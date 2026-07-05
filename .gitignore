@@ -1,0 +1,47 @@
+# 自动生成的 session 文件
+agent/sessions/
+
+# npm 安装的依赖
+agent/npm/node_modules/
+agent/npm/package-lock.json
+agent/extensions/*/node_modules/
+agent/extensions/*/package-lock.json
+
+# pi 运行时缓存
+context-mode/
+agent/bin/
+agent/auth.json
+agent/trust.json
+
+# pi 自动生成的计划文件
+plans/
+.restore_progress
+
+# Python 字节码缓存
+__pycache__/
+*.pyc
+
+# searxng: 密钥文件（含 secret_key）
+searxng/settings.yml
+
+# searxng: Python 虚拟环境
+searxng/venv/
+
+# searxng: 原始开源项目
+searxng/repo/
+
+# 日志文件
+*.log
+
+# SQLite 数据库文件
+*.db
+
+# searxng: 运行时 PID 文件
+searxng/searxng.pid
+
+# 代理二进制
+sing-box/
+
+# 代理测试运行时产物
+proxy_test_results.json
+proxy_test_results_v2.json

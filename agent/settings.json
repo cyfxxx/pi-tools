@@ -1,0 +1,52 @@
+{
+  "lastChangelogVersion": "0.79.4",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
+  "defaultThinkingLevel": "high",
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "packages": [
+    "npm:@juicesharp/rpiv-todo"
+  ],
+  "hideThinkingBlock": true,
+  "collapseChangelog": true,
+  "defaultProjectTrust": "ask",
+  "extensions": [],
+  "pi-web-toolkit": {
+    "searxng_url": "http://127.0.0.1:8889",
+    "search_timeout": 30000,
+    "proxy_pool": {
+      "enabled": true,
+      "subscription_urls": [
+        "https://ghfast.top/https://raw.githubusercontent.com/free18/v2ray/refs/heads/main/v.txt",
+        "https://raw.githubusercontent.com/ssrsub/ssr/master/v2ray"
+      ],
+      "proxies": [
+        "http://23.141.4.103:8080",
+        "http://47.79.119.13:8080",
+        "http://43.161.239.147:8888",
+        "http://115.231.181.40:8128",
+        "http://117.236.124.166:3128",
+        "http://170.106.136.181:31002",
+        "http://113.160.132.26:8080",
+        "http://104.154.186.48:80",
+        "http://138.124.113.102:7443",
+        "http://37.49.224.15:3128"
+      ],
+      "strategy": "round-robin",
+      "health_check_url": "http://httpbin.org/ip",
+      "health_check_interval": 300,
+      "fallback_direct": true,
+      "local_proxy_port": 19998,
+      "sing_box": {
+        "mixed_port": 19998,
+        "external_controller_port": 9090
+      }
+    }
+  },
+  "skills": [
+    "+skills/pi-translate-zh/SKILL.md",
+    "+skills/pi-backup/SKILL.md"
+  ],
+  "theme": "dark"
+}
