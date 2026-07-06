@@ -1,13 +1,11 @@
 {
-  "lastChangelogVersion": "0.79.4",
+  "lastChangelogVersion": "0.80.3",
   "defaultProvider": "deepseek",
   "defaultModel": "deepseek-v4-flash",
   "defaultThinkingLevel": "high",
   "steeringMode": "all",
   "followUpMode": "all",
   "packages": [
-    "npm:@juicesharp/rpiv-todo"
-  ],
   "hideThinkingBlock": true,
   "collapseChangelog": true,
   "defaultProjectTrust": "ask",

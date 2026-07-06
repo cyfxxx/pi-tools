@@ -1,23 +1,3 @@
-/**
- * Plan Mode Extension
- *
- * Read-only exploration mode for safe code analysis and plan-driven execution.
- * Merged from built-in plan-mode + stagefright5/pi-agent-extensions features.
- *
- * Features:
- * - /plan command or Ctrl+Alt+P to toggle
- * - Bash restricted to allowlisted read-only commands
- * - Extracts numbered plan steps from "Plan:" sections
- * - [DONE:n] markers to complete steps during execution
- * - Progress tracking widget during execution
- * - Clarifying questions + impact analysis before planning
- * - Accidental plan replacement protection on follow-up questions
- * - Per-plan git repo at ~/.pi/plans/ for versioning
- * - /plandiff command to view plan iteration differences
- * - /planqa command to view plan discussion history
- * - Full state persistence across session resume
- */
-
 import { execSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -25,35 +5,34 @@ import { join } from "node:path";
 
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage, TextContent } from "@earendil-works/pi-ai";
-import type {
-	ExtensionAPI,
-	ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Key } from "@earendil-works/pi-tui";
 import {
-	extractTodoItems,
-	isPlanRevisionIntent,
-	isSafeCommand,
-	markCompletedSteps,
-	type TodoItem,
+  extractTodoItems,
+  isPlanRevisionIntent,
+  isSafeCommand,
+  markCompletedSteps,
 } from "./utils.ts";
-import { getTokenPressureTag, recordToolUsage, resetBudget } from "../../lib/token-budget.ts";
+import { getTokenPressureTag, resetBudget } from "../../lib/token-budget.ts";
 
-// Tools
+import { type Task, applyTaskMutation } from "./state.ts";
+import { getState, commitState, replaceState, resetState } from "./store.ts";
+import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
+import { registerTodoTool, registerTodosCommand } from "./todo.ts";
+import { TodoOverlay } from "./overlay.ts";
+
 const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "questionnaire"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 
-// Type guard for assistant messages
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
-	return m.role === "assistant" && Array.isArray(m.content);
+  return m.role === "assistant" && Array.isArray(m.content);
 }
 
-// Extract text content from an assistant message
 function getTextContent(message: AssistantMessage): string {
-	return message.content
-		.filter((block): block is TextContent => block.type === "text")
-		.map((block) => block.text)
-		.join("\n");
+  return message.content
+    .filter((block): block is TextContent => block.type === "text")
+    .map((block) => block.text)
+    .join("\n");
 }
 
 const PLANS_DIR = join(homedir(), ".pi", "plans");
@@ -61,532 +40,578 @@ const PLANS_DIR = join(homedir(), ".pi", "plans");
 type QAPair = { role: "user" | "assistant"; content: string };
 
 export default function planModeExtension(pi: ExtensionAPI): void {
-	let planModeEnabled = false;
-	let executionMode = false;
-	let todoItems: TodoItem[] = [];
-	let planPresented = false;
-	let planDir: string | null = null;
-	let qaMessages: QAPair[] = [];
-	let planModeFullInjected = false;
-	let knownTodoHash = 0;
+  let planModeEnabled = false;
+  let executionMode = false;
+  let planPresented = false;
+  let planDir: string | null = null;
+  let qaMessages: QAPair[] = [];
+  let planModeFullInjected = false;
+  let knownTodoHash = 0;
 
-	function todoHash(): number {
-		let h = 0;
-		for (const t of todoItems) {
-			h = ((h << 5) - h + t.step) | 0;
-			for (let i = 0; i < t.text.length; i++) {
-				h = ((h << 5) - h + t.text.charCodeAt(i)) | 0;
-			}
-			h = ((h << 5) - h + (t.completed ? 1 : 0)) | 0;
-		}
-		return h;
-	}
+  let todoOverlay: TodoOverlay | undefined;
 
-	pi.registerFlag("plan", {
-		description: `以规划模式启动（只读探索）`,
-		type: "boolean",
-		default: false,
-	});
+  function todoHash(): number {
+    const state = getState();
+    let h = 0;
+    for (const t of state.tasks) {
+      h = ((h << 5) - h + t.id) | 0;
+      for (let i = 0; i < t.subject.length; i++) {
+        h = ((h << 5) - h + t.subject.charCodeAt(i)) | 0;
+      }
+      h = ((h << 5) - h + (t.status === "completed" ? 1 : 0)) | 0;
+    }
+    return h;
+  }
 
-	function updateStatus(ctx: ExtensionContext): void {
-		// Footer status
-		if (executionMode && todoItems.length > 0) {
-			const completed = todoItems.filter((t) => t.completed).length;
-			ctx.ui.setStatus(
-				"plan-mode",
-				ctx.ui.theme.fg("accent", `📋 ${completed}/${todoItems.length}`),
-			);
-		} else if (planModeEnabled) {
-			ctx.ui.setStatus("plan-mode", ctx.ui.theme.fg("warning", "⏸ plan"));
-		} else {
-			ctx.ui.setStatus("plan-mode", undefined);
-		}
+  pi.registerFlag("plan", {
+    description: "以规划模式启动（只读探索）",
+    type: "boolean",
+    default: false,
+  });
 
-		// Widget showing todo list
-		if (executionMode && todoItems.length > 0) {
-			const lines = todoItems.map((item) => {
-				if (item.completed) {
-					return (
-						ctx.ui.theme.fg("success", "☑ ") +
-						ctx.ui.theme.fg("muted", ctx.ui.theme.strikethrough(item.text))
-					);
-				}
-				return `${ctx.ui.theme.fg("muted", "☐ ")}${item.text}`;
-			});
-			ctx.ui.setWidget("plan-todos", lines);
-		} else {
-			ctx.ui.setWidget("plan-todos", undefined);
-		}
-	}
+  function updateStatus(ctx: ExtensionContext): void {
+    const state = getState();
+    const counts = selectTodoCounts(state);
+    const total = counts.pending + counts.inProgress + counts.completed;
 
-	function togglePlanMode(ctx: ExtensionContext): void {
-		planModeEnabled = !planModeEnabled;
-		executionMode = false;
-		todoItems = [];
-		planPresented = false;
-		planDir = null;
-		qaMessages = [];
+    if (executionMode && total > 0) {
+      ctx.ui.setStatus(
+        "plan-mode",
+        ctx.ui.theme.fg("accent", `📋 ${counts.completed}/${total}`),
+      );
+    } else if (planModeEnabled) {
+      ctx.ui.setStatus("plan-mode", ctx.ui.theme.fg("warning", "⏸ plan"));
+    } else {
+      ctx.ui.setStatus("plan-mode", undefined);
+    }
 
-		if (planModeEnabled) {
-			pi.setActiveTools(PLAN_MODE_TOOLS);
-			ctx.ui.notify(`Plan mode enabled. Tools: ${PLAN_MODE_TOOLS.join(", ")}`);
-		} else {
-			pi.setActiveTools(NORMAL_MODE_TOOLS);
-			ctx.ui.notify("Plan mode disabled. Full access restored.");
-		}
-		updateStatus(ctx);
-	}
+    if (executionMode && total > 0) {
+      todoOverlay?.update();
+    } else {
+      ctx.ui.setWidget("plan-todos-simple", undefined);
+    }
+  }
 
-	async function savePlanIteration(
-		planText: string,
-		iteration: number,
-	): Promise<string> {
-		const timestamp = Date.now();
-		const dir = planDir ?? join(PLANS_DIR, `plan-${timestamp}`);
+  function togglePlanMode(ctx: ExtensionContext): void {
+    planModeEnabled = !planModeEnabled;
+    executionMode = false;
+    resetState();
+    planPresented = false;
+    planDir = null;
+    qaMessages = [];
+    knownTodoHash = 0;
 
-		await mkdir(dir, { recursive: true });
-		await writeFile(join(dir, "plan.md"), planText);
+    if (planModeEnabled) {
+      pi.setActiveTools(PLAN_MODE_TOOLS);
+      ctx.ui.notify(`规划模式已启用。工具: ${PLAN_MODE_TOOLS.join(", ")}`);
+    } else {
+      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      ctx.ui.notify("规划模式已禁用。完整权限已恢复。");
+    }
+    updateStatus(ctx);
+  }
 
-		try {
-			if (iteration === 1 || !planDir) {
-				execSync("git init && git add plan.md && git commit -m 'initial'", {
-					cwd: dir,
-					encoding: "utf-8",
-				});
-			} else {
-				execSync(`git add plan.md && git commit -m 'iteration ${iteration}'`, {
-					cwd: planDir,
-					encoding: "utf-8",
-				});
-			}
-		} catch {
-			// git not available or init failed — silently skip versioning
-		}
+  async function savePlanIteration(
+    planText: string,
+    iteration: number,
+  ): Promise<string> {
+    const timestamp = Date.now();
+    const dir = planDir ?? join(PLANS_DIR, `plan-${timestamp}`);
 
-		return dir;
-	}
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "plan.md"), planText);
 
-	function persistState(): void {
-		pi.appendEntry("plan-mode", {
-			enabled: planModeEnabled,
-			todos: todoItems,
-			executing: executionMode,
-			planPresented,
-			planDir,
-			qaMessages,
-		});
-	}
+    try {
+      if (iteration === 1 || !planDir) {
+        execSync("git init && git add plan.md && git commit -m 'initial'", {
+          cwd: dir,
+          encoding: "utf-8",
+        });
+      } else {
+        execSync(`git add plan.md && git commit -m 'iteration ${iteration}'`, {
+          cwd: planDir,
+          encoding: "utf-8",
+        });
+      }
+    } catch {
+      // git not available — silently skip versioning
+    }
 
-	pi.registerCommand("plan", {
-		description: `切换规划模式（只读探索）`,
-		handler: async (_args, ctx) => togglePlanMode(ctx),
-	});
+    return dir;
+  }
 
-	pi.registerCommand("todos", {
-		description: `显示当前规划任务列表`,
-		handler: async (_args, ctx) => {
-			if (todoItems.length === 0) {
-				ctx.ui.notify("No todos. Create a plan first with /plan", "info");
-				return;
-			}
-			const list = todoItems
-				.map(
-					(item, i) => `${i + 1}. ${item.completed ? "✓" : "○"} ${item.text}`,
-				)
-				.join("\n");
-			ctx.ui.notify(`Plan Progress:\n${list}`, "info");
-		},
-	});
+  function persistState(): void {
+    const state = getState();
+    pi.appendEntry("plan-mode", {
+      enabled: planModeEnabled,
+      tasks: state.tasks,
+      nextId: state.nextId,
+      executing: executionMode,
+      planPresented,
+      planDir,
+      qaMessages,
+    });
+  }
 
-	pi.registerCommand("plandiff", {
-		description: `显示当前与上一版规划的差异`,
-		handler: async (_args, ctx) => {
-			if (!planDir) {
-				ctx.ui.notify("No plan to diff. Create a plan first.", "info");
-				return;
-			}
-			try {
-				const diff = execSync(
-					"git diff HEAD~1..HEAD -- plan.md 2>/dev/null || git show --stat HEAD",
-					{ cwd: planDir, encoding: "utf-8" },
-				);
-				if (!diff.trim()) {
-					ctx.ui.notify("No changes from previous iteration.", "info");
-					return;
-				}
-				pi.sendMessage(
-					{
-						customType: "plan-diff",
-						content: `**Plan Diff:**\n\n\`\`\`diff\n${diff.trim()}\n\`\`\``,
-						display: true,
-					},
-					{ triggerTurn: false },
-				);
-			} catch {
-				ctx.ui.notify("No previous iteration to diff against.", "info");
-			}
-		},
-	});
+  registerTodoTool(pi);
+  registerTodosCommand(pi);
 
-	pi.registerCommand("planqa", {
-		description: `显示当前规划讨论的问答历史`,
-		handler: async (_args, ctx) => {
-			if (qaMessages.length === 0) {
-				ctx.ui.notify("No Q&A history yet.", "info");
-				return;
-			}
-			const history = qaMessages
-				.map(
-					(qa, i) =>
-						`**${qa.role === "user" ? "You" : "Agent"}:**\n${qa.content}`,
-				)
-				.join("\n\n---\n\n");
-			pi.sendMessage(
-				{
-					customType: "plan-qa-history",
-					content: `**Plan Q&A History (${qaMessages.length} messages):**\n\n${history}`,
-					display: true,
-				},
-				{ triggerTurn: false },
-			);
-		},
-	});
+  pi.registerCommand("plan", {
+    description: "切换规划模式（只读探索）",
+    handler: async (_args, ctx) => togglePlanMode(ctx),
+  });
 
-	pi.registerShortcut(Key.ctrlAlt("p"), {
-		description: "Toggle plan mode",
-		handler: async (ctx) => togglePlanMode(ctx),
-	});
+  pi.registerCommand("plandiff", {
+    description: "显示当前与上一版规划的差异",
+    handler: async (_args, ctx) => {
+      if (!planDir) {
+        ctx.ui.notify("没有可对比的计划。请先创建计划。", "info");
+        return;
+      }
+      try {
+        const diff = execSync(
+          "git diff HEAD~1..HEAD -- plan.md 2>/dev/null || git show --stat HEAD",
+          { cwd: planDir, encoding: "utf-8" },
+        );
+        if (!diff.trim()) {
+          ctx.ui.notify("与上一版无差异。", "info");
+          return;
+        }
+        pi.sendMessage(
+          {
+            customType: "plan-diff",
+            content: `**计划差异对比:**\n\n\`\`\`diff\n${diff.trim()}\n\`\`\``,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+      } catch {
+        ctx.ui.notify("没有之前的版本来对比。", "info");
+      }
+    },
+  });
 
-	// Block destructive bash commands in plan mode
-	pi.on("tool_call", async (event) => {
-		if (!planModeEnabled || event.toolName !== "bash") return;
+  pi.registerCommand("planqa", {
+    description: "显示当前规划讨论的问答历史",
+    handler: async (_args, ctx) => {
+      if (qaMessages.length === 0) {
+        ctx.ui.notify("暂无问答历史。", "info");
+        return;
+      }
+      const history = qaMessages
+        .map(
+          (qa, i) =>
+            `**${qa.role === "user" ? "你" : "Agent"}:**\n${qa.content}`,
+        )
+        .join("\n\n---\n\n");
+      pi.sendMessage(
+        {
+          customType: "plan-qa-history",
+          content: `**计划问答历史 (${qaMessages.length} 条消息):**\n\n${history}`,
+          display: true,
+        },
+        { triggerTurn: false },
+      );
+    },
+  });
 
-		const command = event.input.command as string;
-		if (!isSafeCommand(command)) {
-			return {
-				block: true,
-				reason: `Plan mode: command blocked (not allowlisted). Use /plan to disable plan mode first.\nCommand: ${command}`,
-			};
-		}
-	});
+  pi.registerShortcut(Key.ctrlAlt("p"), {
+    description: "切换计划模式",
+    handler: async (ctx) => togglePlanMode(ctx),
+  });
 
-	// Filter out stale plan mode context when not in plan mode
-	pi.on("context", async (event) => {
-		if (planModeEnabled) return;
+  // Block destructive bash commands in plan mode
+  pi.on("tool_call", async (event) => {
+    if (!planModeEnabled || event.toolName !== "bash") return;
 
-		return {
-			messages: event.messages.filter((m) => {
-				const msg = m as AgentMessage & { customType?: string };
-				if (msg.customType === "plan-mode-context") return false;
-				if (msg.role !== "user") return true;
+    const command = event.input.command as string;
+    if (!isSafeCommand(command)) {
+      return {
+        block: true,
+        reason: `规划模式: 命令被阻止（不在白名单中）。使用 /plan 退出规划模式。\n命令: ${command}`,
+      };
+    }
+  });
 
-				const content = msg.content;
-				if (typeof content === "string") {
-					return !content.includes("[PLAN MODE ACTIVE]");
-				}
-				if (Array.isArray(content)) {
-					return !content.some(
-						(c) =>
-							c.type === "text" &&
-							(c as TextContent).text?.includes("[PLAN MODE ACTIVE]"),
-					);
-				}
-				return true;
-			}),
-		};
-	});
+  // Filter out stale plan mode context when not in plan mode
+  pi.on("context", async (event) => {
+    if (planModeEnabled) return;
 
-	// Inject plan/execution context before agent starts
-	pi.on("before_agent_start", async () => {
-		if (planModeEnabled) {
-			const pressureTag = getTokenPressureTag() || "";
-		const preamble = pressureTag ? `${pressureTag}\n` : "";
-		const content = planModeFullInjected
-				? `${preamble}[PLAN MODE] same rules apply. Use /plan to exit.`
-				: `${preamble}[PLAN MODE ACTIVE]
-You are in plan mode - a read-only exploration mode for safe code analysis.
+    return {
+      messages: event.messages.filter((m) => {
+        const msg = m as AgentMessage & { customType?: string };
+        if (msg.customType === "plan-mode-context") return false;
+        if (msg.role !== "user") return true;
 
-Restrictions:
-- You can only use: read, bash, grep, find, ls, questionnaire
-- You CANNOT use: edit, write (file modifications are disabled)
-- Bash is restricted to an allowlist of read-only commands
+        const content = msg.content;
+        if (typeof content === "string") {
+          return !content.includes("[PLAN MODE ACTIVE]");
+        }
+        if (Array.isArray(content)) {
+          return !content.some(
+            (c) =>
+              c.type === "text" &&
+              (c as TextContent).text?.includes("[PLAN MODE ACTIVE]"),
+          );
+        }
+        return true;
+      }),
+    };
+  });
 
-Before creating a plan:
-- Ask clarifying questions if requirements are unclear.
-- Inspect the codebase to understand current structure.
-- Perform impact analysis: identify which files would change, what could break, edge cases.
+  // Inject plan/execution context before agent starts
+  pi.on("before_agent_start", async () => {
+    if (planModeEnabled) {
+      const pressureTag = getTokenPressureTag() || "";
+      const preamble = pressureTag ? `${pressureTag}\n` : "";
+      const content = planModeFullInjected
+        ? `${preamble}[PLAN MODE] 保持相同规则。使用 /plan 退出。`
+        : `${preamble}[PLAN MODE ACTIVE]
+你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
-Create a detailed numbered plan under a "Plan:" header:
+限制:
+- 只能使用: read, bash, grep, find, ls, questionnaire
+- 不能使用: edit, write（文件修改已禁用）
+- Bash 命令限制为只读白名单
+
+创建计划前:
+- 如果需求不明确，先提出澄清问题。
+- 检查代码库以了解当前结构。
+- 进行影响分析：识别哪些文件会变化、可能破坏什么、边界情况。
+
+在 "Plan:" 头部下创建详细的编号计划:
 
 Plan:
-1. First step description
-2. Second step description
+1. 第一步描述
+2. 第二步描述
 ...
 
-Do NOT attempt to make changes - just describe what you would do.
+不要尝试修改文件——只描述你要做什么。
 
-After a plan is presented: if the user asks normal follow-up questions
-(why, what, explain), answer in text — do NOT output another Plan: block.
-Only produce a revised "Plan:" section when the user explicitly asks for a
-revision, change, or update.`;
-			planModeFullInjected = true;
-			return {
-				message: {
-					customType: "plan-mode-context",
-					content,
-					display: false,
-				},
-			};
-		}
+计划展示后: 如果用户提出正常的后续问题
+（为什么、是什么、解释一下），用文字回答——不要输出另一个 Plan: 块。
+只有在用户明确要求修改、变更或更新时，才输出修订后的 "Plan:" 部分。`;
+      planModeFullInjected = true;
+      return {
+        message: {
+          customType: "plan-mode-context",
+          content,
+          display: false,
+        },
+      };
+    }
 
-		if (executionMode && todoItems.length > 0) {
-			const currentHash = todoHash();
-			if (currentHash === knownTodoHash) {
-				// Still inject pressure tag if non-trivial
-				const pressureTag = getTokenPressureTag();
-				if (pressureTag) {
-					return { message: { customType: "plan-pressure-tag", content: pressureTag, display: false } };
-				}
-				return;
-			}
-			knownTodoHash = currentHash;
-			const pressureTag = getTokenPressureTag() || "";
-			const preamble = pressureTag ? `${pressureTag}\n` : "";
-			const remaining = todoItems.filter((t) => !t.completed);
-			const todoList = remaining.map((t) => `${t.step}. ${t.text}`).join("\n");
-			return {
-				message: {
-					customType: "plan-execution-context",
-					content: `${preamble}[EXECUTING: ${todoItems.filter(t => t.completed).length}/${todoItems.length} done]
+    if (executionMode) {
+      const state = getState();
+      const visible = state.tasks.filter((t) => t.status !== "deleted");
+      if (visible.length === 0) return;
 
-Remaining:
+      const currentHash = todoHash();
+      if (currentHash === knownTodoHash) {
+        const pressureTag = getTokenPressureTag();
+        if (pressureTag) {
+          return { message: { customType: "plan-pressure-tag", content: pressureTag, display: false } };
+        }
+        return;
+      }
+      knownTodoHash = currentHash;
+      const pressureTag = getTokenPressureTag() || "";
+      const preamble = pressureTag ? `${pressureTag}\n` : "";
+      const remaining = visible.filter((t) => t.status !== "completed");
+      const counts = selectTodoCounts(state);
+      const todoList = remaining.map((t) => `${t.id}. ${t.subject}`).join("\n");
+      return {
+        message: {
+          customType: "plan-execution-context",
+          content: `${preamble}[执行中: ${counts.completed}/${counts.total} 已完成]
+
+剩余步骤:
 ${todoList}`,
-					display: false,
-				},
-			};
-		}
-	});
+          display: false,
+        },
+      };
+    }
+  });
 
-	// Track progress after each turn
-	pi.on("turn_end", async (event, ctx) => {
-		if (!executionMode || todoItems.length === 0) return;
-		if (!isAssistantMessage(event.message)) return;
+  // Track progress after each turn
+  pi.on("turn_end", async (event, ctx) => {
+    if (!executionMode) return;
+    if (!isAssistantMessage(event.message)) return;
 
-		const text = getTextContent(event.message);
-		if (markCompletedSteps(text, todoItems) > 0) {
-			updateStatus(ctx);
-		}
-		persistState();
-	});
+    const text = getTextContent(event.message);
+    if (markCompletedSteps(text) > 0) {
+      updateStatus(ctx);
+      todoOverlay?.update();
+    }
+    persistState();
+  });
 
-	// Handle plan completion and plan mode UI
-	pi.on("agent_end", async (event, ctx) => {
-		// Check if execution is complete
-		if (executionMode && todoItems.length > 0) {
-			if (todoItems.every((t) => t.completed)) {
-				const completedList = todoItems.map((t) => `~~${t.text}~~`).join("\n");
-				pi.sendMessage(
-					{
-						customType: "plan-complete",
-						content: `**Plan Complete!** ✓\n\n${completedList}`,
-						display: true,
-					},
-					{ triggerTurn: false },
-				);
-				executionMode = false;
-				todoItems = [];
-				pi.setActiveTools(NORMAL_MODE_TOOLS);
-				updateStatus(ctx);
-				persistState(); // Save cleared state so resume doesn't restore old execution mode
-			}
-			return;
-		}
+  // Handle plan completion and plan mode UI
+  pi.on("agent_end", async (event, ctx) => {
+    // Check if execution is complete
+    if (executionMode) {
+      const state = getState();
+      const visible = state.tasks.filter((t) => t.status !== "deleted");
+      if (visible.length > 0 && visible.every((t) => t.status === "completed")) {
+        const completedList = visible.map((t) => `~~${t.subject}~~`).join("\n");
+        pi.sendMessage(
+          {
+            customType: "plan-complete",
+            content: `**计划完成!** ✓\n\n${completedList}`,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+        executionMode = false;
+        pi.setActiveTools(NORMAL_MODE_TOOLS);
+        updateStatus(ctx);
+        todoOverlay?.update();
+        persistState();
+      }
+      return;
+    }
 
-		if (!planModeEnabled || !ctx.hasUI) return;
+    if (!planModeEnabled || !ctx.hasUI) return;
 
-		// Extract todos from last assistant message
-		const lastAssistant = [...event.messages]
-			.reverse()
-			.find(isAssistantMessage);
-		if (lastAssistant) {
-			const lastText = getTextContent(lastAssistant);
-			const extracted = extractTodoItems(lastText);
-			if (extracted.length > 0) {
-				const isNewPlan = !planPresented || isPlanRevisionIntent(lastText);
-				if (isNewPlan && extracted.length > 0) {
-					todoItems = extracted;
-					// Save plan to git repo
-					let iteration = 1;
-					if (planDir) {
-						try {
-							iteration =
-								Number(
-									execSync("git rev-list --count HEAD", {
-										cwd: planDir,
-										encoding: "utf-8",
-									}).trim(),
-								) + 1;
-						} catch {
-							// fallback: increment beyond known commits
-							iteration = 2;
-						}
-					}
-					savePlanIteration(lastText, iteration).then((dir) => {
-						planDir = dir;
-						persistState();
-					});
-				}
-				planPresented = true;
-			}
+    // Extract todos from last assistant message
+    const lastAssistant = [...event.messages]
+      .reverse()
+      .find(isAssistantMessage);
+    if (lastAssistant) {
+      const lastText = getTextContent(lastAssistant);
+      const extracted = extractTodoItems(lastText);
+      if (extracted.length > 0) {
+        const isNewPlan = !planPresented || isPlanRevisionIntent(lastText);
+        if (isNewPlan) {
+          // Create tasks via reducer
+          let state = getState();
+          for (const item of extracted) {
+            const result = applyTaskMutation(state, "create", {
+              subject: item.subject,
+            } as Record<string, unknown>);
+            if (result.op.kind !== "error") {
+              state = result.state;
+            }
+          }
+          commitState(state);
 
-			// Capture Q&A pair when plan has been presented
-			if (planPresented) {
-				const lastUser = [...event.messages]
-					.reverse()
-					.find((m) => m.role === "user");
-				if (lastUser) {
-					const userContent =
-						typeof lastUser.content === "string" ? lastUser.content : "";
-					if (userContent.trim()) {
-						qaMessages.push({ role: "user", content: userContent });
-					}
-				}
-				qaMessages.push({
-					role: "assistant",
-					content: lastText.slice(0, 500),
-				});
+          // Save plan to git repo
+          let iteration = 1;
+          if (planDir) {
+            try {
+              iteration =
+                Number(
+                  execSync("git rev-list --count HEAD", {
+                    cwd: planDir,
+                    encoding: "utf-8",
+                  }).trim(),
+                ) + 1;
+            } catch {
+              iteration = 2;
+            }
+          }
+          savePlanIteration(lastText, iteration).then((dir) => {
+            planDir = dir;
+            persistState();
+          });
+        }
+        planPresented = true;
+      }
 
-				// Trim Q&A to last 3 pairs (max 6 entries)
-				if (qaMessages.length > 6) {
-					qaMessages = qaMessages.slice(-6);
-				}
-			}
-		}
+      // Capture Q&A pair when plan has been presented
+      if (planPresented) {
+        const lastUser = [...event.messages]
+          .reverse()
+          .find((m) => m.role === "user");
+        if (lastUser) {
+          const userContent =
+            typeof lastUser.content === "string" ? lastUser.content : "";
+          if (userContent.trim()) {
+            qaMessages.push({ role: "user", content: userContent });
+          }
+        }
+        qaMessages.push({
+          role: "assistant",
+          content: lastText.slice(0, 500),
+        });
 
-		// Show plan steps; conditionally prompt for next action
-		if (todoItems.length > 0) {
-			const todoListText = todoItems
-				.map((t, i) => `${i + 1}. ☐ ${t.text}`)
-				.join("\n");
-			pi.sendMessage(
-				{
-					customType: "plan-todo-list",
-					content: `**Plan Steps (${todoItems.length}):**\n\n${todoListText}`,
-					display: true,
-				},
-				{ triggerTurn: false },
-			);
-		}
+        if (qaMessages.length > 6) {
+          qaMessages = qaMessages.slice(-6);
+        }
+      }
+    }
 
-		// Only show choice when todos actually changed or plan is brand new
-		const needsChoice = todoItems.length > 0 && todoHash() !== knownTodoHash;
-		if (!needsChoice) return;
+    // Show plan steps
+    const state = getState();
+    const visible = state.tasks.filter((t) => t.status !== "deleted");
+    if (visible.length > 0) {
+      const todoListText = visible
+        .map((t) => `${t.id}. ☐ ${t.subject}`)
+        .join("\n");
+      pi.sendMessage(
+        {
+          customType: "plan-todo-list",
+          content: `**计划步骤 (${visible.length}):**\n\n${todoListText}`,
+          display: true,
+        },
+        { triggerTurn: false },
+      );
+    }
 
-		const choice = await ctx.ui.select("Plan mode - what next?", [
-			todoItems.length > 0
-				? "Execute the plan (track progress)"
-				: "Execute the plan",
-			"Stay in plan mode",
-			"Refine the plan",
-		]);
+    // Only show choice when todos actually changed or plan is brand new
+    const needsChoice = visible.length > 0 && todoHash() !== knownTodoHash;
+    if (!needsChoice) return;
 
-		if (choice?.startsWith("Execute")) {
-			planModeEnabled = false;
-			executionMode = todoItems.length > 0;
-			knownTodoHash = todoHash();
-			pi.setActiveTools(NORMAL_MODE_TOOLS);
-			updateStatus(ctx);
+    const choice = await ctx.ui.select("计划模式 - 下一步?", [
+      visible.length > 0
+        ? "执行计划（追踪进度）"
+        : "执行计划",
+      "继续计划模式",
+      "优化计划",
+    ]);
 
-			const execMessage =
-				todoItems.length > 0
-					? `Execute the plan. Start with: ${todoItems[0].text}`
-					: "Execute the plan you just created.";
-			pi.sendMessage(
-				{
-					customType: "plan-mode-execute",
-					content: execMessage,
-					display: true,
-				},
-				{ triggerTurn: true },
-			);
-		} else if (choice === "Refine the plan") {
-			const refinement = await ctx.ui.editor("Refine the plan:", "");
-			if (refinement?.trim()) {
-				pi.sendUserMessage(refinement.trim());
-			}
-		}
-	});
+    if (choice?.startsWith("执行计划")) {
+      planModeEnabled = false;
+      executionMode = visible.length > 0;
+      knownTodoHash = todoHash();
+      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      updateStatus(ctx);
+      todoOverlay?.update();
 
-	// Restore state on session start/resume
-	pi.on("session_start", async (_event, ctx) => {
-		resetBudget();
-		if (pi.getFlag("plan") === true) {
-			planModeEnabled = true;
-		}
+      const firstTask = visible[0];
+      const execMessage =
+        firstTask
+          ? `执行计划。从以下步骤开始: ${firstTask.subject}`
+          : "执行你刚创建的计划。";
+      pi.sendMessage(
+        {
+          customType: "plan-mode-execute",
+          content: execMessage,
+          display: true,
+        },
+        { triggerTurn: true },
+      );
+    } else if (choice === "优化计划") {
+      const refinement = await ctx.ui.editor("优化计划:", "");
+      if (refinement?.trim()) {
+        pi.sendUserMessage(refinement.trim());
+      }
+    }
+  });
 
-		const entries = ctx.sessionManager.getEntries();
+  // Restore state on session start/resume
+  pi.on("session_start", async (_event, ctx) => {
+    resetBudget();
+    resetState();
 
-		// Restore persisted state
-		const planModeEntry = entries
-			.filter(
-				(e: { type: string; customType?: string }) =>
-					e.type === "custom" && e.customType === "plan-mode",
-			)
-			.pop() as
-			| {
-					data?: {
-						enabled: boolean;
-						todos?: TodoItem[];
-						executing?: boolean;
-						planPresented?: boolean;
-						planDir?: string | null;
-						qaMessages?: QAPair[];
-					};
-			  }
-			| undefined;
+    if (pi.getFlag("plan") === true) {
+      planModeEnabled = true;
+    }
 
-		if (planModeEntry?.data) {
-			planModeEnabled = planModeEntry.data.enabled ?? planModeEnabled;
-			todoItems = planModeEntry.data.todos ?? todoItems;
-			executionMode = planModeEntry.data.executing ?? executionMode;
-			planPresented = planModeEntry.data.planPresented ?? planPresented;
-			planDir = planModeEntry.data.planDir ?? planDir;
-			qaMessages = planModeEntry.data.qaMessages ?? qaMessages;
-		}
+    const entries = ctx.sessionManager.getEntries();
 
-		// On resume: re-scan messages to rebuild completion state
-		// Only scan messages AFTER the last "plan-mode-execute" to avoid picking up [DONE:n] from previous plans
-		const isResume = planModeEntry !== undefined;
-		if (isResume && executionMode && todoItems.length > 0) {
-			// Find the index of the last plan-mode-execute entry (marks when current execution started)
-			let executeIndex = -1;
-			for (let i = entries.length - 1; i >= 0; i--) {
-				const entry = entries[i] as { type: string; customType?: string };
-				if (entry.customType === "plan-mode-execute") {
-					executeIndex = i;
-					break;
-				}
-			}
+    // Restore persisted state
+    const planModeEntry = entries
+      .filter(
+        (e: { type: string; customType?: string }) =>
+          e.type === "custom" && e.customType === "plan-mode",
+      )
+      .pop() as
+      | {
+          data?: {
+            enabled: boolean;
+            tasks?: Task[];
+            nextId?: number;
+            executing?: boolean;
+            planPresented?: boolean;
+            planDir?: string | null;
+            qaMessages?: QAPair[];
+          };
+        }
+      | undefined;
 
-			// Only scan messages after the execute marker
-			const messages: AssistantMessage[] = [];
-			for (let i = executeIndex + 1; i < entries.length; i++) {
-				const entry = entries[i];
-				if (
-					entry.type === "message" &&
-					"message" in entry &&
-					isAssistantMessage(entry.message as AgentMessage)
-				) {
-					messages.push(entry.message as AssistantMessage);
-				}
-			}
-			const allText = messages.map(getTextContent).join("\n");
-			markCompletedSteps(allText, todoItems);
-		}
+    if (planModeEntry?.data) {
+      planModeEnabled = planModeEntry.data.enabled ?? planModeEnabled;
+      executionMode = planModeEntry.data.executing ?? executionMode;
+      planPresented = planModeEntry.data.planPresented ?? planPresented;
+      planDir = planModeEntry.data.planDir ?? planDir;
+      qaMessages = planModeEntry.data.qaMessages ?? qaMessages;
 
-		if (planModeEnabled) {
-			pi.setActiveTools(PLAN_MODE_TOOLS);
-		}
-		updateStatus(ctx);
-	});
+      if (planModeEntry.data.tasks) {
+        replaceState({
+          tasks: planModeEntry.data.tasks,
+          nextId: planModeEntry.data.nextId ?? 1,
+        });
+      }
+    }
+
+    // Restore overlay UI
+    if (ctx.hasUI) {
+      todoOverlay ??= new TodoOverlay();
+      todoOverlay.setUICtx(ctx.ui);
+      todoOverlay.resetCompletedDisplayState();
+      todoOverlay.update();
+    }
+
+    // On resume: re-scan messages to rebuild completion state
+    const isResume = planModeEntry !== undefined;
+    if (isResume && executionMode) {
+      const state = getState();
+      const visible = state.tasks.filter((t) => t.status !== "deleted");
+      if (visible.length > 0) {
+        let executeIndex = -1;
+        for (let i = entries.length - 1; i >= 0; i--) {
+          const entry = entries[i] as { type: string; customType?: string };
+          if (entry.customType === "plan-mode-execute") {
+            executeIndex = i;
+            break;
+          }
+        }
+
+        const messages: AssistantMessage[] = [];
+        for (let i = executeIndex + 1; i < entries.length; i++) {
+          const entry = entries[i];
+          if (
+            entry.type === "message" &&
+            "message" in entry &&
+            isAssistantMessage(entry.message as AgentMessage)
+          ) {
+            messages.push(entry.message as AssistantMessage);
+          }
+        }
+        const allText = messages.map(getTextContent).join("\n");
+        markCompletedSteps(allText);
+      }
+    }
+
+    if (planModeEnabled) {
+      pi.setActiveTools(PLAN_MODE_TOOLS);
+    }
+    updateStatus(ctx);
+  });
+
+  // Overlay lifecycle handlers
+  pi.on("session_compact", async (_event, ctx) => {
+    todoOverlay?.resetCompletedDisplayState();
+    todoOverlay?.update();
+  });
+
+  pi.on("session_tree", async (_event, ctx) => {
+    todoOverlay?.resetCompletedDisplayState();
+    todoOverlay?.update();
+  });
+
+  pi.on("session_shutdown", async () => {
+    todoOverlay?.dispose();
+    todoOverlay = undefined;
+  });
+
+  pi.on("tool_execution_end", async (event) => {
+    if (event.toolName !== "todo" || event.isError) return;
+    todoOverlay?.update();
+  });
+
+  pi.on("agent_start", async () => {
+    todoOverlay?.hideCompletedTasksFromPreviousTurn();
+  });
 }

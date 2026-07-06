@@ -92,7 +92,7 @@ cp settings-selector.js.bak.1234567890 settings-selector.js
 | pi-subagents 命令 + 状态消息 | `pi-subagents/src/slash/slash-commands.ts` | 12 项 |
 | pi-subagents 提示词描述 | `pi-subagents/prompts/*.md` | 7 个 |
 | pi-subagents 技能描述 | `pi-subagents/skills/*/SKILL.md` | 1 个 |
-| rpiv-todo 命令 + 本地化 | `rpiv-todo/todo.ts` + `locale/zh.json` | 2 条 |
+| plan-mode todo 工具 + /todos 命令 | `plan-mode/todo.ts` | 2 条 |
 | **ctx-lite 扩展命令** | `extensions/ctx-lite.ts` | **4 条** |
 | **plan-mode 扩展命令/标志** | `extensions/plan-mode/index.ts` | **5 条** |
 | **@plannotator/pi-extension 命令/标志** | `index.ts` | **9 条** |

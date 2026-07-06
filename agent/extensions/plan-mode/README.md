@@ -48,11 +48,13 @@
 
 | 特性 | 说明 |
 |------|------|
+| **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），4 状态机（pending→in_progress→completed→deleted） |
+| **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓）、删除线、溢出折叠 |
 | **只读工具集** | 限制可用工具为 read、bash、grep、find、ls、questionnaire |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
-| **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，形成待办列表 |
-| **进度追踪** | TUI 小部件实时显示完成比例（如 2/5） |
-| **`[DONE:n]` 标记** | Agent 在回复中插入标记，显式标记步骤完成 |
+| **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
+| **进度追踪** | TUI 小部件 + TodoOverlay 实时显示完成比例（如 2/5） |
+| **`[DONE:n]` 标记** | Agent 在回复中插入标记，自动调用 reducer 更新任务状态 |
 | **会话持久化** | 所有状态（模式、待办、执行状态等）在 session resume 后完整恢复 |
 | **追问保护** | Agent 已展示计划后，普通追问（why/what）不会误覆盖计划；只有显式修改请求才产生新版本 |
 | **影响分析** | Agent 在规划前必须分析受影响文件、评估风险 |
@@ -246,27 +248,14 @@
 
 ```
 ~/.pi/agent/extensions/plan-mode/
-├── index.ts        # 主扩展逻辑 (591 行)
-│                   # - 状态机管理
-│                   # - 事件绑定 (6 个事件)
-│                   # - 命令注册 (4 个命令)
-│                   # - 快捷键注册
-│                   # - UI 更新 (状态栏、小部件)
-│                   # - 持久化 (存/取 session log)
-│                   # - Git 版本控制
-│                   # - 分级注入 (full/short 切换)
-│                   # - 条件选择 (仅计划变化时弹出三选一)
-│                   # - Q&A 自动裁剪 (max 6 条)
-│                   # - Token-budget 集成 (压力标签)
-│                   #
-├── utils.ts        # 纯函数工具集 (207 行)
-│                   # - isSafeCommand()          双重检查命令安全
-│                   # - extractTodoItems()        从 Plan: 提取待办
-│                   # - extractDoneSteps()        提取 [DONE:n] 标记
-│                   # - markCompletedSteps()      更新完成状态
-│                   # - cleanStepText()           清洗/截断步骤文本
-│                   # - isPlanRevisionIntent()    判断是否为修订请求 (含短消息过滤)
-│                   #
+├── index.ts        # 主入口：事件绑定 + 命令注册 + 状态机 + 生命周期
+├── state.ts        # 类型定义（Task, TaskState）+ 纯 reducer + 状态转换校验
+├── store.ts        # 模块级状态单元（getState/commitState/replaceState/resetState）
+├── selectors.ts    # 纯选择器（visibleTasks/tasksByStatus/overlayLayout/hasActive）
+├── view.ts         # 格式化：彩色图标、状态标签、overlay/command/list/get 行格式
+├── overlay.ts      # TodoOverlay 悬浮层（aboveEditor widget，12 行折叠）
+├── todo.ts         # todo 工具 + /todos 命令注册
+├── utils.ts        # 纯函数：安全命令检查、Plan 提取、[DONE:n] 处理、修订检测
 ├── README.md       # 说明文档
 └── CHANGELOG.md    # 变更日志
 ```
@@ -278,7 +267,6 @@
 ```typescript
 let planModeEnabled = false;    // 是否处于规划模式（只读）
 let executionMode = false;      // 是否处于执行模式（全权限）
-let todoItems: TodoItem[] = []; // 待办步骤列表
 let planPresented = false;      // 是否已展示计划（防误覆盖）
 let planDir: string | null = null; // 当前计划的 git 版本库路径
 let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
@@ -305,10 +293,11 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 - 消息类型为 `customType`，`display: false`（不显示在聊天中，只发送给 LLM）
 
 #### `pi.on("turn_end", ...)` — 步骤进度追踪
-- 只在 `executionMode=true` 且有待办时生效
+- 只在 `executionMode=true` 时生效
 - 扫描 assistant 消息中的 `[DONE:n]` 标记
-- 调用 `markCompletedSteps()` 更新 `todoItems`
-- 刷新 UI 并持久化状态
+- 调用 `markCompletedSteps()` 通过 reducer 更新 TaskState
+- 刷新 UI、更新 TodoOverlay、持久化状态
+- LLM 也可使用 `todo update` 工具精细控制任务状态，效果一致
 
 #### `pi.on("agent_end", ...)` — 核心流程控制
 功能最复杂的事件处理器，涵盖三个阶段：
@@ -460,11 +449,12 @@ turn_end 触发
 通过 `pi.appendEntry()` 将状态保存到 session log：
 
 ```typescript
-// index.ts:154-163
 function persistState(): void {
+  const state = getState();
   pi.appendEntry("plan-mode", {
     enabled: planModeEnabled,
-    todos: todoItems,
+    tasks: state.tasks,
+    nextId: state.nextId,
     executing: executionMode,
     planPresented,
     planDir,
@@ -545,10 +535,25 @@ async function savePlanIteration(planText: string, iteration: number): Promise<s
 
 | 命令 | 描述 | 实现位置 |
 |------|------|----------|
-| `/plan` | 切换规划模式（只读探索） | `index.ts:165-168` |
-| `/todos` | 显示当前规划任务列表 | `index.ts:170-184` |
-| `/plandiff` | 显示当前与上一版本规划的差异 | `index.ts:186-214` |
-| `/planqa` | 显示当前规划讨论的问答历史 | `index.ts:216-238` |
+| `/plan` | 切换规划模式（只读探索） | `index.ts:180-182` |
+| `/todos` | 按状态分组显示所有计划任务 | `todo.ts` |
+| `/plandiff` | 显示当前与上一版本规划的差异 | `index.ts:192-220` |
+| `/planqa` | 显示当前规划讨论的问答历史 | `index.ts:222-248` |
+
+### 工具
+
+| 工具 | 描述 | 操作 |
+|------|------|------|
+| `todo` | 管理计划任务列表 | create / update / list / get / delete / clear |
+
+**todo 工具参数：**
+- `action` (必填): create / update / list / get / delete / clear
+- `subject`: 任务标题（create 必填）
+- `description`: 详细描述
+- `activeForm`: 进行中状态标签（如"正在编写测试"）
+- `status`: pending / in_progress / completed / deleted
+- `id`: 任务 ID（update/get/delete 必填）
+- `includeDeleted`: list 时是否包含已归档任务
 
 ### 快捷键
 
@@ -574,9 +579,21 @@ pi --plan   # 以规划模式启动
 1. 在规划模式中询问 agent："分析现有代码，为添加用户管理系统制定计划"
 2. Agent 提出澄清问题、执行影响分析
 3. Agent 输出编号计划
-4. 查看计划，如果满意选择 "Execute"
-5. Agent 逐步执行，每一步标记 `[DONE:n]`
+4. 查看计划，如果满意选择 "执行计划（追踪进度）"
+5. Agent 逐步执行，使用 `[DONE:n]` 标记完成步骤，也可用 `todo` 工具精细控制
 6. 全部完成后自动提示
+
+### 场景 2：使用 todo 工具精细控制
+
+执行模式中，LLM 可直接使用 `todo` 工具操作任务：
+
+- `todo create` — 新建任务（如发现遗漏步骤）
+- `todo update status=in_progress activeForm="正在编写代码"` — 标记开始
+- `todo update status=completed` — 标记完成
+- `todo list` — 查看所有任务
+- `todo get id=N` — 查看任务详情
+
+两种方式的效果一致：`[DONE:n]` 标记和 `todo update` 都使用同一个 reducer 更新状态。
 
 ### 场景 2：后续追问与修订
 

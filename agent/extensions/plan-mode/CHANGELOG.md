@@ -1,6 +1,28 @@
 # Changelog — plan-mode
 
-## [初始版本]
+## [2.0.0] - 2026-07-06
+
+### Added
+
+- **`todo` 工具**：合并自 rpiv-todo，支持 6 个操作（create/update/list/get/delete/clear），4 状态机（pending → in_progress → completed → deleted）
+- **TodoOverlay 悬浮层**：编辑器上方显示任务列表，彩色图标（○/◐/✓）、删除线、溢出折叠
+- **`/todos` 命令升级**：按状态分组显示（待办/进行中/已完成），带彩色图标和数量统计
+- 计划模式三个选项已中文化："执行计划（追踪进度）"、"继续计划模式"、"优化计划"
+
+### Changed
+
+- 底层任务存储从 `TodoItem[]` 数组升级为 `TaskState`（带 reducer 的正交状态管理）
+- `[DONE:n]` 标记现在通过 reducer 更新任务状态，保持与 `todo` 工具的状态一致
+- `extractTodoItems` 返回 `Task[]` 类型，通过 reducer 创建任务
+- 系统提示词和用户界面文字全部中文化
+
+### Removed
+
+- 移除对 `@juicesharp/rpiv-config`、`typebox`、`@juicesharp/rpiv-i18n` 的依赖
+- 移除 blockedBy 依赖追踪（保持简洁，后续可按需恢复）
+- 移除旧 `TodoItem` 接口（由 `Task` 替代）
+
+## [1.0.0] - 初始版本
 
 ### Added
 - `/plan` 命令 + 键盘快捷键 Ctrl+Alt+P，切换只读规划模式
