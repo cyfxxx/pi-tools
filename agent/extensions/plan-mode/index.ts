@@ -11,7 +11,6 @@ import {
   extractTodoItems,
   isPlanRevisionIntent,
   isSafeCommand,
-  markCompletedSteps,
 } from "./utils.ts";
 import { getTokenPressureTag, resetBudget } from "../../lib/token-budget.ts";
 
@@ -327,7 +326,10 @@ Plan:
           content: `${preamble}[执行中: ${counts.completed}/${counts.total} 已完成]
 
 剩余步骤:
-${todoList}`,
+${todoList}
+
+完成步骤时使用: todo update id=N status=completed
+开始步骤时使用: todo update id=N status=in_progress activeForm='正在...'`,
           display: false,
         },
       };
@@ -355,11 +357,8 @@ ${todoList}`,
     if (!executionMode) return;
     if (!isAssistantMessage(event.message)) return;
 
-    const text = getTextContent(event.message);
-    if (markCompletedSteps(text) > 0) {
-      updateStatus(ctx);
-      todoOverlay?.update();
-    }
+    updateStatus(ctx);
+    todoOverlay?.update();
     persistState();
   });
 
@@ -576,28 +575,8 @@ ${todoList}`,
       const state = getState();
       const visible = state.tasks.filter((t) => t.status !== "deleted");
       if (visible.length > 0) {
-        let executeIndex = -1;
-        for (let i = entries.length - 1; i >= 0; i--) {
-          const entry = entries[i] as { type: string; customType?: string };
-          if (entry.customType === "plan-mode-execute") {
-            executeIndex = i;
-            break;
-          }
-        }
-
-        const messages: AssistantMessage[] = [];
-        for (let i = executeIndex + 1; i < entries.length; i++) {
-          const entry = entries[i];
-          if (
-            entry.type === "message" &&
-            "message" in entry &&
-            isAssistantMessage(entry.message as AgentMessage)
-          ) {
-            messages.push(entry.message as AssistantMessage);
-          }
-        }
-        const allText = messages.map(getTextContent).join("\n");
-        markCompletedSteps(allText);
+        updateStatus(ctx);
+        todoOverlay?.update();
       }
     }
 
