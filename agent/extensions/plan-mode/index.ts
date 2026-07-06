@@ -21,7 +21,7 @@ import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "questionnaire"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "questionnaire"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
@@ -271,7 +271,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
 限制:
-- 只能使用: read, bash, grep, find, ls, questionnaire
+- 只能使用: read, bash, grep, glob, questionnaire
 - 不能使用: edit, write（文件修改已禁用）
 - Bash 命令限制为只读白名单
 
