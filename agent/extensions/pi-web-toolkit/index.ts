@@ -9,6 +9,7 @@ import { registerProxyControlTools } from './proxy/index'
 import { unlink, readdir } from 'fs/promises'
 import { join } from 'path'
 import { recordToolUsage, resetBudget, estimateTokens } from '../../lib/token-budget.ts'
+import { searchDirect } from './fetch.ts'
 
 const SCREENSHOT_PREFIX = 'pi-screenshot-'
 const MAX_SCREENSHOTS = 20
@@ -107,6 +108,28 @@ export default async function (pi: ExtensionAPI) {
       } catch (e) {
         return { content: [{ type: "text", text: `请求失败: ${(e as Error).message}` }] }
       }
+    },
+  })
+
+  // ─── web_fetch: 轻量 HTTP 搜索（不依赖 SearXNG） ────────────────
+  pi.registerTool({
+    name: "web_fetch",
+    label: "网络搜索",
+    description: "使用 HTTP GET 从搜索引擎获取搜索结果。不依赖 SearXNG 服务，适合搜索不可用时的 fallback。",
+    promptSnippet: "网络搜索",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "搜索关键词" },
+        max_results: { type: "number", description: "最大返回结果数，默认 5" },
+      },
+      required: ["query"],
+    },
+    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+      const query = params.query as string
+      const maxResults = (params.max_results as number) ?? 5
+      const text = await searchDirect(query, maxResults)
+      return { content: [{ type: "text", text }] }
     },
   })
 
