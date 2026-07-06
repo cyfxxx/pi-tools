@@ -21,6 +21,7 @@
 ### 移除
 
 - 移除 README 中所有 ProxyHub 相关文档和故障排查条目。
+- 移除 git 跟踪的旧路径测试脚本（原 `../../../test_proxies.py` 和 `../../../test_global_proxies.py`），已移至 `scripts/` 目录。
 
 ## [1.3.0] - 2026-06-27
 
