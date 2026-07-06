@@ -20,11 +20,9 @@ export function registerTodoTool(pi: ExtensionAPI): void {
       "管理任务列表以跟踪多步骤进度。操作: create（新建任务）、update（更新状态/字段）、list（列出任务）、get（查看详情）、delete（删除/归档）、clear（重置）。状态: pending → in_progress → completed，delete 作为归档。使用此工具规划和跟踪多步骤工作。",
     promptSnippet: "管理任务列表以跟踪多步骤进度",
     promptGuidelines: [
-      "在开始多步骤工作时使用 `todo` 创建任务。完成后标记 in_progress 开始工作，完成时标记 completed。",
-      "每次只应有一个 in_progress 的任务。",
-      "如果测试失败、实现不完整或有未解决的错误，不要标记 completed。",
-      "状态机: pending → in_progress → completed，delete 用于归档已完成或已取消的任务。",
-      "使用 activeForm 参数（进行中状态的标签，如 '正在编写测试'）标记 in_progress。",
+      "用 todo 管理多步骤任务。create 创建、update status=in_progress activeForm='正在...' 开始、update status=completed 完成。每次只有一个 in_progress。",
+      "状态机: pending → in_progress → completed。delete 归档已完成或取消的任务。",
+      "遇到阻塞或错误时保持当前任务 in_progress，创建新任务处理阻塞。不要跳过步骤标记 completed。",
     ],
     parameters: {
       type: "object",
