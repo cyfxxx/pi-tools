@@ -1,163 +1,10 @@
-import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback } from '@earendil-works/pi-coding-agent'
-import { loadConfig } from './config'
-import { searchWeb } from './search'
-import { BrowserManager } from './browser'
-import type { ProxyPool } from './proxy-pool'
-import type { WebToolkitConfig } from './types'
-import { unlink, readdir } from 'fs/promises'
-import { join } from 'path'
-import { recordToolUsage, resetBudget, estimateTokens } from '../../../lib/token-budget.ts'
+import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResult } from '@earendil-works/pi-coding-agent'
+import type { BrowserConfig } from './types'
+import { BrowserManager } from './impl'
 
-function truncate(s: string, max: number): string {
-  if (!s) return ''
-  return s.length <= max
-    ? s
-    : s.slice(0, max) + `\n\n…… [已截断，共 ${s.length} 字符]`
-}
+type RecordUsage = (name: string, tokens: number) => void
 
-function toolResult(text: string) {
-  return { content: [{ type: 'text' as const, text }], details: {} }
-}
-
-const SCREENSHOT_PREFIX = 'pi-screenshot-'
-const MAX_SCREENSHOTS = 20
-
-async function cleanScreenshots(): Promise<void> {
-  try {
-    const files = await readdir('/tmp')
-    await Promise.all(
-      files
-        .filter(f => f.startsWith(SCREENSHOT_PREFIX))
-        .map(f => unlink(join('/tmp', f)).catch(() => {}))
-    )
-  } catch { /* ignore */ }
-}
-
-async function trimScreenshots(): Promise<void> {
-  try {
-    const files = (await readdir('/tmp'))
-      .filter(f => f.startsWith(SCREENSHOT_PREFIX))
-      .sort()
-    if (files.length > MAX_SCREENSHOTS) {
-      await Promise.all(
-        files
-          .slice(0, files.length - MAX_SCREENSHOTS)
-          .map(f => unlink(join('/tmp', f)).catch(() => {}))
-      )
-    }
-  } catch { /* ignore */ }
-}
-
-export default async function (pi: ExtensionAPI) {
-  const config: WebToolkitConfig = loadConfig()
-
-  // Proxy pool: lazily imported + deferred init on first proxy tool use
-  let proxyPool: ProxyPool | null = null
-  let proxyPoolInit: Promise<void> | null = null
-  if (config.proxy_pool) {
-    const { ProxyPool: PP } = await import('./proxy-pool')
-    proxyPool = new PP(config.proxy_pool) as unknown as ProxyPool
-    proxyPoolInit = proxyPool.init().catch((e) => {
-      console.error(`[pi-web-toolkit] 代理池启动失败: ${(e as Error).message}，IP 池功能不可用`)
-      proxyPool = null
-      proxyPoolInit = null
-    })
-  }
-  async function ensureProxy(): Promise<boolean> {
-    if (proxyPoolInit) { await proxyPoolInit; proxyPoolInit = null }
-    return proxyPool !== null
-  }
-
-  // Pass proxy pool lazy getter — browser will resolve proxy URL only when launching
-  const browser = new BrowserManager(config.browser, () => proxyPool?.getLocalProxyUrl() ?? null)
-
-  // ─── web_search ─────────────────────────────────────────────
-  pi.registerTool({
-    name: 'web_search',
-    label: '搜索网络',
-    description:
-      '使用 SearXNG 私密元搜索引擎搜索网络。支持指定搜索引擎列表、分类过滤、分页、时间范围。自动报告不可用的搜索引擎，支持引擎故障切换。',
-    promptSnippet: '搜索网络，支持多引擎、分类、分页和时间范围过滤',
-    promptGuidelines: [
-      '国内网络推荐 engines: ["baidu","sogou","bing"]，境外用 ["google","bing","duckduckgo"]',
-      '如搜索结果不理想，尝试减少 engines 参数或切换 categories',
-      '默认返回 5 条结果，使用 max_results:N 查看更多, brief:true 只看标题列表',
-    ],
-    parameters: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: '搜索关键词' },
-        engines: {
-          type: 'array',
-          items: { type: 'string' },
-          description:
-            '指定搜索引擎列表，如 ["google","bing","duckduckgo","brave","qwant","startpage"]。留空则使用 SearXNG 默认配置。当网络环境变化时可切换引擎组合。',
-        },
-        categories: {
-          type: 'string',
-          enum: [
-            'general',
-            'news',
-            'images',
-            'videos',
-            'files',
-            'map',
-            'music',
-            'it',
-            'science',
-            'social media',
-          ],
-          description: '搜索类别，用于缩小搜索范围',
-        },
-        pageno: { type: 'number', description: '页码，从 1 开始。用于翻页查看更多结果。' },
-        time_range: {
-          type: 'string',
-          enum: ['day', 'week', 'month', 'year'],
-          description: '时间范围过滤',
-        },
-        lang: {
-          type: 'string',
-          description: '语言代码，如 zh-CN、en-US、ja-JP。指定搜索结果的偏好语言。',
-        },
-        max_results: {
-          type: 'number',
-          description: '返回的最大结果数（默认 5）。设为 10 或 20 查看更多。设为 0 使用默认值。',
-          default: 5,
-        },
-        brief: {
-          type: 'boolean',
-          description: '简要模式：只返回标题和 URL 列表，不包含 snippet。适合快速浏览。',
-          default: false,
-        },
-      },
-      required: ['query'],
-    },
-    execute: async (
-      _toolCallId: string,
-      params: Record<string, unknown>,
-      signal: AbortSignal | undefined,
-      _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-      _ctx: ExtensionContext,
-    ) => {
-      const text = await searchWeb(
-        config.search,
-        params.query as string,
-        {
-          engines: params.engines as string[] | undefined,
-          categories: params.categories as string | undefined,
-          pageno: params.pageno as number | undefined,
-          time_range: params.time_range as string | undefined,
-          lang: params.lang as string | undefined,
-          max_results: params.max_results as number | undefined,
-          brief: params.brief as boolean | undefined,
-        },
-        signal,
-      )
-      recordToolUsage('web_search', estimateTokens(text))
-      return toolResult(text)
-    },
-  })
-
+export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, recordUsage: RecordUsage, viewportHeight: number = 800): void {
   // ─── browser_navigate ────────────────────────────────────────
   pi.registerTool({
     name: 'browser_navigate',
@@ -214,7 +61,7 @@ export default async function (pi: ExtensionAPI) {
         lines.push(`[全文 ${totalLen} 字符。使用 browser_extract 获取完整内容]`)
       }
       const resultText = lines.join('\n')
-      recordToolUsage('browser_navigate', estimateTokens(resultText))
+      recordUsage('browser_navigate', estimateTokens(resultText))
       return toolResult(resultText)
     },
   })
@@ -275,8 +122,7 @@ export default async function (pi: ExtensionAPI) {
       properties: {
         x: {
           type: 'number',
-          description:
-            '点击位置的 X 坐标（像素）。与 y 同时提供时使用坐标模式。坐标模式可穿透所有嵌套层级。',
+          description: '点击位置的 X 坐标（像素）。与 y 同时提供时使用坐标模式。坐标模式可穿透所有嵌套层级。',
         },
         y: {
           type: 'number',
@@ -284,8 +130,7 @@ export default async function (pi: ExtensionAPI) {
         },
         selector: {
           type: 'string',
-          description:
-            'CSS 选择器，如 "button#submit"、".search-btn"、"a[href*=\\"login\\"]"。与 x/y 互斥，二选一。',
+          description: 'CSS 选择器，如 "button#submit"、".search-btn"、"a[href*=\\"login\\"]"。与 x/y 互斥，二选一。',
         },
         button: {
           type: 'string',
@@ -334,8 +179,7 @@ export default async function (pi: ExtensionAPI) {
         text: { type: 'string', description: '要输入的文本内容' },
         selector: {
           type: 'string',
-          description:
-            '目标输入框的 CSS 选择器，如 "#search"、"input[name=\\"q\\"]"。留空则在当前焦点元素输入。',
+          description: '目标输入框的 CSS 选择器，如 "#search"、"input[name=\\"q\\"]"。留空则在当前焦点元素输入。',
         },
       },
       required: ['text'],
@@ -390,7 +234,7 @@ export default async function (pi: ExtensionAPI) {
       if (amount != null) {
         await browser.scroll(0, dir === 'up' ? -amount : amount)
       } else {
-        const vh = config.browser.viewport_height
+        const vh = viewportHeight
         await browser.scroll(0, dir === 'up' ? -vh : Math.floor(vh * 0.8))
       }
       return toolResult(`页面已${dir === 'up' ? '向上' : '向下'}滚动。`)
@@ -413,8 +257,7 @@ export default async function (pi: ExtensionAPI) {
       properties: {
         selector: {
           type: 'string',
-          description:
-            'CSS 选择器，提取特定元素内的文本。如 "article"、".main-content"、"#result-stats"。留空提取整页。',
+          description: 'CSS 选择器，提取特定元素内的文本。如 "article"、".main-content"、"#result-stats"。留空提取整页。',
         },
       },
     },
@@ -428,7 +271,7 @@ export default async function (pi: ExtensionAPI) {
       requirePage()
       const content = await browser.extractContent(params.selector as string | undefined)
       const truncated = truncate(content, 8000)
-      recordToolUsage('browser_extract', estimateTokens(truncated))
+      recordUsage('browser_extract', estimateTokens(truncated))
       return toolResult(truncated)
     },
   })
@@ -445,8 +288,7 @@ export default async function (pi: ExtensionAPI) {
       properties: {
         script: {
           type: 'string',
-          description:
-            '要执行的 JavaScript 代码。返回值会被序列化为 JSON。例如：\n- 提取所有链接: document.querySelectorAll("a").map(a => a.href)\n- 获取页面元数据: JSON.stringify({title: document.title, url: location.href})',
+          description: '要执行的 JavaScript 代码。返回值会被序列化为 JSON。例如：\n- 提取所有链接: document.querySelectorAll("a").map(a => a.href)\n- 获取页面元数据: JSON.stringify({title: document.title, url: location.href})',
         },
       },
       required: ['script'],
@@ -460,10 +302,9 @@ export default async function (pi: ExtensionAPI) {
     ) => {
       requirePage()
       const result = await browser.evaluate(params.script as string)
-      const str =
-        typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)
+      const str = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)
       const truncated = truncate(str, 5000)
-      recordToolUsage('browser_evaluate', estimateTokens(truncated))
+      recordUsage('browser_evaluate', estimateTokens(truncated))
       return toolResult(`执行结果：\n${truncated}`)
     },
   })
@@ -480,110 +321,17 @@ export default async function (pi: ExtensionAPI) {
       return toolResult('浏览器实例已关闭，资源已释放。')
     },
   })
+}
 
-  // ─── IP 池工具（首次调用时初始化）────────────────────────────
-  function registerProxyTools(): void {
-    pi.registerTool({
-      name: 'ip_pool_status',
-      label: 'IP 池状态',
-      description: '查看代理 IP 池的运行状态：代理总数、存活/失效数量、平均延迟、当前策略及各代理详情。',
-      promptSnippet: '查看代理 IP 池运行状态和统计数据',
-      parameters: { type: 'object', properties: {} },
-      execute: async (
-        _toolCallId: string,
-        _params: Record<string, unknown>,
-        _signal: AbortSignal | undefined,
-        _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-        _ctx: ExtensionContext,
-      ) => {
-        if (!(await ensureProxy())) return toolResult('代理池未配置或启动失败。')
-        const s = await proxyPool!.getStats()
-        const lines: string[] = []
-        lines.push(`IP 池状态 (策略: ${s.strategy})`)
-        lines.push(`├─ 当前: ${s.current || 'none'}`)
-        lines.push(`├─ 总计: ${s.total}`)
-        lines.push(`├─ 存活: ${s.alive}`)
-        lines.push(`├─ 失效: ${s.dead}`)
-        lines.push(`└─ 平均延迟: ${s.avgLatency}ms`)
-        lines.push('')
-        for (const e of s.entries) {
-          const icon = e.isCurrent ? '➡️' : '🟢'
-          const lat = e.latency > 0 ? `${e.latency}ms` : '-'
-          lines.push(`${icon} ${e.url}  延迟:${lat}  失败:${e.failures}`)
-        }
-        return toolResult(lines.join('\n'))
-      },
-    })
+function truncate(s: string, max: number): string {
+  if (!s) return ''
+  return s.length <= max ? s : s.slice(0, max) + `\n\n…… [已截断，共 ${s.length} 字符]`
+}
 
-    pi.registerTool({
-      name: 'ip_pool_add',
-      label: '添加代理',
-      description: '向 IP 池中添加一个或多个代理。支持 HTTP/HTTPS/SOCKS 协议，每行一个。',
-      promptSnippet: '手动向 IP 池添加代理',
-      parameters: {
-        type: 'object',
-        properties: {
-          proxies: {
-            type: 'array',
-            items: { type: 'string' },
-            description: '代理 URL 数组，如 ["http://user:pass@1.2.3.4:8080", "socks5://5.6.7.8:1080"]',
-          },
-        },
-        required: ['proxies'],
-      },
-      execute: async (
-        _toolCallId: string,
-        params: Record<string, unknown>,
-        _signal: AbortSignal | undefined,
-        _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-        _ctx: ExtensionContext,
-      ) => {
-        if (!(await ensureProxy())) return toolResult('代理池未配置或启动失败。')
-        const list = params.proxies as string[]
-        await proxyPool!.addProxies(list)
-        const s = await proxyPool!.getStats()
-        return toolResult(`已添加 ${list.length} 个代理。当前池: ${s.alive}/${s.total} 存活，当前: ${s.current || 'none'}。`)
-      },
-    })
+function toolResult(text: string): ToolResult {
+  return { content: [{ type: 'text' as const, text }], details: {} }
+}
 
-    pi.registerTool({
-      name: 'ip_pool_rotate',
-      label: '轮转 IP',
-      description: '强制轮转当前代理 IP，切换至池中另一个可用代理。后续浏览器的网络请求将使用新 IP。',
-      promptSnippet: '强制切换当前代理 IP',
-      parameters: { type: 'object', properties: {} },
-      execute: async (
-        _toolCallId: string,
-        _params: Record<string, unknown>,
-        _signal: AbortSignal | undefined,
-        _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-        _ctx: ExtensionContext,
-      ) => {
-        if (!(await ensureProxy())) return toolResult('代理池未配置或启动失败。')
-        const p = await proxyPool!.rotate()
-        if (p) return toolResult(`已轮转至代理: ${p}`)
-        return toolResult('无可用的代理进行轮转。')
-      },
-    })
-  }
-
-  // Register proxy tools only if proxy_pool is configured (deferred init)
-  const proxyConfigured = !!config.proxy_pool
-  if (proxyConfigured) registerProxyTools()
-
-  // ─── lifecycle ───────────────────────────────────────────────
-  pi.on('session_shutdown', async () => {
-    await browser.close()
-    if (proxyPoolInit) await proxyPoolInit.catch(() => {})
-    if (proxyPool) proxyPool.stop()
-    await cleanScreenshots()
-  })
-
-  pi.on('session_compact', async () => {
-    await trimScreenshots()
-  })
-
-  pi.on('session_start', async () => {
-    resetBudget()
-  })
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
 }

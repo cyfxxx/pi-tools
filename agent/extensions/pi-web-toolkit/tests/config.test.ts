@@ -27,7 +27,7 @@ describe('config', () => {
   })
 
   it('should use defaults when no config file or env', async () => {
-    const { loadConfig } = await import('../src/config')
+    const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.search.searxng_url).toBe('https://searx.be')
     expect(cfg.search.timeout).toBe(15000)
@@ -40,7 +40,7 @@ describe('config', () => {
   it('should read search env vars', async () => {
     process.env.PI_WEB_TOOLKIT_SEARXNG_URL = 'https://my-searxng.local'
     process.env.PI_WEB_TOOLKIT_SEARCH_TIMEOUT = '5000'
-    const { loadConfig } = await import('../src/config')
+    const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.search.searxng_url).toBe('https://my-searxng.local')
     expect(cfg.search.timeout).toBe(5000)
@@ -50,7 +50,7 @@ describe('config', () => {
     process.env.PI_WEB_TOOLKIT_SEARCH_TIMEOUT = 'not-a-number'
     process.env.PI_WEB_TOOLKIT_VIEWPORT_WIDTH = 'abc'
     process.env.PI_WEB_TOOLKIT_VIEWPORT_HEIGHT = 'def'
-    const { loadConfig } = await import('../src/config')
+    const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.search.timeout).toBe(15000)
     expect(cfg.browser.viewport_width).toBe(1280)
@@ -63,7 +63,7 @@ describe('config', () => {
     process.env.PI_WEB_TOOLKIT_VIEWPORT_HEIGHT = '1080'
     process.env.PI_WEB_TOOLKIT_FINGERPRINT_SEED = 'test-seed'
     process.env.PI_WEB_TOOLKIT_PROXY = 'http://1.2.3.4:8080'
-    const { loadConfig } = await import('../src/config')
+    const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.browser.headless).toBe(true)
     expect(cfg.browser.viewport_width).toBe(1920)
@@ -74,14 +74,14 @@ describe('config', () => {
 
   it('should reject PI_WEB_TOOLKIT_HEADLESS=false as false', async () => {
     process.env.PI_WEB_TOOLKIT_HEADLESS = 'false'
-    const { loadConfig } = await import('../src/config')
+    const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.browser.headless).toBe(false)
   })
 
   it('should set headless true when env is true', async () => {
     process.env.PI_WEB_TOOLKIT_HEADLESS = 'true'
-    const { loadConfig } = await import('../src/config')
+    const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.browser.headless).toBe(true)
   })

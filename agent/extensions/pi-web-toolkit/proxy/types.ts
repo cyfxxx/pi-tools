@@ -1,17 +1,3 @@
-export interface SearchConfig {
-  searxng_url: string
-  timeout: number
-}
-
-export interface BrowserConfig {
-  headless: boolean
-  viewport_width: number
-  viewport_height: number
-  fingerprint_seed?: string
-  proxy?: string
-  data_dir?: string
-}
-
 export interface SingBoxConfig {
   binary_path: string
   work_dir: string
@@ -38,6 +24,8 @@ export interface PoolStats {
   avgLatency: number
   strategy: string
   current: string
+  systemProxyEnabled: boolean
+  systemProxyUrl: string | null
   entries: Array<{
     url: string
     alive: boolean
@@ -63,42 +51,6 @@ export interface ClashProxiesResponse {
     alive?: boolean
     history?: Array<{ delay: number }>
   }>
-}
-
-export interface WebToolkitConfig {
-  search: SearchConfig
-  browser: BrowserConfig
-  proxy_pool?: ProxyPoolConfig
-}
-
-export interface SearchResultItem {
-  title: string
-  url: string
-  content?: string
-  engine?: string
-  score?: number
-  category?: string
-  publishedDate?: string
-  thumbnail?: string
-}
-
-export interface SearchResponse {
-  query: string
-  number_of_results: number
-  results: SearchResultItem[]
-  answers: string[]
-  corrections: string[]
-  suggestions: string[]
-  unresponsive_engines: string[]
-  infoboxes: Array<{ title?: string; content?: string; [key: string]: unknown }>
-}
-
-export interface PageInfo {
-  url: string
-  title: string
-  content: string
-  textContent: string
-  viewport: { width: number; height: number }
 }
 
 export interface ParsedProxy {

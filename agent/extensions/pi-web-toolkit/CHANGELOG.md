@@ -5,6 +5,23 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [2.0.0] - 2026-07-06
+
+### 重构 — 代理控制系统
+
+- **IP 池 → 代理控制**：`ip_pool_*` 工具全部重命名为 `proxy_*`（`proxy_status`、`proxy_add`、`proxy_rotate`），语义从"IP 池"升级为"代理控制"。
+- **新增 `proxy_on`**：启用系统级代理，设置 `HTTP_PROXY`/`HTTPS_PROXY`/`http_proxy`/`https_proxy` 环境变量指向 sing-box，所有子进程流量自动走代理。
+- **新增 `proxy_off`**：禁用系统级代理，清空环境变量并停止 sing-box。
+- **新增 `proxy_set`**：一键操作——添加代理地址 → 自动选中 → 启用系统代理。
+- **`ProxyPool` 扩展**：新增 `enableSystemProxy()` / `disableSystemProxy()` / `isRunning()` / `isSystemProxyEnabled()` 方法，`getStats()` 返回新增 `systemProxyEnabled` 和 `systemProxyUrl` 字段。
+- **系统代理生命周期**：`session_shutdown` 时自动清理系统代理环境变量并停止 sing-box。
+- **ProxyHub 文档清理**：README 移除 ProxyHub 上游项目引用、架构图改为系统代理 env vars 模式、配置示例更新。
+- **测试覆盖**：新增 `tests/proxy-control.test.ts`（6 个测试，覆盖全部 6 个代理工具）。
+
+### 移除
+
+- 移除 README 中所有 ProxyHub 相关文档和故障排查条目。
+
 ## [1.3.0] - 2026-06-27
 
 ### 修复

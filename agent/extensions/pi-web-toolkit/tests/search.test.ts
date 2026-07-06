@@ -42,7 +42,7 @@ describe('search', () => {
         json: () => Promise.resolve(mockData),
       }) as any
 
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
       const config = { searxng_url: 'https://searx.be', timeout: 5000 }
 
       const result = await searchWeb(config, 'test query', undefined, undefined)
@@ -55,7 +55,7 @@ describe('search', () => {
     })
 
     it('should handle empty results', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -77,7 +77,7 @@ describe('search', () => {
     })
 
     it('should show suggestions', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -100,7 +100,7 @@ describe('search', () => {
     })
 
     it('should show spell corrections', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -122,7 +122,7 @@ describe('search', () => {
     })
 
     it('should report unresponsive engines', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -145,7 +145,7 @@ describe('search', () => {
     })
 
     it('should cap results at 20 and report remaining', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
       const manyResults = Array.from({ length: 25 }, (_, i) => ({
         title: `Result ${i + 1}`,
         url: `https://example.com/${i + 1}`,
@@ -174,7 +174,7 @@ describe('search', () => {
 
   describe('fetch error handling', () => {
     it('should handle non-ok HTTP response', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -192,7 +192,7 @@ describe('search', () => {
 
   describe('URL parameter construction', () => {
     it('should pass search params correctly', async () => {
-      const { searchWeb } = await import('../src/search')
+      const { searchWeb } = await import('../search/impl')
       let capturedUrl = ''
 
       globalThis.fetch = vi.fn().mockImplementation((url: string) => {

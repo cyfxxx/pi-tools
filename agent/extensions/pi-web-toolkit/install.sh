@@ -233,7 +233,7 @@ echo -e "  SearXNG:  ${CYAN}$([ -f "$SEARXNG_VENV/bin/granian" ] && echo '已部
 
 # 验证扩展加载
 info "验证扩展..."
-if [ -f "$EXTENSION_DIR/src/index.ts" ] && [ -d "$EXTENSION_DIR/node_modules" ]; then
+if [ -f "$EXTENSION_DIR/index.ts" ] && [ -d "$EXTENSION_DIR/node_modules" ]; then
   ok "扩展文件完整"
 else
   warn "扩展文件不完整，请检查 $EXTENSION_DIR"
@@ -246,7 +246,7 @@ echo "使用方法:"
 echo "  1. 启动 Pi:  pi"
 echo "  2. LLM 会自动使用 web_search、browser_navigate 等工具"
 echo "  3. 如需测试扩展:"
-echo "     pi --no-extensions -e $EXTENSION_DIR/src/index.ts \"搜索测试\""
+echo "     pi --no-extensions -e $EXTENSION_DIR/index.ts \"搜索测试\""
 echo ""
 echo "SearXNG 管理:"
 if [ -f "$SEARXNG_VENV/bin/granian" ]; then

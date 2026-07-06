@@ -14,7 +14,7 @@ const mockPi = {
 }
 
 // Mock config so proxy_pool is not set (no network/binary dependencies)
-vi.mock('../src/config', () => ({
+vi.mock('../config', () => ({
   loadConfig: () => ({
     search: { searxng_url: 'https://searx.be', timeout: 5000 },
     browser: { headless: false, viewport_width: 1280, viewport_height: 800 },
@@ -53,7 +53,7 @@ describe('index (entry point)', () => {
   })
 
   it('should register core tools and lifecycle hooks', async () => {
-    const main = (await import('../src/index')).default
+    const main = (await import('../index')).default
     await main(mockPi as any)
 
     const toolNames = registeredTools.map(t => t.name)
@@ -72,18 +72,21 @@ describe('index (entry point)', () => {
     expect(lifecycleHandlers['session_compact']).toBeDefined()
   })
 
-  it('should NOT register ip_pool tools when no proxy_pool config', async () => {
-    const main = (await import('../src/index')).default
+  it('should NOT register proxy tools when no proxy_pool config', async () => {
+    const main = (await import('../index')).default
     await main(mockPi as any)
 
     const toolNames = registeredTools.map(t => t.name)
-    expect(toolNames).not.toContain('ip_pool_status')
-    expect(toolNames).not.toContain('ip_pool_add')
-    expect(toolNames).not.toContain('ip_pool_rotate')
+    expect(toolNames).not.toContain('proxy_status')
+    expect(toolNames).not.toContain('proxy_add')
+    expect(toolNames).not.toContain('proxy_rotate')
+    expect(toolNames).not.toContain('proxy_on')
+    expect(toolNames).not.toContain('proxy_off')
+    expect(toolNames).not.toContain('proxy_set')
   })
 
   it('browser_navigate should return page info', async () => {
-    const main = (await import('../src/index')).default
+    const main = (await import('../index')).default
     await main(mockPi as any)
 
     const navTool = registeredTools.find(t => t.name === 'browser_navigate')!
@@ -95,7 +98,7 @@ describe('index (entry point)', () => {
   })
 
   it('should handle screenshot tool', async () => {
-    const main = (await import('../src/index')).default
+    const main = (await import('../index')).default
     await main(mockPi as any)
 
     const navTool = registeredTools.find(t => t.name === 'browser_navigate')!
@@ -112,7 +115,7 @@ describe('index (entry point)', () => {
     const testFile = '/tmp/pi-screenshot-test-clean.png'
     await fs.writeFile(testFile, 'test')
 
-    const main = (await import('../src/index')).default
+    const main = (await import('../index')).default
     await main(mockPi as any)
 
     await lifecycleHandlers['session_shutdown']()
@@ -127,7 +130,7 @@ describe('index (entry point)', () => {
       await fs.writeFile(`/tmp/pi-screenshot-test-compact-${i}.png`, 'test')
     }
 
-    const main = (await import('../src/index')).default
+    const main = (await import('../index')).default
     await main(mockPi as any)
 
     await lifecycleHandlers['session_compact']()

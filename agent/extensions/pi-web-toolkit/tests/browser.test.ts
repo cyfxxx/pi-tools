@@ -35,7 +35,7 @@ vi.mock('cloakbrowser', () => ({
 }))
 
 async function getBrowserManager() {
-  const { BrowserManager } = await import('../src/browser')
+  const { BrowserManager } = await import('../browser/impl')
   const config = { headless: false, viewport_width: 1280, viewport_height: 800 }
   const bm = new BrowserManager(config)
   return bm

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseSubscriptionText, parseHttpProxyList, fetchAndMerge } from '../src/subscription'
+import { parseSubscriptionText, parseHttpProxyList, fetchAndMerge } from '../proxy/subscription'
 
 function b64(s: string): string {
   return Buffer.from(s, 'utf-8').toString('base64')
@@ -9,7 +9,7 @@ describe('subscription', () => {
 
   describe('parseVless', () => {
     it('should parse a minimal vless link', async () => {
-      const { parseSubscriptionText } = await import('../src/subscription')
+      const { parseSubscriptionText } = await import('../proxy/subscription')
       const link = 'vless://550e8400-e29b-41d4-a716-446655440000@1.2.3.4:443?security=tls&sni=example.com&flow=xtls-rprx-vision#my-server'
       const result = parseSubscriptionText(link, 'test')
       expect(result).toHaveLength(1)

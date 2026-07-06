@@ -15,13 +15,16 @@
 │  │  browser_screenshot()  ├── CDP Protocol ──── CloakBrowser       │  │
 │  │  browser_click()       │   (定制 Chromium)                      │  │
 │  │  browser_type()       ─┘    │                                   │  │
-│  │  browser_scroll()            │  HTTP 前向代理 (嵌入 ProxyPool)  │  │
+│  │  browser_scroll()            │  系统代理 env vars (由 ProxyPool 管理)│  │
 │  │  browser_extract()  ──── CDP Runtime.evaluate                   │  │
 │  │  browser_evaluate() ──── CDP Runtime.evaluate                   │  │
 │  │  browser_close()    ──── 生命周期管理                           │  │
-│  │  ip_pool_status() ────┐                                         │  │
-│  │  ip_pool_add()         ├── ProxyPool ─── sing-box              │  │
-│  │  ip_pool_rotate()     ┘    子进程 + Clash API 兼容层           │  │
+│  │  proxy_status() ────────────┐                                   │  │
+│  │  proxy_add()          ──────┤                                   │  │
+│  │  proxy_rotate()       ──────┤── ProxyPool ──→ 系统代理          │  │
+│  │  proxy_on()           ──────┤       └── sing-box 子进程          │  │
+│  │  proxy_off()          ──────┤         + Clash API 兼容层         │  │
+│  │  proxy_set()          ──────┘   HTTP_PROXY/HTTPS_PROXY env vars │  │
 │  │                                                                 │  │
 │  │  交互模式参考: browser-harness (坐标点击 + 截图驱动)            │  │
 │  └────────────────────────────────────────────────────────────────┘  │
@@ -36,8 +39,6 @@
 | **CloakBrowser** | https://github.com/CloakHQ/CloakBrowser | MIT (封装器) + 自定义二进制 (Chromium) | 58 处 C++ 源码级隐身补丁的 Chromium，绕过反爬虫检测 |
 | **browser-harness** | https://github.com/browser-use/browser-harness | MIT | 截图驱动 + 坐标点击的交互模式参考，穿透 iframe/Shadow DOM |
 | **Pi** | https://pi.dev | MIT | 宿主平台，TypeScript 扩展系统 |
-| **ProxyHub** | https://github.com/jiusanzhou/proxyhub | MIT | 可选 sidecar，自动聚合 3000+ 免费代理，提供 HTTP 前向代理 + REST API。IP 池可通过 `source_url` 订阅其 `/api/v1/pick/all` 接口 |
-
 ### 不修改源码的保证
 
 | 项目 | 集成方式 | 更新方法 |
@@ -45,8 +46,6 @@
 | SearXNG | 纯 HTTP fetch 调用 `?format=json` API，零代码依赖 | 更新 SearXNG 服务端即可 |
 | CloakBrowser | npm 包 `cloakbrowser` 直接 `import { launch }` | `npm update cloakbrowser` |
 | browser-harness | 仅参考设计模式，纯 TypeScript 自实现 | 无需更新（非直接依赖） |
-| ProxyHub | 可选 sidecar，纯 HTTP fetch 调用 REST API | 更新 ProxyHub 二进制即可 |
-
 ## 本地 SearXNG 部署
 
 本地部署 SearXNG 可提供更快的搜索速度、完全的数据隐私、不受公共实例可用性影响。
@@ -185,21 +184,46 @@ bash ~/.pi/searxng/stop.sh && bash ~/.pi/searxng/start.sh
 
 ```
 ~/.pi/agent/extensions/pi-web-toolkit/
-├── README.md                  # 项目说明文件（本文档）
-├── CHANGELOG.md               # 修改记录
-├── package.json               # npm 包配置，声明依赖和扩展入口
+├── index.ts                   # ★ 入口 orchestrator（~30 行）
+├── config.ts                  # 配置聚合器：settings.json → 环境变量 → 默认值
+├── types.ts                   # 跨功能类型：WebToolkitConfig
+├── env.d.ts                   # Pi ExtensionAPI 类型声明
+├── package.json               # npm 包配置，入口 → ./index.ts
+├── tsconfig.json
 ├── install.sh                 # 一键安装脚本（部署扩展 + 可选 SearXNG）
 ├── start-searxng.sh           # 启动本地 SearXNG 服务
-├── src/
-│   ├── index.ts               # ★ 主入口：注册 12 个工具到 Pi，监听生命周期
-│   ├── config.ts              # 配置加载：settings.json → 环境变量 → 默认值三级覆盖
-│   ├── types.ts               # TypeScript 类型定义：SearchConfig、PageInfo、ProxyPoolConfig 等
-│   ├── search.ts              # SearXNG 搜索：构建请求 → 解析响应 → 格式化输出
-│   ├── browser.ts             # 浏览器管理器：CloakBrowser 启动/导航/截图/CDP 交互
-│   ├── proxy-pool.ts          # IP 池：代理管理 + 健康检查 + 内嵌 HTTP 前向代理
-│   ├── sing-box-manager.ts    # sing-box 子进程管理：配置生成/API 通信/轮转/订阅
-│   ├── subscription.ts        # 代理订阅解析：VLESS/VMess/Trojan/Shadowsocks/Hysteria2/YAML
-│   └── env.d.ts               # Pi ExtensionAPI 类型声明（开发时类型提示）
+│
+├── search/                    # 🔍 搜索功能
+│   ├── index.ts               #   registerSearchTools()
+│   ├── impl.ts                #   searchWeb(), formatResponse()
+│   ├── types.ts               #   SearchConfig, SearchResponse, SearchResultItem
+│   └── config.ts              #   buildSearchConfig()
+│
+├── browser/                   # 🌐 浏览器功能
+│   ├── index.ts               #   registerBrowserTools()
+│   ├── impl.ts                #   BrowserManager 类
+│   ├── types.ts               #   BrowserConfig, PageInfo
+│   └── config.ts              #   buildBrowserConfig()
+│
+├── proxy/                     # 🔌 代理控制
+│   ├── index.ts               #   registerProxyControlTools()
+│   ├── pool.ts                #   ProxyPool 类
+│   ├── sing-box.ts            #   SingBoxManager 类
+│   ├── subscription.ts        #   代理订阅解析 (VLESS/VMess/Trojan/SS/Hy2)
+│   ├── types.ts               #   ProxyPoolConfig, PoolStats, ParsedProxy
+│   └── config.ts              #   buildProxyPoolConfig()
+│
+├── scripts/
+│   ├── test-proxies.py        # 代理发现工具（HTTP/HTTPS/SOCKS 测试）
+│   └── test-global-proxies.py # 全局代理测试（多源 + Google 可达性）
+│
+└── tests/
+    ├── browser.test.ts        # BrowserManager 单元测试
+    ├── config.test.ts         # 配置加载测试
+    ├── index.test.ts          # 入口工具注册测试
+    ├── proxy-control.test.ts  # 代理控制工具测试
+    ├── search.test.ts         # 搜索功能测试
+    └── subscription.test.ts   # 代理订阅解析测试
 
 ~/.pi/searxng/                 # （可选）本地 SearXNG 部署目录
 ├── repo/                      # git 克隆的 SearXNG 仓库
@@ -231,11 +255,14 @@ bash ~/.pi/searxng/stop.sh && bash ~/.pi/searxng/start.sh
       "proxy_pool": {
         "enabled": true,
         "strategy": "round-robin",
-        "health_check_interval": 30000,
-        "source_url": "http://127.0.0.1:8100/api/v1/pick/all",
-        "source_refresh_interval": 120000,
-        "max_failures": 3,
-        "cool_down_ms": 60000
+        "health_check_interval": 300,
+        "subscription_urls": [
+          "https://raw.githubusercontent.com/example/v2ray/main/v.txt"
+        ],
+        "proxies": [
+          "http://1.2.3.4:8080"
+        ],
+        "fallback_direct": true
       }
     }
   }
@@ -253,12 +280,9 @@ bash ~/.pi/searxng/stop.sh && bash ~/.pi/searxng/start.sh
 | `PI_WEB_TOOLKIT_VIEWPORT_HEIGHT` | 浏览器视口高度 | `800` |
 | `PI_WEB_TOOLKIT_FINGERPRINT_SEED` | 浏览器指纹种子 | （随机） |
 | `PI_WEB_TOOLKIT_PROXY` | 代理地址 | （无） |
-| `PI_WEB_TOOLKIT_PROXY_POOL_ENABLED` | 启用 IP 池 | `false` |
-| `PI_WEB_TOOLKIT_PROXY_POOL_STRATEGY` | 选择策略（random/round-robin/latency） | `random` |
-| `PI_WEB_TOOLKIT_PROXY_POOL_HEALTH_CHECK_INTERVAL` | 健康检查间隔（毫秒） | `30000` |
-| `PI_WEB_TOOLKIT_PROXY_POOL_SOURCE_URL` | 代理列表订阅 URL | （无） |
-| `PI_WEB_TOOLKIT_PROXY_POOL_SOURCE_REFRESH_INTERVAL` | 订阅刷新间隔（毫秒） | `120000` |
-| `PI_WEB_TOOLKIT_PROXY_POOL_MAX_ENTRIES` | 池容量上限，超出淘汰最久未使用代理 | `500` |
+| `PI_WEB_TOOLKIT_PROXY_POOL_ENABLED` | 启用代理池 | `false` |
+| `PI_WEB_TOOLKIT_PROXY_POOL_STRATEGY` | 选择策略（random/round-robin/latency） | `round-robin` |
+| `PI_WEB_TOOLKIT_PROXY_POOL_HEALTH_CHECK_INTERVAL` | 健康检查间隔（秒） | `300` |
 
 ### 配置优先级
 
@@ -300,7 +324,7 @@ npm install
 #    编辑 ~/.pi/agent/settings.json 填入你的 SearXNG 地址
 
 # 5. 验证安装
-pi --no-extensions -e ~/.pi/agent/extensions/pi-web-toolkit/src/index.ts "搜索网络扩展验证"
+pi --no-extensions -e ~/.pi/agent/extensions/pi-web-toolkit/index.ts "搜索网络扩展验证"
 ```
 
 ### 验证检查清单
@@ -410,26 +434,24 @@ pi --no-extensions -e ~/.pi/agent/extensions/pi-web-toolkit/src/index.ts "搜索
            可尝试减少 engines 参数或切换 categories。
 ```
 
-### ip_pool_status / ip_pool_add / ip_pool_rotate
+### proxy_status / proxy_add / proxy_rotate / proxy_on / proxy_off / proxy_set
 
-代理 IP 池管理工具（仅在配置了 `proxy_pool` 时注册）。
+代理控制系统（仅在配置了 `proxy_pool` 时注册）。
 
-**原理：** ProxyPool 从 `proxy_source_url`（如公开免费代理列表）定期拉取代理，对每个代理进行健康检查（请求 `health_check_url`），存活代理进入可用池。启动一个本地 HTTP 前向代理（`127.0.0.1:随机端口`），浏览器流量经过该代理转发至上游代理，实现 IP 轮转。
+**原理：** ProxyPool 从订阅 URL 拉取或手动添加代理，由 sing-box 子进程管理。启用系统代理后，`HTTP_PROXY`/`HTTPS_PROXY` 环境变量自动指向 sing-box 的本地混合代理端口，当前进程及所有子进程的网络流量均通过代理发出。
 
 **配置：** 在 `settings.json` 的 `extensions.pi-web-toolkit` 中添加 `proxy_pool` 字段：
 
 ```json
 {
   "proxy_pool": {
-    "proxy_source_url": "https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt",
-    "proxy_source_refresh": 300000,
-    "strategy": "random",
+    "subscription_urls": [
+      "https://raw.githubusercontent.com/example/v2ray/main/v.txt"
+    ],
+    "strategy": "round-robin",
     "health_check_url": "http://httpbin.org/ip",
-    "health_check_interval": 60000,
-    "max_failures": 3,
-    "fail_cooldown": 300000,
-    "fallback_direct": true,
-    "max_entries": 500
+    "health_check_interval": 300,
+    "fallback_direct": true
   }
 }
 ```
@@ -438,9 +460,12 @@ pi --no-extensions -e ~/.pi/agent/extensions/pi-web-toolkit/src/index.ts "搜索
 
 | 工具 | 说明 |
 |------|------|
-| `ip_pool_status` | 查看代理总数、存活/失效数量、平均延迟及各代理详情 |
-| `ip_pool_add` | 手动向池中添加一批代理（传入数组，支持 HTTP/HTTPS/SOCKS） |
-| `ip_pool_rotate` | 强制轮转当前代理，后续浏览器请求使用新 IP |
+| `proxy_status` | 查看代理总数、存活/失效数量、平均延迟、系统代理开关状态及各代理详情 |
+| `proxy_add` | 手动向池中添加一批代理（传入数组，支持 HTTP/HTTPS/SOCKS） |
+| `proxy_rotate` | 强制轮转当前代理 |
+| `proxy_on` | 启用系统代理，设置 HTTP_PROXY/HTTPS_PROXY 环境变量，所有子进程网络走代理 |
+| `proxy_off` | 禁用系统代理，清空环境变量并停止 sing-box |
+| `proxy_set` | 添加一个代理并立即启用为系统代理（一键操作） |
 
 > **⚠️ 当前状态：** 已测试多个免费代理源，结论——免费代理无法用于绕过 GFW 访问境外搜索引擎。
 >
@@ -568,17 +593,17 @@ JSON.stringify({title: document.title, url: location.href})
 
 **参数：** 无。
 
-### ip_pool_status
+### proxy_status
 
-查看 IP 池的当前状态，包括总数、存活数、失效数、平均延迟，以及每个代理的详情（协议、延迟、失败次数、上次使用时间）。
+查看代理控制系统的当前状态，包括池代理总数、存活数、失效数、平均延迟、系统代理开关状态，以及每个代理的详情。
 
 **参数：** 无。
 
-**返回：** IP 池状态摘要 + 各代理详情列表。
+**返回：** 代理状态摘要 + 各代理详情列表。
 
-### ip_pool_add
+### proxy_add
 
-运行时批量添加代理到 IP 池。
+运行时批量添加代理到代理池。
 
 **参数：**
 
@@ -588,13 +613,41 @@ JSON.stringify({title: document.title, url: location.href})
 
 **返回：** 新增数量 + 更新后池状态。
 
-### ip_pool_rotate
+### proxy_rotate
 
-强制将当前代理切换到池中的下一个可用代理。配合内置 HTTP 前向代理，CloakBrowser 无需重启即可更换出口 IP。
+强制将当前代理切换到池中的下一个可用代理。如果系统代理已启用，环境变量将立即指向新代理。
 
 **参数：** 无。
 
-**返回：** 新代理地址 + 切换后池状态。
+**返回：** 新代理地址。
+
+### proxy_on
+
+启用系统级代理。自动启动 sing-box（如未运行），设置 `HTTP_PROXY`/`HTTPS_PROXY`/`http_proxy`/`https_proxy` 环境变量指向代理地址。当前进程及所有子进程的网络流量将通过代理发出。
+
+**参数：** 无。
+
+**返回：** 系统代理已启用 + 代理地址。
+
+### proxy_off
+
+禁用系统级代理。清空 `HTTP_PROXY`/`HTTPS_PROXY` 等环境变量并停止 sing-box 子进程。
+
+**参数：** 无。
+
+**返回：** 系统代理已禁用。
+
+### proxy_set
+
+一键操作：添加一个代理地址到池 → 自动选中 → 启用系统代理。等价于 `proxy_add` + `proxy_rotate` + `proxy_on`。
+
+**参数：**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `proxy` | string | 是 | 代理 URL，如 `"http://user:pass@1.2.3.4:8080"` |
+
+**返回：** 已添加并启用 + 当前代理地址。
 
 ## 使用场景示例
 
@@ -655,10 +708,8 @@ JSON.stringify({title: document.title, url: location.href})
 | **Pi 报错"扩展未找到"** | 扩展不在搜索路径 | 确认扩展在 `~/.pi/agent/extensions/` 中；或使用 `-e` 参数指定路径 |
 | **npm install 失败** | 网络问题或版本冲突 | 检查 Node.js 版本（>= 18）；尝试 `npm install --legacy-peer-deps` |
 | **浏览器窗口未显示** | headless 模式 | 设置 `headless: false` 以显示 GUI 窗口 |
-| **IP 池所有代理失效** | 代理质量不佳或网络环境变化 | `ip_pool_add` 添加新代理或刷新订阅源；检查 `source_url` 是否可达 |
+| **所有代理失效** | 代理质量不佳或网络环境变化 | `proxy_add` 添加新代理或刷新订阅源；检查 `subscription_urls` 是否可达 |
 | **浏览器请求变慢** | 健康检测间隔过长导致过慢代理未被剔除 | 缩短 `health_check_interval`；检查各代理延迟 |
-| **ProxyHub sidecar 连接失败** | ProxyHub 未启动或端口错误 | 确认 ProxyHub 已启动并监听正确的端口；检查 `source_url` 配置 |
-
 ## 安全注意事项
 
 - **扩展以用户完整权限运行**：Pi 扩展系统设计如此，无内置沙箱。仅从信任的来源安装扩展。

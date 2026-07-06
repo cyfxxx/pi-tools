@@ -142,6 +142,8 @@ export class SingBoxManager {
       avgLatency,
       strategy: this.strategy,
       current: now,
+      systemProxyEnabled: false,
+      systemProxyUrl: null,
       entries,
     }
   }
