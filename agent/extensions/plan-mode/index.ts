@@ -47,6 +47,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   let qaMessages: QAPair[] = [];
   let planModeFullInjected = false;
   let knownTodoHash = 0;
+  let skillsInjected = false;
 
   let todoOverlay: TodoOverlay | undefined;
 
@@ -327,6 +328,22 @@ Plan:
 
 剩余步骤:
 ${todoList}`,
+          display: false,
+        },
+      };
+    }
+    // 注入可用技能清单（仅一次）
+    if (!skillsInjected) {
+      skillsInjected = true;
+      const skills = [
+        { name: "pi-backup", desc: "备份和恢复 agent 配置、扩展、技能" },
+        { name: "pi-translate-zh", desc: "Pi TUI 完整中文化补丁" },
+      ];
+      const skillList = skills.map(s => `  /skill:${s.name} — ${s.desc}`).join("\n");
+      return {
+        message: {
+          customType: "plan-skill-list",
+          content: `[可用技能]\n${skillList}\n\n当用户需求匹配时，提示用户使用对应技能或回复 /skill:name。`,
           display: false,
         },
       };
