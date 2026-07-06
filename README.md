@@ -13,7 +13,7 @@
 │   │   ├── token-budget.ts    跨扩展 Token 用量追踪
 │   │   └── TOKEN-BUDGET.md    使用文档
 │   ├── extensions/            自定义扩展
-│   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索 + 代理池
+│   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索 + 代理控制系统
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
 │   │   └── subagent/          子代理
@@ -33,8 +33,6 @@
 │   └── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
 ├── sing-box/                  Sing-box 代理核心
 │   └── sing-box               ~62MB 二进制（git 不追踪）
-├── test_proxies.py            代理连通性测试
-├── test_global_proxies.py     全局代理测试
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
 └── README.md                  本文件
 ```
