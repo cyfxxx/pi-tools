@@ -156,6 +156,45 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   registerTodoTool(pi);
   registerTodosCommand(pi);
 
+  // ─── task 子代理工具 ───────────────────────────────────────────
+  pi.registerTool({
+    name: "task",
+    label: "子任务",
+    description: "创建独立子任务描述文件，供用户在新会话中执行。用于需要并行探索或独立执行的独立子任务。",
+    promptSnippet: "创建子任务",
+    parameters: {
+      type: "object",
+      properties: {
+        description: { type: "string", description: "子任务详细描述" },
+        context: { type: "string", description: "子任务需要的上下文信息" },
+      },
+      required: ["description"],
+    },
+    async execute(_id, params) {
+      const ts = Date.now();
+      const taskFile = join(homedir(), ".pi", "tasks", `task-${ts}.md`);
+      await mkdir(join(homedir(), ".pi", "tasks"), { recursive: true });
+      const content = `# 子任务 ${ts}
+
+## 描述
+${params.description}
+
+## 上下文
+${params.context ?? "无"}
+
+---
+创建于: ${new Date(ts).toISOString()}
+`;
+      await writeFile(taskFile, content);
+      return {
+        content: [{
+          type: "text",
+          text: `子任务已创建: ${taskFile}\n请用户在新会话中打开此文件继续执行。\n当前会话继续主任务。`,
+        }],
+      };
+    },
+  });
+
   pi.registerCommand("plan", {
     description: "切换规划模式（只读探索）",
     handler: async (_args, ctx) => togglePlanMode(ctx),
