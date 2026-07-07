@@ -5,7 +5,7 @@
   "defaultThinkingLevel": "high",
   "steeringMode": "all",
   "followUpMode": "all",
-  "packages": [
+  "packages": [],
   "hideThinkingBlock": true,
   "collapseChangelog": true,
   "defaultProjectTrust": "ask",
