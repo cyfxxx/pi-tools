@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResult } from '@earendil-works/pi-coding-agent'
 import type { BrowserConfig } from './types'
 import { BrowserManager } from './impl'
+import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
 
 type RecordUsage = (name: string, tokens: number) => void
 
@@ -62,7 +63,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       }
       const resultText = lines.join('\n')
       recordUsage('browser_navigate', estimateTokens(resultText))
-      return toolResult(resultText)
+      return toolResult(resultText, "browser_navigate")
     },
   })
 
@@ -102,7 +103,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
     ) => {
       requirePage()
       const path = await browser.screenshot(params.full_page as boolean | undefined)
-      return toolResult(`截图已保存：\`${path}\`\n\n使用提示：观察截图中的目标元素位置，然后通过 browser_click 传入坐标进行点击。`)
+      return toolResult(`截图已保存：\`${path}\`\n\n使用提示：观察截图中的目标元素位置，然后通过 browser_click 传入坐标进行点击。`, "browser_screenshot")
     },
   })
 
@@ -159,10 +160,10 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       const btn: 'left' | 'right' | 'middle' = rawBtn === 'right' ? 'right' : rawBtn === 'middle' ? 'middle' : 'left'
       if (x != null && y != null) {
         await browser.click(x, y, btn)
-        return toolResult(`已在坐标 (${x}, ${y}) 处点击。`)
+        return toolResult(`已在坐标 (${x}, ${y}) 处点击。`, "browser_click")
       }
       await browser.clickSelector(sel!)
-      return toolResult(`已点击元素 "${sel}"。`)
+      return toolResult(`已点击元素 "${sel}"。`, "browser_click")
     },
   })
 
@@ -196,7 +197,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       const detail = params.selector
         ? `向 "${params.selector}" 输入了文本`
         : '在当前焦点元素输入了文本'
-      return toolResult(`${detail}（${(params.text as string).length} 字符）。`)
+      return toolResult(`${detail}（${(params.text as string).length} 字符）。`, "browser_type")
     },
   })
 
@@ -237,7 +238,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
         const vh = viewportHeight
         await browser.scroll(0, dir === 'up' ? -vh : Math.floor(vh * 0.8))
       }
-      return toolResult(`页面已${dir === 'up' ? '向上' : '向下'}滚动。`)
+      return toolResult(`页面已${dir === 'up' ? '向上' : '向下'}滚动。`, "browser_scroll")
     },
   })
 
@@ -272,7 +273,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       const content = await browser.extractContent(params.selector as string | undefined)
       const truncated = truncate(content, 8000)
       recordUsage('browser_extract', estimateTokens(truncated))
-      return toolResult(truncated)
+      return toolResult(truncated, "browser_extract")
     },
   })
 
@@ -305,7 +306,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       const str = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)
       const truncated = truncate(str, 5000)
       recordUsage('browser_evaluate', estimateTokens(truncated))
-      return toolResult(`执行结果：\n${truncated}`)
+      return toolResult(`执行结果：\n${truncated}`, "browser_evaluate")
     },
   })
 
@@ -318,7 +319,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
     parameters: { type: 'object', properties: {} },
     execute: async () => {
       await browser.close()
-      return toolResult('浏览器实例已关闭，资源已释放。')
+      return toolResult('浏览器实例已关闭，资源已释放。', "browser_close")
     },
   })
 }
@@ -328,8 +329,10 @@ function truncate(s: string, max: number): string {
   return s.length <= max ? s : s.slice(0, max) + `\n\n…… [已截断，共 ${s.length} 字符]`
 }
 
-function toolResult(text: string): ToolResult {
-  return { content: [{ type: 'text' as const, text }], details: {} }
+function toolResult(text: string, toolName: string): ToolResult {
+  const result = pruneToolOutput(text, toolName)
+  recordOutput(toolName, result.length)
+  return { content: [{ type: 'text' as const, text: result }], details: {} }
 }
 
 function estimateTokens(text: string): number {

@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResult } from '@earendil-works/pi-coding-agent'
 import type { SearchConfig } from './types'
 import { searchWeb } from './impl'
+import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
 
 type RecordUsage = (name: string, tokens: number) => void
 
@@ -76,7 +77,9 @@ export function registerSearchTools(pi: ExtensionAPI, config: SearchConfig, reco
         signal,
       )
       recordUsage('web_search', estimateTokens(text))
-      return toolResult(text)
+      const result = pruneToolOutput(text, "web_search")
+      recordOutput("web_search", result.length)
+      return toolResult(result)
     },
   })
 }

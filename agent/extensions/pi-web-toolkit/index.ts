@@ -9,6 +9,7 @@ import { registerProxyControlTools } from './proxy/index'
 import { unlink, readdir } from 'fs/promises'
 import { join } from 'path'
 import { recordToolUsage, resetBudget, estimateTokens } from '../../lib/token-budget.ts'
+import { recordOutput, pruneToolOutput } from '../../lib/prune.ts'
 import { searchDirect } from './fetch.ts'
 
 const SCREENSHOT_PREFIX = 'pi-screenshot-'
@@ -104,7 +105,9 @@ export default async function (pi: ExtensionAPI) {
         const truncated = text.length > maxLength
           ? text.slice(0, maxLength) + `\n\n...（共 ${text.length} 字符，仅显示前 ${maxLength} 字符）`
           : text
-        return { content: [{ type: "text", text: truncated }] }
+        const result = pruneToolOutput(truncated, "fetch_url")
+        recordOutput("fetch_url", result.length)
+        return { content: [{ type: "text", text: result }] }
       } catch (e) {
         return { content: [{ type: "text", text: `请求失败: ${(e as Error).message}` }] }
       }
@@ -129,7 +132,9 @@ export default async function (pi: ExtensionAPI) {
       const query = params.query as string
       const maxResults = (params.max_results as number) ?? 5
       const text = await searchDirect(query, maxResults)
-      return { content: [{ type: "text", text }] }
+      const result = pruneToolOutput(text, "web_fetch")
+      recordOutput("web_fetch", result.length)
+      return { content: [{ type: "text", text: result }] }
     },
   })
 
@@ -146,5 +151,7 @@ export default async function (pi: ExtensionAPI) {
 
   pi.on('session_start', async () => {
     resetBudget()
+    const { resetOutputBudget } = await import('../../lib/prune.ts')
+    resetOutputBudget()
   })
 }

@@ -1,5 +1,13 @@
 # Changelog — plan-mode
 
+## [2.2.0] - 2026-07-07
+
+### Added
+
+- **Compaction 恢复提示（P1）**：检测到刚完成 compaction 时，在 `before_agent_start` 注入"上下文已压缩，继续之前的工作"提示，解决压缩后断片问题。
+- **语义摘要引导（P2）**：压力达到 critical 时，注入引导指令，让 LLM 用 ctx_note 保存结构化摘要后再 `\`/compact\``。
+- **溢出预警（P3）**：引入 `getUrgencyHint()`，在剩余 token 不足 20K/10K 时注入溢出预警，让 LLM 主动应对。
+
 ## [2.1.0] - 2026-07-07
 
 ### Added

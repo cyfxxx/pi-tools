@@ -2,6 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
 import { spawnSync } from "node:child_process"
 import { recordToolUsage, estimateTokens } from "../../lib/token-budget.ts"
+import { recordOutput, pruneToolOutput } from "../../lib/prune.ts"
 import {
   existsSync,
   mkdirSync,
@@ -80,6 +81,15 @@ export function loadNotes(): Record<string, string> {
 export function saveNotes(notes: Record<string, string>) {
   ensureDir()
   writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2))
+}
+
+export function clearCompactionFlag() {
+  const notes = loadNotes()
+  if (notes["_ctx.just_compacted"]) {
+    delete notes["_ctx.just_compacted"]
+    delete notes["_ctx.compacted_at"]
+    saveNotes(notes)
+  }
 }
 
 function getTotalSize(notes: Record<string, string>): number {
@@ -161,8 +171,10 @@ export default function (pi: ExtensionAPI) {
         output = `${output.slice(0, cap)}\n\n[truncated: ${output.length} chars → ${cap} chars (${ratio}%)]`
       }
       recordToolUsage("ctx_exec", estimateTokens(output))
+      const pruned = pruneToolOutput(output, "ctx_exec")
+      recordOutput("ctx_exec", pruned.length)
       return {
-        content: [{ type: "text", text: output }],
+        content: [{ type: "text", text: pruned }],
         details: { stderr: stderr || undefined },
       }
     },
@@ -347,10 +359,14 @@ export default function (pi: ExtensionAPI) {
     },
   })
 
-  // ── Auto-save notes before compaction ──
+  // ── Auto-save notes + mark compaction ──
   pi.on("session_before_compact", async () => {
     const notes = loadNotes()
-    if (Object.keys(notes).length > 0) {
+    // Mark that compaction happened (survives across compaction)
+    notes["_ctx.compacted_at"] = new Date().toISOString()
+    saveNotes(notes)
+
+    if (Object.keys(notes).filter(k => !k.startsWith("__") && k !== "_ctx.compacted_at").length > 0) {
       const snap: SnapData = { timestamp: Date.now(), notes, compaction: true }
       writeFileSync(join(CHECKPOINTS_DIR, `__compaction_${Date.now()}.json`), JSON.stringify(snap, null, 2))
       const files = readdirSync(CHECKPOINTS_DIR)
@@ -363,10 +379,21 @@ export default function (pi: ExtensionAPI) {
     }
   })
 
-  // ── Notify on session start ──
+  // ── Notify on session start + detect compaction recovery ──
   pi.on("session_start", async (_event, ctx) => {
     const notes = loadNotes()
     const count = Object.keys(notes).length
+
+    // Detect recent compaction: _ctx.compacted_at within last 30s
+    const compactedAt = notes["_ctx.compacted_at"]
+    if (compactedAt) {
+      const age = Date.now() - new Date(compactedAt).getTime()
+      if (age < 30_000) {
+        notes["_ctx.just_compacted"] = "true"
+        saveNotes(notes)
+      }
+    }
+
     if (count > 0 && ctx.hasUI) {
       const totalSize = getTotalSize(notes)
       const sizeMB = (totalSize / (1024 * 1024)).toFixed(2)

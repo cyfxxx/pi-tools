@@ -291,6 +291,9 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 #### `pi.on("before_agent_start", ...)` — 注入系统提示
 - **Plan Mode**: 注入包含限制说明、行为指引导的 `[PLAN MODE ACTIVE]` 消息
 - **Execution Mode**: 注入包含剩余步骤列表的 `[EXECUTING PLAN]` 消息
+- **Compaction 恢复**: 检测到刚完成 compaction 时，注入"继续之前的工作"提示
+- **溢出预警**: 剩余 token 不足 20K 时注入 🟠🔴 预警
+- **摘要引导**: 压力 critical 时引导 LLM 用 ctx_note 保存结构化摘要
 - 消息类型为 `customType`，`display: false`（不显示在聊天中，只发送给 LLM）
 
 #### `pi.on("turn_end", ...)` — 步骤进度追踪

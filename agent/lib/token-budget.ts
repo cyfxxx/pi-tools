@@ -79,6 +79,20 @@ export function resetBudget(): void {
   tokenUsageLog = []
 }
 
+const RED_ZONE = 20_000
+const CRITICAL_ZONE = 10_000
+
+export function getUrgencyHint(): string | null {
+  const r = getBudgetReport()
+  if (r.remaining <= CRITICAL_ZONE && r.pressure === "critical") {
+    return `🔴 上下文即将溢出（剩余 ~${r.remaining} token）。请用 ctx_note 保存关键决策、已完成工作和相关文件路径，然后通知用户执行 /compact 压缩上下文。`
+  }
+  if (r.remaining <= RED_ZONE && r.pressure === "high") {
+    return `🟠 上下文压力较大（剩余 ~${r.remaining} token）。建议保存关键信息。`
+  }
+  return null
+}
+
 export function estimateTokens(text: string): number {
   if (!text) return 0
   return Math.ceil(text.length / 3.5)

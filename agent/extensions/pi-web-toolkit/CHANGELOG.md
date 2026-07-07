@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [2.2.0] - 2026-07-07
+
+### 新增
+
+- **工具输出预算控制**：集成 `lib/prune.ts`，所有 11 个工具（fetch_url、web_fetch、web_search、browser_*、ctx_exec）的返回文本经过输出预算校验，累计超过 60K 字符时自动截断，延缓上下文膨胀。
+- **session_start 重置**：输出预算在 session 启动时自动重置。
+
 ## [2.1.0] - 2026-07-07
 
 ### 新增

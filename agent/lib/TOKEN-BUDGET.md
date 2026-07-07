@@ -14,17 +14,25 @@
 | `truncateByTokens(text, maxTokens)` | `string, number` | `string` | 按 Token 预算截断文本，追加截断标记 |
 | `compressOutput(text, targetTokens)` | `string, number` | `string` | 55/35/10 分片压缩（头/尾/中间重要行） |
 | `recordToolUsage(tool, tokens)` | `string, number` | `void` | 记录单次工具调用的 Token 消耗 |
-| `getBudgetReport()` | — | `string` | 返回格式化用量报告（各工具用量 + 总计） |
+| `getBudgetReport()` | — | `BudgetReport` | 返回用量报告对象 |
 | `getTokenPressureTag()` | — | `"🔴"` / `"🟡"` / `"🟢"` | 根据总 Token 消耗返回压力等级标签 |
+| `getUrgencyHint()` | — | `string \| null` | 剩余不足 20K / 10K 时返回溢出预警提示 |
 | `resetBudget()` | — | `void` | 重置所有用量统计（`session_start` 时调用） |
 
 ## 压力标签阈值
 
 | 等级 | 标签 | 条件 |
 |------|------|------|
-| 低 | 🟢 | 总 Token 消耗 < 30K |
-| 中 | 🟡 | 30K ≤ 总 Token < 60K |
-| 高 | 🔴 | 总 Token ≥ 60K |
+| 低 | 🟢 或 null | 剩余 > 20K |
+| 中 | 🟡 | 剩余 ≤ 20K |
+| 高 | 🔴 | 剩余 ≤ 10K |
+
+## 溢出预警 (`getUrgencyHint`)
+
+| 剩余 | 行为 |
+|------|------|
+| ≤ 20K | 🟠 返回"上下文压力较大"提示 |
+| ≤ 10K | 🔴 返回"即将溢出，请用 ctx_note 保存关键信息后 /compact" |
 
 ## 压缩算法 (`compressOutput`)
 

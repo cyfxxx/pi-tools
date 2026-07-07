@@ -12,7 +12,8 @@ import {
   isPlanRevisionIntent,
   isSafeCommand,
 } from "./utils.ts";
-import { getTokenPressureTag, resetBudget } from "../../lib/token-budget.ts";
+import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
+import { loadNotes, clearCompactionFlag } from "../ctx-lite/index.ts";
 
 import { type Task, applyTaskMutation } from "./state.ts";
 import { getState, commitState, replaceState, resetState } from "./store.ts";
@@ -373,6 +374,48 @@ ${todoList}
         },
       };
     }
+    // Check for compaction recovery (P1)
+    const notes = loadNotes();
+    if (notes["_ctx.just_compacted"] === "true") {
+      clearCompactionFlag();
+      const lastMsg = notes["_ctx.last_user_msg"] || "";
+      const pending = notes["_ctx.pending_tasks"] || "";
+      let recoveryMsg = "上下文已压缩。继续之前的工作。";
+      if (lastMsg) recoveryMsg += `\n最后一条用户消息: ${lastMsg}`;
+      if (pending) recoveryMsg += `\n待完成任务:\n${pending}`;
+      recoveryMsg += "\n请继续执行。";
+      return {
+        message: {
+          customType: "plan-mode-recovery",
+          content: recoveryMsg,
+          display: false,
+        },
+      };
+    }
+
+    // Inject urgency hint if pressure is high (P3)
+    const urgencyHint = getUrgencyHint();
+    if (urgencyHint) {
+      return {
+        message: {
+          customType: "plan-urgency-hint",
+          content: urgencyHint,
+          display: false,
+        },
+      };
+    }
+
+    // Inject summary guidance if pressure is critical (P2)
+    if (getBudgetReport().pressure === "critical") {
+      return {
+        message: {
+          customType: "plan-summary-request",
+          content: "=== 上下文压缩请求 ===\n上下文窗口即将填满。请立即：\n1. 用 ctx_note 记录关键决策和已完成工作\n2. 格式：ctx_note key='session.summary' value='## 目标\\n## 已完成的步骤\\n## 关键发现\\n## 相关文件'\n3. 然后通知用户执行 /compact 压缩上下文",
+          display: false,
+        },
+      };
+    }
+
     // 注入可用技能清单（仅一次）
     if (!skillsInjected) {
       skillsInjected = true;
