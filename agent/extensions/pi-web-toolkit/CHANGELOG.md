@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [2.1.0] - 2026-07-07
+
+### 新增
+
+- **`fetch_url` 工具**：轻量 HTTP GET，无需启动浏览器。15s 超时，`max_length` 控制 Token 开销。适合 API/JSON/纯文本/Markdown。
+- **`web_fetch` 工具**：轻量 HTTP 搜索，直接解析 Bing HTML。不依赖 SearXNG，作为搜索不可用时的 fallback。
+
+### 变更
+
+- **三级搜索通路**：`web_search`（SearXNG 首选）→ `web_fetch`（Bing 直搜备选）→ `fetch_url` + Bing（最终 fallback）。
+- **README 架构图更新**：新增 `fetch_url` 和 `web_fetch` 节点。
+- **README 目录结构更新**：新增 `fetch.ts` 文件条目。
+- **Token 效率表更新**：新增 `fetch_url`（~50% vs browser）和 `web_fetch`（~80% vs web_search）。
+
 ## [2.0.0] - 2026-07-06
 
 ### 重构 — 代理控制系统

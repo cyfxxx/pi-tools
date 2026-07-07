@@ -49,12 +49,13 @@
 | 特性 | 说明 |
 |------|------|
 | **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），4 状态机（pending→in_progress→completed→deleted） |
+| **`task` 工具** | 创建独立子任务描述文件到 `~/.pi/tasks/`，支持并行探索 |
 | **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓）、删除线、溢出折叠 |
-| **只读工具集** | 限制可用工具为 read、bash、grep、find、ls、questionnaire |
+| **只读工具集** | 限制可用工具为 read、bash、grep、glob、questionnaire |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
+| **`[DONE:n]` 标记** ~~→ 已移除~~ | 统一使用 `todo update status=completed` 完成步骤 |
 | **进度追踪** | TUI 小部件 + TodoOverlay 实时显示完成比例（如 2/5） |
-| **`[DONE:n]` 标记** | Agent 在回复中插入标记，自动调用 reducer 更新任务状态 |
 | **会话持久化** | 所有状态（模式、待办、执行状态等）在 session resume 后完整恢复 |
 | **追问保护** | Agent 已展示计划后，普通追问（why/what）不会误覆盖计划；只有显式修改请求才产生新版本 |
 | **影响分析** | Agent 在规划前必须分析受影响文件、评估风险 |
@@ -86,9 +87,9 @@
               │          Plan Mode                   │
               │         (只读探索阶段)                 │
               │                                      │
-              │  可用工具:                            │
-              │    read / bash / grep / find /        │
-              │    ls / questionnaire                 │
+│  可用工具:                            │
+│    read / bash / grep / glob /        │
+│    questionnaire                       │
               │                                      │
               │  Bash 受 allowlist 限制               │
               │  (cat、grep、ls 等只读命令)            │
@@ -129,8 +130,8 @@
               │  工具: 恢复完整权限                     │
               │  (read / bash / edit / write 等)      │
               │                                      │
-              │  Agent 逐步执行每一步                   │
-              │  每完成一步在回复中插入 [DONE:n] 标记    │
+│  Agent 逐步执行每一步                   │
+│  使用 `todo update` 标记完成/进行中     │
               │                                      │
               │  TUI 显示实时进度: ☐ / ☑                │
               │                                      │
@@ -147,7 +148,7 @@
 | Plan → Execution | 用户在 `agent_end` 选择 "Execute the plan" |
 | Plan → Plan (stay) | 用户选择 "Stay in plan mode" |
 | Plan → Plan (refine) | 用户选择 "Refine the plan"，编辑器中提交后 agent 重新生成 |
-| Execution → Normal | 所有 `[DONE:n]` 标记完成后自动转换 |
+| Execution → Normal | 所有步骤标记 `completed` 后自动转换 |
 
 ---
 
@@ -161,8 +162,8 @@
     ▼
   session_start  (只在 session 首次启动/恢复时触发)
     │  ├── 检查 --plan flag → 自动启用规划模式
-    │  ├── 从 session log 恢复持久化状态 (todoItems、executionMode 等)
-    │  ├── 如果是 resume，重新扫描 [DONE:n] 标记重建完成状态
+│   ├── 从 session log 恢复持久化状态 (todoItems、executionMode 等)
+│  ├── 如果是 resume，重新扫描消息重建完成状态
     │  └── 更新 UI 状态栏和小部件
     │
     ▼
@@ -180,9 +181,9 @@
     │  │   └── 始终前置 Token 压力标签: "🔴🟡🟢 [token: N%]"
     │  │
     │  └── Execution Mode:
-    │       └── 注入 [EXECUTING PLAN] 系统提示消息（customType: "plan-execution-context"）
-    │           内容包括：剩余步骤列表、指示按顺序执行、使用 [DONE:n] 标记
-    │           前置 Token 压力标签
+│       └── 注入 [EXECUTING PLAN] 系统提示消息（customType: "plan-execution-context"）
+│           内容包括：剩余步骤列表、指示按顺序执行、使用 todo update 标记
+│           前置 Token 压力标签
     │
     ▼
   tool_call  (每次 LLM 请求调用工具时触发)
@@ -203,7 +204,7 @@
     ▼
   turn_end  (每轮 LLM 回复后触发)
     │  └── Execution Mode:
-    │       └── 扫描 [DONE:n] 标记 → 更新 todoItems 完成状态 → 刷新 UI → 持久化
+    │       └── 检查 todo 完成状态 → 更新 UI → 持久化
     │
     ▼
   agent_end  (一次用户请求的最终回复完成后触发)
@@ -294,10 +295,8 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 
 #### `pi.on("turn_end", ...)` — 步骤进度追踪
 - 只在 `executionMode=true` 时生效
-- 扫描 assistant 消息中的 `[DONE:n]` 标记
-- 调用 `markCompletedSteps()` 通过 reducer 更新 TaskState
-- 刷新 UI、更新 TodoOverlay、持久化状态
-- LLM 也可使用 `todo update` 工具精细控制任务状态，效果一致
+- 检查任务完成状态，更新 UI、TodoOverlay、持久化
+- LLM 使用 `todo update` 工具标记步骤完成/进行中
 
 #### `pi.on("agent_end", ...)` — 核心流程控制
 功能最复杂的事件处理器，涵盖三个阶段：
@@ -319,7 +318,7 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 #### `pi.on("session_start", ...)` — 状态恢复
 - 检查 `--plan` flag
 - 从 session log 恢复持久化状态（`pi.appendEntry("plan-mode", ...)`）
-- 在 resume 场景下，只扫描 `plan-mode-execute` 标记之后的消息来重建 `[DONE:n]` 状态
+- 在 resume 场景下，从待办列表重建当前完成状态
 - 如果恢复后处于规划模式，设置只读工具集
 
 ### 5.4 UI 集成
@@ -409,19 +408,18 @@ Plan:
 
 ### 7.2 步骤进度追踪
 
-Agent 在执行过程中通过在回复中插入 `[DONE:n]` 标记来完成步骤。例如：
+Agent 在执行过程中使用 `todo update` 工具标记步骤状态。例如：
 
 ```
-已完成第一步分析。[DONE:1] 现在开始第二步...[DONE:2]
+→ LLM 调用: todo update id=1 status=in_progress activeForm="正在分析代码"
+→ LLM 调用: todo update id=1 status=completed
 ```
 
 **追踪流程**（`turn_end` 事件）：
 
 ```
 turn_end 触发
-  → getTextContent(event.message) 获取纯文本
-  → extractDoneSteps(text) 提取所有 [DONE:n] 数字
-  → markCompletedSteps(steps, todoItems) 更新对应项的 completed=true
+  → reducer 已通过 todo 工具更新状态
   → updateStatus(ctx) 刷新 UI（状态栏 & 小部件）
   → persistState() 持久化到 session log
 ```
@@ -545,6 +543,7 @@ async function savePlanIteration(planText: string, iteration: number): Promise<s
 | 工具 | 描述 | 操作 |
 |------|------|------|
 | `todo` | 管理计划任务列表 | create / update / list / get / delete / clear |
+| `task` | 创建独立子任务（保存到 `~/.pi/tasks/`） | description + context |
 
 **todo 工具参数：**
 - `action` (必填): create / update / list / get / delete / clear
@@ -554,6 +553,10 @@ async function savePlanIteration(planText: string, iteration: number): Promise<s
 - `status`: pending / in_progress / completed / deleted
 - `id`: 任务 ID（update/get/delete 必填）
 - `includeDeleted`: list 时是否包含已归档任务
+
+**task 工具参数：**
+- `description` (必填): 子任务详细描述
+- `context`: 子任务需要的上下文信息
 
 ### 快捷键
 
@@ -580,7 +583,7 @@ pi --plan   # 以规划模式启动
 2. Agent 提出澄清问题、执行影响分析
 3. Agent 输出编号计划
 4. 查看计划，如果满意选择 "执行计划（追踪进度）"
-5. Agent 逐步执行，使用 `[DONE:n]` 标记完成步骤，也可用 `todo` 工具精细控制
+5. Agent 逐步执行，使用 `todo update` 标记完成步骤
 6. 全部完成后自动提示
 
 ### 场景 2：使用 todo 工具精细控制
@@ -593,9 +596,19 @@ pi --plan   # 以规划模式启动
 - `todo list` — 查看所有任务
 - `todo get id=N` — 查看任务详情
 
-两种方式的效果一致：`[DONE:n]` 标记和 `todo update` 都使用同一个 reducer 更新状态。
+### 场景 3：使用 task 工具创建子任务
 
-### 场景 2：后续追问与修订
+遇到可独立并行执行的任务时，可使用 `task` 工具创建子任务文件：
+
+```
+→ LLM 调用: task(description="分析用户模块的数据库模式",
+                  context="项目在 /root/myapp，关注 models/user.py")
+→ 返回:  子任务已创建: /root/.pi/tasks/task-123456789.md
+          请用户在新会话中打开此文件继续执行。
+          当前会话继续主任务。
+```
+
+### 场景 4：后续追问与修订
 
 计划展示后，以下对话**不会**覆盖计划：
 - "为什么需要改这个文件？"
@@ -607,14 +620,14 @@ pi --plan   # 以规划模式启动
 - "更新计划，加入数据库迁移"
 - "修订计划，去掉第 5 步"
 
-### 场景 3：Session Resume
+### 场景 5：Session Resume
 
 1. 退出终端后重新进入，`/resume` 之前的 session
 2. Plan Mode 状态（模式、待办、执行进度、讨论历史）全部恢复
-3. 执行中的计划会从 session log 重建 `[DONE:n]` 完成情况
+3. 执行中的计划会从 session log 重建完成情况
 4. 继续工作，如同从未中断
 
-### 场景 4：快速查看
+### 场景 6：快速查看
 
 ```bash
 /plan       # 启用规划模式

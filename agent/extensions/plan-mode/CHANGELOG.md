@@ -1,5 +1,26 @@
 # Changelog — plan-mode
 
+## [2.1.0] - 2026-07-07
+
+### Added
+
+- **`task` 工具**：创建独立子任务描述文件到 `~/.pi/tasks/`，支持并行探索任务。
+- **技能清单注入**：`before_agent_start` 事件中自动告知 LLM 可用技能（`/skill:pi-backup`、`/skill:pi-translate-zh`），仅首次会话注入一次。
+
+### Changed
+
+- **工具集精简**：`find` + `ls` → `glob`，减少工具数量，glob 覆盖两组功能。
+- **任务完成方式统一**：移除 `[DONE:n]` 标记处理，所有任务状态变更通过 `todo` 工具完成。
+- **执行上下文提示更新**：`plan-execution-context` 消息中指导 LLM 使用 `todo update status=completed` 而非 `[DONE:n]`。
+- **Session resume 简化**：不再扫描历史消息中的 `[DONE:n]` 标记，直接从待办列表恢复状态。
+- **`todo` 工具 promptGuidelines 精简**：从 5 条减至 3 条，节省 ~300 token。
+
+### Removed
+
+- 移除 `[DONE:n]` 标记的扫描和解析逻辑（`markCompletedSteps`、`extractDoneSteps`）。
+- 移除 `find`、`ls` 工具引用。
+- 移除旧式 session resume 的消息重扫描逻辑。
+
 ## [2.0.0] - 2026-07-06
 
 ### Added
