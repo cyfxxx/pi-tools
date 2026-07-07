@@ -148,6 +148,11 @@ function formatToolCall(
 			const rawPath = (args.path || ".") as string;
 			return themeFg("muted", "find ") + themeFg("accent", pattern) + themeFg("dim", ` in ${shortenPath(rawPath)}`);
 		}
+		case "glob": {
+			const pattern = (args.pattern || "*") as string;
+			const rawPath = (args.path || ".") as string;
+			return themeFg("muted", "glob ") + themeFg("accent", pattern) + themeFg("dim", ` in ${shortenPath(rawPath)}`);
+		}
 		case "grep": {
 			const pattern = (args.pattern || "") as string;
 			const rawPath = (args.path || ".") as string;
@@ -579,7 +584,7 @@ function compressOutput(text: string, targetTokens: number): string {
 
 	const middleLines = middle.split("\n");
 	const importantLines = middleLines.filter(
-		(l) => /^#{1,3}\s|^\d+\.\s|^- |^\* |\[DONE:|FAIL:|ERROR:|^[A-Z][A-Z\s]+:/.test(l.trim()),
+		(l) => /^#{1,3}\s|^\d+\.\s|^- |^\* |ERROR:|^[A-Z][A-Z\s]+:/.test(l.trim()),
 	);
 	const compressedMiddle = importantLines.slice(0, 20).join("\n");
 

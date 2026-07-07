@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -13,7 +13,7 @@ import {
   isSafeCommand,
 } from "./utils.ts";
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
-import { loadNotes, clearCompactionFlag } from "../ctx-lite/index.ts";
+import { loadNotes, clearCompactionFlag } from "../../lib/note-store.ts";
 
 import { type Task, applyTaskMutation } from "./state.ts";
 import { getState, commitState, replaceState, resetState } from "./store.ts";
@@ -36,6 +36,25 @@ function getTextContent(message: AssistantMessage): string {
 }
 
 const PLANS_DIR = join(homedir(), ".pi", "plans");
+const MAX_PLANS = 20;
+
+async function cleanupOldPlans(): Promise<void> {
+  try {
+    const entries = await readdir(PLANS_DIR, { withFileTypes: true });
+    const dirs = entries
+      .filter((e) => e.isDirectory())
+      .map((e) => ({ name: e.name, path: join(PLANS_DIR, e.name) }))
+      .sort((a, b) => b.name.localeCompare(a.name));
+
+    if (dirs.length <= MAX_PLANS) return;
+
+    for (const dir of dirs.slice(MAX_PLANS)) {
+      await rm(dir.path, { recursive: true, force: true });
+    }
+  } catch {
+    // directory may not exist yet
+  }
+}
 
 type QAPair = { role: "user" | "assistant"; content: string };
 
@@ -508,10 +527,12 @@ ${todoList}
               iteration = 2;
             }
           }
-          savePlanIteration(lastText, iteration).then((dir) => {
-            planDir = dir;
-            persistState();
-          });
+		savePlanIteration(lastText, iteration).then((dir) => {
+			planDir = dir;
+			persistState();
+		}).catch((err) => {
+			console.error("plan-mode: Failed to save plan iteration:", err);
+		});
         }
         planPresented = true;
       }
@@ -599,6 +620,7 @@ ${todoList}
 
   // Restore state on session start/resume
   pi.on("session_start", async (_event, ctx) => {
+    cleanupOldPlans();
     resetBudget();
     resetState();
 

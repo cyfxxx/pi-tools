@@ -11,7 +11,10 @@
 │   ├── APPEND_SYSTEM.md       追加系统提示词
 │   ├── lib/                   共享库模块
 │   │   ├── token-budget.ts    跨扩展 Token 用量追踪
-│   │   └── TOKEN-BUDGET.md    使用文档
+│   │   ├── note-store.ts      ctx-lite 笔记持久化
+│   │   ├── prune.ts           工具输出裁剪
+│   │   ├── TOKEN-BUDGET.md    使用文档
+│   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索 + 代理控制系统
 │   │   ├── ctx-lite/          轻量上下文笔记
@@ -23,6 +26,8 @@
 │   └── npm/
 │       ├── package.json       npm 包声明
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
+├── ctx-lite/                  ctx-lite 运行时数据（checkpoints）
+│   └── checkpoints/           笔记检查点
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── proxy_list.txt         代理 IP 池
 │   ├── settings.yml           SearXNG 配置（含 secret_key）

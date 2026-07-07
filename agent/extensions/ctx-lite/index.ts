@@ -1,8 +1,19 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent"
 import { Type } from "typebox"
-import { spawnSync } from "node:child_process"
+import { spawn } from "node:child_process"
 import { recordToolUsage, estimateTokens } from "../../lib/token-budget.ts"
 import { recordOutput, pruneToolOutput } from "../../lib/prune.ts"
+import {
+  DATA_DIR,
+  NOTES_FILE,
+  CHECKPOINTS_DIR,
+  ensureDir,
+  loadNotes,
+  saveNotes,
+  clearCompactionFlag,
+  MAX_NOTES_SIZE,
+  getTotalSize,
+} from "../../lib/note-store.ts"
 import {
   existsSync,
   mkdirSync,
@@ -14,13 +25,7 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 
-const HOME = process.env.HOME || "/root"
-export const DATA_DIR = process.env.CTX_LITE_DIR || join(HOME, ".pi", "ctx-lite")
-export const NOTES_FILE = join(DATA_DIR, "notes.json")
-export const CHECKPOINTS_DIR = join(DATA_DIR, "checkpoints")
-
-const MAX_NOTES_SIZE = 1024 * 1024 // 1 MB — warn threshold
-const MAX_CHECKPOINTS_LIST = 100 // max checkpoints to show in list
+const MAX_CHECKPOINTS_LIST = 100
 
 const LANGUAGES: Record<string, { cmd: string; args: string[] }> = {
   js: { cmd: process.argv[0], args: ["-e"] },
@@ -29,20 +34,10 @@ const LANGUAGES: Record<string, { cmd: string; args: string[] }> = {
   shell: { cmd: "bash", args: ["-c"] },
 }
 
-interface NoteValue {
-  value: string
-  ttl?: string
-}
-
 interface SnapData {
   timestamp: number
   notes: Record<string, string>
   compaction?: boolean
-}
-
-function ensureDir() {
-  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true })
-  if (!existsSync(CHECKPOINTS_DIR)) mkdirSync(CHECKPOINTS_DIR, { recursive: true })
 }
 
 function detectLanguage(code: string): string {
@@ -55,71 +50,44 @@ function detectLanguage(code: string): string {
   return "js"
 }
 
-export function loadNotes(): Record<string, string> {
-  ensureDir()
-  try {
-    const raw: Record<string, string> = JSON.parse(readFileSync(NOTES_FILE, "utf-8"))
-    // Expire TTL notes
-    const now = Date.now()
-    let changed = false
-    for (const key of Object.keys(raw)) {
-      const ttlKey = `__ttl_${key}`
-      const ttl = raw[ttlKey]
-      if (ttl && new Date(ttl).getTime() <= now) {
-        delete raw[key]
-        delete raw[ttlKey]
-        changed = true
-      }
-    }
-    if (changed) saveNotes(raw)
-    return raw
-  } catch {
-    return {}
-  }
-}
+async function execLanguageAsync(
+	language: string,
+	code: string,
+	timeout: number,
+	signal?: AbortSignal,
+): Promise<{ stdout: string; stderr: string; status: number | null; error?: string }> {
+	const lang = LANGUAGES[language]
+	if (!lang) {
+		return { stdout: "", stderr: "", status: null, error: `Unsupported language: "${language}". Supported: ${Object.keys(LANGUAGES).join(", ")}` }
+	}
 
-export function saveNotes(notes: Record<string, string>) {
-  ensureDir()
-  writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2))
-}
+	const timeoutController = new AbortController()
+	const timeoutId = setTimeout(() => timeoutController.abort(new Error(`Timeout after ${timeout}ms`)), timeout)
+	const combinedSignal = signal ? AbortSignal.any([signal, timeoutController.signal]) : timeoutController.signal
 
-export function clearCompactionFlag() {
-  const notes = loadNotes()
-  if (notes["_ctx.just_compacted"]) {
-    delete notes["_ctx.just_compacted"]
-    delete notes["_ctx.compacted_at"]
-    saveNotes(notes)
-  }
-}
+	try {
+		const result = await new Promise<{ stdout: string; stderr: string; status: number | null }>((resolve, reject) => {
+			const proc = spawn(lang.cmd, [...lang.args, code], {
+				env: { ...process.env, NODE_NO_WARNINGS: "1" },
+				cwd: process.cwd(),
+				stdio: ["ignore", "pipe", "pipe"],
+				signal: combinedSignal,
+			})
 
-function getTotalSize(notes: Record<string, string>): number {
-  return Object.entries(notes)
-    .filter(([k]) => !k.startsWith("__"))
-    .reduce((sum, [, v]) => sum + Buffer.byteLength(v, "utf-8"), 0)
-}
+			let stdout = ""
+			let stderr = ""
+			proc.stdout.on("data", (data: Buffer) => { stdout += data.toString() })
+			proc.stderr.on("data", (data: Buffer) => { stderr += data.toString() })
 
-function execLanguage(
-  language: string,
-  code: string,
-  timeout: number,
-): { stdout: string; stderr: string; status: number | null; error?: string } {
-  const lang = LANGUAGES[language]
-  if (!lang) {
-    return { stdout: "", stderr: "", status: null, error: `Unsupported language: "${language}". Supported: ${Object.keys(LANGUAGES).join(", ")}` }
-  }
-  const result = spawnSync(lang.cmd, [...lang.args, code], {
-    timeout,
-    encoding: "utf-8",
-    maxBuffer: 1024 * 1024,
-    env: { ...process.env, NODE_NO_WARNINGS: "1" },
-    cwd: process.cwd(),
-  })
-  const stdout = result.stdout?.trim() || ""
-  const stderr = result.stderr?.trim() || ""
-  if (result.error) {
-    return { stdout, stderr, status: result.status, error: result.error.message }
-  }
-  return { stdout, stderr, status: result.status }
+			proc.on("close", (status) => resolve({ stdout: stdout.trim(), stderr: stderr.trim(), status }))
+			proc.on("error", (err) => reject(err))
+		})
+		return result
+	} catch (err: any) {
+		return { stdout: "", stderr: "", status: null, error: err.message }
+	} finally {
+		clearTimeout(timeoutId)
+	}
 }
 
 export default function (pi: ExtensionAPI) {
@@ -145,12 +113,12 @@ export default function (pi: ExtensionAPI) {
         Type.Number({ description: "Max output chars (default 2000). Use 0 for unlimited." }),
       ),
     }),
-    async execute(_id, params, _signal, _onUpdate, _ctx) {
+    async execute(_id, params, signal, _onUpdate, _ctx) {
       const maxOutput = params.max_output as number | undefined
       const cap = maxOutput === undefined ? 2000 : maxOutput === 0 ? Infinity : maxOutput
       const { code, timeout = 30000 } = params
       const language = params.language || detectLanguage(code)
-      const { stdout, stderr, status, error } = execLanguage(language, code, timeout)
+      const { stdout, stderr, status, error } = await execLanguageAsync(language, code, timeout, signal)
       if (error) {
         return {
           content: [{ type: "text", text: `Error: ${error}` }],
