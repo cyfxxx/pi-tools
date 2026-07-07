@@ -32,7 +32,7 @@ vi.mock('cloakbrowser', () => ({
       url: vi.fn().mockReturnValue('about:blank'),
       title: vi.fn().mockResolvedValue(''),
       content: vi.fn().mockResolvedValue('<html></html>'),
-      evaluate: vi.fn().mockResolvedValue(''),
+      evaluate: vi.fn().mockResolvedValue({ text: '', headings: [], paragraphs: [] }),
       screenshot: vi.fn().mockResolvedValue('/tmp/test-screenshot.png'),
       close: vi.fn(),
       mouse: { click: vi.fn() },

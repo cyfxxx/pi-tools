@@ -168,7 +168,7 @@ describe('search', () => {
       const config = { searxng_url: 'https://searx.be', timeout: 5000 }
       const result = await searchWeb(config, 'test', undefined, undefined)
 
-      expect(result).toContain('还有 5 条结果未显示')
+      expect(result).toContain('还有 20 条结果未显示')
     })
   })
 
