@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.80.3",
-  "defaultProvider": "deepseek",
-  "defaultModel": "deepseek-v4-flash",
+  "lastChangelogVersion": "0.80.6",
+  "defaultProvider": "local-llama",
+  "defaultModel": "Qwen3.6-35B-HauhauCS-Q4_K_P.gguf",
   "defaultThinkingLevel": "high",
   "steeringMode": "all",
   "followUpMode": "all",

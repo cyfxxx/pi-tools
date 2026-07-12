@@ -1,0 +1,27 @@
+{
+  "providers": {
+    "local-llama": {
+      "baseUrl": "http://localhost:8080/v1",
+      "api": "openai-completions",
+      "apiKey": "not-needed",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "Qwen3.6-35B-HauhauCS-Q4_K_P.gguf",
+          "name": "Qwen3.6 35B Local",
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "reasoning": true,
+          "compat": {
+            "thinkingFormat": "qwen-chat-template",
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": false
+          }
+        }
+      ]
+    }
+  }
+}

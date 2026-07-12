@@ -24,6 +24,7 @@ fi
 
 export SEARXNG_SETTINGS_PATH="$DIR/settings.yml"
 export SEARXNG_DEBUG=0
+export PYTHONPATH="$DIR/repo:$PYTHONPATH"
 
 nohup granian searx.webapp:app \
   --interface wsgi \

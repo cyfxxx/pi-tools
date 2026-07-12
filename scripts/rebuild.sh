@@ -172,10 +172,16 @@ phase2_python() {
   # venv
   if [ -f "$PI_HOME/searxng/settings.yml" ]; then
     if [ ! -f "$PI_HOME/searxng/venv/bin/python" ]; then
+      # 确保 python3-venv 已安装（否则 venv 缺少 pip）
+      dpkg -l python3-venv &>/dev/null 2>&1 || apt-get install -y python3-venv -qq 2>&1 | tail -1
       info "创建 SearXNG venv..."
-      (cd "$PI_HOME/searxng" && python3 -m venv venv && venv/bin/pip install -q searxng granian 2>&1 | tail -1)
+      (cd "$PI_HOME/searxng" && python3 -m venv --copies venv \
+        && venv/bin/pip install -q searxng granian pyyaml 2>&1 | tail -1)
       ok "searxng/venv/ ($($PI_HOME/searxng/venv/bin/python --version 2>&1))"
     else
+      # 确保 pyyaml 在 venv 中可用
+      "$PI_HOME/searxng/venv/bin/python" -c "import yaml" 2>/dev/null \
+        || "$PI_HOME/searxng/venv/bin/pip" install -q pyyaml 2>&1 | tail -1
       ok "searxng/venv/ 已存在"
     fi
   fi
@@ -192,6 +198,20 @@ phase2_python() {
   fi
 }
 
+# ---- 架构检测 ----
+detect_arch() {
+  local arch
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64|amd64)   echo "amd64"  ;;
+    aarch64|arm64)  echo "arm64"  ;;
+    armv7l|armv7)   echo "armv7"  ;;
+    i386|i686)      echo "386"    ;;
+    riscv64)        echo "riscv64" ;;
+    *)              echo "unsupported: $arch" ;;
+  esac
+}
+
 # ---- Phase 2-C: 二进制下载（并发） ----
 phase2_binaries() {
   title "Phase 2-C" "二进制下载（并发）"
@@ -200,6 +220,7 @@ phase2_binaries() {
     local name="$1" dest="$2" url="$3" ver_cmd="$4"
     if [ ! -f "$dest" ]; then
       local final_url="${GH_PROXY:-}$url"
+      mkdir -p "$(dirname "$dest")"
       info "下载 $name..."
       curl -sL "$final_url" -o "/tmp/$name.download" && mv "/tmp/$name.download" "$dest" && chmod +x "$dest"
       if [ -n "$ver_cmd" ]; then
@@ -226,12 +247,16 @@ phase2_binaries() {
   ok "agent/bin/fd ($($PI_HOME/agent/bin/fd --version 2>/dev/null | head -1))"
   ok "agent/bin/rg ($($PI_HOME/agent/bin/rg --version 2>/dev/null | head -1))"
 
-  # 下载 sing-box
-  SINGBOX_VER=$(curl -sL "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep tag_name | cut -d'"' -f4 2>/dev/null || echo "v1.13.14")
-
-  download_bin "sing-box" "$PI_HOME/sing-box/sing-box" \
-    "https://github.com/SagerNet/sing-box/releases/download/$SINGBOX_VER/sing-box-${SINGBOX_VER#v}-linux-arm64.tar.gz" \
-    "$PI_HOME/sing-box/sing-box version 2>&1 | head -1" &
+  # 下载 sing-box（自动匹配系统架构）
+  SINGBOX_ARCH=$(detect_arch)
+  if [ "$SINGBOX_ARCH" = "unsupported: $(uname -m)" ]; then
+    warn "不支持的架构 $(uname -m)，跳过 sing-box 下载"
+  else
+    SINGBOX_VER=$(curl -sL "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep tag_name | cut -d'"' -f4 2>/dev/null || echo "v1.13.14")
+    download_bin "sing-box" "$PI_HOME/sing-box/sing-box" \
+      "https://github.com/SagerNet/sing-box/releases/download/$SINGBOX_VER/sing-box-${SINGBOX_VER#v}-linux-$SINGBOX_ARCH.tar.gz" \
+      "$PI_HOME/sing-box/sing-box version 2>&1 | head -1" &
+  fi
 
   PID_SINGBOX=$!
 

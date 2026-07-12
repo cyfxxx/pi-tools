@@ -124,3 +124,99 @@ cd ~/.pi && bash scripts/rebuild.sh --yes
 ```
 
 `rebuild.sh` 会自动完成全部依赖重建（系统工具安装、npm install、venv 创建、二进制下载等）。
+
+## 恢复清单
+
+克隆后首次恢复，建议按以下顺序检查：
+
+### 前置条件
+
+| 检查项 | 要求 | 验证命令 |
+|--------|------|---------|
+| Node.js | >= 20 | `node -v` |
+| npm | 随 Node 自带 | `npm -v` |
+| python3 + venv | >= 3.10 | `python3 --version && python3 -m venv --help >/dev/null && echo ok` |
+| git | 任意版本 | `git --version` |
+| 磁盘空间 | >= 2GB 可用 | `df -h .` |
+
+### 首次恢复步骤
+
+```bash
+git clone https://github.com/cyfxxx/pi-tools.git ~/.pi
+cd ~/.pi && bash scripts/rebuild.sh --yes
+```
+
+### 重建后验证
+
+```bash
+# 配置校验
+python3 -c "import json; json.load(open('agent/settings.json'))" && echo "settings.json OK"
+python3 -c "import yaml; yaml.safe_load(open('searxng/settings.yml'))" && echo "settings.yml OK"
+
+# 核心依赖
+ls agent/bin/fd agent/bin/rg && echo "binaries OK"
+ls agent/extensions/pi-web-toolkit/node_modules/ | wc -l
+
+# SearXNG
+ls searxng/venv/bin/python && echo "venv OK"
+ls searxng/repo/.git && echo "repo OK"
+
+# sing-box（可选，用于代理池）
+./sing-box/sing-box version
+```
+
+## 常见问题
+
+### SearXNG 启动后搜索引擎全部超时
+
+**原因：** 国内 DNS 干扰导致 Google/DuckDuckGo 等站点不可达；`extra_proxy_timeout` 配置为 float 类型导致 schema 校验失败。
+
+**解决：**
+- 重新生成配置：`cd searxng && bash generate-config.sh --force`
+- 默认仅启用 bing 和 baidu，其余引擎 `disabled: true`（已在 `generate-config.sh` 中预设）
+- 如需启用其他引擎，编辑 `searxng/settings.yml`，将对应引擎的 `disabled` 改为 `false`
+
+### sing-box 二进制无法执行
+
+**原因：** 下载了与当前系统架构不匹配的版本。
+
+**解决：** `rebuild.sh` 现已自动检测架构（amd64/arm64/armv7/386）。如仍失败，手动下载：
+
+```bash
+# 替换为对应架构
+ARCH=amd64  # 或 arm64、armv7、386
+VER=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep tag_name | cut -d'"' -f4)
+curl -sL "https://github.com/SagerNet/sing-box/releases/download/$VER/sing-box-${VER#v}-linux-$ARCH.tar.gz" \
+  | tar xz --strip-components=1 -C ~/.pi/sing-box/ "sing-box-${VER#v}-linux-$ARCH/sing-box"
+```
+
+### Venv 创建后缺少 pip
+
+**原因：** 系统中未安装 `python3-venv` 包，`python3 -m venv` 创建了空壳。
+
+**解决：** 安装后重新创建：
+```bash
+apt-get install -y python3-venv
+rm -rf ~/.pi/searxng/venv
+bash ~/.pi/scripts/rebuild.sh --yes
+```
+
+### Chromium/CloakBrowser 浏览器无法启动
+
+**原因：** Chromium 未安装或缺少系统依赖。
+
+**解决：** rebuild.sh 不包含浏览器安装，手动执行：
+```bash
+npx cloakbrowser install          # 安装 chromium
+apt-get install -y libnspr4 libnss3 libatk1.0-0t64 libcups2t64 libgbm1
+```
+
+### 扩展加载时报 "proxyPool 启动失败"
+
+**原因：** sing-box 二进制缺失或架构不匹配，`spawn()` 失败后 proxyPool 被设为 null。
+
+**解决：** 确保 sing-box 可执行并重启 pi：
+```bash
+./sing-box/sing-box version && echo "OK" || bash scripts/rebuild.sh --yes
+# 重启 pi
+```

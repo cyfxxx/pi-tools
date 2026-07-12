@@ -48,26 +48,30 @@ outgoing:
   request_timeout: 5.0
   max_request_timeout: 10.0
   useragent_suffix: ""
-  extra_proxy_timeout: 5.0
+  extra_proxy_timeout: 5
   max_redirects: 5
 
 engines:
-  - name: duckduckgo
-    disabled: false
-  - name: google
-    disabled: false
-  - name: wikipedia
-    disabled: false
-  - name: stackoverflow
-    disabled: false
-  - name: github
-    disabled: false
+  # 国内网络下仅 bing 和 baidu 稳定可达
   - name: bing
     disabled: false
+  - name: baidu
+    disabled: false
+  # 以下引擎在国内网络环境下可能因 DNS/GFW 不可达，需按需启用
+  - name: duckduckgo
+    disabled: true
+  - name: google
+    disabled: true
+  - name: wikipedia
+    disabled: true
+  - name: stackoverflow
+    disabled: true
+  - name: github
+    disabled: true
   - name: yahoo
-    disabled: false
+    disabled: true
   - name: brave
-    disabled: false
+    disabled: true
 CONFIGEOF
 
 chmod 644 "$CONFIG"
