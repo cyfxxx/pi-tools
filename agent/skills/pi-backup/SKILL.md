@@ -136,7 +136,7 @@ GitHub 同步完成
    tar czf "$SNAPSHOT_PATH" \
      -C ~ .pi/agent/settings.json .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/npm/package.json \
-        .pi/ctx-lite .pi/searxng/settings.yml .pi/searxng/proxy_list.txt
+         .pi/ctx-lite .pi/searxng/settings.yml
    ```
 
 **阶段 3：解压**
@@ -157,7 +157,7 @@ GitHub 同步完成
 恢复完成
   来源：~/pi-backups/pi-backup-myhost-20260701_120000.tar.gz
   文件：已解压 52 个
-   重建：npm 依赖 ✓ | 扩展依赖 ✓ | fd/rg ✓ | SearXNG venv ✓ | sing-box ✓
+   重建：npm 依赖 ✓ | 扩展依赖 ✓ | fd/rg ✓ | SearXNG venv ✓
   跳过：sessions（未请求）| auth.json（备份中不含）
   快照：~/.pi/pre-restore-20260701_120500.tar.gz
   ⚠ 重启 pi 使更改生效
@@ -241,7 +241,7 @@ GitHub 同步完成
 |---|--------|------|------|
 | 7 | `agent/bin/fd` | `fd` 命令不可用 | `apt-get install -y fd-find 2>&1` 并软链到 `~/.pi/agent/bin/fd` |
 | 8 | `agent/bin/rg` | `rg` 命令不可用 | `apt-get install -y ripgrep 2>&1` 并软链到 `~/.pi/agent/bin/rg` |
-| 9 | `sing-box` | `~/.pi/sing-box/sing-box` 不存在 | 从 GitHub Releases 下载 sing-box linux-arm64 二进制到 `~/.pi/sing-box/sing-box` 并 `chmod +x` |
+
 
 **不重建的项（始终跳过）：**
 
@@ -258,7 +258,7 @@ GitHub 同步完成
 | rg | `rg --version 2>/dev/null \|\| echo "rg not available"` |
 | SearXNG venv | `~/.pi/searxng/venv/bin/python --version 2>/dev/null \|\| echo "venv not found"` |
 | SearXNG repo | `[ -d ~/.pi/searxng/repo/.git ] && echo "OK" \|\| echo "MISSING"` |
-| sing-box | `~/.pi/sing-box/sing-box version 2>/dev/null \|\| echo "sing-box not found"` |
+
 | settings.yml | `python3 -c "import yaml; yaml.safe_load(open('$HOME/.pi/searxng/settings.yml'))" 2>/dev/null \|\| echo "YAML 校验失败"` |
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
 
@@ -287,7 +287,7 @@ GitHub 同步完成
 [Phase 2-C] 二进制下载
   ✓ agent/bin/fd (v9.0.0)
   ✓ agent/bin/rg (v14.1.0)
-  ✓ sing-box (v1.13.14)
+
 
 [验证]
   ✓ YAML 校验通过
@@ -358,9 +358,9 @@ GitHub 同步完成
 | 仓库文档 | `README.md` | 说明文档 |
 | ctx-lite | `ctx-lite/` | 上下文笔记和检查点（如存在） |
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
-| SearXNG 代理列表 | `searxng/proxy_list.txt` | IP 池代理列表（如存在） |
+
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
-| 代理测试 | `test_proxies.py`、`test_global_proxies.py` | 代理连通性测试脚本 |
+
 
 ### 默认排除（`--full` 时额外包含）
 
@@ -372,9 +372,7 @@ GitHub 同步完成
 | 运行时二进制 | `agent/bin/` | fd、rg | 自动下载 |
 | Python 虚拟环境 | `searxng/venv/` | SearXNG Python 依赖 | `python3 -m venv venv && pip install` |
 | SearXNG 源码 | `searxng/repo/` | SearXNG 原始项目 | `git clone` |
-| 代理二进制 | `sing-box/sing-box` | Sing-box 核心 | 自动下载 |
 | 日志 | `searxng/searxng.log` | 运行时日志 | 不可重建，不恢复 |
-| 测试结果 | `proxy_test_results*.json` | 代理测试输出 | 不可重建，不恢复 |
 | npm lock | `agent/npm/package-lock.json` | npm 锁定文件 | 由 `npm install` 生成 |
 | 扩展 lock | `agent/extensions/*/package-lock.json` | 扩展 npm 锁定文件 | 由 `npm install` 生成 |
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
@@ -395,4 +393,4 @@ GitHub 同步完成
 3. **恢复前快照**：每次 `restore` 操作会自动创建 `~/.pi/pre-restore-{timestamp}.tar.gz`，可用于回滚。
 4. **跨机器恢复**：`settings.yml` 中的 SearXNG secret_key 是安装时生成的。跨机器恢复后需要重新生成。
 5. **重建超时**：`npm install` 在网络慢时可能超时。建议在网络稳定的环境下执行 `rebuild`。
-6. **sing-box 版本**：自动下载的二进制来自官方 GitHub Releases。如果网络不可达，重建会跳过此项并提示手动下载。
+

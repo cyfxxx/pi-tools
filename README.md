@@ -29,15 +29,12 @@
 ├── ctx-lite/                  ctx-lite 运行时数据（checkpoints）
 │   └── checkpoints/           笔记检查点
 ├── searxng/                   SearXNG 自托管搜索引擎
-│   ├── proxy_list.txt         代理 IP 池
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
 │   ├── generate-config.sh     settings.yml 自动生成脚本
 │   ├── start.sh               启动脚本
 │   └── stop.sh                停止脚本
 ├── scripts/
 │   └── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
-├── sing-box/                  Sing-box 代理核心
-│   └── sing-box               ~62MB 二进制（git 不追踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
 └── README.md                  本文件
 ```
@@ -88,11 +85,11 @@ pi-backup rebuild --yes          # 静默自动重建
 - **幂等** — 已存在项跳过，只重建缺失内容
 - **国内镜像加速** — 自动检测并切换 apt/npm/pip/GitHub 镜像
 - **Node.js 自动升级** — 检测到 <20 时自动安装 22.x
-- **并发下载** — sing-box 等多组件同时下载
+- **并发下载** — fd/rg、SearXNG 等多组件同时下载
 - **自动补全配置** — 自动生成 `searxng/settings.yml`、`agent/npm/package.json`（如缺失）
 - **格式校验** — 重建后自动验证 YAML/JSON 配置文件
 
-支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码、sing-box。
+支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码。
 
 ## ⚠ 安全注意事项
 
@@ -110,7 +107,6 @@ pi-backup rebuild --yes          # 静默自动重建
 
 | 文件 | 大小 | 来源 | 重建方式 |
 |------|------|------|---------|
-| `sing-box/sing-box` | ~62 MB | GitHub Releases | `scripts/rebuild.sh` 自动下载 |
 | `searxng/venv/` | ~94 MB | `python3 -m venv` | `scripts/rebuild.sh` 自动创建 |
 | `searxng/repo/` | ~28 MB | `git clone searxng/searxng`（--depth 1） | `scripts/rebuild.sh` 自动克隆 |
 | `agent/npm/node_modules/` | ~153 MB | `npm install` | `scripts/rebuild.sh` 自动安装 |
@@ -161,8 +157,6 @@ ls agent/extensions/pi-web-toolkit/node_modules/ | wc -l
 ls searxng/venv/bin/python && echo "venv OK"
 ls searxng/repo/.git && echo "repo OK"
 
-# sing-box（可选，用于代理池）
-./sing-box/sing-box version
 ```
 
 ## 常见问题
@@ -175,20 +169,6 @@ ls searxng/repo/.git && echo "repo OK"
 - 重新生成配置：`cd searxng && bash generate-config.sh --force`
 - 默认仅启用 bing 和 baidu，其余引擎 `disabled: true`（已在 `generate-config.sh` 中预设）
 - 如需启用其他引擎，编辑 `searxng/settings.yml`，将对应引擎的 `disabled` 改为 `false`
-
-### sing-box 二进制无法执行
-
-**原因：** 下载了与当前系统架构不匹配的版本。
-
-**解决：** `rebuild.sh` 现已自动检测架构（amd64/arm64/armv7/386）。如仍失败，手动下载：
-
-```bash
-# 替换为对应架构
-ARCH=amd64  # 或 arm64、armv7、386
-VER=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep tag_name | cut -d'"' -f4)
-curl -sL "https://github.com/SagerNet/sing-box/releases/download/$VER/sing-box-${VER#v}-linux-$ARCH.tar.gz" \
-  | tar xz --strip-components=1 -C ~/.pi/sing-box/ "sing-box-${VER#v}-linux-$ARCH/sing-box"
-```
 
 ### Venv 创建后缺少 pip
 
@@ -211,12 +191,4 @@ npx cloakbrowser install          # 安装 chromium
 apt-get install -y libnspr4 libnss3 libatk1.0-0t64 libcups2t64 libgbm1
 ```
 
-### 扩展加载时报 "proxyPool 启动失败"
 
-**原因：** sing-box 二进制缺失或架构不匹配，`spawn()` 失败后 proxyPool 被设为 null。
-
-**解决：** 确保 sing-box 可执行并重启 pi：
-```bash
-./sing-box/sing-box version && echo "OK" || bash scripts/rebuild.sh --yes
-# 重启 pi
-```

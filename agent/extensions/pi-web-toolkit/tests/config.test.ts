@@ -34,7 +34,6 @@ describe('config', () => {
     expect(cfg.browser.headless).toBe(false)
     expect(cfg.browser.viewport_width).toBe(1280)
     expect(cfg.browser.viewport_height).toBe(800)
-    expect(cfg.proxy_pool).toBeUndefined()
   })
 
   it('should read search env vars', async () => {

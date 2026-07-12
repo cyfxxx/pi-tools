@@ -4,7 +4,6 @@ import { join } from 'path'
 import type { WebToolkitConfig } from './types'
 import { buildSearchConfig, buildEnvSearchConfig } from './search/config'
 import { buildBrowserConfig, buildEnvBrowserConfig } from './browser/config'
-import { buildProxyPoolConfig } from './proxy/config'
 
 const PI_CONFIG_DIR = '.pi'
 
@@ -34,9 +33,8 @@ function readConfigFromFile(): Partial<WebToolkitConfig> {
 
       const searchPart = buildSearchConfig(ext)
       const browserPart = buildBrowserConfig(ext)
-      const poolPart = buildProxyPoolConfig(ext)
 
-      return { ...searchPart, ...browserPart, ...poolPart }
+      return { ...searchPart, ...browserPart }
     } catch {
       continue
     }

@@ -10,5 +10,5 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["index.ts", "search/**/*.ts", "browser/**/*.ts", "proxy/**/*.ts", "types.ts", "config.ts", "env.d.ts"]
+  "include": ["index.ts", "search/**/*.ts", "browser/**/*.ts", "types.ts", "config.ts", "env.d.ts"]
 }

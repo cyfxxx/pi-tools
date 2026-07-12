@@ -39,9 +39,4 @@ searxng/repo/
 # searxng: 运行时 PID 文件
 searxng/searxng.pid
 
-# 代理二进制
-sing-box/
 
-# 代理测试运行时产物
-proxy_test_results.json
-proxy_test_results_v2.json

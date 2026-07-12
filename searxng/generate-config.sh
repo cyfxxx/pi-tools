@@ -45,32 +45,41 @@ enabled_plugins:
   - 'Search on category select'
 
 outgoing:
-  request_timeout: 5.0
-  max_request_timeout: 10.0
+  request_timeout: 10.0
+  max_request_timeout: 30.0
   useragent_suffix: ""
-  extra_proxy_timeout: 5
   max_redirects: 5
 
 engines:
-  # 国内网络下仅 bing 和 baidu 稳定可达
-  - name: bing
-    disabled: false
+  # 国内直接可达的搜索引擎
   - name: baidu
     disabled: false
-  # 以下引擎在国内网络环境下可能因 DNS/GFW 不可达，需按需启用
-  - name: duckduckgo
-    disabled: true
+  - name: bing
+    engine: bing
+    base_url: https://cn.bing.com
+    disabled: false
+  - name: sogou
+    disabled: false
+  - name: 360search
+    disabled: false
+  - name: bilibili
+    disabled: false
+  - name: yandex
+    disabled: false
+  - name: stackoverflow
+    disabled: false
+  - name: github
+    disabled: false
+  # 以下引擎被 GFW 封锁且无代理可用，暂不启用
   - name: google
+    disabled: true
+  - name: duckduckgo
     disabled: true
   - name: wikipedia
     disabled: true
-  - name: stackoverflow
-    disabled: true
-  - name: github
+  - name: brave
     disabled: true
   - name: yahoo
-    disabled: true
-  - name: brave
     disabled: true
 CONFIGEOF
 

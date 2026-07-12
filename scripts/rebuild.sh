@@ -132,6 +132,8 @@ EOF
 
   mkdir -p "$PI_HOME/agent/bin"
   ok "agent/bin/ 已就绪"
+
+  true  # placeholder for future infra setup
 }
 
 # ---- Phase 2-A: npm 依赖 ----
@@ -247,20 +249,7 @@ phase2_binaries() {
   ok "agent/bin/fd ($($PI_HOME/agent/bin/fd --version 2>/dev/null | head -1))"
   ok "agent/bin/rg ($($PI_HOME/agent/bin/rg --version 2>/dev/null | head -1))"
 
-  # 下载 sing-box（自动匹配系统架构）
-  SINGBOX_ARCH=$(detect_arch)
-  if [ "$SINGBOX_ARCH" = "unsupported: $(uname -m)" ]; then
-    warn "不支持的架构 $(uname -m)，跳过 sing-box 下载"
-  else
-    SINGBOX_VER=$(curl -sL "https://api.github.com/repos/SagerNet/sing-box/releases/latest" | grep tag_name | cut -d'"' -f4 2>/dev/null || echo "v1.13.14")
-    download_bin "sing-box" "$PI_HOME/sing-box/sing-box" \
-      "https://github.com/SagerNet/sing-box/releases/download/$SINGBOX_VER/sing-box-${SINGBOX_VER#v}-linux-$SINGBOX_ARCH.tar.gz" \
-      "$PI_HOME/sing-box/sing-box version 2>&1 | head -1" &
-  fi
-
-  PID_SINGBOX=$!
-
-  wait $PID_SINGBOX 2>/dev/null || true
+  true  # placeholder for future infra download
 }
 
 # ---- Phase 4: 验证 ----
@@ -277,8 +266,6 @@ verify() {
   # binaries
   [ -f "$PI_HOME/agent/bin/fd" ] && ok "fd: $($PI_HOME/agent/bin/fd --version 2>/dev/null | head -1)" || { warn "fd not found"; errors=$((errors+1)); }
   [ -f "$PI_HOME/agent/bin/rg" ] && ok "rg: $($PI_HOME/agent/bin/rg --version 2>/dev/null | head -1)" || { warn "rg not found"; errors=$((errors+1)); }
-  [ -f "$PI_HOME/sing-box/sing-box" ] && ok "sing-box: $($PI_HOME/sing-box/sing-box version 2>&1 | head -1)" || { warn "sing-box not found"; errors=$((errors+1)); }
-
   # venv
   if [ -f "$PI_HOME/searxng/venv/bin/python" ]; then
     ok "Python: $($PI_HOME/searxng/venv/bin/python --version 2>&1)"

@@ -13,7 +13,6 @@ const mockPi = {
   }),
 }
 
-// Mock config so proxy_pool is not set (no network/binary dependencies)
 vi.mock('../config', () => ({
   loadConfig: () => ({
     search: { searxng_url: 'https://searx.be', timeout: 5000 },
@@ -70,19 +69,6 @@ describe('index (entry point)', () => {
 
     expect(lifecycleHandlers['session_shutdown']).toBeDefined()
     expect(lifecycleHandlers['session_compact']).toBeDefined()
-  })
-
-  it('should NOT register proxy tools when no proxy_pool config', async () => {
-    const main = (await import('../index')).default
-    await main(mockPi as any)
-
-    const toolNames = registeredTools.map(t => t.name)
-    expect(toolNames).not.toContain('proxy_status')
-    expect(toolNames).not.toContain('proxy_add')
-    expect(toolNames).not.toContain('proxy_rotate')
-    expect(toolNames).not.toContain('proxy_on')
-    expect(toolNames).not.toContain('proxy_off')
-    expect(toolNames).not.toContain('proxy_set')
   })
 
   it('browser_navigate should return page info', async () => {

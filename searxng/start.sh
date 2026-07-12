@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
+PI_HOME="${PI_HOME:-$HOME/.pi}"
 
 if [ ! -d "$DIR/venv" ]; then
   echo "错误: 虚拟环境不存在 ($DIR/venv)"
-  echo "请先运行 install.sh"
+  echo "请先运行 $PI_HOME/scripts/rebuild.sh"
   exit 1
 fi
-
-source "$DIR/venv/bin/activate"
 
 PID_FILE="$DIR/searxng.pid"
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
@@ -22,6 +21,10 @@ if [ ! -f "$DIR/settings.yml" ]; then
   exit 1
 fi
 
+# ═══════════════════════════════════════════════
+# 启动 SearXNG
+# ═══════════════════════════════════════════════
+source "$DIR/venv/bin/activate"
 export SEARXNG_SETTINGS_PATH="$DIR/settings.yml"
 export SEARXNG_DEBUG=0
 export PYTHONPATH="$DIR/repo:$PYTHONPATH"
