@@ -16,7 +16,7 @@
 │   │   ├── TOKEN-BUDGET.md    使用文档
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
-│   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索 + 代理控制系统
+│   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
 │   │   └── subagent/          子代理
