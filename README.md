@@ -17,6 +17,7 @@
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索
+│   │   ├── pi-scheduler/      定时任务（interval / cron / once + 离线唤醒）
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
 │   │   └── subagent/          子代理
@@ -34,7 +35,12 @@
 │   ├── start.sh               启动脚本
 │   └── stop.sh                停止脚本
 ├── scripts/
-│   └── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
+│   ├── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
+│   ├── pi-cron.sh             pi-scheduler 离线执行包装脚本
+│   ├── install-cron.sh        安装 crontab 条目
+│   └── install-systemd.sh     安装 systemd timer（备选）
+├── logs/
+│   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
 └── README.md                  本文件
 ```
@@ -90,6 +96,32 @@ pi-backup rebuild --yes          # 静默自动重建
 - **格式校验** — 重建后自动验证 YAML/JSON 配置文件
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
+
+## 定时任务（pi-scheduler）
+
+`pi-scheduler` 扩展提供定时任务能力，支持三种触发方式：
+
+| 类型 | 命令 | 说明 |
+|------|------|------|
+| interval | `/loop 5m check build` | 固定间隔循环，创建后立即执行一次 |
+| cron | `/schedule cron "0 9 * * 1-5" standup` | 5 字段 POSIX cron |
+| once | `/remind +30m review PR` | 一次性提醒，执行后自动禁用 |
+
+**会话内执行：** Pi 运行时由扩展 1s 轮询引擎直接触发，注入为用户消息。
+
+**离线执行：** Pi 关闭后，系统 cron 每分钟调用 `pi-cron.sh` → `pi -p "<prompt>"` print 模式执行 → 记日志。下次进入 Pi 时在 TUI 顶部显示离线执行摘要。
+
+**通知链：**
+- 日志文件：`logs/scheduler/<name>-<ts>.log`
+- 会话摘要：`session_start` 时 TUI 显示
+- 邮件：设置 `PI_SCHEDULER_MAIL_TO` 环境变量
+- Webhook：设置 `PI_SCHEDULER_WEBHOOK` 环境变量
+
+**安装：**
+```bash
+bash scripts/install-cron.sh           # 安装 crontab（每分钟）
+bash scripts/install-systemd.sh        # 或安装 systemd timer
+```
 
 ## ⚠ 安全注意事项
 
@@ -158,6 +190,10 @@ ls agent/extensions/pi-web-toolkit/node_modules/ | wc -l
 ls searxng/venv/bin/python && echo "venv OK"
 ls searxng/repo/.git && echo "repo OK"
 
+# 定时任务
+ls agent/extensions/pi-scheduler/node_modules/ | wc -l
+crontab -l | grep pi-cron && echo "crontab OK"
+
 ```
 
 ## 常见问题
@@ -194,6 +230,30 @@ bash ~/.pi/scripts/rebuild.sh --yes
 ```bash
 source ~/.pi/searxng/venv/bin/activate
 pip install -r ~/.pi/searxng/repo/requirements.txt
+```
+
+### 定时任务没有在指定时间触发
+
+**原因：** Pi 会话已关闭但 cron daemon 未运行，或者 crontab 未安装。
+
+**解决：**
+```bash
+service cron status                   # 检查 cron daemon 是否运行
+crontab -l | grep pi-cron             # 检查 crontab 条目是否存在
+bash scripts/install-cron.sh          # 安装或修复 crontab
+```
+
+### 离线任务显示"超时"
+
+**原因：** `pi -p` 执行时需要 provider 后端在线。若使用 `local-llama`（localhost:8080），需确保 llama.cpp 等服务在后台运行。
+
+**解决：** 默认 `maxRunTime=300s`，可通过任务配置调整。若 provider 不可预期离线，考虑使用 remote API provider。
+
+### 任务锁文件残留导致新任务不执行
+
+**解决：**
+```bash
+rm -f agent/scheduler.lock
 ```
 
 ### Chromium/CloakBrowser 浏览器无法启动

@@ -358,8 +358,10 @@ GitHub 同步完成
 | 仓库文档 | `README.md` | 说明文档 |
 | ctx-lite | `ctx-lite/` | 上下文笔记和检查点（如存在） |
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
-
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
+| 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
+| 调度脚本 | `scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
+| 调度安装脚本 | `scripts/install-cron.sh`、`scripts/install-systemd.sh` | crontab / systemd 安装 |
 
 
 ### 默认排除（`--full` 时额外包含）
@@ -373,6 +375,7 @@ GitHub 同步完成
 | Python 虚拟环境 | `searxng/venv/` | SearXNG Python 依赖 | `python3 -m venv venv && pip install` |
 | SearXNG 源码 | `searxng/repo/` | SearXNG 原始项目 | `git clone` |
 | 日志 | `searxng/searxng.log` | 运行时日志 | 不可重建，不恢复 |
+| 调度日志 | `logs/scheduler/` | 离线执行日志 | 不可重建，不恢复 |
 | npm lock | `agent/npm/package-lock.json` | npm 锁定文件 | 由 `npm install` 生成 |
 | 扩展 lock | `agent/extensions/*/package-lock.json` | 扩展 npm 锁定文件 | 由 `npm install` 生成 |
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
@@ -393,4 +396,6 @@ GitHub 同步完成
 3. **恢复前快照**：每次 `restore` 操作会自动创建 `~/.pi/pre-restore-{timestamp}.tar.gz`，可用于回滚。
 4. **跨机器恢复**：`settings.yml` 中的 SearXNG secret_key 是安装时生成的。跨机器恢复后需要重新生成。
 5. **重建超时**：`npm install` 在网络慢时可能超时。建议在网络稳定的环境下执行 `rebuild`。
+6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
+7. **调度任务文件**：`agent/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
 
