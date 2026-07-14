@@ -89,7 +89,7 @@ pi-backup rebuild --yes          # 静默自动重建
 - **自动补全配置** — 自动生成 `searxng/settings.yml`、`agent/npm/package.json`（如缺失）
 - **格式校验** — 重建后自动验证 YAML/JSON 配置文件
 
-支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码。
+支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
 
 ## ⚠ 安全注意事项
 
@@ -133,6 +133,7 @@ cd ~/.pi && bash scripts/rebuild.sh --yes
 | npm | 随 Node 自带 | `npm -v` |
 | python3 + venv | >= 3.10 | `python3 --version && python3 -m venv --help >/dev/null && echo ok` |
 | git | 任意版本 | `git --version` |
+| ca-certificates | 已安装（脚本会自动补装） | `dpkg -l ca-certificates` |
 | 磁盘空间 | >= 2GB 可用 | `df -h .` |
 
 ### 首次恢复步骤
@@ -163,11 +164,11 @@ ls searxng/repo/.git && echo "repo OK"
 
 ### SearXNG 启动后搜索引擎全部超时
 
-**原因：** 国内 DNS 干扰导致 Google/DuckDuckGo 等站点不可达；`extra_proxy_timeout` 配置为 float 类型导致 schema 校验失败。
+**原因：** 国内 DNS 干扰导致 Google/DuckDuckGo 等站点不可达。
 
 **解决：**
-- 重新生成配置：`cd searxng && bash generate-config.sh --force`
-- 默认仅启用 bing 和 baidu，其余引擎 `disabled: true`（已在 `generate-config.sh` 中预设）
+- 重新生成配置：`cd searxng && bash generate-config.sh --force`（自动重启运行中的 SearXNG）
+- 默认仅启用 baidu、bing、sogou、360search、bilibili、yandex、stackoverflow、github，其余引擎 `disabled: true`
 - 如需启用其他引擎，编辑 `searxng/settings.yml`，将对应引擎的 `disabled` 改为 `false`
 
 ### Venv 创建后缺少 pip
@@ -181,12 +182,27 @@ rm -rf ~/.pi/searxng/venv
 bash ~/.pi/scripts/rebuild.sh --yes
 ```
 
+### SearXNG 启动失败，提示缺少 Python 模块
+
+**原因：** SearXNG repo 的依赖未完全安装（`rebuild.sh` 现在从 `searxng/repo/requirements.txt` 安装全部依赖，但若克隆 repo 时失败或中断会导致依赖不完整）。
+
+**解决：** 重新运行重建：
+```bash
+bash ~/.pi/scripts/rebuild.sh --yes
+```
+或者手动安装缺失模块：
+```bash
+source ~/.pi/searxng/venv/bin/activate
+pip install -r ~/.pi/searxng/repo/requirements.txt
+```
+
 ### Chromium/CloakBrowser 浏览器无法启动
 
-**原因：** Chromium 未安装或缺少系统依赖。
+**原因：** Chromium 未安装或缺少系统依赖。`rebuild.sh` 的验证步骤会检测并给出提示。
 
-**解决：** rebuild.sh 不包含浏览器安装，手动执行：
+**解决：**
 ```bash
+cd ~/.pi
 npx cloakbrowser install          # 安装 chromium
 apt-get install -y libnspr4 libnss3 libatk1.0-0t64 libcups2t64 libgbm1
 ```

@@ -45,8 +45,8 @@ enabled_plugins:
   - 'Search on category select'
 
 outgoing:
-  request_timeout: 10.0
-  max_request_timeout: 30.0
+  request_timeout: 10
+  max_request_timeout: 30
   useragent_suffix: ""
   max_redirects: 5
 
@@ -86,3 +86,12 @@ CONFIGEOF
 chmod 644 "$CONFIG"
 echo "已生成 $CONFIG"
 echo "secret_key: ${SECRET_KEY}"
+
+# 自动重启 SearXNG（如果正在运行）
+PID_FILE="$DIR/searxng.pid"
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+  echo "检测到 SearXNG 正在运行，自动重启以加载新配置..."
+  bash "$DIR/stop.sh" 2>/dev/null
+  sleep 1
+  bash "$DIR/start.sh" 2>/dev/null || echo "重启失败，请手动运行: $DIR/start.sh"
+fi
