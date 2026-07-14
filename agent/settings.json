@@ -9,7 +9,9 @@
   "hideThinkingBlock": true,
   "collapseChangelog": true,
   "defaultProjectTrust": "ask",
-  "extensions": [],
+  "extensions": [
+    "extensions/pi-scheduler/index.ts"
+  ],
   "pi-web-toolkit": {
     "searxng_url": "http://127.0.0.1:8889",
     "search_timeout": 30000

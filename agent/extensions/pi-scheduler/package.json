@@ -1,0 +1,15 @@
+{
+  "name": "pi-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "定时任务扩展 — 支持 interval / cron / once 触发，离线时由系统 cron 唤醒 Pi 执行",
+  "type": "module",
+  "dependencies": {
+    "croner": "^10.0.1"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

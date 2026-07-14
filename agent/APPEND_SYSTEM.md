@@ -12,4 +12,6 @@
 ## 项目维护
 - `scripts/rebuild.sh` — 一键重建依赖，在新克隆或依赖缺失时使用
 - `searxng/generate-config.sh` — 重新生成 SearXNG 配置（含随机 secret_key）
+- `extension/pi-scheduler/` — 定时任务扩展，支持 `/loop`、`/schedule`、`/remind` 命令
+- `scripts/install-cron.sh` — 安装 crontab 使定时任务可离线执行
 - 更多操作见 `README.md` 和 `agent/skills/pi-backup/SKILL.md`

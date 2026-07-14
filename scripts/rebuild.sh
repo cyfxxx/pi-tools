@@ -150,7 +150,19 @@ EOF
   mkdir -p "$PI_HOME/agent/bin"
   ok "agent/bin/ 已就绪"
 
-  true  # placeholder for future infra setup
+  # 注册 pi-scheduler 扩展到 settings.json
+  if [ -f "$PI_HOME/agent/settings.json" ]; then
+    python3 -c "
+import json
+p = '$PI_HOME/agent/settings.json'
+d = json.load(open(p))
+ext = 'extensions/pi-scheduler/index.ts'
+if ext not in d.setdefault('extensions', []):
+    d['extensions'].append(ext)
+    json.dump(d, open(p, 'w'), indent=2)
+    print('registered')
+" 2>/dev/null && ok "pi-scheduler 扩展已注册" || true
+  fi
 }
 
 # ---- Phase 2-A: npm 依赖 ----
@@ -390,6 +402,23 @@ verify() {
     ok "ctx-lite/checkpoints/ 已创建"
   fi
 
+  # Scheduler 扩展
+  if [ -d "$PI_HOME/agent/extensions/pi-scheduler/node_modules" ]; then
+    local pkgs=$(ls "$PI_HOME/agent/extensions/pi-scheduler/node_modules" 2>/dev/null | wc -l)
+    ok "pi-scheduler: $pkgs npm 包已安装"
+  else
+    warn "pi-scheduler: node_modules 未安装"
+    info "运行: cd $PI_HOME/agent/extensions/pi-scheduler && npm install"
+  fi
+  # 检查 cron / systemd 是否已配置
+  if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
+    ok "pi-scheduler: crontab 已安装"
+  elif command -v systemctl &>/dev/null && systemctl is-enabled pi-scheduler.timer &>/dev/null; then
+    ok "pi-scheduler: systemd timer 已安装"
+  else
+    info "pi-scheduler: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
+  fi
+
   # Provider 配置检查
   if [ -f "$PI_HOME/agent/settings.json" ] && [ -f "$PI_HOME/agent/models.json" ]; then
     DEFAULT_PROVIDER=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultProvider',''))" 2>/dev/null)
@@ -448,11 +477,27 @@ phase2_searxng_deps
 
 phase2_binaries
 
+# Scheduler 离线调度安装（可选）
+if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
+  title "Phase 2-D" "定时调度安装"
+  bash "$PI_HOME/scripts/install-cron.sh" 2>&1 | while IFS= read -r line; do
+    if echo "$line" | grep -q "^✓"; then
+      ok "${line#✓ }"
+    elif echo "$line" | grep -q "^⚠"; then
+      warn "${line#⚠ }"
+    fi
+  done
+fi
+
 verify
 
 echo -e "\n${GREEN}重建完成。${NC}"
 echo ""
-echo "  启动 SearXNG:  $PI_HOME/searxng/start.sh"
-echo "  停止 SearXNG:  $PI_HOME/searxng/stop.sh"
-echo "  重新生成配置:  $PI_HOME/searxng/generate-config.sh --force"
-echo "  安装浏览器:    cd $PI_HOME && npx cloakbrowser install"
+echo "  启动 SearXNG:    $PI_HOME/searxng/start.sh"
+echo "  停止 SearXNG:    $PI_HOME/searxng/stop.sh"
+echo "  重新生成配置:    $PI_HOME/searxng/generate-config.sh --force"
+echo "  安装浏览器:      cd $PI_HOME && npx cloakbrowser install"
+echo "  安装定时调度:    $PI_HOME/scripts/install-cron.sh"
+echo "  循环任务:        /loop 5m <prompt>"
+echo "  定时任务:        /schedule cron \"0 9 * * 1-5\" <prompt>"
+echo "  提醒:            /remind +30m <prompt>"
