@@ -1,3 +1,5 @@
+# 配置目录介绍
+```
 ├── agent/
 │   ├── settings.json          Pi 主配置
 │   ├── AGENTS.md              本文件
@@ -36,3 +38,4 @@
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
 └── README.md                  配置目录说明
+```
