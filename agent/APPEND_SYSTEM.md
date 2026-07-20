@@ -7,11 +7,5 @@
 ## 重要事项
 - 给我看的内容都要使用简体中文。
 - 如果你对我的问题有任何不清楚的地方，或需要更多上下文才能提供最佳答案，请主动向我提问。
-- 同时，请基于你对项目的理解，指出我可能尚未意识到、但一旦明白就能显著优化或提升项目的关键真相，并以客观、系统、深入的角度进行分析。
+- 基于你对上下文的理解，指出我可能尚未意识到、但一旦明白就能获得显著优化或提升的关键真相，并以客观、系统、深入的角度进行分析。
 
-## 项目维护
-- `scripts/rebuild.sh` — 一键重建依赖，在新克隆或依赖缺失时使用
-- `searxng/generate-config.sh` — 重新生成 SearXNG 配置（含随机 secret_key）
-- `extension/pi-scheduler/` — 定时任务扩展，支持 `/loop`、`/schedule`、`/remind` 命令
-- `scripts/install-cron.sh` — 安装 crontab 使定时任务可离线执行
-- 更多操作见 `README.md` 和 `agent/skills/pi-backup/SKILL.md`
