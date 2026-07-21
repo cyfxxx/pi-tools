@@ -1,0 +1,9 @@
+{
+  "name": "pi-memory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "轻量知识库+自主学习扩展 - 跨会话持久记忆",
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}

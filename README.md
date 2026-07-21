@@ -20,6 +20,7 @@
 │   │   ├── pi-scheduler/      定时任务（interval / cron / once + 离线唤醒）
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
+│   │   ├── pi-memory/         跨会话持久记忆
 │   │   └── subagent/          子代理
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   中文翻译
@@ -29,6 +30,7 @@
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
 ├── ctx-lite/                  ctx-lite 运行时数据（checkpoints）
 │   └── checkpoints/           笔记检查点
+├── memory/                    pi-memory 运行时数据
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
 │   ├── generate-config.sh     settings.yml 自动生成脚本
@@ -123,6 +125,31 @@ bash scripts/install-cron.sh           # 安装 crontab（每分钟）
 bash scripts/install-systemd.sh        # 或安装 systemd timer
 ```
 
+## 持久记忆（pi-memory）
+
+`pi-memory` 扩展提供跨会话持久记忆能力，让 LLM 记住学到的知识和用户偏好：
+
+| 工具 | 功能 |
+|------|------|
+| `memory_store` | 存储一条知识（自动去重：标题精确匹配 → 更新，内容 Jaccard>0.7 → 合并） |
+| `memory_search` | 搜索已存储的记忆（按置信度×时效性×引用频率排序） |
+| `memory_stats` | 查看记忆库统计信息 |
+| `memory_forget` | 删除记忆（按 ID 精确删除或按类别+时间批量删除） |
+
+**自动注入：** 会话前 2 轮自动注入 Top-5 高价值记忆到 LLM 上下文（`display: false`，对用户不可见）。第 3 轮起不自动注入，模型按需调用 `memory_search`。
+
+**文件位置：** `memory/entries.json`（1 MB 上限）
+
+**数据流：**
+```
+web-toolkit 搜到信息 → memory_store 固化 → before_agent_start 自动注入 → 跨会话复用
+subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 memory_search 检索
+```
+
+**清理：** `/memory:prune` 删除低置信度 + 长期未访问条目。
+
+**安装：** 零外部依赖，注册到 `settings.json` 后即生效。无需额外安装步骤。
+
 ## ⚠ 安全注意事项
 
 ### 密钥文件（永远不要提交到 git）
@@ -193,6 +220,9 @@ ls searxng/repo/.git && echo "repo OK"
 # 定时任务
 ls agent/extensions/pi-scheduler/node_modules/ | wc -l
 crontab -l | grep pi-cron && echo "crontab OK"
+
+# 持久记忆
+ls memory/entries.json && echo "memory OK"
 
 ```
 
