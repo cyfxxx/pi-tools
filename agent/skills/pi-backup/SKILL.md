@@ -357,6 +357,7 @@ GitHub 同步完成
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
 | ctx-lite | `ctx-lite/` | 上下文笔记和检查点（如存在） |
+| 记忆 | `memory/` | pi-memory 持久记忆数据（如存在） |
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
 | 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |

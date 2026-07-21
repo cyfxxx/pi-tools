@@ -10,7 +10,8 @@
   "collapseChangelog": true,
   "defaultProjectTrust": "ask",
   "extensions": [
-    "extensions/pi-scheduler/index.ts"
+    "extensions/pi-scheduler/index.ts",
+    "extensions/pi-memory/index.ts"
   ],
   "pi-web-toolkit": {
     "searxng_url": "http://127.0.0.1:8889",

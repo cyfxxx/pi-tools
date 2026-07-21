@@ -15,6 +15,7 @@
 │   │   ├── pi-scheduler/      定时任务（interval / cron / once + 离线唤醒）
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
+│   │   ├── pi-memory/         跨会话持久记忆
 │   │   └── subagent/          子代理
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   tui 中文翻译
@@ -24,6 +25,7 @@
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
 ├── ctx-lite/                  ctx-lite 运行时数据（checkpoints）
 │   └── checkpoints/           笔记检查点
+├── memory/                    pi-memory 运行时数据
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
 │   ├── generate-config.sh     settings.yml 自动生成脚本
