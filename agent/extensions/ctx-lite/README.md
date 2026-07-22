@@ -229,13 +229,14 @@ ctx-lite
   Data dir: /root/.pi/ctx-lite (8 files)
 ```
 
-### `/ctx-lite:cleanup [--keep N]`
+### `/ctx-lite:cleanup [--keep N] [--dry-run]`
 
 清理过期笔记和旧自动检查点：
 
 - **TTL 清理**：重新加载 notes 时自动清除过期项
 - **自动检查点清理**：只保留最近 N 个 `__compaction_*` 文件（默认 10）
-- 不带 `--keep` 参数时使用默认值 10
+- `--keep N`：自定义保留的自动检查点数量（默认 10）
+- `--dry-run`：仅预览将要清理的内容，不实际删除任何文件
 
 ```
 Cleanup complete:
