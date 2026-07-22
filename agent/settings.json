@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.80.6",
+  "lastChangelogVersion": "0.80.10",
   "defaultProvider": "local-llama",
   "defaultModel": "Qwen3.6-35B-HauhauCS-Q4_K_P.gguf",
   "defaultThinkingLevel": "high",

@@ -372,7 +372,7 @@ LLM 首次发现项目信息:
 | 扩展 | 关系 |
 |------|------|
 | **pi-web-toolkit** | 互补。web-toolkit 获取外部信息，pi-memory 固化成果。首次搜索到的内容存起来，后续不再需要重新搜。 |
-| **ctx-lite** | 互补，不重叠。ctx-lite 存的是会话级工作状态（`task.current="修复 bug"`），pi-memory 存的是跨会话固化知识（`用户偏好=Shell`）。 |
+| **ctx-lite** | 互补，不重叠。ctx-lite 存的是会话级工作状态（`ctx_note task.current="修复 bug"`），pi-memory 存的是跨会话固化知识（`memory_store category=preference title="用户偏好: Shell"`）。AI 判断准则：需未来 Agent 主动读取→memory_store；当前会话短中期记录→ctx_note。 |
 | **pi-scheduler** | 无冲突。定时任务结果可调用 memory_store 记录发现。 |
 | **plan-mode** | 无冲突。plan-mode 管理任务流，pi-memory 管理知识。 |
 | **subagent** | 强协同。子代理可通过 memory tools 读写共享知识库。 |
