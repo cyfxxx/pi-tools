@@ -410,11 +410,11 @@ export default function (pi: ExtensionAPI) {
 
   // ── /ctx-lite:cleanup ──
   pi.registerCommand("ctx-lite:cleanup", {
-    description: "清理过期笔记和旧检查点。--keep <N> 保留最近 N 个自动检查点",
+    description: "清理过期笔记和旧检查点。--keep <N> 保留最近 N 个自动检查点。--dry-run 仅预览不执行",
     handler: async (args, ctx) => {
-      // Parse --keep N
       const keepMatch = args.match(/--keep\s+(\d+)/)
       const keep = keepMatch ? parseInt(keepMatch[1], 10) : 10
+      const dryRun = args.includes('--dry-run')
 
       // 1. Clean TTL notes via loadNotes
       loadNotes()
@@ -426,7 +426,7 @@ export default function (pi: ExtensionAPI) {
         .reverse()
       let removed = 0
       for (const f of autoFiles.slice(keep)) {
-        rmSync(join(CHECKPOINTS_DIR, f))
+        if (!dryRun) rmSync(join(CHECKPOINTS_DIR, f))
         removed++
       }
 
@@ -438,9 +438,9 @@ export default function (pi: ExtensionAPI) {
 
       ctx.ui.notify(
         [
-          "Cleanup complete:",
+          `${dryRun ? '[DRY-RUN] ' : ''}Cleanup complete:`,
           `  Notes: ${noteCount} (${(totalSize / 1024).toFixed(1)} KB)`,
-          `  Auto-checkpoints kept: ${Math.min(autoFiles.length, keep)}, removed: ${removed}`,
+          `  Auto-checkpoints kept: ${Math.min(autoFiles.length, keep)}, would remove: ${removed}${dryRun ? ' (skipped)' : ''}`,
           `  Total checkpoints: ${checkpoints.length}`,
         ].join("\n"),
         "info",

@@ -13,7 +13,7 @@ export class SessionScheduler {
 
   start(): void {
     if (this.timer) return
-    this.timer = setInterval(() => this.tick(), 1000)
+    this.timer = setInterval(() => this.tick(), 30000)
   }
 
   stop(): void {
@@ -56,8 +56,29 @@ export class SessionScheduler {
   }
 
   private async fireViaSubagent(task: Task): Promise<void> {
+    const { spawn } = await import('node:child_process')
+    const timeout = (task.maxRunTime || 300) * 1000
     const label = `[Scheduler] ${task.name}`
-    await this.pi.sendUserMessage?.(`${label}: ${task.prompt}`)
+
+    await new Promise<void>((resolve, reject) => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeout)
+      const proc = spawn('pi', ['-p', task.prompt], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        signal: controller.signal,
+      })
+      let stderr = ''
+      proc.stderr.on('data', (data: Buffer) => { stderr += data.toString() })
+      proc.on('close', (code) => {
+        clearTimeout(timer)
+        if (code === 0) resolve()
+        else reject(new Error(stderr.trim() || `exit ${code}`))
+      })
+      proc.on('error', (err) => {
+        clearTimeout(timer)
+        reject(err)
+      })
+    })
   }
 
   async checkMissedTasks(): Promise<{ name: string; result: string }[]> {
