@@ -370,8 +370,14 @@ async function runSingleAgentWithModel(
 	};
 
 	try {
-		if (agent.systemPrompt.trim()) {
-			const tmp = await writePromptToTempFile(agent.name, agent.systemPrompt);
+		// Inject cross-session memory into subagent system prompt
+		let systemPrompt = agent.systemPrompt;
+		const memoryContext = loadMemoryContext();
+		if (memoryContext) {
+			systemPrompt = memoryContext + (systemPrompt.trim() ? `\n\n${systemPrompt}` : '');
+		}
+		if (systemPrompt.trim()) {
+			const tmp = await writePromptToTempFile(agent.name, systemPrompt);
 			tmpPromptDir = tmp.dir;
 			tmpPromptPath = tmp.filePath;
 			args.push("--append-system-prompt", tmpPromptPath);
@@ -563,6 +569,25 @@ async function runSingleAgent(
 	// All models failed
 	if (outputPath && lastError) await saveOutputToFile(defaultCwd, outputPath, lastError);
 	return lastError!;
+}
+
+function loadMemoryContext(): string {
+	const MEMORY_FILE = path.join(os.homedir(), '.pi', 'memory', 'entries.json');
+	try {
+		if (!fs.existsSync(MEMORY_FILE)) return '';
+		const raw = JSON.parse(fs.readFileSync(MEMORY_FILE, 'utf-8'));
+		const entries: any[] = raw.entries || [];
+		if (!entries.length) return '';
+		const top = entries
+			.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
+			.slice(0, 5);
+		const sections = top.map((e: any) =>
+			`  - [${e.category}] ${e.title}: ${(e.content || '').length > 200 ? e.content.slice(0, 200) + '...' : e.content} [置信度: ${e.confidence}]`
+		);
+		return `## 跨会话记忆（来自 pi-memory）\n${sections.join('\n')}\n`;
+	} catch {
+		return '';
+	}
 }
 
 function formatAgentListDetail(agents: AgentConfig[]): string {
