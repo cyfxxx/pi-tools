@@ -9,17 +9,9 @@
  *   - Parallel: { tasks: [{ agent: "name", task: "..." }, ...] }
  *   - Chain: { chain: [{ agent: "name", task: "... {previous} ..." }, ...] }
  *
- * Extended features:
- *   - Async: { async: true } runs in background, returns run ID
- *   - Status: { action: "status", id: "..." } checks async job
- *   - Output files: { output: "path/to/file.md" } saves result to file
- *   - Model fallback: agent markdown frontmatter supports fallback_models
- *   - Per-task model: parallel/chain steps can override model
- *
  * Uses JSON mode to capture structured output from subagents.
  */
 
-import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -27,42 +19,21 @@ import * as path from "node:path";
 import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { Message } from "@earendil-works/pi-ai";
 import { StringEnum } from "@earendil-works/pi-ai";
-import { type ExtensionAPI, getMarkdownTheme, withFileMutationQueue } from "@earendil-works/pi-coding-agent";
+import {
+	CONFIG_DIR_NAME,
+	type ExtensionAPI,
+	getAgentDir,
+	getMarkdownTheme,
+	withFileMutationQueue,
+} from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
-import { recordToolUsage, estimateTokens } from "../../lib/token-budget.ts";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
 const COLLAPSED_ITEM_COUNT = 10;
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
-
-// ---------------------------------------------------------------------------
-// Async job tracking
-// ---------------------------------------------------------------------------
-
-interface PendingAsyncJob {
-	runId: string;
-	agent: string;
-	task: string;
-	startTime: number;
-}
-
-const pendingAsyncJobs = new Map<string, PendingAsyncJob>();
-const ASYNC_RESULTS_DIR = path.join(os.homedir(), ".pi", "subagent-async");
-
-function ensureAsyncResultsDir(): void {
-	try {
-		fs.mkdirSync(ASYNC_RESULTS_DIR, { recursive: true });
-	} catch {
-		/* ignore */
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Formatting helpers
-// ---------------------------------------------------------------------------
 
 function formatTokens(count: number): string {
 	if (count < 1000) return count.toString();
@@ -148,11 +119,6 @@ function formatToolCall(
 			const rawPath = (args.path || ".") as string;
 			return themeFg("muted", "find ") + themeFg("accent", pattern) + themeFg("dim", ` in ${shortenPath(rawPath)}`);
 		}
-		case "glob": {
-			const pattern = (args.pattern || "*") as string;
-			const rawPath = (args.path || ".") as string;
-			return themeFg("muted", "glob ") + themeFg("accent", pattern) + themeFg("dim", ` in ${shortenPath(rawPath)}`);
-		}
 		case "grep": {
 			const pattern = (args.pattern || "") as string;
 			const rawPath = (args.path || ".") as string;
@@ -169,10 +135,6 @@ function formatToolCall(
 		}
 	}
 }
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 interface UsageStats {
 	input: number;
@@ -196,7 +158,6 @@ interface SingleResult {
 	stopReason?: string;
 	errorMessage?: string;
 	step?: number;
-	outputPath?: string;
 }
 
 interface SubagentDetails {
@@ -255,10 +216,6 @@ function getDisplayItems(messages: Message[]): DisplayItem[] {
 	return items;
 }
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
 async function mapWithConcurrencyLimit<TIn, TOut>(
 	items: TIn[],
 	concurrency: number,
@@ -305,44 +262,37 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 	return { command: "pi", args };
 }
 
-async function saveOutputToFile(
-	cwd: string,
-	outputPath: string | undefined,
-	result: SingleResult,
-): Promise<void> {
-	if (!outputPath) return;
-	const resolvedPath = path.resolve(cwd, outputPath);
-	const finalText = getResultOutput(result);
-	try {
-		await fs.promises.mkdir(path.dirname(resolvedPath), { recursive: true });
-		await fs.promises.writeFile(resolvedPath, finalText, "utf-8");
-		result.outputPath = resolvedPath;
-	} catch (e) {
-		const errMsg = e instanceof Error ? e.message : String(e);
-		result.stderr += `\n[output save error] ${errMsg}`;
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Core execution (single agent, one model attempt)
-// ---------------------------------------------------------------------------
-
 type OnUpdateCallback = (partial: AgentToolResult<SubagentDetails>) => void;
 
-async function runSingleAgentWithModel(
+async function runSingleAgent(
 	defaultCwd: string,
-	agent: AgentConfig,
+	agents: AgentConfig[],
 	agentName: string,
 	task: string,
-	effectiveModel: string | null,
 	cwd: string | undefined,
 	step: number | undefined,
 	signal: AbortSignal | undefined,
 	onUpdate: OnUpdateCallback | undefined,
 	makeDetails: (results: SingleResult[]) => SubagentDetails,
 ): Promise<SingleResult> {
+	const agent = agents.find((a) => a.name === agentName);
+
+	if (!agent) {
+		const available = agents.map((a) => `"${a.name}"`).join(", ") || "none";
+		return {
+			agent: agentName,
+			agentSource: "unknown",
+			task,
+			exitCode: 1,
+			messages: [],
+			stderr: `Unknown agent: "${agentName}". Available agents: ${available}.`,
+			usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
+			step,
+		};
+	}
+
 	const args: string[] = ["--mode", "json", "-p", "--no-session"];
-	if (effectiveModel) args.push("--model", effectiveModel);
+	if (agent.model) args.push("--model", agent.model);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
 
 	let tmpPromptDir: string | null = null;
@@ -356,7 +306,7 @@ async function runSingleAgentWithModel(
 		messages: [],
 		stderr: "",
 		usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
-		model: effectiveModel ?? agent.model,
+		model: agent.model,
 		step,
 	};
 
@@ -370,14 +320,8 @@ async function runSingleAgentWithModel(
 	};
 
 	try {
-		// Inject cross-session memory into subagent system prompt
-		let systemPrompt = agent.systemPrompt;
-		const memoryContext = loadMemoryContext();
-		if (memoryContext) {
-			systemPrompt = memoryContext + (systemPrompt.trim() ? `\n\n${systemPrompt}` : '');
-		}
-		if (systemPrompt.trim()) {
-			const tmp = await writePromptToTempFile(agent.name, systemPrompt);
+		if (agent.systemPrompt.trim()) {
+			const tmp = await writePromptToTempFile(agent.name, agent.systemPrompt);
 			tmpPromptDir = tmp.dir;
 			tmpPromptPath = tmp.filePath;
 			args.push("--append-system-prompt", tmpPromptPath);
@@ -477,168 +421,23 @@ async function runSingleAgentWithModel(
 			}
 		if (tmpPromptDir)
 			try {
-				fs.rmSync(tmpPromptDir, { recursive: true, force: true });
+				fs.rmdirSync(tmpPromptDir);
 			} catch {
 				/* ignore */
 			}
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Core execution (single agent, with model fallback)
-// ---------------------------------------------------------------------------
-
-async function runSingleAgent(
-	defaultCwd: string,
-	agents: AgentConfig[],
-	agentName: string,
-	task: string,
-	cwd: string | undefined,
-	step: number | undefined,
-	signal: AbortSignal | undefined,
-	onUpdate: OnUpdateCallback | undefined,
-	makeDetails: (results: SingleResult[]) => SubagentDetails,
-	modelOverride?: string,
-	outputPath?: string,
-): Promise<SingleResult> {
-	const agent = agents.find((a) => a.name === agentName);
-
-	if (!agent) {
-		const result: SingleResult = {
-			agent: agentName,
-			agentSource: "unknown",
-			task,
-			exitCode: 1,
-			messages: [],
-			stderr: `Unknown agent: "${agentName}". Available agents: ${formatAgentListDetail(agents)}.`,
-			usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
-			step,
-		};
-		return result;
-	}
-
-	// Build the ordered model list: override > agent.model > agent.fallbackModels
-	const modelsToTry = [
-		modelOverride || agent.model,
-		...(agent.fallbackModels || []),
-	].filter(Boolean) as string[];
-
-	// No model config — use pi's default model
-	if (modelsToTry.length === 0) {
-		const result = await runSingleAgentWithModel(
-			defaultCwd, agent, agentName, task, null, cwd, step, signal, onUpdate, makeDetails,
-		);
-		if (outputPath) await saveOutputToFile(defaultCwd, outputPath, result);
-		const finalMsg = getFinalOutput(result.messages);
-		recordToolUsage(`subagent:${agentName}`, estimateTokens(finalMsg));
-		return result;
-	}
-
-	// Try each model in order, fallback on LLM errors
-	let lastError: SingleResult | null = null;
-
-	for (let i = 0; i < modelsToTry.length; i++) {
-		const model = modelsToTry[i];
-		const r = await runSingleAgentWithModel(
-			defaultCwd, agent, agentName, task, model, cwd,
-			i === 0 ? step : undefined,       // only first attempt gets step number
-			signal,                            // all attempts respect abort signal
-			onUpdate,                          // all attempts stream progress
-			makeDetails,
-		);
-
-		// Success — save output and return
-		if (!isFailedResult(r)) {
-			if (outputPath) await saveOutputToFile(defaultCwd, outputPath, r);
-			const finalMsg = getFinalOutput(r.messages);
-			recordToolUsage(`subagent:${agentName}`, estimateTokens(finalMsg));
-			return r;
-		}
-
-		// Non-LLM failure (crash, OOM, etc.) — do not retry, return as-is
-		if (r.stopReason !== "error") {
-			if (outputPath) await saveOutputToFile(defaultCwd, outputPath, r);
-			recordToolUsage(`subagent:${agentName}`, estimateTokens(getResultOutput(r)));
-			return r;
-		}
-
-		// LLM error — try fallback model
-		lastError = r;
-	}
-
-	// All models failed
-	if (outputPath && lastError) await saveOutputToFile(defaultCwd, outputPath, lastError);
-	return lastError!;
-}
-
-function loadMemoryContext(): string {
-	const MEMORY_FILE = path.join(os.homedir(), '.pi', 'memory', 'entries.json');
-	try {
-		if (!fs.existsSync(MEMORY_FILE)) return '';
-		const raw = JSON.parse(fs.readFileSync(MEMORY_FILE, 'utf-8'));
-		const entries: any[] = raw.entries || [];
-		if (!entries.length) return '';
-		const top = entries
-			.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))
-			.slice(0, 5);
-		const sections = top.map((e: any) =>
-			`  - [${e.category}] ${e.title}: ${(e.content || '').length > 200 ? e.content.slice(0, 200) + '...' : e.content} [置信度: ${e.confidence}]`
-		);
-		return `## 跨会话记忆（来自 pi-memory）\n${sections.join('\n')}\n`;
-	} catch {
-		return '';
-	}
-}
-
-function formatAgentListDetail(agents: AgentConfig[]): string {
-	if (agents.length === 0) {
-		return 'none (place .md agent files in ~/.pi/agent/agents/ or set agentScope:"both" for project .pi/agents/)';
-	}
-	return agents.map((a) => `"${a.name}" (${a.source})`).join(", ");
-}
-
-function compressOutput(text: string, targetTokens: number): string {
-	const targetChars = targetTokens * 3.5;
-	if (text.length <= targetChars) return text;
-
-	const headPortion = Math.floor(targetChars * 0.55);
-	const tailPortion = Math.floor(targetChars * 0.35);
-	const head = text.slice(0, headPortion);
-	const tail = text.slice(-tailPortion);
-	const middle = text.slice(headPortion, text.length - tailPortion);
-
-	const middleLines = middle.split("\n");
-	const importantLines = middleLines.filter(
-		(l) => /^#{1,3}\s|^\d+\.\s|^- |^\* |ERROR:|^[A-Z][A-Z\s]+:/.test(l.trim()),
-	);
-	const compressedMiddle = importantLines.slice(0, 20).join("\n");
-
-	const result = [head.trim(), "", "--- (compressed " + middle.length + " chars to " + compressedMiddle.length + ") ---", "", compressedMiddle, "", "--- (end compression) ---", "", tail.trim()].filter(Boolean).join("\n");
-
-	if (result.length <= targetChars) return result;
-	return result.slice(0, Math.floor(targetChars)) + "\n\n[output compressed to fit budget]";
-}
-
-// ---------------------------------------------------------------------------
-// Schema
-// ---------------------------------------------------------------------------
-
 const TaskItem = Type.Object({
 	agent: Type.String({ description: "Name of the agent to invoke" }),
 	task: Type.String({ description: "Task to delegate to the agent" }),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process" })),
-	model: Type.Optional(Type.String({ description: "Override model for this task (e.g. 'deepseek/deepseek-v4-flash')" })),
-	output: Type.Optional(Type.String({ description: "Save result to this file path" })),
 });
 
 const ChainItem = Type.Object({
 	agent: Type.String({ description: "Name of the agent to invoke" }),
 	task: Type.String({ description: "Task with optional {previous} placeholder for prior output" }),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process" })),
-	model: Type.Optional(Type.String({ description: "Override model for this step" })),
-	output: Type.Optional(Type.String({ description: "Save result to this file path" })),
-	compress: Type.Optional(Type.Boolean({ description: "Compress {previous} output before passing to next step (default: true)" })),
-	token_budget: Type.Optional(Type.Number({ description: "Target max output tokens for this step. Agent is instructed to stay within budget." })),
 });
 
 const AgentScopeSchema = StringEnum(["user", "project", "both"] as const, {
@@ -656,32 +455,35 @@ const SubagentParams = Type.Object({
 		Type.Boolean({ description: "Prompt before running project-local agents. Default: true.", default: true }),
 	),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process (single mode)" })),
-	async: Type.Optional(
-		Type.Boolean({ description: "Run in background. Returns immediately with a run ID. Check with action:'status'." }),
-	),
-	output: Type.Optional(Type.String({ description: "Save result to this file path (single mode)" })),
-	action: Type.Optional(
-		Type.String({ description: '"status" to check an async job. Use with "id".' }),
-	),
-	id: Type.Optional(Type.String({ description: "Async job run ID to check" })),
 });
-
-// ---------------------------------------------------------------------------
-// Extension entry point
-// ---------------------------------------------------------------------------
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "subagent",
 		label: "Subagent",
+		promptSnippet: "Delegate tasks to specialized subagents for parallel/isolated work",
+		promptGuidelines: [
+			"Use `subagent` (with scout agent) for codebase exploration — it uses a cheap model and compressed output, keeping your context clean",
+			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) to reduce latency and token waste",
+			"Use `subagent` chain mode for complex multi-step workflows (scout→planner→worker) — each step has an isolated context, avoiding context pollution",
+			"For pure research or exploration questions, delegate entirely to a scout agent and consume only its compressed summary",
+			"When context is getting large (>70% of limit), favor subagent delegation over reading more files yourself",
+			"Cheap model agents (scout with Haiku) are ~20x cheaper than Sonnet; use them for any task that doesn't need deep reasoning",
+		],
 		description: [
-			"Delegate tasks to specialized subagents with isolated context.",
+			"Delegate tasks to specialized subagents with isolated context windows.",
+			"",
+			"When to use this tool:",
+			"- Codebase exploration: uses cheap models (Haiku) and returns compressed output",
+			"- Parallel work: run N independent searches/analyses simultaneously (up to 8 tasks, 4 concurrent)",
+			"- Multi-step workflows: chain agents together (scout→planner→worker) for complex implementations",
+			"- Heavy lifting: move large refactoring or batch changes to a sub-agent to keep main context clean",
+			"- Cost savings: delegate scoped tasks to cheaper models instead of using the main expensive model",
+			"",
 			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
-			'Async: { async: true } runs in background.',
-			'Status: { action: "status", id: "..." } checks async jobs.',
-			'Default agent scope is "user" (from ~/.pi/agent/agents).',
-			'To enable project-local agents in .pi/agents, set agentScope: "both" (or "project").',
-		].join(" "),
+			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
+			`To enable project-local agents in ${CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
+		].join("\n"),
 		parameters: SubagentParams,
 
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
@@ -689,87 +491,6 @@ export default function (pi: ExtensionAPI) {
 			const discovery = discoverAgents(ctx.cwd, agentScope);
 			const agents = discovery.agents;
 			const confirmProjectAgents = params.confirmProjectAgents ?? true;
-
-			// -----------------------------------------------------------------------
-			// Action handlers (management operations, checked before mode detection)
-			// -----------------------------------------------------------------------
-
-			if (params.action === "status") {
-				if (!params.id) {
-					// List all running and recent completed jobs
-					const running = Array.from(pendingAsyncJobs.entries()).map(([id, job]) => {
-						const elapsed = Math.round((Date.now() - job.startTime) / 1000);
-						return `- \`${id}\` — **${job.agent}** (${elapsed}s running)`;
-					});
-
-					let completedList = "";
-					try {
-						const dirs = await fs.promises.readdir(ASYNC_RESULTS_DIR);
-						if (dirs.length > 0) {
-							const recent = dirs.slice(-5);
-							completedList = `**Recent completed:**\n${recent.map((id) => `- \`${id}\``).join("\n")}\n\n`;
-						}
-					} catch {
-						/* directory may not exist yet */
-					}
-
-					return {
-						content: [{
-							type: "text",
-							text: (running.length > 0
-								? `**Running jobs:**\n${running.join("\n")}\n\n`
-								: "No running jobs.\n\n") +
-								completedList +
-								`Use \`subagent({ action: "status", id: "<run-id>" })\` to inspect a specific job.`,
-						}],
-						details: { mode: "single", agentScope, projectAgentsDir: discovery.projectAgentsDir, results: [] },
-					};
-				}
-
-				// Check memory (still running)
-				const job = pendingAsyncJobs.get(params.id);
-				if (job) {
-					const elapsed = Math.round((Date.now() - job.startTime) / 1000);
-					return {
-						content: [{ type: "text", text: `⏳ **${job.agent}** — running (${elapsed}s elapsed)\n\nTask: ${job.task}` }],
-						details: { mode: "single", agentScope, projectAgentsDir: discovery.projectAgentsDir, results: [] },
-					};
-				}
-
-				// Check completed results on disk
-				try {
-					const data = JSON.parse(
-						await fs.promises.readFile(path.join(ASYNC_RESULTS_DIR, params.id, "result.json"), "utf-8"),
-					);
-					const result = data.result as SingleResult;
-					const error = isFailedResult(result);
-					const output = error ? getResultOutput(result) : getFinalOutput(result.messages);
-					const completedAt = data.completedAt
-						? ` (${Math.round((Date.now() - data.completedAt) / 1000)}s ago)`
-						: "";
-					return {
-						content: [{
-							type: "text",
-							text: error
-								? `✗ **${result.agent}** failed${completedAt}\n\n${output}`
-								: `✓ **${result.agent}** completed${completedAt}\n\n${output}`,
-						}],
-						details: { mode: "single", agentScope, projectAgentsDir: discovery.projectAgentsDir, results: [result] },
-						isError: error,
-					};
-				} catch {
-					/* not found */
-				}
-
-				return {
-					content: [{ type: "text", text: `No job found with ID: \`${params.id}\`.\n\nUse \`subagent({ action: "status" })\` to list all jobs.` }],
-					details: { mode: "single", agentScope, projectAgentsDir: discovery.projectAgentsDir, results: [] },
-				};
-			}
-
-			// -----------------------------------------------------------------------
-			// Mode detection
-			// -----------------------------------------------------------------------
 
 			const hasChain = (params.chain?.length ?? 0) > 0;
 			const hasTasks = (params.tasks?.length ?? 0) > 0;
@@ -786,11 +507,12 @@ export default function (pi: ExtensionAPI) {
 				});
 
 			if (modeCount !== 1) {
+				const available = agents.map((a) => `${a.name} (${a.source})`).join(", ") || "none";
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Invalid parameters. Provide exactly one mode.\nAvailable agents: ${formatAgentListDetail(agents)}`,
+							text: `Invalid parameters. Provide exactly one mode.\nAvailable agents: ${available}`,
 						},
 					],
 					details: makeDetails("single")([]),
@@ -822,30 +544,18 @@ export default function (pi: ExtensionAPI) {
 				}
 			}
 
-			// -----------------------------------------------------------------------
-			// Chain mode
-			// -----------------------------------------------------------------------
-
 			if (params.chain && params.chain.length > 0) {
 				const results: SingleResult[] = [];
 				let previousOutput = "";
 
 				for (let i = 0; i < params.chain.length; i++) {
 					const step = params.chain[i];
-					const compress = step.compress !== false;
-					const budget = step.token_budget;
-					let context = previousOutput;
-					if (compress && context.length > 2000) {
-						const target = budget ? Math.min(budget, 2000) : 2000;
-						context = compressOutput(context, Math.floor(target * 0.6));
-					}
-					let taskWithContext = step.task.replace(/\{previous\}/g, context);
-					if (budget) {
-						taskWithContext += `\n\nIMPORTANT: Your final output should not exceed approximately ${budget} tokens. Be concise. Prioritize key findings.`;
-					}
+					const taskWithContext = step.task.replace(/\{previous\}/g, previousOutput);
 
+					// Create update callback that includes all previous results
 					const chainUpdate: OnUpdateCallback | undefined = onUpdate
 						? (partial) => {
+								// Combine completed results with current streaming result
 								const currentResult = partial.details?.results[0];
 								if (currentResult) {
 									const allResults = [...results, currentResult];
@@ -867,8 +577,6 @@ export default function (pi: ExtensionAPI) {
 						signal,
 						chainUpdate,
 						makeDetails("chain"),
-						step.model,
-						step.output,
 					);
 					results.push(result);
 
@@ -889,10 +597,6 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
-			// -----------------------------------------------------------------------
-			// Parallel mode
-			// -----------------------------------------------------------------------
-
 			if (params.tasks && params.tasks.length > 0) {
 				if (params.tasks.length > MAX_PARALLEL_TASKS)
 					return {
@@ -905,14 +609,16 @@ export default function (pi: ExtensionAPI) {
 						details: makeDetails("parallel")([]),
 					};
 
+				// Track all results for streaming updates
 				const allResults: SingleResult[] = new Array(params.tasks.length);
 
+				// Initialize placeholder results
 				for (let i = 0; i < params.tasks.length; i++) {
 					allResults[i] = {
 						agent: params.tasks[i].agent,
 						agentSource: "unknown",
 						task: params.tasks[i].task,
-						exitCode: -1,
+						exitCode: -1, // -1 = still running
 						messages: [],
 						stderr: "",
 						usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
@@ -941,6 +647,7 @@ export default function (pi: ExtensionAPI) {
 						t.cwd,
 						undefined,
 						signal,
+						// Per-task update callback
 						(partial) => {
 							if (partial.details?.results[0]) {
 								allResults[index] = partial.details.results[0];
@@ -948,8 +655,6 @@ export default function (pi: ExtensionAPI) {
 							}
 						},
 						makeDetails("parallel"),
-						t.model,
-						t.output,
 					);
 					allResults[index] = result;
 					emitParallelUpdate();
@@ -958,10 +663,7 @@ export default function (pi: ExtensionAPI) {
 
 				const successCount = results.filter((r) => !isFailedResult(r)).length;
 				const summaries = results.map((r) => {
-					const rawOutput = getResultOutput(r);
-					const output = r.outputPath
-						? `Output saved to: \`${r.outputPath}\``
-						: truncateParallelOutput(rawOutput);
+					const output = truncateParallelOutput(getResultOutput(r));
 					const status = isFailedResult(r)
 						? `failed${r.stopReason && r.stopReason !== "end" ? ` (${r.stopReason})` : ""}`
 						: "completed";
@@ -978,78 +680,7 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
-			// -----------------------------------------------------------------------
-			// Single mode (sync or async)
-			// -----------------------------------------------------------------------
-
 			if (params.agent && params.task) {
-				// Async mode — start in background, return immediately
-				if (params.async) {
-					const runId = randomUUID().slice(0, 12);
-					ensureAsyncResultsDir();
-
-					// Spawn in background (no await)
-					const backgroundPromise = runSingleAgent(
-						ctx.cwd,
-						agents,
-						params.agent,
-						params.task,
-						params.cwd,
-						undefined,
-						undefined, // no signal — parent abort should not kill background
-						undefined, // no streaming updates for async
-						makeDetails("single"),
-						undefined, // no model override
-						params.output,
-					);
-
-					const asyncJob: PendingAsyncJob = {
-						runId,
-						agent: params.agent,
-						task: params.task,
-						startTime: Date.now(),
-					};
-					pendingAsyncJobs.set(runId, asyncJob);
-
-					// When done, persist to disk
-					backgroundPromise.then(async (result) => {
-						try {
-							const resultDir = path.join(ASYNC_RESULTS_DIR, runId);
-							await fs.promises.mkdir(resultDir, { recursive: true });
-							const data = JSON.stringify({ result, completedAt: Date.now() });
-							await fs.promises.writeFile(path.join(resultDir, "result.json"), data, "utf-8");
-						} catch {
-							/* best effort persistence */
-						}
-						pendingAsyncJobs.delete(runId);
-
-						// Notify user if UI is available
-						if (ctx.hasUI) {
-							const status = isFailedResult(result) ? "failed" : "completed";
-							const output = status === "completed"
-								? getFinalOutput(result.messages).slice(0, 200)
-								: getResultOutput(result).slice(0, 200);
-							ctx.ui.notify(
-								`Background task ${status}: **${result.agent}** (ID: \`${runId}\`)\n\n` +
-								(output ? `${output}${output.length >= 200 ? "..." : ""}` : ""),
-								status === "completed" ? "info" : "warning",
-							);
-						}
-					});
-
-					return {
-						content: [{
-							type: "text",
-							text: `⏳ Background task started: **${params.agent}**\n\n` +
-								`Task: ${params.task}\nRun ID: \`${runId}\`\n\n` +
-								`You will be notified when it completes.\n` +
-								`Check status with: \`subagent({ action: "status", id: "${runId}" })\``,
-						}],
-						details: makeDetails("single")([]),
-					};
-				}
-
-				// Sync mode (original behavior)
 				const result = await runSingleAgent(
 					ctx.cwd,
 					agents,
@@ -1060,8 +691,6 @@ export default function (pi: ExtensionAPI) {
 					signal,
 					onUpdate,
 					makeDetails("single"),
-					undefined,
-					undefined,
 				);
 				const isError = isFailedResult(result);
 				if (isError) {
@@ -1078,30 +707,23 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
+			const available = agents.map((a) => `${a.name} (${a.source})`).join(", ") || "none";
 			return {
-				content: [{ type: "text", text: `Invalid parameters. Available agents: ${formatAgentListDetail(agents)}` }],
+				content: [{ type: "text", text: `Invalid parameters. Available agents: ${available}` }],
 				details: makeDetails("single")([]),
 			};
 		},
 
-		// -----------------------------------------------------------------------
-		// renderCall — show call in TUI
-		// -----------------------------------------------------------------------
-
 		renderCall(args, theme, _context) {
 			const scope: AgentScope = args.agentScope ?? "user";
-
-			// Async indicator
-			const asyncTag = args.async ? theme.fg("warning", " [async]") : "";
-
 			if (args.chain && args.chain.length > 0) {
 				let text =
 					theme.fg("toolTitle", theme.bold("subagent ")) +
 					theme.fg("accent", `chain (${args.chain.length} steps)`) +
-					theme.fg("muted", ` [${scope}]`) +
-					asyncTag;
+					theme.fg("muted", ` [${scope}]`);
 				for (let i = 0; i < Math.min(args.chain.length, 3); i++) {
 					const step = args.chain[i];
+					// Clean up {previous} placeholder for display
 					const cleanTask = step.task.replace(/\{previous\}/g, "").trim();
 					const preview = cleanTask.length > 40 ? `${cleanTask.slice(0, 40)}...` : cleanTask;
 					text +=
@@ -1114,20 +736,11 @@ export default function (pi: ExtensionAPI) {
 				if (args.chain.length > 3) text += `\n  ${theme.fg("muted", `... +${args.chain.length - 3} more`)}`;
 				return new Text(text, 0, 0);
 			}
-			if (args.action) {
-				const target = args.id || "";
-				return new Text(
-					theme.fg("toolTitle", theme.bold("subagent ")) +
-					theme.fg("accent", `status${target ? ` ${target}` : ""}`),
-					0, 0,
-				);
-			}
 			if (args.tasks && args.tasks.length > 0) {
 				let text =
 					theme.fg("toolTitle", theme.bold("subagent ")) +
 					theme.fg("accent", `parallel (${args.tasks.length} tasks)`) +
-					theme.fg("muted", ` [${scope}]`) +
-					asyncTag;
+					theme.fg("muted", ` [${scope}]`);
 				for (const t of args.tasks.slice(0, 3)) {
 					const preview = t.task.length > 40 ? `${t.task.slice(0, 40)}...` : t.task;
 					text += `\n  ${theme.fg("accent", t.agent)}${theme.fg("dim", ` ${preview}`)}`;
@@ -1140,15 +753,10 @@ export default function (pi: ExtensionAPI) {
 			let text =
 				theme.fg("toolTitle", theme.bold("subagent ")) +
 				theme.fg("accent", agentName) +
-				theme.fg("muted", ` [${scope}]`) +
-				asyncTag;
+				theme.fg("muted", ` [${scope}]`);
 			text += `\n  ${theme.fg("dim", preview)}`;
 			return new Text(text, 0, 0);
 		},
-
-		// -----------------------------------------------------------------------
-		// renderResult — show result in TUI
-		// -----------------------------------------------------------------------
 
 		renderResult(result, { expanded }, theme, _context) {
 			const details = result.details as SubagentDetails | undefined;
@@ -1212,10 +820,6 @@ export default function (pi: ExtensionAPI) {
 							container.addChild(new Markdown(finalOutput.trim(), 0, 0, mdTheme));
 						}
 					}
-					if (r.outputPath) {
-						container.addChild(new Spacer(1));
-						container.addChild(new Text(theme.fg("dim", `Output saved to: ${r.outputPath}`), 0, 0));
-					}
 					const usageStr = formatUsageStats(r.usage, r.model);
 					if (usageStr) {
 						container.addChild(new Spacer(1));
@@ -1227,12 +831,11 @@ export default function (pi: ExtensionAPI) {
 				let text = `${icon} ${theme.fg("toolTitle", theme.bold(r.agent))}${theme.fg("muted", ` (${r.agentSource})`)}`;
 				if (isError && r.stopReason) text += ` ${theme.fg("error", `[${r.stopReason}]`)}`;
 				if (isError && r.errorMessage) text += `\n${theme.fg("error", `Error: ${r.errorMessage}`)}`;
-				else if (displayItems.length === 0 && !r.outputPath) text += `\n${theme.fg("muted", "(no output)")}`;
+				else if (displayItems.length === 0) text += `\n${theme.fg("muted", "(no output)")}`;
 				else {
 					text += `\n${renderDisplayItems(displayItems, COLLAPSED_ITEM_COUNT)}`;
 					if (displayItems.length > COLLAPSED_ITEM_COUNT) text += `\n${theme.fg("muted", "(Ctrl+O to expand)")}`;
 				}
-				if (r.outputPath) text += `\n${theme.fg("dim", `Output: ${r.outputPath}`)}`;
 				const usageStr = formatUsageStats(r.usage, r.model);
 				if (usageStr) text += `\n${theme.fg("dim", usageStr)}`;
 				return new Text(text, 0, 0);
@@ -1283,6 +886,7 @@ export default function (pi: ExtensionAPI) {
 						);
 						container.addChild(new Text(theme.fg("muted", "Task: ") + theme.fg("dim", r.task), 0, 0));
 
+						// Show tool calls
 						for (const item of displayItems) {
 							if (item.type === "toolCall") {
 								container.addChild(
@@ -1295,13 +899,10 @@ export default function (pi: ExtensionAPI) {
 							}
 						}
 
+						// Show final output as markdown
 						if (finalOutput) {
 							container.addChild(new Spacer(1));
 							container.addChild(new Markdown(finalOutput.trim(), 0, 0, mdTheme));
-						}
-
-						if (r.outputPath) {
-							container.addChild(new Text(theme.fg("dim", `Output: ${r.outputPath}`), 0, 0));
 						}
 
 						const stepUsage = formatUsageStats(r.usage, r.model);
@@ -1316,6 +917,7 @@ export default function (pi: ExtensionAPI) {
 					return container;
 				}
 
+				// Collapsed view
 				let text =
 					icon +
 					" " +
@@ -1325,9 +927,8 @@ export default function (pi: ExtensionAPI) {
 					const rIcon = r.exitCode === 0 ? theme.fg("success", "✓") : theme.fg("error", "✗");
 					const displayItems = getDisplayItems(r.messages);
 					text += `\n\n${theme.fg("muted", `─── Step ${r.step}: `)}${theme.fg("accent", r.agent)} ${rIcon}`;
-					if (displayItems.length === 0 && !r.outputPath) text += `\n${theme.fg("muted", "(no output)")}`;
+					if (displayItems.length === 0) text += `\n${theme.fg("muted", "(no output)")}`;
 					else text += `\n${renderDisplayItems(displayItems, 5)}`;
-					if (r.outputPath) text += `\n${theme.fg("dim", `Output: ${r.outputPath}`)}`;
 				}
 				const usageStr = formatUsageStats(aggregateUsage(details.results));
 				if (usageStr) text += `\n\n${theme.fg("dim", `Total: ${usageStr}`)}`;
@@ -1370,6 +971,7 @@ export default function (pi: ExtensionAPI) {
 						);
 						container.addChild(new Text(theme.fg("muted", "Task: ") + theme.fg("dim", r.task), 0, 0));
 
+						// Show tool calls
 						for (const item of displayItems) {
 							if (item.type === "toolCall") {
 								container.addChild(
@@ -1382,13 +984,10 @@ export default function (pi: ExtensionAPI) {
 							}
 						}
 
+						// Show final output as markdown
 						if (finalOutput) {
 							container.addChild(new Spacer(1));
 							container.addChild(new Markdown(finalOutput.trim(), 0, 0, mdTheme));
-						}
-
-						if (r.outputPath) {
-							container.addChild(new Text(theme.fg("dim", `Output: ${r.outputPath}`), 0, 0));
 						}
 
 						const taskUsage = formatUsageStats(r.usage, r.model);
@@ -1403,6 +1002,7 @@ export default function (pi: ExtensionAPI) {
 					return container;
 				}
 
+				// Collapsed view (or still running)
 				let text = `${icon} ${theme.fg("toolTitle", theme.bold("parallel "))}${theme.fg("accent", status)}`;
 				for (const r of details.results) {
 					const rIcon =
@@ -1413,12 +1013,9 @@ export default function (pi: ExtensionAPI) {
 								: theme.fg("success", "✓");
 					const displayItems = getDisplayItems(r.messages);
 					text += `\n\n${theme.fg("muted", "─── ")}${theme.fg("accent", r.agent)} ${rIcon}`;
-					if (displayItems.length === 0 && !r.outputPath) {
+					if (displayItems.length === 0)
 						text += `\n${theme.fg("muted", r.exitCode === -1 ? "(running...)" : "(no output)")}`;
-					} else {
-						text += `\n${renderDisplayItems(displayItems, 5)}`;
-					}
-					if (r.outputPath) text += `\n${theme.fg("dim", `Output: ${r.outputPath}`)}`;
+					else text += `\n${renderDisplayItems(displayItems, 5)}`;
 				}
 				if (!isRunning) {
 					const usageStr = formatUsageStats(aggregateUsage(details.results));
