@@ -136,7 +136,7 @@ GitHub 同步完成
    tar czf "$SNAPSHOT_PATH" \
      -C ~ .pi/agent/settings.json .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/npm/package.json \
-         .pi/ctx-lite .pi/searxng/settings.yml
+         .pi/ctx-lite .pi/memory .pi/searxng/settings.yml .pi/scripts
    ```
 
 **阶段 3：解压**
@@ -363,6 +363,11 @@ GitHub 同步完成
 | 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
 | 调度脚本 | `scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
 | 调度安装脚本 | `scripts/install-cron.sh`、`scripts/install-systemd.sh` | crontab / systemd 安装 |
+| 生命周期脚本 | `scripts/pi-wrapper.sh` | 进程外生命周期管理器（自动重启） |
+| 生命周期安装脚本 | `scripts/install-wrapper.sh` | wrapper 安装/卸载 |
+| 生命周期直启脚本 | `scripts/pi-orig.sh` | 绕过 wrapper 直接启动（故障逃生） |
+| 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
+| SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
 
 
 ### 默认排除（`--full` 时额外包含）
@@ -381,6 +386,7 @@ GitHub 同步完成
 | 扩展 lock | `agent/extensions/*/package-lock.json` | 扩展 npm 锁定文件 | 由 `npm install` 生成 |
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
 | 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
+| 运行时状态 | `agent/.pi-admin-state.json` | pi-admin 重启状态标记 | 不可备份恢复 |
 
 ### 按需包含
 
@@ -399,4 +405,5 @@ GitHub 同步完成
 5. **重建超时**：`npm install` 在网络慢时可能超时。建议在网络稳定的环境下执行 `rebuild`。
 6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
 7. **调度任务文件**：`agent/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
+8. **wrapper 恢复**：如果备份中包含了 pi-admin 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
 
