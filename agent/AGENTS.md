@@ -26,10 +26,10 @@
 │       ├── package.json       npm 包声明
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
 │   ├── agents/                   agent 定义（子代理模板）
-│   │   ├── scout.md              Haiku 快速代码探测，返回压缩上下文
-│   │   ├── planner.md            实现计划生成（Sonnet）
+│   │   ├── scout.md              快速代码探测，返回压缩上下文
+│   │   ├── planner.md            实现计划生成
 │   │   ├── worker.md             通用执行 agent
-│   │   └── reviewer.md           代码审查（Sonnet）
+│   │   └── reviewer.md           代码审查
 │   └── prompts/                  工作流 prompt（子代理 chain 模板）
 │       ├── implement.md          完整实现流：scout→planner→worker
 │       ├── scout-and-plan.md     探测+计划：scout→planner

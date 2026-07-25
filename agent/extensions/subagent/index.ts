@@ -31,7 +31,7 @@ import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
 
 const MAX_PARALLEL_TASKS = 8;
-const MAX_CONCURRENCY = 4;
+const MAX_CONCURRENCY = 1; // 本地模型默认串行，多进程会竞争 GPU 内存
 const COLLAPSED_ITEM_COUNT = 10;
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
 
@@ -463,22 +463,21 @@ export default function (pi: ExtensionAPI) {
 		label: "Subagent",
 		promptSnippet: "Delegate tasks to specialized subagents for parallel/isolated work",
 		promptGuidelines: [
-			"Use `subagent` (with scout agent) for codebase exploration — it uses a cheap model and compressed output, keeping your context clean",
-			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) to reduce latency and token waste",
+			"Use `subagent` (with scout agent) for codebase exploration — it uses an isolated context and returns compressed output, keeping your context clean",
+			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) — tasks run 1 at a time by default to avoid resource contention",
 			"Use `subagent` chain mode for complex multi-step workflows (scout→planner→worker) — each step has an isolated context, avoiding context pollution",
 			"For pure research or exploration questions, delegate entirely to a scout agent and consume only its compressed summary",
 			"When context is getting large (>70% of limit), favor subagent delegation over reading more files yourself",
-			"Cheap model agents (scout with Haiku) are ~20x cheaper than Sonnet; use them for any task that doesn't need deep reasoning",
 		],
 		description: [
 			"Delegate tasks to specialized subagents with isolated context windows.",
 			"",
 			"When to use this tool:",
-			"- Codebase exploration: uses cheap models (Haiku) and returns compressed output",
-			"- Parallel work: run N independent searches/analyses simultaneously (up to 8 tasks, 4 concurrent)",
+			"- Codebase exploration: delegates to isolated context, returns compressed output",
+			"- Parallel work: run N independent searches/analyses (up to 8 tasks, runs 1 at a time by default to avoid resource contention)",
 			"- Multi-step workflows: chain agents together (scout→planner→worker) for complex implementations",
 			"- Heavy lifting: move large refactoring or batch changes to a sub-agent to keep main context clean",
-			"- Cost savings: delegate scoped tasks to cheaper models instead of using the main expensive model",
+			"- Context preservation: delegate scoped tasks to avoid polluting the main conversation with intermediate results",
 			"",
 			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
 			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,

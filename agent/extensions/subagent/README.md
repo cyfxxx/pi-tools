@@ -175,16 +175,18 @@ subagent({
 
 ### 任务级别模型覆盖
 
-Parallel 和 chain 中每个任务可指定 `model`，实现**分阶段选择模型**：
+Parallel 和 chain 中每个任务可指定 `model`，覆盖 agent 默认模型：
 
 ```
 subagent({
   chain: [
-    { agent: "scout",   task: "...", model: "claude-haiku" },
-    { agent: "planner", task: "...", model: "claude-sonnet" },
+    { agent: "scout",   task: "..." },      // 使用 agent 默认模型
+    { agent: "planner", task: "..." },      // 使用 agent 默认模型
   ]
 })
 ```
+
+默认所有 agent 使用 `settings.json` 中配置的主模型。如需指定，在 agent YAML 中加 `model:` 字段。
 
 ---
 
@@ -208,8 +210,6 @@ Agent 定义是带 YAML frontmatter 的 Markdown 文件：
 name: my-agent
 description: What this agent does
 tools: read, grep, find, ls
-model: claude-haiku-4-5
-fallback_models: google/gemini-3-flash, openai/gpt-5-mini
 ---
 
 You are a specialized agent. Your system prompt goes here.
@@ -222,17 +222,19 @@ You are a specialized agent. Your system prompt goes here.
 | `name` | 是 | Agent 名称，用于 `subagent({ agent: "name" })` |
 | `description` | 是 | 用途描述 |
 | `tools` | 否 | 工具白名单（逗号分隔，默认全部） |
-| `model` | 否 | 使用的模型（默认 pi 的默认模型） |
-| `fallback_models` | 否 | 备用模型列表。主模型返回 LLM 错误（API 超时/限流/服务器错误）时自动降级。进程崩溃/内存溢出不重试 |
+| `model` | 否 | 指定模型 ID。省略则使用 `settings.json` 中的主模型 |
+| `fallback_models` | 否 | 备用模型列表，主模型不可用时自动降级 |
 
 ### 内置 agent
 
-| Agent | 角色 | 工具 | 模型 |
-|-------|------|------|------|
-| **scout** | 侦察兵 | read, grep, find, ls, bash | Haiku（快速/便宜） |
-| **planner** | 参谋长 | read, grep, find, ls（只读） | Sonnet（强推理） |
-| **worker** | 执行者 | 全部（默认） | Sonnet |
-| **reviewer** | 质检员 | read, grep, find, ls, bash | Sonnet |
+| Agent | 角色 | 工具 |
+|-------|------|------|
+| **scout** | 侦察兵 | read, grep, find, ls, bash |
+| **planner** | 参谋长 | read, grep, find, ls（只读） |
+| **worker** | 执行者 | 全部（默认） |
+| **reviewer** | 质检员 | read, grep, find, ls, bash |
+
+所有 agent 默认使用 `settings.json` 中配置的主模型。如需指定模型，在 agent YAML 前加 `model:` 字段。
 
 ### Agent 来源目录
 
