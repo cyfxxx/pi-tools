@@ -30,6 +30,9 @@ searxng/venv/
 # searxng: 原始开源项目
 searxng/repo/
 
+# pi-admin 运行时状态文件
+agent/.pi-admin-state.json
+
 # 日志文件
 *.log
 
