@@ -1,8 +1,16 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
-	pi.on("before_agent_start", async (event) => {
-		const delegationAdvice = `## Proactive Delegation
+	pi.on("before_agent_start", async (event, ctx) => {
+		const usage = ctx.getContextUsage();
+		let tokenHint = "";
+		if (usage && usage.tokens !== null && usage.contextWindow > 0) {
+			const remaining = usage.contextWindow - usage.tokens;
+			const pct = Math.round((usage.tokens / usage.contextWindow) * 100);
+			tokenHint = `\n[Context: ${usage.tokens.toLocaleString()} / ${usage.contextWindow.toLocaleString()} tokens (${pct}%). ~${remaining.toLocaleString()} tokens remain. If context is tight, delegate aggressively to subagents.]`;
+		}
+
+		const delegationAdvice = `## Proactive Delegation${tokenHint}
 
 You have access to \`subagent\` tool with specialized agents (scout, planner, worker, reviewer). Use them proactively:
 
