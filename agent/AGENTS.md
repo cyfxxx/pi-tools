@@ -25,6 +25,15 @@
 │   └── npm/
 │       ├── package.json       npm 包声明
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
+│   ├── agents/                   agent 定义（子代理模板）
+│   │   ├── scout.md              Haiku 快速代码探测，返回压缩上下文
+│   │   ├── planner.md            实现计划生成（Sonnet）
+│   │   ├── worker.md             通用执行 agent
+│   │   └── reviewer.md           代码审查（Sonnet）
+│   └── prompts/                  工作流 prompt（子代理 chain 模板）
+│       ├── implement.md          完整实现流：scout→planner→worker
+│       ├── scout-and-plan.md     探测+计划：scout→planner
+│       └── implement-and-review.md  实现+审查：worker→reviewer→worker
 ├── ctx-lite/                  ctx-lite 运行时数据（checkpoints）
 │   └── checkpoints/           笔记检查点
 ├── memory/                    pi-memory 运行时数据
@@ -37,7 +46,10 @@
 │   ├── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
 │   ├── pi-cron.sh             pi-scheduler 离线执行包装脚本
 │   ├── install-cron.sh        安装 crontab 条目
-│   └── install-systemd.sh     安装 systemd timer（备选）
+│   ├── install-systemd.sh     安装 systemd timer（备选）
+│   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启）
+│   ├── install-wrapper.sh     wrapper 安装/卸载
+│   └── pi-orig.sh             绕过 wrapper 直启（故障逃生）
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
