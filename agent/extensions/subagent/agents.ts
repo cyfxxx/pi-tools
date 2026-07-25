@@ -4,7 +4,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
+import { CONFIG_DIR_NAME, getAgentDir, parseFrontmatter } from "@earendil-works/pi-coding-agent";
 
 export type AgentScope = "user" | "project" | "both";
 
@@ -13,7 +13,6 @@ export interface AgentConfig {
 	description: string;
 	tools?: string[];
 	model?: string;
-	fallbackModels?: string[];
 	systemPrompt: string;
 	source: "user" | "project";
 	filePath: string;
@@ -61,17 +60,11 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			.map((t: string) => t.trim())
 			.filter(Boolean);
 
-		const fallbackModels = frontmatter.fallback_models
-			?.split(",")
-			.map((t: string) => t.trim())
-			.filter(Boolean);
-
 		agents.push({
 			name: frontmatter.name,
 			description: frontmatter.description,
 			tools: tools && tools.length > 0 ? tools : undefined,
 			model: frontmatter.model,
-			fallbackModels: fallbackModels && fallbackModels.length > 0 ? fallbackModels : undefined,
 			systemPrompt: body,
 			source,
 			filePath,
@@ -89,17 +82,10 @@ function isDirectory(p: string): boolean {
 	}
 }
 
-const DISCOVERY_CACHE_TTL = 5000;
-const discoveryCache = new Map<string, { result: AgentDiscoveryResult; timestamp: number }>();
-
-export function invalidateDiscoveryCache(): void {
-	discoveryCache.clear();
-}
-
 function findNearestProjectAgentsDir(cwd: string): string | null {
 	let currentDir = cwd;
 	while (true) {
-		const candidate = path.join(currentDir, ".pi", "agents");
+		const candidate = path.join(currentDir, CONFIG_DIR_NAME, "agents");
 		if (isDirectory(candidate)) return candidate;
 
 		const parentDir = path.dirname(currentDir);
@@ -109,12 +95,6 @@ function findNearestProjectAgentsDir(cwd: string): string | null {
 }
 
 export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryResult {
-	const cacheKey = `${cwd}:${scope}`;
-	const cached = discoveryCache.get(cacheKey);
-	if (cached && Date.now() - cached.timestamp < DISCOVERY_CACHE_TTL) {
-		return cached.result;
-	}
-
 	const userDir = path.join(getAgentDir(), "agents");
 	const projectAgentsDir = findNearestProjectAgentsDir(cwd);
 
@@ -132,16 +112,7 @@ export function discoverAgents(cwd: string, scope: AgentScope): AgentDiscoveryRe
 		for (const agent of projectAgents) agentMap.set(agent.name, agent);
 	}
 
-	const result: AgentDiscoveryResult = { agents: Array.from(agentMap.values()), projectAgentsDir };
-	discoveryCache.set(cacheKey, { result, timestamp: Date.now() });
-	return result;
-}
-
-export function formatAgentListDetailed(agents: AgentConfig[]): string {
-	if (agents.length === 0) {
-		return 'No agents found. Place .md agent files in ~/.pi/agent/agents/ (user) or .pi/agents/ (project)';
-	}
-	return agents.map((a) => `${a.name} (${a.source}): ${a.description}`).join("; ");
+	return { agents: Array.from(agentMap.values()), projectAgentsDir };
 }
 
 export function formatAgentList(agents: AgentConfig[], maxItems: number): { text: string; remaining: number } {
