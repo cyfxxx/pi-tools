@@ -20,8 +20,20 @@
 │   │   ├── pi-scheduler/      定时任务（interval / cron / once + 离线唤醒）
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
+│   │   ├── pi-admin/          自管理（切换模型/会话/重启）
 │   │   ├── pi-memory/         跨会话持久记忆
-│   │   └── subagent/          子代理
+│   │   ├── subagent/          子代理（delegate 给专门 agent）
+│   │   ├── pi-router/         before_agent_start 注入主动路由策略 + token 预算
+│   │   └── pi-context-efficiency/  token 优化（thinking 剥离/context 过滤/输出截断）
+│   ├── agents/                agent 定义（子代理模板）
+│   │   ├── scout.md           Haiku 快速代码探测，返回压缩上下文
+│   │   ├── planner.md         实现计划生成（Sonnet）
+│   │   ├── worker.md          通用执行 agent
+│   │   └── reviewer.md        代码审查（Sonnet）
+│   ├── prompts/               工作流 prompt（子代理 chain 模板）
+│   │   ├── implement.md       完整实现流：scout→planner→worker
+│   │   ├── scout-and-plan.md  探测+计划：scout→planner
+│   │   └── implement-and-review.md  实现+审查：worker→reviewer→worker
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   中文翻译
 │   │   └── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
@@ -40,7 +52,10 @@
 │   ├── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
 │   ├── pi-cron.sh             pi-scheduler 离线执行包装脚本
 │   ├── install-cron.sh        安装 crontab 条目
-│   └── install-systemd.sh     安装 systemd timer（备选）
+│   ├── install-systemd.sh     安装 systemd timer（备选）
+│   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启）
+│   ├── install-wrapper.sh     wrapper 安装/卸载
+│   └── pi-orig.sh             绕过 wrapper 直启（故障逃生）
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
@@ -150,6 +165,94 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 
 **安装：** 零外部依赖，注册到 `settings.json` 后即生效。无需额外安装步骤。
 
+## 子代理（subagent）
+
+`subagent` 扩展提供将任务委托给专门 agent 的能力，每个子代理运行在独立 `pi` 进程中，拥有隔离的上下文窗口。
+
+### Agent 定义
+
+| Agent | 模型 | 工具 | 用途 |
+|-------|------|------|------|
+| `scout` | Haiku（~20x 比主模型便宜） | read, grep, find, ls, bash | 快速代码探测，返回压缩后的上下文摘要 |
+| `planner` | Sonnet | read, grep, find, ls | 根据上下文生成实现计划 |
+| `worker` | Sonnet | 全部 | 通用执行 agent，处理实际修改 |
+| `reviewer` | Sonnet | read, grep, find, ls, bash | 代码审查，评估质量和安全性 |
+
+### 三种调用模式
+
+```json
+// 单 agent
+{ "agent": "scout", "task": "Find all authentication code" }
+
+// 并行（最多 8 任务，4 并发）
+{ "tasks": [
+  { "agent": "scout", "task": "Find models" },
+  { "agent": "scout", "task": "Find providers" }
+]}
+
+// 链式（{previous} 占位符传递上一步输出）
+{ "chain": [
+  { "agent": "scout", "task": "Find all code for X" },
+  { "agent": "planner", "task": "Plan improvements using: {previous}" },
+  { "agent": "worker", "task": "Implement: {previous}" }
+]}
+```
+
+### 工作流 Prompt
+
+通过 `/implement <query>`、`/scout-and-plan <query>`、`/implement-and-review <query>` 快速启动预定义 chain 流程。
+
+### 为什么子代理能省钱
+
+`scout` 使用 Haiku 模型，价格约为主模型（Sonnet）的 1/20。它将代码探测结果压缩为结构化摘要，主 agent 只需消费摘要而非原始文件。在需要探索多个文件时，总成本可降低 **5-10x**。
+
+## 主动路由（pi-router）
+
+`pi-router` 通过 `before_agent_start` 事件，在每轮 LLM 调用前自动注入两段内容到 system prompt：
+
+### 主动路由策略表
+
+告诉模型何时使用子代理、何时并行、何时 chain，包含具体决策启发式规则（"如果 context > 70% 就 delegate"）。
+
+### 实时 Token 预算
+
+```
+[Context: 45,000 / 128,000 tokens (35%). ~83,000 tokens remain.]
+```
+
+模型看到实时占用率后，会更主动选择 delegate 到子代理来节省主 context 空间。
+
+**依赖：** 需要 `subagent` 扩展和 agent 定义配合。
+
+## 上下文优化（pi-context-efficiency）
+
+全程零用户感知的 token 节省层。注册 5 个事件处理器：
+
+| # | Hook | 作用 | 节省量 |
+|---|------|------|--------|
+| R1 | `message_end` | 剥离 assistant 的 thinking 块，不存入会话历史 | 50-80% 每轮 assistant 消息 |
+| R2 | `context` | compaction summary 去重，只留最新一份 | 500-1500 tokens/turn |
+| R3 | `context` | 旧 turn（>2 轮）的 thinking 块剪枝 | 10-50% 旧 assistant 消息 |
+| R4 | `tool_result` | bash/read 输出 >5000 字符时截断 | 50-80% 工具结果 |
+| R6 | `input` | `/ping` 免 LLM 响应 | 单次完全省掉 |
+
+R1 不影响当前轮显示，仅阻止 thinking 进入后续 context。R4 仅当输出 >5000 字符时生效。
+
+## Wrapper 生命周期
+
+`pi-wrapper.sh` 是进程外生命周期管理器，确保 Pi 在崩溃后自动重启：
+
+```
+pi（bash wrapper）→ pi-wrapper.sh → node cli.js
+```
+
+- **`pi-wrapper.sh`** — 检测目标 `cli.js`（优先通过 `pi-original` 符号链接，兜底硬编码路径），以 `node cli.js` 方式启动 Pi。崩溃后按递增间隔自动重试（1s → 5s → 15s → 30s → 60s）。
+- **`install-wrapper.sh`** — 安装/卸载 wrapper。安装时把原 `pi` 命令重命名为 `pi-original`，将 wrapper 脚本放置为 `pi`。
+- **`pi-orig.sh`** — 绕过 wrapper 直接启动（故障逃生口）。
+- **`.bash_aliases`** — 提供 `pic`（继续会话）、`pir`（重启会话）、`piorg`（直启）三个便捷别名。
+
+**安装：** `bash scripts/install-wrapper.sh`
+
 ## ⚠ 安全注意事项
 
 ### 密钥文件（永远不要提交到 git）
@@ -176,6 +279,7 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 ```bash
 git clone https://github.com/cyfxxx/pi-tools.git ~/.pi
 cd ~/.pi && bash scripts/rebuild.sh --yes
+bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 ```
 
 `rebuild.sh` 会自动完成全部依赖重建（系统工具安装、npm install、venv 创建、二进制下载等）。
