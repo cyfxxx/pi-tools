@@ -26,10 +26,10 @@
 │   │   ├── pi-router/         before_agent_start 注入主动路由策略 + token 预算
 │   │   └── pi-context-efficiency/  token 优化（thinking 剥离/context 过滤/输出截断）
 │   ├── agents/                agent 定义（子代理模板）
-│   │   ├── scout.md           Haiku 快速代码探测，返回压缩上下文
-│   │   ├── planner.md         实现计划生成（Sonnet）
-│   │   ├── worker.md          通用执行 agent
-│   │   └── reviewer.md        代码审查（Sonnet）
+│   │   ├── scout.md              快速代码探测，返回压缩上下文
+│   │   ├── planner.md            实现计划生成
+│   │   ├── worker.md             通用执行 agent
+│   │   └── reviewer.md           代码审查
 │   ├── prompts/               工作流 prompt（子代理 chain 模板）
 │   │   ├── implement.md       完整实现流：scout→planner→worker
 │   │   ├── scout-and-plan.md  探测+计划：scout→planner
@@ -171,12 +171,12 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 
 ### Agent 定义
 
-| Agent | 模型 | 工具 | 用途 |
-|-------|------|------|------|
-| `scout` | Haiku（~20x 比主模型便宜） | read, grep, find, ls, bash | 快速代码探测，返回压缩后的上下文摘要 |
-| `planner` | Sonnet | read, grep, find, ls | 根据上下文生成实现计划 |
-| `worker` | Sonnet | 全部 | 通用执行 agent，处理实际修改 |
-| `reviewer` | Sonnet | read, grep, find, ls, bash | 代码审查，评估质量和安全性 |
+| Agent | 工具 | 用途 |
+|-------|------|------|
+| `scout` | read, grep, find, ls, bash | 快速代码探测，返回压缩后的上下文摘要 |
+| `planner` | read, grep, find, ls | 根据上下文生成实现计划 |
+| `worker` | 全部 | 通用执行 agent，处理实际修改 |
+| `reviewer` | read, grep, find, ls, bash | 代码审查，评估质量和安全性 |
 
 ### 三种调用模式
 
@@ -184,7 +184,7 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 // 单 agent
 { "agent": "scout", "task": "Find all authentication code" }
 
-// 并行（最多 8 任务，4 并发）
+// 并行（最多 8 任务，默认串行）
 { "tasks": [
   { "agent": "scout", "task": "Find models" },
   { "agent": "scout", "task": "Find providers" }
@@ -204,7 +204,12 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 
 ### 为什么子代理能省钱
 
-`scout` 使用 Haiku 模型，价格约为主模型（Sonnet）的 1/20。它将代码探测结果压缩为结构化摘要，主 agent 只需消费摘要而非原始文件。在需要探索多个文件时，总成本可降低 **5-10x**。
+子代理使用独立上下文窗口，主 agent 只需消费压缩后的摘要而非原始文件。在需要探索多个文件或执行独立任务时，隔离上下文避免了主 context 膨胀，变相降低 token 消耗。
+
+### 注意事项
+
+- 所有 agent 默认使用 `settings.json` 中配置的主模型，无需单独指定
+- 并行模式默认串行执行（`MAX_CONCURRENCY=1`），避免多进程竞争 GPU 内存。如需并行，修改 `agent/extensions/subagent/index.ts` 中的 `MAX_CONCURRENCY`
 
 ## 主动路由（pi-router）
 
