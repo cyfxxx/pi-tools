@@ -16,7 +16,9 @@
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
 │   │   ├── pi-memory/         跨会话持久记忆
-│   │   └── subagent/          子代理
+│   │   ├── subagent/          子代理（delegate 给专门 agent）
+│   │   ├── pi-router/         before_agent_start 注入主动路由策略
+│   │   └── pi-context-efficiency/  token 优化（thinking 剥离/context 过滤/输出截断）
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   tui 中文翻译
 │   │   └── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
