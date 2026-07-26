@@ -5,7 +5,7 @@
 # 用法: ./pi-wrapper.sh [pi 参数...]
 # 安装: ./install-wrapper.sh (会备份原 pi 命令，替换为 wrapper)
 
-set -e
+# 手动处理关键路径的错误，不使用 set -e
 
 # 找到原始 pi CLI 的 JS 入口（绕过 wrapper 防循环）
 # 不能直接执行 pi-original symlink，因为 Node 拒绝非 .js 扩展名
@@ -140,6 +140,9 @@ STATEEOF
 
 init_state_file
 
+# Save original args for restart reuse
+ORIG_ARGS="$@"
+
 while true; do
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
@@ -166,8 +169,10 @@ while true; do
   # Reset state (preserve restartLog for extension on next startup)
   reset_state_preserve_log
 
-  # Build extra CLI args for the restart
+  # Reset extra args each iteration to avoid accumulation
   EXTRA_ARGS=()
+  # Unset old target vars
+  unset TARGET_SESSION TARGET_MODEL
 
   if [ "$ACTION" = "switch_session" ] && [ -n "$TARGET_SESSION" ]; then
     EXTRA_ARGS+=(--session "$TARGET_SESSION")
@@ -183,11 +188,11 @@ while true; do
     echo "[pi-wrapper] 目标: 恢复最近会话" >&2
   fi
 
-  echo "[pi-wrapper] ${EXIT_CODE} 秒后重启..." >&2
+  echo "[pi-wrapper] 1 秒后重启..." >&2
   sleep 1
 
-  # Merge original args with extra args
-  set -- "$@" "${EXTRA_ARGS[@]}"
+  # Merge original args with extra args (fresh per iteration)
+  set -- "$ORIG_ARGS" "${EXTRA_ARGS[@]}"
 done
 
 exit "$EXIT_CODE"

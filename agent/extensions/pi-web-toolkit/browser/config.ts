@@ -4,11 +4,11 @@ export function buildBrowserConfig(ext: Record<string, unknown>): Partial<{ brow
   const r: Partial<{ browser: BrowserConfig }> = {}
   const b: Record<string, unknown> = {}
   if (ext.headless != null) b.headless = ext.headless
-  if (ext.viewport_width) b.viewport_width = ext.viewport_width
-  if (ext.viewport_height) b.viewport_height = ext.viewport_height
-  if (ext.fingerprint_seed) b.fingerprint_seed = ext.fingerprint_seed
-  if (ext.proxy) b.proxy = ext.proxy
-  if (ext.data_dir) b.data_dir = ext.data_dir
+  if (ext.viewport_width != null) b.viewport_width = ext.viewport_width
+  if (ext.viewport_height != null) b.viewport_height = ext.viewport_height
+  if (ext.fingerprint_seed != null) b.fingerprint_seed = ext.fingerprint_seed
+  if (ext.proxy != null) b.proxy = ext.proxy
+  if (ext.data_dir != null) b.data_dir = ext.data_dir
   if (Object.keys(b).length > 0) r.browser = b as unknown as BrowserConfig
   return r
 }

@@ -82,6 +82,7 @@ export default async function (pi: ExtensionAPI) {
           : text
         const result = pruneToolOutput(truncated, "fetch_url")
         recordOutput("fetch_url", result.length)
+        recordToolUsage("fetch_url", estimateTokens(result.length))
         return { content: [{ type: "text", text: result }] }
       } catch (e) {
         return { content: [{ type: "text", text: `请求失败: ${(e as Error).message}` }] }
@@ -109,6 +110,7 @@ export default async function (pi: ExtensionAPI) {
       const text = await searchDirect(query, maxResults)
       const result = pruneToolOutput(text, "web_fetch")
       recordOutput("web_fetch", result.length)
+      recordToolUsage("web_fetch", estimateTokens(result.length))
       return { content: [{ type: "text", text: result }] }
     },
   })

@@ -1,4 +1,4 @@
-import { readFile, writeFile, rename, mkdir, unlink } from 'node:fs/promises'
+import { readFile, writeFile, rename, mkdir, unlink, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -32,6 +32,24 @@ function emptyStore(): TaskStore {
 export async function acquireSessionLock(): Promise<boolean> {
   const lockF = lockPath()
   const myPid = String(process.pid)
+
+  // 检查是否存在陈旧锁（持有锁的进程已死）
+  if (existsSync(lockF)) {
+    try {
+      const oldPid = (await readFile(lockF, 'utf-8')).trim()
+      if (oldPid && oldPid !== myPid) {
+        try {
+          await stat(`/proc/${oldPid}`)
+          // 进程仍存活，锁被其他实例持有
+          return false
+        } catch {
+          // /proc/${oldPid} 不存在 → 进程已死，清理陈旧锁
+          await unlink(lockF).catch(() => {})
+        }
+      }
+    } catch { /* 读锁文件失败，覆盖之 */ }
+  }
+
   try {
     await writeFile(lockF + '.tmp', myPid, 'utf-8')
     await rename(lockF + '.tmp', lockF)

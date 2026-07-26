@@ -65,7 +65,9 @@ describe('index (entry point)', () => {
     expect(toolNames).toContain('browser_extract')
     expect(toolNames).toContain('browser_evaluate')
     expect(toolNames).toContain('browser_close')
-    expect(registeredTools.length).toBeGreaterThanOrEqual(9)
+    expect(toolNames).toContain('fetch_url')
+    expect(toolNames).toContain('web_fetch')
+    expect(registeredTools.length).toBeGreaterThanOrEqual(11)
 
     expect(lifecycleHandlers['session_shutdown']).toBeDefined()
     expect(lifecycleHandlers['session_compact']).toBeDefined()

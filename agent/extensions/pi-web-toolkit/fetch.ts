@@ -1,9 +1,12 @@
 export async function searchDirect(query: string, maxResults = 5): Promise<string> {
   const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}`
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000)
   const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
-    signal: AbortSignal.timeout(10000),
-  })
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout))
+  if (!res) return '搜索失败: 请求超时'
   if (!res.ok) return `搜索失败: HTTP ${res.status}`
   const html = await res.text()
   const results: string[] = []
