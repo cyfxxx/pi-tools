@@ -50,4 +50,7 @@ agent/models.json
 .env
 .env.*
 
+# ctx-lite 运行时数据（笔记+检查点）
+ctx-lite/
+
 

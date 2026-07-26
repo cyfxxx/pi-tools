@@ -105,7 +105,7 @@ export function searchEntries(
 
   const keywords = query ? tokenize(query) : undefined
 
-  let scored = filtered.map(e => ({ entry: e, score: scoreEntry(e, keywords) }))
+  let scored = filtered.map((e, i) => ({ entry: e, score: scoreEntry(e, keywords), order: i }))
 
   if (keywords && keywords.length > 0) {
     const tokenSets = filtered.map(e => {
@@ -121,7 +121,13 @@ export function searchEntries(
   }
 
   return scored
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      const diff = b.score - a.score
+      if (diff !== 0) return diff
+      const t = new Date(b.entry.createdAt).getTime() - new Date(a.entry.createdAt).getTime()
+      if (t !== 0) return t
+      return b.order - a.order
+    })
     .slice(0, limit)
     .map(({ entry }) => entry)
 }
