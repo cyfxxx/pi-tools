@@ -42,4 +42,12 @@ agent/.pi-admin-state.json
 # searxng: 运行时 PID 文件
 searxng/searxng.pid
 
+# 代理配置（可能含 API Key）
+agent/settings.json
+agent/models.json
+
+# 环境变量文件（可能含密钥）
+.env
+.env.*
+
 

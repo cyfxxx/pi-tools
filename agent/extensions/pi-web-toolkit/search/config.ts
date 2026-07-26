@@ -3,8 +3,8 @@ import type { SearchConfig } from './types'
 export function buildSearchConfig(ext: Record<string, unknown>): Partial<{ search: SearchConfig }> {
   const r: Partial<{ search: SearchConfig }> = {}
   const s: { searxng_url?: string; timeout?: number } = {}
-  if (ext.searxng_url) s.searxng_url = ext.searxng_url as string
-  if (ext.search_timeout) s.timeout = ext.search_timeout as number
+  if (ext.searxng_url != null) s.searxng_url = String(ext.searxng_url)
+  if (ext.search_timeout != null) s.timeout = Number(ext.search_timeout)
   if (Object.keys(s).length > 0) r.search = s as SearchConfig
   return r
 }

@@ -28,13 +28,15 @@ function readConfigFromFile(): Partial<WebToolkitConfig> {
     if (!existsSync(p)) continue
     try {
       const raw = JSON.parse(readFileSync(p, 'utf-8'))
-      const ext = (raw?.extensions?.['pi-web-toolkit'] ?? raw?.['pi-web-toolkit']) as Record<string, unknown> | undefined
-      if (!ext) continue
+      const extRaw = raw?.extensions?.['pi-web-toolkit'] ?? raw?.['pi-web-toolkit']
+      if (!extRaw) continue
+
+      const ext = extRaw as Record<string, unknown>
 
       const searchPart = buildSearchConfig(ext)
       const browserPart = buildBrowserConfig(ext)
 
-      return { ...searchPart, ...browserPart }
+      return deepMerge({} as Partial<WebToolkitConfig>, { ...searchPart, ...browserPart })
     } catch {
       continue
     }
