@@ -74,7 +74,7 @@ export default async function (pi: ExtensionAPI) {
         })
         clearTimeout(timeout)
         if (!res.ok) {
-          return { content: [{ type: "text", text: `HTTP ${res.status}: ${res.statusText}` }] }
+          return { content: [{ type: "text", text: `HTTP ${res.status}: ${res.statusText}` }], details: {} }
         }
         const text = await res.text()
         const truncated = text.length > maxLength
@@ -82,10 +82,10 @@ export default async function (pi: ExtensionAPI) {
           : text
         const result = pruneToolOutput(truncated, "fetch_url")
         recordOutput("fetch_url", result.length)
-        recordToolUsage("fetch_url", estimateTokens(result.length))
-        return { content: [{ type: "text", text: result }] }
+        recordToolUsage("fetch_url", estimateTokens(result))
+        return { content: [{ type: "text", text: result }], details: {} }
       } catch (e) {
-        return { content: [{ type: "text", text: `请求失败: ${(e as Error).message}` }] }
+        return { content: [{ type: "text", text: `请求失败: ${(e as Error).message}` }], details: {} }
       }
     },
   })
@@ -110,8 +110,8 @@ export default async function (pi: ExtensionAPI) {
       const text = await searchDirect(query, maxResults)
       const result = pruneToolOutput(text, "web_fetch")
       recordOutput("web_fetch", result.length)
-      recordToolUsage("web_fetch", estimateTokens(result.length))
-      return { content: [{ type: "text", text: result }] }
+        recordToolUsage("web_fetch", estimateTokens(result))
+      return { content: [{ type: "text", text: result }], details: {} }
     },
   })
 
