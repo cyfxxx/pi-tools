@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { registerTools } from './tools.ts'
 import { registerCommands } from './commands.ts'
-import { consumeRestartLog, readState, writeState } from './state.ts'
+import { consumeRestartLog } from './state.ts'
 
 export default function piAdminExtension(pi: ExtensionAPI): void {
   registerTools(pi)
@@ -31,13 +31,6 @@ export default function piAdminExtension(pi: ExtensionAPI): void {
       } catch {
         // non-critical
       }
-    }
-  })
-
-  pi.on('session_shutdown', async () => {
-    const state = readState()
-    if (state.action !== 'none' && state.restartLog) {
-      writeState({ restartLog: null })
     }
   })
 }

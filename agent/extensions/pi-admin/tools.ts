@@ -265,14 +265,6 @@ export function registerTools(pi: ExtensionAPI): void {
     execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => {
       const reason = params.reason as string | undefined
 
-      const confirmed = ctx.hasUI
-        ? await ctx.ui.confirm('重启 Agent', `确认重启 Agent？${reason ? `原因: ${reason}` : ''}`)
-        : true
-
-      if (!confirmed) {
-        return { content: [{ type: 'text', text: '已取消重启' }] }
-      }
-
       writeRestartRequest('restart', { reason: reason || '用户请求重启' })
 
       try { ctx.shutdown() } catch { process.exit(0) }
