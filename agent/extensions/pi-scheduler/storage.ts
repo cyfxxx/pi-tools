@@ -2,27 +2,24 @@ import { readFile, writeFile, rename, mkdir, unlink, stat } from 'node:fs/promis
 import { existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { Task, TaskStore, SchedulerSettings } from './types.ts'
 import { STORE_VERSION, DEFAULT_MAX_RUN_TIME } from './types.ts'
 
-function agentDir(): string {
-  return process.env.PI_HOME
-    ? join(process.env.PI_HOME, 'agent')
-    : join(process.env.HOME || '/root', '.pi', 'agent')
-}
-
 let lockPid: string | null = null
 
+const AGENT_DIR = getAgentDir()
+
 export function tasksPath(): string {
-  return join(agentDir(), 'scheduled-tasks.json')
+  return join(AGENT_DIR, 'scheduled-tasks.json')
 }
 
 export function lockPath(): string {
-  return join(agentDir(), 'scheduler.lock')
+  return join(AGENT_DIR, 'scheduler.lock')
 }
 
 export function logDir(): string {
-  return join(agentDir(), '..', 'logs', 'scheduler')
+  return join(AGENT_DIR, '..', 'logs', 'scheduler')
 }
 
 function emptyStore(): TaskStore {

@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { readSettings, listAvailableModels, updateSettings, getSettingsPath } from './config.ts'
+import { readSettings, listAvailableModels, updateSettings, updateModelConfig, getSettingsPath, isSensitiveKey } from './config.ts'
 import { listSessions, resolveSession, getSessionsBaseDir } from './sessions.ts'
 import { writeRestartRequest } from './state.ts'
 
@@ -42,7 +42,7 @@ export function registerCommands(pi: ExtensionAPI): void {
   })
 
   pi.registerCommand('admin:session', {
-    description: '切换到指定会话。需要重启。',
+    description: '切换到指定会话。',
     usage: '/admin:session <sessionId|filePath>',
     handler: async (args, ctx) => {
       const target = args.trim()
@@ -57,18 +57,16 @@ export function registerCommands(pi: ExtensionAPI): void {
         return
       }
 
-      const confirmed = await ctx.ui.confirm(
-        '切换会话',
-        `切换到会话 ${session.sessionId}\n${session.filePath}？将重启 Agent。`,
-      )
-      if (!confirmed) return
-
       ctx.ui.notify(`正在切换到会话 ${session.sessionId}...`, 'info')
-      writeRestartRequest('switch_session', {
-        targetSession: session.filePath,
-        reason: `切换到会话 ${session.sessionId}`,
-      })
-      try { ctx.shutdown() } catch { process.exit(0) }
+      try {
+        ctx.switchSession?.(session.filePath)
+      } catch {
+        writeRestartRequest('switch_session', {
+          targetSession: session.filePath,
+          reason: `切换到会话 ${session.sessionId}`,
+        })
+        try { ctx.shutdown() } catch { process.exit(0) }
+      }
     },
   })
 
@@ -108,8 +106,11 @@ export function registerCommands(pi: ExtensionAPI): void {
       if (!confirmed) return
 
       ctx.ui.notify(`正在切换模型为 ${provider}/${model}...`, 'info')
-      updateSettings('defaultProvider', provider)
-      updateSettings('defaultModel', model)
+      const result = updateModelConfig(provider, model)
+      if (!result.success) {
+        ctx.ui.notify(result.error || '写入失败', 'error')
+        return
+      }
       writeRestartRequest('set_model', {
         targetProvider: provider,
         targetModel: model,
@@ -149,7 +150,7 @@ export function registerCommands(pi: ExtensionAPI): void {
         try { parsedValue = JSON.parse(value) } catch { /* keep as string */ }
       }
 
-      const sensitive = /key|token|secret|password|auth/i.test(key)
+      const sensitive = isSensitiveKey(key)
       if (sensitive) {
         const ok = await ctx.ui.confirm('修改敏感配置', `确认修改 "${key}" 为 ${JSON.stringify(parsedValue)}？`)
         if (!ok) return
@@ -162,6 +163,7 @@ export function registerCommands(pi: ExtensionAPI): void {
       }
 
       ctx.ui.notify(`已更新配置: ${key} = ${JSON.stringify(parsedValue)}`, 'success')
+      try { await ctx.reload() } catch { /* 忽略 reload 失败 */ }
     },
   })
 }

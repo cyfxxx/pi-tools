@@ -21,9 +21,11 @@ import type { Message } from "@earendil-works/pi-ai";
 import { StringEnum } from "@earendil-works/pi-ai";
 import {
 	CONFIG_DIR_NAME,
+	calculateContextTokens,
 	type ExtensionAPI,
 	getAgentDir,
 	getMarkdownTheme,
+	truncateHead,
 	withFileMutationQueue,
 } from "@earendil-works/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@earendil-works/pi-tui";
@@ -191,14 +193,9 @@ function getResultOutput(result: SingleResult): string {
 }
 
 function truncateParallelOutput(output: string): string {
-	const byteLength = Buffer.byteLength(output, "utf8");
-	if (byteLength <= PER_TASK_OUTPUT_CAP) return output;
-
-	let truncated = output.slice(0, PER_TASK_OUTPUT_CAP);
-	while (Buffer.byteLength(truncated, "utf8") > PER_TASK_OUTPUT_CAP) {
-		truncated = truncated.slice(0, -1);
-	}
-	return `${truncated}\n\n[Output truncated: ${byteLength - Buffer.byteLength(truncated, "utf8")} bytes omitted. Full output preserved in tool details.]`;
+	const result = truncateHead(output, { maxBytes: PER_TASK_OUTPUT_CAP });
+	if (!result.truncated) return output;
+	return `${result.content}\n\n[Output truncated: ${result.totalBytes - result.outputBytes} bytes omitted. Full output preserved in tool details.]`;
 }
 
 type DisplayItem = { type: "text"; text: string } | { type: "toolCall"; name: string; args: Record<string, any> };
@@ -209,7 +206,7 @@ function getDisplayItems(messages: Message[]): DisplayItem[] {
 		if (msg.role === "assistant") {
 			for (const part of msg.content) {
 				if (part.type === "text") items.push({ type: "text", text: part.text });
-				else if (part.type === "toolCall") items.push({ type: "toolCall", name: part.name, args: part.arguments });
+				else if (part.type === "toolCall") items.push({ type: "toolCall", name: part.name as string, args: part.arguments as Record<string, any> });
 			}
 		}
 	}
@@ -361,7 +358,7 @@ async function runSingleAgent(
 							currentResult.usage.cacheRead += usage.cacheRead || 0;
 							currentResult.usage.cacheWrite += usage.cacheWrite || 0;
 							currentResult.usage.cost += usage.cost?.total || 0;
-							currentResult.usage.contextTokens = usage.totalTokens || 0;
+							currentResult.usage.contextTokens = calculateContextTokens(usage);
 						}
 						if (!currentResult.model && msg.model) currentResult.model = msg.model;
 						if (msg.stopReason) currentResult.stopReason = msg.stopReason;
@@ -457,6 +454,16 @@ const SubagentParams = Type.Object({
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process (single mode)" })),
 });
 
+interface SubagentToolParams {
+	agent?: string;
+	task?: string;
+	tasks?: { agent: string; task: string; cwd?: string }[];
+	chain?: { agent: string; task: string; cwd?: string }[];
+	agentScope?: AgentScope;
+	confirmProjectAgents?: boolean;
+	cwd?: string;
+}
+
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "subagent",
@@ -485,7 +492,8 @@ export default function (pi: ExtensionAPI) {
 		].join("\n"),
 		parameters: SubagentParams,
 
-		async execute(_toolCallId, params, signal, onUpdate, ctx) {
+		async execute(_toolCallId, rawParams, signal, onUpdate, ctx) {
+			const params = rawParams as unknown as SubagentToolParams;
 			const agentScope: AgentScope = params.agentScope ?? "user";
 			const discovery = discoverAgents(ctx.cwd, agentScope);
 			const agents = discovery.agents;
@@ -713,7 +721,8 @@ export default function (pi: ExtensionAPI) {
 			};
 		},
 
-		renderCall(args, theme, _context) {
+		renderCall(rawArgs, theme, _context) {
+			const args = rawArgs as unknown as SubagentToolParams;
 			const scope: AgentScope = args.agentScope ?? "user";
 			if (args.chain && args.chain.length > 0) {
 				let text =

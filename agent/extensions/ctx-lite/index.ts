@@ -116,8 +116,9 @@ export default function (pi: ExtensionAPI) {
     async execute(_id, params, signal, _onUpdate, _ctx) {
       const maxOutput = params.max_output as number | undefined
       const cap = maxOutput === undefined ? 2000 : maxOutput === 0 ? Infinity : maxOutput
-      const { code, timeout = 30000 } = params
-      const language = params.language || detectLanguage(code)
+      const code = params.code as string
+      const timeout = (params.timeout as number | undefined) ?? 30000
+      const language = (params.language as string | undefined) || detectLanguage(code)
       const { stdout, stderr, status, error } = await execLanguageAsync(language, code, timeout, signal)
       if (error) {
         return {
@@ -162,7 +163,7 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_id, params, _signal, _onUpdate, _ctx) {
       const notes = loadNotes()
-      const rawKey = params.key
+      const rawKey = params.key as string
       let key = rawKey
       let ttl: string | undefined
 
@@ -191,7 +192,8 @@ export default function (pi: ExtensionAPI) {
         }
       }
 
-      notes[key] = params.value
+      const value = params.value as string
+      notes[key] = value
       // Set TTL if specified
       const ttlKey = `__ttl_${key}`
       if (ttl) {
@@ -203,7 +205,7 @@ export default function (pi: ExtensionAPI) {
 
       // Warn if total notes size is large
       const totalSize = getTotalSize(notes)
-      const valueKB = (params.value.length / 1024).toFixed(1)
+      const valueKB = (value.length / 1024).toFixed(1)
       let msg = `Saved note "${key}" (${valueKB} KB)`
       if (totalSize > MAX_NOTES_SIZE) {
         const sizeMB = (totalSize / (1024 * 1024)).toFixed(1)
@@ -226,13 +228,15 @@ export default function (pi: ExtensionAPI) {
     async execute(_id, params, _signal, _onUpdate, _ctx) {
       const notes = loadNotes()
       const allKeys = Object.keys(notes).filter((k) => !k.startsWith("__"))
-      const keys = params.prefix
-        ? allKeys.filter((k) => k.startsWith(params.prefix!))
+      const prefix = params.prefix as string | undefined
+      const keys = prefix
+        ? allKeys.filter((k) => k.startsWith(prefix))
         : allKeys
       if (keys.length === 0) {
         return { content: [{ type: "text", text: "(no notes)" }], details: {} }
       }
       const totalSize = getTotalSize(loadNotes())
+      const detail = params.detail === true
       const lines = keys.map((k) => {
         const v = notes[k]
         const size = v ? (v.length / 1024).toFixed(1) : "0"
@@ -240,7 +244,7 @@ export default function (pi: ExtensionAPI) {
         const ttlKey = `__ttl_${k}`
         const ttl = notes[ttlKey]
         const ttlStr = ttl ? ` [expires: ${ttl}]` : ""
-        if (params.detail) {
+        if (detail) {
           const val = v ? (v.length > 200 ? v.slice(0, 200) + "..." : v) : ""
           return `  ${k}  (${size} KB)${ttlStr}\n    ${val.replace(/\n/g, "\n    ")}`
         }
@@ -269,7 +273,7 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_id, params, _signal, _onUpdate, _ctx) {
       ensureDir()
-      const { name } = params
+      const name = params.name as string
 
       if (name === "list") {
         const files = readdirSync(CHECKPOINTS_DIR)

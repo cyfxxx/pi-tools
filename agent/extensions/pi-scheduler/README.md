@@ -7,7 +7,7 @@ Pi 定时任务扩展。按指定时间或间隔自动运行 agent 执行预设�
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  会话内（Pi 运行中）                                                 │
-│  extension scheduler.ts (30s 轮询) → 到期 → sendUserMessage / subagent│
+│  extension scheduler.ts (30s 轮询) → 到期 → sendUserMessage / pi -p 子进程│
 │  共享存储: agent/scheduled-tasks.json                                 │
 │  锁文件: agent/scheduler.lock (PID)                                   │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -276,5 +276,5 @@ rm -f agent/scheduler.lock
 |------|------|
 | pi-web-toolkit | 无冲突。调度任务可调用 web_search 等工具。 |
 | plan-mode | 无冲突。调度注入的用户消息不触发 plan-mode 的 tool_call 拦截。 |
-| subagent | 任务设 `useSubagent=true` 时通过 subagent 扩展执行。 |
+| subagent | 无直接依赖。任务设 `useSubagent=true` 时以独立 `pi -p <prompt>` 子进程执行（非 subagent 扩展工具）。 |
 | pi-backup | 备份清单包含 `scheduled-tasks.json` 和所有脚本。 |

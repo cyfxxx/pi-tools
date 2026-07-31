@@ -2,6 +2,7 @@ import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResul
 import type { BrowserConfig } from './types'
 import { BrowserManager } from './impl'
 import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
+import { estimateTokens } from '../../../lib/token-budget.ts'
 
 type RecordUsage = (name: string, tokens: number) => void
 
@@ -62,8 +63,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
         lines.push(`[全文 ${totalLen} 字符。使用 browser_extract 获取完整内容]`)
       }
       const resultText = lines.join('\n')
-      recordUsage('browser_navigate', estimateTokens(resultText))
-      return toolResult(resultText, "browser_navigate")
+      return toolResult(resultText, "browser_navigate", recordUsage)
     },
   })
 
@@ -104,8 +104,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       requirePage()
       const path = await browser.screenshot(params.full_page as boolean | undefined)
       const text = `截图已保存：\`${path}\`\n\n使用提示：观察截图中的目标元素位置，然后通过 browser_click 传入坐标进行点击。`
-      recordUsage('browser_screenshot', estimateTokens(text))
-      return toolResult(text, "browser_screenshot")
+      return toolResult(text, "browser_screenshot", recordUsage)
     },
   })
 
@@ -163,13 +162,11 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       if (x != null && y != null) {
         await browser.click(x, y, btn)
         const text = `已在坐标 (${x}, ${y}) 处点击。`
-        recordUsage('browser_click', estimateTokens(text))
-        return toolResult(text, "browser_click")
+        return toolResult(text, "browser_click", recordUsage)
       }
       await browser.clickSelector(sel!)
       const text = `已点击元素 "${sel}"。`
-      recordUsage('browser_click', estimateTokens(text))
-      return toolResult(text, "browser_click")
+      return toolResult(text, "browser_click", recordUsage)
     },
   })
 
@@ -204,8 +201,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
         ? `向 "${params.selector}" 输入了文本`
         : '在当前焦点元素输入了文本'
       const text = `${detail}（${(params.text as string).length} 字符）。`
-      recordUsage('browser_type', estimateTokens(text))
-      return toolResult(text, "browser_type")
+      return toolResult(text, "browser_type", recordUsage)
     },
   })
 
@@ -247,8 +243,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
         await browser.scroll(0, dir === 'up' ? -vh : Math.floor(vh * 0.8))
       }
       const text = `页面已${dir === 'up' ? '向上' : '向下'}滚动。`
-      recordUsage('browser_scroll', estimateTokens(text))
-      return toolResult(text, "browser_scroll")
+      return toolResult(text, "browser_scroll", recordUsage)
     },
   })
 
@@ -282,8 +277,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       requirePage()
       const content = await browser.extractContent(params.selector as string | undefined)
       const truncated = truncate(content, 8000)
-      recordUsage('browser_extract', estimateTokens(truncated))
-      return toolResult(truncated, "browser_extract")
+      return toolResult(truncated, "browser_extract", recordUsage)
     },
   })
 
@@ -315,8 +309,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
       const result = await browser.evaluate(params.script as string)
       const str = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)
       const truncated = truncate(str, 5000)
-      recordUsage('browser_evaluate', estimateTokens(truncated))
-      return toolResult(`执行结果：\n${truncated}`, "browser_evaluate")
+      return toolResult(`执行结果：\n${truncated}`, "browser_evaluate", recordUsage)
     },
   })
 
@@ -330,8 +323,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
     execute: async () => {
       await browser.close()
       const text = '浏览器实例已关闭，资源已释放。'
-      recordUsage('browser_close', estimateTokens(text))
-      return toolResult(text, "browser_close")
+      return toolResult(text, "browser_close", recordUsage)
     },
   })
 }
@@ -341,12 +333,9 @@ function truncate(s: string, max: number): string {
   return s.length <= max ? s : s.slice(0, max) + `\n\n…… [已截断，共 ${s.length} 字符]`
 }
 
-function toolResult(text: string, toolName: string): ToolResult {
+function toolResult(text: string, toolName: string, recordUsage?: RecordUsage): ToolResult {
   const result = pruneToolOutput(text, toolName)
   recordOutput(toolName, result.length)
+  if (recordUsage) recordUsage(toolName, estimateTokens(result))
   return { content: [{ type: 'text' as const, text: result }], details: {} }
-}
-
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 3.5)
 }

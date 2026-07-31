@@ -80,35 +80,4 @@ export class SessionScheduler {
       })
     })
   }
-
-  async checkMissedTasks(): Promise<{ name: string; result: string }[]> {
-    const logD = logDir()
-    const entries: { name: string; result: string }[] = []
-    try {
-      const { readdir, readFile } = await import('node:fs/promises')
-      const files = await readdir(logD).catch(() => [] as string[])
-      const unread = files
-        .filter(f => f.endsWith('.log') && !f.includes('.read'))
-        .sort()
-        .slice(-10)
-      for (const f of unread) {
-        const content = await readFile(join(logD, f), 'utf-8').catch(() => '')
-        const line = content.split('\n')[0] || f
-        const [name, result] = line.split('|')
-        entries.push({ name: name?.trim() || f, result: result?.trim() || 'unknown' })
-        try {
-          const { rename } = await import('node:fs/promises')
-          await rename(join(logD, f), join(logD, f + '.read'))
-        } catch { /* ignore */ }
-      }
-    } catch { /* ignore */ }
-    return entries
-  }
 }
-
-function logDir(): string {
-  const home = process.env.PI_HOME || join(process.env.HOME || '/root', '.pi')
-  return join(home, 'logs', 'scheduler')
-}
-
-import { join } from 'node:path'

@@ -1,16 +1,12 @@
 import { readdir, readFile, rename } from 'node:fs/promises'
 import { join } from 'node:path'
+import { logDir } from './storage.ts'
 
 export interface LogEntry {
   name: string
   result: string
   time: string
   output: string
-}
-
-function logDir(): string {
-  const home = process.env.PI_HOME || join(process.env.HOME || '/root', '.pi')
-  return join(home, 'logs', 'scheduler')
 }
 
 export async function collectOfflineExecutions(): Promise<LogEntry[]> {

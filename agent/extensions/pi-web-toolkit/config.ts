@@ -1,11 +1,9 @@
 import { readFileSync, existsSync } from 'fs'
-import { homedir } from 'os'
 import { join } from 'path'
+import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { WebToolkitConfig } from './types'
 import { buildSearchConfig, buildEnvSearchConfig } from './search/config'
 import { buildBrowserConfig, buildEnvBrowserConfig } from './browser/config'
-
-const PI_CONFIG_DIR = '.pi'
 
 const DEFAULT_CONFIG: WebToolkitConfig = {
   search: {
@@ -21,8 +19,8 @@ const DEFAULT_CONFIG: WebToolkitConfig = {
 
 function readConfigFromFile(): Partial<WebToolkitConfig> {
   const paths = [
-    join(homedir(), PI_CONFIG_DIR, 'agent', 'settings.json'),
-    join(process.cwd(), PI_CONFIG_DIR, 'settings.json'),
+    join(getAgentDir(), 'settings.json'),
+    join(process.cwd(), '.pi', 'settings.json'),
   ]
   for (const p of paths) {
     if (!existsSync(p)) continue

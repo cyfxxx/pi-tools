@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import type { MemoryEntry, MemoryCategory } from './types.ts'
-import { loadEntries, searchEntries } from './storage.ts'
+import { loadEntries, searchEntries, getTotalSize } from './storage.ts'
 import { registerTools } from './tools.ts'
 import { registerCommands } from './commands.ts'
 
@@ -51,10 +51,7 @@ export default function piMemoryExtension(pi: ExtensionAPI): void {
     const entries = loadEntries()
     warmMemories = searchEntries(entries, undefined, undefined, undefined, INJECTION_LIMIT)
 
-    const totalSize = entries.reduce(
-      (s, e) => s + Buffer.byteLength(e.title + e.content, 'utf-8'),
-      0,
-    )
+    const totalSize = getTotalSize(entries)
     const sizeMB = (totalSize / (1024 * 1024)).toFixed(1)
     if (entries.length > 0) {
       console.log(`[pi-memory] loaded ${entries.length} entries (${sizeMB} MB)`)

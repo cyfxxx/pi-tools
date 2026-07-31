@@ -99,32 +99,12 @@ subagent({ agent: "scout", task: "Find all authentication code" })
 | `agent` | string | 是 | Agent 名称 |
 | `task` | string | 是 | 任务描述 |
 | `cwd` | string | 否 | 工作目录 |
-| `async` | boolean | 否 | 后台运行，立即返回 run ID |
-| `output` | string | 否 | 保存结果到文件路径 |
 | `agentScope` | "user" / "project" / "both" | 否 | agent 来源（默认 "user"） |
 | `confirmProjectAgents` | boolean | 否 | 项目 agent 前确认（默认 true） |
-| `compress` | boolean | 否 | 是否压缩前一步输出（chain 模式，默认 `true`） |
-| `token_budget` | number | 否 | 上下文 token 预算上限，到达后自动截断 |
-
-### ② Single（异步） — async:true
-
-后台运行，立即返回，完成后通知：
-
-```
-subagent({ agent: "worker", task: "Refactor module X", async: true })
-// → 返回 run ID: a1b2c3d4e5f6
-// 完成后 TUI 弹出通知
-
-// 查状态：
-subagent({ action: "status" })
-subagent({ action: "status", id: "a1b2c3d4e5f6" })
-```
-
-**异步结果**持久化在 `~/.pi/subagent-async/<runId>/result.json`，重启不丢失。
 
 ### ③ Parallel（并行） — tasks[]
 
-多个 agent 并发执行（最大 8 个，4 并发）：
+多个 agent 并发执行（最大 8 个，1 并发）：
 
 ```
 subagent({
@@ -137,7 +117,7 @@ subagent({
 
 **并发控制**：
 - `MAX_PARALLEL_TASKS = 8` — 最大任务数
-- `MAX_CONCURRENCY = 4` — 同时运行数
+- `MAX_CONCURRENCY = 1` — 本地模型默认串行，避免多进程竞争 GPU 内存
 - 每任务输出截断到 **50 KB**（完整结果在 tool details 中）
 
 **结果格式**：
@@ -160,18 +140,16 @@ Provider files found: src/providers/oauth.ts, ...
 ```
 subagent({
   chain: [
-    { agent: "scout",   task: "Find auth code", output: "auth-context.md" },
-    { agent: "planner", task: "Plan refactor using:\n{previous}", compress: true },
-    { agent: "worker",  task: "Implement:\n{previous}", token_budget: 4000 },
+    { agent: "scout",   task: "Find auth code" },
+    { agent: "planner", task: "Plan refactor using:\n{previous}" },
+    { agent: "worker",  task: "Implement:\n{previous}" },
   ]
 })
 ```
 
 - 任一步失败 → 立即停止，报告失败步骤
-- 成功步骤的输出保存到 `output` 指定的文件
 - 后续步骤引用前步输出
-- **自动压缩**：每步执行时，`{previous}` 替换内容自动压缩至约 2000 字符（`compress:true`，默认），保留首尾关键信息
-- **Token 预算**：`token_budget` 指定该步上下文预算上限，超限时自动截断输出
+- **chain 输出控制**：`{previous}` 替换内容按长度截断，防止上下文膨胀
 
 ### 任务级别模型覆盖
 
@@ -275,10 +253,9 @@ You are a specialized agent. Your system prompt goes here.
 
 | 改进 | 说明 |
 |------|------|
-| **compressOutput** | 新增 `compressOutput(text, targetTokens)` 函数，55/35/10 分片（头/尾/中间重要行），保留结构上下文同时压缩体积 |
-| **Chain 输出压缩** | 每步 `{previous}` 默认压缩至 2000 字符，防止上下文膨胀 |
-| **Token 预算** | chain 每步支持 `token_budget` 参数，超限自动截断；前置预算指令 |
-| **token-budget 集成** | 集成 `lib/token-budget.ts`，每次调佣自动记录 Token 用量 |
+| **chain 上下文控制** | 每步 `{previous}` 输出做长度截断，防止上下文膨胀 |
+| **并行输出截断** | 并行模式下每个任务输出 >50KB 时用 SDK `truncateHead` 截断 |
+| **usage 统计** | 每步收集 input/output/cacheRead/cacheWrite/cost/contextTokens（经 SDK `calculateContextTokens`） |
 | **测试覆盖** | 34 项测试全部通过 |
 
 ### v2 (上次改进)
@@ -286,9 +263,7 @@ You are a specialized agent. Your system prompt goes here.
 | 改进 | 说明 |
 |------|------|
 | **模型降级修复** | fallback 模型现在也支持 Ctrl+C 中止和流式输出 |
-| **异步 output 支持** | `async:true` 与 `output:"path"` 可同时使用 |
 | **Agent 发现缓存** | 5 秒 TTL，避免高频调用重复扫描磁盘 |
-| **异步结果持久化** | 从 `/tmp` 迁移到 `~/.pi/subagent-async/`，重启不丢失 |
 | **空 agent 提示优化** | directories empty 时显示如何添加 agent 的指引 |
 | **temp 目录清理** | `rmdirSync` → `rmSync({ recursive: true })`，避免残留 |
 | **测试覆盖** | 34 项测试全部通过 |
@@ -296,9 +271,7 @@ You are a specialized agent. Your system prompt goes here.
 ### v1 (初始版本 + 之前的改进)
 
 - 单代理 / 并行 / 链式三种执行模式
-- 异步后台模式（`{ async: true }`）
-- 状态查询（`{ action: "status" }`）
-- 输出文件管理（`{ output: "path" }`）
+- 状态展示与 usage 统计
 - Model fallback 自动降级
 - 每任务 model 覆盖
 - Agent 自动发现
