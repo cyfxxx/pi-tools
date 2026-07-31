@@ -1,12 +1,7 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { readSettings, readModels, listAvailableModels, updateModelConfig, updateSettings, getSettingsPath } from './config.ts'
+import { readSettings, readModels, listAvailableModels, updateModelConfig, updateSettings, getSettingsPath, isSensitiveKey } from './config.ts'
 import { listSessions, resolveSession, getSessionsBaseDir } from './sessions.ts'
 import { writeRestartRequest } from './state.ts'
-
-function isSensitiveKey(key: string): boolean {
-  const lower = key.toLowerCase()
-  return /key|token|secret|password|auth/i.test(lower)
-}
 
 export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({

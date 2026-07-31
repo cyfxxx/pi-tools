@@ -59,29 +59,31 @@ import { estimateTokens, createBashToolDefinition, SessionManager }
 
 | 函数 | 用途 |
 |------|------|
-| `estimateTokens(messages, model)` | 估算消息数组 token 数 |
+| `estimateTokens(message)` | 估算单条消息 token 数（字符/4 保守估算） |
+| `estimateContextTokens(messages)` | 用最后一条 usage 计算总 context token，无则回退逐条估算 |
+| `calculateContextTokens(usage)` | 从 usage 计算 context token（优先 totalTokens） |
 | `compact(preparation, model, ...)` | 执行压缩（全参数控制） |
-| `shouldCompact(context, settings)` | 判断是否需要压缩 |
-| `prepareCompaction(...)` | 预计算压缩数据 |
+| `shouldCompact(contextTokens, contextWindow, settings)` | 判断是否需要压缩 |
+| `prepareBranchEntries(entries, tokenBudget)` | 预计算分支摘要条目 |
 | `serializeConversation(messages)` | 将消息串化为文本 |
-| `findCutPoint(messages, maxTokens)` | 找到截断点 |
-| `findTurnStartIndex(messages)` | 找到最近 turn 起点 |
+| `findCutPoint(entries, startIndex, endIndex, keepRecentTokens)` | 找到截断点 |
+| `findTurnStartIndex(entries, entryIndex, startIndex)` | 找到最近 turn 起点 |
 | `convertToLlm(messages)` | AgentMessage → LLM Message |
 | `parseFrontmatter(text)` | 解析 frontmatter |
-| `parseSessionEntries(data)` | 解析 session 条目 |
-| `estimateTokens(text)` | 纯文本 token 估算 |
+| `parseSessionEntries(content)` | 解析 session 条目 |
+| `getLatestCompactionEntry(entries)` | 取最近一份 compaction 摘要 |
 
 **示例：按实际 token 数做 context 裁剪**
 
 ```typescript
-import { estimateTokens, findCutPoint } from "@earendil-works/pi-coding-agent"
+import { estimateContextTokens, findCutPoint } from "@earendil-works/pi-coding-agent"
 
-pi.on("context", async (event, ctx) => {
-  const total = await estimateTokens(event.messages, ctx.model)
+pi.on("context", (event, ctx) => {
+  const { tokens } = estimateContextTokens(event.messages)
   const limit = 80_000  // 自定义阈值
-  if (total > limit) {
-    const cutIndex = await findCutPoint(event.messages, limit)
-    return { messages: event.messages.slice(cutIndex) }
+  if (tokens > limit) {
+    const cutIndex = findCutPoint(event.messages, 0, event.messages.length, 20_000)
+    return { messages: event.messages.slice(cutIndex.firstKeptEntryIndex) }
   }
 })
 ```

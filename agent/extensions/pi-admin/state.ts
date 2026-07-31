@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import os from 'node:os'
+import { getAgentDir } from '@earendil-works/pi-coding-agent'
 
 export interface RestartLog {
   action: string
@@ -21,7 +21,7 @@ export interface AdminState {
   restartLog: RestartLog | null
 }
 
-const STATE_FILE = path.join(os.homedir(), '.pi', 'agent', '.pi-admin-state.json')
+const STATE_FILE = path.join(getAgentDir(), '.pi-admin-state.json')
 
 function defaultState(): AdminState {
   return { action: 'none', timestamp: 0, restartLog: null }

@@ -7,6 +7,7 @@ import {
   searchEntries,
   deleteEntry,
   getStats,
+  getTotalSize,
   pruneEntries,
 } from './storage.ts'
 
@@ -67,10 +68,7 @@ export function registerTools(pi: ExtensionAPI): void {
       }
 
       const { action } = storeEntry(entries, entry)
-      const totalSize = entries.reduce(
-        (s, e) => s + Buffer.byteLength(e.title + e.content, 'utf-8'),
-        0,
-      )
+      const totalSize = getTotalSize(entries)
 
       const actionMap: Record<string, string> = {
         created: '新存入',

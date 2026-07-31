@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import os from 'node:os'
+import { getAgentDir } from '@earendil-works/pi-coding-agent'
 
-const AGENT_DIR = path.join(os.homedir(), '.pi', 'agent')
+const AGENT_DIR = getAgentDir()
 const SETTINGS_PATH = path.join(AGENT_DIR, 'settings.json')
 const MODELS_PATH = path.join(AGENT_DIR, 'models.json')
 
@@ -81,9 +81,13 @@ export function updateModelConfig(provider: string, modelId: string): { success:
   if (!modelExists) {
     return { success: false, error: `模型 "${modelId}" 不在 provider "${provider}" 的模型列表中` }
   }
-  const r1 = updateSettings('defaultProvider', provider)
-  if (!r1.success) return r1
-  return updateSettings('defaultModel', modelId)
+  const settings = readSettings()
+  settings.defaultProvider = provider
+  settings.defaultModel = modelId
+  if (!writeSettings(settings)) {
+    return { success: false, error: '写 settings.json 失败' }
+  }
+  return { success: true }
 }
 
 export function readModels(): { providers?: Record<string, ProviderInfo> } {
@@ -116,4 +120,8 @@ export function safeConfigKeys(): string[] {
 
 export function getSettingsPath(): string {
   return SETTINGS_PATH
+}
+
+export function isSensitiveKey(key: string): boolean {
+  return /key|token|secret|password|auth/i.test(key.toLowerCase())
 }

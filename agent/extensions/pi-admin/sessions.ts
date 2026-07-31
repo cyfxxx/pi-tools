@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import os from 'node:os'
+import { getAgentDir, parseSessionEntries } from '@earendil-works/pi-coding-agent'
 
-const SESSIONS_BASE = path.join(os.homedir(), '.pi', 'agent', 'sessions')
+const SESSIONS_BASE = path.join(getAgentDir(), 'sessions')
 
 export interface SessionInfo {
   sessionId: string
@@ -15,12 +15,19 @@ export interface SessionInfo {
 }
 
 function encodeCwd(cwd: string): string {
-  const cleaned = cwd.replace(/^\//, '').replace(/\//g, '-')
-  return `--${cleaned}--`
+  return `--${encodeURIComponent(cwd)}--`
 }
 
 function decodeCwd(dirName: string): string {
   const inner = dirName.replace(/^--/, '').replace(/--$/, '')
+  if (inner.includes('%')) {
+    try {
+      return decodeURIComponent(inner)
+    } catch {
+      return '/' + inner
+    }
+  }
+  // Backward compatibility with the legacy `-`-separated scheme
   return '/' + inner.replace(/-/g, '/')
 }
 
@@ -32,10 +39,12 @@ function readFirstLine(filePath: string): string {
     fs.closeSync(fd)
     const firstLine = buffer.toString('utf-8', 0, bytesRead).split('\n')[0]
     try {
-      const parsed = JSON.parse(firstLine)
-      if (parsed.type === 'session') {
-        const id = parsed.id || ''
-        const ts = parsed.timestamp ? new Date(parsed.timestamp).toISOString().slice(0, 19) : ''
+      const parsed = parseSessionEntries(firstLine)
+      const session = parsed[0] as { type?: string; id?: string; timestamp?: number; header?: { type?: string; id?: string; timestamp?: number } } | undefined
+      const header = session?.type === 'session' ? session : (session as { header?: { type?: string; id?: string; timestamp?: number } })?.header
+      if (header?.type === 'session') {
+        const id = header.id || ''
+        const ts = header.timestamp ? new Date(header.timestamp).toISOString().slice(0, 19) : ''
         return `[${ts}] session ${id}`
       }
       return firstLine.slice(0, 120)

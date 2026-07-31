@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -57,6 +56,22 @@ async function cleanupOldPlans(): Promise<void> {
 }
 
 type QAPair = { role: "user" | "assistant"; content: string };
+
+async function runGit(
+  pi: ExtensionAPI,
+  cwd: string,
+  command: string,
+): Promise<{ stdout: string; code: number }> {
+  try {
+    const result = (await pi.exec("bash", ["-c", command], { cwd })) as {
+      stdout?: string;
+      code?: number;
+    };
+    return { stdout: result?.stdout ?? "", code: result?.code ?? 0 };
+  } catch {
+    return { stdout: "", code: 1 };
+  }
+}
 
 export default function planModeExtension(pi: ExtensionAPI): void {
   let planModeEnabled = false;
@@ -141,27 +156,36 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, "plan.md"), planText);
 
-    try {
-      if (iteration === 1 || !planDir) {
-        execSync("git init && git add plan.md && git commit -m 'initial'", {
-          cwd: dir,
-          encoding: "utf-8",
-        });
-      } else {
-        execSync(`git add plan.md && git commit -m 'iteration ${iteration}'`, {
-          cwd: planDir,
-          encoding: "utf-8",
-        });
-      }
-    } catch {
-      // git not available — silently skip versioning
+    if (iteration === 1 || !planDir) {
+      await runGit(pi, dir, "git init && git add plan.md && git commit -m 'initial'");
+    } else {
+      await runGit(pi, planDir, `git add plan.md && git commit -m 'iteration ${iteration}'`);
     }
 
     return dir;
   }
 
+  let lastPersistedHash = 0;
+
   function persistState(): void {
     const state = getState();
+    let h = 0;
+    const tasksJson = JSON.stringify(state.tasks);
+    for (let i = 0; i < tasksJson.length; i++) {
+      h = ((h << 5) - h + tasksJson.charCodeAt(i)) | 0;
+    }
+    h = ((h << 5) - h + (planModeEnabled ? 1 : 0)) | 0;
+    h = ((h << 5) - h + (executionMode ? 1 : 0)) | 0;
+    h = ((h << 5) - h + (planPresented ? 1 : 0)) | 0;
+    h = ((h << 5) - h + qaMessages.length) | 0;
+    if (planDir) {
+      for (let i = 0; i < planDir.length; i++) {
+        h = ((h << 5) - h + planDir.charCodeAt(i)) | 0;
+      }
+    }
+    if (h === lastPersistedHash) return;
+
+    lastPersistedHash = h;
     pi.appendEntry("plan-mode", {
       enabled: planModeEnabled,
       tasks: state.tasks,
@@ -227,26 +251,27 @@ ${params.context ?? "无"}
         ctx.ui.notify("没有可对比的计划。请先创建计划。", "info");
         return;
       }
-      try {
-        const diff = execSync(
-          "git diff HEAD~1..HEAD -- plan.md 2>/dev/null || git show --stat HEAD",
-          { cwd: planDir, encoding: "utf-8" },
-        );
-        if (!diff.trim()) {
-          ctx.ui.notify("与上一版无差异。", "info");
-          return;
-        }
-        pi.sendMessage(
-          {
-            customType: "plan-diff",
-            content: `**计划差异对比:**\n\n\`\`\`diff\n${diff.trim()}\n\`\`\``,
-            display: true,
-          },
-          { triggerTurn: false },
-        );
-      } catch {
+      const { stdout: diff, code } = await runGit(
+        pi,
+        planDir,
+        "git diff HEAD~1..HEAD -- plan.md 2>/dev/null || git show --stat HEAD",
+      );
+      if (code !== 0 && !diff.trim()) {
         ctx.ui.notify("没有之前的版本来对比。", "info");
+        return;
       }
+      if (!diff.trim()) {
+        ctx.ui.notify("与上一版无差异。", "info");
+        return;
+      }
+      pi.sendMessage(
+        {
+          customType: "plan-diff",
+          content: `**计划差异对比:**\n\n\`\`\`diff\n${diff.trim()}\n\`\`\``,
+          display: true,
+        },
+        { triggerTurn: false },
+      );
     },
   });
 
@@ -299,21 +324,7 @@ ${params.context ?? "无"}
     return {
       messages: event.messages.filter((m) => {
         const msg = m as AgentMessage & { customType?: string };
-        if (msg.customType === "plan-mode-context") return false;
-        if (msg.role !== "user") return true;
-
-        const content = msg.content;
-        if (typeof content === "string") {
-          return !content.includes("[PLAN MODE ACTIVE]");
-        }
-        if (Array.isArray(content)) {
-          return !content.some(
-            (c) =>
-              c.type === "text" &&
-              (c as TextContent).text?.includes("[PLAN MODE ACTIVE]"),
-          );
-        }
-        return true;
+        return msg.customType !== "plan-mode-context";
       }),
     };
   });
@@ -397,16 +408,10 @@ ${todoList}
     const notes = loadNotes();
     if (notes["_ctx.just_compacted"] === "true") {
       clearCompactionFlag();
-      const lastMsg = notes["_ctx.last_user_msg"] || "";
-      const pending = notes["_ctx.pending_tasks"] || "";
-      let recoveryMsg = "上下文已压缩。继续之前的工作。";
-      if (lastMsg) recoveryMsg += `\n最后一条用户消息: ${lastMsg}`;
-      if (pending) recoveryMsg += `\n待完成任务:\n${pending}`;
-      recoveryMsg += "\n请继续执行。";
       return {
         message: {
           customType: "plan-mode-recovery",
-          content: recoveryMsg,
+          content: "上下文已压缩。继续之前的工作。\n请继续执行。",
           display: false,
         },
       };
@@ -515,17 +520,9 @@ ${todoList}
           // Save plan to git repo
           let iteration = 1;
           if (planDir) {
-            try {
-              iteration =
-                Number(
-                  execSync("git rev-list --count HEAD", {
-                    cwd: planDir,
-                    encoding: "utf-8",
-                  }).trim(),
-                ) + 1;
-            } catch {
-              iteration = 2;
-            }
+            const { stdout } = await runGit(pi, planDir, "git rev-list --count HEAD");
+            const count = Number(stdout.trim());
+            iteration = Number.isFinite(count) && count > 0 ? count + 1 : 2;
           }
 		savePlanIteration(lastText, iteration).then((dir) => {
 			planDir = dir;

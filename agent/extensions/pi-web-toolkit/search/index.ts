@@ -2,6 +2,7 @@ import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResul
 import type { SearchConfig } from './types'
 import { searchWeb } from './impl'
 import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
+import { estimateTokens } from '../../../lib/token-budget.ts'
 
 type RecordUsage = (name: string, tokens: number) => void
 
@@ -91,8 +92,4 @@ function truncate(s: string, max: number): string {
 
 function toolResult(text: string): ToolResult {
   return { content: [{ type: 'text' as const, text }], details: {} }
-}
-
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4)
 }

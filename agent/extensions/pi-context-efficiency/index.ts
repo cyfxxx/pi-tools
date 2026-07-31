@@ -1,17 +1,11 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { truncateHead, truncateTail, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 export default function (pi: ExtensionAPI) {
-	const MAX_TOOL_CHARS = 5000;
+	const MAX_TOOL_BYTES = 5000;
 	const KEEP_THINKING_TURNS = 2;
 
-	pi.on("message_end", (event) => {
-		if (event.message.role !== "assistant") return;
-		const content = event.message.content;
-		const nonThinking = content.filter((b: any) => b.type !== "thinking");
-		if (nonThinking.length < content.length) {
-			return { message: { ...event.message, content: nonThinking } };
-		}
-	});
+	// R1（message_end 剥离 thinking）已移除：它在消息产生时无法判断新旧轮次，
+	// 与 R3「保留最近 KEEP_THINKING_TURNS 轮 thinking」矛盾。统一由 R3 在 context 阶段剪枝。
 
 	pi.on("context", (event) => {
 		let messages = event.messages;
@@ -63,33 +57,28 @@ export default function (pi: ExtensionAPI) {
 			.filter((c: any) => c.type === "text")
 			.map((c: any) => c.text)
 			.join("");
-		if (totalText.length <= MAX_TOOL_CHARS) return;
+		if (Buffer.byteLength(totalText, "utf8") <= MAX_TOOL_BYTES) return;
 
-		let truncated = "";
-		for (const c of event.content) {
-			if (c.type === "text") {
-				const remaining = MAX_TOOL_CHARS - truncated.length;
-				if (remaining <= 0) continue;
-				truncated += c.text.slice(0, remaining);
-			}
-		}
+		const truncate = event.toolName === "bash" ? truncateTail : truncateHead;
+		const result = truncate(totalText, { maxBytes: MAX_TOOL_BYTES });
+		const omittedBytes = Buffer.byteLength(totalText, "utf8") - result.outputBytes;
 
 		return {
 			content: [
 				{
 					type: "text",
-					text: `${truncated}\n[...truncated ${Buffer.byteLength(totalText, "utf8") - Buffer.byteLength(truncated, "utf8")} bytes]`,
+					text: `${result.content}\n\n[...truncated ${omittedBytes} bytes]`,
 				} as any,
 			],
+			details: event.details,
 		};
 	});
 
-	pi.on("input", (event, ctx) => {
-		if (event.source !== "interactive" || event.streamingBehavior) return;
-		const t = event.text.trim();
-		if (/^\/ping$/i.test(t)) {
+	pi.registerCommand("ping", {
+		description: "检查 pi-context-efficiency 是否生效",
+		usage: "/ping",
+		handler: (_args, ctx) => {
 			ctx.ui.notify("pong — pi-context-efficiency active");
-			return { action: "handled" };
-		}
+		},
 	});
 }
