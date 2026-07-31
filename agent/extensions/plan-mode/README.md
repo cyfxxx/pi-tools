@@ -162,8 +162,7 @@
     ▼
   session_start  (只在 session 首次启动/恢复时触发)
     │  ├── 检查 --plan flag → 自动启用规划模式
-│   ├── 从 session log 恢复持久化状态 (todoItems、executionMode 等)
-│  ├── 如果是 resume，重新扫描消息重建完成状态
+    │  ├── 从 session log 恢复持久化状态 (todoItems、executionMode 等)
     │  └── 更新 UI 状态栏和小部件
     │
     ▼
@@ -196,7 +195,6 @@
   context  (每次 LLM 请求前，可过滤消息)
     │  └── 非 Plan Mode:
     │       └── 过滤掉 customType = "plan-mode-context" 的消息
-    │           以及包含 "[PLAN MODE ACTIVE]" 的用户消息
     │
     ▼
   agent 生成回复（多轮 tool_call 循环，略）
@@ -256,14 +254,14 @@
 ├── view.ts         # 格式化：彩色图标、状态标签、overlay/command/list/get 行格式
 ├── overlay.ts      # TodoOverlay 悬浮层（aboveEditor widget，12 行折叠）
 ├── todo.ts         # todo 工具 + /todos 命令注册
-├── utils.ts        # 纯函数：安全命令检查、Plan 提取、[DONE:n] 处理、修订检测
+├── utils.ts        # 纯函数：安全命令检查、Plan 提取、修订检测
 ├── README.md       # 说明文档
 └── CHANGELOG.md    # 变更日志
 ```
 
 ### 5.2 核心状态变量
 
-所有状态定义在 `index.ts:63-68`：
+所有状态定义在 `index.ts:77-83`：
 
 ```typescript
 let planModeEnabled = false;    // 是否处于规划模式（只读）
@@ -272,6 +270,8 @@ let planPresented = false;      // 是否已展示计划（防误覆盖）
 let planDir: string | null = null; // 当前计划的 git 版本库路径
 let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 ```
+
+`lastPersistedHash`（`index.ts:168`）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
 
 ### 5.3 事件处理器详解
 
@@ -285,7 +285,6 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 #### `pi.on("context", ...)` — 消息上下文过滤
 - 只在 `planModeEnabled=false` 时生效
 - 过滤掉 `customType === "plan-mode-context"` 的消息
-- 过滤掉内容包含 `[PLAN MODE ACTIVE]` 的用户消息
 - 防止残留的规划模式上下文影响正常对话
 
 #### `pi.on("before_agent_start", ...)` — 注入系统提示
@@ -321,7 +320,7 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 #### `pi.on("session_start", ...)` — 状态恢复
 - 检查 `--plan` flag
 - 从 session log 恢复持久化状态（`pi.appendEntry("plan-mode", ...)`）
-- 在 resume 场景下，从待办列表重建当前完成状态
+- 恢复 overlay UI 与状态栏
 - 如果恢复后处于规划模式，设置只读工具集
 
 ### 5.4 UI 集成
@@ -452,6 +451,9 @@ turn_end 触发
 ```typescript
 function persistState(): void {
   const state = getState();
+  // 计算状态 hash（tasks + 各标志位 + qaMessages 数量 + planDir）
+  if (h === lastPersistedHash) return;  // 无变化则跳过，避免冗余 entry
+  lastPersistedHash = h;
   pi.appendEntry("plan-mode", {
     enabled: planModeEnabled,
     tasks: state.tasks,
@@ -467,20 +469,16 @@ function persistState(): void {
 持久化在以下时机触发：
 - 每次 `turn_end`（执行步骤变化后）
 - 每次 `agent_end`（计划更新、状态切换后）
-- `session_start` 恢复时
+- 状态未变化时跳过写入（hash 去重）
 
 ### 恢复
 
-在 `session_start` 事件中恢复（`index.ts:481-549`）：
+在 `session_start` 事件中恢复（`index.ts:619-688`）：
 
 1. 从 `ctx.sessionManager.getEntries()` 中找到最后一个 `customType === "plan-mode"` 的 entry
-2. 恢复所有状态变量
-3. **关键设计 - Resume 安全恢复**：
-   - 如果是 resume（以前存在的 session），且处于 execution mode
-   - 找到最后一次 `"plan-mode-execute"` custom message 的位置
-   - **只扫描此标记之后**的 assistant 消息
-   - 重新运行 `markCompletedSteps()` 重建当前完成状态
-   - 这个机制防止从历史 session 残留的 `[DONE:n]` 中恢复错误状态
+2. 恢复所有状态变量（模式、执行状态、计划目录、QA 历史、任务列表）
+3. 重建 overlay UI，恢复状态栏
+4. 若恢复后处于规划模式，设置只读工具集
 
 ---
 
@@ -498,7 +496,7 @@ function persistState(): void {
 ### 版本化流程
 
 ```typescript
-// index.ts:125-152
+// index.ts:150-166
 async function savePlanIteration(planText: string, iteration: number): Promise<string> {
   const timestamp = Date.now();
   const dir = planDir ?? join(PLANS_DIR, `plan-${timestamp}`);
@@ -507,19 +505,21 @@ async function savePlanIteration(planText: string, iteration: number): Promise<s
   await writeFile(join(dir, "plan.md"), planText);
 
   if (iteration === 1 || !planDir) {
-    execSync("git init && git add plan.md && git commit -m 'initial'", { cwd: dir });
+    await runGit(pi, dir, "git init && git add plan.md && git commit -m 'initial'");
   } else {
-    execSync(`git add plan.md && git commit -m 'iteration ${iteration}'`, { cwd: planDir });
+    await runGit(pi, planDir, `git add plan.md && git commit -m 'iteration ${iteration}'`);
   }
   return dir;
 }
 ```
 
+git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...])`），不依赖 `execSync`。
+
 ### `/plandiff` 命令
 
 ```typescript
-// index.ts:186-214
-// 执行 git diff HEAD~1..HEAD -- plan.md
+// index.ts:250-275
+// 通过 runGit 执行 git diff HEAD~1..HEAD -- plan.md
 // 如果没有上一版本，回退到 git show --stat HEAD
 // 结果通过 customType: "plan-diff" 消息展示
 ```

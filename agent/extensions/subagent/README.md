@@ -8,7 +8,7 @@
 
 - [一、设计理念](#一设计理念)
 - [二、架构概览](#二架构概览)
-- [三、四种执行模式](#三四种执行模式)
+- [三、三种执行模式](#三三种执行模式)
 - [四、安全模型](#四安全模型)
 - [五、Agent 定义](#五agent-定义)
 - [六、工作流预设](#六工作流预设)
@@ -38,15 +38,15 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 ┌──────────────────────────────────────────────────────────────────┐
 │                      subagent 扩展                               │
 │                                                                  │
-│  index.ts (1360 行)                    agents.ts (133 行)        │
+│  index.ts (1040 行)                    agents.ts (126 行)        │
 │  ┌────────────────────────────┐       ┌──────────────────────┐  │
 │  │ 1 个 LLM 工具: subagent    │       │ 核心函数:             │  │
 │  │   ├─ execute() 主逻辑      │       │ discoverAgents()     │  │
 │  │   ├─ renderCall() TUI 渲染  │       │ loadAgentsFromDir()   │  │
 │  │   └─ renderResult() 结果渲染│       │ + 发现缓存 (TTL 5s)   │  │
 │  │                            │       └──────────────────────┘  │
-│  │ 四种执行模式:               │                                  │
-│  │   ├─ single (同步/异步)    │  agent 定义目录                   │
+│  │ 三种执行模式:               │                                  │
+│  │   ├─ single (同步)         │  agent 定义目录                   │
 │  │   ├─ parallel              │  ~/.pi/agent/agents/*.md        │
 │  │   └─ chain                 │  .pi/agents/*.md  (项目级)       │
 │  └────────────────────────────┘                                  │
@@ -82,7 +82,7 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 
 ---
 
-## 三、四种执行模式
+## 三、三种执行模式
 
 ### ① Single（同步） — 默认
 
@@ -102,7 +102,7 @@ subagent({ agent: "scout", task: "Find all authentication code" })
 | `agentScope` | "user" / "project" / "both" | 否 | agent 来源（默认 "user"） |
 | `confirmProjectAgents` | boolean | 否 | 项目 agent 前确认（默认 true） |
 
-### ③ Parallel（并行） — tasks[]
+### ② Parallel（并行） — tasks[]
 
 多个 agent 并发执行（最大 8 个，1 并发）：
 
@@ -133,7 +133,7 @@ Model files found: src/models/user.ts, ...
 Provider files found: src/providers/oauth.ts, ...
 ```
 
-### ④ Chain（链式） — chain[]
+### ③ Chain（链式） — chain[]
 
 顺序执行，`{previous}` 占位符传递前一步输出：
 
