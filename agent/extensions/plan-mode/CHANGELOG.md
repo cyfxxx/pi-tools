@@ -1,5 +1,19 @@
 # Changelog — plan-mode
 
+## [2.3.0] - 2026-07-31
+
+### Changed
+
+- **`execSync` 移除**：git 操作（计划版本管理、`/plandiff`、迭代计数）改用 `runGit()`（`pi.exec("bash", ["-c", ...])`），与 Pi 扩展 API 一致，不再依赖 `child_process`。
+- **context 过滤简化**：只过滤 `customType === "plan-mode-context"` 的消息，移除按内容匹配 `[PLAN MODE ACTIVE]` 的用户消息过滤。
+- **持久化去重**：`persistState()` 对状态内容计算哈希（tasks + 标志位 + QA 数量 + 计划目录），状态未变化时跳过 `appendEntry`，减少冗余写入。
+- **compaction 恢复消息固定化**：移除对 `_ctx.last_user_msg` / `_ctx.pending_tasks` 的死读取（从未被写入），恢复提示改为固定文案。
+- **agent_end 迭代计数**：通过 `git rev-list --count HEAD` 统计计划迭代版本，替代依赖状态推断。
+
+### Removed
+
+- 移除 `checkMissedTasks()` 死方法。
+
 ## [2.2.0] - 2026-07-07
 
 ### Added

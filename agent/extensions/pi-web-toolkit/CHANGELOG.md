@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [2.3.0] - 2026-07-31
+
+### 变更
+
+- **config.ts 使用 SDK `getAgentDir()`**：配置路径从 `PI_CONFIG_DIR` 本地常量改为 SDK 虚拟模块的 `getAgentDir()`（`~/.pi/agent`），与扩展运行时目录一致；第二路径保持 `.pi/settings.json`（项目级）。
+- **工具输出 token 记账统一**：`browser_navigate`/`browser_screenshot`/`browser_click` 等工具改为在工具内部经 `recordOutput` 统一记账（复用 `lib/token-budget.ts` 的 `estimateTokens`），移除调用侧的重复 `recordUsage` 调用。
+
 ## [2.2.0] - 2026-07-07
 
 ### 新增
@@ -55,7 +62,7 @@
 
 ### 变更
 
-- **config.ts 支持 Pi 重分发**：使用 `PI_CONFIG_DIR` 本地常量，运行时尝试从 Pi 包获取 `CONFIG_DIR_NAME`，失败回退 `.pi`。
+- **config.ts 支持 Pi 重分发**：运行时尝试从 Pi 包获取 `CONFIG_DIR_NAME`，失败回退 `.pi`。（2.3.0 起改用 SDK `getAgentDir()`）
 - **env.d.ts 类型增强**：补充 `ExtensionContext`（`mode`/`hasUI`/`cwd`/`signal`/`ui`/`sessionManager` 等）、`ExtensionCommandContext`、`prepareArguments`、`registerCommand` 接口，移除不准确的 `isError` 字段。
 - **合并 import**：`@earendil-works/pi-coding-agent` 的三条类型导入合并为一行。
 

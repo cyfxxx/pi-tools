@@ -21,7 +21,7 @@ Agent 自管理扩展。让 AI 模型能够控制 Pi Agent 本身——切换模
 |------|------|
 | `/admin:status` | 显示 Agent 状态 |
 | `/admin:restart [reason]` | 重启 Agent |
-| `/admin:session <id>` | 切换会话 |
+| `/admin:session <id>` | 切换会话（优先热切换，失败才重启） |
 | `/admin:model <provider> <model>` | 切换模型 |
 | `/admin:config <key> [value]` | 读取/修改配置 |
 
@@ -29,7 +29,7 @@ Agent 自管理扩展。让 AI 模型能够控制 Pi Agent 本身——切换模
 
 ### 重启协议
 
-需要重启的操作（切换模型/会话/显式重启）通过状态文件 `~/.pi/agent/.pi-admin-state.json` 实现：
+需要重启的操作（切换模型/显式重启；切换会话在热切换不可用时兜底）通过状态文件 `~/.pi/agent/.pi-admin-state.json` 实现：
 
 ```
 extension 写状态文件 → ctx.shutdown()
@@ -42,6 +42,8 @@ extension 写状态文件 → ctx.shutdown()
                               ↓
         session_start 时注入恢复消息 → AI 继续任务
 ```
+
+`/admin:session` 命令优先调用 `ctx.switchSession()` 热切换（不重启）；仅在调用抛异常时回退到写状态文件 + 重启。
 
 ### 安装 wrapper
 
