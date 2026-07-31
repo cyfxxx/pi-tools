@@ -24,7 +24,7 @@
 │   │   ├── pi-memory/         跨会话持久记忆
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-router/         before_agent_start 注入主动路由策略 + token 预算
-│   │   └── pi-context-efficiency/  token 优化（thinking 剥离/context 过滤/输出截断）
+│   │   └── pi-context-efficiency/  token 优化（thinking 剪枝/compaction 去重/输出截断）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
 │   │   ├── planner.md            实现计划生成
@@ -231,17 +231,16 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 
 ## 上下文优化（pi-context-efficiency）
 
-全程零用户感知的 token 节省层。注册 5 个事件处理器：
+全程零用户感知的 token 节省层。注册 4 个事件处理器 + 1 个命令：
 
 | # | Hook | 作用 | 节省量 |
 |---|------|------|--------|
-| R1 | `message_end` | 剥离 assistant 的 thinking 块，不存入会话历史 | 50-80% 每轮 assistant 消息 |
 | R2 | `context` | compaction summary 去重，只留最新一份 | 500-1500 tokens/turn |
 | R3 | `context` | 旧 turn（>2 轮）的 thinking 块剪枝 | 10-50% 旧 assistant 消息 |
 | R4 | `tool_result` | bash/read 输出 >5000 字符时截断 | 50-80% 工具结果 |
-| R6 | `input` | `/ping` 免 LLM 响应 | 单次完全省掉 |
+| R6 | 命令 | `/ping` 免 LLM 响应 | 单次完全省掉 |
 
-R1 不影响当前轮显示，仅阻止 thinking 进入后续 context。R4 仅当输出 >5000 字符时生效。
+R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。
 
 ## Wrapper 生命周期
 
