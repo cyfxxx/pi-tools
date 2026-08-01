@@ -1,5 +1,14 @@
 # Changelog — subagent
 
+## [v4]
+
+### Fixed
+- **模型继承 bug**：子进程原本回落到 settings 默认模型，现在继承当前会话模型（agent frontmatter 的 `model` 优先，否则用 `provider/model` 传递）
+- **README 测试路径缺失**：补上真实存在的 `tests/test.mjs`（34 项纯函数测试，经 loader 解析 SDK 依赖）
+
+### Changed
+- **子进程跳过扩展加载**：`pi` 参数加 `--no-extensions`，子代理无需扩展即可执行（内置工具不受影响）。实测扩展加载约 0.7s，主要启动成本在 SDK ESM 加载
+
 ## [v3]
 
 ### Added
