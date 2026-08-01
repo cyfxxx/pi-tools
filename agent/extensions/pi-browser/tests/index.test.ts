@@ -15,7 +15,6 @@ const mockPi = {
 
 vi.mock('../config', () => ({
   loadConfig: () => ({
-    search: { searxng_url: 'https://searx.be', timeout: 5000 },
     browser: { headless: false, viewport_width: 1280, viewport_height: 800 },
   }),
 }))
@@ -44,33 +43,26 @@ vi.mock('cloakbrowser', () => ({
   }),
 }))
 
-describe('index (entry point)', () => {
+describe('pi-browser (entry point)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     registeredTools.length = 0
     Object.keys(lifecycleHandlers).forEach(k => delete lifecycleHandlers[k])
   })
 
-  it('should register core tools and lifecycle hooks', async () => {
+  it('should register 8 browser tools and lifecycle hooks', async () => {
     const main = (await import('../index')).default
     await main(mockPi as any)
 
-    const toolNames = registeredTools.map(t => t.name)
-    expect(toolNames).toContain('web_search')
-    expect(toolNames).toContain('browser_navigate')
-    expect(toolNames).toContain('browser_screenshot')
-    expect(toolNames).toContain('browser_click')
-    expect(toolNames).toContain('browser_type')
-    expect(toolNames).toContain('browser_scroll')
-    expect(toolNames).toContain('browser_extract')
-    expect(toolNames).toContain('browser_evaluate')
-    expect(toolNames).toContain('browser_close')
-    expect(toolNames).toContain('fetch_url')
-    expect(toolNames).toContain('web_fetch')
-    expect(registeredTools.length).toBeGreaterThanOrEqual(11)
+    const toolNames = registeredTools.map(t => t.name).sort()
+    expect(toolNames).toEqual([
+      'browser_click', 'browser_close', 'browser_evaluate', 'browser_extract',
+      'browser_navigate', 'browser_screenshot', 'browser_scroll', 'browser_type',
+    ].sort())
 
     expect(lifecycleHandlers['session_shutdown']).toBeDefined()
     expect(lifecycleHandlers['session_compact']).toBeDefined()
+    expect(lifecycleHandlers['session_start']).toBeDefined()
   })
 
   it('browser_navigate should return page info', async () => {

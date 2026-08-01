@@ -1,52 +1,16 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { loadConfig } from './config'
-import type { WebToolkitConfig } from './types'
-import { BrowserManager } from './browser/impl'
+import type { SearchOnlyConfig } from './types'
 import { registerSearchTools } from './search/index'
-import { registerBrowserTools } from './browser/index'
-import { unlink, readdir } from 'fs/promises'
-import { join } from 'path'
 import { recordToolUsage, resetBudget, estimateTokens } from '../../lib/token-budget.ts'
 import { recordOutput, pruneToolOutput } from '../../lib/prune.ts'
 import { searchDirect } from './fetch.ts'
 
-const SCREENSHOT_PREFIX = 'pi-screenshot-'
-const MAX_SCREENSHOTS = 20
-
-async function cleanScreenshots(): Promise<void> {
-  try {
-    const files = await readdir('/tmp')
-    await Promise.all(
-      files
-        .filter(f => f.startsWith(SCREENSHOT_PREFIX))
-        .map(f => unlink(join('/tmp', f)).catch(() => {}))
-    )
-  } catch { /* ignore */ }
-}
-
-async function trimScreenshots(): Promise<void> {
-  try {
-    const files = (await readdir('/tmp'))
-      .filter(f => f.startsWith(SCREENSHOT_PREFIX))
-      .sort()
-    if (files.length > MAX_SCREENSHOTS) {
-      await Promise.all(
-        files
-          .slice(0, files.length - MAX_SCREENSHOTS)
-          .map(f => unlink(join('/tmp', f)).catch(() => {}))
-      )
-    }
-  } catch { /* ignore */ }
-}
-
 export default async function (pi: ExtensionAPI) {
-  const config: WebToolkitConfig = loadConfig()
-
-  const browser = new BrowserManager(config.browser)
+  const config: SearchOnlyConfig = loadConfig()
 
   // Register feature tools
   registerSearchTools(pi, config.search, recordToolUsage)
-  registerBrowserTools(pi, browser, recordToolUsage, config.browser.viewport_height)
 
   // ─── fetch_url: 轻量 HTTP GET（无需浏览器） ─────────────────────
   pi.registerTool({
@@ -110,21 +74,12 @@ export default async function (pi: ExtensionAPI) {
       const text = await searchDirect(query, maxResults)
       const result = pruneToolOutput(text, "web_fetch")
       recordOutput("web_fetch", result.length)
-        recordToolUsage("web_fetch", estimateTokens(result))
+      recordToolUsage("web_fetch", estimateTokens(result))
       return { content: [{ type: "text", text: result }], details: {} }
     },
   })
 
   // ─── lifecycle ───────────────────────────────────────────────
-  pi.on('session_shutdown', async () => {
-    await browser.close()
-    await cleanScreenshots()
-  })
-
-  pi.on('session_compact', async () => {
-    await trimScreenshots()
-  })
-
   pi.on('session_start', async () => {
     resetBudget()
     const { resetOutputBudget } = await import('../../lib/prune.ts')

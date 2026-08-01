@@ -1,0 +1,19 @@
+{
+  "name": "pi-web-search",
+  "version": "3.0.0",
+  "private": true,
+  "description": "网络搜索扩展 - SearXNG 私密搜索 + Bing 直搜备选 + 轻量 HTTP 抓取",
+  "type": "module",
+  "dependencies": {
+    "typescript": "^6.0.3"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "vitest": "^4.1.9"
+  }
+}

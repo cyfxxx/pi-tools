@@ -20,16 +20,19 @@
     "extensions/pi-admin/index.ts",
     "extensions/pi-scheduler/index.ts",
     "extensions/pi-memory/index.ts",
-    "extensions/pi-web-toolkit/index.ts"
+    "extensions/pi-web-search/index.ts",
+    "extensions/pi-browser/index.ts"
   ],
-  "pi-web-toolkit": {
-    "searxng_url": "http://127.0.0.1:8889",
-    "search_timeout": 30000,
-    "headless": true
-  },
   "skills": [
     "+skills/pi-translate-zh/SKILL.md",
     "+skills/pi-backup/SKILL.md"
   ],
-  "theme": "dark"
+  "theme": "dark",
+  "pi-browser": {
+    "headless": true
+  },
+  "pi-web-search": {
+    "searxng_url": "http://127.0.0.1:8889",
+    "search_timeout": 30000
+  }
 }
