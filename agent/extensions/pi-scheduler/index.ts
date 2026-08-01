@@ -3,7 +3,7 @@ import { SessionScheduler } from './scheduler.ts'
 import { registerCommands } from './commands.ts'
 import { registerTools } from './tools.ts'
 import { acquireSessionLock, releaseSessionLock } from './storage.ts'
-import { collectOfflineExecutions, formatSummary } from './notifications.ts'
+import { collectOfflineExecutions, formatSummary, markRead } from './notifications.ts'
 
 export default function piSchedulerExtension(pi: ExtensionAPI): void {
   let scheduler: SessionScheduler | null = null
@@ -33,6 +33,9 @@ export default function piSchedulerExtension(pi: ExtensionAPI): void {
               content: summary,
             })
           } catch { /* not critical */ }
+          for (const e of entries) {
+            await markRead(e)
+          }
         }
       }
     }

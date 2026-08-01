@@ -7,6 +7,7 @@ export interface LogEntry {
   result: string
   time: string
   output: string
+  filename: string
 }
 
 export async function collectOfflineExecutions(): Promise<LogEntry[]> {
@@ -34,6 +35,7 @@ export async function collectOfflineExecutions(): Promise<LogEntry[]> {
         result: parts[1]?.trim() || 'unknown',
         time: parts[2]?.trim() || '',
         output: lines.slice(1).join('\n').slice(0, 300),
+        filename: f,
       })
     } catch { /* skip unreadable */ }
   }
@@ -43,15 +45,9 @@ export async function collectOfflineExecutions(): Promise<LogEntry[]> {
 
 export async function markRead(entry: LogEntry): Promise<void> {
   const dir = logDir()
-  const files = await readdir(dir).catch(() => [] as string[])
-  const target = files.find(f =>
-    f.endsWith('.log') && !f.includes('.read') && f.includes(entry.name.replace(/[^a-z0-9]/gi, '_'))
-  )
-  if (target) {
-    try {
-      await rename(join(dir, target), join(dir, target + '.read'))
-    } catch { /* ignore */ }
-  }
+  try {
+    await rename(join(dir, entry.filename), join(dir, entry.filename + '.read'))
+  } catch { /* ignore */ }
 }
 
 export function formatSummary(entries: LogEntry[]): string {

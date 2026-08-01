@@ -12,13 +12,22 @@ function taskStatus(t: Task): string {
   return `${status} ${t.name.padEnd(20)} ${type} next:${next}  last:${last}(${result})×${count}  ${t.prompt.slice(0, 40)}`
 }
 
+function extractTimeout(args: string): { prompt: string; maxRunTime: number | undefined } {
+  const m = args.match(/--timeout\s+(\d+)/i)
+  if (!m) return { prompt: args, maxRunTime: undefined }
+  const maxRunTime = parseInt(m[1], 10)
+  const prompt = args.replace(/--timeout\s+\d+/i, '').replace(/\s+/g, ' ').trim()
+  return { prompt, maxRunTime }
+}
+
 export function registerCommands(pi: ExtensionAPI): void {
   pi.registerCommand('loop', {
     description: '创建间隔循环任务并立即执行一次',
     usage: '/loop <interval> <prompt...>',
     handler: async (args: string) => {
-      const m = args.match(/^(\S+)\s+(.+)/s)
-      if (!m) return '用法: /loop <interval> <prompt>\n示例: /loop 5m check CI status'
+      const { prompt: cleaned, maxRunTime } = extractTimeout(args)
+      const m = cleaned.match(/^(\S+)\s+(.+)/s)
+      if (!m) return '用法: /loop <interval> <prompt> [--timeout <秒>]\n示例: /loop 5m check CI status'
       const interval = m[1]
       const prompt = m[2]
       const ms = parseIntervalToMs(interval)
@@ -30,6 +39,7 @@ export function registerCommands(pi: ExtensionAPI): void {
         schedule: interval,
         prompt,
         enabled: true,
+        maxRunTime,
       })
       return `已创建循环任务 "${name}": ${formatInterval(ms)} 执行一次\n  ${prompt}\nID: ${task.id}\n下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '未知'}`
     },
@@ -92,12 +102,13 @@ export function registerCommands(pi: ExtensionAPI): void {
       }
 
       if (subcmd === 'cron') {
-        const m = args.match(/^cron\s+"([^"]+)"\s+(.+)/s) || args.match(/^cron\s+'([^']+)'\s+(.+)/s)
-        if (!m) return '用法: /schedule cron "<expr>" <prompt>\n示例: /schedule cron "0 9 * * 1-5" daily standup'
+        const { prompt: cleaned, maxRunTime } = extractTimeout(args)
+        const m = cleaned.match(/^cron\s+"([^"]+)"\s+(.+)/s) || cleaned.match(/^cron\s+'([^']+)'\s+(.+)/s)
+        if (!m) return '用法: /schedule cron "<expr>" <prompt> [--timeout <秒>]\n示例: /schedule cron "0 9 * * 1-5" daily standup'
         const expr = m[1]
         const prompt = m[2]
         const name = `cron-${Date.now().toString(36)}`
-        const task = await addTask({ name, type: 'cron', schedule: expr, prompt, enabled: true })
+        const task = await addTask({ name, type: 'cron', schedule: expr, prompt, enabled: true, maxRunTime })
         const next = task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效表达式'
         return `已创建定时任务 "${name}": ${expr}\n  下次执行: ${next}\n  ${prompt}\nID: ${task.id}`
       }

@@ -32,7 +32,6 @@ Pi 定时任务扩展。按指定时间或间隔自动运行 agent 执行预设�
 | `interval` | `/loop 5m check CI` | 固定间隔重复，创建后立即执行一次 |
 | `cron` | `/schedule cron "0 9 * * 1-5" standup` | 5 字段 POSIX cron 表达式 |
 | `once` | `/remind +30m review PR` | 一次性提醒，到期执行后自动禁用 |
-| `hook` | `session_start` / `session_shutdown` | 生命周期事件自动注入（built-in） |
 
 ## 文件结构
 
@@ -40,22 +39,22 @@ Pi 定时任务扩展。按指定时间或间隔自动运行 agent 执行预设�
 agent/extensions/pi-scheduler/
 ├── index.ts              — 入口：扩展注册 + session_start/shutdown 钩子
 ├── storage.ts            — JSON 原子读写 + PID 锁 + 任务 CRUD + nextRun 计算
-├── scheduler.ts          — 会话内 1s 轮询调度引擎
+├── scheduler.ts          — 会话内 30s 轮询调度引擎
 ├── commands.ts           — /loop /schedule /remind 斜杠命令
 ├── tools.ts              — schedule_task LLM 工具
-├── notifications.ts      — 离线执行日志收集与 TUI 摘要展示
+├── notifications.ts      — 离线执行日志收集与摘要展示
 ├── types.ts              — 类型定义
 ├── package.json          — 依赖：croner
 ├── README.md             — 本文件
 └── SKILL.md              — 供 LLM 交互的技能定义
 
-scripts/
-├── pi-cron.sh            — cron/systemd 包装脚本（离线执行）
+~/.pi/scripts/
+├── pi-cron.sh            — cron 包装脚本（离线执行）
 ├── install-cron.sh       — 安装 crontab 条目（每分钟）
 └── install-systemd.sh    — 安装 systemd timer
 
-agent/scheduled-tasks.json — 任务持久化存储（扩展与 cron 共享）
-logs/scheduler/            — 离线执行日志（按任务名+时间戳归档）
+agent/scheduled-tasks.json — 任务持久化存储（扩展与 cron 共享，非 git 跟踪）
+~/.pi/logs/scheduler/       — 离线执行日志（按任务名+时间戳归档）
 ```
 
 ## 安装
@@ -87,6 +86,7 @@ bash scripts/install-cron.sh   # 安装 crontab
 ```
 /loop 5m check CI status and report uncommitted changes
 /loop 1h run the full test suite and summarize
+/loop 10m check build --timeout 600   # 超时 600s（仅 useSubagent 模式生效）
 ```
 
 ### `/remind <time> <prompt>`
@@ -113,7 +113,7 @@ bash scripts/install-cron.sh   # 安装 crontab
 /schedule delete <id>   — 删除任务
 /schedule enable <id>   — 启用任务
 /schedule disable <id>  — 禁用任务
-/schedule cron "<expr>" <prompt> — 创建 cron 任务
+/schedule cron "<expr>" <prompt> [--timeout <秒>] — 创建 cron 任务
 ```
 
 **cron 表达式格式：** 5 字段 `minute hour day-of-month month day-of-week`
@@ -140,7 +140,8 @@ bash scripts/install-cron.sh   # 安装 crontab
 | `schedule` | string | action=add 时必需 | 调度表达式 |
 | `prompt` | string | action=add 时必需 | 任务提示词 |
 | `useSubagent` | boolean | 否 | 是否在子代理中执行 |
-| `notifyOnCompletion` | boolean | 否 | 完成时是否发送通知 |
+| `notifyOnCompletion` | boolean | 否 | 完成时是否发送通知（离线 cron 执行时生效） |
+| `maxRunTime` | number | 否 | 执行超时秒数（默认 `300`），仅 `useSubagent=true` 时生效 |
 
 ## 任务存储
 
@@ -250,8 +251,11 @@ service cron status
 `maxRunTime` 默认 300s。可通过任务配置调整：
 
 ```bash
-# 创建任务时指定
+# 创建任务时指定（useSubagent 模式）
 /loop 10m check build --timeout 600
+/schedule cron "0 9 * * 1-5" standup --timeout 600
+# LLM 工具参数
+schedule_task action=add ... useSubagent=true maxRunTime=600
 ```
 
 ### 同一任务被重复触发
@@ -268,13 +272,13 @@ rm -f agent/scheduler.lock
 
 ### 任务丢失（重启后）
 
-任务存储在 `scheduled-tasks.json`，非 git 跟踪。使用 `pi-backup` 备份时该文件已包含。
+任务存储在 `scheduled-tasks.json`（非 git 跟踪，已加入 `.gitignore`）。使用 `pi-backup` 备份时该文件已包含。
 
 ## 兼容性
 
 | 扩展 | 关系 |
 |------|------|
-| pi-web-toolkit | 无冲突。调度任务可调用 web_search 等工具。 |
+| pi-web-search / pi-browser | 无冲突。调度任务可调用 web_search 等工具。 |
 | plan-mode | 无冲突。调度注入的用户消息不触发 plan-mode 的 tool_call 拦截。 |
 | subagent | 无直接依赖。任务设 `useSubagent=true` 时以独立 `pi -p <prompt>` 子进程执行（非 subagent 扩展工具）。 |
 | pi-backup | 备份清单包含 `scheduled-tasks.json` 和所有脚本。 |

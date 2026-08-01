@@ -13,6 +13,24 @@ MAX_RUN_TIME="${PI_SCHEDULER_TIMEOUT:-300}"
 
 mkdir -p "$LOG_DIR"
 
+# ── 定位 pi 可执行文件（cron 环境 PATH 通常不含 node 安装目录）──
+PI_BIN="${PI_BIN:-}"
+if [ -z "$PI_BIN" ]; then
+  PI_BIN="$(command -v pi 2>/dev/null || true)"
+fi
+if [ -z "$PI_BIN" ]; then
+  for c in \
+    "$HOME/.local/share/pi-node"/*/bin/pi \
+    "$HOME/.nvm/versions/node"/*/bin/pi \
+    /usr/local/bin/pi /usr/bin/pi; do
+    [ -x "$c" ] && PI_BIN="$c" && break
+  done
+fi
+if [ -z "$PI_BIN" ]; then
+  echo "[pi-cron] 错误: 找不到 pi 可执行文件，请设置 PI_BIN 环境变量" >&2
+  exit 1
+fi
+
 # ── 锁检测 ──────────────────────────────────────────
 check_lock() {
   if [ ! -f "$LOCK_FILE" ]; then
@@ -88,7 +106,7 @@ def compute_next(task_type, schedule, last_run):
             return d.isoformat().replace('+00:00', 'Z')
         except: return None
     elif task_type == 'interval':
-        m = re.match(r'^(\d+)\s*(s|m|h|d|min|hr|sec)?s?$', schedule)
+        m = re.match(r'^(\d+)\s*(s|m|h|d|min|hr|sec|day)?s?$', schedule)
         if not m: return None
         n = int(m.group(1))
         u = (m.group(2) or 'm').lower()[0]
@@ -307,7 +325,7 @@ print(d['prompt'], end='')
     # 使用 Pi print 模式执行
     echo "[pi-cron] 执行: $task_name ($task_type)"
     local out_file="/tmp/pi-cron-out.$$.$RANDOM"
-    timeout "$task_timeout" pi -p "$task_prompt" > "$out_file" 2>&1
+    timeout "$task_timeout" "$PI_BIN" -p "$task_prompt" > "$out_file" 2>&1
     EXIT_CODE=$?
     OUTPUT=$(cat "$out_file" 2>/dev/null || echo "<output lost>")
     rm -f "$out_file"
