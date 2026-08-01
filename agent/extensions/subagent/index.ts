@@ -37,14 +37,14 @@ const MAX_CONCURRENCY = 1; // 本地模型默认串行，多进程会竞争 GPU 
 const COLLAPSED_ITEM_COUNT = 10;
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
 
-function formatTokens(count: number): string {
+export function formatTokens(count: number): string {
 	if (count < 1000) return count.toString();
 	if (count < 10000) return `${(count / 1000).toFixed(1)}k`;
 	if (count < 1000000) return `${Math.round(count / 1000)}k`;
 	return `${(count / 1000000).toFixed(1)}M`;
 }
 
-function formatUsageStats(
+export function formatUsageStats(
 	usage: {
 		input: number;
 		output: number;
@@ -169,7 +169,7 @@ interface SubagentDetails {
 	results: SingleResult[];
 }
 
-function getFinalOutput(messages: Message[]): string {
+export function getFinalOutput(messages: Message[]): string {
 	for (let i = messages.length - 1; i >= 0; i--) {
 		const msg = messages[i];
 		if (msg.role === "assistant") {
@@ -181,18 +181,18 @@ function getFinalOutput(messages: Message[]): string {
 	return "";
 }
 
-function isFailedResult(result: SingleResult): boolean {
+export function isFailedResult(result: SingleResult): boolean {
 	return result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted";
 }
 
-function getResultOutput(result: SingleResult): string {
+export function getResultOutput(result: SingleResult): string {
 	if (isFailedResult(result)) {
 		return result.errorMessage || result.stderr || getFinalOutput(result.messages) || "(no output)";
 	}
 	return getFinalOutput(result.messages) || "(no output)";
 }
 
-function truncateParallelOutput(output: string): string {
+export function truncateParallelOutput(output: string): string {
 	const result = truncateHead(output, { maxBytes: PER_TASK_OUTPUT_CAP });
 	if (!result.truncated) return output;
 	return `${result.content}\n\n[Output truncated: ${result.totalBytes - result.outputBytes} bytes omitted. Full output preserved in tool details.]`;
@@ -213,7 +213,7 @@ function getDisplayItems(messages: Message[]): DisplayItem[] {
 	return items;
 }
 
-async function mapWithConcurrencyLimit<TIn, TOut>(
+export async function mapWithConcurrencyLimit<TIn, TOut>(
 	items: TIn[],
 	concurrency: number,
 	fn: (item: TIn, index: number) => Promise<TOut>,
@@ -261,6 +261,16 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 
 type OnUpdateCallback = (partial: AgentToolResult<SubagentDetails>) => void;
 
+/** Resolve which model ID a subagent process should use: agent override, else current session model. */
+function resolveModelId(
+	agentModel: string | undefined,
+	currentModel: { id?: string; provider?: string } | undefined,
+): string | undefined {
+	if (agentModel) return agentModel;
+	if (currentModel?.id && currentModel?.provider) return `${currentModel.provider}/${currentModel.id}`;
+	return undefined;
+}
+
 async function runSingleAgent(
 	defaultCwd: string,
 	agents: AgentConfig[],
@@ -271,6 +281,7 @@ async function runSingleAgent(
 	signal: AbortSignal | undefined,
 	onUpdate: OnUpdateCallback | undefined,
 	makeDetails: (results: SingleResult[]) => SubagentDetails,
+	currentModel?: { id?: string; provider?: string },
 ): Promise<SingleResult> {
 	const agent = agents.find((a) => a.name === agentName);
 
@@ -288,8 +299,9 @@ async function runSingleAgent(
 		};
 	}
 
-	const args: string[] = ["--mode", "json", "-p", "--no-session"];
-	if (agent.model) args.push("--model", agent.model);
+	const args: string[] = ["--mode", "json", "-p", "--no-session", "--no-extensions"];
+	const resolvedModel = resolveModelId(agent.model, currentModel);
+	if (resolvedModel) args.push("--model", resolvedModel);
 	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
 
 	let tmpPromptDir: string | null = null;
@@ -303,7 +315,7 @@ async function runSingleAgent(
 		messages: [],
 		stderr: "",
 		usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
-		model: agent.model,
+		model: resolvedModel,
 		step,
 	};
 
@@ -498,6 +510,7 @@ export default function (pi: ExtensionAPI) {
 			const discovery = discoverAgents(ctx.cwd, agentScope);
 			const agents = discovery.agents;
 			const confirmProjectAgents = params.confirmProjectAgents ?? true;
+			const currentModel = ctx.model as { id?: string; provider?: string } | undefined;
 
 			const hasChain = (params.chain?.length ?? 0) > 0;
 			const hasTasks = (params.tasks?.length ?? 0) > 0;
@@ -584,6 +597,7 @@ export default function (pi: ExtensionAPI) {
 						signal,
 						chainUpdate,
 						makeDetails("chain"),
+						currentModel,
 					);
 					results.push(result);
 
@@ -662,6 +676,7 @@ export default function (pi: ExtensionAPI) {
 							}
 						},
 						makeDetails("parallel"),
+						currentModel,
 					);
 					allResults[index] = result;
 					emitParallelUpdate();
@@ -698,6 +713,7 @@ export default function (pi: ExtensionAPI) {
 					signal,
 					onUpdate,
 					makeDetails("single"),
+					currentModel,
 				);
 				const isError = isFailedResult(result);
 				if (isError) {

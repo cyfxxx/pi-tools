@@ -164,7 +164,7 @@ subagent({
 })
 ```
 
-默认所有 agent 使用 `settings.json` 中配置的主模型。如需指定，在 agent YAML 中加 `model:` 字段。
+默认继承当前会话模型。如需指定，在 agent YAML 中加 `model:` 字段。
 
 ---
 
@@ -200,7 +200,7 @@ You are a specialized agent. Your system prompt goes here.
 | `name` | 是 | Agent 名称，用于 `subagent({ agent: "name" })` |
 | `description` | 是 | 用途描述 |
 | `tools` | 否 | 工具白名单（逗号分隔，默认全部） |
-| `model` | 否 | 指定模型 ID。省略则使用 `settings.json` 中的主模型 |
+| `model` | 否 | 指定模型 ID。省略则继承当前会话模型 |
 | `fallback_models` | 否 | 备用模型列表，主模型不可用时自动降级 |
 
 ### 内置 agent
@@ -212,7 +212,7 @@ You are a specialized agent. Your system prompt goes here.
 | **worker** | 执行者 | 全部（默认） |
 | **reviewer** | 质检员 | read, grep, find, ls, bash |
 
-所有 agent 默认使用 `settings.json` 中配置的主模型。如需指定模型，在 agent YAML 前加 `model:` 字段。
+所有 agent 默认继承当前会话模型。如需指定模型，在 agent YAML 前加 `model:` 字段。
 
 ### Agent 来源目录
 
@@ -284,7 +284,7 @@ You are a specialized agent. Your system prompt goes here.
 测试文件：`tests/test.mjs`（独立 Node.js 脚本，无需 vitest/pi 环境）
 
 ```bash
-node extensions/subagent/tests/test.mjs
+node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs
 ```
 
 34 项测试覆盖：
