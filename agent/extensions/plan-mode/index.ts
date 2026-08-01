@@ -21,7 +21,7 @@ import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "questionnaire"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
@@ -108,7 +108,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   function updateStatus(ctx: ExtensionContext): void {
     const state = getState();
     const counts = selectTodoCounts(state);
-    const total = counts.pending + counts.inProgress + counts.completed;
+    const total = counts.total;
 
     if (executionMode && total > 0) {
       ctx.ui.setStatus(
@@ -131,18 +131,29 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   function togglePlanMode(ctx: ExtensionContext): void {
     planModeEnabled = !planModeEnabled;
     executionMode = false;
-    resetState();
-    planPresented = false;
-    planDir = null;
-    qaMessages = [];
-    knownTodoHash = 0;
+    planModeFullInjected = false;
 
     if (planModeEnabled) {
+      // 进入规划模式：从干净状态开始
+      resetState();
+      planPresented = false;
+      planDir = null;
+      qaMessages = [];
+      knownTodoHash = 0;
       pi.setActiveTools(PLAN_MODE_TOOLS);
       ctx.ui.notify(`规划模式已启用。工具: ${PLAN_MODE_TOOLS.join(", ")}`);
     } else {
+      // 退出规划模式：保留任务与进度（/planclear 可清空）
+      planPresented = false;
       pi.setActiveTools(NORMAL_MODE_TOOLS);
-      ctx.ui.notify("规划模式已禁用。完整权限已恢复。");
+      persistState();
+      const state = getState();
+      const count = state.tasks.filter((t) => t.status !== "deleted").length;
+      ctx.ui.notify(
+        count > 0
+          ? `规划模式已禁用。任务已保留（${count} 项，/todos 查看，/planresume 继续执行）。`
+          : "规划模式已禁用。完整权限已恢复。",
+      );
     }
     updateStatus(ctx);
   }
@@ -204,48 +215,56 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   registerTodoTool(pi);
   registerTodosCommand(pi);
 
-  // ─── task 子代理工具 ───────────────────────────────────────────
-  pi.registerTool({
-    name: "task",
-    label: "子任务",
-    description: "创建独立子任务描述文件，供用户在新会话中执行。用于需要并行探索或独立执行的独立子任务。",
-    promptSnippet: "创建子任务",
-    parameters: {
-      type: "object",
-      properties: {
-        description: { type: "string", description: "子任务详细描述" },
-        context: { type: "string", description: "子任务需要的上下文信息" },
-      },
-      required: ["description"],
-    },
-    async execute(_id, params) {
-      const ts = Date.now();
-      const taskFile = join(homedir(), ".pi", "tasks", `task-${ts}.md`);
-      await mkdir(join(homedir(), ".pi", "tasks"), { recursive: true });
-      const content = `# 子任务 ${ts}
-
-## 描述
-${params.description}
-
-## 上下文
-${params.context ?? "无"}
-
----
-创建于: ${new Date(ts).toISOString()}
-`;
-      await writeFile(taskFile, content);
-      return {
-        content: [{
-          type: "text",
-          text: `子任务已创建: ${taskFile}\n请用户在新会话中打开此文件继续执行。\n当前会话继续主任务。`,
-        }],
-      };
-    },
-  });
-
   pi.registerCommand("plan", {
     description: "切换规划模式（只读探索）",
     handler: async (_args, ctx) => togglePlanMode(ctx),
+  });
+
+  pi.registerCommand("planclear", {
+    description: "清空所有计划任务",
+    handler: async (_args, ctx) => {
+      const state = getState();
+      const count = state.tasks.filter((t) => t.status !== "deleted").length;
+      if (count === 0) {
+        ctx.ui.notify("当前没有计划任务。", "info");
+        return;
+      }
+      resetState();
+      planPresented = false;
+      knownTodoHash = 0;
+      persistState();
+      updateStatus(ctx);
+      todoOverlay?.update();
+      ctx.ui.notify(`已清空 ${count} 个计划任务。`);
+    },
+  });
+
+  pi.registerCommand("planresume", {
+    description: "恢复执行模式（继续未完成的计划）",
+    handler: async (_args, ctx) => {
+      const state = getState();
+      const visible = state.tasks.filter((t) => t.status !== "deleted");
+      const remaining = visible.filter((t) => t.status !== "completed");
+      if (remaining.length === 0) {
+        ctx.ui.notify("没有可恢复的计划任务。请先 /plan 创建计划。", "info");
+        return;
+      }
+      planModeEnabled = false;
+      executionMode = true;
+      knownTodoHash = todoHash();
+      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      persistState();
+      updateStatus(ctx);
+      const first = remaining[0];
+      pi.sendMessage(
+        {
+          customType: "plan-mode-execute",
+          content: `继续执行计划。剩余 ${remaining.length} 步，从以下步骤开始: ${first.subject}`,
+          display: true,
+        },
+        { triggerTurn: true },
+      );
+    },
   });
 
   pi.registerCommand("plandiff", {
@@ -303,6 +322,30 @@ ${params.context ?? "无"}
     },
   });
 
+  pi.registerCommand("planview", {
+    description: "显示当前版本计划全文",
+    handler: async (_args, ctx) => {
+      if (!planDir) {
+        ctx.ui.notify("没有已保存的计划。请先创建计划。", "info");
+        return;
+      }
+      try {
+        const { readFile } = await import("node:fs/promises");
+        const content = await readFile(join(planDir, "plan.md"), "utf-8");
+        pi.sendMessage(
+          {
+            customType: "plan-view",
+            content: `**当前计划全文:**\n\n${content}`,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+      } catch {
+        ctx.ui.notify("无法读取计划文件。", "error");
+      }
+    },
+  });
+
   pi.registerShortcut(Key.ctrlAlt("p"), {
     description: "切换计划模式",
     handler: async (ctx) => togglePlanMode(ctx),
@@ -331,6 +374,7 @@ ${params.context ?? "无"}
     "plan-summary-request",
     "plan-skill-list",
     "plan-complete",
+    "plan-revise",
     "plan-todo-list",
   ]);
 
@@ -386,7 +430,7 @@ ${params.context ?? "无"}
 你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
 限制:
-- 只能使用: read, bash, grep, glob, questionnaire
+- 只能使用: read, bash, grep, glob
 - 不能使用: edit, write（文件修改已禁用）
 - Bash 命令限制为只读白名单
 
@@ -532,8 +576,44 @@ ${todoList}
 
   // Handle plan completion and plan mode UI
   pi.on("agent_end", async (event, ctx) => {
-    // Check if execution is complete
+    // 执行模式：检测计划修订（LLM 输出新的 Plan: 块且用户明确要求修改）
     if (executionMode) {
+      const lastAssistant = [...event.messages]
+        .reverse()
+        .find(isAssistantMessage);
+      const lastText = lastAssistant ? getTextContent(lastAssistant) : "";
+      const extracted = lastText ? extractTodoItems(lastText) : [];
+      if (extracted.length > 0 && isPlanRevisionIntent(lastText)) {
+        let state = getState();
+        const completed = state.tasks.filter(
+          (t) => t.status === "completed" || t.status === "deleted",
+        );
+        const maxId =
+          completed.length > 0 ? Math.max(...completed.map((t) => t.id)) : 0;
+        const newTasks = [...completed];
+        for (const item of extracted) {
+          newTasks.push({
+            id: maxId + item.id,
+            subject: item.subject,
+            status: "pending",
+          });
+        }
+        replaceState({ tasks: newTasks, nextId: maxId + extracted.length + 1 });
+        persistState();
+        updateStatus(ctx);
+        todoOverlay?.update();
+        pi.sendMessage(
+          {
+            customType: "plan-revise",
+            content: `**计划已修订** — 未完成任务已替换为 ${extracted.length} 个新步骤：\n\n${extracted
+              .map((t) => `${t.id}. ${t.subject}`)
+              .join("\n")}`,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+      }
+
       const state = getState();
       const visible = state.tasks.filter((t) => t.status !== "deleted");
       if (visible.length > 0 && visible.every((t) => t.status === "completed")) {
@@ -619,9 +699,13 @@ ${todoList}
       }
     }
 
-    // Show plan steps
+    // Only show choice when todos actually changed or plan is brand new
     const state = getState();
     const visible = state.tasks.filter((t) => t.status !== "deleted");
+    const needsChoice = visible.length > 0 && todoHash() !== knownTodoHash;
+    if (!needsChoice) return;
+
+    // Show plan steps (仅在计划有变化时展示，避免重复刷屏)
     if (visible.length > 0) {
       const todoListText = visible
         .map((t) => `${t.id}. ☐ ${t.subject}`)
@@ -635,10 +719,6 @@ ${todoList}
         { triggerTurn: false },
       );
     }
-
-    // Only show choice when todos actually changed or plan is brand new
-    const needsChoice = visible.length > 0 && todoHash() !== knownTodoHash;
-    if (!needsChoice) return;
 
     const choice = await ctx.ui.select("计划模式 - 下一步?", [
       visible.length > 0

@@ -17,12 +17,12 @@ export function registerTodoTool(pi: ExtensionAPI): void {
     name: "todo",
     label: "计划任务",
     description:
-      "管理任务列表以跟踪多步骤进度。操作: create（新建任务）、update（更新状态/字段）、list（列出任务）、get（查看详情）、delete（删除/归档）、clear（重置）。状态: pending → in_progress → completed，delete 作为归档。使用此工具规划和跟踪多步骤工作。",
+      "管理任务列表以跟踪多步骤进度。操作: create（新建任务）、update（更新状态/字段）、list（列出任务）、get（查看详情）、delete（删除/归档）、clear（重置）。状态: pending → in_progress → completed，blocked（阻塞）→ pending/in_progress/completed，delete 作为归档。使用此工具规划和跟踪多步骤工作。",
     promptSnippet: "管理任务列表以跟踪多步骤进度",
     promptGuidelines: [
       "用 todo 管理多步骤任务。create 创建、update status=in_progress activeForm='正在...' 开始、update status=completed 完成。每次只有一个 in_progress。",
-      "状态机: pending → in_progress → completed。delete 归档已完成或取消的任务。",
-      "遇到阻塞或错误时保持当前任务 in_progress，创建新任务处理阻塞。不要跳过步骤标记 completed。",
+      "状态机: pending → in_progress → completed。blocked 表示步骤被阻塞（依赖缺失、错误频发），阻塞解决后回到 in_progress/pending。delete 归档已完成、取消或放弃的步骤。",
+      "遇到阻塞或错误时，将该步骤标记为 blocked 并说明原因（activeForm），创建新任务处理阻塞。不要跳过步骤标记 completed。",
     ],
     parameters: {
       type: "object",
@@ -47,7 +47,7 @@ export function registerTodoTool(pi: ExtensionAPI): void {
         status: {
           type: "string",
           description: "目标状态（update 用）或过滤条件（list 用）",
-          enum: ["pending", "in_progress", "completed", "deleted"],
+          enum: ["pending", "in_progress", "completed", "blocked", "deleted"],
         },
         id: {
           type: "number",
@@ -56,10 +56,6 @@ export function registerTodoTool(pi: ExtensionAPI): void {
         includeDeleted: {
           type: "boolean",
           description: "list 时是否包含已归档的任务",
-        },
-        owner: {
-          type: "string",
-          description: "负责人",
         },
       },
       required: ["action"],
@@ -116,6 +112,7 @@ function statusLabel(status: string): string {
     pending: "待办",
     in_progress: "进行中",
     completed: "已完成",
+    blocked: "已阻塞",
     deleted: "已删除",
   };
   return labels[status] ?? status;
@@ -141,6 +138,7 @@ export function registerTodosCommand(pi: ExtensionAPI): void {
       const header: string[] = [];
       if (counts.completed > 0) header.push(`${counts.completed}/${counts.total} 已完成`);
       if (counts.inProgress > 0) header.push(`${counts.inProgress} 进行中`);
+      if (counts.blocked > 0) header.push(`${counts.blocked} 已阻塞`);
       if (counts.pending > 0) header.push(`${counts.pending} 待办`);
 
       const lines: string[] = [header.join(" · ")];
@@ -151,6 +149,10 @@ export function registerTodosCommand(pi: ExtensionAPI): void {
       if (groups.inProgress.length > 0) {
         lines.push("── 进行中 ──");
         for (const task of groups.inProgress) lines.push(formatCommandTaskLine(task, "◐"));
+      }
+      if (groups.blocked.length > 0) {
+        lines.push("── 已阻塞 ──");
+        for (const task of groups.blocked) lines.push(formatCommandTaskLine(task, "⏸"));
       }
       if (groups.completed.length > 0) {
         lines.push("── 已完成 ──");

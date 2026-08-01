@@ -1,5 +1,21 @@
 # Changelog — plan-mode
 
+## [2.5.0] - 2026-08-01
+
+### Added
+
+- **blocked 阻塞状态**：`pending/in_progress → blocked`，`blocked → pending/in_progress/completed/deleted`。UI 显示 `⏸`（error 色）与"已阻塞"标签，`/todos` 新增分组，计数 total 含 blocked。存在阻塞任务时计划不会判定完成。
+- **暂停/安全退出**：`/plan` 退出规划模式时保留任务与进度（原行为是清空）；新增 `/planclear` 手动清空、`/planresume` 恢复执行模式并自动注入剩余步骤上下文。
+- **执行中计划修订**：执行模式下 LLM 输出新的 `Plan:` 块且用户明确要求修改时，自动用新步骤替换未完成任务（已完成保留），聊天提示"计划已修订"，下一轮注入新执行上下文。双重判断（修订意图 + Plan 头）防止问句误触发。
+- **`/planview` 命令**：展示当前版本计划全文。
+
+### Removed
+
+- **`task` 子任务工具**：仅写 .md 文件无实际执行价值，与 subagent（worker/parallel）功能重叠。
+- **`questionnaire` 工具条目**：SDK 中不存在此工具（setActiveTools 静默忽略），PLAN_MODE_TOOLS 与提示词中的死条目。
+- **`Task.owner` 字段**：单用户场景无协作，从创建到展示均未使用。
+- **`plan-todo-list` 冗余发送**：仅在计划有变化（needsChoice）时才展示任务列表，避免每次 agent_end 重复刷屏。
+
 ## [2.4.0] - 2026-08-01
 
 ### Fixed
