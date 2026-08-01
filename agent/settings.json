@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.82.1",
-  "defaultProvider": "local-llama",
-  "defaultModel": "Qwen3.6-35B-HauhauCS-Q4_K_P.gguf",
+  "lastChangelogVersion": "0.83.0",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
   "defaultThinkingLevel": "high",
   "steeringMode": "all",
   "followUpMode": "all",
@@ -9,6 +9,10 @@
   "hideThinkingBlock": true,
   "collapseChangelog": true,
   "defaultProjectTrust": "ask",
+  "compaction": {
+    "reserveTokens": 32768,
+    "keepRecentTokens": 20000
+  },
   "extensions": [
     "extensions/subagent/index.ts",
     "extensions/pi-router/index.ts",
@@ -20,7 +24,8 @@
   ],
   "pi-web-toolkit": {
     "searxng_url": "http://127.0.0.1:8889",
-    "search_timeout": 30000
+    "search_timeout": 30000,
+    "headless": true
   },
   "skills": [
     "+skills/pi-translate-zh/SKILL.md",
