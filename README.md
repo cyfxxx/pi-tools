@@ -242,6 +242,14 @@ subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 me
 
 R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。
 
+### 长任务会话拆分
+
+单次会话跨长时间（如数小时、数十轮工具循环）会把上下文累积到数万 token，每次请求都全量重发历史，是 token 消耗的最大来源。建议：
+
+- **按阶段拆会话**：一个会话聚焦一个阶段任务（侦察/规划/实现/验证），完成后新开会话继续，避免单会话无限累积。
+- **提前压缩**：长会话中当上下文接近窗口（compaction 触发线 = 窗口 − `compaction.reserveTokens`，默认配置已调至 32768）时，主动 `/compact` 压缩历史。
+- **批量执行**：引导 agent 合并多次 bash 为单次调用，减少固化进历史的碎工具调用（见 APPEND_SYSTEM.md）。
+
 ## Wrapper 生命周期
 
 `pi-wrapper.sh` 是进程外生命周期管理器，确保 Pi 在崩溃后自动重启：
