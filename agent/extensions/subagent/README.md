@@ -13,8 +13,7 @@
 - [五、Agent 定义](#五agent-定义)
 - [六、工作流预设](#六工作流预设)
 - [七、TUI 渲染](#七tui-渲染)
-- [八、版本变更](#八版本变更)
-- [九、测试](#九测试)
+- [八、测试](#八测试)
 
 ---
 
@@ -51,18 +50,18 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 │  │   └─ chain                 │  .pi/agents/*.md  (项目级)       │
 │  └────────────────────────────┘                                  │
 │                                                                  │
-│  ├─ prompts/                   ├─ agents/                       │
-│  │   implement.md             │   scout.md                      │
-│  │   scout-and-plan.md        │   planner.md                    │
-│  │   implement-and-review.md  │   worker.md                     │
-│                                │   reviewer.md                    │
+│  agents/                                                         │
+│  ├─ scout.md                                                     │
+│  ├─ planner.md                                                   │
+│  ├─ worker.md                                                    │
+│  └─ reviewer.md                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ### 子进程通信协议
 
 ```
-主 agent                              子 agent (pi --mode json -p --no-session)
+主 agent                              子 agent (pi --mode json -p --no-session --no-extensions)
   │                                          │
   │  spawn("pi", [args])                     │
   │────────────────────────────────────>     │
@@ -227,13 +226,13 @@ You are a specialized agent. Your system prompt goes here.
 
 ## 六、工作流预设
 
-预设 prompt 文件注册为 Pi 斜杠命令：
+预设 prompt 文件位于 `~/.pi/agent/prompts/`（用户级，SDK 自动加载为 Pi 斜杠命令）：
 
 | 命令 | 工作流 | 说明 |
 |------|--------|------|
-| `/implement <query>` | scout → planner → worker | 全流程实现 |
-| `/scout-and-plan <query>` | scout → planner | 只计划不做实现 |
-| `/implement-and-review <query>` | worker → reviewer → worker | 实现→审阅→修复 |
+| `/实现 <query>` | scout → planner → worker | 全流程实现 |
+| `/侦察计划 <query>` | scout → planner | 只计划不做实现 |
+| `/实现审阅 <query>` | worker → reviewer → worker | 实现→审阅→修复 |
 
 ---
 
@@ -247,39 +246,7 @@ You are a specialized agent. Your system prompt goes here.
 
 ---
 
-## 八、版本变更
-
-### v3 (今次改进)
-
-| 改进 | 说明 |
-|------|------|
-| **chain 上下文控制** | 每步 `{previous}` 输出做长度截断，防止上下文膨胀 |
-| **并行输出截断** | 并行模式下每个任务输出 >50KB 时用 SDK `truncateHead` 截断 |
-| **usage 统计** | 每步收集 input/output/cacheRead/cacheWrite/cost/contextTokens（经 SDK `calculateContextTokens`） |
-| **测试覆盖** | 34 项测试全部通过 |
-
-### v2 (上次改进)
-
-| 改进 | 说明 |
-|------|------|
-| **模型降级修复** | fallback 模型现在也支持 Ctrl+C 中止和流式输出 |
-| **Agent 发现缓存** | 5 秒 TTL，避免高频调用重复扫描磁盘 |
-| **空 agent 提示优化** | directories empty 时显示如何添加 agent 的指引 |
-| **temp 目录清理** | `rmdirSync` → `rmSync({ recursive: true })`，避免残留 |
-| **测试覆盖** | 34 项测试全部通过 |
-
-### v1 (初始版本 + 之前的改进)
-
-- 单代理 / 并行 / 链式三种执行模式
-- 状态展示与 usage 统计
-- Model fallback 自动降级
-- 每任务 model 覆盖
-- Agent 自动发现
-- 工作流预设
-
----
-
-## 九、测试
+## 八、测试
 
 测试文件：`tests/test.mjs`（独立 Node.js 脚本，无需 vitest/pi 环境）
 
