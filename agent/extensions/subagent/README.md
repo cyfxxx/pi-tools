@@ -52,7 +52,6 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 │                                                                  │
 │  agents/                                                         │
 │  ├─ scout.md                                                     │
-│  ├─ planner.md                                                   │
 │  ├─ worker.md                                                    │
 │  └─ reviewer.md                                                  │
 └──────────────────────────────────────────────────────────────────┘
@@ -139,12 +138,13 @@ Provider files found: src/providers/oauth.ts, ...
 ```
 subagent({
   chain: [
-    { agent: "scout",   task: "Find auth code" },
-    { agent: "planner", task: "Plan refactor using:\n{previous}" },
-    { agent: "worker",  task: "Implement:\n{previous}" },
+    { agent: "scout",  task: "Find auth code" },
+    { task: "Plan refactor using:\n{previous}" },
+    { agent: "worker", task: "Implement:\n{previous}" },
   ]
 })
 ```
+（省略 `agent` 的步骤使用内置通用提示）
 
 - 任一步失败 → 立即停止，报告失败步骤
 - 后续步骤引用前步输出
@@ -157,8 +157,8 @@ Parallel 和 chain 中每个任务可指定 `model`，覆盖 agent 默认模型�
 ```
 subagent({
   chain: [
-    { agent: "scout",   task: "..." },      // 使用 agent 默认模型
-    { agent: "planner", task: "..." },      // 使用 agent 默认模型
+    { agent: "scout",  task: "..." },      // 使用 agent 默认模型
+    { task: "..." },                        // 使用当前会话模型
   ]
 })
 ```
@@ -207,11 +207,14 @@ You are a specialized agent. Your system prompt goes here.
 | Agent | 角色 | 工具 |
 |-------|------|------|
 | **scout** | 侦察兵 | read, grep, find, ls, bash |
-| **planner** | 参谋长 | read, grep, find, ls（只读） |
 | **worker** | 执行者 | 全部（默认） |
 | **reviewer** | 质检员 | read, grep, find, ls, bash |
 
 所有 agent 默认继承当前会话模型。如需指定模型，在 agent YAML 前加 `model:` 字段。
+
+### 默认提示兜底
+
+**agent 是可选的**：调用 `subagent` 时省略 `agent`（或名字不存在），子代理会用内置通用提示执行——融合了探索/计划/执行/审阅四类任务的工作方式与输出要求。自定义角色只是在通用能力之上叠加专用指令。
 
 ### Agent 来源目录
 
@@ -226,13 +229,9 @@ You are a specialized agent. Your system prompt goes here.
 
 ## 六、工作流预设
 
-预设 prompt 文件位于 `~/.pi/agent/prompts/`（用户级，SDK 自动加载为 Pi 斜杠命令）：
+工作流预设已并入内置默认提示：`subagent` 链式模式（chain）天然支持多步流程（探索→计划→执行→审阅），通过 `{previous}` 在步骤间传递输出，无需单独的命令文件。
 
-| 命令 | 工作流 | 说明 |
-|------|--------|------|
-| `/实现 <query>` | scout → planner → worker | 全流程实现 |
-| `/侦察计划 <query>` | scout → planner | 只计划不做实现 |
-| `/实现审阅 <query>` | worker → reviewer → worker | 实现→审阅→修复 |
+如需固定流程，可直接在 `~/.pi/agent/prompts/` 放置带 frontmatter 的 .md 文件，SDK 会自动注册为 Pi 斜杠命令。
 
 ---
 
