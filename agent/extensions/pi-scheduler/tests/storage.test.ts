@@ -3,14 +3,10 @@ import { mkdtemp, rm, readFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
-let TEST_DIR = ''
+const TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-scheduler-test-'))
 
 const { __setAgentDir } = await import('./__mocks__/pi-coding-agent')
-
-beforeAll(async () => {
-  TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-scheduler-test-'))
-  __setAgentDir(TEST_DIR)
-})
+__setAgentDir(TEST_DIR)
 
 afterAll(async () => {
   await rm(TEST_DIR, { recursive: true, force: true })
@@ -182,6 +178,13 @@ describe('task CRUD (isolated store)', () => {
     expect(await updateTask('nope', { enabled: true })).toBeNull()
   })
 
+  it('updateTask rejects invalid schedule on recalc', async () => {
+    const task = await addTask({ name: 'recalc', type: 'interval', schedule: '5m', prompt: 'p' })
+    await expect(updateTask(task.id, { schedule: 'garbage' })).rejects.toThrow('无效调度表达式')
+    const t = await updateTask(task.id, { schedule: '10m' })
+    expect(t?.schedule).toBe('10m')
+  })
+
   it('updateTaskAfterRun records result and recomputes nextRun', async () => {
     const task = await addTask({ name: 'run', type: 'interval', schedule: '5m', prompt: 'p' })
     await updateTaskAfterRun(task.id, 'success', 'output '.repeat(300))
@@ -221,6 +224,173 @@ describe('session lock', () => {
   })
 })
 
+describe('migration (v1 → v2)', () => {
+  it('fills default fields for legacy tasks', async () => {
+    const { readTasks } = await import('../storage')
+    const p = join(TEST_DIR, 'scheduled-tasks.json')
+    const { writeFile } = await import('fs/promises')
+    await writeFile(p, JSON.stringify({
+      version: 1,
+      settings: {},
+      tasks: [{ id: 'old', name: 'legacy', type: 'interval', schedule: '5m', prompt: 'p', enabled: true, lastRun: null, lastResult: null, lastOutput: '', nextRun: '2026-09-01T00:00:00Z' }],
+    }))
+    const store = await readTasks()
+    expect(store.version).toBe(2)
+    const t = store.tasks[0]
+    expect(t.history).toEqual([])
+    expect(t.tags).toEqual([])
+    expect(t.retries).toBe(0)
+    expect(t.failCount).toBe(0)
+    expect(t.maxRunTime).toBe(300)
+    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+  })
+})
+
+describe('addTask validation', () => {
+  beforeEach(async () => {
+    const { writeTasks, readTasks } = await import('../storage')
+    await writeTasks(await readTasks())
+  })
+
+  it('rejects duplicate names', async () => {
+    await addTask({ name: 'dup', type: 'interval', schedule: '5m', prompt: 'p' })
+    await expect(addTask({ name: 'dup', type: 'interval', schedule: '5m', prompt: 'p' })).rejects.toThrow('已存在同名任务')
+  })
+
+  it('rejects invalid schedule expressions', async () => {
+    await expect(addTask({ name: 'bad', type: 'interval', schedule: 'garbage', prompt: 'p' })).rejects.toThrow('无效调度表达式')
+    await expect(addTask({ name: 'bad2', type: 'cron', schedule: '99 99 * * *', prompt: 'p' })).rejects.toThrow('无效调度表达式')
+    await expect(addTask({ name: 'bad3', type: 'once', schedule: 'not-a-time', prompt: 'p' })).rejects.toThrow('无效调度表达式')
+  })
+
+  it('stores tags and retries', async () => {
+    const task = await addTask({ name: 'tagged', type: 'interval', schedule: '5m', prompt: 'p', tags: ['ci', 'daily'], retries: 3 })
+    expect(task.tags).toEqual(['ci', 'daily'])
+    expect(task.retries).toBe(3)
+    expect(task.history).toEqual([])
+  })
+})
+
+describe('updateTaskAfterRun v2 behavior', () => {
+  it('pushes history with duration and truncates at 10', async () => {
+    const task = await addTask({ name: 'hist', type: 'interval', schedule: '5m', prompt: 'p' })
+    for (let i = 0; i < 12; i++) {
+      await updateTaskAfterRun(task.id, i % 2 === 0 ? 'success' : 'failed', `output-${i}`, 1000 + i)
+    }
+    const { readTasks } = await import('../storage')
+    const t = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(t.history).toHaveLength(10)
+    expect(t.history[9].result).toBe('failed')
+    expect(t.history[9].durationMs).toBe(1011)
+    expect(t.history[0].output).toBe('output-2')
+  })
+
+  it('removes once tasks after success', async () => {
+    const task = await addTask({ name: 'one-off', type: 'once', schedule: '+30m', prompt: 'p' })
+    await updateTaskAfterRun(task.id, 'success', 'done')
+    const { readTasks } = await import('../storage')
+    const store = await readTasks()
+    expect(store.tasks.some(x => x.id === task.id)).toBe(false)
+  })
+
+  it('schedules retry on failure when retries remain', async () => {
+    const task = await addTask({ name: 'flaky', type: 'interval', schedule: '5m', prompt: 'p', retries: 2 })
+    await updateTaskAfterRun(task.id, 'failed', 'boom')
+    const { readTasks } = await import('../storage')
+    let t = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(t.failCount).toBe(1)
+    expect(t.runCount).toBe(0)
+    const gap = new Date(t.nextRun!).getTime() - Date.now()
+    expect(gap).toBeGreaterThan(50000)
+    expect(gap).toBeLessThan(70000)
+    await updateTaskAfterRun(task.id, 'failed', 'boom2')
+    t = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(t.failCount).toBe(2)
+    await updateTaskAfterRun(task.id, 'failed', 'boom3')
+    t = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(t.failCount).toBe(3)
+    expect(t.runCount).toBe(1)
+    const nextGap = new Date(t.nextRun!).getTime() - Date.now()
+    expect(nextGap).toBeGreaterThan(280000)
+  })
+
+  it('resets failCount on success', async () => {
+    const task = await addTask({ name: 'recover', type: 'interval', schedule: '5m', prompt: 'p', retries: 2 })
+    await updateTaskAfterRun(task.id, 'failed', 'boom')
+    await updateTaskAfterRun(task.id, 'success', 'ok')
+    const { readTasks } = await import('../storage')
+    const t = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(t.failCount).toBe(0)
+    expect(t.runCount).toBe(1)
+  })
+})
+
+describe('renderPrompt', () => {
+  it('replaces template variables', async () => {
+    const { renderPrompt } = await import('../storage')
+    const out = renderPrompt('today is {{date}} at {{time}}, cwd={{cwd}}')
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    expect(out).toContain(`today is ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`)
+    expect(out).toContain('cwd=')
+    expect(out).not.toContain('{{date}}')
+  })
+})
+
+describe('previewCron', () => {
+  it('returns increasing future trigger times', async () => {
+    const { previewCron } = await import('../storage')
+    const times = await previewCron('0 9 * * 1-5')
+    expect(times).toHaveLength(5)
+    const t = times.map(x => new Date(x).getTime())
+    expect(t[1]).toBeGreaterThan(t[0])
+    expect(t[4]).toBeGreaterThan(t[3])
+  })
+
+  it('rejects invalid expressions', async () => {
+    const { previewCron } = await import('../storage')
+    await expect(previewCron('garbage')).rejects.toThrow('无效 cron 表达式')
+  })
+})
+
+describe('export / import', () => {
+  beforeEach(async () => {
+    const { writeTasks, readTasks } = await import('../storage')
+    const store = await readTasks()
+    store.tasks = []
+    await writeTasks(store)
+  })
+
+  it('round-trips tasks and skips duplicates/invalid', async () => {
+    const { exportTasks, importTasks, readTasks } = await import('../storage')
+    await addTask({ name: 'keep', type: 'interval', schedule: '5m', prompt: 'p', tags: ['a'], retries: 1 })
+    await addTask({ name: 'dup-name', type: 'once', schedule: '+1h', prompt: 'p' })
+    const outPath = await exportTasks()
+    const { readFile } = await import('fs/promises')
+    const exported = JSON.parse(await readFile(outPath, 'utf-8'))
+    expect(exported.tasks).toHaveLength(2)
+    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    const res = await importTasks(outPath)
+    expect(res.imported).toBe(2)
+    expect(res.skipped).toEqual([])
+    const res2 = await importTasks(outPath)
+    expect(res2.imported).toBe(0)
+    expect(res2.skipped.sort()).toEqual(['dup-name', 'keep'])
+    await rm(outPath, { force: true })
+  })
+})
+
+describe('settings', () => {
+  it('get/set round-trip', async () => {
+    const { getSettings, setSettings } = await import('../storage')
+    await setSettings({ paused: true, webhookUrl: 'https://example.com/hook' })
+    const s = await getSettings()
+    expect(s.paused).toBe(true)
+    expect(s.webhookUrl).toBe('https://example.com/hook')
+    await setSettings({ paused: false })
+  })
+})
+
 function createTaskShape(p: Parameters<typeof addTask>[0]): Record<string, unknown> {
   return {
     id: 'test-id',
@@ -237,6 +407,10 @@ function createTaskShape(p: Parameters<typeof addTask>[0]): Record<string, unkno
     notifyOnCompletion: false,
     maxRunTime: 300,
     runCount: 0,
+    history: [],
+    tags: [],
+    retries: 0,
+    failCount: 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }

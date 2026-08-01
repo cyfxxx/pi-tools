@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
-import type { Task, TaskStore, SchedulerSettings } from './types.ts'
-import { STORE_VERSION, DEFAULT_MAX_RUN_TIME } from './types.ts'
+import type { Task, TaskStore, SchedulerSettings, ExecHistoryEntry } from './types.ts'
+import { STORE_VERSION, DEFAULT_MAX_RUN_TIME, DEFAULT_RETRY_DELAY_MS, HISTORY_LIMIT, TASKS_FILE } from './types.ts'
 
 let lockPid: string | null = null
 
@@ -73,11 +73,28 @@ export async function readTasks(): Promise<TaskStore> {
   try {
     const raw = await readFile(p, 'utf-8')
     const data = JSON.parse(raw) as TaskStore
-    if (!data.tasks) data.tasks = []
+    if (!Array.isArray(data.tasks)) data.tasks = []
     if (!data.settings) data.settings = {}
+    if ((data.version ?? 1) < STORE_VERSION) migrateTasks(data)
+    data.version = STORE_VERSION
     return data
   } catch {
     return emptyStore()
+  }
+}
+
+function migrateTasks(data: TaskStore): void {
+  for (const t of data.tasks) {
+    if (!Array.isArray(t.history)) t.history = []
+    if (!Array.isArray(t.tags)) t.tags = []
+    if (typeof t.retries !== 'number') t.retries = 0
+    if (typeof t.failCount !== 'number') t.failCount = 0
+    if (typeof t.maxRunTime !== 'number') t.maxRunTime = DEFAULT_MAX_RUN_TIME
+    if (typeof t.notifyOnCompletion !== 'boolean') t.notifyOnCompletion = false
+    if (typeof t.useSubagent !== 'boolean') t.useSubagent = false
+    if (typeof t.runCount !== 'number') t.runCount = 0
+    if (typeof t.lastResult !== 'string') t.lastResult = null
+    if (typeof t.lastOutput !== 'string') t.lastOutput = ''
   }
 }
 
@@ -203,6 +220,8 @@ export function createTask(params: {
   useSubagent?: boolean
   notifyOnCompletion?: boolean
   maxRunTime?: number
+  tags?: string[]
+  retries?: number
 }): Task {
   const task: Task = {
     id: randomUUID(),
@@ -219,15 +238,28 @@ export function createTask(params: {
     notifyOnCompletion: params.notifyOnCompletion ?? false,
     maxRunTime: params.maxRunTime ?? DEFAULT_MAX_RUN_TIME,
     runCount: 0,
+    history: [],
+    tags: params.tags ?? [],
+    retries: Math.max(0, params.retries ?? 0),
+    failCount: 0,
     createdAt: isoNow(),
     updatedAt: isoNow(),
   }
   task.nextRun = computeNextRun(task)
+  if (task.nextRun === null) {
+    throw new Error(
+      `无效调度表达式: "${params.schedule}"（类型 ${params.type}）。` +
+      `interval 示例 "5m"/"1h"，cron 示例 "0 9 * * 1-5"，once 示例 "+30m" 或 ISO 时间`
+    )
+  }
   return task
 }
 
 export async function addTask(params: Parameters<typeof createTask>[0]): Promise<Task> {
   const store = await readTasks()
+  if (store.tasks.some(t => t.name === params.name)) {
+    throw new Error(`已存在同名任务: "${params.name}"，请更换名称`)
+  }
   const task = createTask(params)
   store.tasks.push(task)
   await writeTasks(store)
@@ -236,7 +268,7 @@ export async function addTask(params: Parameters<typeof createTask>[0]): Promise
 
 export async function updateTask(
   idOrName: string,
-  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name'>>
+  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries'>>
 ): Promise<Task | null> {
   const store = await readTasks()
   const task = store.tasks.find(t => t.id === idOrName || t.name === idOrName)
@@ -244,11 +276,20 @@ export async function updateTask(
   let needsRecalc = false
   for (const [k, v] of Object.entries(updates)) {
     if (v !== undefined) {
+      if (k === 'tags' && !Array.isArray(v)) continue
       ;(task as any)[k] = v
       if (k === 'schedule' || k === 'type') needsRecalc = true
     }
   }
-  if (needsRecalc) task.nextRun = computeNextRun(task)
+  if (needsRecalc) {
+    task.nextRun = computeNextRun(task)
+    if (task.nextRun === null) {
+      throw new Error(
+        `无效调度表达式: "${task.schedule}"（类型 ${task.type}）。` +
+        `interval 示例 "5m"/"1h"，cron 示例 "0 9 * * 1-5"，once 示例 "+30m" 或 ISO 时间`
+      )
+    }
+  }
   task.updatedAt = isoNow()
   await writeTasks(store)
   return task
@@ -275,16 +316,164 @@ export async function listTasks(): Promise<Task[]> {
 export async function updateTaskAfterRun(
   id: string,
   result: 'success' | 'failed',
-  output: string
+  output: string,
+  durationMs?: number
 ): Promise<void> {
   const store = await readTasks()
-  const task = store.tasks.find(t => t.id === id)
-  if (!task) return
+  const idx = store.tasks.findIndex(t => t.id === id)
+  if (idx === -1) return
+  const task = store.tasks[idx]
+
+  const historyEntry: ExecHistoryEntry = {
+    time: isoNow(),
+    result,
+    output: output.slice(0, 1000),
+    durationMs,
+  }
+  task.history.push(historyEntry)
+  if (task.history.length > HISTORY_LIMIT) task.history = task.history.slice(-HISTORY_LIMIT)
+
   task.lastRun = isoNow()
   task.lastResult = result
   task.lastOutput = output.slice(0, 1000)
-  task.runCount++
-  task.nextRun = computeNextRun(task)
   task.updatedAt = isoNow()
+
+  if (result === 'success') {
+    task.failCount = 0
+    task.runCount++
+    // once 任务完成后自动清理
+    if (task.type === 'once') {
+      store.tasks.splice(idx, 1)
+      await writeTasks(store)
+      return
+    }
+    task.nextRun = computeNextRun(task)
+  } else {
+    task.failCount++
+    if (task.retries > 0 && task.failCount <= task.retries) {
+      // 失败重试：延迟固定间隔后再次触发
+      task.nextRun = addMs(isoNow(), DEFAULT_RETRY_DELAY_MS)
+    } else {
+      task.runCount++
+      task.nextRun = computeNextRun(task)
+    }
+  }
   await writeTasks(store)
+}
+
+export async function getSettings(): Promise<SchedulerSettings> {
+  const store = await readTasks()
+  return store.settings
+}
+
+export async function setSettings(updates: Partial<SchedulerSettings>): Promise<SchedulerSettings> {
+  const store = await readTasks()
+  store.settings = { ...store.settings, ...updates }
+  await writeTasks(store)
+  return store.settings
+}
+
+export function renderPrompt(prompt: string): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const vars: Record<string, string> = {
+    '{{date}}': `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    '{{time}}': `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+    '{{datetime}}': now.toISOString(),
+    '{{cwd}}': process.cwd(),
+  }
+  let out = prompt
+  for (const [k, v] of Object.entries(vars)) out = out.split(k).join(v)
+  return out
+}
+
+export async function previewCron(expr: string, count = 5): Promise<string[]> {
+  if (!CronClass) throw new Error('croner 不可用')
+  const out: string[] = []
+  let startAt: Date | undefined
+  for (let i = 0; i < count; i++) {
+    let cron: any
+    try {
+      cron = new CronClass(expr, { legacyMode: false, startAt })
+    } catch {
+      throw new Error(`无效 cron 表达式: "${expr}"`)
+    }
+    const next = cron.nextRun()
+    if (!next) break
+    out.push(next.toISOString())
+    startAt = new Date(next.getTime() + 1)
+  }
+  if (out.length === 0) throw new Error(`无效 cron 表达式: "${expr}"（无未来触发时间）`)
+  return out
+}
+
+export async function sendWebhook(task: Pick<Task, 'name' | 'type' | 'schedule'>, result: string, output: string): Promise<void> {
+  let url = process.env.PI_SCHEDULER_WEBHOOK || ''
+  if (!url) {
+    const settings = await getSettings()
+    url = settings.webhookUrl || ''
+  }
+  if (!url) return
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task: task.name,
+        type: task.type,
+        schedule: task.schedule,
+        result,
+        time: isoNow(),
+        output: (output || '').slice(0, 1000),
+      }),
+      signal: AbortSignal.timeout(10000),
+    })
+  } catch { /* 通知失败不影响调度 */ }
+}
+
+export async function exportTasks(): Promise<string> {
+  const store = await readTasks()
+  const outPath = join(AGENT_DIR, `scheduler-export-${Date.now()}.json`)
+  await writeFile(outPath, JSON.stringify({ version: STORE_VERSION, exportedAt: isoNow(), tasks: store.tasks }, null, 2), 'utf-8')
+  return outPath
+}
+
+export async function importTasks(filePath: string): Promise<{ imported: number; skipped: string[] }> {
+  const raw = await readFile(filePath, 'utf-8')
+  const data = JSON.parse(raw) as { tasks?: unknown[] }
+  if (!Array.isArray(data.tasks)) throw new Error(`导入文件无 tasks 数组: ${filePath}`)
+  const store = await readTasks()
+  const existing = new Set(store.tasks.map(t => t.name))
+  const skipped: string[] = []
+  let imported = 0
+  for (const rawTask of data.tasks as Record<string, unknown>[]) {
+    if (!rawTask || typeof rawTask !== 'object') continue
+    const name = String(rawTask.name ?? '')
+    const type = rawTask.type as Task['type']
+    const schedule = String(rawTask.schedule ?? '')
+    const prompt = String(rawTask.prompt ?? '')
+    if (!name || !type || !schedule || !prompt) { skipped.push(name || '<未命名>'); continue }
+    if (existing.has(name)) { skipped.push(name); continue }
+    try {
+      const task = createTask({
+        name,
+        type,
+        schedule,
+        prompt,
+        enabled: rawTask.enabled as boolean | undefined,
+        useSubagent: rawTask.useSubagent as boolean | undefined,
+        notifyOnCompletion: rawTask.notifyOnCompletion as boolean | undefined,
+        maxRunTime: rawTask.maxRunTime as number | undefined,
+        tags: Array.isArray(rawTask.tags) ? rawTask.tags as string[] : undefined,
+        retries: rawTask.retries as number | undefined,
+      })
+      store.tasks.push(task)
+      imported++
+      existing.add(name)
+    } catch {
+      skipped.push(name)
+    }
+  }
+  if (imported > 0) await writeTasks(store)
+  return { imported, skipped }
 }

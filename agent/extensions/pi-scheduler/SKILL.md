@@ -20,13 +20,17 @@ description: 定时任务扩展。支持 interval / cron / once 三种触发类�
 | 参数 | 说明 |
 |------|------|
 | `interval` | 间隔时间：`30s` / `5m` / `1h` / `2d` |
-| `prompt` | 要 agent 执行的提示词 |
+| `prompt` | 要 agent 执行的提示词，支持模板变量 |
+| `--timeout <秒>` | 执行超时（useSubagent 模式生效） |
+| `--tags a,b` | 任务标签 |
+| `--retries <n>` | 失败后额外重试次数（每次间隔 60s） |
 
 **示例：**
 - `/loop 5m 检查 CI 状态并报告未提交的变更`
 - `/loop 1h 运行完整测试套件并总结`
 - `/loop 30s 检查开发服务器是否仍在响应`
-- `/loop 10m 检查构建状态 --timeout 600`（可选超时，useSubagent 模式生效）
+- `/loop 10m 检查构建状态 --timeout 600 --retries 2`
+- `/loop 1h 汇报 {{date}} 的 git 提交`
 
 ### `/schedule`
 
@@ -34,11 +38,16 @@ description: 定时任务扩展。支持 interval / cron / once 三种触发类�
 
 | 子命令 | 说明 |
 |--------|------|
-| `list` | 列出所有任务（默认） |
+| `list [--tag <t>]` | 列出所有任务（默认，可按标签过滤） |
+| `edit <id或name> [--schedule <expr>] [--prompt <text>] [--timeout <秒>] [--retries <n>]` | 修改任务 |
 | `delete <id或name>` | 删除任务 |
 | `enable <id或name>` | 启用已禁用的任务 |
 | `disable <id或name>` | 禁用任务 |
 | `cron "<expr>" <prompt>` | 创建 cron 定时任务 |
+| `test "<expr>"` | 预览未来 5 次触发时间 |
+| `history <id或name>` | 查看最近 10 次执行记录 |
+| `export` / `import <file>` | 导出 / 导入任务 JSON |
+| `pause` / `resume` | 全局暂停 / 恢复调度 |
 
 **cron 表达式（5 字段）：** `minute hour day-of-month month day-of-week`
 
@@ -56,7 +65,7 @@ description: 定时任务扩展。支持 interval / cron / once 三种触发类�
 
 ### `/remind`
 
-创建一次性提醒任务，到期后自动禁用。
+创建一次性提醒任务，执行成功后自动移除。
 
 | 参数 | 说明 |
 |------|------|
@@ -75,14 +84,17 @@ Agent 可在对话中自主调用此工具。
 
 | 参数 | 类型 | 必需 | 说明 |
 |------|------|------|------|
-| `action` | `add`/`list`/`delete`/`enable`/`disable` | 是 | 操作 |
+| `action` | `add`/`list`/`update`/`delete`/`enable`/`disable`/`pause`/`resume` | 是 | 操作 |
 | `name` | string | 增删改时 | 任务名 |
+| `taskId` | string | 增删改时 | 任务 ID（优先于 name） |
 | `type` | `interval`/`cron`/`once` | add 时 | 任务类型 |
 | `schedule` | string | add 时 | 调度表达式 |
 | `prompt` | string | add 时 | 提示词 |
 | `useSubagent` | boolean | 否 | 子代理执行 |
-| `notifyOnCompletion` | boolean | 否 | 完成通知（离线 cron 执行时生效） |
+| `notifyOnCompletion` | boolean | 否 | 完成通知（在线与离线均生效） |
 | `maxRunTime` | number | 否 | 执行超时秒数（默认 300，仅 useSubagent 生效） |
+| `tags` | string[] | 否 | 任务标签 |
+| `retries` | number | 否 | 失败后额外重试次数（默认 0） |
 
 **场景示例：**
 
@@ -115,19 +127,21 @@ Pi 关闭时，系统 cron 每分钟执行 `pi-cron.sh`：
 
 ```
 创建 (/loop /schedule /remind)
-  → 写入 scheduled-tasks.json
-  → 计算 nextRun
-  → 等待到期...
+  → 校验表达式 + 重名校验 → 写入 scheduled-tasks.json
+  → 计算 nextRun → 等待到期...
       ├── 会话内：30s 轮询 → 到期 → sendUserMessage
       └── 离线：cron 60s 间隔 → 到期 → pi -p
-  → 更新 lastRun / lastResult / nextRun
-  → 循环（interval/cron）或禁用（once）
+  → 更新 lastRun / lastResult / nextRun / history
+  → 失败且配置 retries → 60s 后重试
+  → 循环（interval/cron）或移除（once）
 ```
 
 ## 注意事项
 
 1. **Pi 运行中时不会离线触发**：锁文件机制确保 cron 跳过 Pi 活跃期间的任务。
-2. **`once` 任务只触发一次**：执行后 `nextRun` 置 null，不会再次触发。
+2. **`once` 任务只触发一次**：执行成功后自动移除；失败且配置重试则按重试计划执行。
 3. **超时保护**：每个任务默认 `maxRunTime=300s`，可调整。
 4. **任务迁移**：重建后任务文件保留（`scheduled-tasks.json` 非 git 跟踪），使用 `pi-backup` 备份。
-5. **cron 表达式**：使用 5 字段 POSIX 格式，第 6 字段（秒）不支持。
+5. **cron 表达式**：使用 5 字段 POSIX 格式，第 6 字段（秒）不支持；按系统本地时区计算。
+6. **无效表达式与重名会被拒绝**：创建时校验，不会产生永不执行的任务。
+7. **模板变量**：prompt 中 `{{date}}` `{{time}}` `{{datetime}}` `{{cwd}}` 会在执行时渲染。

@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks } from './storage.ts'
+import { listTasks, isDue, updateTaskAfterRun, readTasks, renderPrompt, sendWebhook } from './storage.ts'
 import type { Task } from './types.ts'
 
 export class SessionScheduler {
@@ -24,8 +24,16 @@ export class SessionScheduler {
     this.firing.clear()
   }
 
+  /** 立即执行任务（/loop 创建后首次触发用） */
+  async runNow(task: Task): Promise<void> {
+    if (this.firing.has(task.id)) return
+    await this.fireTask(task)
+  }
+
   private async tick(): Promise<void> {
     try {
+      const store = await readTasks()
+      if (store.settings.paused) return
       const tasks = await listTasks()
       const due = tasks.filter(t => isDue(t) && !this.firing.has(t.id))
       for (const task of due) {
@@ -37,15 +45,16 @@ export class SessionScheduler {
 
   private async fireTask(task: Task): Promise<void> {
     this.firing.add(task.id)
+    const startedAt = Date.now()
     try {
       if (task.useSubagent) {
         await this.fireViaSubagent(task)
       } else {
         await this.fireViaMessage(task)
       }
-      await updateTaskAfterRun(task.id, 'success', '')
+      await updateTaskAfterRun(task.id, 'success', '', Date.now() - startedAt)
     } catch (err) {
-      await updateTaskAfterRun(task.id, 'failed', String(err))
+      await updateTaskAfterRun(task.id, 'failed', String(err), Date.now() - startedAt)
     } finally {
       this.firing.delete(task.id)
     }
@@ -53,7 +62,10 @@ export class SessionScheduler {
 
   private async fireViaMessage(task: Task): Promise<void> {
     const label = `[Scheduler] ${task.name}`
-    await this.pi.sendUserMessage?.(`${label}: ${task.prompt}`)
+    await this.pi.sendUserMessage?.(`${label}: ${renderPrompt(task.prompt)}`)
+    if (task.notifyOnCompletion) {
+      await sendWebhook(task, 'success', '')
+    }
   }
 
   private async fireViaSubagent(task: Task): Promise<void> {
@@ -64,16 +76,25 @@ export class SessionScheduler {
     await new Promise<void>((resolve, reject) => {
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), timeout)
-      const proc = spawn('pi', ['-p', task.prompt], {
+      const proc = spawn('pi', ['-p', renderPrompt(task.prompt)], {
         stdio: ['ignore', 'pipe', 'pipe'],
         signal: controller.signal,
+        cwd: process.cwd(),
       })
       let stderr = ''
+      let stdout = ''
       proc.stderr.on('data', (data: Buffer) => { stderr += data.toString() })
-      proc.on('close', (code) => {
+      proc.stdout.on('data', (data: Buffer) => { stdout += data.toString() })
+      proc.on('close', async (code) => {
         clearTimeout(timer)
-        if (code === 0) resolve()
-        else reject(new Error(stderr.trim() || `exit ${code}`))
+        if (code === 0) {
+          if (task.notifyOnCompletion) {
+            await sendWebhook(task, 'success', stdout.slice(0, 1000))
+          }
+          resolve()
+        } else {
+          reject(new Error(stderr.trim() || `exit ${code}`))
+        }
       })
       proc.on('error', (err) => {
         clearTimeout(timer)
