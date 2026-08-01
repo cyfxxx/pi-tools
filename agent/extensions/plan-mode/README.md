@@ -50,7 +50,7 @@
 |------|------|
 | **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），4 状态机（pending→in_progress→completed→deleted） |
 | **`task` 工具** | 创建独立子任务描述文件到 `~/.pi/tasks/`，支持并行探索 |
-| **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓）、删除线、溢出折叠 |
+| **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓）、删除线、溢出折叠、标题行高亮当前执行步骤 |
 | **只读工具集** | 限制可用工具为 read、bash、grep、glob、questionnaire |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
@@ -193,8 +193,8 @@
     │
     ▼
   context  (每次 LLM 请求前，可过滤消息)
-    │  └── 非 Plan Mode:
-    │       └── 过滤掉 customType = "plan-mode-context" 的消息
+    │  └── 所有 plan-* 注入型消息只保留最新一条
+    │       （清除历史累积，本轮注入不受影响）
     │
     ▼
   agent 生成回复（多轮 tool_call 循环，略）
@@ -283,16 +283,19 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 - 不安全命令返回 `{ block: true, reason }` 阻止执行
 
 #### `pi.on("context", ...)` — 消息上下文过滤
-- 只在 `planModeEnabled=false` 时生效
-- 过滤掉 `customType === "plan-mode-context"` 的消息
-- 防止残留的规划模式上下文影响正常对话
+- 对所有 `plan-*` 注入型消息（`plan-mode-context`、`plan-execution-context`、`plan-pressure-tag`、`plan-mode-recovery`、`plan-urgency-hint`、`plan-summary-request`、`plan-skill-list`、`plan-complete`、`plan-todo-list`）执行**只保留最新一条**去重
+- 防止历史注入消息作为 user 消息永久累积在上下文中，浪费 token
+- 本轮新注入的消息不受影响（保留最新一条）
 
 #### `pi.on("before_agent_start", ...)` — 注入系统提示
-- **Plan Mode**: 注入包含限制说明、行为指引导的 `[PLAN MODE ACTIVE]` 消息
-- **Execution Mode**: 注入包含剩余步骤列表的 `[EXECUTING PLAN]` 消息
-- **Compaction 恢复**: 检测到刚完成 compaction 时，注入"继续之前的工作"提示
-- **溢出预警**: 剩余 token 不足 20K 时注入 🟠🔴 预警
-- **摘要引导**: 压力 critical 时引导 LLM 用 ctx_note 保存结构化摘要
+按优先级链注入，每轮最多一条：
+1. **Plan Mode**: 注入包含限制说明、行为指导、结构化影响分析要求的 `[PLAN MODE ACTIVE]` 消息
+2. **Execution Mode（计划有变化）**: 注入包含剩余步骤列表的 `[EXECUTING PLAN]` 消息
+3. **Compaction 恢复**: 检测到刚完成 compaction 时，注入"继续之前的工作"提示
+4. **溢出预警**: 剩余 token 不足 20K 时注入 🟠🔴 预警
+5. **摘要引导**: 压力 critical 时引导 LLM 用 ctx_note 保存结构化摘要
+6. **技能清单**: 首次动态扫描 `~/.pi/agent/skills/*/SKILL.md` 并注入可用技能
+7. **压力标签兜底**: 执行模式计划未变化时仅注入 token 压力标签
 - 消息类型为 `customType`，`display: false`（不显示在聊天中，只发送给 LLM）
 
 #### `pi.on("turn_end", ...)` — 步骤进度追踪
@@ -401,12 +404,29 @@ Plan:
 3. 添加单元测试
 ```
 
-**提取流程**（`extractTodoItems()`, `utils.ts:129-157`）：
+也支持中文标题与多种编号/清单格式：
 
-1. 搜索 `Plan:`（或 `**Plan:**`）标题
-2. 在标题后的文本中用正则 `^\s*(\d+)[.)]\s+\*{0,2}([^*\n]+)` 匹配编号步骤
-3. 过滤条件：文本 ≥ 5 字符、不以 `` ` `` 或 `/` 开头
-4. 调用 `cleanStepText()` 清洗：去 markdown 格式、去首行动词、截断 50 字、首字母大写
+```
+计划：
+1、安装项目依赖
+2．配置运行环境变量
+
+或:
+
+计划:
+- [ ] 分析数据结构
+- 运行回归测试
+```
+
+**提取流程**（`extractTodoItems()`, `utils.ts`）：
+
+1. 搜索 `Plan:` / `计划：` / `计划:` 标题（支持 `**Plan:**` 加粗形式）
+2. 在标题后的文本中匹配编号步骤：`1.` `1)` `1、` `1．`（半角分隔符后需空格，全角分隔符后可选）
+3. 无编号匹配时回退到 checklist 格式：`- [ ]` / `-` / `•` / `☐`
+4. 过滤条件：文本 ≥ 5 字符、不以 `` ` `` 或 `/` 开头
+5. 调用 `cleanStepText()` 清洗：去 markdown 格式、去首行动词、截断 50 字、首字母大写
+
+**计划修订识别**（`isPlanRevisionIntent()`）：中英文修订词（修改/改为/改成/更新/重新规划/删除/新增/remove/update 等）触发新计划版本保存；中文问句（为什么/怎么/如何/解释等）与英文问句（why/what/how 等）被识别为澄清问题，不产生新版本。
 
 ### 7.2 步骤进度追踪
 

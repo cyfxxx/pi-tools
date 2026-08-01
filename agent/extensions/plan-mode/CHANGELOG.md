@@ -1,5 +1,25 @@
 # Changelog — plan-mode
 
+## [2.4.0] - 2026-08-01
+
+### Fixed
+
+- **注入消息永久累积（S1）**：`context` hook 从"仅过滤 `plan-mode-context`"升级为"每种注入类型只保留最新一条"（覆盖 `plan-execution-context`、`plan-pressure-tag`、`plan-mode-recovery`、`plan-urgency-hint`、`plan-summary-request`、`plan-skill-list`、`plan-complete`、`plan-todo-list`）。此前这些消息会作为 user 消息写入会话日志并在恢复时反复进入上下文，永久浪费 token。
+- **`before_agent_start` 提前 return（S2）**：执行模式 todo 未变化时的提前返回导致 compaction 恢复/溢出预警/技能清单注入全部失效。重构为统一优先级链：plan 上下文 → 执行上下文 → 压缩恢复 → 溢出预警 → 摘要请求 → 技能清单 → 压力标签兜底。
+- **中文计划提取（S3）**：`extractTodoItems` 支持「计划：/计划:」头部、中文顿号（`1、`）与全角句点（`1．`）编号、checklist 格式（`- [ ]`/`-`/`•`/`☐`）。`isPlanRevisionIntent` 增加中文修订词（修改/改为/改成/换成/调整/重新规划/删除/新增/精简等）与中文问句排除（为什么/怎么/如何/解释等）。
+- **`persistState` 哈希（M4）**：QA 内容变化（条数不变）现在也会触发持久化，不再只按条数计哈希。
+
+### Changed
+
+- **技能清单动态化（M1）**：不再硬编码 `pi-backup`/`pi-translate-zh`，改为扫描 `~/.pi/agent/skills/*/SKILL.md` 的 frontmatter，新增技能自动生效。
+- **计划质量提示（E3）**：PLAN MODE 注入提示要求结构化影响分析（影响文件/风险/未知点）与步骤粒度规范。
+- **执行状态显示（E2）**：`TodoOverlay` 标题行高亮显示当前执行步骤（`▶ 步骤标题`）。
+- **安全白名单（M2）**：补充 `lsblk` 到只读白名单，与 README 附录一致。
+
+### Removed
+
+- 删除死代码 `extractDoneSteps()` / `markCompletedSteps()` 及其冗余 import。
+
 ## [2.3.0] - 2026-07-31
 
 ### Changed
