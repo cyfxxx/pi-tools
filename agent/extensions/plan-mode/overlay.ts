@@ -111,7 +111,17 @@ export class TodoOverlay {
     const headingColor = hasActive ? "accent" : "dim";
     const headingIcon = hasActive ? "●" : "○";
     const headingText = `计划 (${counts.completed}/${counts.total})`;
-    const heading = `${theme.fg(headingColor, headingIcon)} ${theme.fg(headingColor, headingText)}`;
+    let heading = `${theme.fg(headingColor, headingIcon)} ${theme.fg(headingColor, headingText)}`;
+
+    const active = visible.find((t) => t.status === "in_progress");
+    if (active) {
+      const maxSubject = Math.max(10, width - heading.length - 14);
+      const subject =
+        active.subject.length > maxSubject
+          ? `${active.subject.slice(0, maxSubject - 1)}…`
+          : active.subject;
+      heading += ` ${theme.fg("warning", `▶ ${subject}`)}`;
+    }
 
     const lines: string[] = [heading];
     const layout = selectOverlayLayout(overlayState, MAX_WIDGET_LINES - 1);

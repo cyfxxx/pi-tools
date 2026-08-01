@@ -1,4 +1,5 @@
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { readFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -177,7 +178,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     h = ((h << 5) - h + (planModeEnabled ? 1 : 0)) | 0;
     h = ((h << 5) - h + (executionMode ? 1 : 0)) | 0;
     h = ((h << 5) - h + (planPresented ? 1 : 0)) | 0;
-    h = ((h << 5) - h + qaMessages.length) | 0;
+    const qaJson = JSON.stringify(qaMessages);
+    for (let i = 0; i < qaJson.length; i++) {
+      h = ((h << 5) - h + qaJson.charCodeAt(i)) | 0;
+    }
     if (planDir) {
       for (let i = 0; i < planDir.length; i++) {
         h = ((h << 5) - h + planDir.charCodeAt(i)) | 0;
@@ -317,17 +321,59 @@ ${params.context ?? "无"}
     }
   });
 
-  // Filter out stale plan mode context when not in plan mode
-  pi.on("context", async (event) => {
-    if (planModeEnabled) return;
+  // 注入型消息：每种类型只保留最新一条，避免历史消息永久累积浪费 token
+  const INJECTED_CUSTOM_TYPES = new Set([
+    "plan-mode-context",
+    "plan-execution-context",
+    "plan-pressure-tag",
+    "plan-mode-recovery",
+    "plan-urgency-hint",
+    "plan-summary-request",
+    "plan-skill-list",
+    "plan-complete",
+    "plan-todo-list",
+  ]);
 
-    return {
-      messages: event.messages.filter((m) => {
-        const msg = m as AgentMessage & { customType?: string };
-        return msg.customType !== "plan-mode-context";
-      }),
-    };
+  pi.on("context", async (event) => {
+    const seen = new Set<string>();
+    const filtered: typeof event.messages = [];
+    for (let i = event.messages.length - 1; i >= 0; i--) {
+      const m = event.messages[i];
+      const msg = m as AgentMessage & { customType?: string };
+      const customType = msg.customType;
+      if (customType && INJECTED_CUSTOM_TYPES.has(customType)) {
+        if (seen.has(customType)) continue;
+        seen.add(customType);
+      }
+      filtered.unshift(m);
+    }
+    return { messages: filtered };
   });
+
+  // 动态扫描可用技能（~/.pi/agent/skills/*/SKILL.md）
+  function discoverSkills(): { name: string; desc: string }[] {
+    const base = join(homedir(), ".pi", "agent", "skills");
+    try {
+      const entries = readdirSync(base, { withFileTypes: true });
+      const skills: { name: string; desc: string }[] = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const name = entry.name;
+        try {
+          const content = readFileSync(join(base, name, "SKILL.md"), "utf-8");
+          const fm = content.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
+          const desc =
+            fm.match(/^description:\s*(.+)$/m)?.[1]?.trim() ?? "";
+          skills.push({ name, desc });
+        } catch {
+          skills.push({ name, desc: "" });
+        }
+      }
+      return skills;
+    } catch {
+      return [];
+    }
+  }
 
   // Inject plan/execution context before agent starts
   pi.on("before_agent_start", async () => {
@@ -347,7 +393,14 @@ ${params.context ?? "无"}
 创建计划前:
 - 如果需求不明确，先提出澄清问题。
 - 检查代码库以了解当前结构。
-- 进行影响分析：识别哪些文件会变化、可能破坏什么、边界情况。
+- 进行影响分析（在计划前用以下结构输出）:
+  影响文件: <将变化的文件清单>
+  风险: <可能破坏的内容、边界情况>
+  未知点: <需要用户确认的假设>
+
+计划的步骤要求:
+- 每步一个可独立执行的改动，粒度适中（可单独验证）。
+- 编号从 1 开始，顺序按依赖排列。
 
 在 "Plan:" 头部下创建详细的编号计划:
 
@@ -374,36 +427,30 @@ Plan:
     if (executionMode) {
       const state = getState();
       const visible = state.tasks.filter((t) => t.status !== "deleted");
-      if (visible.length === 0) return;
-
       const currentHash = todoHash();
-      if (currentHash === knownTodoHash) {
-        const pressureTag = getTokenPressureTag();
-        if (pressureTag) {
-          return { message: { customType: "plan-pressure-tag", content: pressureTag, display: false } };
-        }
-        return;
-      }
-      knownTodoHash = currentHash;
-      const pressureTag = getTokenPressureTag() || "";
-      const preamble = pressureTag ? `${pressureTag}\n` : "";
-      const remaining = visible.filter((t) => t.status !== "completed");
-      const counts = selectTodoCounts(state);
-      const todoList = remaining.map((t) => `${t.id}. ${t.subject}`).join("\n");
-      return {
-        message: {
-          customType: "plan-execution-context",
-          content: `${preamble}[执行中: ${counts.completed}/${counts.total} 已完成]
+      if (visible.length > 0 && currentHash !== knownTodoHash) {
+        knownTodoHash = currentHash;
+        const pressureTag = getTokenPressureTag() || "";
+        const preamble = pressureTag ? `${pressureTag}\n` : "";
+        const remaining = visible.filter((t) => t.status !== "completed");
+        const counts = selectTodoCounts(state);
+        const todoList = remaining.map((t) => `${t.id}. ${t.subject}`).join("\n");
+        return {
+          message: {
+            customType: "plan-execution-context",
+            content: `${preamble}[执行中: ${counts.completed}/${counts.total} 已完成]
 
 剩余步骤:
 ${todoList}
 
 完成步骤时使用: todo update id=N status=completed
 开始步骤时使用: todo update id=N status=in_progress activeForm='正在...'`,
-          display: false,
-        },
-      };
+            display: false,
+          },
+        };
+      }
     }
+
     // Check for compaction recovery (P1)
     const notes = loadNotes();
     if (notes["_ctx.just_compacted"] === "true") {
@@ -440,21 +487,36 @@ ${todoList}
       };
     }
 
-    // 注入可用技能清单（仅一次）
+    // 注入可用技能清单（仅一次，动态扫描）
     if (!skillsInjected) {
       skillsInjected = true;
-      const skills = [
-        { name: "pi-backup", desc: "备份和恢复 agent 配置、扩展、技能" },
-        { name: "pi-translate-zh", desc: "Pi TUI 完整中文化补丁" },
-      ];
-      const skillList = skills.map(s => `  /skill:${s.name} — ${s.desc}`).join("\n");
-      return {
-        message: {
-          customType: "plan-skill-list",
-          content: `[可用技能]\n${skillList}\n\n当用户需求匹配时，提示用户使用对应技能或回复 /skill:name。`,
-          display: false,
-        },
-      };
+      const skills = discoverSkills();
+      if (skills.length > 0) {
+        const skillList = skills
+          .map((s) => `  /skill:${s.name} — ${s.desc}`)
+          .join("\n");
+        return {
+          message: {
+            customType: "plan-skill-list",
+            content: `[可用技能]\n${skillList}\n\n当用户需求匹配时，提示用户使用对应技能或回复 /skill:name。`,
+            display: false,
+          },
+        };
+      }
+    }
+
+    // 执行模式：todo 未变化时仅注入压力标签
+    if (executionMode) {
+      const pressureTag = getTokenPressureTag();
+      if (pressureTag) {
+        return {
+          message: {
+            customType: "plan-pressure-tag",
+            content: pressureTag,
+            display: false,
+          },
+        };
+      }
     }
   });
 

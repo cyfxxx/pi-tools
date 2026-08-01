@@ -43,6 +43,7 @@ const SAFE_PATTERNS = [
   /^\s*grep\b/,
   /^\s*find\b/,
   /^\s*ls\b/,
+  /^\s*lsblk\b/,
   /^\s*pwd\b/,
   /^\s*echo\b/,
   /^\s*printf\b/,
@@ -92,8 +93,6 @@ export function isSafeCommand(command: string): boolean {
 }
 
 import type { Task } from "./state.ts";
-import { applyTaskMutation } from "./state.ts";
-import { getState, commitState } from "./store.ts";
 
 export function cleanStepText(text: string): string {
   let cleaned = text
@@ -117,25 +116,38 @@ export function cleanStepText(text: string): string {
 
 export function extractTodoItems(message: string): Task[] {
   const items: Task[] = [];
-  const headerMatch = message.match(/\*{0,2}Plan:\*{0,2}\s*\n/i);
+  const headerMatch = message.match(/\*{0,2}(Plan|计划)[:：]?\*{0,2}[^\n]*\n/i);
   if (!headerMatch) return items;
 
   const planSection = message.slice(
     message.indexOf(headerMatch[0]) + headerMatch[0].length,
   );
-  const numberedPattern = /^\s*(\d+)[.)]\s+\*{0,2}([^*\n]+)/gm;
+  const numberedPattern = /^\s*(\d+)(?:[.)]\s+|[、．]\s*)\*{0,2}([^*\n]+)/gm;
 
   for (const match of planSection.matchAll(numberedPattern)) {
     const text = match[2]
       .trim()
       .replace(/\*{1,2}$/, "")
       .trim();
-    if (
-      text.length > 5 &&
-      !text.startsWith("`") &&
-      !text.startsWith("/") &&
-      !text.startsWith("-")
-    ) {
+    if (isValidStepText(text)) {
+      const cleaned = cleanStepText(text);
+      if (cleaned.length > 3) {
+        items.push({
+          id: items.length + 1,
+          subject: cleaned,
+          status: "pending",
+        });
+      }
+    }
+  }
+
+  if (items.length > 0) return items;
+
+  // 无编号时尝试 checklist 格式（- [ ] / - / • / ☐）
+  const checklistPattern = /^\s*(?:[-*•☐]\s+)(?:\[[ xX]\]\s+)?([^\n]+)/gm;
+  for (const match of planSection.matchAll(checklistPattern)) {
+    const text = match[1].trim().replace(/\*{1,2}$/, "").trim();
+    if (isValidStepText(text)) {
       const cleaned = cleanStepText(text);
       if (cleaned.length > 3) {
         items.push({
@@ -149,40 +161,23 @@ export function extractTodoItems(message: string): Task[] {
   return items;
 }
 
-export function extractDoneSteps(message: string): number[] {
-  const steps: number[] = [];
-  for (const match of message.matchAll(/\[DONE:(\d+)\]/gi)) {
-    const step = Number(match[1]);
-    if (Number.isFinite(step)) steps.push(step);
-  }
-  return steps;
-}
-
-export function markCompletedSteps(text: string): number {
-  const doneSteps = extractDoneSteps(text);
-  let count = 0;
-  for (const step of doneSteps) {
-    const state = getState();
-    const task = state.tasks.find((t) => t.id === step);
-    if (task && task.status !== "completed" && task.status !== "deleted") {
-      const result = applyTaskMutation(state, "update", {
-        id: task.id,
-        status: "completed",
-      } as Record<string, unknown>);
-      if (result.op.kind !== "error") {
-        commitState(result.state);
-        count++;
-      }
-    }
-  }
-  return count;
+function isValidStepText(text: string): boolean {
+  return (
+    text.length > 5 &&
+    !text.startsWith("`") &&
+    !text.startsWith("/") &&
+    !text.startsWith("-")
+  );
 }
 
 export function isPlanRevisionIntent(text: string): boolean {
   const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();
   if (!normalized) return false;
 
-  if (normalized.length < 100 && !/\b(plan|revise|change|update|modify|edit|redo|replan)\b/.test(normalized)) {
+  const revisionHints =
+    /\b(plan|revise|change|update|modify|edit|redo|replan)\b|(计划|修改|改为|改成|换成|变为|变成|变更|更新|调整|重新|修订|重写|改写|重做|删|增加|新增|移除|去掉|精简|缩短)/;
+
+  if (normalized.length < 100 && !revisionHints.test(normalized)) {
     return false;
   }
 
@@ -195,6 +190,9 @@ export function isPlanRevisionIntent(text: string): boolean {
     ) ||
     /\b(plan should|new plan|another plan|updated plan|revised plan)\b/.test(
       normalized,
+    ) ||
+    /(修改|改为|改成|换成|变为|变成|变更|更新|调整|重新(计划|规划|制定|做|写)|修订|重做|改写|重写|重新生成|改(一)?下|改一改|增加|加入|加上|新增|移除|删除|去掉|删掉|扩展|扩大|精简|缩短|收紧|计划应该|新计划|另一个计划|新方案|新版本)/.test(
+      normalized,
     );
 
   if (!explicitRevision) return false;
@@ -202,7 +200,10 @@ export function isPlanRevisionIntent(text: string): boolean {
   const clarificationOnly =
     /\b(why|what|how|explain|clarify|question|rationale|tell me|help me understand)\b/.test(
       normalized,
-    ) && !/\b(to the plan|in the plan)\b/.test(normalized);
+    ) ||
+    /(为什么|是什么|怎么|如何|解释一下|说明一下|疑问|原因|理由|告诉我|帮我看看|能不能解释)/.test(
+      normalized,
+    );
 
   return !clarificationOnly;
 }
