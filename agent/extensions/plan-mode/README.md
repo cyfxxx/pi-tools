@@ -48,10 +48,9 @@
 
 | 特性 | 说明 |
 |------|------|
-| **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），4 状态机（pending→in_progress→completed→deleted） |
-| **`task` 工具** | 创建独立子任务描述文件到 `~/.pi/tasks/`，支持并行探索 |
-| **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓）、删除线、溢出折叠、标题行高亮当前执行步骤 |
-| **只读工具集** | 限制可用工具为 read、bash、grep、glob、questionnaire |
+| **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），5 状态机（pending→in_progress→completed→deleted，blocked 阻塞可回退） |
+| **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓/⏸）、删除线、溢出折叠、标题行高亮当前执行步骤 |
+| **只读工具集** | 限制可用工具为 read、bash、grep、glob |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
 | **`[DONE:n]` 标记** ~~→ 已移除~~ | 统一使用 `todo update status=completed` 完成步骤 |
@@ -88,8 +87,7 @@
               │         (只读探索阶段)                 │
               │                                      │
 │  可用工具:                            │
-│    read / bash / grep / glob /        │
-│    questionnaire                       │
+│    read / bash / grep / glob         │
               │                                      │
               │  Bash 受 allowlist 限制               │
               │  (cat、grep、ls 等只读命令)            │
@@ -556,30 +554,35 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 命令 | 描述 | 实现位置 |
 |------|------|----------|
-| `/plan` | 切换规划模式（只读探索） | `index.ts:180-182` |
+| `/plan` | 切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:180-182` |
 | `/todos` | 按状态分组显示所有计划任务 | `todo.ts` |
 | `/plandiff` | 显示当前与上一版本规划的差异 | `index.ts:192-220` |
 | `/planqa` | 显示当前规划讨论的问答历史 | `index.ts:222-248` |
+| `/planview` | 显示当前版本计划全文 | `index.ts` |
+| `/planclear` | 清空所有计划任务（手动重置） | `index.ts` |
+| `/planresume` | 恢复执行模式，继续未完成的计划 | `index.ts` |
 
 ### 工具
 
 | 工具 | 描述 | 操作 |
 |------|------|------|
 | `todo` | 管理计划任务列表 | create / update / list / get / delete / clear |
-| `task` | 创建独立子任务（保存到 `~/.pi/tasks/`） | description + context |
 
 **todo 工具参数：**
 - `action` (必填): create / update / list / get / delete / clear
 - `subject`: 任务标题（create 必填）
 - `description`: 详细描述
 - `activeForm`: 进行中状态标签（如"正在编写测试"）
-- `status`: pending / in_progress / completed / deleted
+- `status`: pending / in_progress / completed / blocked / deleted
 - `id`: 任务 ID（update/get/delete 必填）
 - `includeDeleted`: list 时是否包含已归档任务
 
-**task 工具参数：**
-- `description` (必填): 子任务详细描述
-- `context`: 子任务需要的上下文信息
+**状态机：**
+- `pending → in_progress → completed`
+- `pending / in_progress → blocked`（步骤被阻塞，如依赖缺失、错误频发）
+- `blocked → pending / in_progress / completed / deleted`（阻塞解决后恢复）
+- `completed → deleted`（归档）
+- 存在 `blocked` 任务时计划不会判定为"全部完成"
 
 ### 快捷键
 
@@ -616,22 +619,25 @@ pi --plan   # 以规划模式启动
 - `todo create` — 新建任务（如发现遗漏步骤）
 - `todo update status=in_progress activeForm="正在编写代码"` — 标记开始
 - `todo update status=completed` — 标记完成
+- `todo update status=blocked activeForm="依赖缺失"` — 标记阻塞（不阻塞计划完成判定）
 - `todo list` — 查看所有任务
 - `todo get id=N` — 查看任务详情
 
-### 场景 3：使用 task 工具创建子任务
+### 场景 3：执行中修订计划
 
-遇到可独立并行执行的任务时，可使用 `task` 工具创建子任务文件：
+执行模式中，若用户明确要求修改计划（如"修改计划的第 3 步"），LLM 会输出新的 `Plan:` 块：
 
-```
-→ LLM 调用: task(description="分析用户模块的数据库模式",
-                  context="项目在 /root/myapp，关注 models/user.py")
-→ 返回:  子任务已创建: /root/.pi/tasks/task-123456789.md
-          请用户在新会话中打开此文件继续执行。
-          当前会话继续主任务。
-```
+- 扩展自动识别修订意图 + 新的 `Plan:` 头（双重判断，问句不会误触发）
+- 已完成的步骤**保留**，未完成任务被替换为新提取的步骤
+- 聊天中显示"计划已修订"，下一轮自动注入新的执行上下文
 
-### 场景 4：后续追问与修订
+### 场景 4：暂停与恢复
+
+- `/plan` 退出规划模式时**保留**任务与执行进度（不会清空）
+- `/planclear` 手动清空全部任务
+- `/planresume` 从保留的任务恢复执行模式（自动注入剩余步骤上下文）
+
+### 场景 5：后续追问与修订
 
 计划展示后，以下对话**不会**覆盖计划：
 - "为什么需要改这个文件？"
@@ -643,14 +649,14 @@ pi --plan   # 以规划模式启动
 - "更新计划，加入数据库迁移"
 - "修订计划，去掉第 5 步"
 
-### 场景 5：Session Resume
+### 场景 6：Session Resume
 
 1. 退出终端后重新进入，`/resume` 之前的 session
 2. Plan Mode 状态（模式、待办、执行进度、讨论历史）全部恢复
 3. 执行中的计划会从 session log 重建完成情况
 4. 继续工作，如同从未中断
 
-### 场景 6：快速查看
+### 场景 7：快速查看
 
 ```bash
 /plan       # 启用规划模式
@@ -658,7 +664,10 @@ pi --plan   # 以规划模式启动
 /todos      # 查看当前待办
 /plandiff   # 查看计划变更历史
 /planqa     # 查看讨论上下文
-/plan       # 退出规划模式
+/planview   # 查看当前计划全文
+/plan       # 退出规划模式（任务保留）
+/planresume # 恢复执行模式
+/planclear  # 清空任务
 ```
 
 ---

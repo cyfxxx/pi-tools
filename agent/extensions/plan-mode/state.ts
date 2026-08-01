@@ -1,4 +1,4 @@
-export type TaskStatus = "pending" | "in_progress" | "completed" | "deleted";
+export type TaskStatus = "pending" | "in_progress" | "completed" | "blocked" | "deleted";
 
 export type TaskAction = "create" | "update" | "list" | "get" | "delete" | "clear";
 
@@ -8,7 +8,6 @@ export interface Task {
   description?: string;
   activeForm?: string;
   status: TaskStatus;
-  owner?: string;
 }
 
 export interface TaskState {
@@ -19,8 +18,9 @@ export interface TaskState {
 export const EMPTY_STATE: TaskState = { tasks: [], nextId: 1 };
 
 export const VALID_TRANSITIONS: Record<TaskStatus, ReadonlySet<TaskStatus>> = {
-  pending: new Set(["in_progress", "completed", "deleted"]),
-  in_progress: new Set(["pending", "completed", "deleted"]),
+  pending: new Set(["in_progress", "completed", "blocked", "deleted"]),
+  in_progress: new Set(["pending", "completed", "blocked", "deleted"]),
+  blocked: new Set(["pending", "in_progress", "completed", "deleted"]),
   completed: new Set(["deleted"]),
   deleted: new Set(),
 };
@@ -57,7 +57,6 @@ export interface TaskMutationParams {
   status?: TaskStatus;
   id?: number;
   includeDeleted?: boolean;
-  owner?: string;
 }
 
 export function applyTaskMutation(
@@ -77,7 +76,6 @@ export function applyTaskMutation(
       };
       if (params.description) newTask.description = params.description;
       if (params.activeForm) newTask.activeForm = params.activeForm;
-      if (params.owner) newTask.owner = params.owner;
 
       const newTasks = [...state.tasks, newTask];
       return {
@@ -96,8 +94,7 @@ export function applyTaskMutation(
         params.subject !== undefined ||
         params.description !== undefined ||
         params.activeForm !== undefined ||
-        params.status !== undefined ||
-        params.owner !== undefined;
+        params.status !== undefined;
       if (!hasMutation) return errorResult(state, "update requires at least one mutable field");
 
       let newStatus = current.status;
@@ -112,7 +109,6 @@ export function applyTaskMutation(
       if (params.subject !== undefined) updated.subject = params.subject;
       if (params.description !== undefined) updated.description = params.description;
       if (params.activeForm !== undefined) updated.activeForm = params.activeForm;
-      if (params.owner !== undefined) updated.owner = params.owner;
 
       const newTasks = [...state.tasks];
       newTasks[idx] = updated;

@@ -8,6 +8,7 @@ export function selectVisibleTasks(state: TaskState): readonly Task[] {
 export interface TasksByStatus {
   pending: readonly Task[];
   inProgress: readonly Task[];
+  blocked: readonly Task[];
   completed: readonly Task[];
 }
 
@@ -16,6 +17,7 @@ export function selectTasksByStatus(state: TaskState): TasksByStatus {
   return {
     pending: visible.filter((t) => t.status === "pending"),
     inProgress: visible.filter((t) => t.status === "in_progress"),
+    blocked: visible.filter((t) => t.status === "blocked"),
     completed: visible.filter((t) => t.status === "completed"),
   };
 }
@@ -24,15 +26,21 @@ export interface TodoCounts {
   total: number;
   pending: number;
   inProgress: number;
+  blocked: number;
   completed: number;
 }
 
 export function selectTodoCounts(state: TaskState): TodoCounts {
   const groups = selectTasksByStatus(state);
   return {
-    total: groups.pending.length + groups.inProgress.length + groups.completed.length,
+    total:
+      groups.pending.length +
+      groups.inProgress.length +
+      groups.blocked.length +
+      groups.completed.length,
     pending: groups.pending.length,
     inProgress: groups.inProgress.length,
+    blocked: groups.blocked.length,
     completed: groups.completed.length,
   };
 }
@@ -67,5 +75,7 @@ export function selectOverlayLayout(state: TaskState, budget: number): OverlayLa
 }
 
 export function selectHasActive(state: TaskState): boolean {
-  return selectVisibleTasks(state).some((t) => t.status === "in_progress" || t.status === "pending");
+  return selectVisibleTasks(state).some(
+    (t) => t.status === "in_progress" || t.status === "pending",
+  );
 }

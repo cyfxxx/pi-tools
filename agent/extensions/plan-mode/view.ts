@@ -5,13 +5,15 @@ export const STATUS_GLYPH: Record<TaskStatus, string> = {
   pending: "○",
   in_progress: "◐",
   completed: "●",
+  blocked: "⏸",
   deleted: "⊘",
 };
 
-export const STATUS_COLOR: Record<TaskStatus, "dim" | "warning" | "success" | "muted"> = {
+export const STATUS_COLOR: Record<TaskStatus, "dim" | "warning" | "success" | "muted" | "error"> = {
   pending: "dim",
   in_progress: "warning",
   completed: "success",
+  blocked: "error",
   deleted: "muted",
 };
 
@@ -19,6 +21,7 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: "待办",
   in_progress: "进行中",
   completed: "已完成",
+  blocked: "已阻塞",
   deleted: "已删除",
 };
 
@@ -34,6 +37,8 @@ export function overlayStatusGlyph(status: TaskStatus, theme: Theme): string {
       return theme.fg("warning", "◐");
     case "completed":
       return theme.fg("success", "✓");
+    case "blocked":
+      return theme.fg("error", "⏸");
     case "deleted":
       return theme.fg("error", "✗");
   }
@@ -41,10 +46,14 @@ export function overlayStatusGlyph(status: TaskStatus, theme: Theme): string {
 
 export function formatOverlayTaskLine(t: Task, theme: Theme): string {
   const glyph = overlayStatusGlyph(t.status, theme);
-  const subjectColor = t.status === "completed" || t.status === "deleted" ? "dim" : "text";
+  const subjectColor =
+    t.status === "completed" || t.status === "deleted" ? "dim" : "text";
   let subject = theme.fg(subjectColor, t.subject);
   if (t.status === "completed" || t.status === "deleted") {
     subject = theme.strikethrough(subject);
+  }
+  if (t.status === "blocked") {
+    subject = theme.fg("error", t.subject);
   }
   let line = glyph;
   line += ` ${subject}`;
@@ -68,6 +77,5 @@ export function formatGetLines(task: Task): string {
   const lines = [`#${task.id} [${STATUS_LABEL[task.status]}] ${task.subject}`];
   if (task.description) lines.push(`  描述: ${task.description}`);
   if (task.activeForm) lines.push(`  状态: ${task.activeForm}`);
-  if (task.owner) lines.push(`  负责人: ${task.owner}`);
   return lines.join("\n");
 }
