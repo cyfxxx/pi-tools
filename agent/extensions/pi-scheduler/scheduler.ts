@@ -29,7 +29,8 @@ export class SessionScheduler {
       const tasks = await listTasks()
       const due = tasks.filter(t => isDue(t) && !this.firing.has(t.id))
       for (const task of due) {
-        this.fireTask(task)
+        if (this.firing.has(task.id)) continue
+        await this.fireTask(task)
       }
     } catch { /* suppress tick errors */ }
   }

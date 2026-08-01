@@ -46,6 +46,10 @@ Pi 关闭时，系统 cron 会接管执行。`,
           type: 'boolean',
           description: '执行完成时是否发送通知',
         },
+        maxRunTime: {
+          type: 'number',
+          description: '执行超时秒数（默认 300），仅 useSubagent=true 时生效',
+        },
         taskId: {
           type: 'string',
           description: '任务 ID（用于 delete/enable/disable）',
@@ -67,6 +71,7 @@ Pi 关闭时，系统 cron 会接管执行。`,
           prompt: params.prompt as string,
           useSubagent: params.useSubagent as boolean | undefined,
           notifyOnCompletion: params.notifyOnCompletion as boolean | undefined,
+          maxRunTime: params.maxRunTime as number | undefined,
         })
         return {
           content: [{

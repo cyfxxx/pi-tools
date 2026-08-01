@@ -54,3 +54,6 @@ agent/models.json
 ctx-lite/
 
 
+
+# pi-scheduler 运行时数据
+agent/scheduled-tasks.json

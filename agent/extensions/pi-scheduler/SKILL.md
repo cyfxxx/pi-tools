@@ -5,7 +5,7 @@ description: 定时任务扩展。支持 interval / cron / once 三种触发类�
 
 # pi-scheduler 技能
 
-对 agent 暴露定时任务调度能力。Pi 会话活跃时由扩展内 1s 轮询引擎触发，Pi 关闭时由系统 cron 唤醒 Pi 执行。
+对 agent 暴露定时任务调度能力。Pi 会话活跃时由扩展内 30s 轮询引擎触发，Pi 关闭时由系统 cron 唤醒 Pi 执行。
 
 ## 命令列表
 
@@ -26,6 +26,7 @@ description: 定时任务扩展。支持 interval / cron / once 三种触发类�
 - `/loop 5m 检查 CI 状态并报告未提交的变更`
 - `/loop 1h 运行完整测试套件并总结`
 - `/loop 30s 检查开发服务器是否仍在响应`
+- `/loop 10m 检查构建状态 --timeout 600`（可选超时，useSubagent 模式生效）
 
 ### `/schedule`
 
@@ -80,7 +81,8 @@ Agent 可在对话中自主调用此工具。
 | `schedule` | string | add 时 | 调度表达式 |
 | `prompt` | string | add 时 | 提示词 |
 | `useSubagent` | boolean | 否 | 子代理执行 |
-| `notifyOnCompletion` | boolean | 否 | 完成通知 |
+| `notifyOnCompletion` | boolean | 否 | 完成通知（离线 cron 执行时生效） |
+| `maxRunTime` | number | 否 | 执行超时秒数（默认 300，仅 useSubagent 生效） |
 
 **场景示例：**
 
@@ -116,7 +118,7 @@ Pi 关闭时，系统 cron 每分钟执行 `pi-cron.sh`：
   → 写入 scheduled-tasks.json
   → 计算 nextRun
   → 等待到期...
-      ├── 会话内：1s 间隔 → 到期 → sendUserMessage
+      ├── 会话内：30s 轮询 → 到期 → sendUserMessage
       └── 离线：cron 60s 间隔 → 到期 → pi -p
   → 更新 lastRun / lastResult / nextRun
   → 循环（interval/cron）或禁用（once）
