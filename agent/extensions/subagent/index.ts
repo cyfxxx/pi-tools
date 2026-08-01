@@ -271,6 +271,23 @@ function resolveModelId(
 	return undefined;
 }
 
+export const DEFAULT_SYSTEM_PROMPT = `你是通用子代理，在独立上下文中执行委派的任务。
+
+## 工作方式
+根据任务类型选择合适策略：
+- 探索：用 grep/find 定位相关代码，只读关键部分（不要整文件读），识别类型/接口/关键函数，梳理文件间依赖
+- 计划：先收集上下文，再产出具体可执行的步骤
+- 执行：小步修改，明确说明每个文件的改动
+- 审阅：检查质量、安全、可维护性；bash 仅用于只读命令（git diff/log/show），不得修改文件或运行构建
+
+## 输出要求
+你的输出会直接交给主代理（它没有看过你探索过的内容），务必完整：
+- 探索任务 → 相关文件（带行号）、关键代码、架构说明、建议从哪开始
+- 计划任务 → 目标、编号步骤（具体到文件/函数）、待修改文件、新建文件（如有）、风险
+- 执行任务 → 完成情况、修改的文件、备注（如有）
+- 审阅任务 → 审阅的文件、必须修复、建议修复、可选改进、总结
+- 链式任务 → 若任务基于上一步输出（{previous}），以其为基础继续`;
+
 async function runSingleAgent(
 	defaultCwd: string,
 	agents: AgentConfig[],
@@ -286,19 +303,39 @@ async function runSingleAgent(
 	const agent = agents.find((a) => a.name === agentName);
 
 	if (!agent) {
-		const available = agents.map((a) => `"${a.name}"`).join(", ") || "none";
-		return {
-			agent: agentName,
-			agentSource: "unknown",
+		return runSubprocessAgent(
+			{
+				name: agentName || "default",
+				description: "通用子代理（无预定义角色时使用）",
+				systemPrompt: DEFAULT_SYSTEM_PROMPT,
+				source: "user",
+				filePath: "",
+			},
+			defaultCwd,
 			task,
-			exitCode: 1,
-			messages: [],
-			stderr: `Unknown agent: "${agentName}". Available agents: ${available}.`,
-			usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0, contextTokens: 0, turns: 0 },
+			cwd,
 			step,
-		};
+			signal,
+			onUpdate,
+			makeDetails,
+			currentModel,
+		);
 	}
 
+	return runSubprocessAgent(agent, defaultCwd, task, cwd, step, signal, onUpdate, makeDetails, currentModel);
+}
+
+async function runSubprocessAgent(
+	agent: AgentConfig,
+	defaultCwd: string,
+	task: string,
+	cwd: string | undefined,
+	step: number | undefined,
+	signal: AbortSignal | undefined,
+	onUpdate: OnUpdateCallback | undefined,
+	makeDetails: (results: SingleResult[]) => SubagentDetails,
+	currentModel?: { id?: string; provider?: string },
+): Promise<SingleResult> {
 	const args: string[] = ["--mode", "json", "-p", "--no-session", "--no-extensions"];
 	const resolvedModel = resolveModelId(agent.model, currentModel);
 	if (resolvedModel) args.push("--model", resolvedModel);
@@ -308,7 +345,7 @@ async function runSingleAgent(
 	let tmpPromptPath: string | null = null;
 
 	const currentResult: SingleResult = {
-		agent: agentName,
+		agent: agent.name,
 		agentSource: agent.source,
 		task,
 		exitCode: 0,
@@ -438,13 +475,13 @@ async function runSingleAgent(
 }
 
 const TaskItem = Type.Object({
-	agent: Type.String({ description: "Name of the agent to invoke" }),
+	agent: Type.Optional(Type.String({ description: "Name of the agent to invoke (optional, default general-purpose)" })),
 	task: Type.String({ description: "Task to delegate to the agent" }),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process" })),
 });
 
 const ChainItem = Type.Object({
-	agent: Type.String({ description: "Name of the agent to invoke" }),
+	agent: Type.Optional(Type.String({ description: "Name of the agent to invoke (optional, default general-purpose)" })),
 	task: Type.String({ description: "Task with optional {previous} placeholder for prior output" }),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process" })),
 });
@@ -469,8 +506,8 @@ const SubagentParams = Type.Object({
 interface SubagentToolParams {
 	agent?: string;
 	task?: string;
-	tasks?: { agent: string; task: string; cwd?: string }[];
-	chain?: { agent: string; task: string; cwd?: string }[];
+	tasks?: { agent?: string; task: string; cwd?: string }[];
+	chain?: { agent?: string; task: string; cwd?: string }[];
 	agentScope?: AgentScope;
 	confirmProjectAgents?: boolean;
 	cwd?: string;
@@ -480,26 +517,28 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "subagent",
 		label: "Subagent",
-		promptSnippet: "Delegate tasks to specialized subagents for parallel/isolated work",
+		promptSnippet: "Delegate tasks to subagents for parallel/isolated work",
 		promptGuidelines: [
-			"Use `subagent` (with scout agent) for codebase exploration — it uses an isolated context and returns compressed output, keeping your context clean",
+			"Use `subagent` for codebase exploration — it runs in an isolated context and returns compressed output, keeping your context clean",
 			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) — tasks run 1 at a time by default to avoid resource contention",
-			"Use `subagent` chain mode for complex multi-step workflows (scout→planner→worker) — each step has an isolated context, avoiding context pollution",
-			"For pure research or exploration questions, delegate entirely to a scout agent and consume only its compressed summary",
+			"Use `subagent` chain mode for complex multi-step workflows — each step has an isolated context, avoiding context pollution; pass prior output via {previous}",
+			"For pure research or exploration questions, delegate entirely to a subagent and consume only its compressed summary",
 			"When context is getting large (>70% of limit), favor subagent delegation over reading more files yourself",
+			"Available agents (scout/worker/reviewer) are optional: omit `agent` and the subagent runs with a general-purpose default prompt",
 		],
 		description: [
-			"Delegate tasks to specialized subagents with isolated context windows.",
+			"Delegate tasks to subagents with isolated context windows.",
 			"",
 			"When to use this tool:",
 			"- Codebase exploration: delegates to isolated context, returns compressed output",
 			"- Parallel work: run N independent searches/analyses (up to 8 tasks, runs 1 at a time by default to avoid resource contention)",
-			"- Multi-step workflows: chain agents together (scout→planner→worker) for complex implementations",
+			"- Multi-step workflows: chain agents together for complex implementations, passing output between steps with {previous}",
 			"- Heavy lifting: move large refactoring or batch changes to a sub-agent to keep main context clean",
 			"- Context preservation: delegate scoped tasks to avoid polluting the main conversation with intermediate results",
 			"",
-			"Modes: single (agent + task), parallel (tasks array), chain (sequential with {previous} placeholder).",
-			`Default agent scope is "user" (from ${path.join(getAgentDir(), "agents")}).`,
+			"Modes: single (task, optional agent), parallel (tasks array), chain (sequential with {previous} placeholder).",
+			`When no agent is specified (or the name is unknown), the subagent runs with a general-purpose default prompt.`,
+			`Custom agents can be defined as markdown files in ${path.join(getAgentDir(), "agents")}.`,
 			`To enable project-local agents in ${CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
 		].join("\n"),
 		parameters: SubagentParams,
@@ -514,7 +553,7 @@ export default function (pi: ExtensionAPI) {
 
 			const hasChain = (params.chain?.length ?? 0) > 0;
 			const hasTasks = (params.tasks?.length ?? 0) > 0;
-			const hasSingle = Boolean(params.agent && params.task);
+			const hasSingle = Boolean(params.task);
 			const modeCount = Number(hasChain) + Number(hasTasks) + Number(hasSingle);
 
 			const makeDetails =
@@ -527,12 +566,11 @@ export default function (pi: ExtensionAPI) {
 				});
 
 			if (modeCount !== 1) {
-				const available = agents.map((a) => `${a.name} (${a.source})`).join(", ") || "none";
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Invalid parameters. Provide exactly one mode.\nAvailable agents: ${available}`,
+							text: `Invalid parameters. Provide exactly one mode: single (task, optional agent), parallel (tasks array) or chain (chain array).`,
 						},
 					],
 					details: makeDetails("single")([]),
@@ -636,7 +674,7 @@ export default function (pi: ExtensionAPI) {
 				// Initialize placeholder results
 				for (let i = 0; i < params.tasks.length; i++) {
 					allResults[i] = {
-						agent: params.tasks[i].agent,
+						agent: params.tasks[i].agent ?? "default",
 						agentSource: "unknown",
 						task: params.tasks[i].task,
 						exitCode: -1, // -1 = still running

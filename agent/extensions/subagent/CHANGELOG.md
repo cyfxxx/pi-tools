@@ -8,14 +8,25 @@
 
 ### Changed
 - **子进程跳过扩展加载**：`pi` 参数加 `--no-extensions`，子代理无需扩展即可执行（内置工具不受影响）。实测扩展加载约 0.7s，主要启动成本在 SDK ESM 加载
+- **工作流预设中文化**：`~/.pi/agent/prompts/` 提示词改为中文（文件名为 `/实现`、`/侦察计划`、`/实现审阅`，即斜杠命令名）
 
 ### Removed
 - **TODO.md**：内容均已完成或为不存在的虚构功能，删除
 - **扩展内 `prompts/` 目录**：SDK 只加载 `~/.pi/agent/prompts/`（用户级），扩展内 prompts 从未被加载，属死文件，删除
 - **README 版本变更章节**：修改记录统一收进本文件，README 只保留使用说明
 
+## [v5]
+
 ### Changed
-- **工作流预设中文化**：`~/.pi/agent/prompts/` 提示词改为中文（文件名为 `/实现`、`/侦察计划`、`/实现审阅`，即斜杠命令名）
+- **提示词合并为通用默认提示**：`/实现`、`/侦察计划`、`/实现审阅` 三个工作流提示词合并为一个内置 `DEFAULT_SYSTEM_PROMPT`（融合探索/计划/执行/审阅四类任务的工作方式与输出要求），删除 prompts 目录及斜杠命令
+- **agent 可选 + 默认兜底**：`subagent` 的 agent 参数完全可选（single/parallel/chain 均支持省略），名字不存在时用内置通用提示执行，不再报 "Unknown agent"
+- **角色精简为 3 个**：保留 scout（侦察）/ worker（执行）/ reviewer（审阅），删除 planner（规划能力已并入默认提示）
+- **角色文件中文化**：scout/worker/reviewer 三个角色提示词全部改为中文
+
+### Removed
+- `~/.pi/agent/prompts/`（3 个工作流文件）
+- `~/.pi/agent/agents/planner.md`
+- 工具描述中所有硬编码角色引用（scout→planner→worker 等）
 
 ## [v3]
 
