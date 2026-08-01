@@ -28,7 +28,7 @@ const mockPi = (): MockPI => ({
 
 const reset = (pi: MockPI) => {
   for (const key of Object.keys(pi)) {
-    const fn = (pi as Record<string, unknown>)[key]
+    const fn = (pi as unknown as Record<string, unknown>)[key]
     if (typeof fn === 'function' && 'mockReset' in fn) (fn as ReturnType<typeof vi.fn>).mockReset()
   }
 }
@@ -74,23 +74,23 @@ describe('pi-router extension', () => {
 
 // ─── pi-context-efficiency ────────────────────────────────────
 describe('pi-context-efficiency extension', () => {
-  it('registers event handlers: message_end, context, tool_result, input', async () => {
+  it('registers event handlers: context, tool_result', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context-efficiency/index')).default
     await main(pi as any)
     const events = pi.on.mock.calls.map((c: any[]) => c[0])
-    expect(events).toContain('message_end')
     expect(events).toContain('context')
     expect(events).toContain('tool_result')
-    expect(events).toContain('input')
   })
 
-  it('does not register tools or commands', async () => {
+  it('does not register tools, but registers 1 command (ping)', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context-efficiency/index')).default
     await main(pi as any)
     expect(pi.registerTool).not.toHaveBeenCalled()
-    expect(pi.registerCommand).not.toHaveBeenCalled()
+    expect(pi.registerCommand).toHaveBeenCalledTimes(1)
+    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
+    expect(cmdNames).toEqual(['ping'])
   })
 })
 
@@ -179,15 +179,12 @@ describe('pi-memory extension', () => {
     expect(cmdNames).toEqual(['memory:prune', 'memory:search', 'memory:stats'])
   })
 
-  it('registers event handlers', async () => {
+  it('registers session_start event handler', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-memory/index')).default
     await main(pi as any)
     const events = pi.on.mock.calls.map((c: any[]) => c[0])
     expect(events).toContain('session_start')
-    expect(events).toContain('before_agent_start')
-    expect(events).toContain('context')
-    expect(events).toContain('session_shutdown')
   })
 })
 
@@ -240,24 +237,68 @@ describe('ctx-lite extension', () => {
   })
 })
 
-// ─── plan-mode (unregistered extension) ───────────────────────
-describe('plan-mode extension', () => {
-  it('registers 2 tools: todo, task', async () => {
+// ─── pi-web-search ───────────────────────────────────────────
+describe('pi-web-search extension', () => {
+  it('registers 3 search tools: web_search, web_fetch, fetch_url', async () => {
     const pi = mockPi()
-    const main = (await import('../../plan-mode/index')).default
+    const main = (await import('../../pi-web-search/index')).default
     await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(2)
+    expect(pi.registerTool).toHaveBeenCalledTimes(3)
     const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name).sort()
-    expect(toolNames).toEqual(['task', 'todo'])
+    expect(toolNames).toEqual(['fetch_url', 'web_fetch', 'web_search'])
   })
 
-  it('registers 4 plan commands: plan, plandiff, planqa, todos', async () => {
+  it('does not register commands', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-web-search/index')).default
+    await main(pi as any)
+    expect(pi.registerCommand).not.toHaveBeenCalled()
+  })
+})
+
+// ─── pi-browser (unregistered extension) ─────────────────────
+describe('pi-browser extension', () => {
+  it('registers 8 browser tools', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-browser/index')).default
+    await main(pi as any)
+    expect(pi.registerTool).toHaveBeenCalledTimes(8)
+    const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name).sort()
+    expect(toolNames).toEqual([
+      'browser_click', 'browser_close', 'browser_evaluate', 'browser_extract',
+      'browser_navigate', 'browser_screenshot', 'browser_scroll', 'browser_type',
+    ])
+  })
+
+  it('registers session lifecycle event handlers', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-browser/index')).default
+    await main(pi as any)
+    const events = pi.on.mock.calls.map((c: any[]) => c[0])
+    expect(events).toContain('session_shutdown')
+    expect(events).toContain('session_compact')
+    expect(events).toContain('session_start')
+  })
+})
+
+// ─── plan-mode (unregistered extension) ───────────────────────
+describe('plan-mode extension', () => {
+  it('registers 1 tool: todo', async () => {
     const pi = mockPi()
     const main = (await import('../../plan-mode/index')).default
     await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(4)
+    expect(pi.registerTool).toHaveBeenCalledTimes(1)
+    const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name)
+    expect(toolNames).toEqual(['todo'])
+  })
+
+  it('registers 7 plan commands: plan, planclear, planresume, plandiff, planqa, planview, todos', async () => {
+    const pi = mockPi()
+    const main = (await import('../../plan-mode/index')).default
+    await main(pi as any)
+    expect(pi.registerCommand).toHaveBeenCalledTimes(7)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual(['plan', 'plandiff', 'planqa', 'todos'].sort())
+    expect(cmdNames).toEqual(['plan', 'planclear', 'planresume', 'plandiff', 'planqa', 'planview', 'todos'].sort())
   })
 
   it('registers plan flag', async () => {

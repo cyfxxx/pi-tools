@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# pi-web-toolkit 一键安装脚本
+# pi-web-search 一键安装脚本
 # 安装 Pi 网络扩展 + 可选部署本地 SearXNG 服务
 #
 set -e
@@ -98,7 +98,7 @@ import json
 try:
     with open('$PI_SETTINGS') as f:
         d = json.load(f)
-    ext = d.get('extensions', {}).get('pi-web-toolkit', {})
+    ext = d.get("pi-web-search", {})
     print(json.dumps(ext))
 except:
     print('{}')
@@ -119,11 +119,11 @@ if os.path.exists(settings_path):
 
 if 'extensions' not in current:
     current['extensions'] = {}
-if 'pi-web-toolkit' not in current['extensions']:
-    current['extensions']['pi-web-toolkit'] = {}
+if 'pi-web-search' not in current['extensions']:
+    current['extensions']['pi-web-search'] = {}
 
-current['extensions']['pi-web-toolkit']['searxng_url'] = 'http://127.0.0.1:$SEARXNG_PORT'
-current['extensions']['pi-web-toolkit']['search_timeout'] = 10000
+current['extensions']['pi-web-search']['searxng_url'] = 'http://127.0.0.1:$SEARXNG_PORT'
+current['extensions']['pi-web-search']['search_timeout'] = 10000
 
 os.makedirs(os.path.dirname(settings_path), exist_ok=True)
 with open(settings_path, 'w') as f:
@@ -244,7 +244,7 @@ echo -e "${GREEN}${BOLD}安装完成！${NC}"
 echo ""
 echo "使用方法:"
 echo "  1. 启动 Pi:  pi"
-echo "  2. LLM 会自动使用 web_search、browser_navigate 等工具"
+echo "  2. LLM 会自动使用 web_search、web_fetch、fetch_url 等工具"
 echo "  3. 如需测试扩展:"
 echo "     pi --no-extensions -e $EXTENSION_DIR/index.ts \"搜索测试\""
 echo ""

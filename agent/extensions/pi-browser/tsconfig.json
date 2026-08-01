@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@earendil-works/pi-coding-agent": [
+        "/root/.pi/agent/extensions/types/pi-coding-agent.d.ts"
+      ],
+      "@earendil-works/pi-agent-core": [
+        "/root/.pi/agent/extensions/types/pi-coding-agent.d.ts"
+      ],
+      "@earendil-works/pi-ai": [
+        "/root/.pi/agent/extensions/types/pi-coding-agent.d.ts"
+      ],
+      "@earendil-works/pi-tui": [
+        "/root/.pi/agent/extensions/types/pi-coding-agent.d.ts"
+      ],
+      "typebox": [
+        "/root/.pi/agent/extensions/types/pi-coding-agent.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "index.ts",
+    "config.ts",
+    "types.ts",
+    "browser/**/*.ts"
+  ]
+}

@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [3.0.0] - 2026-08-01
+
+### 变更
+
+- **拆分独立并更名 `pi-web-toolkit` → `pi-web-search`**：浏览器能力（8 个 `browser_*` 工具）拆出为独立扩展 **pi-browser**，本扩展专注搜索与轻量 HTTP 抓取（`web_search`/`web_fetch`/`fetch_url`），实现依赖与故障隔离。
+- **配置段 `pi-web-search`**：搜索配置迁移至 `settings.json` 的 `pi-web-search` 段；字段缺失时自动回退读取旧 `pi-web-toolkit` 段，无需手动迁移。
+- **移除重依赖**：`cloakbrowser`、`playwright-core` 移出依赖清单（随浏览器功能迁移至 pi-browser）。
+- **环境变量保留原前缀**：`PI_WEB_TOOLKIT_SEARXNG_URL` 等环境变量名不变，避免破坏既有部署。
+
+### 移除
+
+- 浏览器工具（8 个 `browser_*`）及截图生命周期管理（`session_shutdown`/`session_compact` 钩子）迁移至 pi-browser。
+- README 中浏览器相关章节、代理池相关文档与安全注意事项。
+
 ## [2.3.0] - 2026-07-31
 
 ### 变更
@@ -16,7 +30,7 @@
 
 ### 新增
 
-- **工具输出预算控制**：集成 `lib/prune.ts`，所有 11 个工具（fetch_url、web_fetch、web_search、browser_*、ctx_exec）的返回文本经过输出预算校验，累计超过 60K 字符时自动截断，延缓上下文膨胀。
+- **工具输出预算控制**：集成 `lib/prune.ts`，所有工具（fetch_url、web_fetch、web_search）的返回文本经过输出预算校验，累计超过 60K 字符时自动截断，延缓上下文膨胀。
 - **session_start 重置**：输出预算在 session 启动时自动重置。
 
 ## [2.1.0] - 2026-07-07

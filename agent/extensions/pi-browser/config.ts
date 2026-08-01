@@ -1,15 +1,10 @@
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
-import type { WebToolkitConfig } from './types'
-import { buildSearchConfig, buildEnvSearchConfig } from './search/config'
+import type { BrowserOnlyConfig } from './types'
 import { buildBrowserConfig, buildEnvBrowserConfig } from './browser/config'
 
-const DEFAULT_CONFIG: WebToolkitConfig = {
-  search: {
-    searxng_url: 'https://searx.be',
-    timeout: 15000,
-  },
+const DEFAULT_CONFIG: BrowserOnlyConfig = {
   browser: {
     headless: false,
     viewport_width: 1280,
@@ -17,7 +12,10 @@ const DEFAULT_CONFIG: WebToolkitConfig = {
   },
 }
 
-function readConfigFromFile(): Partial<WebToolkitConfig> {
+// 兼容旧配置段：拆分前浏览器配置位于 pi-web-toolkit 段，读取时回退
+const CONFIG_KEYS = ['pi-browser', 'pi-web-toolkit'] as const
+
+function readConfigFromFile(): Partial<BrowserOnlyConfig> {
   const paths = [
     join(getAgentDir(), 'settings.json'),
     join(process.cwd(), '.pi', 'settings.json'),
@@ -26,15 +24,15 @@ function readConfigFromFile(): Partial<WebToolkitConfig> {
     if (!existsSync(p)) continue
     try {
       const raw = JSON.parse(readFileSync(p, 'utf-8'))
-      const extRaw = raw?.extensions?.['pi-web-toolkit'] ?? raw?.['pi-web-toolkit']
-      if (!extRaw) continue
+      const sections = CONFIG_KEYS
+        .map(k => raw?.extensions?.[k] ?? raw?.[k])
+        .filter((s): s is Record<string, unknown> => !!s && typeof s === 'object')
+      if (sections.length === 0) continue
 
-      const ext = extRaw as Record<string, unknown>
+      const merged = Object.assign({}, ...sections.reverse()) as Record<string, unknown>
+      const browserPart = buildBrowserConfig(merged)
 
-      const searchPart = buildSearchConfig(ext)
-      const browserPart = buildBrowserConfig(ext)
-
-      return deepMerge({} as Partial<WebToolkitConfig>, { ...searchPart, ...browserPart })
+      return deepMerge({} as Partial<BrowserOnlyConfig>, browserPart)
     } catch {
       continue
     }
@@ -42,10 +40,8 @@ function readConfigFromFile(): Partial<WebToolkitConfig> {
   return {}
 }
 
-function readConfigFromEnv(): Partial<WebToolkitConfig> {
-  const searchPart = buildEnvSearchConfig()
-  const browserPart = buildEnvBrowserConfig()
-  return { ...searchPart, ...browserPart }
+function readConfigFromEnv(): Partial<BrowserOnlyConfig> {
+  return buildEnvBrowserConfig()
 }
 
 function deepMerge<T extends Record<string, any>>(base: T, override: Partial<T>): T {
@@ -61,7 +57,7 @@ function deepMerge<T extends Record<string, any>>(base: T, override: Partial<T>)
   return result
 }
 
-export function loadConfig(): WebToolkitConfig {
+export function loadConfig(): BrowserOnlyConfig {
   const fromFile = readConfigFromFile()
   const fromEnv = readConfigFromEnv()
   return deepMerge(DEFAULT_CONFIG, deepMerge(fromFile, fromEnv))
