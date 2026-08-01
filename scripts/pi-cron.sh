@@ -73,6 +73,9 @@ find_due_tasks() {
 import json, sys, re
 from datetime import datetime, timezone, timedelta
 
+def now_local():
+    return datetime.now().astimezone()
+
 def _match_field(field, value):
     if field == '*': return True
     for part in field.split(','):
@@ -91,7 +94,7 @@ def _match_field(field, value):
     return False
 
 def compute_next(task_type, schedule, last_run):
-    now = datetime.now(timezone.utc)
+    now = now_local()
     if task_type == 'once':
         if last_run: return None
         m = re.match(r'^\+(\d+)\s*(s|m|h|d)?$', schedule)
@@ -99,11 +102,11 @@ def compute_next(task_type, schedule, last_run):
             n = int(m.group(1))
             u = (m.group(2) or 'm').lower()[0]
             mult = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}[u]
-            return (now + timedelta(seconds=n * mult)).isoformat().replace('+00:00', 'Z')
+            return (now + timedelta(seconds=n * mult)).isoformat()
         try:
             d = datetime.fromisoformat(schedule)
-            if d.tzinfo is None: d = d.replace(tzinfo=timezone.utc)
-            return d.isoformat().replace('+00:00', 'Z')
+            if d.tzinfo is None: d = d.replace(tzinfo=now.tzinfo)
+            return d.isoformat()
         except: return None
     elif task_type == 'interval':
         m = re.match(r'^(\d+)\s*(s|m|h|d|min|hr|sec|day)?s?$', schedule)
@@ -112,8 +115,8 @@ def compute_next(task_type, schedule, last_run):
         u = (m.group(2) or 'm').lower()[0]
         mult = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}[u]
         from_time = datetime.fromisoformat(last_run) if last_run else now
-        if from_time.tzinfo is None: from_time = from_time.replace(tzinfo=timezone.utc)
-        return (from_time + timedelta(seconds=n * mult)).isoformat().replace('+00:00', 'Z')
+        if from_time.tzinfo is None: from_time = from_time.replace(tzinfo=now.tzinfo)
+        return (from_time + timedelta(seconds=n * mult)).isoformat()
     elif task_type == 'cron':
         parts = schedule.split()
         if len(parts) < 5: return None
@@ -141,7 +144,7 @@ def compute_next(task_type, schedule, last_run):
             if not _match_field(minute, cur.minute):
                 cur += timedelta(minutes=1)
                 continue
-            return cur.isoformat().replace('+00:00', 'Z')
+            return cur.isoformat()
         return None
     return None
 
@@ -151,7 +154,10 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     sys.exit(0)
 
-now = datetime.now(timezone.utc)
+if data.get('settings', {}).get('paused'):
+    sys.exit(0)
+
+now = now_local()
 due = []
 for t in data.get('tasks', []):
     if not t.get('enabled'): continue
@@ -159,7 +165,7 @@ for t in data.get('tasks', []):
     if not nr: continue
     try:
         next_dt = datetime.fromisoformat(nr)
-        if next_dt.tzinfo is None: next_dt = next_dt.replace(tzinfo=timezone.utc)
+        if next_dt.tzinfo is None: next_dt = next_dt.replace(tzinfo=now.tzinfo)
     except: continue
     if next_dt <= now:
         due.append(t)
@@ -169,6 +175,9 @@ if not due: sys.exit(0)
 due.sort(key=lambda x: x.get('nextRun', ''))
 for t in due:
     t['_next_run'] = compute_next(t.get('type',''), t.get('schedule',''), t.get('lastRun','') or '')
+    if not t['_next_run']:
+        print('[pi-cron] 跳过无法计算下次运行的任务: ' + str(t.get('name', '?')), file=sys.stderr)
+        continue
     print(json.dumps(t))
 "
 }
@@ -179,10 +188,11 @@ update_task() {
   local result="$2"
   local output_file="$3"
   local next_run="$4"
+  local duration_ms="$5"
 
   python3 -c "
 import json, sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 with open('$TASKS_FILE') as f:
     data = json.load(f)
@@ -194,18 +204,45 @@ try:
 except:
     pass
 
-for t in data.get('tasks', []):
+now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+for i, t in enumerate(data.get('tasks', [])):
     if t['id'] != '$task_id':
         continue
-    t['lastRun'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    history = t.get('history') or []
+    entry = {
+        'time': now,
+        'result': '$result',
+        'output': output_text,
+    }
+    if '$duration_ms':
+        entry['durationMs'] = int('$duration_ms')
+    history.append(entry)
+    if len(history) > 10:
+        history = history[-10:]
+    t['history'] = history
+    t['lastRun'] = now
     t['lastResult'] = '$result'
     t['lastOutput'] = output_text
-    t['runCount'] = t.get('runCount', 0) + 1
-    if '$next_run':
-        t['nextRun'] = '$next_run'
+    t['updatedAt'] = now
+
+    if '$result' == 'success':
+        t['failCount'] = 0
+        # once 任务成功后自动移除
+        if t.get('type') == 'once':
+            data['tasks'].pop(i)
+            break
+        t['runCount'] = t.get('runCount', 0) + 1
+        t['nextRun'] = '$next_run' if '$next_run' else None
     else:
-        t['nextRun'] = None
-    t['updatedAt'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        t['failCount'] = t.get('failCount', 0) + 1
+        retries = t.get('retries', 0)
+        if retries and t['failCount'] <= retries:
+            # 失败重试：60s 后再次触发
+            t['nextRun'] = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat().replace('+00:00', 'Z')
+        else:
+            t['runCount'] = t.get('runCount', 0) + 1
+            t['nextRun'] = '$next_run' if '$next_run' else None
+    break
 
 tmp = '$TASKS_FILE.tmp.$$'
 with open(tmp, 'w') as f:
@@ -232,13 +269,14 @@ write_log() {
   } > "$log_file"
 }
 
-# ── 发送邮件通知 ────────────────────────────────────
+# ── 发送邮件/webhook 通知 ───────────────────────────
+# 配置来源优先级: 环境变量 > settings.json
 send_notification() {
   local task_name="$1"
   local result="$2"
   local output="$3"
-  local mail_to="${PI_SCHEDULER_MAIL_TO:-}"
-  local webhook="${PI_SCHEDULER_WEBHOOK:-}"
+  local mail_to="${PI_SCHEDULER_MAIL_TO:-$SETTINGS_MAIL_TO}"
+  local webhook="${PI_SCHEDULER_WEBHOOK:-$SETTINGS_WEBHOOK}"
 
   if [ -n "$mail_to" ] && command -v mail >/dev/null 2>&1; then
     echo "Pi 调度器: $task_name — $result\n\n$output" | \
@@ -247,7 +285,7 @@ send_notification() {
 
   if [ -n "$webhook" ] && command -v curl >/dev/null 2>&1; then
     curl -s -X POST -H "Content-Type: application/json" \
-      -d "{\"task\":\"$task_name\",\"result\":\"$result\",\"time\":\"$(date -u -Iseconds)\"}" \
+      -d "{\"task\":\"$task_name\",\"result\":\"$result\",\"time\":\"$(date -u -Iseconds)\",\"output\":$(printf '%s' "$output" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()[:1000]))')}" \
       "$webhook" >/dev/null 2>&1 || true
   fi
 }
@@ -264,6 +302,21 @@ main() {
     exit 0  # 锁被其他进程持有
   fi
 
+  # 读取 settings（通知配置），环境变量可覆盖
+  SETTINGS_MAIL_TO=""
+  SETTINGS_WEBHOOK=""
+  if [ -f "$TASKS_FILE" ]; then
+    eval "$(python3 -c "
+import json
+try:
+    s = json.load(open('$TASKS_FILE')).get('settings', {})
+except Exception:
+    s = {}
+print('SETTINGS_MAIL_TO=' + repr(s.get('mailTo', '') or ''))
+print('SETTINGS_WEBHOOK=' + repr(s.get('webhookUrl', '') or ''))
+")"
+  fi
+
   # 查找到期任务
   DUE_JSON=$(find_due_tasks)
   if [ -z "$DUE_JSON" ]; then
@@ -275,18 +328,26 @@ main() {
   while IFS= read -r task_json; do
     [ -z "$task_json" ] && continue
 
-    # 提取字段 + 计算下次运行（单次 Python 调用，写入临时文件）
+    # 提取字段 + 计算下次运行 + 渲染 prompt 模板（单次 Python 调用，写入临时文件）
     local task_meta_file="/tmp/pi-cron-meta.$$.$RANDOM.json"
     echo "$task_json" | python3 -c "
 import json, sys
+from datetime import datetime
 t = json.load(sys.stdin)
+now = datetime.now()
+pad = lambda n: str(n).zfill(2)
+prompt = t.get('prompt', '')
+prompt = prompt.replace('{{date}}', '%d-%02d-%02d' % (now.year, now.month, now.day))
+prompt = prompt.replace('{{time}}', '%02d:%02d:%02d' % (now.hour, now.minute, now.second))
+prompt = prompt.replace('{{datetime}}', now.isoformat())
+prompt = prompt.replace('{{cwd}}', __import__('os').getcwd())
 with open('$task_meta_file', 'w') as f:
     json.dump({
         'id': t['id'],
         'name': t['name'],
         'type': t['type'],
         'schedule': t['schedule'],
-        'prompt': t['prompt'],
+        'prompt': prompt,
         'timeout': t.get('maxRunTime', $MAX_RUN_TIME),
         'notify': str(t.get('notifyOnCompletion', False)),
         'last_run': t.get('lastRun', '') or '',
@@ -325,8 +386,12 @@ print(d['prompt'], end='')
     # 使用 Pi print 模式执行
     echo "[pi-cron] 执行: $task_name ($task_type)"
     local out_file="/tmp/pi-cron-out.$$.$RANDOM"
+    local EXEC_START
+    EXEC_START=$(date +%s%N)
     timeout "$task_timeout" "$PI_BIN" -p "$task_prompt" > "$out_file" 2>&1
     EXIT_CODE=$?
+    local EXEC_MS
+    EXEC_MS=$(( ($(date +%s%N) - EXEC_START) / 1000000 ))
     OUTPUT=$(cat "$out_file" 2>/dev/null || echo "<output lost>")
     rm -f "$out_file"
 
@@ -343,7 +408,7 @@ print(d['prompt'], end='')
     # 用文件传递 output 避免 shell 转义问题
     local update_input="/tmp/pi-cron-update.$$.$RANDOM"
     echo "$OUTPUT" > "$update_input" 2>/dev/null
-    update_task "$task_id" "$RESULT" "$update_input" "$NEXT_RUN"
+    update_task "$task_id" "$RESULT" "$update_input" "$NEXT_RUN" "$EXEC_MS"
     rm -f "$update_input"
     write_log "$task_name" "$RESULT" "$OUTPUT"
 

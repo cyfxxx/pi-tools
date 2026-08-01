@@ -49,6 +49,6 @@ export default function piSchedulerExtension(pi: ExtensionAPI): void {
     await releaseSessionLock()
   })
 
-  registerCommands(pi)
+  registerCommands(pi, scheduler)
   registerTools(pi)
 }
