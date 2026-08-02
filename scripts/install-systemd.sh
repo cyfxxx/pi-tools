@@ -4,7 +4,7 @@ set -u
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 CRON_SCRIPT="$PI_HOME/scripts/pi-cron.sh"
-SERVICE_NAME="pi-scheduler"
+SERVICE_NAME="pi-autopilot"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 TIMER_FILE="/etc/systemd/system/${SERVICE_NAME}.timer"
 
@@ -23,7 +23,7 @@ fi
 # 创建 service unit
 cat > "$SERVICE_FILE" << UNIT
 [Unit]
-Description=Pi Scheduler — 执行到期定时任务
+Description=Pi Autopilot — 执行到期定时任务
 After=network.target
 
 [Service]
@@ -36,7 +36,7 @@ UNIT
 # 创建 timer unit
 cat > "$TIMER_FILE" << UNIT
 [Unit]
-Description=Pi Scheduler Timer — 每分钟触发
+Description=Pi Autopilot Timer — 每分钟触发
 
 [Timer]
 OnCalendar=*-*-* *:*:00
