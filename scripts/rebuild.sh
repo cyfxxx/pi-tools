@@ -163,6 +163,7 @@ d['extensions'] = [e for e in d['extensions'] if e not in legacy]
 required = [
     'extensions/subagent/index.ts',
     'extensions/pi-context/index.ts',
+    'extensions/plan-mode/index.ts',
     'extensions/pi-autopilot/index.ts',
     'extensions/pi-memory/index.ts',
     'extensions/pi-web-search/index.ts',
@@ -175,7 +176,7 @@ for ext in required:
         added += 1
 json.dump(d, open(p, 'w'), indent=2)
 print('registered +%d' % added)
-" 2>/dev/null && ok "6 个扩展已注册到 settings.json（subagent/pi-context/pi-autopilot/pi-memory/pi-web-search/pi-browser）" || true
+" 2>/dev/null && ok "7 个扩展已注册到 settings.json（subagent/pi-context/plan-mode/pi-autopilot/pi-memory/pi-web-search/pi-browser）" || true
   fi
 }
 
@@ -436,15 +437,15 @@ verify() {
     fi
   done
 
-  # 扩展注册完整性（6 项齐备）
+  # 扩展注册完整性（7 项齐备）
   python3 -c "
 import json
 d = json.load(open('$PI_HOME/agent/settings.json'))
-required = ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts']
+required = ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/plan-mode/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts']
 missing = [e for e in required if e not in d.get('extensions', [])]
 print('missing' if missing else 'ok')
 " 2>/dev/null | grep -q ok \
-    && ok "settings.json: 6 个扩展注册完整" \
+    && ok "settings.json: 7 个扩展注册完整" \
     || warn "settings.json: 扩展注册不完整，运行 rebuild 的 phase1 修复"
   # 检查 cron / systemd 是否已配置
   if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
