@@ -17,8 +17,9 @@
 │   │   ├── TOKEN-BUDGET.md    使用文档
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
-│   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索
+│   │   ├── pi-web-search/     网络搜索（SearXNG 私密搜索 + Bing 备选 + HTTP 抓取）
 │   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
+│   │   ├── pi-browser/       浏览器自动化（CloakBrowser，自 pi-web-toolkit 拆出）
 │   │   ├── plan-mode/         计划模式
 │   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
@@ -51,7 +52,8 @@
 │   ├── install-systemd.sh     安装 systemd timer（备选）
 │   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启）
 │   ├── install-wrapper.sh     wrapper 安装/卸载
-│   └── pi-orig.sh             绕过 wrapper 直启（故障逃生）
+│   ├── pi-orig.sh             绕过 wrapper 直启（故障逃生）
+│   └── test-all.sh            一键全量回归（测试+类型+冲突检查）
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
@@ -293,6 +295,26 @@ pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 
 **安装：** `bash scripts/install-wrapper.sh`
 
+## 测试与回归
+
+一键全量回归（5 套测试 + 类型检查 + 扩展冲突检查 + 注册完整性）：
+
+```bash
+bash scripts/test-all.sh
+```
+
+| 套件 | 命令 | 用例数 |
+|------|------|--------|
+| pi-web-search | `cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run` | 72 |
+| pi-memory | `cd agent/extensions/pi-memory && ./node_modules/.bin/vitest run` | 49 |
+| pi-autopilot | `cd agent/extensions/pi-autopilot && ./node_modules/.bin/vitest run` | 86 |
+| pi-browser | `cd agent/extensions/pi-browser && ./node_modules/.bin/vitest run` | 23 |
+| subagent | `cd agent/extensions/subagent && node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs` | 34 |
+| 类型检查 | `cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit` | — |
+| 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 6 项 |
+
+**约定：** 新增/修改扩展必须同步 `settings.json` extensions、`extensions/tsconfig.json` include、`tests/conflict-check.mjs` 监听者清单，并保持各套件用例全绿。
+
 ## ⚠ 安全注意事项
 
 ### 密钥文件（永远不要提交到 git）
@@ -355,7 +377,7 @@ python3 -c "import yaml; yaml.safe_load(open('searxng/settings.yml'))" && echo "
 
 # 核心依赖
 ls agent/bin/fd agent/bin/rg && echo "binaries OK"
-ls agent/extensions/pi-web-toolkit/node_modules/ | wc -l
+ls agent/extensions/pi-browser/node_modules/ | wc -l
 
 # SearXNG
 ls searxng/venv/bin/python && echo "venv OK"

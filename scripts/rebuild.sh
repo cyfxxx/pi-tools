@@ -150,20 +150,32 @@ EOF
   mkdir -p "$PI_HOME/agent/bin"
   ok "agent/bin/ 已就绪"
 
-  # 注册 pi-autopilot 扩展到 settings.json（融合 pi-admin + pi-scheduler）
+  # 注册全部 6 个扩展到 settings.json（清理已融合的旧扩展名）
   if [ -f "$PI_HOME/agent/settings.json" ]; then
     python3 -c "
 import json
 p = '$PI_HOME/agent/settings.json'
 d = json.load(open(p))
-ext = 'extensions/pi-autopilot/index.ts'
+legacy = ('extensions/pi-admin/index.ts', 'extensions/pi-scheduler/index.ts',
+          'extensions/pi-router/index.ts', 'extensions/pi-context-efficiency/index.ts')
 d.setdefault('extensions', [])
-d['extensions'] = [e for e in d['extensions'] if e not in ('extensions/pi-admin/index.ts', 'extensions/pi-scheduler/index.ts')]
-if ext not in d['extensions']:
-    d['extensions'].append(ext)
+d['extensions'] = [e for e in d['extensions'] if e not in legacy]
+required = [
+    'extensions/subagent/index.ts',
+    'extensions/pi-context/index.ts',
+    'extensions/pi-autopilot/index.ts',
+    'extensions/pi-memory/index.ts',
+    'extensions/pi-web-search/index.ts',
+    'extensions/pi-browser/index.ts',
+]
+added = 0
+for ext in required:
+    if ext not in d['extensions']:
+        d['extensions'].append(ext)
+        added += 1
 json.dump(d, open(p, 'w'), indent=2)
-print('registered')
-" 2>/dev/null && ok "pi-autopilot 扩展已注册（替代 pi-admin + pi-scheduler）" || true
+print('registered +%d' % added)
+" 2>/dev/null && ok "6 个扩展已注册到 settings.json（subagent/pi-context/pi-autopilot/pi-memory/pi-web-search/pi-browser）" || true
   fi
 }
 
@@ -382,8 +394,8 @@ verify() {
   fi
 
   # CloakBrowser 检测
-  if [ -f "$PI_HOME/agent/extensions/pi-web-toolkit/node_modules/cloakbrowser/package.json" ]; then
-    CB_VER=$(node -e "console.log(require('$PI_HOME/agent/extensions/pi-web-toolkit/node_modules/cloakbrowser/package.json').version)" 2>/dev/null)
+  if [ -f "$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json" ]; then
+    CB_VER=$(node -e "console.log(require('$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json').version)" 2>/dev/null)
     ok "CloakBrowser v$CB_VER"
     # 检测 Chromium 是否已安装
     if command -v npx &>/dev/null && npx cloakbrowser list 2>/dev/null | grep -q chromium; then
@@ -412,10 +424,32 @@ verify() {
     warn "pi-autopilot: node_modules 未安装"
     info "运行: cd $PI_HOME/agent/extensions/pi-autopilot && npm install"
   fi
+
+  # 其余扩展（subagent/pi-context 零依赖；pi-memory/pi-web-search/pi-browser 需 node_modules）
+  for ext in pi-memory pi-web-search pi-browser; do
+    if [ -d "$PI_HOME/agent/extensions/$ext/node_modules" ]; then
+      local pkgs=$(ls "$PI_HOME/agent/extensions/$ext/node_modules" 2>/dev/null | wc -l)
+      ok "$ext: $pkgs npm 包已安装"
+    else
+      warn "$ext: node_modules 未安装"
+      info "运行: cd $PI_HOME/agent/extensions/$ext && npm install"
+    fi
+  done
+
+  # 扩展注册完整性（6 项齐备）
+  python3 -c "
+import json
+d = json.load(open('$PI_HOME/agent/settings.json'))
+required = ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts']
+missing = [e for e in required if e not in d.get('extensions', [])]
+print('missing' if missing else 'ok')
+" 2>/dev/null | grep -q ok \
+    && ok "settings.json: 6 个扩展注册完整" \
+    || warn "settings.json: 扩展注册不完整，运行 rebuild 的 phase1 修复"
   # 检查 cron / systemd 是否已配置
   if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
     ok "pi-autopilot: crontab 已安装"
-  elif command -v systemctl &>/dev/null && systemctl is-enabled pi-scheduler.timer &>/dev/null; then
+  elif command -v systemctl &>/dev/null && systemctl is-enabled pi-autopilot.timer &>/dev/null; then
     ok "pi-autopilot: systemd timer 已安装"
   else
     info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"

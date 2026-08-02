@@ -39,9 +39,9 @@ export class BrowserManager {
       ) {
         throw new Error(
           '浏览器依赖未安装。请运行安装脚本：\n' +
-          '  bash ~/.pi/agent/extensions/pi-web-toolkit/install.sh\n' +
+          '  bash ~/.pi/agent/extensions/pi-browser/install.sh\n' +
           '或手动安装依赖：\n' +
-          '  cd ~/.pi/agent/extensions/pi-web-toolkit && npm install'
+          '  cd ~/.pi/agent/extensions/pi-browser && npm install'
         )
       }
       throw e
