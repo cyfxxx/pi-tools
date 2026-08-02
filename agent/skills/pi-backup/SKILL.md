@@ -135,8 +135,9 @@ GitHub 同步完成
    SNAPSHOT_PATH="~/.pi/pre-restore-{timestamp}.tar.gz"
    tar czf "$SNAPSHOT_PATH" \
      -C ~ .pi/agent/settings.json .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
-        .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/npm/package.json \
-         .pi/ctx-lite .pi/memory .pi/searxng/settings.yml .pi/scripts
+        .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
+        .pi/agent/agents .pi/agent/prompts .pi/agent/npm/package.json \
+        .pi/memory .pi/searxng/settings.yml .pi/scripts
    ```
 
 **阶段 3：解压**
@@ -232,7 +233,7 @@ GitHub 同步完成
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 5 | `searxng/venv/` | `searxng/settings.yml` 存在且 `searxng/venv/bin/python` 不存在 | `cd ~/.pi/searxng && python3 -m venv venv && venv/bin/pip install searxng granian 2>&1` |
+| 5 | `searxng/venv/` | `searxng/settings.yml` 存在且 `searxng/venv/bin/python` 不存在 | `cd ~/.pi/searxng && python3 -m venv venv && venv/bin/pip install -r searxng/repo/requirements.txt 2>&1`（全量依赖） |
 | 6 | `searxng/repo/` | `searxng/repo/` 不存在或为空 | `git clone --depth 1 https://github.com/searxng/searxng ~/.pi/searxng/repo 2>&1`（中国网络通过镜像代理） |
 
 **Phase 2 — 并行组 C（二进制下载，并发执行）：**
@@ -261,6 +262,7 @@ GitHub 同步完成
 
 | settings.yml | `python3 -c "import yaml; yaml.safe_load(open('$HOME/.pi/searxng/settings.yml'))" 2>/dev/null \|\| echo "YAML 校验失败"` |
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
+| 扩展注册 | `python3 -c "import json; d=json.load(open('$HOME/.pi/agent/settings.json')); assert all(e in d['extensions'] for e in ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/plan-mode/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts'])" 2>/dev/null \|\| echo "扩展注册不完整"` |
 
 **示例输出：**
 
@@ -277,8 +279,10 @@ GitHub 同步完成
   ✓ agent/bin/ (已存在)
 
 [Phase 2-A] npm 依赖
-  ✓ agent/npm/node_modules/ (54 packages)
-  ✓ agent/extensions/pi-web-toolkit/node_modules/ (49 packages)
+  ✓ agent/extensions/pi-browser/node_modules/ (49 packages)
+  ✓ agent/extensions/pi-web-search/node_modules/ (87 packages)
+  ✓ agent/extensions/pi-memory/node_modules/ (76 packages)
+  ✓ agent/extensions/pi-autopilot/node_modules/ (76 packages)
 
 [Phase 2-B] Python 环境
   ✓ searxng/venv/ (Python 3.12.3)
@@ -353,11 +357,14 @@ GitHub 同步完成
 | 核心配置 | `agent/APPEND_SYSTEM.md` | 追加系统提示词 |
 | 技能 | `agent/skills/*/` | 所有已安装技能（SKILL.md 及附属文件） |
 | 扩展源码 | `agent/extensions/*/` | 扩展源码，排除 `node_modules/`、`dist/`、`.git/` |
+| 扩展冲突测试 | `agent/extensions/tests/` | conflict-check 等扩展级测试脚本 |
+| 共享库 | `agent/lib/` | 共享库源码（context-budget/token-budget/prune/note-store/TOKEN-BUDGET.md） |
+| 子代理定义 | `agent/agents/` | 子代理模板（scout/worker/reviewer.md） |
+| 提示词文档 | `agent/prompts/` | SDK 提示词文档（PI-SDK-EXTENSION.md） |
 | npm 配置 | `agent/npm/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
-| ctx-lite | `ctx-lite/` | 上下文笔记和检查点（如存在） |
-| 记忆 | `memory/` | pi-memory 持久记忆数据（如存在） |
+| 记忆 | `memory/` | pi-memory 持久记忆数据（如存在；已含原 ctx-lite 数据） |
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
 | 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
@@ -367,6 +374,7 @@ GitHub 同步完成
 | 生命周期安装脚本 | `scripts/install-wrapper.sh` | wrapper 安装/卸载 |
 | 生命周期直启脚本 | `scripts/pi-orig.sh` | 绕过 wrapper 直接启动（故障逃生） |
 | 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
+| 回归测试脚本 | `scripts/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
 
 
@@ -386,7 +394,9 @@ GitHub 同步完成
 | 扩展 lock | `agent/extensions/*/package-lock.json` | 扩展 npm 锁定文件 | 由 `npm install` 生成 |
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
 | 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
-| 运行时状态 | `agent/.pi-admin-state.json` | pi-admin 重启状态标记 | 不可备份恢复 |
+| 运行时状态 | `agent/.pi-admin-state.json` | pi-autopilot 重启状态标记（wrapper 契约） | 不可备份恢复 |
+| 自主运行状态 | `agent/.pi-autopilot-config.json`、`.pi-autopilot-telemetry.json`、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json` | pi-autopilot 配置/遥测/回滚快照 | 可重建，不恢复 |
+| 模型配置 | `agent/models.json` | provider/模型定义（可能含密钥） | 手动维护，不备份 |
 
 ### 按需包含
 
@@ -405,5 +415,5 @@ GitHub 同步完成
 5. **重建超时**：`npm install` 在网络慢时可能超时。建议在网络稳定的环境下执行 `rebuild`。
 6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
 7. **调度任务文件**：`agent/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
-8. **wrapper 恢复**：如果备份中包含了 pi-admin 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
+8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
 
