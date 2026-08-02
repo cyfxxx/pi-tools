@@ -49,7 +49,7 @@
 │   └── stop.sh                停止脚本
 ├── scripts/
 │   ├── rebuild.sh             一键重建脚本（幂等、并行下载、国内镜像加速）
-│   ├── pi-cron.sh             pi-scheduler 离线执行包装脚本
+│   ├── pi-cron.sh             pi-autopilot 离线执行包装脚本
 │   ├── install-cron.sh        安装 crontab 条目
 │   ├── install-systemd.sh     安装 systemd timer（备选）
 │   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启）

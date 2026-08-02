@@ -14,11 +14,10 @@ import { fileURLToPath } from 'node:url'
 
 const EXTENSIONS_DIR = join(fileURLToPath(new URL('..', import.meta.url)))
 const EXT_NAMES = readdirSync(EXTENSIONS_DIR, { withFileTypes: true })
-  .filter(d => d.isDirectory() && d.name !== 'tests' && d.name !== 'types' && d.name !== 'node_modules' && d.name !== 'pi-web-toolkit')
+  .filter(d => d.isDirectory() && d.name !== 'tests' && d.name !== 'types' && d.name !== 'node_modules')
   .map(d => d.name)
 
-// Also include pi-web-toolkit separately
-const ALL_EXTENSIONS = [...EXT_NAMES, 'pi-web-toolkit'].sort()
+const ALL_EXTENSIONS = EXT_NAMES.sort()
 
 const TOOL_PATTERN = /registerTool\s*\(\s*\{[\s\S]*?name:\s*['"]([^'"]+)['"]/g
 const CMD_PATTERN = /registerCommand\s*\(\s*['"]([^'"]+)['"]/g
@@ -116,9 +115,10 @@ async function main() {
     const expected = [
       'admin_status', 'admin_list_models', 'admin_set_model', 'admin_get_config',
       'admin_set_config', 'admin_list_sessions', 'admin_switch_session', 'admin_restart',
+      'autopilot_status', 'autopilot_stats', 'autopilot_policy', 'autopilot_failover',
       'memory_store', 'memory_search', 'memory_stats', 'memory_forget',
       'schedule_task', 'ctx_exec', 'ctx_note', 'ctx_list', 'ctx_snap',
-      'todo', 'task', 'subagent',
+      'todo', 'subagent',
       'web_search', 'fetch_url', 'web_fetch',
       'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
       'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
@@ -144,6 +144,7 @@ async function main() {
     }
     const expected = [
       'admin:status', 'admin:restart', 'admin:session', 'admin:model', 'admin:config',
+      'auto:status', 'auto:stats', 'auto:policy', 'auto:failover', 'auto:pause', 'auto:resume',
       'memory:search', 'memory:stats', 'memory:prune',
       'loop', 'remind', 'schedule',
       'ctx-lite:status', 'ctx-lite:cleanup', 'ctx-lite:forget',
@@ -175,18 +176,16 @@ async function main() {
 
     // Check critical shared events have expected listeners
     const expectedListeners = {
-      'session_start': ['pi-admin', 'pi-scheduler', 'pi-memory', 'pi-web-toolkit', 'ctx-lite', 'plan-mode'],
-      'session_shutdown': ['pi-scheduler', 'pi-memory', 'pi-web-toolkit', 'plan-mode'],
-      'before_agent_start': ['pi-router', 'pi-memory', 'plan-mode'],
-      'context': ['pi-context-efficiency', 'pi-memory', 'plan-mode'],
+      'session_start': ['pi-autopilot', 'pi-memory', 'pi-web-search', 'pi-browser', 'ctx-lite', 'plan-mode'],
+      'session_shutdown': ['pi-autopilot', 'pi-browser', 'plan-mode'],
+      'before_agent_start': ['pi-router', 'plan-mode'],
+      'context': ['pi-context-efficiency', 'plan-mode'],
       'tool_call': ['plan-mode'],
       'tool_result': ['pi-context-efficiency'],
-      'message_end': ['pi-context-efficiency'],
-      'input': ['pi-context-efficiency'],
       'turn_end': ['plan-mode'],
       'agent_end': ['plan-mode'],
       'agent_start': ['plan-mode'],
-      'session_compact': ['pi-web-toolkit', 'plan-mode'],
+      'session_compact': ['pi-browser', 'plan-mode'],
       'session_tree': ['plan-mode'],
       'session_before_compact': ['ctx-lite'],
       'tool_execution_end': ['plan-mode'],
@@ -219,16 +218,6 @@ async function main() {
           }
           envMap[varName] = prefix
         }
-      }
-    }
-
-    // Verify pi-web-toolkit env vars have correct prefix
-    for (const [varName, ext] of Object.entries(envMap)) {
-      if (ext === 'pi-web-toolkit') {
-        assert(
-          varName.startsWith('PI_WEB_TOOLKIT_') || varName.startsWith('HOME') || varName === 'NODE_ENV',
-          `pi-web-toolkit env var "${varName}" should start with PI_WEB_TOOLKIT_`
-        )
       }
     }
   })

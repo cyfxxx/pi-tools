@@ -1,5 +1,5 @@
 #!/bin/bash
-# install-systemd.sh — 安装 pi-scheduler 的 systemd timer
+# install-systemd.sh — 安装 pi-autopilot 的 systemd timer
 set -u
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"

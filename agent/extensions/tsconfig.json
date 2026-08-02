@@ -21,9 +21,8 @@
     }
   },
   "include": [
-    "pi-admin/**/*.ts",
+    "pi-autopilot/**/*.ts",
     "pi-memory/**/*.ts",
-    "pi-scheduler/**/*.ts",
     "pi-router/**/*.ts",
     "pi-context-efficiency/**/*.ts",
     "subagent/**/*.ts",

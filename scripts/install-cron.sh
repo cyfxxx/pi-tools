@@ -1,5 +1,5 @@
 #!/bin/bash
-# install-cron.sh — 安装 pi-scheduler 的 crontab 条目
+# install-cron.sh — 安装 pi-autopilot 的 crontab 条目
 set -u
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
@@ -32,7 +32,7 @@ fi
 # 追加条目
 (
   echo "$EXISTING"
-  echo "# pi-scheduler: 每分钟检查到期任务"
+  echo "# pi-autopilot: 每分钟检查到期任务"
   echo "$CRON_LINE"
 ) | crontab -
 
