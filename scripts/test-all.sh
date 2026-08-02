@@ -46,12 +46,12 @@ cyn "== settings.json 扩展注册完整性 =="
 python3 -c "
 import json
 d = json.load(open('$PI_HOME/agent/settings.json'))
-required = ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts']
+required = ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/plan-mode/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts']
 missing = [e for e in required if e not in d.get('extensions', [])]
 if missing:
     raise SystemExit(1)
 " >/dev/null 2>&1
-report $? "settings.json 6 扩展注册"
+report $? "settings.json 7 扩展注册"
 
 if [ "$FAILED" -gt 0 ]; then
   printf '\n\033[0;31m✗ 回归失败（%s 项）\033[0m\n' "$FAILED"

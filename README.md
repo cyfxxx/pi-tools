@@ -20,24 +20,21 @@
 │   │   ├── pi-web-search/     网络搜索（SearXNG 私密搜索 + Bing 备选 + HTTP 抓取）
 │   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
 │   │   ├── pi-browser/       浏览器自动化（CloakBrowser，自 pi-web-toolkit 拆出）
-│   │   ├── plan-mode/         计划模式
+│   │   ├── plan-mode/         计划模式（TUI 计划/任务管理）
 │   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
-│   │   └── pi-context/  token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
+│   │   └── pi-context/        token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
-│   │   ├── planner.md            实现计划生成
 │   │   ├── worker.md             通用执行 agent
 │   │   └── reviewer.md           代码审查
-│   ├── prompts/               工作流 prompt（子代理 chain 模板）
-│   │   ├── implement.md       完整实现流：scout→planner→worker
-│   │   ├── scout-and-plan.md  探测+计划：scout→planner
-│   │   └── implement-and-review.md  实现+审查：worker→reviewer→worker
+│   ├── prompts/               SDK 提示词文档
+│   │   └── PI-SDK-EXTENSION.md   Pi SDK 扩展开发说明
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   中文翻译
 │   │   └── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
 │   └── npm/
-│       ├── package.json       npm 包声明
+│       ├── package.json       npm 包声明（rebuild.sh 按 settings.json packages 自动生成）
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
 ├── memory/                    pi-memory 运行时数据（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
@@ -130,9 +127,7 @@ pi-backup rebuild --yes          # 静默自动重建
 
 **通知链：**
 - 日志文件：`logs/scheduler/<name>-<ts>.log`
-- 会话摘要：`session_start` 时 TUI 显示
-- 邮件：设置 `PI_SCHEDULER_MAIL_TO` 环境变量
-- Webhook：设置 `PI_SCHEDULER_WEBHOOK` 环境变量
+- 会话摘要：`session_start` 时 TUI 顶部显示离线执行摘要
 
 ### 失败自愈
 
@@ -204,7 +199,6 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 | Agent | 工具 | 用途 |
 |-------|------|------|
 | `scout` | read, grep, find, ls, bash | 快速代码探测，返回压缩后的上下文摘要 |
-| `planner` | read, grep, find, ls | 根据上下文生成实现计划 |
 | `worker` | 全部 | 通用执行 agent，处理实际修改 |
 | `reviewer` | read, grep, find, ls, bash | 代码审查，评估质量和安全性 |
 
@@ -228,9 +222,9 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 ]}
 ```
 
-### 工作流 Prompt
+### 链式调用
 
-通过 `/implement <query>`、`/scout-and-plan <query>`、`/implement-and-review <query>` 快速启动预定义 chain 流程。
+多步流程通过 `{previous}` 占位符串联上一步输出（如 scout 探测 → worker 实现 → reviewer 审查）。链式流程所需 agent 均可自由组合，无需预定义工作流命令。
 
 ### 为什么子代理能省钱
 
@@ -291,7 +285,7 @@ pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 - **`pi-wrapper.sh`** — 检测目标 `cli.js`（优先通过 `pi-original` 符号链接，兜底硬编码路径），以 `node cli.js` 方式启动 Pi。注入 `PI_AUTOPILOT=1` 环境变量；崩溃（非 0 退出）累计计数，连续 3 次自动回滚至 lastGood 模型并重启；正常退出记录 lastGood 快照并清零计数；5 分钟内仅回滚一次防死循环。
 - **`install-wrapper.sh`** — 安装/卸载 wrapper。安装时把原 `pi` 命令重命名为 `pi-original`，将 wrapper 脚本放置为 `pi`。
 - **`pi-orig.sh`** — 绕过 wrapper 直接启动（故障逃生口）。
-- **`.bash_aliases`** — 提供 `pic`（继续会话）、`pir`（重启会话）、`piorg`（直启）三个便捷别名。
+- **`.bash_aliases`** — 提供 `pic`（继续会话）、`pir`（重启会话）、`piorg`（直启）三个便捷别名（手动维护于 `~/.bash_aliases`，wrapper 安装脚本不负责写入）。
 
 **安装：** `bash scripts/install-wrapper.sh`
 
@@ -333,8 +327,7 @@ bash scripts/test-all.sh
 |------|------|------|---------|
 | `searxng/venv/` | ~94 MB | `python3 -m venv` | `scripts/rebuild.sh` 自动创建 |
 | `searxng/repo/` | ~28 MB | `git clone searxng/searxng`（--depth 1） | `scripts/rebuild.sh` 自动克隆 |
-| `agent/npm/node_modules/` | ~153 MB | `npm install` | `scripts/rebuild.sh` 自动安装 |
-| `agent/extensions/*/node_modules/` | ~104 MB | `npm install` | `scripts/rebuild.sh` 自动安装 |
+| `agent/extensions/*/node_modules/` | ~330 MB（4 扩展合计） | `npm install` | `scripts/rebuild.sh` 自动安装 |
 
 ### 首次使用
 
