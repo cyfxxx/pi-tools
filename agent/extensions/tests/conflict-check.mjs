@@ -116,7 +116,7 @@ async function main() {
       'admin_status', 'admin_list_models', 'admin_set_model', 'admin_get_config',
       'admin_set_config', 'admin_list_sessions', 'admin_switch_session', 'admin_restart',
       'autopilot_status', 'autopilot_stats', 'autopilot_policy', 'autopilot_failover',
-      'memory_store', 'memory_search', 'memory_stats', 'memory_forget',
+      'memory_store', 'memory_search', 'memory_stats', 'memory_forget', 'memory_recall',
       'schedule_task', 'ctx_exec', 'ctx_note', 'ctx_list', 'ctx_snap',
       'todo', 'subagent',
       'web_search', 'fetch_url', 'web_fetch',
@@ -145,7 +145,7 @@ async function main() {
     const expected = [
       'admin:status', 'admin:restart', 'admin:session', 'admin:model', 'admin:config',
       'auto:status', 'auto:stats', 'auto:policy', 'auto:failover', 'auto:pause', 'auto:resume',
-      'memory:search', 'memory:stats', 'memory:prune',
+      'memory:search', 'memory:stats', 'memory:prune', 'memory:digest', 'memory:summary',
       'loop', 'remind', 'schedule',
       'ctx-lite:status', 'ctx-lite:cleanup', 'ctx-lite:forget',
       'plan', 'plandiff', 'planqa', 'todos',
@@ -176,9 +176,9 @@ async function main() {
 
     // Check critical shared events have expected listeners
     const expectedListeners = {
-      'session_start': ['pi-autopilot', 'pi-memory', 'pi-web-search', 'pi-browser', 'ctx-lite', 'plan-mode'],
-      'session_shutdown': ['pi-autopilot', 'pi-browser', 'plan-mode'],
-      'before_agent_start': ['pi-router', 'plan-mode'],
+      'session_start': ['pi-autopilot', 'pi-memory', 'pi-web-search', 'pi-browser', 'plan-mode'],
+      'session_shutdown': ['pi-autopilot', 'pi-memory', 'pi-browser', 'plan-mode'],
+      'before_agent_start': ['pi-router', 'pi-memory', 'plan-mode'],
       'context': ['pi-context-efficiency', 'plan-mode'],
       'tool_call': ['plan-mode'],
       'tool_result': ['pi-context-efficiency'],
@@ -187,7 +187,7 @@ async function main() {
       'agent_start': ['plan-mode'],
       'session_compact': ['pi-browser', 'plan-mode'],
       'session_tree': ['plan-mode'],
-      'session_before_compact': ['ctx-lite'],
+      'session_before_compact': ['pi-memory'],
       'tool_execution_end': ['plan-mode'],
     }
     for (const [ev, exts] of Object.entries(expectedListeners)) {

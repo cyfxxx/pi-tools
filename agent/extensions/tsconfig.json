@@ -26,7 +26,6 @@
     "pi-router/**/*.ts",
     "pi-context-efficiency/**/*.ts",
     "subagent/**/*.ts",
-    "ctx-lite/**/*.ts",
     "plan-mode/**/*.ts",
     "pi-browser/**/*.ts",
     "pi-web-search/**/*.ts"

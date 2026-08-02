@@ -1,5 +1,6 @@
 export type MemoryCategory = 'fact' | 'preference' | 'habit' | 'procedure' | 'reference'
-export type MemorySource = 'manual' | 'extraction' | 'inference'
+export type MemorySource = 'manual' | 'extract' | 'digest'
+export type MemoryAction = 'ADD' | 'UPDATE' | 'DELETE' | 'NOOP'
 
 export interface MemoryEntry {
   id: string
@@ -13,6 +14,24 @@ export interface MemoryEntry {
   createdAt: string
   updatedAt: string
   accessedAt: string
+  /** v2: 观察到该事实的时间（自动提取时取自会话时间，可能早于 createdAt） */
+  observedAt?: string
+  /** v2: 被哪条记忆取代（冲突消解，软删除） */
+  supersededBy?: string
+  /** v2: 软删除标记 */
+  deleted?: boolean
+}
+
+export interface SummaryEntry {
+  id: string
+  sessionId: string | null
+  ts: string
+  title: string
+  decisions: string[]
+  facts: string[]
+  prefs: string[]
+  lessons: string[]
+  fullText: string
 }
 
 export interface MemoryStore {
@@ -20,11 +39,19 @@ export interface MemoryStore {
   entries: MemoryEntry[]
 }
 
+export interface SummaryStore {
+  version: number
+  summaries: SummaryEntry[]
+}
+
 export interface MemoryStats {
   totalEntries: number
+  activeEntries: number
   byCategory: Record<string, number>
   totalSizeBytes: number
   oldestEntry: string | null
   newestEntry: string | null
   coldEntries: number
+  summaries: number
+  superseded: number
 }

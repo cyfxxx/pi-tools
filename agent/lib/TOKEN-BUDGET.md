@@ -4,7 +4,7 @@
 
 ## 概览
 
-`lib/token-budget.ts` 是一个轻量共享模块（纯函数，零依赖），被 **plan-mode**、**pi-web-toolkit**、**ctx-lite**、**subagent** 四个扩展共用。
+`lib/token-budget.ts` 是一个轻量共享模块（纯函数，零依赖），被 **plan-mode**、**pi-web-toolkit**、**pi-memory**（含原 ctx-lite）、**subagent** 四个扩展共用。
 
 ## 导出的函数
 
@@ -50,7 +50,7 @@
 各扩展通过相对路径导入：
 
 ```typescript
-// plan-mode, ctx-lite, subagent
+// plan-mode, pi-memory, subagent
 import { recordToolUsage, estimateTokens, ... } from "../../lib/token-budget.ts"
 
 // pi-web-toolkit (额外一层 src/)
@@ -63,7 +63,7 @@ import { recordToolUsage, estimateTokens, ... } from "../../../lib/token-budget.
 |------|----------------|-------------|---------|
 | **plan-mode** | `resetBudget()` | — | `getTokenPressureTag()` 前置到提示词 |
 | **pi-web-toolkit** | `resetBudget()` | `recordToolUsage()` | — |
-| **ctx-lite** | — | `recordToolUsage()` | — |
+| **pi-memory** | — | `recordToolUsage()`（ctx_exec） | — |
 | **subagent** | — | `recordToolUsage()` | 前置预算指令 |
 
 ## 测试

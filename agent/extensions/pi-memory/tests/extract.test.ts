@@ -1,0 +1,209 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import type { Runner } from '../extract.ts'
+
+let dir: string
+const ORIG_ENV = { ...process.env }
+
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'pi-memory-ext-'))
+  process.env.PI_MEMORY_DIR = dir
+  vi.resetModules()
+})
+
+afterEach(() => {
+  process.env = { ...ORIG_ENV }
+  delete process.env.PI_MEMORY_DIR
+  rmSync(dir, { recursive: true, force: true })
+})
+
+const VALID_JSON = JSON.stringify({
+  summary: {
+    title: '修复 CI 配置',
+    decisions: ['采用 GitHub Actions 构建'],
+    facts: ['node 版本为 20'],
+    prefs: ['用户偏好简洁注释'],
+    lessons: ['记得先跑 lint'],
+    fullText: '本次会话修复了 CI 配置问题',
+  },
+  memories: [
+    {
+      category: 'preference',
+      title: '用户偏好: 简洁注释',
+      content: '用户希望代码注释保持简洁，不写冗余说明',
+      tags: ['style', 'user'],
+      confidence: 0.95,
+    },
+  ],
+})
+
+describe('extract: parseExtractResult', () => {
+  it('parses clean JSON output', async () => {
+    const { parseExtractResult } = await import('../extract.ts')
+    const result = parseExtractResult(VALID_JSON)
+    expect(result).not.toBeNull()
+    expect(result!.summary.title).toBe('修复 CI 配置')
+    expect(result!.memories).toHaveLength(1)
+    expect(result!.memories[0].category).toBe('preference')
+  })
+
+  it('strips markdown fences', async () => {
+    const { parseExtractResult } = await import('../extract.ts')
+    const result = parseExtractResult(`\`\`\`json\n${VALID_JSON}\n\`\`\``)
+    expect(result).not.toBeNull()
+    expect(result!.memories).toHaveLength(1)
+  })
+
+  it('tolerates leading/trailing prose', async () => {
+    const { parseExtractResult } = await import('../extract.ts')
+    const result = parseExtractResult(`好的，以下是提取结果：\n${VALID_JSON}\n希望能帮助到你。`)
+    expect(result).not.toBeNull()
+    expect(result!.memories[0].title).toBe('用户偏好: 简洁注释')
+  })
+
+  it('returns null for invalid JSON', async () => {
+    const { parseExtractResult } = await import('../extract.ts')
+    expect(parseExtractResult('')).toBeNull()
+    expect(parseExtractResult('not json at all')).toBeNull()
+    expect(parseExtractResult('{"broken":')).toBeNull()
+  })
+
+  it('sanitizes category fallback and clips fields', async () => {
+    const { parseExtractResult } = await import('../extract.ts')
+    const raw = JSON.stringify({
+      summary: { title: 't'.repeat(200), fullText: 'x'.repeat(5000) },
+      memories: [
+        { category: 'evil', title: 'a'.repeat(500), content: 'b'.repeat(5000), tags: ['t'.repeat(100)], confidence: 5 },
+      ],
+    })
+    const result = parseExtractResult(raw)
+    expect(result).not.toBeNull()
+    expect(result!.memories[0].category).toBe('fact')
+    expect(result!.memories[0].title.length).toBeLessThanOrEqual(60)
+    expect(result!.memories[0].content.length).toBeLessThanOrEqual(1000)
+    expect(result!.memories[0].tags[0].length).toBeLessThanOrEqual(30)
+    expect(result!.memories[0].confidence).toBe(1)
+  })
+
+  it('drops malformed memory items', async () => {
+    const { parseExtractResult } = await import('../extract.ts')
+    const raw = JSON.stringify({
+      summary: { title: 'ok' },
+      memories: [
+        { category: 'fact', title: 'no content' },
+        { title: 'no category no content', confidence: 0.5 },
+        { category: 'fact', title: 'good', content: 'fine' },
+      ],
+    })
+    const result = parseExtractResult(raw)
+    expect(result!.memories).toHaveLength(1)
+    expect(result!.memories[0].title).toBe('good')
+  })
+})
+
+describe('extract: extractConversation full flow', () => {
+  it('extracts, merges, and persists entries + summary via mock runner', async () => {
+    const { extractConversation } = await import('../extract.ts')
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    const outcome = await extractConversation(
+      [
+        { role: 'user', content: '帮我修复 CI 配置' },
+        { role: 'assistant', content: '已修复，采用 GitHub Actions' },
+      ],
+      { sessionId: 'sess-1', messageCount: 2, runner },
+    )
+    expect(outcome.ok).toBe(true)
+    expect(outcome.memories).toBe(1)
+
+    const { loadEntries, loadSummaries } = await import('../storage.ts')
+    const entries = loadEntries()
+    expect(entries).toHaveLength(1)
+    expect(entries[0].source).toBe('extract')
+    expect(entries[0].title).toBe('用户偏好: 简洁注释')
+    expect(entries[0].observedAt).toBeTruthy()
+
+    const summaries = loadSummaries()
+    expect(summaries).toHaveLength(1)
+    expect(summaries[0].title).toBe('修复 CI 配置')
+    expect(summaries[0].sessionId).toBe('sess-1')
+  })
+
+  it('is idempotent: same fingerprint within cooldown is skipped', async () => {
+    const { extractConversation } = await import('../extract.ts')
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+      { role: 'user', content: 'hi' },
+      { role: 'assistant', content: 'hello' },
+    ]
+    const first = await extractConversation(messages, { sessionId: 'sess-2', messageCount: 2, runner })
+    expect(first.ok).toBe(true)
+    const second = await extractConversation(messages, { sessionId: 'sess-2', messageCount: 2, runner })
+    expect(second.ok).toBe(false)
+    expect(second.error).toContain('skip')
+
+    const { loadEntries } = await import('../storage.ts')
+    expect(loadEntries()).toHaveLength(1)
+  })
+
+  it('different message count is not skipped', async () => {
+    const { extractConversation } = await import('../extract.ts')
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    await extractConversation([{ role: 'user', content: 'a' }], { sessionId: 'sess-3', messageCount: 1, runner })
+    const second = await extractConversation(
+      [{ role: 'user', content: 'a' }, { role: 'user', content: 'b' }],
+      { sessionId: 'sess-3', messageCount: 2, runner },
+    )
+    expect(second.ok).toBe(true)
+  })
+
+  it('fails gracefully when parse fails', async () => {
+    const { extractConversation } = await import('../extract.ts')
+    const runner: Runner = async () => ({ stdout: 'garbage', stderr: '', code: 0 })
+    const outcome = await extractConversation([{ role: 'user', content: 'x' }], { sessionId: 'sess-4', runner })
+    expect(outcome.ok).toBe(false)
+    expect(outcome.error).toContain('提取解析失败')
+  })
+
+  it('empty conversation → error without invoking runner', async () => {
+    const { extractConversation } = await import('../extract.ts')
+    let called = false
+    const runner: Runner = async () => { called = true; return { stdout: '', stderr: '', code: 0 } }
+    const outcome = await extractConversation([], { sessionId: 'sess-5', runner })
+    expect(outcome.ok).toBe(false)
+    expect(called).toBe(false)
+  })
+})
+
+describe('extract: prompt building', () => {
+  it('builds prompt with transcript and truncates beyond maxChars', async () => {
+    const { buildExtractPrompt } = await import('../extract.ts')
+    const messages = [
+      { role: 'user' as const, content: '你好'.repeat(5000) },
+      { role: 'assistant' as const, content: '再见' },
+    ]
+    const prompt = buildExtractPrompt(messages, 1000)
+    expect(prompt).toContain('记忆提取器')
+    expect(prompt).toContain('再见')
+    expect(prompt.length).toBeLessThan(3000)
+  })
+})
+
+describe('extract: extractTextFromEntries', () => {
+  it('extracts text blocks from session entries', async () => {
+    const { extractTextFromEntries } = await import('../extract.ts')
+    const entries = [
+      { type: 'message', role: 'user', content: [{ type: 'text', text: 'hello' }] },
+      { type: 'message', role: 'assistant', content: 'plain text' },
+      { type: 'tool', role: 'assistant', message: { role: 'assistant', content: 'tool result' } },
+      { type: 'message', role: 'system', content: 'ignored' },
+      { type: 'message', role: 'user', content: [{ type: 'image', text: 'no' }] },
+    ]
+    const messages = extractTextFromEntries(entries as Array<{ role?: string; content?: unknown; message?: { role?: string; content?: unknown } }>)
+    expect(messages).toHaveLength(3)
+    expect(messages[0].content).toBe('hello')
+    expect(messages[1].content).toBe('plain text')
+    expect(messages[2].content).toBe('tool result')
+  })
+})

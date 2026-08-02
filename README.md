@@ -11,16 +11,15 @@
 │   ├── APPEND_SYSTEM.md       追加系统提示词
 │   ├── lib/                   共享库模块
 │   │   ├── token-budget.ts    跨扩展 Token 用量追踪
-│   │   ├── note-store.ts      ctx-lite 笔记持久化
+│   │   ├── note-store.ts      ctx-lite 笔记持久化（已并入 pi-memory，保留兼容）
 │   │   ├── prune.ts           工具输出裁剪
 │   │   ├── TOKEN-BUDGET.md    使用文档
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索
 │   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
-│   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
-│   │   ├── pi-memory/         跨会话持久记忆
+│   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-router/         before_agent_start 注入主动路由策略 + token 预算
 │   │   └── pi-context-efficiency/  token 优化（thinking 剪枝/compaction 去重/输出截断）
@@ -39,9 +38,7 @@
 │   └── npm/
 │       ├── package.json       npm 包声明
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
-├── ctx-lite/                  ctx-lite 运行时数据（checkpoints）
-│   └── checkpoints/           笔记检查点
-├── memory/                    pi-memory 运行时数据
+├── memory/                    pi-memory 运行时数据（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
 │   ├── generate-config.sh     settings.yml 自动生成脚本
@@ -167,26 +164,32 @@ bash scripts/install-systemd.sh        # 或安装 systemd timer
 
 ## 持久记忆（pi-memory）
 
-`pi-memory` 扩展提供跨会话持久记忆能力，让 LLM 记住学到的知识和用户偏好：
+`pi-memory` 扩展（已合并 ctx-lite）提供跨会话持久记忆 + 自主学习闭环：
 
 | 工具 | 功能 |
 |------|------|
 | `memory_store` | 存储一条知识（自动去重：标题精确匹配 → 更新，内容 Jaccard>0.7 → 合并） |
-| `memory_search` | 搜索已存储的记忆（按置信度×时效性×引用频率排序） |
+| `memory_search` | 搜索已存储的记忆（BM25 词法 + 置信度×时效×引用频率混合排序） |
+| `memory_recall` | 综合回忆：记忆检索 + 会话摘要时间线（`summaries:true`） |
 | `memory_stats` | 查看记忆库统计信息 |
 | `memory_forget` | 删除记忆（按 ID 精确删除或按类别+时间批量删除） |
+| `ctx_exec/ctx_note/ctx_list/ctx_snap` | ctx-lite 迁移工具（同名同行为） |
 
-**自动注入：** 会话前 2 轮自动注入 Top-5 高价值记忆到 LLM 上下文（`display: false`，对用户不可见）。第 3 轮起不自动注入，模型按需调用 `memory_search`。
+**自主学习闭环：**
+- **自动提取** — compaction / 会话结束时 LLM 分析会话，提取决策/事实/偏好/约定/教训入长期记忆（`pi -p` 离线通道，失败静默，同会话幂等）
+- **自动消解** — Mem0 式四操作（ADD/UPDATE/DELETE/NOOP），同类别同标签冲突时新结论取代旧结论（标记 superseded）
+- **每轮常驻注入** — `before_agent_start` 把 ~500 token「持续记忆」块拼入 system prompt（高价值条目 + 最近会话摘要衔接），预算可用 `PI_MEMORY_INJECT_TOKENS` 调整
+- **手动触发** — `/memory:digest` 立即提取当前会话；`/memory:summary` 查看摘要时间线
 
-**文件位置：** `memory/entries.json`（1 MB 上限）
+**文件位置：** `memory/`（entries.json 1 MB 上限 / notes.json / summaries.json / checkpoints/），ctx-lite 旧数据自动迁移。
 
 **数据流：**
 ```
-web-toolkit 搜到信息 → memory_store 固化 → before_agent_start 自动注入 → 跨会话复用
-subagent 学到新知 → memory_store 回写 → 主代理 / 其他子代理 memory_search 检索
+会话中新知识 → memory_store / 自动提取 → 四操作消解入库 → 每轮常驻注入 → 跨会话复用
+compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文连续
 ```
 
-**清理：** `/memory:prune` 删除低置信度 + 长期未访问条目。
+**清理：** `/memory:prune` 删除低置信度 + 长期未访问条目；`/ctx-lite:cleanup` 清理旧检查点。
 
 **安装：** 零外部依赖，注册到 `settings.json` 后即生效。无需额外安装步骤。
 

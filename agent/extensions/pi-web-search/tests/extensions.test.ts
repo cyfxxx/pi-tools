@@ -132,80 +132,63 @@ describe('pi-autopilot extension', () => {
   })
 })
 
-// ─── pi-memory ────────────────────────────────────────────────
+// ─── pi-memory（合并 ctx-lite 后） ───────────────────────────
 describe('pi-memory extension', () => {
-  it('registers 4 memory tools: memory_store, memory_search, memory_stats, memory_forget', async () => {
+  it('registers 9 tools: memory_* + ctx_* (merged from ctx-lite)', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-memory/index')).default
     await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(4)
+    expect(pi.registerTool).toHaveBeenCalledTimes(9)
     const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name).sort()
-    expect(toolNames).toEqual(['memory_forget', 'memory_search', 'memory_stats', 'memory_store'])
+    expect(toolNames).toEqual([
+      'ctx_exec', 'ctx_list', 'ctx_note', 'ctx_snap',
+      'memory_forget', 'memory_recall', 'memory_search', 'memory_stats', 'memory_store',
+    ])
   })
 
-  it('registers 3 memory commands', async () => {
+  it('registers 8 commands: memory:* + ctx-lite:* aliases', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-memory/index')).default
     await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(3)
+    expect(pi.registerCommand).toHaveBeenCalledTimes(8)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual(['memory:prune', 'memory:search', 'memory:stats'])
+    expect(cmdNames).toEqual([
+      'ctx-lite:cleanup', 'ctx-lite:forget', 'ctx-lite:status',
+      'memory:digest', 'memory:prune', 'memory:search', 'memory:stats', 'memory:summary',
+    ])
   })
 
-  it('registers session_start event handler', async () => {
+  it('registers lifecycle event handlers', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-memory/index')).default
     await main(pi as any)
     const events = pi.on.mock.calls.map((c: any[]) => c[0])
     expect(events).toContain('session_start')
-  })
-})
-
-// ─── ctx-lite (unregistered extension) ────────────────────────
-describe('ctx-lite extension', () => {
-  it('registers 4 tools: ctx_exec, ctx_note, ctx_list, ctx_snap', async () => {
-    const pi = mockPi()
-    const main = (await import('../../ctx-lite/index')).default
-    await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(4)
-    const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name).sort()
-    expect(toolNames).toEqual(['ctx_exec', 'ctx_list', 'ctx_note', 'ctx_snap'])
-  })
-
-  it('registers 3 ctx-lite commands', async () => {
-    const pi = mockPi()
-    const main = (await import('../../ctx-lite/index')).default
-    await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(3)
-    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual(['ctx-lite:cleanup', 'ctx-lite:forget', 'ctx-lite:status'])
-  })
-
-  it('registers session event handlers', async () => {
-    const pi = mockPi()
-    const main = (await import('../../ctx-lite/index')).default
-    await main(pi as any)
-    const events = pi.on.mock.calls.map((c: any[]) => c[0])
     expect(events).toContain('session_before_compact')
-    expect(events).toContain('session_start')
+    expect(events).toContain('session_shutdown')
+    expect(events).toContain('before_agent_start')
   })
 
   it('tool execute functions do not throw with defaults', async () => {
     const pi = mockPi()
-    const main = (await import('../../ctx-lite/index')).default
+    const main = (await import('../../pi-memory/index')).default
     await main(pi as any)
     for (const call of pi.registerTool.mock.calls) {
       const tool = call[0]
-      if (tool.execute) {
-        const defaults: Record<string, unknown> = {}
-        if (tool.name === 'ctx_exec') defaults.code = 'console.log("hello")'
-        if (tool.name === 'ctx_note') defaults.key = 'test.key'
-        if (tool.name === 'ctx_list') {}
-        if (tool.name === 'ctx_snap') { defaults.name = 'test-snap' }
-        await expect(
-          tool.execute('id', defaults, undefined, undefined, {} as any),
-        ).resolves.not.toThrow()
+      if (!tool.execute) continue
+      const defaults: Record<string, unknown> = {}
+      if (tool.name === 'ctx_exec') defaults.code = 'console.log("hello")'
+      if (tool.name === 'ctx_note') defaults.key = 'test.key'
+      if (tool.name === 'ctx_list') {}
+      if (tool.name === 'ctx_snap') defaults.name = 'test-snap'
+      if (tool.name === 'memory_store') {
+        defaults.category = 'fact'
+        defaults.title = 'test'
+        defaults.content = 'content'
       }
+      await expect(
+        tool.execute('id', defaults, undefined, undefined, {} as any),
+      ).resolves.not.toThrow()
     }
   })
 })
