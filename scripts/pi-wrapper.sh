@@ -37,6 +37,13 @@ if [ -z "$PI_JS" ]; then
 fi
 
 STATE_FILE="$HOME/.pi/agent/.pi-admin-state.json"
+CRASH_FILE="$HOME/.pi/agent/.pi-autopilot-crash.json"
+LASTGOOD_FILE="$HOME/.pi/agent/.pi-autopilot-lastgood.json"
+SETTINGS_FILE="$HOME/.pi/agent/settings.json"
+PI_AUTOPILOT=1
+export PI_AUTOPILOT
+CRASH_THRESHOLD=3
+LAST_ROLLBACK_TS=0
 
 init_state_file() {
   mkdir -p "$(dirname "$STATE_FILE")"
@@ -140,6 +147,92 @@ STATEEOF
 
 init_state_file
 
+# pi-autopilot：崩溃计数 / lastGood 快照 / 回滚
+
+init_crash_file() {
+  if [ ! -f "$CRASH_FILE" ]; then
+    echo '{"count":0,"ts":0}' > "$CRASH_FILE"
+  fi
+}
+
+read_crash_count() {
+  node -e "
+    try {
+      const s = require('$CRASH_FILE');
+      console.log(s.count || 0);
+    } catch(e) { console.log('0'); }
+  " 2>/dev/null || echo "0"
+}
+
+write_crash_count() {
+  local count="$1"
+  node -e "
+    const fs = require('fs');
+    fs.writeFileSync('$CRASH_FILE', JSON.stringify({count: $count, ts: Date.now()}, null, 2));
+  " 2>/dev/null
+}
+
+save_lastgood() {
+  # 正常退出时记录当前默认模型为“最近一次良好配置”
+  node -e "
+    const fs = require('fs');
+    let settings = {};
+    try { settings = JSON.parse(fs.readFileSync('$SETTINGS_FILE', 'utf-8')); } catch(e) {}
+    const snap = {
+      provider: settings.defaultProvider || '',
+      model: settings.defaultModel || '',
+      ts: Date.now(),
+    };
+    fs.writeFileSync('$LASTGOOD_FILE', JSON.stringify(snap, null, 2));
+  " 2>/dev/null
+}
+
+read_lastgood_model() {
+  node -e "
+    try {
+      const s = require('$LASTGOOD_FILE');
+      console.log(JSON.stringify({provider: s.provider || '', model: s.model || ''}));
+    } catch(e) { console.log('{}'); }
+  " 2>/dev/null || echo "{}"
+}
+
+rollback_to_lastgood() {
+  # 连续崩溃达到阈值：回滚到最近一次良好模型并重启
+  local now rollback_window snap provider model
+  now=$(date +%s)
+  rollback_window=$((LAST_ROLLBACK_TS + 300))
+  if [ "$now" -lt "$rollback_window" ]; then
+    echo "[pi-wrapper] 5 分钟内已回滚过一次，停止自动重试" >&2
+    return 1
+  fi
+  snap=$(read_lastgood_model)
+  provider=$(echo "$snap" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).provider||''))" 2>/dev/null)
+  model=$(echo "$snap" | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).model||''))" 2>/dev/null)
+  if [ -z "$model" ]; then
+    echo "[pi-wrapper] 无 lastGood 快照，无法回滚" >&2
+    return 1
+  fi
+  node -e "
+    const fs = require('fs');
+    const s = JSON.parse(fs.readFileSync('$STATE_FILE', 'utf-8'));
+    s.action = 'set_model';
+    s.targetProvider = '$provider';
+    s.targetModel = '$model';
+    s.reason = '连续崩溃' + '$CRASH_THRESHOLD' + ' 次，自动回滚至稳定模型';
+    s.timestamp = Date.now();
+    fs.writeFileSync('$STATE_FILE', JSON.stringify(s, null, 2));
+  " 2>/dev/null
+  LAST_ROLLBACK_TS=$now
+  write_crash_count 0
+  echo "[pi-wrapper] 已触发回滚至 $provider/$model" >&2
+  return 0
+}
+
+init_crash_file
+if [ ! -f "$LASTGOOD_FILE" ]; then
+  save_lastgood
+fi
+
 # Save original args for restart reuse
 ORIG_ARGS="$@"
 
@@ -158,9 +251,33 @@ while true; do
   echo "[pi-wrapper] 状态: action=$ACTION" >&2
 
   if [ "$ACTION" = "none" ] || [ -z "$ACTION" ]; then
+    if [ "$EXIT_CODE" -ne 0 ]; then
+      # 非正常退出（崩溃）：累计计数，达到阈值回滚 lastGood
+      local crash_count
+      crash_count=$(read_crash_count)
+      crash_count=$((crash_count + 1))
+      write_crash_count "$crash_count"
+      echo "[pi-wrapper] 检测到崩溃 (第 ${crash_count} 次)" >&2
+      if [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
+        if rollback_to_lastgood; then
+          echo "[pi-wrapper] 回滚后 1 秒重启..." >&2
+          sleep 1
+          set -- "$ORIG_ARGS" "--continue"
+          continue
+        fi
+      fi
+      echo "[pi-wrapper] 崩溃次数未达阈值或回滚失败，停止" >&2
+      break
+    fi
+    # 正常退出：记录 lastGood 并清零崩溃计数
+    save_lastgood
+    write_crash_count 0
     echo "[pi-wrapper] 正常退出，不重启" >&2
     break
   fi
+
+  # 有意的重启（模型切换/会话切换/挂死恢复）：清零崩溃计数
+  write_crash_count 0
 
   # Read target info from state file (from the restartLog that was set before shutdown)
   TARGET_SESSION=$(read_state_field "targetSession")

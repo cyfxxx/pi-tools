@@ -17,10 +17,9 @@
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-toolkit/    浏览器自动化 + 搜索
-│   │   ├── pi-scheduler/      定时任务（interval / cron / once + 离线唤醒）
+│   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
 │   │   ├── ctx-lite/          轻量上下文笔记
 │   │   ├── plan-mode/         计划模式
-│   │   ├── pi-admin/          自管理（切换模型/会话/重启）
 │   │   ├── pi-memory/         跨会话持久记忆
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-router/         before_agent_start 注入主动路由策略 + token 预算
@@ -114,9 +113,11 @@ pi-backup rebuild --yes          # 静默自动重建
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
 
-## 定时任务（pi-scheduler）
+## 自主运行（pi-autopilot）
 
-`pi-scheduler` 扩展提供定时任务能力，支持三种触发方式：
+`pi-autopilot` 融合了原 pi-scheduler（定时任务）与 pi-admin（自管理），并增加失败自愈闭环，目标是让 Pi 无人值守自驱动运行：
+
+### 定时任务
 
 | 类型 | 命令 | 说明 |
 |------|------|------|
@@ -133,6 +134,30 @@ pi-backup rebuild --yes          # 静默自动重建
 - 会话摘要：`session_start` 时 TUI 显示
 - 邮件：设置 `PI_SCHEDULER_MAIL_TO` 环境变量
 - Webhook：设置 `PI_SCHEDULER_WEBHOOK` 环境变量
+
+### 失败自愈
+
+任务执行失败时按错误分类自动决策：
+
+| 错误类别 | 判定 | 处置 |
+|---------|------|------|
+| 超时 | exit 124 | 按重试次数重试，耗尽后切备选模型 |
+| 服务不可用 | provider/api/connection/429/503 等 | failoverAfter 次后切换 fallback 模型链 |
+| 逻辑错误 | Error:/invalid 等 | 直接失败（不烧重启成本） |
+| 连续失败 | failCount ≥ suspendAfter(5) | 自动暂停任务 + webhook 告警 |
+
+- **模型 failover：** 配置 `fallbackModels` 白名单后自动切换（结合历史成功率排序），切换即重启会话（wrapper 带 `--model` 拉起）
+- **看门狗：** 会话超过 `maxIdleMinutes` 无活动自动重启恢复
+- **崩溃回滚：** wrapper 检测连续 3 次崩溃后回滚至最近一次良好模型（lastGood 快照）
+- **预算三锁：** `maxRunsPerDay`（默认 50）/ `maxCostPerDay` / `allowedModels`，超限自动跳过并通知
+
+### 自管理
+
+`/admin:status`、`/admin:model`、`/admin:session`、`/admin:config`、`/admin:restart`（工具 `admin_*` 同名兼容）；新增 `/auto:status`、`/auto:stats`、`/auto:policy set <path> <value>`、`/auto:failover --exec`、`/auto:pause`、`/auto:resume`。
+
+**策略/预算仅 `/auto:policy` 命令可写**（工具只读，防止 Agent 自我豁免）。
+
+**配置：** `.pi-autopilot-config.json`（首次自动生成）；状态/遥测：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`。
 
 **安装：**
 ```bash
@@ -258,7 +283,7 @@ R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >50
 pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 ```
 
-- **`pi-wrapper.sh`** — 检测目标 `cli.js`（优先通过 `pi-original` 符号链接，兜底硬编码路径），以 `node cli.js` 方式启动 Pi。崩溃后按递增间隔自动重试（1s → 5s → 15s → 30s → 60s）。
+- **`pi-wrapper.sh`** — 检测目标 `cli.js`（优先通过 `pi-original` 符号链接，兜底硬编码路径），以 `node cli.js` 方式启动 Pi。注入 `PI_AUTOPILOT=1` 环境变量；崩溃（非 0 退出）累计计数，连续 3 次自动回滚至 lastGood 模型并重启；正常退出记录 lastGood 快照并清零计数；5 分钟内仅回滚一次防死循环。
 - **`install-wrapper.sh`** — 安装/卸载 wrapper。安装时把原 `pi` 命令重命名为 `pi-original`，将 wrapper 脚本放置为 `pi`。
 - **`pi-orig.sh`** — 绕过 wrapper 直接启动（故障逃生口）。
 - **`.bash_aliases`** — 提供 `pic`（继续会话）、`pir`（重启会话）、`piorg`（直启）三个便捷别名。
@@ -334,7 +359,7 @@ ls searxng/venv/bin/python && echo "venv OK"
 ls searxng/repo/.git && echo "repo OK"
 
 # 定时任务
-ls agent/extensions/pi-scheduler/node_modules/ | wc -l
+ls agent/extensions/pi-autopilot/node_modules/ | wc -l
 crontab -l | grep pi-cron && echo "crontab OK"
 
 # 持久记忆

@@ -94,64 +94,37 @@ describe('pi-context-efficiency extension', () => {
   })
 })
 
-// ─── pi-admin ─────────────────────────────────────────────────
-describe('pi-admin extension', () => {
-  it('registers 8 management tools', async () => {
+// ─── pi-autopilot (融合 pi-admin + pi-scheduler) ──────────────
+describe('pi-autopilot extension', () => {
+  it('registers 13 tools: 8 admin_* + 4 autopilot_* + schedule_task', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-admin/index')).default
+    const main = (await import('../../pi-autopilot/index')).default
     await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(8)
     const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name).sort()
     expect(toolNames).toEqual([
       'admin_get_config', 'admin_list_models', 'admin_list_sessions',
       'admin_restart', 'admin_set_config', 'admin_set_model',
       'admin_status', 'admin_switch_session',
+      'autopilot_failover', 'autopilot_policy', 'autopilot_stats', 'autopilot_status',
+      'schedule_task',
     ].sort())
   })
 
-  it('registers 5 admin commands', async () => {
+  it('registers 14 commands: 5 admin:* + 6 auto:* + loop/remind/schedule', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-admin/index')).default
+    const main = (await import('../../pi-autopilot/index')).default
     await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(5)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
     expect(cmdNames).toEqual([
       'admin:config', 'admin:model', 'admin:restart', 'admin:session', 'admin:status',
+      'auto:failover', 'auto:pause', 'auto:policy', 'auto:resume', 'auto:stats', 'auto:status',
+      'loop', 'remind', 'schedule',
     ].sort())
-  })
-
-  it('registers session_start event handler', async () => {
-    const pi = mockPi()
-    const main = (await import('../../pi-admin/index')).default
-    await main(pi as any)
-    const events = pi.on.mock.calls.map((c: any[]) => c[0])
-    expect(events).toContain('session_start')
-  })
-})
-
-// ─── pi-scheduler ─────────────────────────────────────────────
-describe('pi-scheduler extension', () => {
-  it('registers schedule_task tool', async () => {
-    const pi = mockPi()
-    const main = (await import('../../pi-scheduler/index')).default
-    await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(1)
-    const toolName = pi.registerTool.mock.calls[0][0].name
-    expect(toolName).toBe('schedule_task')
-  })
-
-  it('registers 3 scheduler commands: loop, remind, schedule', async () => {
-    const pi = mockPi()
-    const main = (await import('../../pi-scheduler/index')).default
-    await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(3)
-    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual(['loop', 'remind', 'schedule'])
   })
 
   it('registers session_start and session_shutdown event handlers', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-scheduler/index')).default
+    const main = (await import('../../pi-autopilot/index')).default
     await main(pi as any)
     const events = pi.on.mock.calls.map((c: any[]) => c[0])
     expect(events).toContain('session_start')

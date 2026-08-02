@@ -17,8 +17,7 @@
     "extensions/subagent/index.ts",
     "extensions/pi-router/index.ts",
     "extensions/pi-context-efficiency/index.ts",
-    "extensions/pi-admin/index.ts",
-    "extensions/pi-scheduler/index.ts",
+    "extensions/pi-autopilot/index.ts",
     "extensions/pi-memory/index.ts",
     "extensions/pi-web-search/index.ts",
     "extensions/pi-browser/index.ts"
