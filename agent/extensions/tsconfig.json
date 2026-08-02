@@ -23,7 +23,6 @@
   "include": [
     "pi-autopilot/**/*.ts",
     "pi-memory/**/*.ts",
-    "pi-router/**/*.ts",
     "pi-context-efficiency/**/*.ts",
     "subagent/**/*.ts",
     "plan-mode/**/*.ts",

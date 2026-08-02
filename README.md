@@ -10,9 +10,10 @@
 │   ├── AGENTS.md              项目环境描述
 │   ├── APPEND_SYSTEM.md       追加系统提示词
 │   ├── lib/                   共享库模块
-│   │   ├── token-budget.ts    跨扩展 Token 用量追踪
+│   │   ├── token-budget.ts    跨扩展 Token 用量追踪（兼容层 → context-budget.ts）
 │   │   ├── note-store.ts      ctx-lite 笔记持久化（已并入 pi-memory，保留兼容）
-│   │   ├── prune.ts           工具输出裁剪
+│   │   ├── prune.ts           工具输出裁剪（兼容层 → context-budget.ts）
+│   │   ├── context-budget.ts  统一 Token 预算/估算/裁剪 + 缓存命中统计
 │   │   ├── TOKEN-BUDGET.md    使用文档
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
@@ -21,8 +22,7 @@
 │   │   ├── plan-mode/         计划模式
 │   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
-│   │   ├── pi-router/         before_agent_start 注入主动路由策略 + token 预算
-│   │   └── pi-context-efficiency/  token 优化（thinking 剪枝/compaction 去重/输出截断）
+│   │   └── pi-context-efficiency/  token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
 │   │   ├── planner.md            实现计划生成
@@ -239,27 +239,27 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 - 所有 agent 默认使用 `settings.json` 中配置的主模型，无需单独指定
 - 并行模式默认串行执行（`MAX_CONCURRENCY=1`），避免多进程竞争 GPU 内存。如需并行，修改 `agent/extensions/subagent/index.ts` 中的 `MAX_CONCURRENCY`
 
-## 主动路由（pi-router）
+## 主动路由 + 上下文优化（pi-context-efficiency，已融合 pi-router）
 
-`pi-router` 通过 `before_agent_start` 事件，在每轮 LLM 调用前自动注入两段内容到 system prompt：
+pi-context-efficiency 作为 token 优化中枢，通过 `before_agent_start` 事件在每轮 LLM 调用前按需注入内容到 system prompt，并注册 4 个事件处理器 + 1 个命令。
 
 ### 主动路由策略表
 
-告诉模型何时使用子代理、何时并行、何时 chain，包含具体决策启发式规则（"如果 context > 70% 就 delegate"）。
+告知模型何时使用子代理、何时并行、何时 chain，包含具体决策启发式规则（"如果 context 压力档位为高就 delegate"）。该段为**固定静态文案**（无实时数字），配合深度缓存前缀命中。
 
-### 实时 Token 预算
+### 缓存友好的动态压力提示
 
 ```
-[Context: 45,000 / 128,000 tokens (35%). ~83,000 tokens remain.]
+[上下文压力较高（>85%）。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。]
 ```
 
-模型看到实时占用率后，会更主动选择 delegate 到子代理来节省主 context 空间。
+实时占用率仅做档位判断：空闲/中（<85%）**不注入**任何行；≥85% 注入固定文案；≥95% 注入更重文案。文案不含精确数字、不含时间戳 → system prompt 在档位内逐字节稳定，前缀缓存全程命中。
 
 **依赖：** 需要 `subagent` 扩展和 agent 定义配合。
 
-## 上下文优化（pi-context-efficiency）
+### Token 优化（R2/R3/R4/R6）
 
-全程零用户感知的 token 节省层。注册 4 个事件处理器 + 1 个命令：
+全程零用户感知的 token 节省层：
 
 | # | Hook | 作用 | 节省量 |
 |---|------|------|--------|
@@ -268,7 +268,7 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 | R4 | `tool_result` | bash/read 输出 >5000 字符时截断 | 50-80% 工具结果 |
 | R6 | 命令 | `/ping` 免 LLM 响应 | 单次完全省掉 |
 
-R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。
+R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。工具输出统一经 `lib/context-budget.ts` 记账（默认 20K tokens 输出预算 / 5K per-tool），并聚合缓存命中统计（`recordCacheUsage`）。
 
 ### 长任务会话拆分
 

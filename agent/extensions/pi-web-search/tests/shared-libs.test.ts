@@ -63,14 +63,13 @@ describe('shared lib: prune', () => {
 
   it('pruneToolOutput truncates when over budget', async () => {
     const mod = await import('../../../lib/prune')
-    // Exhaust budget first
-    const big = 'x'.repeat(60000)
-    mod.pruneToolOutput(big, 'big_tool')
-    mod.recordOutput('big_tool', 59000)
+    // Exhaust token budget first (20K tokens ≈ 70K chars at 3.5 chars/token)
+    mod.recordOutput('big_tool', 70000)
 
     // Now add more - should trigger truncation
     const more = 'y'.repeat(5000)
     const result = mod.pruneToolOutput(more, 'another_tool')
+    expect(result).toContain('输出已截断')
     expect(result.length).toBeLessThan(5000)
   })
 })

@@ -78,14 +78,17 @@ describe('inject: buildInjectionBlock', () => {
     expect(isInjectionBlock(result.block)).toBe(true)
     expect(INJECT_TAG).toBe('pi-memory-injection')
   })
-})
 
-describe('inject: estimateTokens', () => {
-  it('estimates CJK at 2 chars/token', async () => {
-    const { estimateTokens } = await import('../inject.ts')
-    const cjk = estimateTokens('中文内容'.repeat(10))
-    expect(cjk).toBe(20)
-    const mixed = estimateTokens('中文 content')
-    expect(mixed).toBeGreaterThan(0)
+  it('is byte-stable for identical data (cache-prefix friendly: no timestamps)', async () => {
+    const { buildInjectionBlock } = await import('../inject.ts')
+    const entries = [makeEntry({ title: '稳定条目', content: '固定内容' })]
+    const summaries = [makeSummary({ title: '固定摘要', fullText: '固定摘要正文' })]
+    const a = buildInjectionBlock(entries, summaries, 500)
+    // 同一份数据不同时刻生成 → 输出必须完全一致（不得含时间戳等动态文本）
+    const b = buildInjectionBlock(entries, summaries, 500)
+    expect(a.block).toBe(b.block)
+    // 标记行无动态时间戳
+    expect(a.block).toContain('> pi-memory-injection')
+    expect(a.block).not.toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/)
   })
 })
