@@ -136,10 +136,10 @@ You have access to \`subagent\` tool with specialized agents (scout, planner, wo
 	});
 
 	pi.registerCommand("ping", {
-		description: "检查 pi-context-efficiency 是否生效",
+		description: "检查 pi-context 是否生效",
 		usage: "/ping",
 		handler: (_args, ctx) => {
-			ctx.ui.notify("pong — pi-context-efficiency active");
+			ctx.ui.notify("pong — pi-context active");
 		},
 	});
 }

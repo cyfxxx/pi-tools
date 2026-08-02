@@ -22,7 +22,7 @@
 │   │   ├── plan-mode/         计划模式
 │   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
-│   │   └── pi-context-efficiency/  token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
+│   │   └── pi-context/  token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
 │   │   ├── planner.md            实现计划生成
@@ -239,9 +239,9 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 - 所有 agent 默认使用 `settings.json` 中配置的主模型，无需单独指定
 - 并行模式默认串行执行（`MAX_CONCURRENCY=1`），避免多进程竞争 GPU 内存。如需并行，修改 `agent/extensions/subagent/index.ts` 中的 `MAX_CONCURRENCY`
 
-## 主动路由 + 上下文优化（pi-context-efficiency，已融合 pi-router）
+## 主动路由 + 上下文优化（pi-context，已融合 pi-router）
 
-pi-context-efficiency 作为 token 优化中枢，通过 `before_agent_start` 事件在每轮 LLM 调用前按需注入内容到 system prompt，并注册 4 个事件处理器 + 1 个命令。
+pi-context 作为 token 优化中枢，通过 `before_agent_start` 事件在每轮 LLM 调用前按需注入内容到 system prompt，并注册 4 个事件处理器 + 1 个命令。
 
 ### 主动路由策略表
 

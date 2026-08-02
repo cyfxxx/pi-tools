@@ -80,7 +80,7 @@ import { pruneToolOutput, estimateTokens } from "../../lib/context-budget.ts"
 | **pi-web-toolkit** | `resetBudget()` | `recordToolUsage()` / `pruneToolOutput()` | — |
 | **pi-memory** | — | `recordToolUsage()`（ctx_exec） | — |
 | **subagent** | — | `recordToolUsage()` | 前置预算指令 |
-| **pi-context-efficiency** | — | 聚合 `recordCacheUsage()` | 档位化压力文案（≥85%/95%） |
+| **pi-context** | — | 聚合 `recordCacheUsage()` | 档位化压力文案（≥85%/95%） |
 
 ## 测试
 

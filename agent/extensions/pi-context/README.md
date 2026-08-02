@@ -1,4 +1,4 @@
-# pi-context-efficiency
+# pi-context
 
 6 个事件处理器，减少不必要 token 消耗，全程零用户感知。
 

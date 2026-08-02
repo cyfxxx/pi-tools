@@ -52,11 +52,11 @@ describe('subagent extension', () => {
   })
 })
 
-// ─── pi-context-efficiency（已融合 pi-router） ────────────────
-describe('pi-context-efficiency extension', () => {
+// ─── pi-context（已融合 pi-router） ────────────────
+describe('pi-context extension', () => {
   it('registers event handlers: context, tool_result, before_agent_start', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-context-efficiency/index')).default
+    const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     const events = pi.on.mock.calls.map((c: any[]) => c[0])
     expect(events).toContain('context')
@@ -66,7 +66,7 @@ describe('pi-context-efficiency extension', () => {
 
   it('does not register tools, but registers 1 command (ping)', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-context-efficiency/index')).default
+    const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     expect(pi.registerTool).not.toHaveBeenCalled()
     expect(pi.registerCommand).toHaveBeenCalledTimes(1)
@@ -76,7 +76,7 @@ describe('pi-context-efficiency extension', () => {
 
   it('before_agent_start does not change systemPrompt when context is idle (cache-friendly)', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-context-efficiency/index')).default
+    const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     const handler = pi.on.mock.calls.find((c: any[]) => c[0] === 'before_agent_start')?.[1]
     expect(handler).toBeDefined()
@@ -100,7 +100,7 @@ describe('pi-context-efficiency extension', () => {
 
   it('before_agent_start injects fixed pressure hint only at high usage', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-context-efficiency/index')).default
+    const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     const handler = pi.on.mock.calls.find((c: any[]) => c[0] === 'before_agent_start')?.[1]
 
@@ -133,7 +133,7 @@ describe('pi-context-efficiency extension', () => {
 
   it('handles missing context usage gracefully (no injection)', async () => {
     const pi = mockPi()
-    const main = (await import('../../pi-context-efficiency/index')).default
+    const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     const handler = pi.on.mock.calls.find((c: any[]) => c[0] === 'before_agent_start')?.[1]
     const result = await handler({ systemPrompt: 'BASE' }, { getContextUsage: () => undefined })
