@@ -150,18 +150,20 @@ EOF
   mkdir -p "$PI_HOME/agent/bin"
   ok "agent/bin/ 已就绪"
 
-  # 注册 pi-scheduler 扩展到 settings.json
+  # 注册 pi-autopilot 扩展到 settings.json（融合 pi-admin + pi-scheduler）
   if [ -f "$PI_HOME/agent/settings.json" ]; then
     python3 -c "
 import json
 p = '$PI_HOME/agent/settings.json'
 d = json.load(open(p))
-ext = 'extensions/pi-scheduler/index.ts'
-if ext not in d.setdefault('extensions', []):
+ext = 'extensions/pi-autopilot/index.ts'
+d.setdefault('extensions', [])
+d['extensions'] = [e for e in d['extensions'] if e not in ('extensions/pi-admin/index.ts', 'extensions/pi-scheduler/index.ts')]
+if ext not in d['extensions']:
     d['extensions'].append(ext)
-    json.dump(d, open(p, 'w'), indent=2)
-    print('registered')
-" 2>/dev/null && ok "pi-scheduler 扩展已注册" || true
+json.dump(d, open(p, 'w'), indent=2)
+print('registered')
+" 2>/dev/null && ok "pi-autopilot 扩展已注册（替代 pi-admin + pi-scheduler）" || true
   fi
 }
 
@@ -402,21 +404,21 @@ verify() {
     ok "ctx-lite/checkpoints/ 已创建"
   fi
 
-  # Scheduler 扩展
-  if [ -d "$PI_HOME/agent/extensions/pi-scheduler/node_modules" ]; then
-    local pkgs=$(ls "$PI_HOME/agent/extensions/pi-scheduler/node_modules" 2>/dev/null | wc -l)
-    ok "pi-scheduler: $pkgs npm 包已安装"
+  # pi-autopilot 扩展（融合 pi-scheduler + pi-admin）
+  if [ -d "$PI_HOME/agent/extensions/pi-autopilot/node_modules" ]; then
+    local pkgs=$(ls "$PI_HOME/agent/extensions/pi-autopilot/node_modules" 2>/dev/null | wc -l)
+    ok "pi-autopilot: $pkgs npm 包已安装"
   else
-    warn "pi-scheduler: node_modules 未安装"
-    info "运行: cd $PI_HOME/agent/extensions/pi-scheduler && npm install"
+    warn "pi-autopilot: node_modules 未安装"
+    info "运行: cd $PI_HOME/agent/extensions/pi-autopilot && npm install"
   fi
   # 检查 cron / systemd 是否已配置
   if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
-    ok "pi-scheduler: crontab 已安装"
+    ok "pi-autopilot: crontab 已安装"
   elif command -v systemctl &>/dev/null && systemctl is-enabled pi-scheduler.timer &>/dev/null; then
-    ok "pi-scheduler: systemd timer 已安装"
+    ok "pi-autopilot: systemd timer 已安装"
   else
-    info "pi-scheduler: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
+    info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
   fi
 
   # Provider 配置检查

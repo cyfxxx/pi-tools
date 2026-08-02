@@ -57,3 +57,9 @@ ctx-lite/
 
 # pi-scheduler 运行时数据
 agent/scheduled-tasks.json
+
+# pi-autopilot 运行时数据
+agent/.pi-autopilot-config.json
+agent/.pi-autopilot-telemetry.json
+agent/.pi-autopilot-lastgood.json
+agent/.pi-autopilot-crash.json
