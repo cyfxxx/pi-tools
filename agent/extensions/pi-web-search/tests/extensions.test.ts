@@ -52,35 +52,16 @@ describe('subagent extension', () => {
   })
 })
 
-// ─── pi-router ────────────────────────────────────────────────
-describe('pi-router extension', () => {
-  it('registers before_agent_start event handler', async () => {
-    const pi = mockPi()
-    const main = (await import('../../pi-router/index')).default
-    await main(pi as any)
-    expect(pi.on).toHaveBeenCalled()
-    const events = pi.on.mock.calls.map((c: any[]) => c[0])
-    expect(events).toContain('before_agent_start')
-  })
-
-  it('does not register tools or commands', async () => {
-    const pi = mockPi()
-    const main = (await import('../../pi-router/index')).default
-    await main(pi as any)
-    expect(pi.registerTool).not.toHaveBeenCalled()
-    expect(pi.registerCommand).not.toHaveBeenCalled()
-  })
-})
-
-// ─── pi-context-efficiency ────────────────────────────────────
+// ─── pi-context-efficiency（已融合 pi-router） ────────────────
 describe('pi-context-efficiency extension', () => {
-  it('registers event handlers: context, tool_result', async () => {
+  it('registers event handlers: context, tool_result, before_agent_start', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context-efficiency/index')).default
     await main(pi as any)
     const events = pi.on.mock.calls.map((c: any[]) => c[0])
     expect(events).toContain('context')
     expect(events).toContain('tool_result')
+    expect(events).toContain('before_agent_start')
   })
 
   it('does not register tools, but registers 1 command (ping)', async () => {
@@ -91,6 +72,73 @@ describe('pi-context-efficiency extension', () => {
     expect(pi.registerCommand).toHaveBeenCalledTimes(1)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
     expect(cmdNames).toEqual(['ping'])
+  })
+
+  it('before_agent_start does not change systemPrompt when context is idle (cache-friendly)', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-context-efficiency/index')).default
+    await main(pi as any)
+    const handler = pi.on.mock.calls.find((c: any[]) => c[0] === 'before_agent_start')?.[1]
+    expect(handler).toBeDefined()
+
+    const ctx = {
+      getContextUsage: () => ({ tokens: 10_000, contextWindow: 128_000, percent: 8 }),
+    }
+    const result = await handler(
+      { systemPrompt: 'BASE PROMPT' },
+      ctx,
+    )
+    expect(result).toBeDefined()
+    expect(result.systemPrompt).toContain('BASE PROMPT')
+    expect(result.systemPrompt).toContain('Proactive Delegation')
+    // 低压力：不注入压力行
+    expect(result.systemPrompt).not.toContain('上下文压力')
+    // 无时间戳/无精确数值 → 同一状态两次调用输出一致
+    const result2 = await handler({ systemPrompt: 'BASE PROMPT' }, ctx)
+    expect(result2.systemPrompt).toBe(result.systemPrompt)
+  })
+
+  it('before_agent_start injects fixed pressure hint only at high usage', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-context-efficiency/index')).default
+    await main(pi as any)
+    const handler = pi.on.mock.calls.find((c: any[]) => c[0] === 'before_agent_start')?.[1]
+
+    const low = await handler(
+      { systemPrompt: 'BASE' },
+      { getContextUsage: () => ({ tokens: 50_000, contextWindow: 128_000, percent: 39 }) },
+    )
+    expect(low.systemPrompt).not.toContain('上下文压力')
+
+    const high = await handler(
+      { systemPrompt: 'BASE' },
+      { getContextUsage: () => ({ tokens: 110_000, contextWindow: 128_000, percent: 86 }) },
+    )
+    expect(high.systemPrompt).toContain('上下文压力较高')
+
+    // 档位文案固定：同一状态两次调用逐字节一致（无轮次动态数值）
+    const high2 = await handler(
+      { systemPrompt: 'BASE' },
+      { getContextUsage: () => ({ tokens: 110_000, contextWindow: 128_000, percent: 86 }) },
+    )
+    expect(high2.systemPrompt).toBe(high.systemPrompt)
+    expect(high.systemPrompt).not.toMatch(/toLocaleString|当前占用/)
+
+    const crit = await handler(
+      { systemPrompt: 'BASE' },
+      { getContextUsage: () => ({ tokens: 123_000, contextWindow: 128_000, percent: 96 }) },
+    )
+    expect(crit.systemPrompt).toContain('接近满')
+  })
+
+  it('handles missing context usage gracefully (no injection)', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-context-efficiency/index')).default
+    await main(pi as any)
+    const handler = pi.on.mock.calls.find((c: any[]) => c[0] === 'before_agent_start')?.[1]
+    const result = await handler({ systemPrompt: 'BASE' }, { getContextUsage: () => undefined })
+    expect(result.systemPrompt).toContain('Proactive Delegation')
+    expect(result.systemPrompt).not.toContain('上下文压力')
   })
 })
 

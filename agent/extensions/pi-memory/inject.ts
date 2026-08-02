@@ -1,16 +1,10 @@
 import type { MemoryEntry, SummaryEntry } from './types.ts'
 import { activeEntries } from './storage.ts'
 import { qualityScore } from './retrieval.ts'
+import { estimateTokens } from '../../lib/context-budget.ts'
 
 export const INJECT_TAG = 'pi-memory-injection'
 export const DEFAULT_BUDGET_TOKENS = 500
-
-// 估算 token：中文约 2 字符/token，拉丁约 4 字符/token（保守）
-export function estimateTokens(text: string): number {
-  const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length
-  const other = text.length - cjk
-  return Math.ceil(cjk / 2 + other / 4)
-}
 
 export function getBudget(): number {
   const env = process.env.PI_MEMORY_INJECT_TOKENS
@@ -71,7 +65,8 @@ export function buildInjectionBlock(
     injectedSummaries++
   }
 
-  lines.push(`> ${INJECT_TAG} · 最后更新 ${new Date().toISOString().slice(0, 19).replace('T', ' ')}`)
+  // 恒定标记行（无时间戳：时间戳每轮变化会破坏 system prompt 缓存前缀，使全部消息历史缓存失效）
+  lines.push(`> ${INJECT_TAG}`)
   const block = lines.join('\n')
   return { block, entries: injectedEntries, summaries: injectedSummaries, tokens: estimateTokens(block) }
 }

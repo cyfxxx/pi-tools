@@ -137,12 +137,14 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 `before_agent_start` 每轮把「持续记忆」块拼入 systemPrompt（MemGPT 核心块思路）：
 
 ```
-## 持续记忆（pi-memory 自动注入，每轮刷新）
+## 持续记忆（pi-memory 自动注入）
 - [preference] 用户偏好: 使用 Shell 管理系统: ...
 - [fact] CI 配置已迁移 GitHub Actions: ...
 - 会话「修复 CI 配置」: 本次会话修复了...
-> pi-memory-injection · 最后更新 2026-08-02 12:00:00
+> pi-memory-injection
 ```
+
+> **缓存友好**：标记行不带时间戳（数据不变时 system prompt 逐字节稳定，DeepSeek 前缀缓存持续命中）；记忆数据一旦变化，块整体替换、缓存从该点重建。
 
 - 条目按质量分（置信度×0.5 + 时效×0.25 + 引用×0.25）排序，最多 6 条
 - 最近 2 条会话摘要衔接（compaction 后上下文连续）

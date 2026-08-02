@@ -178,7 +178,7 @@ async function main() {
     const expectedListeners = {
       'session_start': ['pi-autopilot', 'pi-memory', 'pi-web-search', 'pi-browser', 'plan-mode'],
       'session_shutdown': ['pi-autopilot', 'pi-memory', 'pi-browser', 'plan-mode'],
-      'before_agent_start': ['pi-router', 'pi-memory', 'plan-mode'],
+      'before_agent_start': ['pi-context-efficiency', 'pi-memory', 'plan-mode'],
       'context': ['pi-context-efficiency', 'plan-mode'],
       'tool_call': ['plan-mode'],
       'tool_result': ['pi-context-efficiency'],

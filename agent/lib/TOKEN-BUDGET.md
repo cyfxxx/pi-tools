@@ -1,31 +1,43 @@
 # Token Budget 共享模块
 
-> 跨扩展的 Token 用量追踪与上下文预算管理
+> 跨扩展的 Token 用量追踪、上下文预算管理与缓存命中统计
 
 ## 概览
 
-`lib/token-budget.ts` 是一个轻量共享模块（纯函数，零依赖），被 **plan-mode**、**pi-web-toolkit**、**pi-memory**（含原 ctx-lite）、**subagent** 四个扩展共用。
+`lib/context-budget.ts` 是统一预算模块（纯函数，零依赖），被 **plan-mode**、**pi-web-toolkit**、**pi-memory**（含原 ctx-lite）、**subagent** 等扩展共用。
+
+`lib/token-budget.ts` 与 `lib/prune.ts` 现为 re-export 兼容层（`export * from './context-budget.ts'`），旧导入路径零改动。
 
 ## 导出的函数
 
 | 函数 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
-| `estimateTokens(text)` | `string` | `number` | 按 1 token ≈ 3.5 字符估算 Token 数 |
-| `truncateByTokens(text, maxTokens)` | `string, number` | `string` | 按 Token 预算截断文本，追加截断标记 |
+| `estimateTokens(text)` | `string` | `number` | 按 CJK≈2 字符/token、数字≈3.5、拉丁≈4 估算 |
+| `truncateByTokens(text, maxTokens)` | `string, number` | `string` | 按 Token 预算二分逼近截断，追加截断标记 |
 | `compressOutput(text, targetTokens)` | `string, number` | `string` | 55/35/10 分片压缩（头/尾/中间重要行） |
+| `setContextWindow(tokens)` | `number` | `void` | 设置上下文窗口大小（默认 128_000） |
 | `recordToolUsage(tool, tokens)` | `string, number` | `void` | 记录单次工具调用的 Token 消耗 |
+| `recordOutput(tool, outputLength)` | `string, number` | `void` | 记录工具输出（字符长度，按 3.5 字符/token 折算） |
+| `pruneToolOutput(text, tool, allowed?)` | `string, string, number?` | `string` | 输出预算校验：总量 20K / 单工具 5K tokens，超限截断 |
 | `getBudgetReport()` | — | `BudgetReport` | 返回用量报告对象 |
-| `getTokenPressureTag()` | — | `"🔴"` / `"🟡"` / `"🟢"` | 根据总 Token 消耗返回压力等级标签 |
+| `getTokenPressureTag()` | — | `string \| null` | 根据占用率返回压力档位文案（仅 high/critical 非 null） |
 | `getUrgencyHint()` | — | `string \| null` | 剩余不足 20K / 10K 时返回溢出预警提示 |
-| `resetBudget()` | — | `void` | 重置所有用量统计（`session_start` 时调用） |
+| `recordCacheUsage(usage)` | `object` | `void` | 聚合缓存命中统计（仅内部累计） |
+| `getCacheStats()` | — | `CacheStats` | 返回缓存命中/未命中 token 统计 |
+| `resetBudget()` | — | `void` | 重置用量统计（`session_start` 时调用） |
+| `resetAllBudgets()` | — | `void` | 重置用量 + 缓存统计 + 上下文窗口 |
 
-## 压力标签阈值
+## 压力档位（缓存友好设计）
 
-| 等级 | 标签 | 条件 |
+上下文占用率 = 已用 tokens / contextWindow。**低/中（<85%）返回 null、不注入任何文本**；仅在 ≥85% 注入固定文案、≥95% 注入更重文案：
+
+| 等级 | 条件 | 文案 |
 |------|------|------|
-| 低 | 🟢 或 null | 剩余 > 20K |
-| 中 | 🟡 | 剩余 ≤ 20K |
-| 高 | 🔴 | 剩余 ≤ 10K |
+| 空闲/中 | < 85% | null（不注入） |
+| 高 | ≥ 85% | 固定文案"上下文压力较高" |
+| 临界 | ≥ 95% | 固定文案"上下文即将耗尽" |
+
+文案**不含精确数字、不含时间戳** → system prompt 在档位内逐字节稳定，DeepSeek 前缀缓存全程命中（命中价约为 miss 的 1/10）。
 
 ## 溢出预警 (`getUrgencyHint`)
 
@@ -47,7 +59,7 @@
 
 ## 集成方式
 
-各扩展通过相对路径导入：
+各扩展通过相对路径导入（兼容层保证旧路径可用）：
 
 ```typescript
 // plan-mode, pi-memory, subagent
@@ -55,6 +67,9 @@ import { recordToolUsage, estimateTokens, ... } from "../../lib/token-budget.ts"
 
 // pi-web-toolkit (额外一层 src/)
 import { recordToolUsage, estimateTokens, ... } from "../../../lib/token-budget.ts"
+
+// 统一预算模块（推荐）
+import { pruneToolOutput, estimateTokens } from "../../lib/context-budget.ts"
 ```
 
 ## 集成点
@@ -62,16 +77,15 @@ import { recordToolUsage, estimateTokens, ... } from "../../../lib/token-budget.
 | 扩展 | `session_start` | 每次工具调用 | 每次注入 |
 |------|----------------|-------------|---------|
 | **plan-mode** | `resetBudget()` | — | `getTokenPressureTag()` 前置到提示词 |
-| **pi-web-toolkit** | `resetBudget()` | `recordToolUsage()` | — |
+| **pi-web-toolkit** | `resetBudget()` | `recordToolUsage()` / `pruneToolOutput()` | — |
 | **pi-memory** | — | `recordToolUsage()`（ctx_exec） | — |
 | **subagent** | — | `recordToolUsage()` | 前置预算指令 |
+| **pi-context-efficiency** | — | 聚合 `recordCacheUsage()` | 档位化压力文案（≥85%/95%） |
 
 ## 测试
 
-测试文件：`tests/token-budget-test.mjs`（独立 Node.js 脚本，无需依赖）
+测试文件：`extensions/pi-web-search/tests/context-budget.test.ts`（vitest，18 项，覆盖 `estimateTokens`、`truncateByTokens`、`compressOutput`、档位文案固定性、缓存统计）。
 
 ```bash
-node lib/tests/token-budget-test.mjs
+cd extensions/pi-web-search && ./node_modules/.bin/vitest run tests/context-budget.test.ts
 ```
-
-14 项测试覆盖：`estimateTokens`、`truncateByTokens`、`compressOutput`（短文本、压缩标记、结构保留、紧预算）。
