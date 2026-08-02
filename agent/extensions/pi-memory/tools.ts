@@ -1,17 +1,115 @@
 import crypto from 'node:crypto'
+import { spawn } from 'node:child_process'
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs'
+import { join } from 'node:path'
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
+import { Type } from 'typebox'
+import { recordToolUsage, estimateTokens } from '../../lib/token-budget.ts'
+import { recordOutput, pruneToolOutput } from '../../lib/prune.ts'
 import type { MemoryEntry, MemoryCategory } from './types.ts'
 import {
   loadEntries,
   storeEntry,
-  searchEntries,
   deleteEntry,
   getStats,
   getTotalSize,
-  pruneEntries,
+  getNotesSize,
+  loadNotes,
+  saveNotes,
+  loadSummaries,
+  CHECKPOINTS_DIR,
 } from './storage.ts'
+import { searchEntries } from './retrieval.ts'
+
+const MAX_CHECKPOINTS_LIST = 100
+const MAX_NOTES_SIZE = 1024 * 1024
+
+const LANGUAGES: Record<string, { cmd: string; args: string[] }> = {
+  js: { cmd: process.argv[0], args: ['-e'] },
+  ts: { cmd: process.argv[0], args: ['-e'] },
+  python: { cmd: 'python3', args: ['-c'] },
+  shell: { cmd: 'bash', args: ['-c'] },
+}
+
+interface SnapData {
+  timestamp: number
+  notes: Record<string, string>
+  compaction?: boolean
+}
+
+function detectLanguage(code: string): string {
+  const firstLine = code.trim().split('\n')[0] || ''
+  if (/^#!/.test(firstLine)) {
+    if (/\bpython/.test(firstLine)) return 'python'
+    if (/\bbash\b/.test(firstLine) || /\bsh\b/.test(firstLine)) return 'shell'
+    if (/\bnode\b/.test(firstLine)) return 'js'
+  }
+  return 'js'
+}
+
+async function execLanguageAsync(
+  language: string,
+  code: string,
+  timeout: number,
+  signal?: AbortSignal,
+): Promise<{ stdout: string; stderr: string; status: number | null; error?: string }> {
+  const lang = LANGUAGES[language]
+  if (!lang) {
+    return {
+      stdout: '',
+      stderr: '',
+      status: null,
+      error: `Unsupported language: "${language}". Supported: ${Object.keys(LANGUAGES).join(', ')}`,
+    }
+  }
+
+  const timeoutController = new AbortController()
+  const timeoutId = setTimeout(
+    () => timeoutController.abort(new Error(`Timeout after ${timeout}ms`)),
+    timeout,
+  )
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutController.signal])
+    : timeoutController.signal
+
+  try {
+    const result = await new Promise<{ stdout: string; stderr: string; status: number | null }>(
+      (resolve, reject) => {
+        const proc = spawn(lang.cmd, [...lang.args, code], {
+          env: { ...process.env, NODE_NO_WARNINGS: '1' },
+          cwd: process.cwd(),
+          stdio: ['ignore', 'pipe', 'pipe'],
+          signal: combinedSignal,
+        })
+
+        let stdout = ''
+        let stderr = ''
+        proc.stdout.on('data', (data: Buffer) => { stdout += data.toString() })
+        proc.stderr.on('data', (data: Buffer) => { stderr += data.toString() })
+
+        proc.on('close', status => resolve({ stdout: stdout.trim(), stderr: stderr.trim(), status }))
+        proc.on('error', err => reject(err))
+      },
+    )
+    return result
+  } catch (err: unknown) {
+    return { stdout: '', stderr: '', status: null, error: (err as Error).message }
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+const CATEGORIES: MemoryCategory[] = ['fact', 'preference', 'habit', 'procedure', 'reference']
 
 export function registerTools(pi: ExtensionAPI): void {
+  // ── memory_store ──
   pi.registerTool({
     name: 'memory_store',
     label: '存储知识',
@@ -24,9 +122,8 @@ export function registerTools(pi: ExtensionAPI): void {
       properties: {
         category: {
           type: 'string',
-          enum: ['fact', 'preference', 'habit', 'procedure', 'reference'],
-          description:
-            '类别: fact=事实, preference=用户偏好, habit=用户习惯, procedure=操作流程, reference=参考信息',
+          enum: CATEGORIES,
+          description: '类别: fact=事实, preference=用户偏好, habit=用户习惯, procedure=操作流程, reference=参考信息',
         },
         title: {
           type: 'string',
@@ -50,7 +147,7 @@ export function registerTools(pi: ExtensionAPI): void {
       },
       required: ['category', 'title', 'content'],
     },
-    execute: async (_toolCallId, params, _signal, _onUpdate, _ctx) => {
+    execute: async (_toolCallId, params) => {
       const entries = loadEntries()
 
       const entry: MemoryEntry = {
@@ -85,12 +182,13 @@ export function registerTools(pi: ExtensionAPI): void {
     },
   })
 
+  // ── memory_search ──
   pi.registerTool({
     name: 'memory_search',
     label: '搜索记忆',
     description:
       '从持久记忆库中搜索已存储的知识。支持按关键词、类别、标签过滤。' +
-      '结果按相关度排序（置信度+时效性+引用频率+关键词匹配）。' +
+      '结果按相关度排序（BM25 词法相关 + 置信度+时效性+引用频率）。' +
       '当需要回忆之前学到的知识、用户偏好、项目约定时调用。',
     parameters: {
       type: 'object',
@@ -101,7 +199,7 @@ export function registerTools(pi: ExtensionAPI): void {
         },
         category: {
           type: 'string',
-          enum: ['fact', 'preference', 'habit', 'procedure', 'reference'],
+          enum: CATEGORIES,
           description: '按类别过滤',
         },
         tags: {
@@ -141,20 +239,16 @@ export function registerTools(pi: ExtensionAPI): void {
       })
 
       return {
-        content: [
-          {
-            type: 'text',
-            text: `记忆搜索结果 (${results.length} 条):\n${lines.join('\n')}`,
-          },
-        ],
+        content: [{ type: 'text', text: `记忆搜索结果 (${results.length} 条):\n${lines.join('\n')}` }],
       }
     },
   })
 
+  // ── memory_stats ──
   pi.registerTool({
     name: 'memory_stats',
     label: '记忆统计',
-    description: '查看持久记忆库的统计信息：条目总数、各类别分布、存储大小、冷数据比例。',
+    description: '查看持久记忆库的统计信息：条目总数、各类别分布、存储大小、冷数据比例、摘要数。',
     parameters: {
       type: 'object',
       properties: {},
@@ -174,8 +268,10 @@ export function registerTools(pi: ExtensionAPI): void {
             type: 'text',
             text: [
               `记忆库统计:`,
-              `  总条目: ${stats.totalEntries}`,
+              `  总条目: ${stats.totalEntries}（活跃 ${stats.activeEntries}）`,
               `  存储大小: ${sizeMB} MB / 1 MB`,
+              `  会话摘要: ${stats.summaries} 条`,
+              `  被取代条目: ${stats.superseded} 条`,
               `  冷数据(>30天未访问): ${stats.coldEntries} 条`,
               `  分类:`,
               categoryLines || '  (空)',
@@ -190,6 +286,7 @@ export function registerTools(pi: ExtensionAPI): void {
     },
   })
 
+  // ── memory_forget ──
   pi.registerTool({
     name: 'memory_forget',
     label: '删除记忆',
@@ -205,7 +302,7 @@ export function registerTools(pi: ExtensionAPI): void {
         },
         category: {
           type: 'string',
-          enum: ['fact', 'preference', 'habit', 'procedure', 'reference'],
+          enum: CATEGORIES,
           description: '按类别批量删除。需要同时指定 olderThan。',
         },
         olderThan: {
@@ -224,12 +321,7 @@ export function registerTools(pi: ExtensionAPI): void {
       if (id) {
         const ok = deleteEntry(entries, id)
         return {
-          content: [
-            {
-              type: 'text',
-              text: ok ? `已删除记忆 ${id}` : `未找到记忆 ${id}`,
-            },
-          ],
+          content: [{ type: 'text', text: ok ? `已删除记忆 ${id}` : `未找到记忆 ${id}` }],
         }
       }
 
@@ -248,22 +340,326 @@ export function registerTools(pi: ExtensionAPI): void {
         entries.push(...kept)
         return {
           content: [
-            {
-              type: 'text',
-              text: `已删除 ${removed} 条 ${category} 类别记忆（${olderThan} 之前）`,
-            },
+            { type: 'text', text: `已删除 ${removed} 条 ${category} 类别记忆（${olderThan} 之前）` },
           ],
         }
       }
 
       return {
         content: [
-          {
-            type: 'text',
-            text: '请指定 id 参数，或同时指定 category 和 olderThan 参数',
-          },
+          { type: 'text', text: '请指定 id 参数，或同时指定 category 和 olderThan 参数' },
         ],
         isError: true,
+      }
+    },
+  })
+
+  // ── memory_recall（新增：BM25 检索 + 会话摘要时间线） ──
+  pi.registerTool({
+    name: 'memory_recall',
+    label: '回忆记忆与摘要',
+    description:
+      '综合检索跨会话长期记忆与历史会话摘要。' +
+      'query 匹配长期记忆条目（BM25 词法相关 + 质量分混合排序）；' +
+      '附加 --summaries 时同时返回最近会话摘要时间线，用于跨会话上下文衔接。',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: '检索关键词（可空：仅返回高质量记忆）',
+        },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 10,
+          description: '记忆条数上限（默认 3）',
+        },
+        summaries: {
+          type: 'boolean',
+          description: '是否附带最近会话摘要（默认 false）',
+        },
+      },
+    },
+    execute: async (_toolCallId, params) => {
+      const entries = loadEntries()
+      const limit = typeof params.limit === 'number' ? (params.limit as number) : 3
+      const results = searchEntries(
+        entries,
+        params.query as string | undefined,
+        undefined,
+        undefined,
+        limit,
+      )
+
+      const blocks: string[] = []
+      if (results.length) {
+        blocks.push(
+          '相关记忆:\n' +
+            results
+              .map((e, i) => `${i + 1}. [${e.category}] ${e.title}: ${e.content.slice(0, 200)}`)
+              .join('\n'),
+        )
+      } else {
+        blocks.push('(无相关记忆)')
+      }
+
+      if (params.summaries === true) {
+        const summaries = loadSummaries().slice(-5).reverse()
+        if (summaries.length) {
+          blocks.push(
+            '最近会话摘要:\n' +
+              summaries
+                .map(
+                  (s, i) =>
+                    `${i + 1}. ${s.ts.slice(0, 10)} 「${s.title}」 — ${s.fullText.slice(0, 150)}`,
+                )
+                .join('\n'),
+          )
+        } else {
+          blocks.push('(暂无会话摘要)')
+        }
+      }
+
+      return { content: [{ type: 'text', text: blocks.join('\n\n') }] }
+    },
+  })
+
+  // ── ctx_exec（ctx-lite 迁移） ──
+  pi.registerTool({
+    name: 'ctx_exec',
+    label: 'Execute Code',
+    description:
+      'Execute code (JS/TS/Python/Shell) in a child process. Only stdout enters the context window. ' +
+      'Use this instead of reading many files — write a script to aggregate data and print the result.',
+    parameters: Type.Object({
+      code: Type.String({ description: 'Code to execute' }),
+      language: Type.Optional(
+        Type.String({
+          description: "Language: 'js' (default), 'python', 'shell'. Auto-detected from shebang if omitted.",
+        }),
+      ),
+      description: Type.Optional(Type.String({ description: 'Brief description of what this does' })),
+      timeout: Type.Optional(Type.Number({ description: 'Timeout in ms (default 30000)' })),
+      max_output: Type.Optional(
+        Type.Number({ description: 'Max output chars (default 2000). Use 0 for unlimited.' }),
+      ),
+    }),
+    async execute(_id, params, signal, _onUpdate, _ctx) {
+      const maxOutput = params.max_output as number | undefined
+      const cap = maxOutput === undefined ? 2000 : maxOutput === 0 ? Infinity : maxOutput
+      const code = params.code as string
+      const timeout = (params.timeout as number | undefined) ?? 30000
+      const language = (params.language as string | undefined) || detectLanguage(code)
+      const { stdout, stderr, status, error } = await execLanguageAsync(language, code, timeout, signal)
+      if (error) {
+        return { content: [{ type: 'text', text: `Error: ${error}` }], isError: true }
+      }
+      if (status !== 0) {
+        return { content: [{ type: 'text', text: `Exit code ${status}\n${stderr || stdout}` }], isError: true }
+      }
+      let output = stdout || '(no output)'
+      if (Number.isFinite(cap) && output.length > cap) {
+        const ratio = Math.round((cap / output.length) * 100)
+        output = `${output.slice(0, cap)}\n\n[truncated: ${output.length} chars → ${cap} chars (${ratio}%)]`
+      }
+      recordToolUsage('ctx_exec', estimateTokens(output))
+      const pruned = pruneToolOutput(output, 'ctx_exec')
+      recordOutput('ctx_exec', pruned.length)
+      return { content: [{ type: 'text', text: pruned }], details: { stderr: stderr || undefined } }
+    },
+  })
+
+  // ── ctx_note（ctx-lite 迁移） ──
+  pi.registerTool({
+    name: 'ctx_note',
+    label: 'Store Note',
+    description:
+      "Store a note that survives conversation compaction. Use this to remember " +
+      "file edits, task status, user decisions, errors, or any state across compactions. " +
+      "Set value to 'null' to delete. Append '@ttl=<ISO timestamp>' to key (e.g. 'task.status@ttl=2026-12-31T23:59:59Z') to auto-expire.",
+    parameters: Type.Object({
+      key: Type.String({
+        description: "Note key (dot notation for namespacing, e.g. 'task.current'). Append '@ttl=ISO_TIMESTAMP' for auto-expire.",
+      }),
+      value: Type.Optional(Type.String({ description: "Value to store. Omit to read. Set to 'null' to delete." })),
+    }),
+    async execute(_id, params, _signal, _onUpdate, _ctx) {
+      const notes = loadNotes()
+      const rawKey = params.key as string
+      let key = rawKey
+      let ttl: string | undefined
+
+      const ttlMatch = rawKey.match(/^(.*)@ttl=(.+)$/)
+      if (ttlMatch) {
+        key = ttlMatch[1]
+        ttl = ttlMatch[2]
+      }
+
+      if (params.value === undefined) {
+        return {
+          content: [{ type: 'text', text: notes[key] !== undefined ? notes[key] : `(no note for "${key}")` }],
+        }
+      }
+      if (params.value === 'null' || params.value === null) {
+        const hadKey = key in notes
+        delete notes[key]
+        const ttlKey = `__ttl_${key}`
+        delete notes[ttlKey]
+        saveNotes(notes)
+        return {
+          content: [{ type: 'text', text: hadKey ? `Deleted note "${key}"` : `(no note "${key}" to delete)` }],
+        }
+      }
+
+      const value = params.value as string
+      notes[key] = value
+      const ttlKey = `__ttl_${key}`
+      if (ttl) {
+        notes[ttlKey] = ttl
+      } else {
+        delete notes[ttlKey]
+      }
+      saveNotes(notes)
+
+      const totalSize = getNotesSize(notes)
+      const valueKB = (value.length / 1024).toFixed(1)
+      let msg = `Saved note "${key}" (${valueKB} KB)`
+      if (totalSize > MAX_NOTES_SIZE) {
+        const sizeMB = (totalSize / (1024 * 1024)).toFixed(1)
+        msg += `\nWarning: total notes size ${sizeMB} MB exceeds 1 MB — consider cleaning up with /memory:cleanup`
+      }
+      if (ttl) msg += `\nExpires: ${ttl}`
+      return { content: [{ type: 'text', text: msg }] }
+    },
+  })
+
+  // ── ctx_list（ctx-lite 迁移） ──
+  pi.registerTool({
+    name: 'ctx_list',
+    label: 'List Notes',
+    description: "List all stored note keys with their sizes. Use detail:true to show values.",
+    parameters: Type.Object({
+      prefix: Type.Optional(Type.String({ description: "Filter by key prefix (e.g. 'task')" })),
+      detail: Type.Optional(Type.Boolean({ description: 'Show full values (default false)' })),
+    }),
+    async execute(_id, params, _signal, _onUpdate, _ctx) {
+      const notes = loadNotes()
+      const allKeys = Object.keys(notes).filter(k => !k.startsWith('__'))
+      const prefix = params.prefix as string | undefined
+      const keys = prefix ? allKeys.filter(k => k.startsWith(prefix)) : allKeys
+      if (keys.length === 0) {
+        return { content: [{ type: 'text', text: '(no notes)' }] }
+      }
+      const totalSize = getNotesSize(notes)
+      const detail = params.detail === true
+      const lines = keys.map(k => {
+        const v = notes[k]
+        const size = v ? (v.length / 1024).toFixed(1) : '0'
+        const ttlKey = `__ttl_${k}`
+        const ttl = notes[ttlKey]
+        const ttlStr = ttl ? ` [expires: ${ttl}]` : ''
+        if (detail) {
+          const val = v ? (v.length > 200 ? v.slice(0, 200) + '...' : v) : ''
+          return `  ${k}  (${size} KB)${ttlStr}\n    ${val.replace(/\n/g, '\n    ')}`
+        }
+        return `  ${k}  (${size} KB)${ttlStr}`
+      })
+      const totalMB = (totalSize / (1024 * 1024)).toFixed(2)
+      return {
+        content: [{ type: 'text', text: `Notes (${keys.length}):\n${lines.join('\n')}\nTotal: ${totalMB} MB` }],
+      }
+    },
+  })
+
+  // ── ctx_snap（ctx-lite 迁移） ──
+  pi.registerTool({
+    name: 'ctx_snap',
+    label: 'Save Checkpoint',
+    description:
+      "Save a named checkpoint of current notes + timestamp. " +
+      "Use 'restore:<name>' to restore. Use 'list' to see all checkpoints. " +
+      'Useful before risky operations or at natural milestones.',
+    parameters: Type.Object({
+      name: Type.String({
+        description: "Checkpoint name (e.g. 'before-refactor'). Use 'restore:<name>' to restore. Use 'list' to list all.",
+      }),
+    }),
+    async execute(_id, params, _signal, _onUpdate, _ctx) {
+      if (!existsSync(CHECKPOINTS_DIR)) {
+        // 无检查点目录时 list 返回空，其余操作需要先初始化
+        if (params.name !== 'list') {
+          // 允许首次保存：由 loadNotes() 触发 ensureDir
+          loadNotes()
+        }
+      }
+      const name = params.name as string
+
+      if (name === 'list') {
+        if (!existsSync(CHECKPOINTS_DIR)) {
+          return { content: [{ type: 'text', text: '(no checkpoints)' }] }
+        }
+        const files = readdirSync(CHECKPOINTS_DIR)
+          .filter(f => f.endsWith('.json'))
+          .sort()
+          .reverse()
+          .slice(0, MAX_CHECKPOINTS_LIST)
+        if (files.length === 0) {
+          return { content: [{ type: 'text', text: '(no checkpoints)' }] }
+        }
+        const lines = files.map(f => {
+          const snapName = f.replace(/\.json$/, '')
+          try {
+            const data: SnapData = JSON.parse(readFileSync(join(CHECKPOINTS_DIR, f), 'utf-8'))
+            const isAuto = data.compaction ? ' [auto]' : ''
+            const time = new Date(data.timestamp).toISOString()
+            const noteCount = Object.keys(data.notes || {}).length
+            const size = statSync(join(CHECKPOINTS_DIR, f)).size
+            return `  ${snapName}${isAuto}  (${noteCount} notes, ${(size / 1024).toFixed(1)} KB, ${time})`
+          } catch {
+            return `  ${snapName}  (corrupted)`
+          }
+        })
+        return {
+          content: [{ type: 'text', text: `Checkpoints (${files.length}):\n${lines.join('\n')}` }],
+        }
+      }
+
+      if (name.startsWith('restore:')) {
+        const snapName = name.slice(8)
+        const snapFile = join(CHECKPOINTS_DIR, `${snapName}.json`)
+        if (!existsSync(snapFile)) {
+          return { content: [{ type: 'text', text: `No checkpoint "${snapName}" found` }], isError: true }
+        }
+        try {
+          const data: SnapData = JSON.parse(readFileSync(snapFile, 'utf-8'))
+          saveNotes(data.notes || {})
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Restored checkpoint "${snapName}" (${Object.keys(data.notes || {}).length} notes, from ${new Date(data.timestamp).toISOString()})`,
+              },
+            ],
+          }
+        } catch (e: unknown) {
+          return {
+            content: [{ type: 'text', text: `Failed to restore: ${(e as Error).message}` }],
+            isError: true,
+          }
+        }
+      }
+
+      const notes = loadNotes()
+      const snap: SnapData = { timestamp: Date.now(), notes }
+      writeFileSync(join(CHECKPOINTS_DIR, `${name}.json`), JSON.stringify(snap, null, 2))
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Saved checkpoint "${name}" (${Object.keys(notes).length} notes, ${new Date(snap.timestamp).toISOString()})`,
+          },
+        ],
       }
     },
   })

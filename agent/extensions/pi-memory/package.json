@@ -1,9 +1,17 @@
 {
   "name": "pi-memory",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "轻量知识库+自主学习扩展 - 跨会话持久记忆",
+  "description": "自主学习记忆扩展（已合并 ctx-lite）— 跨会话持久记忆 + 自动提取/消解/注入闭环",
+  "type": "module",
   "pi": {
-    "extensions": ["./index.ts"]
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }

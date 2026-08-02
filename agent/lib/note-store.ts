@@ -2,7 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync
 import { join } from "node:path"
 
 const HOME = process.env.HOME || "/root"
-export const DATA_DIR = process.env.CTX_LITE_DIR || join(HOME, ".pi", "ctx-lite")
+// 默认数据位置已随 ctx-lite 并入 pi-memory 迁至 ~/.pi/memory
+export const DATA_DIR = process.env.CTX_LITE_DIR || join(HOME, ".pi", "memory")
 export const NOTES_FILE = join(DATA_DIR, "notes.json")
 export const CHECKPOINTS_DIR = join(DATA_DIR, "checkpoints")
 export const MAX_NOTES_SIZE = 1024 * 1024

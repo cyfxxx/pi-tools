@@ -396,12 +396,12 @@ verify() {
     warn "CloakBrowser npm 包未安装，浏览器功能不可用"
   fi
 
-  # ctx-lite 数据目录
-  if [ -d "$PI_HOME/ctx-lite/checkpoints" ]; then
-    ok "ctx-lite/checkpoints/ 已就绪"
+  # pi-memory 数据目录（合并 ctx-lite 后）
+  if [ -d "$PI_HOME/memory/checkpoints" ]; then
+    ok "pi-memory/checkpoints/ 已就绪"
   else
-    mkdir -p "$PI_HOME/ctx-lite/checkpoints"
-    ok "ctx-lite/checkpoints/ 已创建"
+    mkdir -p "$PI_HOME/memory/checkpoints"
+    ok "pi-memory/checkpoints/ 已创建"
   fi
 
   # pi-autopilot 扩展（融合 pi-scheduler + pi-admin）
