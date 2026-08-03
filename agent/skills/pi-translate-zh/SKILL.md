@@ -67,9 +67,12 @@ cp settings-selector.js.bak.1234567890 settings-selector.js
 
 | 文件 | 覆盖状态 |
 |------|---------|
-| `slash-commands.js` | ~85% |
-| `settings-selector.js` | ~85% |
+| `slash-commands.js` | ~85%（description/label 已 100% 中文，剩余为统计口径） |
+| `settings-selector.js` | ~88% |
+| `thinking-selector.js` | 100% |
+| `status-indicator.js` | 100% |
 | `interactive-mode.js` | ~40+ 条（非 description/label 格式的独立统计） |
+| `agent-session.js` / `provider-composer.js` | 核心消息已覆盖 |
 | `pi-lens/index.ts` | ~53% |
 | `@plannotator/pi-extension/index.ts` | ~59% |
 | `pi-markdown-preview/index.ts` | ~46% |
