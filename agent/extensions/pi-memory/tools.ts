@@ -2,6 +2,7 @@ import crypto from 'node:crypto'
 import { spawn } from 'node:child_process'
 import {
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   writeFileSync,
@@ -586,13 +587,6 @@ export function registerTools(pi: ExtensionAPI): void {
       }),
     }),
     async execute(_id, params, _signal, _onUpdate, _ctx) {
-      if (!existsSync(CHECKPOINTS_DIR)) {
-        // 无检查点目录时 list 返回空，其余操作需要先初始化
-        if (params.name !== 'list') {
-          // 允许首次保存：由 loadNotes() 触发 ensureDir
-          loadNotes()
-        }
-      }
       const name = params.name as string
 
       const sanitizeSnapName = (raw: string): string | null => {
@@ -664,6 +658,14 @@ export function registerTools(pi: ExtensionAPI): void {
       const snapName = sanitizeSnapName(name)
       if (!snapName) {
         return { content: [{ type: 'text', text: `非法检查点名称: "${name}"（仅允许字母/数字/._-，且不含路径分隔符）` }], isError: true }
+      }
+      try {
+        mkdirSync(CHECKPOINTS_DIR, { recursive: true })
+      } catch (e: unknown) {
+        return {
+          content: [{ type: 'text', text: `无法创建检查点目录: ${(e as Error).message}` }],
+          isError: true,
+        }
       }
       const notes = loadNotes()
       const snap: SnapData = { timestamp: Date.now(), notes }

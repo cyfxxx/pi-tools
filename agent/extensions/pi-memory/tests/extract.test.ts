@@ -147,6 +147,26 @@ describe('extract: extractConversation full flow', () => {
     expect(loadEntries()).toHaveLength(1)
   })
 
+  it('first extraction works when DATA_DIR does not exist yet (lock dir auto-created)', async () => {
+    const freshDir = mkdtempSync(join(tmpdir(), 'pi-memory-fresh-'))
+    rmSync(freshDir, { recursive: true, force: true })
+    process.env.PI_MEMORY_DIR = freshDir
+    vi.resetModules()
+    const { extractConversation } = await import('../extract.ts')
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    const outcome = await extractConversation(
+      [{ role: 'user', content: 'hi' }],
+      { sessionId: 'sess-fresh', messageCount: 1, runner },
+    )
+    expect(outcome.ok).toBe(true)
+    expect(outcome.error).toBeUndefined()
+    const { loadEntries } = await import('../storage.ts')
+    expect(loadEntries()).toHaveLength(1)
+    rmSync(freshDir, { recursive: true, force: true })
+    process.env.PI_MEMORY_DIR = dir
+    vi.resetModules()
+  })
+
   it('different message count is not skipped', async () => {
     const { extractConversation } = await import('../extract.ts')
     const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })

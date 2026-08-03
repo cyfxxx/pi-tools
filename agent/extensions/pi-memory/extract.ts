@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -41,6 +41,9 @@ export interface ExtractOutcome {
 }
 
 // ── pi 可执行文件定位（与 pi-cron.sh 同策略） ──
+// 优先解析到真实 cli.js（pi-original symlink / 直接 symlink），
+// 避免 spawn 到 pi-wrapper.sh：提取子进程是后台一次性任务，
+// 不应经过 wrapper 的崩溃计数/自动重启/回滚逻辑。
 
 export function findPiBin(): string | null {
   const envBin = process.env.PI_BIN
@@ -54,12 +57,35 @@ export function findPiBin(): string | null {
     let entries: string[] = []
     try { entries = readdirSync(base) } catch { continue }
     for (const sub of entries) {
-      const p = join(base, sub, 'bin', 'pi')
-      if (existsSync(p)) return p
+      const binDir = join(base, sub, 'bin')
+      // 1) pi-original：install-wrapper.sh 保留的原 CLI symlink
+      const original = join(binDir, 'pi-original')
+      if (existsSync(original)) {
+        try {
+          const target = realpathSync(original)
+          if (target.endsWith('.js') && existsSync(target)) return target
+        } catch { /* 继续尝试 */ }
+      }
+      // 2) bin/pi 若是直接指向 cli.js 的 symlink（未装 wrapper）
+      const piBin = join(binDir, 'pi')
+      if (existsSync(piBin)) {
+        try {
+          const target = realpathSync(piBin)
+          if (target.endsWith('.js') && existsSync(target)) return target
+        } catch { /* 不是 symlink（wrapper 脚本） */ }
+      }
+      // 3) 兜底：lib 目录下的 cli.js
+      const libCli = join(base, sub, 'lib', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist', 'cli.js')
+      if (existsSync(libCli)) return libCli
     }
   }
   for (const p of ['/usr/local/bin/pi', '/usr/bin/pi']) {
-    if (existsSync(p)) return p
+    if (existsSync(p)) {
+      try {
+        const target = realpathSync(p)
+        if (target.endsWith('.js') && existsSync(target)) return target
+      } catch { /* ignore */ }
+    }
   }
   return null
 }
@@ -80,6 +106,7 @@ function pidAlive(pid: number): boolean {
 
 export function acquireExtractLock(): boolean {
   try {
+    mkdirSync(DATA_DIR, { recursive: true })
     if (existsSync(LOCK_FILE)) {
       const pid = Number(readFileSync(LOCK_FILE, 'utf8'))
       if (pidAlive(pid)) return false
@@ -102,31 +129,49 @@ export function releaseExtractLock(): void {
 }
 
 // ── 子进程执行（可注入 runner 便于测试） ──
+// 提取子进程的会话文件写入隔离目录（~/.pi/memory/extract-sessions），
+// 避免在真实会话目录（agent/sessions/）累积 "会话记忆提取器" 垃圾会话文件。
+
+export const EXTRACT_SESSIONS_DIR = join(DATA_DIR, 'extract-sessions')
 
 export type Runner = (bin: string, args: string[], timeoutMs: number) => Promise<{ stdout: string; stderr: string; code: number | null }>
 
 export const defaultRunner: Runner = (bin, args, timeoutMs) =>
   new Promise(resolve => {
+    try {
+      mkdirSync(EXTRACT_SESSIONS_DIR, { recursive: true })
+    } catch { /* 目录创建失败不影响提取 */ }
     const proc = spawn(bin, args, {
-      env: { ...process.env, NO_COLOR: '1', PI_MEMORY_EXTRACT: '1' },
+      env: {
+        ...process.env,
+        NO_COLOR: '1',
+        PI_MEMORY_EXTRACT: '1',
+        PI_CODING_AGENT_SESSION_DIR: EXTRACT_SESSIONS_DIR,
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
     })
+    let settled = false
+    const done = (out: { stdout: string; stderr: string; code: number | null }) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(out)
+    }
     let stdout = ''
     let stderr = ''
     const timer = setTimeout(() => {
       proc.kill('SIGKILL')
-      resolve({ stdout, stderr, code: null })
+      done({ stdout, stderr, code: null })
     }, timeoutMs)
     proc.stdout.on('data', (d: Buffer) => { stdout += d.toString() })
     proc.stderr.on('data', (d: Buffer) => { stderr += d.toString() })
     proc.on('close', code => {
       clearTimeout(timer)
-      resolve({ stdout, stderr, code })
+      done({ stdout, stderr, code })
     })
     proc.on('error', err => {
-      clearTimeout(timer)
-      resolve({ stdout: '', stderr: err.message, code: null })
+      done({ stdout: '', stderr: err.message, code: null })
     })
   })
 
@@ -240,8 +285,7 @@ export function shouldExtract(sessionId: string, messageCount: number, cooldownM
   const prev = tracker.get(key)
   const now = Date.now()
   if (!prev) return true
-  if (now - prev.fingerprint < 0) return true
-  // 同指纹且冷却期内 → 跳过
+  // 同指纹且冷却期内 → 跳过（幂等：同会话同消息数重复触发不重复提取）
   if (prev.fingerprint === messageCount && now - lastExtractTs(key) < cooldownMs) return false
   return true
 }
@@ -299,7 +343,17 @@ async function doExtract(
 
   const prompt = buildExtractPrompt(messages, opts.maxChars)
   const runner = opts.runner ?? defaultRunner
-  const { stdout, stderr } = await runner(bin!, ['-p', prompt], opts.timeoutMs ?? 60_000)
+  const { stdout, stderr, code } = await runner(bin ?? '', ['-p', prompt], opts.timeoutMs ?? 60_000)
+
+  // 超时/进程被杀（code null）或非零退出：明确报错而不是解析垃圾输出
+  if (code !== 0) {
+    return {
+      ok: false,
+      error: `提取进程退出异常 (code: ${code ?? 'timeout'}): ${stderr.slice(0, 200)}`,
+      memories: 0,
+      skipped: 0,
+    }
+  }
 
   const result = parseExtractResult(stdout)
   if (!result) {
@@ -347,6 +401,8 @@ async function doExtract(
 }
 
 // 从会话条目中提取纯文本消息（供事件层调用）
+// 长会话保留最近 200 条（头部是系统注入/早期上下文，尾部才贴近本次提取目标）
+const MAX_EXTRACT_MESSAGES = 200
 export function extractTextFromEntries(entries: Array<{ role?: string; content?: unknown; message?: { role?: string; content?: unknown } }>): ExtractMessage[] {
   const out: ExtractMessage[] = []
   for (const e of entries) {
@@ -364,14 +420,10 @@ export function extractTextFromEntries(entries: Array<{ role?: string; content?:
     }
     if (!text.trim()) continue
     out.push({ role, content: text })
-    if (out.length > 200) break
+    // 超过上限时丢弃最旧，保留最近消息
+    if (out.length > MAX_EXTRACT_MESSAGES) out.shift()
   }
   return out
-}
-
-// 辅助：token 数估算（字符级近似）
-export function estimateChars(messages: ExtractMessage[]): number {
-  return messages.reduce((s, m) => s + m.content.length, 0)
 }
 
 export { tokenize }

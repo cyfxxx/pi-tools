@@ -196,7 +196,7 @@ export function registerCommands(pi: ExtensionAPI): void {
     usage: '/ctx-lite:cleanup [--keep=N] [--dry-run]',
     handler: async (args, ctx) => {
       const keepMatch = args.match(/--keep\s+(\d+)/)
-      const keep = keepMatch ? parseInt(keepMatch[1], 10) : 10
+      const keep = Math.min(Math.max(keepMatch ? parseInt(keepMatch[1], 10) : 10, 1), 100)
       const dryRun = args.includes('--dry-run')
 
       loadNotes()

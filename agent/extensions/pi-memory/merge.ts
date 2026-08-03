@@ -1,5 +1,5 @@
 import type { MemoryAction, MemoryEntry } from './types.ts'
-import { activeEntries, tokenize, jaccardSimilarity } from './storage.ts'
+import { activeEntries, tokenize, jaccardSimilarity, saveEntries, applyMem0Action } from './storage.ts'
 import { findSimilar } from './retrieval.ts'
 
 export interface MergeDecision {
@@ -114,7 +114,6 @@ export async function mergeCandidates(
     }
   }
   // 冲突取代时 entry 已在 decideMerge 内被标记，最后统一持久化
-  const { saveEntries } = await import('./storage.ts')
   saveEntries(entries)
   return { applied, skipped }
 }
@@ -130,7 +129,6 @@ export async function resolveAndApply(
   candidate: MemoryEntry,
 ): Promise<MergeDecision & { applied: boolean }> {
   const decision = await decideMerge(entries, candidate)
-  const { applyMem0Action, saveEntries } = await import('./storage.ts')
   if (decision.action === 'ADD') {
     entries.push(candidate)
     saveEntries(entries)

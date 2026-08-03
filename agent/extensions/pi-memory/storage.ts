@@ -17,8 +17,6 @@ export const ENTRIES_FILE = join(DATA_DIR, 'entries.json')
 export const NOTES_FILE = join(DATA_DIR, 'notes.json')
 export const SUMMARIES_FILE = join(DATA_DIR, 'summaries.json')
 export const CHECKPOINTS_DIR = join(DATA_DIR, 'checkpoints')
-const TMP_SUFFIX = '.tmp'
-const MAX_MEMORY_SIZE = 1024 * 1024
 export const STORE_VERSION = 2
 export const SUMMARY_VERSION = 1
 const PRUNE_CONFIDENCE = 0.3
@@ -46,7 +44,8 @@ function readJSON<T>(file: string): T | null {
 
 function writeJSONAtomic(file: string, data: unknown) {
   ensureDir()
-  const tmp = file + TMP_SUFFIX
+  // pid 后缀：主进程与提取子进程并发写同文件时互不踩踏 tmp 文件
+  const tmp = `${file}.${process.pid}.tmp`
   writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
   renameSync(tmp, file)
 }

@@ -39,9 +39,12 @@ export function buildInjectionBlock(
   let injectedEntries = 0
   let injectedSummaries = 0
 
-  // L1 高价值条目
+  // L1 高价值条目（仅对候选子集排序：预算/条数上限远小于条目总数）
   if (live.length > 0) {
-    const ranked = [...live].sort((a, b) => qualityScore(b) - qualityScore(a))
+    const maxRank = Math.min(live.length, 32)
+    const ranked = [...live]
+      .sort((a, b) => qualityScore(b) - qualityScore(a))
+      .slice(0, maxRank)
     for (const e of ranked) {
       const item = `- [${e.category}] ${e.title}: ${e.content.slice(0, 200)}`
       const cost = estimateTokens(item + '\n')
