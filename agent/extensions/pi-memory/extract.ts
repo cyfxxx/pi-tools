@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { MemoryCategory, MemoryEntry, SummaryEntry } from './types.ts'
-import { loadEntries, saveEntries, appendSummary, tokenize } from './storage.ts'
+import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR } from './storage.ts'
 import { mergeCandidates } from './merge.ts'
 
 export interface ExtractMessage {
@@ -64,6 +64,43 @@ export function findPiBin(): string | null {
   return null
 }
 
+// ── 提取互斥锁（防 parallelism：同刻只允许一个提取进程） ──
+
+export const LOCK_FILE = join(DATA_DIR, '.extract-lock')
+
+function pidAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function acquireExtractLock(): boolean {
+  try {
+    if (existsSync(LOCK_FILE)) {
+      const pid = Number(readFileSync(LOCK_FILE, 'utf8'))
+      if (pidAlive(pid)) return false
+      rmSync(LOCK_FILE, { force: true })
+    }
+    writeFileSync(LOCK_FILE, String(process.pid))
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function releaseExtractLock(): void {
+  try {
+    const cur = Number(readFileSync(LOCK_FILE, 'utf8'))
+    if (cur === process.pid) rmSync(LOCK_FILE, { force: true })
+  } catch {
+    /* ignore */
+  }
+}
+
 // ── 子进程执行（可注入 runner 便于测试） ──
 
 export type Runner = (bin: string, args: string[], timeoutMs: number) => Promise<{ stdout: string; stderr: string; code: number | null }>
@@ -71,7 +108,7 @@ export type Runner = (bin: string, args: string[], timeoutMs: number) => Promise
 export const defaultRunner: Runner = (bin, args, timeoutMs) =>
   new Promise(resolve => {
     const proc = spawn(bin, args, {
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { ...process.env, NO_COLOR: '1', PI_MEMORY_EXTRACT: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
     })
@@ -239,7 +276,22 @@ export async function extractConversation(
     return { ok: false, error: 'skip: cooldown or duplicate', memories: 0, skipped: 0 }
   }
   if (!messages.length) return { ok: false, error: 'empty conversation', memories: 0, skipped: 0 }
+  if (!acquireExtractLock()) {
+    return { ok: false, error: 'skip: another extraction in progress', memories: 0, skipped: 0 }
+  }
 
+  try {
+    return await doExtract(messages, opts, sessionId)
+  } finally {
+    releaseExtractLock()
+  }
+}
+
+async function doExtract(
+  messages: ExtractMessage[],
+  opts: ExtractOptions,
+  sessionId: string,
+): Promise<ExtractOutcome> {
   const bin = findPiBin()
   if (!bin && !opts.runner) {
     return { ok: false, error: '找不到 pi 可执行文件', memories: 0, skipped: 0 }
@@ -247,7 +299,7 @@ export async function extractConversation(
 
   const prompt = buildExtractPrompt(messages, opts.maxChars)
   const runner = opts.runner ?? defaultRunner
-  const { stdout, stderr } = await runner(bin!, ['-p', prompt], opts.timeoutMs ?? 240_000)
+  const { stdout, stderr } = await runner(bin!, ['-p', prompt], opts.timeoutMs ?? 60_000)
 
   const result = parseExtractResult(stdout)
   if (!result) {

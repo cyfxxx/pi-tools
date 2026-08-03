@@ -69,6 +69,8 @@ export default function (pi: ExtensionAPI): void {
 }
 
 async function extractFromSession(ctx: { sessionManager: { getSessionId(): string | null; getBranch(): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> } }): Promise<void> {
+  // 提取子进程（spawn 的 pi -p）禁止再触发提取，斩断递归链
+  if (process.env.PI_MEMORY_EXTRACT === '1') return
   const sessionId = ctx.sessionManager.getSessionId() || null
   const branch = ctx.sessionManager.getBranch()
   const messages = extractTextFromEntries(branch as Array<{ role?: string; content?: unknown; message?: { role?: string; content?: unknown } }>)

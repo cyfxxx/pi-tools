@@ -128,6 +128,7 @@ pi-backup rebuild --yes          # 静默自动重建
 **通知链：**
 - 日志文件：`logs/scheduler/<name>-<ts>.log`
 - 会话摘要：`session_start` 时 TUI 顶部显示离线执行摘要
+- 邮件/webhook：`settings.mailTo` / `settings.webhookUrl`（或环境变量 `PI_SCHEDULER_MAIL_TO` / `PI_SCHEDULER_WEBHOOK`），任务完成且 `notifyOnCompletion` 时由 `pi-cron.sh` 经 `mail`/`curl` 发送（此通知链由离线脚本承载，与 pi-autopilot 扩展内置的通知复用同一配置字段）
 
 ### 失败自愈
 
