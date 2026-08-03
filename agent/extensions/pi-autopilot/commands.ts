@@ -308,9 +308,11 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
       if (!m) return '用法: /remind <time> <prompt>\n示例: /remind +30m review PR\n示例: /remind 2026-07-15T09:00 standup'
       const time = m[1]
       const prompt = m[2]
+      const isAbsolute = /^\d{4}-\d{2}-\d{2}/.test(time)
+      const schedule = time.startsWith('+') ? time : isAbsolute ? time : `+${time}`
       const name = `remind-${Date.now().toString(36)}`
       try {
-        const task = await addTask({ name, type: 'once', schedule: time.startsWith('+') ? time : (time.includes('T') ? time : `+${time}`), prompt, enabled: true })
+        const task = await addTask({ name, type: 'once', schedule, prompt, enabled: true })
         const next = task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效时间'
         return `已创建提醒 "${name}": ${next}\n  ${prompt}\nID: ${task.id}\n（执行后自动移除）`
       } catch (err) {

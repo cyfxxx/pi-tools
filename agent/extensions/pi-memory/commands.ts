@@ -38,7 +38,7 @@ export function registerCommands(pi: ExtensionAPI): void {
         if (p.startsWith('--category=')) {
           category = p.slice('--category='.length) as MemoryCategory
         } else if (p.startsWith('--limit=')) {
-          limit = parseInt(p.slice('--limit='.length), 10) || 5
+          limit = Math.min(Math.max(parseInt(p.slice('--limit='.length), 10) || 5, 1), 50)
         } else {
           queryParts.push(p)
         }

@@ -9,6 +9,29 @@ import { searchDirect } from './fetch.ts'
 export default async function (pi: ExtensionAPI) {
   const config: SearchOnlyConfig = loadConfig()
 
+  // 分块读取响应体，最多读 cap 字节（防大文件全量入内存）
+  async function readBodyLimited(res: Response, cap: number): Promise<{ text: string; truncated: boolean }> {
+    if (!res.body) {
+      return { text: await res.text(), truncated: false }
+    }
+    const reader = res.body.getReader()
+    const chunks: Uint8Array[] = []
+    let total = 0
+    while (total < cap) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!value) continue
+      const take = Math.min(value.length, cap - total)
+      chunks.push(value.subarray(0, take))
+      total += take
+      if (take < value.length) {
+        await reader.cancel()
+        return { text: Buffer.concat(chunks).toString('utf-8'), truncated: true }
+      }
+    }
+    return { text: Buffer.concat(chunks).toString('utf-8'), truncated: false }
+  }
+
   // Register feature tools
   registerSearchTools(pi, config.search, recordToolUsage)
 
@@ -28,7 +51,7 @@ export default async function (pi: ExtensionAPI) {
     },
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       const url = params.url as string
-      const maxLength = (params.max_length as number) ?? 8000
+      const maxLength = Math.max(0, Math.min((params.max_length as number) ?? 8000, 200000))
       try {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 15000)
@@ -40,11 +63,12 @@ export default async function (pi: ExtensionAPI) {
         if (!res.ok) {
           return { content: [{ type: "text", text: `HTTP ${res.status}: ${res.statusText}` }], details: {} }
         }
-        const text = await res.text()
+        const { text, truncated: bodyTruncated } = await readBodyLimited(res, 512 * 1024)
         const truncated = text.length > maxLength
           ? text.slice(0, maxLength) + `\n\n...（共 ${text.length} 字符，仅显示前 ${maxLength} 字符）`
           : text
-        const result = pruneToolOutput(truncated, "fetch_url")
+        const suffix = bodyTruncated ? `\n\n[响应体超过 512KB 已截断读取]` : ''
+        const result = pruneToolOutput(truncated + suffix, "fetch_url")
         recordOutput("fetch_url", result.length)
         recordToolUsage("fetch_url", estimateTokens(result))
         return { content: [{ type: "text", text: result }], details: {} }
