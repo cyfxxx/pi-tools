@@ -28,6 +28,9 @@ const DESTRUCTIVE_PATTERNS = [
   /\bpkill\b/i,
   /\bkillall\b/i,
   /\breboot\b/i,
+  // curl/wget 落盘即破坏（curl -o/-O 写文件、wget 非 -O - 时写文件）
+  /\bcurl\b[^\n;|&]*\s(-o\s|--output\s|-O\s|--remote-name)/i,
+  /\bwget\b(?!\s+-O\s*-)/i,
   /\bshutdown\b/i,
   /\bsystemctl\s+(start|stop|restart|enable|disable)/i,
   /\bservice\s+\S+\s+(start|stop|restart)/i,
@@ -59,8 +62,6 @@ const SAFE_PATTERNS = [
   /^\s*which\b/,
   /^\s*whereis\b/,
   /^\s*type\b/,
-  /^\s*env\b/,
-  /^\s*printenv\b/,
   /^\s*uname\b/,
   /^\s*whoami\b/,
   /^\s*id\b/,
@@ -89,7 +90,11 @@ const SAFE_PATTERNS = [
 ];
 
 export function isSafeCommand(command: string): boolean {
-  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(command)) && SAFE_PATTERNS.some((p) => p.test(command));
+  const trimmed = command.trim()
+  if (!trimmed) return false
+  // 阻断管道/分号/&&/||/子 shell/反引号/命令替换：`curl URL | bash` 类绕过一律拒绝
+  if (/[;&|]|`|\$\(/.test(trimmed)) return false
+  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(trimmed)) && SAFE_PATTERNS.some((p) => p.test(trimmed))
 }
 
 import type { Task } from "./state.ts";

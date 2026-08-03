@@ -185,7 +185,7 @@ export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'admin_get_config',
     label: '读取配置',
-    description: '读取 settings.json 的配置项。不传 key 时返回全部配置。',
+    description: '读取 settings.json 的配置项。不传 key 时返回全部配置（敏感字段掩蔽为 ***）。',
     parameters: {
       type: 'object',
       properties: { key: { type: 'string', description: '配置键名（可选），不传则返回全部' } },
@@ -195,12 +195,24 @@ export function registerTools(pi: ExtensionAPI): void {
       const key = params.key as string | undefined
       if (key) {
         const val = settings[key]
-        return { content: [{ type: 'text', text: `${key}: ${typeof val === 'string' ? val : JSON.stringify(val, null, 2)}` }] }
+        const safeVal = isSensitiveKey(key) && typeof val === 'string' ? '***' : val
+        return { content: [{ type: 'text', text: `${key}: ${typeof safeVal === 'string' ? safeVal : JSON.stringify(safeVal, null, 2)}` }] }
       }
-      const { apiKey: _ak, ...safe } = settings as Record<string, unknown>
+      const safe = maskSensitive(settings)
       return { content: [{ type: 'text', text: JSON.stringify(safe, null, 2) }] }
     },
   })
+
+  // 递归掩蔽含 key/token/secret 的字段（含嵌套 provider 配置）
+  function maskSensitive(val: unknown, depth = 0): unknown {
+    if (val === null || typeof val !== 'object' || depth > 6) return val
+    if (Array.isArray(val)) return val.map((v) => maskSensitive(v, depth + 1))
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(val)) {
+      out[k] = isSensitiveKey(k) && typeof v === 'string' ? '***' : maskSensitive(v, depth + 1)
+    }
+    return out
+  }
 
   pi.registerTool({
     name: 'admin_set_config',

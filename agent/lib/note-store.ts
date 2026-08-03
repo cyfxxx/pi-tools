@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync, renameSync } from "node:fs"
 import { join } from "node:path"
 
 const HOME = process.env.HOME || "/root"
@@ -37,7 +37,9 @@ export function loadNotes(): Record<string, string> {
 
 export function saveNotes(notes: Record<string, string>) {
   ensureDir()
-  writeFileSync(NOTES_FILE, JSON.stringify(notes, null, 2))
+  const tmp = `${NOTES_FILE}.${process.pid}.tmp`
+  writeFileSync(tmp, JSON.stringify(notes, null, 2))
+  renameSync(tmp, NOTES_FILE)
 }
 
 export function clearCompactionFlag() {

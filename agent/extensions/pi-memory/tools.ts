@@ -595,6 +595,14 @@ export function registerTools(pi: ExtensionAPI): void {
       }
       const name = params.name as string
 
+      const sanitizeSnapName = (raw: string): string | null => {
+        const trimmed = raw.trim()
+        if (!trimmed || trimmed.length > 80) return null
+        if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('..')) return null
+        if (!/^[a-zA-Z0-9._-]+$/.test(trimmed)) return null
+        return trimmed
+      }
+
       if (name === 'list') {
         if (!existsSync(CHECKPOINTS_DIR)) {
           return { content: [{ type: 'text', text: '(no checkpoints)' }] }
@@ -626,7 +634,10 @@ export function registerTools(pi: ExtensionAPI): void {
       }
 
       if (name.startsWith('restore:')) {
-        const snapName = name.slice(8)
+        const snapName = sanitizeSnapName(name.slice(8))
+        if (!snapName) {
+          return { content: [{ type: 'text', text: `非法检查点名称: "${name.slice(8)}"` }], isError: true }
+        }
         const snapFile = join(CHECKPOINTS_DIR, `${snapName}.json`)
         if (!existsSync(snapFile)) {
           return { content: [{ type: 'text', text: `No checkpoint "${snapName}" found` }], isError: true }
@@ -650,9 +661,13 @@ export function registerTools(pi: ExtensionAPI): void {
         }
       }
 
+      const snapName = sanitizeSnapName(name)
+      if (!snapName) {
+        return { content: [{ type: 'text', text: `非法检查点名称: "${name}"（仅允许字母/数字/._-，且不含路径分隔符）` }], isError: true }
+      }
       const notes = loadNotes()
       const snap: SnapData = { timestamp: Date.now(), notes }
-      writeFileSync(join(CHECKPOINTS_DIR, `${name}.json`), JSON.stringify(snap, null, 2))
+      writeFileSync(join(CHECKPOINTS_DIR, `${snapName}.json`), JSON.stringify(snap, null, 2))
       return {
         content: [
           {

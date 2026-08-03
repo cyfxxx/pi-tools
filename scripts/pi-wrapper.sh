@@ -253,7 +253,6 @@ while true; do
   if [ "$ACTION" = "none" ] || [ -z "$ACTION" ]; then
     if [ "$EXIT_CODE" -ne 0 ]; then
       # 非正常退出（崩溃）：累计计数，达到阈值回滚 lastGood
-      local crash_count
       crash_count=$(read_crash_count)
       crash_count=$((crash_count + 1))
       write_crash_count "$crash_count"

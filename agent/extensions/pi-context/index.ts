@@ -42,7 +42,7 @@ export default function (pi: ExtensionAPI) {
 		if (assistantIndices.length > KEEP_THINKING_TURNS) {
 			const threshold = assistantIndices[assistantIndices.length - KEEP_THINKING_TURNS];
 			messages = messages.map((m: any, i: number) => {
-				if (i < threshold && m.role === "assistant" && m.content) {
+				if (i < threshold && m.role === "assistant" && Array.isArray(m.content)) {
 					const filtered = m.content.filter((b: any) => b.type !== "thinking");
 					if (filtered.length < m.content.length) {
 						modified = true;
