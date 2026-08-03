@@ -133,11 +133,13 @@ export function findSimilar(
   const docs = live.map(e => buildDoc(e))
   const n = live.length || 1
   const avgLen = docs.reduce((s, d) => s + docLength(d), 0) / n
+  const query = [...cTitle, ...cTokens.slice(0, 8)]
+  const df = dfFor(docs, query)
 
   const scored = live.map((e, i) => ({
     entry: e,
-    jaccard: jaccardScore(cTokens, tokenize(e.content)),
-    lexical: bm25Score([...cTitle, ...cTokens.slice(0, 8)], docs[i], dfFor(docs, [...cTitle, ...cTokens.slice(0, 8)]), n, avgLen),
+    jaccard: jaccardScore(cTokens, docs[i].content),
+    lexical: bm25Score(query, docs[i], df, n, avgLen),
   }))
   return scored
     .sort((a, b) => b.jaccard - a.jaccard || b.lexical - a.lexical)
