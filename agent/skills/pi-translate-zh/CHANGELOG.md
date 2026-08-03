@@ -1,5 +1,22 @@
 # Changelog — pi-translate-zh
 
+## [v11] — 2026-08-02（适配 pi 0.83.0）
+
+### Changed
+- 适配 pi 0.83.0 字符串变化：
+  - `/reload` 命令描述新增 `, and context files`（slash-commands + interactive-mode 三条 reload 消息）
+  - 思考深度 `xhigh` 从 "Maximum reasoning" 改为 "Extra-high reasoning"，`max` 仍为 "Maximum reasoning"（settings-selector + thinking-selector 两个文件，新增 thinking-selector 区段）
+  - 压缩状态指示器从 interactive-mode 移至 `status-indicator.js`（新增区段，含模板字面量匹配）
+  - 项目信任警告改为模板字面量 `This project is not trusted. Project ${CONFIG_DIR_NAME}...`
+  - 认证方式选择改为 `Select authentication method for ${providerOptions[0].name}:` 模板字面量
+  - Bedrock 提示改为 `You can also use an AWS profile, IAM keys, or role-based credentials.`
+  - `Nothing to compact` 移至 agent-session.js（"session too small"，新增区段）
+  - `Enter API key` 移至 provider-composer.js（message: 形式，新增区段）
+  - config-selector 标题改为 `Project Local Resources`/`Global Resources`，组标签改为运行时拼接模板字面量，新增 "switch mode"/"cycle inherit/+/- "/"toggle" 提示
+- 设置菜单新增：Automatic/Light theme/Dark theme/Apply/Change mode/Cache miss notices/Output padding 等 15 项
+- 清理已删除字符串的旧条目（No editor configured、AWS credentials、Use a subscription、Amazon Bedrock setup、Resource Configuration、Type to filter resources、Select color theme、plan-mode 旧英文描述）
+- 删除 plan-mode 英文描述区段（index.ts 已为中文，`apply(EXT, [])`）
+
 ## [v10] — 2026-06-15
 
 ### Removed

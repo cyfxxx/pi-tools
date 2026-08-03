@@ -117,6 +117,8 @@ function resolvePiPath() {
 const PI = resolvePiPath();
 const COMMANDS = `${PI}/dist/core/slash-commands.js`;
 const SETTINGS = `${PI}/dist/modes/interactive/components/settings-selector.js`;
+const THINKING_SELECTOR = `${PI}/dist/modes/interactive/components/thinking-selector.js`;
+const STATUS_INDICATOR = `${PI}/dist/modes/interactive/components/status-indicator.js`;
 const INTERACTIVE_MODE = `${PI}/dist/modes/interactive/interactive-mode.js`;
 const CONFIG_SELECTOR = `${PI}/dist/modes/interactive/components/config-selector.js`;
 const LOGIN_DIALOG = `${PI}/dist/modes/interactive/components/login-dialog.js`;
@@ -142,6 +144,8 @@ const REVIEW_HTML = join(
 const FIRST_NAMES = [
 	COMMANDS,
 	SETTINGS,
+	THINKING_SELECTOR,
+	STATUS_INDICATOR,
 	INTERACTIVE_MODE,
 	CONFIG_SELECTOR,
 	LOGIN_DIALOG,
@@ -268,8 +272,8 @@ sections.push(() => {
 		['"Manually compact the session context"', "`手动压缩会话上下文`"],
 		['"Resume a different session"', "`恢复另一个会话`"],
 		[
-			'"Reload keybindings, extensions, skills, prompts, and themes"',
-			"`重新加载键盘绑定、扩展、技能、提示模板和主题`",
+			'"Reload keybindings, extensions, skills, prompts, themes, and context files"',
+			"`重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件`",
 		],
 		["`Quit ${APP_NAME}`", "`退出 pi`"],
 	]);
@@ -294,6 +298,38 @@ sections.push(() => {
 		['label: "Warnings"', "label: `警告`"],
 		['label: "Thinking level"', "label: `思考深度`"],
 		['label: "Theme"', "label: `主题`"],
+		['label: "Automatic"', "label: `自动`"],
+		[
+			'description: "Use separate themes for light and dark terminal appearance"',
+			"description: `为浅色和深色终端分别使用不同主题`",
+		],
+		['label: "Light theme"', "label: `浅色主题`"],
+		[
+			'description: "Theme to use in automatic mode when the terminal is light"',
+			"description: `终端为浅色时自动模式使用的主题`",
+		],
+		['label: "Dark theme"', "label: `深色主题`"],
+		[
+			'description: "Theme to use in automatic mode when the terminal is dark"',
+			"description: `终端为深色时自动模式使用的主题`",
+		],
+		['label: "Apply"', "label: `应用`"],
+		['description: "Save and go back"', "description: `保存并返回`"],
+		['label: "Change mode"', "label: `切换模式`"],
+		[
+			'description: "Switch to one theme for light and dark"',
+			"description: `切换为浅色深色共用同一主题`",
+		],
+		['label: "Cache miss notices"', "label: `缓存未命中通知`"],
+		[
+			'description: "Show transcript notices for significant prompt-cache misses"',
+			"description: `为显著的提示词缓存未命中显示记录通知`",
+		],
+		['label: "Output padding"', "label: `输出内边距`"],
+		[
+			'description: "Horizontal padding for user messages, assistant messages, and thinking"',
+			"description: `用户消息、助手消息和思考内容的水平内边距`",
+		],
 		['label: "Show images"', "label: `显示图片`"],
 		['label: "Image width"', "label: `图片宽度`"],
 		['label: "Auto-resize images"', "label: `自动缩放图片`"],
@@ -428,9 +464,10 @@ sections.push(() => {
 			"high: `深度推理（约 16K token）`",
 		],
 		[
-			'xhigh: "Maximum reasoning (~32k tokens)"',
+			'xhigh: "Extra-high reasoning (~32k tokens)"',
 			"xhigh: `最大推理（约 32K token）`",
 		],
+		['max: "Maximum reasoning"', "max: `最大推理`"],
 		// 子菜单标题/提示
 		['"Thinking Level"', '"思考深度"'],
 		[
@@ -438,7 +475,6 @@ sections.push(() => {
 			'"选择支持思考模型的推理深度"',
 		],
 		['"Theme"', '"主题"'],
-		['"Select color theme"', '"选择界面颜色主题"'],
 		[
 			'"  Enter to select \u00b7 Esc to go back"',
 			'"  回车选择 \u00b7 Esc 返回"',
@@ -464,13 +500,54 @@ sections.push(() => {
 	return `设置菜单 (${n} 项)`;
 });
 
+// ---- [2.5] 思考深度选择器（thinking-selector） ----
+sections.push(() => {
+	const n = apply(THINKING_SELECTOR, [
+		['off: "No reasoning"', "off: `无推理`"],
+		[
+			'minimal: "Very brief reasoning (~1k tokens)"',
+			"minimal: `极简推理（约 1K token）`",
+		],
+		[
+			'low: "Light reasoning (~2k tokens)"',
+			"low: `轻度推理（约 2K token）`",
+		],
+		[
+			'medium: "Moderate reasoning (~8k tokens)"',
+			"medium: `中等推理（约 8K token）`",
+		],
+		[
+			'high: "Deep reasoning (~16k tokens)"',
+			"high: `深度推理（约 16K token）`",
+		],
+		[
+			'xhigh: "Extra-high reasoning (~32k tokens)"',
+			"xhigh: `最大推理（约 32K token）`",
+		],
+		['max: "Maximum reasoning"', "max: `最大推理`"],
+	]);
+	return `思考深度选择器 (${n} 项)`;
+});
+
+// ---- [2.6] 状态指示器（status-indicator） ----
+sections.push(() => {
+	const n = apply(STATUS_INDICATOR, [
+		[
+			"`Compacting context... ${cancelHint}`",
+			"`正在压缩上下文... ${cancelHint}`",
+		],
+		["Auto-compacting... ${cancelHint}", "自动压缩... ${cancelHint}"],
+	]);
+	return `状态指示器 (${n} 项)`;
+});
+
 // ---- [3] 交互模式主组件 ----
 sections.push(() => {
 	let n = apply(INTERACTIVE_MODE, [
 		// 已有翻译的保持不动，新增以下：
 		[
-			'"Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage."',
-			'"Anthropic 订阅认证已激活。第三方调用消耗额外用量并按 token 计费，不计入 Claude 套餐限制。在 https://claude.ai/settings/usage 管理额外用量。"',
+			'"Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage. Disable this warning in /settings."',
+			'"Anthropic 订阅认证已激活。第三方调用消耗额外用量并按 token 计费，不计入 Claude 套餐限制。在 https://claude.ai/settings/usage 管理额外用量。可在 /settings 中禁用此警告。"',
 		],
 		['"Working..."', '"处理中..."'],
 		['"Thinking..."', '"思考中..."'],
@@ -482,7 +559,6 @@ sections.push(() => {
 		['"Navigated to selected point"', '"已跳转到选定位置"'],
 		['"Session cwd not found"', '"会话工作目录不存在"'],
 		['"Operation aborted"', '"操作已取消"'],
-		['"Context overflow detected, "', '"检测到上下文溢出，"'],
 		['"Compaction cancelled"', '"压缩已取消"'],
 		['"Auto-compaction cancelled"', '"自动压缩已取消"'],
 		['"Unknown error"', '"未知错误"'],
@@ -495,10 +571,6 @@ sections.push(() => {
 		['"Current model does not support thinking"', '"当前模型不支持思考"'],
 		['"Only one model in scope"', '"范围内只有一个模型"'],
 		['"Only one model available"', '"只有一个可用模型"'],
-		[
-			'"No editor configured. Set $VISUAL or $EDITOR environment variable."',
-			'"未配置编辑器。请设置 $VISUAL 或 $EDITOR 环境变量。"',
-		],
 		['"Changelog: "', '"更新日志："'],
 		['"Context"', '"上下文"'],
 		['"User-Agent"', '"用户代理"'],
@@ -508,8 +580,8 @@ sections.push(() => {
 			'"Bash 命令正在运行，请先按 Esc 取消。"',
 		],
 		[
-			'"This project is not trusted. Project instructions (AGENTS.md/CLAUDE.md), .pi resources, and project packages are ignored. Use /trust to save a trust decision, then restart pi."',
-			'"此项目不受信任。项目指令（AGENTS.md/CLAUDE.md）、.pi 资源和项目包被忽略。使用 /trust 保存信任决策，然后重启 pi。"',
+			'`This project is not trusted. Project ${CONFIG_DIR_NAME} resources and packages are ignored. Use /trust to save a trust decision, then restart pi.`',
+			"`此项目不受信任。项目的 ${CONFIG_DIR_NAME} 资源与包被忽略。使用 /trust 保存信任决策，然后重启 pi。`",
 		],
 		['"Update Available"', '"有可用更新"'],
 		['"Package Updates Available"', '"有可用的包更新"'],
@@ -533,12 +605,8 @@ sections.push(() => {
 		['"No subscription providers available."', '"没有可用的订阅提供商。"'],
 		['"No API key providers available."', '"没有可用的 API 密钥提供商。"'],
 		[
-			'"Amazon Bedrock uses AWS credentials instead of a single API key."',
-			'"Amazon Bedrock 使用 AWS 凭据而非单个 API 密钥。"',
-		],
-		[
-			'"Configure an AWS profile, IAM keys, bearer token, or role-based credentials."',
-			'"配置 AWS 配置文件、IAM 密钥、Bearer Token 或基于角色的凭据。"',
+			'"You can also use an AWS profile, IAM keys, or role-based credentials."',
+			'"也可以使用 AWS 配置文件、IAM 密钥或基于角色的凭据。"',
 		],
 		['"See:"', '"参见："'],
 		[
@@ -550,16 +618,16 @@ sections.push(() => {
 			'"请等待压缩完成后再重新加载。"',
 		],
 		[
-			'"Reloading keybindings, extensions, skills, prompts, themes..."',
-			'"正在重新加载键盘绑定、扩展、技能、提示模板、主题..."',
+			'"Reloading keybindings, extensions, skills, prompts, themes, and context files..."',
+			'"正在重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件..."',
 		],
 		[
-			'"Reloaded keybindings, extensions, skills, prompts, themes; saved project trust"',
-			'"已重新加载键盘绑定、扩展、技能、提示模板、主题；已保存项目信任"',
+			'"Reloaded keybindings, extensions, skills, prompts, themes, and context files; saved project trust"',
+			'"已重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件；已保存项目信任"',
 		],
 		[
-			'"Reloaded keybindings, extensions, skills, prompts, themes"',
-			'"已重新加载键盘绑定、扩展、技能、提示模板、主题"',
+			'"Reloaded keybindings, extensions, skills, prompts, themes, and context files"',
+			'"已重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件"',
 		],
 		['"Import cancelled"', '"导入已取消"'],
 		['"Share cancelled"', '"分享已取消"'],
@@ -568,17 +636,12 @@ sections.push(() => {
 			'"已复制上一条助手消息到剪贴板"',
 		],
 		['"Usage: /name <name>"', '"用法: /name <名称>"'],
-		[
-			'"Nothing to compact (no messages yet)"',
-			'"没有可压缩的内容（尚无消息）"',
-		],
 		['"Summarize branch?"', '"是否汇总分支？"'],
 		['"No summary"', '"不汇总"'],
 		['"Summarize"', '"汇总"'],
 		['"Summarize with custom prompt"', '"使用自定义提示词汇总"'],
 		['"Custom summarization instructions"', '"自定义汇总说明"'],
 		['"Waiting for authentication..."', '"等待认证..."'],
-		['"Enter API key:"', '"输入 API 密钥："'],
 		// === v8 新增：启动区段标题 + 通用消息 ===
 		['"Skills"', '"技能"'],
 		['"Prompts"', '"提示词"'],
@@ -586,9 +649,11 @@ sections.push(() => {
 		['"Themes"', '"主题"'],
 		['"Yes"', '"是"'],
 		['"No"', '"否"'],
-		['"Use a subscription"', '"使用订阅"'],
+		[
+			'`Select authentication method for ${providerOptions[0].name}:`',
+			"`为 ${providerOptions[0].name} 选择认证方式：`",
+		],
 		['"Select authentication method:"', '"选择认证方式："'],
-		['"Amazon Bedrock setup"', '"Amazon Bedrock 设置"'],
 		['"Import session"', '"导入会话"'],
 		['"Creating gist..."', '"正在创建 Gist..."'],
 		['"No agent messages to copy yet."', '"尚无助手消息可复制。"'],
@@ -621,6 +686,27 @@ sections.push(() => {
 	return `交互模式消息 (${n} 条)`;
 });
 
+// ---- [3.1] agent-session 核心消息 ----
+sections.push(() => {
+	const AGENT_SESSION = `${PI}/dist/core/agent-session.js`;
+	const n = apply(AGENT_SESSION, [
+		[
+			'"Nothing to compact (session too small)"',
+			'"没有可压缩的内容（会话太小）"',
+		],
+	]);
+	return `agent-session 消息 (${n} 项)`;
+});
+
+// ---- [3.2] provider-composer 登录提示 ----
+sections.push(() => {
+	const PROVIDER_COMPOSER = `${PI}/dist/core/provider-composer.js`;
+	const n = apply(PROVIDER_COMPOSER, [
+		['message: "Enter API key"', 'message: "输入 API 密钥"'],
+	]);
+	return `provider-composer 登录提示 (${n} 项)`;
+});
+
 // ---- [4] 资源配置选择器 ----
 sections.push(() => {
 	const n = apply(CONFIG_SELECTOR, [
@@ -628,14 +714,35 @@ sections.push(() => {
 		['"Prompts"', '"提示词"'],
 		['skills: "Skills"', 'skills: "技能"'],
 		['themes: "Themes"', 'themes: "主题"'],
-		['"User (~/.pi/agent/)"', '"用户配置 (~/.pi/agent/)"'],
-		['"Project (.pi/)"', '"项目配置 (.pi/)"'],
 		['"User settings"', '"用户设置"'],
 		['"Project settings"', '"项目设置"'],
-		['"Resource Configuration"', '"资源配置"'],
-		['"Type to filter resources"', '"输入以筛选资源"'],
+		['"Project Local Resources"', '"项目本地资源"'],
+		['"Global Resources"', '"全局资源"'],
+		['"  No resources found"', '"  未找到资源"'],
 	]);
-	return `资源配置 (${n} 项)`;
+
+	// 组标签为运行时拼接（模板字面量）
+	const n2 = apply(CONFIG_SELECTOR, [
+		[
+			'`User (${formatBaseDir(metadata.baseDir)})`',
+			"`用户 (${formatBaseDir(metadata.baseDir)})`",
+		],
+		[
+			'`Project (${formatBaseDir(metadata.baseDir)})`',
+			"`项目 (${formatBaseDir(metadata.baseDir)})`",
+		],
+		[
+			'`User (${formatBaseDir(agentDir)})`',
+			"`用户 (${formatBaseDir(agentDir)})`",
+		],
+		[
+			'`Project (${CONFIG_DIR_NAME}/)`',
+			"`项目 (${CONFIG_DIR_NAME}/)`",
+		],
+		['"switch mode"', '"切换模式"'],
+		['"cycle inherit/+/-"', '"循环 继承/+/-"'],
+	]);
+	return `资源配置 (${n + n2} 项)`;
 });
 
 // ---- [5] 登录对话框 ----
@@ -1417,28 +1524,7 @@ sections.push(() => {
 sections.push(() => {
 	const EXT = join(PI_DIR, "extensions/plan-mode/index.ts");
 	if (!existsSync(EXT)) return "plan-mode (跳过：不存在)";
-	const n = apply(EXT, [
-		[
-			'description: "Start in plan mode (read-only exploration)"',
-			"description: `以规划模式启动（只读探索）`",
-		],
-		[
-			'description: "Toggle plan mode (read-only exploration)"',
-			"description: `切换规划模式（只读探索）`",
-		],
-		[
-			'description: "Show current plan todo list"',
-			"description: `显示当前规划任务列表`",
-		],
-		[
-			'description: "Show diff between current and previous plan iteration"',
-			"description: `显示当前与上一版规划的差异`",
-		],
-		[
-			'description: "Show Q&A history for current plan discussion"',
-			"description: `显示当前规划讨论的问答历史`",
-		],
-	]);
+	const n = apply(EXT, []);
 	return `plan-mode 命令 (${n} 条)`;
 });
 
