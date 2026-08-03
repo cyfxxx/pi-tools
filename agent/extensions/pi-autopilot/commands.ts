@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { readSettings, listAvailableModels, updateSettings, updateModelConfig, isSensitiveKey } from './config.ts'
-import { resolveSession } from './sessions.ts'
+import { readSettings } from './config.ts'
 import { writeRestartRequest } from './state.ts'
 import {
   addTask, deleteTask, updateTask, listTasks, readTasks, parseIntervalToMs, formatInterval,
@@ -59,9 +58,9 @@ function parseValue(raw: string): unknown {
 export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler): void {
   // ── /auto:status ─────────────────────────────────────────────────
   pi.registerCommand('auto:status', {
-    description: '显示自主运行状态：模型、会话、任务、遥测、预算、failover 链。',
-    usage: '/auto:status',
-    handler: async () => {
+    description: '显示自主运行状态：模型、会话、任务、遥测、预算、failover 链。--stats 附加遥测统计（按模型/按任务）。',
+    usage: '/auto:status [--stats]',
+    handler: async (args: string) => {
       const settings = readSettings()
       const config = await readAutopilotConfig()
       const tasks = await listTasks()
@@ -78,23 +77,13 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
       if (byModel.length) lines.push(`  最佳模型: ${byModel[0].provider}/${byModel[0].model} (${Math.round(byModel[0].successRate * 100)}%)`)
       lines.push(`  今日: ${todayRuns(telemetry)} 次 / $${todayCost(telemetry).toFixed(4)}`)
       lines.push(`  failover: ${config.fallbackModels.length ? config.fallbackModels.map(f => `${f.provider}/${f.model}`).join(' → ') : '(未配置)'}`)
-      return lines.join('\n')
-    },
-  })
-
-  // ── /auto:stats ──────────────────────────────────────────────────
-  pi.registerCommand('auto:stats', {
-    description: '查看执行遥测统计（按模型/按任务）。',
-    usage: '/auto:stats',
-    handler: async () => {
-      const telemetry = await readTelemetry()
-      const byModel = statsByModel(telemetry)
-      const byTask = statsByTask(telemetry)
-      const lines: string[] = [`执行遥测 (${telemetry.length} 条):`]
-      lines.push('按模型:')
-      for (const m of byModel.slice(0, 10)) lines.push(`  ${m.provider}/${m.model}: ${Math.round(m.successRate * 100)}%, ${m.runs} 次, 平均 ${Math.round(m.avgDurationMs / 1000)}s, $${m.totalCost.toFixed(4)}`)
-      lines.push('按任务:')
-      for (const t of byTask.slice(0, 10)) lines.push(`  ${t.taskName}: ${Math.round(t.successRate * 100)}%, ${t.runs} 次, ${t.failures} 失败`)
+      if (args.trim().includes('--stats')) {
+        const byTask = statsByTask(telemetry)
+        lines.push('', '按模型:')
+        for (const m of byModel.slice(0, 10)) lines.push(`  ${m.provider}/${m.model}: ${Math.round(m.successRate * 100)}%, ${m.runs} 次, 平均 ${Math.round(m.avgDurationMs / 1000)}s, $${m.totalCost.toFixed(4)}`)
+        lines.push('按任务:')
+        for (const t of byTask.slice(0, 10)) lines.push(`  ${t.taskName}: ${Math.round(t.successRate * 100)}%, ${t.runs} 次, ${t.failures} 失败`)
+      }
       return lines.join('\n')
     },
   })
@@ -176,24 +165,7 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
     },
   })
 
-  // ── /admin:* 迁移命令（原名保留） ─────────────────────────────────
-  pi.registerCommand('admin:status', {
-    description: '显示 Agent 当前状态：模型、会话、配置等。',
-    usage: '/admin:status',
-    handler: async (_args, ctx) => {
-      const settings = readSettings()
-      const sessionFile = ctx.sessionManager?.getSessionFile?.() || '(未知)'
-      ctx.ui.notify([
-        'pi-admin',
-        `  模式: ${ctx.mode || '未知'}`,
-        `  Provider: ${settings.defaultProvider || '未设置'}`,
-        `  模型: ${settings.defaultModel || '未设置'}`,
-        `  会话: ${sessionFile}`,
-        `  思考层级: ${settings.defaultThinkingLevel || '未设置'}`,
-      ].join('\n'), 'info')
-    },
-  })
-
+  // ── /admin:restart（保留：需用户确认的重启） ──────────────────────
   pi.registerCommand('admin:restart', {
     description: '重启 Agent。自动保存当前会话，重启后恢复。',
     usage: '/admin:restart [reason]',
@@ -207,126 +179,48 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
     },
   })
 
-  pi.registerCommand('admin:session', {
-    description: '切换到指定会话。',
-    usage: '/admin:session <sessionId|filePath>',
-    handler: async (args, ctx) => {
-      const target = args.trim()
-      if (!target) { ctx.ui.notify('用法: /admin:session <sessionId|filePath>', 'error'); return }
-      const session = resolveSession(target)
-      if (!session) { ctx.ui.notify(`未找到匹配的会话: ${target}`, 'error'); return }
-      ctx.ui.notify(`正在切换到会话 ${session.sessionId}...`, 'info')
-      try {
-        ctx.switchSession?.(session.filePath)
-      } catch {
-        writeRestartRequest('switch_session', { targetSession: session.filePath, reason: `切换到会话 ${session.sessionId}` })
-        try { ctx.shutdown() } catch { process.exit(0) }
-      }
-    },
-  })
-
-  pi.registerCommand('admin:model', {
-    description: '切换模型。用法: /admin:model <provider> <model>',
-    usage: '/admin:model <provider> <model>',
-    handler: async (args, ctx) => {
-      const parts = args.trim().split(/\s+/)
-      if (parts.length < 2) {
-        const providers = listAvailableModels()
-        const hint = providers.map(p => `  ${p.name}: ${p.models.map(m => m.id).join(', ')}`).join('\n')
-        ctx.ui.notify(`用法: /admin:model <provider> <model>\n可用模型:\n${hint}`, 'error')
-        return
-      }
-      const provider = parts[0]
-      const model = parts.slice(1).join(' ')
-      const providerData = listAvailableModels().find(p => p.name === provider)
-      if (!providerData) { ctx.ui.notify(`Provider "${provider}" 不存在`, 'error'); return }
-      if (!providerData.models.some(m => m.id === model)) { ctx.ui.notify(`模型 "${model}" 不在 ${provider} 的列表中`, 'error'); return }
-      const confirmed = await ctx.ui.confirm('切换模型', `将切换为 ${provider}/${model}，需要重启 Agent。是否继续？`)
-      if (!confirmed) return
-      ctx.ui.notify(`正在切换模型为 ${provider}/${model}...`, 'info')
-      const result = updateModelConfig(provider, model)
-      if (!result.success) { ctx.ui.notify(result.error || '写入失败', 'error'); return }
-      writeRestartRequest('set_model', { targetProvider: provider, targetModel: model, reason: `切换模型为 ${provider}/${model}` })
-      try { ctx.shutdown() } catch { process.exit(0) }
-    },
-  })
-
-  pi.registerCommand('admin:config', {
-    description: '读取或修改配置。不传值时读取，传值时修改。',
-    usage: '/admin:config <key> [value]',
-    handler: async (args, ctx) => {
-      const parts = args.trim().split(/\s+/)
-      if (!parts.length || !parts[0]) { ctx.ui.notify('用法: /admin:config <key> [value]', 'error'); return }
-      const key = parts[0]
-      const value = parts.slice(1).join(' ')
-      if (!value) {
-        const settings = readSettings()
-        const val = settings[key]
-        ctx.ui.notify(`${key}: ${typeof val === 'string' ? val : JSON.stringify(val, null, 2)}`, 'info')
-        return
-      }
-      const parsedValue = parseValue(value)
-      if (isSensitiveKey(key)) {
-        const ok = await ctx.ui.confirm('修改敏感配置', `确认修改 "${key}" 为 ${JSON.stringify(parsedValue)}？`)
-        if (!ok) return
-      }
-      const result = updateSettings(key, parsedValue)
-      if (!result.success) { ctx.ui.notify(result.error || '写入失败', 'error'); return }
-      ctx.ui.notify(`已更新配置: ${key} = ${JSON.stringify(parsedValue)}`, 'success')
-      try { await ctx.reload() } catch { /* 忽略 reload 失败 */ }
-    },
-  })
-
-  // ── /loop /remind /schedule（迁自 pi-scheduler） ─────────────────
-  pi.registerCommand('loop', {
-    description: '创建间隔循环任务并立即执行一次',
-    usage: '/loop <interval> <prompt...> [--timeout <秒>] [--tags a,b] [--retries <n>]',
-    handler: async (args: string) => {
-      const { prompt: cleaned, maxRunTime, tags, retries } = extractFlags(args)
-      const m = cleaned.match(/^(\S+)\s+(.+)/s)
-      if (!m) return '用法: /loop <interval> <prompt> [--timeout <秒>] [--tags a,b] [--retries <n>]\n示例: /loop 5m check CI status'
-      const interval = m[1]
-      const prompt = m[2]
-      const ms = parseIntervalToMs(interval)
-      if (!ms) return `无效间隔: ${interval}。支持格式: 30s, 5m, 1h, 2d`
-      const name = `loop-${Date.now().toString(36)}`
-      try {
-        const task = await addTask({ name, type: 'interval', schedule: interval, prompt, enabled: true, maxRunTime, tags, retries })
-        await scheduler.runNow(task)
-        return `已创建循环任务 "${name}" 并立即执行一次: 每 ${formatInterval(ms)} 重复\n  ${prompt}\nID: ${task.id}\n下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '未知'}`
-      } catch (err) {
-        return `创建失败: ${(err as Error).message}`
-      }
-    },
-  })
-
-  pi.registerCommand('remind', {
-    description: '创建一次性提醒任务（执行后自动移除）',
-    usage: '/remind <time> <prompt...>',
-    handler: async (args: string) => {
-      const m = args.match(/^(\S+)\s+(.+)/s)
-      if (!m) return '用法: /remind <time> <prompt>\n示例: /remind +30m review PR\n示例: /remind 2026-07-15T09:00 standup'
-      const time = m[1]
-      const prompt = m[2]
-      const isAbsolute = /^\d{4}-\d{2}-\d{2}/.test(time)
-      const schedule = time.startsWith('+') ? time : isAbsolute ? time : `+${time}`
-      const name = `remind-${Date.now().toString(36)}`
-      try {
-        const task = await addTask({ name, type: 'once', schedule, prompt, enabled: true })
-        const next = task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效时间'
-        return `已创建提醒 "${name}": ${next}\n  ${prompt}\nID: ${task.id}\n（执行后自动移除）`
-      } catch (err) {
-        return `创建失败: ${(err as Error).message}`
-      }
-    },
-  })
-
+  // ── /schedule（迁自 pi-scheduler；/loop /remind 已并入子命令） ────
   pi.registerCommand('schedule', {
-    description: '管理定时任务',
-    usage: '/schedule [list|edit|delete|enable|disable|cron|test|history|export|import|pause|resume] [args...]',
+    description: '管理定时任务，并支持 loop/remind 子命令创建循环任务与提醒。',
+    usage: '/schedule [list|edit|delete|enable|disable|cron|test|history|export|import|pause|resume|loop|remind] [args...]',
     handler: async (args: string) => {
       const parts = args.trim().split(/\s+/)
       const subcmd = parts[0]?.toLowerCase() || 'list'
+
+      if (subcmd === 'loop') {
+        const { prompt: cleaned, maxRunTime, tags, retries } = extractFlags(parts.slice(1).join(' '))
+        const m = cleaned.match(/^(\S+)\s+(.+)/s)
+        if (!m) return '用法: /schedule loop <interval> <prompt> [--timeout <秒>] [--tags a,b] [--retries <n>]\n示例: /schedule loop 5m check CI status'
+        const interval = m[1]
+        const prompt = m[2]
+        const ms = parseIntervalToMs(interval)
+        if (!ms) return `无效间隔: ${interval}。支持格式: 30s, 5m, 1h, 2d`
+        const name = `loop-${Date.now().toString(36)}`
+        try {
+          const task = await addTask({ name, type: 'interval', schedule: interval, prompt, enabled: true, maxRunTime, tags, retries })
+          await scheduler.runNow(task)
+          return `已创建循环任务 "${name}" 并立即执行一次: 每 ${formatInterval(ms)} 重复\n  ${prompt}\nID: ${task.id}\n下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '未知'}`
+        } catch (err) {
+          return `创建失败: ${(err as Error).message}`
+        }
+      }
+
+      if (subcmd === 'remind') {
+        const m = parts.slice(1).join(' ').match(/^(\S+)\s+(.+)/s)
+        if (!m) return '用法: /schedule remind <time> <prompt>\n示例: /schedule remind +30m review PR\n示例: /schedule remind 2026-07-15T09:00 standup'
+        const time = m[1]
+        const prompt = m[2]
+        const isAbsolute = /^\d{4}-\d{2}-\d{2}/.test(time)
+        const schedule = time.startsWith('+') ? time : isAbsolute ? time : `+${time}`
+        const name = `remind-${Date.now().toString(36)}`
+        try {
+          const task = await addTask({ name, type: 'once', schedule, prompt, enabled: true })
+          const next = task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效时间'
+          return `已创建提醒 "${name}": ${next}\n  ${prompt}\nID: ${task.id}\n（执行后自动移除）`
+        } catch (err) {
+          return `创建失败: ${(err as Error).message}`
+        }
+      }
 
       if (subcmd === 'list' || subcmd === 'ls') {
         const tasks = await listTasks()

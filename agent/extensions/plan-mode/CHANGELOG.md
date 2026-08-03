@@ -1,5 +1,11 @@
 # Changelog — plan-mode
 
+## [2.6.0] - 2026-08-02
+
+### Removed
+
+- **`/plandiff`、`/planqa` 命令**：并入 `/planview --diff`、`/planview --qa`（查看类命令统一），减少 / 命令数量。
+
 ## [2.5.0] - 2026-08-01
 
 ### Added

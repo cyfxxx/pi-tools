@@ -1,6 +1,6 @@
 ---
 name: pi-memory
-description: 自主学习记忆扩展（已合并 ctx-lite）。每轮自动注入高价值跨会话记忆到系统提示；会话结束/compaction 时自动提取新知识（决策/事实/偏好/约定/教训）入长期记忆库，Mem0 式四操作消解冲突。提供 memory_store/memory_search/memory_recall 等工具与 /memory:*、/ctx-lite:* 命令。
+description: 自主学习记忆扩展（已合并 ctx-lite）。每轮自动注入高价值跨会话记忆到系统提示；会话结束/compaction 时自动提取新知识（决策/事实/偏好/约定/教训）入长期记忆库，Mem0 式四操作消解冲突。提供 memory_store/memory_search/memory_recall 等工具与 /memory 命令（search/stats/summary/prune/cleanup）。
 ---
 
 # pi-memory 技能
@@ -51,12 +51,12 @@ description: 自主学习记忆扩展（已合并 ctx-lite）。每轮自动注�
 
 | 命令 | 功能 |
 |------|------|
-| `/memory:search <q> [--category=] [--limit=N]` | 搜索 |
-| `/memory:stats` | 统计 |
-| `/memory:prune` | 清理低价值记忆 |
-| `/memory:digest` | 手动触发会话提取 |
-| `/memory:summary [N]` | 会话摘要时间线 |
-| `/ctx-lite:status` / `/ctx-lite:cleanup` / `/ctx-lite:forget` | 兼容旧 ctx-lite |
+| `/memory search <q> [--category=] [--limit=N]` | 搜索 |
+| `/memory stats` | 统计 |
+| `/memory summary [N]` | 会话摘要时间线 |
+| `/memory prune` | 清理低价值记忆 |
+| `/memory cleanup [--keep=N] [--dry-run]` | 清理过期笔记/检查点 |
+| `/memory cleanup --all` | 清空笔记+检查点 |
 
 ## 记忆注入规则
 
@@ -67,5 +67,5 @@ description: 自主学习记忆扩展（已合并 ctx-lite）。每轮自动注�
 ## 数据存储
 
 - `~/.pi/memory/entries.json`（L1 记忆）、`notes.json`（L0 笔记）、`summaries.json`（L2 摘要）、`checkpoints/`（快照）
-- 上限 1 MB，超限提示 `/memory:prune`
+- 上限 1 MB，超限提示 `/memory prune`
 - ctx-lite 数据已自动迁移
