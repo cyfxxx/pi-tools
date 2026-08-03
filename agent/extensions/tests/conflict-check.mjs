@@ -143,12 +143,11 @@ async function main() {
       }
     }
     const expected = [
-      'admin:status', 'admin:restart', 'admin:session', 'admin:model', 'admin:config',
-      'auto:status', 'auto:stats', 'auto:policy', 'auto:failover', 'auto:pause', 'auto:resume',
-      'memory:search', 'memory:stats', 'memory:prune', 'memory:digest', 'memory:summary',
-      'loop', 'remind', 'schedule',
-      'ctx-lite:status', 'ctx-lite:cleanup', 'ctx-lite:forget',
-      'plan', 'plandiff', 'planqa', 'todos',
+      'auto:status', 'auto:policy', 'auto:failover', 'auto:pause', 'auto:resume',
+      'admin:restart',
+      'schedule',
+      'memory',
+      'plan', 'planclear', 'planresume', 'planview', 'todos',
     ]
     const actual = Object.keys(cmdMap).sort()
     for (const c of expected) {

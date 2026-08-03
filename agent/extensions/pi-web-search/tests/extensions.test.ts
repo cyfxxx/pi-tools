@@ -64,14 +64,12 @@ describe('pi-context extension', () => {
     expect(events).toContain('before_agent_start')
   })
 
-  it('does not register tools, but registers 1 command (ping)', async () => {
+  it('does not register tools or commands', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     expect(pi.registerTool).not.toHaveBeenCalled()
-    expect(pi.registerCommand).toHaveBeenCalledTimes(1)
-    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
-    expect(cmdNames).toEqual(['ping'])
+    expect(pi.registerCommand).not.toHaveBeenCalled()
   })
 
   it('before_agent_start does not change systemPrompt when context is idle (cache-friendly)', async () => {
@@ -158,15 +156,15 @@ describe('pi-autopilot extension', () => {
     ].sort())
   })
 
-  it('registers 14 commands: 5 admin:* + 6 auto:* + loop/remind/schedule', async () => {
+  it('registers 7 commands: auto:* + admin:restart + schedule', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-autopilot/index')).default
     await main(pi as any)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
     expect(cmdNames).toEqual([
-      'admin:config', 'admin:model', 'admin:restart', 'admin:session', 'admin:status',
-      'auto:failover', 'auto:pause', 'auto:policy', 'auto:resume', 'auto:stats', 'auto:status',
-      'loop', 'remind', 'schedule',
+      'admin:restart',
+      'auto:failover', 'auto:pause', 'auto:policy', 'auto:resume', 'auto:status',
+      'schedule',
     ].sort())
   })
 
@@ -194,16 +192,13 @@ describe('pi-memory extension', () => {
     ])
   })
 
-  it('registers 8 commands: memory:* + ctx-lite:* aliases', async () => {
+  it('registers 1 command: memory', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-memory/index')).default
     await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(8)
-    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual([
-      'ctx-lite:cleanup', 'ctx-lite:forget', 'ctx-lite:status',
-      'memory:digest', 'memory:prune', 'memory:search', 'memory:stats', 'memory:summary',
-    ])
+    expect(pi.registerCommand).toHaveBeenCalledTimes(1)
+    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
+    expect(cmdNames).toEqual(['memory'])
   })
 
   it('registers lifecycle event handlers', async () => {
@@ -296,13 +291,13 @@ describe('plan-mode extension', () => {
     expect(toolNames).toEqual(['todo'])
   })
 
-  it('registers 7 plan commands: plan, planclear, planresume, plandiff, planqa, planview, todos', async () => {
+  it('registers 5 plan commands: plan, planclear, planresume, planview, todos', async () => {
     const pi = mockPi()
     const main = (await import('../../plan-mode/index')).default
     await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(7)
+    expect(pi.registerCommand).toHaveBeenCalledTimes(5)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual(['plan', 'planclear', 'planresume', 'plandiff', 'planqa', 'planview', 'todos'].sort())
+    expect(cmdNames).toEqual(['plan', 'planclear', 'planresume', 'planview', 'todos'].sort())
   })
 
   it('registers plan flag', async () => {

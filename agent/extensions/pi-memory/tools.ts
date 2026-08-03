@@ -176,7 +176,7 @@ export function registerTools(pi: ExtensionAPI): void {
 
       let msg = `已${actionMap[action]}记忆: "${entry.title}" (${entry.category})`
       if (totalSize > 900 * 1024) {
-        msg += `\n警告: 记忆库 ${(totalSize / (1024 * 1024)).toFixed(1)} MB，接近 1 MB 上限，请考虑 /memory:prune 清理`
+        msg += `\n警告: 记忆库 ${(totalSize / (1024 * 1024)).toFixed(1)} MB，接近 1 MB 上限，请考虑 /memory prune 清理`
       }
 
       return { content: [{ type: 'text', text: msg }] }

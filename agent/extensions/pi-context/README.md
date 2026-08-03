@@ -9,7 +9,6 @@
 | R2 | `context` | 只保留最新一份 compactionSummary | 500-1500/turn |
 | R3 | `context` | 旧 turn（>2 轮）的 thinking 块剪枝 | 10-50% 旧消息 |
 | R4 | `tool_result` | bash/read 输出 >5000 字节时用 SDK 截断 | 50-80% 工具结果 |
-| R6 | 命令 | /ping 免 LLM 响应 | 单次完全省掉 |
 
 ## 注意事项
 

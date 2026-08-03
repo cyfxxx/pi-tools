@@ -41,17 +41,17 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 ```
 ┌───────────────────────────── pi-memory (index.ts) ─────────────────────────────┐
 │                                                                                │
-│  生命周期事件                    │   工具（9 个）          命令（8 个）          │
+│  生命周期事件                    │   工具（9 个）          命令（1 个）          │
 │  ──────────────                │   ──────────           ──────────             │
-│  session_start   迁移+报告      │   memory_store        /memory:search         │
-│  before_agent_start 常驻注入    │   memory_search       /memory:stats          │
-│  session_before_compact 提取    │   memory_stats        /memory:prune          │
-│  session_shutdown 提取          │   memory_forget       /memory:digest         │
-│                                │   memory_recall       /memory:summary         │
+│  session_start   迁移+报告      │   memory_store        /memory search          │
+│  before_agent_start 常驻注入    │   memory_search       /memory stats           │
+│  session_before_compact 提取    │   memory_stats        /memory summary         │
+│  session_shutdown 提取          │   memory_forget       /memory prune           │
+│                                │   memory_recall       /memory cleanup         │
 │                                │   ctx_exec   (ctx-lite 迁移)                  │
-│                                │   ctx_note            /ctx-lite:status        │
-│                                │   ctx_list            /ctx-lite:cleanup       │
-│                                │   ctx_snap            /ctx-lite:forget        │
+│                                │   ctx_note            /memory cleanup --all   │
+│                                │   ctx_list            (并入 /memory)          │
+│                                │   ctx_snap            (并入 /memory)          │
 ├────────────────────────────────┴───────────────────────────────────────────────┤
 │  storage.ts   三库存储（entries/notes/summaries）+ 原子写 + v1→v2 迁移          │
 │  extract.ts   提取引擎（LLM 子进程、JSON 容错解析、幂等限频）                    │
@@ -126,14 +126,14 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 
 | 命令 | 功能 |
 |------|------|
-| `/memory:search <q> [--category=] [--limit=N]` | 搜索记忆 |
-| `/memory:stats` | 统计（条目/大小/摘要/被取代/冷数据） |
-| `/memory:prune` | 清理低价值记忆（需确认） |
-| `/memory:digest` | 手动触发当前会话提取 |
-| `/memory:summary [N]` | 查看会话摘要时间线 |
-| `/ctx-lite:status` | 笔记/检查点状态（兼容） |
-| `/ctx-lite:cleanup [--keep=N] [--dry-run]` | 清理（兼容） |
-| `/ctx-lite:forget` | 清空笔记+检查点（兼容） |
+| `/memory search <q> [--category=] [--limit=N]` | 搜索记忆 |
+| `/memory stats` | 统计（条目/大小/摘要/被取代/冷数据） |
+| `/memory summary [N]` | 查看会话摘要时间线 |
+| `/memory prune` | 清理低价值记忆（需确认） |
+| `/memory cleanup [--keep=N] [--dry-run]` | 清理过期笔记/旧检查点（承接 ctx-lite:cleanup） |
+| `/memory cleanup --all` | 清空笔记+检查点（承接 ctx-lite:forget） |
+
+> 精简说明：`/memory:digest` 已移除（compaction/会话结束时自动提取）；`/ctx-lite:*` 三个命令已并入 `/memory cleanup`。
 
 ---
 
@@ -169,7 +169,7 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 ```
 
 - 全部原子写（tmp + rename）
-- entries 上限 1 MB（超限提示 /memory:prune）
+- entries 上限 1 MB（超限提示 /memory prune）
 - 软删除 + superseded 链，统计保留
 - 首次启动自动从 `~/.pi/ctx-lite/` 迁移 notes + checkpoints
 
@@ -177,8 +177,8 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 
 ## 八、与 ctx-lite 的关系
 
-ctx-lite 已合并入 pi-memory 并删除：
-- 工具 `ctx_exec/ctx_note/ctx_list/ctx_snap` 与命令 `/ctx-lite:*` 全部保留（同名同行为）
+ctx-lite 已合并入 pi-memory：
+- 工具 `ctx_exec/ctx_note/ctx_list/ctx_snap` 全部保留（同名同行为）；命令 `/ctx-lite:*` 已并入 `/memory cleanup`（`/memory cleanup --all` 等价旧 `/ctx-lite:forget`）
 - 数据自动迁移（notes.json + checkpoints/ → `~/.pi/memory/`）
 - settings.json / tsconfig / conflict-check 已同步，无残留引用
 

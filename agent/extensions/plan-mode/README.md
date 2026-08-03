@@ -59,8 +59,8 @@
 | **追问保护** | Agent 已展示计划后，普通追问（why/what）不会误覆盖计划；只有显式修改请求才产生新版本 |
 | **影响分析** | Agent 在规划前必须分析受影响文件、评估风险 |
 | **Git 版本化** | 每次计划迭代自动保存到 `~/.pi/plans/plan-<timestamp>/plan.md`，带 git 历史 |
-| **Plan Diff** | `/plandiff` 命令通过 git diff 展示当前版本与上一版的差异 |
-| **讨论历史** | `/planqa` 命令回溯与该计划相关的完整问答上下文 |
+| **Plan Diff** | `/planview --diff` 通过 git diff 展示当前版本与上一版的差异 |
+| **讨论历史** | `/planview --qa` 回溯与该计划相关的完整问答上下文 |
 | **Ctrl+Alt+P 快捷键** | 快速切换规划模式 |
 | **`--plan` CLI 参数** | 启动时直接进入规划模式 |
 | **多阶段交互** | 用户三选一：执行计划 / 停留规划模式 / 精炼计划 |
@@ -533,18 +533,15 @@ async function savePlanIteration(planText: string, iteration: number): Promise<s
 
 git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...])`），不依赖 `execSync`。
 
-### `/plandiff` 命令
+### `/planview` 命令
 
 ```typescript
-// index.ts:250-275
-// 通过 runGit 执行 git diff HEAD~1..HEAD -- plan.md
-// 如果没有上一版本，回退到 git show --stat HEAD
-// 结果通过 customType: "plan-diff" 消息展示
+// index.ts
+// 默认: 读取 planDir/plan.md，通过 customType: "plan-view" 消息展示全文
+// --diff: 通过 runGit 执行 git diff HEAD~1..HEAD -- plan.md（无上一版本回退 git show --stat HEAD），
+//         结果以 customType: "plan-diff" 消息展示（原 /plandiff）
+// --qa: 回溯 qaMessages 数组中的用户-agent 问答对按时间展示（原 /planqa）
 ```
-
-### `/planqa` 命令
-
-回溯 `qaMessages` 数组中记录的所有用户-agent 问答对，按时间顺序展示。
 
 ---
 
@@ -554,11 +551,9 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 命令 | 描述 | 实现位置 |
 |------|------|----------|
-| `/plan` | 切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:180-182` |
+| `/plan` | 切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:218-221` |
 | `/todos` | 按状态分组显示所有计划任务 | `todo.ts` |
-| `/plandiff` | 显示当前与上一版本规划的差异 | `index.ts:192-220` |
-| `/planqa` | 显示当前规划讨论的问答历史 | `index.ts:222-248` |
-| `/planview` | 显示当前版本计划全文 | `index.ts` |
+| `/planview` | 显示当前版本计划全文；`--diff` 显示与上一版差异；`--qa` 显示问答历史 | `index.ts` |
 | `/planclear` | 清空所有计划任务（手动重置） | `index.ts` |
 | `/planresume` | 恢复执行模式，继续未完成的计划 | `index.ts` |
 
@@ -588,13 +583,13 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 快捷键 | 操作 | 实现位置 |
 |--------|------|----------|
-| `Ctrl+Alt+P` | 切换规划模式 | `index.ts:240-243` |
+| `Ctrl+Alt+P` | 切换规划模式 | `index.ts:343-345` |
 
 ### CLI 参数
 
 | 参数 | 描述 | 实现位置 |
 |------|------|----------|
-| `--plan` | 以规划模式启动（只读） | `index.ts:70-74` |
+| `--plan` | 以规划模式启动（只读） | `index.ts:102-104` |
 
 ---
 
@@ -662,8 +657,8 @@ pi --plan   # 以规划模式启动
 /plan       # 启用规划模式
 <探索代码>   # 进行只读分析
 /todos      # 查看当前待办
-/plandiff   # 查看计划变更历史
-/planqa     # 查看讨论上下文
+/planview --diff   # 查看计划变更历史
+/planview --qa     # 查看讨论上下文
 /planview   # 查看当前计划全文
 /plan       # 退出规划模式（任务保留）
 /planresume # 恢复执行模式
@@ -738,8 +733,8 @@ pi.on("agent_end", async (event, ctx) => {
 | 文件位置 | `packages/coding-agent/examples/extensions/plan-mode/` | `~/.pi/agent/extensions/plan-mode/` |
 | 用途 | 教学示例，展示扩展开发基础 | 实际运行版本，功能完整 |
 | Git 版本化 | 无 | 有 (savePlanIteration, git init/commit) |
-| `/plandiff` | 无 | 有 |
-| `/planqa` | 无 | 有 |
+| `/planview --diff` | 无 | 有 |
+| `/planview --qa` | 无 | 有 |
 | `isPlanRevisionIntent` | 无 | 有 |
 | Q&A 历史捕获 | 无 | 有 (`qaMessages`) |
 | `planPresented` 追踪 | 无 | 有 |
@@ -772,8 +767,8 @@ pi.on("agent_end", async (event, ctx) => {
 - 以结构化消息在聊天中展示
 
 ### 全局快捷键
-- `/plandiff` 绑定全局快捷键（如 Ctrl+Alt+D）
-- `/planqa` 绑定全局快捷键（如 Ctrl+Alt+Q）
+- `/planview --diff` 绑定全局快捷键（如 Ctrl+Alt+D）
+- `/planview --qa` 绑定全局快捷键（如 Ctrl+Alt+Q）
 - 快捷键在任何 mode 下都可用
 
 ---

@@ -267,64 +267,58 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     },
   });
 
-  pi.registerCommand("plandiff", {
-    description: "显示当前与上一版规划的差异",
-    handler: async (_args, ctx) => {
-      if (!planDir) {
-        ctx.ui.notify("没有可对比的计划。请先创建计划。", "info");
-        return;
-      }
-      const { stdout: diff, code } = await runGit(
-        pi,
-        planDir,
-        "git diff HEAD~1..HEAD -- plan.md 2>/dev/null || git show --stat HEAD",
-      );
-      if (code !== 0 && !diff.trim()) {
-        ctx.ui.notify("没有之前的版本来对比。", "info");
-        return;
-      }
-      if (!diff.trim()) {
-        ctx.ui.notify("与上一版无差异。", "info");
-        return;
-      }
-      pi.sendMessage(
-        {
-          customType: "plan-diff",
-          content: `**计划差异对比:**\n\n\`\`\`diff\n${diff.trim()}\n\`\`\``,
-          display: true,
-        },
-        { triggerTurn: false },
-      );
-    },
-  });
-
-  pi.registerCommand("planqa", {
-    description: "显示当前规划讨论的问答历史",
-    handler: async (_args, ctx) => {
-      if (qaMessages.length === 0) {
-        ctx.ui.notify("暂无问答历史。", "info");
-        return;
-      }
-      const history = qaMessages
-        .map(
-          (qa, i) =>
-            `**${qa.role === "user" ? "你" : "Agent"}:**\n${qa.content}`,
-        )
-        .join("\n\n---\n\n");
-      pi.sendMessage(
-        {
-          customType: "plan-qa-history",
-          content: `**计划问答历史 (${qaMessages.length} 条消息):**\n\n${history}`,
-          display: true,
-        },
-        { triggerTurn: false },
-      );
-    },
-  });
-
   pi.registerCommand("planview", {
-    description: "显示当前版本计划全文",
-    handler: async (_args, ctx) => {
+    description: "显示当前版本计划全文。--diff 显示与上一版差异，--qa 显示规划讨论问答历史。",
+    handler: async (args, ctx) => {
+      if (args.trim().includes("--diff")) {
+        if (!planDir) {
+          ctx.ui.notify("没有可对比的计划。请先创建计划。", "info");
+          return;
+        }
+        const { stdout: diff, code } = await runGit(
+          pi,
+          planDir,
+          "git diff HEAD~1..HEAD -- plan.md 2>/dev/null || git show --stat HEAD",
+        );
+        if (code !== 0 && !diff.trim()) {
+          ctx.ui.notify("没有之前的版本来对比。", "info");
+          return;
+        }
+        if (!diff.trim()) {
+          ctx.ui.notify("与上一版无差异。", "info");
+          return;
+        }
+        pi.sendMessage(
+          {
+            customType: "plan-diff",
+            content: `**计划差异对比:**\n\n\`\`\`diff\n${diff.trim()}\n\`\`\``,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+        return;
+      }
+      if (args.trim().includes("--qa")) {
+        if (qaMessages.length === 0) {
+          ctx.ui.notify("暂无问答历史。", "info");
+          return;
+        }
+        const history = qaMessages
+          .map(
+            (qa, i) =>
+              `**${qa.role === "user" ? "你" : "Agent"}:**\n${qa.content}`,
+          )
+          .join("\n\n---\n\n");
+        pi.sendMessage(
+          {
+            customType: "plan-qa-history",
+            content: `**计划问答历史 (${qaMessages.length} 条消息):**\n\n${history}`,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+        return;
+      }
       if (!planDir) {
         ctx.ui.notify("没有已保存的计划。请先创建计划。", "info");
         return;

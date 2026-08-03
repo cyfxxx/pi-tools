@@ -8,9 +8,6 @@ export default function (pi: ExtensionAPI) {
 	const MAX_TOOL_BYTES = 5000;
 	const KEEP_THINKING_TURNS = 2;
 
-	// R1（message_end 剥离 thinking）已移除：它在消息产生时无法判断新旧轮次，
-	// 与 R3「保留最近 KEEP_THINKING_TURNS 轮 thinking」矛盾。统一由 R3 在 context 阶段剪枝。
-
 	// R2/R3：context 阶段确定性过滤（结果每轮一致，不破坏缓存前缀）
 	pi.on("context", (event) => {
 		let messages = event.messages;
@@ -133,13 +130,5 @@ You have access to \`subagent\` tool with specialized agents (scout, planner, wo
 		return {
 			systemPrompt: event.systemPrompt + "\n\n" + delegationAdvice,
 		};
-	});
-
-	pi.registerCommand("ping", {
-		description: "检查 pi-context 是否生效",
-		usage: "/ping",
-		handler: (_args, ctx) => {
-			ctx.ui.notify("pong — pi-context active");
-		},
 	});
 }
