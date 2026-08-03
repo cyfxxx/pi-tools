@@ -196,6 +196,43 @@ describe('extract: extractConversation full flow', () => {
   })
 })
 
+describe('extract: pending queue (deferred shutdown extraction)', () => {
+  it('queue → file persisted; process consumes and removes on success', async () => {
+    const { queuePendingExtract, processPendingExtracts, listPendingExtracts } = await import('../extract.ts')
+    const file = queuePendingExtract([{ role: 'user', content: 'hi' }], 'sess-p1')
+    expect(file).toBeTruthy()
+    expect(listPendingExtracts()).toHaveLength(1)
+
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    const { ok, failed } = await processPendingExtracts({ runner })
+    expect(ok).toBe(1)
+    expect(failed).toBe(0)
+    expect(listPendingExtracts()).toHaveLength(0)
+  })
+
+  it('failed extraction keeps the queue entry for retry', async () => {
+    const { queuePendingExtract, processPendingExtracts, listPendingExtracts } = await import('../extract.ts')
+    queuePendingExtract([{ role: 'user', content: 'hi' }], 'sess-p2')
+    const runner: Runner = async () => ({ stdout: 'garbage', stderr: '', code: 0 })
+    const { ok, failed } = await processPendingExtracts({ runner })
+    expect(ok).toBe(0)
+    expect(failed).toBe(1)
+    expect(listPendingExtracts()).toHaveLength(1)
+  })
+
+  it('corrupted queue files are dropped without breaking the batch', async () => {
+    const { queuePendingExtract, processPendingExtracts, listPendingExtracts } = await import('../extract.ts')
+    queuePendingExtract([{ role: 'user', content: 'hi' }], 'sess-p3')
+    const { writeFileSync } = await import('node:fs')
+    writeFileSync(join(dir, 'pending-extracts', '0-corrupt.json'), 'not json')
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    const { ok, failed } = await processPendingExtracts({ runner })
+    expect(ok).toBe(1)
+    expect(failed).toBe(0)
+    expect(listPendingExtracts()).toHaveLength(0)
+  })
+})
+
 describe('extract: prompt building', () => {
   it('builds prompt with transcript and truncates beyond maxChars', async () => {
     const { buildExtractPrompt } = await import('../extract.ts')

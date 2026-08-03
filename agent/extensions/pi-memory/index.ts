@@ -10,7 +10,7 @@ import {
 import { registerTools } from './tools.ts'
 import { registerCommands } from './commands.ts'
 import { buildInjectionBlock } from './inject.ts'
-import { extractConversation, extractTextFromEntries } from './extract.ts'
+import { extractConversation, extractTextFromEntries, processPendingExtracts, queuePendingExtract } from './extract.ts'
 import { writeCompactionSnapshot } from './snapshot.ts'
 
 export default function (pi: ExtensionAPI): void {
@@ -31,6 +31,13 @@ export default function (pi: ExtensionAPI): void {
         saveNotes(notes)
       }
     }
+
+    // 消费上次退出时入队的延迟提取（后台执行，不阻塞启动）
+    void processPendingExtracts().then(({ ok, failed }) => {
+      if (ok > 0 && ctx.hasUI) {
+        ctx.ui.notify(`pi-memory: 已补提取 ${ok} 个待处理会话${failed > 0 ? `（${failed} 个失败保留）` : ''}`, 'info')
+      }
+    })
 
     if (noteCount > 0 && ctx.hasUI) {
       ctx.ui.notify(
@@ -62,18 +69,25 @@ export default function (pi: ExtensionAPI): void {
     void extractFromSession(ctx)
   })
 
-  // ── 会话结束: 提取 ──
-  pi.on('session_shutdown', async (_event, ctx) => {
-    await extractFromSession(ctx)
+  // ── 会话结束: 提取（入队延迟到下次启动，避免阻塞退出） ──
+  pi.on('session_shutdown', (_event, ctx) => {
+    // 提取子进程（spawn 的 pi -p）禁止再触发提取，斩断递归链
+    if (process.env.PI_MEMORY_EXTRACT === '1') return
+    const messages = extractTextFromEntries(extractBranch(ctx))
+    if (!messages.length) return
+    queuePendingExtract(messages, ctx.sessionManager.getSessionId() || null)
   })
+}
+
+function extractBranch(ctx: { sessionManager: { getSessionId(): string | null; getBranch(): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> } }): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> {
+  return ctx.sessionManager.getBranch()
 }
 
 async function extractFromSession(ctx: { sessionManager: { getSessionId(): string | null; getBranch(): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> } }): Promise<void> {
   // 提取子进程（spawn 的 pi -p）禁止再触发提取，斩断递归链
   if (process.env.PI_MEMORY_EXTRACT === '1') return
   const sessionId = ctx.sessionManager.getSessionId() || null
-  const branch = ctx.sessionManager.getBranch()
-  const messages = extractTextFromEntries(branch as Array<{ role?: string; content?: unknown; message?: { role?: string; content?: unknown } }>)
+  const messages = extractTextFromEntries(extractBranch(ctx))
   if (!messages.length) return
   await extractConversation(messages, { sessionId, messageCount: messages.length })
 }

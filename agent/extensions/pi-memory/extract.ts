@@ -301,6 +301,98 @@ export function markExtracted(sessionId: string, messageCount: number): void {
   lastTs.set(key, Date.now())
 }
 
+// ── 退出期提取队列（延迟到下次启动消费） ──
+// session_shutdown 时同步 spawn 提取子进程会阻塞退出（冷启动 ~19s + LLM 最长 60s）。
+// 改为：shutdown 时把 transcript 落盘（毫秒级），下次 session_start 后台消费，
+// 既保证退出零等待，又不丢提取。
+
+export const PENDING_DIR = join(DATA_DIR, 'pending-extracts')
+
+export interface PendingExtract {
+  sessionId: string
+  messageCount: number
+  createdAt: number
+  messages: ExtractMessage[]
+}
+
+export function queuePendingExtract(messages: ExtractMessage[], sessionId: string | null): string | null {
+  try {
+    mkdirSync(PENDING_DIR, { recursive: true })
+    const file = join(PENDING_DIR, `${Date.now()}-${sanitizeFile(sessionId || 'unknown')}.json`)
+    const job: PendingExtract = {
+      sessionId: sessionId || 'unknown',
+      messageCount: messages.length,
+      createdAt: Date.now(),
+      messages,
+    }
+    writeFileSync(file, JSON.stringify(job))
+    return file
+  } catch {
+    return null
+  }
+}
+
+function sanitizeFile(s: string): string {
+  return s.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60)
+}
+
+export function listPendingExtracts(): PendingExtract[] {
+  let files: string[] = []
+  try {
+    files = readdirSync(PENDING_DIR).filter(f => f.endsWith('.json'))
+  } catch {
+    return []
+  }
+  const jobs: PendingExtract[] = []
+  for (const f of files) {
+    try {
+      jobs.push(JSON.parse(readFileSync(join(PENDING_DIR, f), 'utf8')))
+    } catch { /* 跳过损坏文件 */ }
+  }
+  return jobs.sort((a, b) => a.createdAt - b.createdAt)
+}
+
+export function removePendingExtract(file: string): void {
+  try {
+    rmSync(join(PENDING_DIR, file), { force: true })
+  } catch { /* ignore */ }
+}
+
+// 消费所有 pending 提取（session_start 后台调用）。串行逐个提取，失败保留队列。
+export async function processPendingExtracts(opts: ExtractOptions = {}): Promise<{ ok: number; failed: number }> {
+  let listed: string[] = []
+  try {
+    listed = readdirSync(PENDING_DIR).filter(f => f.endsWith('.json')).sort()
+  } catch {
+    return { ok: 0, failed: 0 }
+  }
+  let ok = 0
+  let failed = 0
+  for (const file of listed) {
+    let job: PendingExtract
+    try {
+      job = JSON.parse(readFileSync(join(PENDING_DIR, file), 'utf8'))
+    } catch {
+      removePendingExtract(file)
+      continue
+    }
+    const outcome = await extractConversation(job.messages, {
+      sessionId: job.sessionId,
+      messageCount: job.messageCount,
+      maxChars: opts.maxChars,
+      timeoutMs: opts.timeoutMs,
+      runner: opts.runner,
+    })
+    if (outcome.ok) {
+      removePendingExtract(file)
+      ok++
+    } else {
+      failed++
+    }
+  }
+  return { ok, failed }
+}
+
 // ── 主流程 ──
 
 export interface ExtractOptions {

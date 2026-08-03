@@ -80,6 +80,11 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
     await releaseSessionLock()
   })
 
+  // 用户输入视为活动：正常对话/挂机不应被挂死判定重启
+  pi.on('input', async () => {
+    touchActivity()
+  })
+
   registerCommands(pi, scheduler)
   registerTools(pi)
 }
