@@ -2,20 +2,20 @@ import { truncateHead, truncateTail, type ExtensionAPI } from "@earendil-works/p
 import {
 	setContextWindow,
 	recordCacheUsage,
-} from "../../lib/context-budget.ts";
-import { makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
-import { pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
+} from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
+import { pruneThinkingBudget, pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
 import {
 	formatUsageSummary,
 	loadDiagLines,
 	recordAutoCompact,
+	recordPrune,
 	recordUsage,
 	type UsageRecord,
 } from "../../lib/usage-diag.ts";
 
 export default function (pi: ExtensionAPI) {
 	const MAX_TOOL_BYTES = 5000;
-	const KEEP_THINKING_TURNS = 2;
+	const MAX_OTHER_TOOL_BYTES = 20 * 1024;
 	// 按窗口比例自动压缩（见 lib/auto-compact.ts 说明）
 	const compactDecider = makeCompactDecider();
 
@@ -51,6 +51,7 @@ export default function (pi: ExtensionAPI) {
 		if (pruned.modified) {
 			messages = pruned.messages as typeof messages;
 			modified = true;
+			recordPrune(pruned.prunedTokens, pruned.prunedChars, pruned.prunedCount);
 		}
 
 		let latestSummaryIdx = -1;
@@ -72,38 +73,31 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 
-		const assistantIndices: number[] = [];
-		messages.forEach((m: any, i: number) => {
-			if (m.role === "assistant") assistantIndices.push(i);
-		});
-		if (assistantIndices.length > KEEP_THINKING_TURNS) {
-			const threshold = assistantIndices[assistantIndices.length - KEEP_THINKING_TURNS];
-			messages = messages.map((m: any, i: number) => {
-				if (i < threshold && m.role === "assistant" && Array.isArray(m.content)) {
-					const filtered = m.content.filter((b: any) => b.type !== "thinking");
-					if (filtered.length < m.content.length) {
-						modified = true;
-						return { ...m, content: filtered };
-					}
-				}
-				return m;
-			});
+		// thinking 保留按 token 预算（早期按"保留最近 2 轮"数量规则，max 推理级别
+		// 下单轮 reasoning 可达 5-10K，2 轮上限不可控）。改为保留最近
+		// KEEP_THINKING_TOKENS token 的 thinking：预算耗尽处及更早的全部删除。
+		// 确定性：判定只依赖消息内容，内容不变结果不变 → 缓存前缀稳定。
+		const thinking = pruneThinkingBudget(messages as PruneMessage[]);
+		if (thinking.modified) {
+			messages = thinking.messages as typeof messages;
+			modified = true;
 		}
-
 		if (modified) return { messages };
 	});
 
-	// R4：工具输出截断（确定性变换，稳定）
+	// R4：工具输出截断（确定性变换，稳定）。
+	// bash/read 输出上限 5KB（最常见的超大输出源）；其他工具 20KB 兜底
+	// （防止未来新工具输出失控直达上下文，子代理等合理输出不受影响）。
 	pi.on("tool_result", (event) => {
-		if (event.toolName !== "bash" && event.toolName !== "read") return;
+		const cap = event.toolName === "bash" || event.toolName === "read" ? MAX_TOOL_BYTES : MAX_OTHER_TOOL_BYTES;
 		const totalText = event.content
 			.filter((c: any) => c.type === "text")
 			.map((c: any) => c.text)
 			.join("");
-		if (Buffer.byteLength(totalText, "utf8") <= MAX_TOOL_BYTES) return;
+		if (Buffer.byteLength(totalText, "utf8") <= cap) return;
 
 		const truncate = event.toolName === "bash" ? truncateTail : truncateHead;
-		const result = truncate(totalText, { maxBytes: MAX_TOOL_BYTES });
+		const result = truncate(totalText, { maxBytes: cap });
 		const omittedBytes = Buffer.byteLength(totalText, "utf8") - result.outputBytes;
 
 		return {
@@ -188,6 +182,30 @@ export default function (pi: ExtensionAPI) {
 		);
 	});
 
+	// 会话恢复：历史全量重发前先检查是否已超压缩阈值。
+	// resume 大会话时上下文立即回到之前大小（如 300K），若等首轮 agent_end
+	// 再压缩会浪费一轮全量发送；此处无 agent 运行时直接压缩（abort 是 no-op）。
+	// 注意：compact() 会 emit session_compact，但 AutoContinueGate 未 arm →
+	// 不会触发自动继续（恢复后等待用户输入是正确行为）。
+	pi.on("session_start", (_event, ctx) => {
+		const usage = ctx.getContextUsage();
+		if (!usage || typeof usage.tokens !== "number" || usage.tokens <= 0) return;
+		const contextWindow = usage.contextWindow;
+		if (!contextWindow || contextWindow <= 0) return;
+
+		const decision = compactDecider.decide(usage.tokens, contextWindow);
+		if (!decision.shouldCompact) return;
+
+		recordAutoCompact(usage.tokens, decision.threshold);
+		compactDecider.markCompact();
+		ctx.compact({
+			onError: (err) => {
+				// 恢复时压缩失败不致命：首轮 agent_end 会再判定
+				console.error("pi-context: resume compact failed:", err);
+			},
+		});
+	});
+
 	// 用量诊断汇总（输出仅展示，已被 context 过滤排除）
 	pi.registerCommand("usage-diag", {
 		description: "显示会话 LLM 用量诊断（每轮 input/缓存/输出汇总）",
@@ -211,20 +229,25 @@ export default function (pi: ExtensionAPI) {
 	// 融合 pi-router：before_agent_start 注入主动路由策略 + 档位化压力提示
 	// 缓存友好原则：
 	//  - 静态的 delegationAdvice 在前（内容永不变化）
-	//  - 压力提示仅 high/critical 注入固定文案（档位跳变才改变 system prompt）
+	//  - 压力提示仅按档位注入固定文案（档位跳变才改变 system prompt）
 	//  - 无压力时 system prompt 与 pi 原生完全一致 → 消息历史缓存前缀稳定
+	// 档位基于 auto-compact 阈值比例（早期实现用 contextWindow 的 85%/95%，
+	// 但 auto-compact 在 20% 处先触发，85%/95% 永不达到 → 死代码）。
 	pi.on("before_agent_start", async (event, ctx) => {
 		const usage = ctx.getContextUsage();
 		let pressureLine = "";
 		if (usage && usage.contextWindow > 0 && typeof usage.tokens === "number") {
 			setContextWindow(usage.contextWindow);
-			const pct = Math.round((usage.tokens / usage.contextWindow) * 100);
-			if (pct >= 95) {
-				pressureLine =
-					"\n\n[上下文接近满（>95%）。请用 ctx_note 保存关键决策与进度，然后建议用户执行 /compact。]";
-			} else if (pct >= 85) {
-				pressureLine =
-					"\n\n[上下文压力较高（>85%）。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。]";
+			const threshold = computeCompactThreshold(usage.contextWindow);
+			if (threshold !== null && threshold > 0) {
+				const near = usage.tokens / threshold;
+				if (near >= 0.9) {
+					pressureLine =
+						"\n\n[上下文接近自动压缩阈值（90%）。请用 ctx_note 保存关键决策与进度；压缩会自动触发并继续。]";
+				} else if (near >= 0.75) {
+					pressureLine =
+						"\n\n[上下文接近自动压缩阈值（75%）。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。]";
+				}
 			}
 		}
 

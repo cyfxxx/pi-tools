@@ -97,7 +97,7 @@ describe('pi-context extension', () => {
     expect(result2.systemPrompt).toBe(result.systemPrompt)
   })
 
-  it('before_agent_start injects fixed pressure hint only at high usage', async () => {
+  it('before_agent_start injects fixed pressure hint at high usage relative to auto-compact threshold', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context/index')).default
     await main(pi as any)
@@ -107,13 +107,14 @@ describe('pi-context extension', () => {
       { systemPrompt: 'BASE' },
       { getContextUsage: () => ({ tokens: 50_000, contextWindow: 128_000, percent: 39 }) },
     )
-    expect(low.systemPrompt).not.toContain('上下文压力')
+    expect(low.systemPrompt).not.toContain('上下文接近自动压缩阈值')
 
+    // 128K 窗口 → 阈值 85% = 108,800；110K > 阈值 → 触发 90% 档位
     const high = await handler(
       { systemPrompt: 'BASE' },
       { getContextUsage: () => ({ tokens: 110_000, contextWindow: 128_000, percent: 86 }) },
     )
-    expect(high.systemPrompt).toContain('上下文压力较高')
+    expect(high.systemPrompt).toContain('上下文接近自动压缩阈值')
 
     // 档位文案固定：同一状态两次调用逐字节一致（无轮次动态数值）
     const high2 = await handler(
@@ -127,7 +128,7 @@ describe('pi-context extension', () => {
       { systemPrompt: 'BASE' },
       { getContextUsage: () => ({ tokens: 123_000, contextWindow: 128_000, percent: 96 }) },
     )
-    expect(crit.systemPrompt).toContain('接近满')
+    expect(crit.systemPrompt).toContain('上下文接近自动压缩阈值')
   })
 
   it('handles missing context usage gracefully (no injection)', async () => {
