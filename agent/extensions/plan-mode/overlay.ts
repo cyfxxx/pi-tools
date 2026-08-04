@@ -2,7 +2,7 @@ import type { ExtensionUIContext, Theme } from "@earendil-works/pi-coding-agent"
 import type { TUI } from "@earendil-works/pi-tui";
 import { getState } from "./store.ts";
 import { selectHasActive, selectOverlayLayout, selectTodoCounts } from "./selectors.ts";
-import { formatOverlayTaskLine, formatStatusLabel } from "./view.ts";
+import { formatStatusLabel } from "./view.ts";
 
 const WIDGET_KEY = "plan-todos";
 const MAX_WIDGET_LINES = 12;
@@ -28,7 +28,8 @@ export class TodoOverlay {
     const snapshot = this.getSnapshot();
     const visible = this.selectVisible(snapshot);
 
-    if (visible.length === 0) {
+    // opencode todos 行为：全部完成时整个面板隐藏（status bar 仍显示完成态）
+    if (visible.length === 0 || visible.every((t) => t.status === "completed")) {
       if (this.widgetRegistered) {
         this.uiCtx.setWidget(WIDGET_KEY, undefined);
         this.widgetRegistered = false;
@@ -126,7 +127,7 @@ export class TodoOverlay {
     const lines: string[] = [heading];
     const layout = selectOverlayLayout(overlayState, MAX_WIDGET_LINES - 1);
     for (const task of layout.visible) {
-      lines.push(`${theme.fg("dim", "├─")} ${formatOverlayTaskLine(task, theme)}`);
+      lines.push(this.formatCheckboxLine(task, theme));
     }
 
     for (const task of visible) {
@@ -136,8 +137,6 @@ export class TodoOverlay {
     }
 
     if (layout.hiddenCompleted === 0 && layout.truncatedTail === 0) {
-      const last = lines.length - 1;
-      lines[last] = lines[last].replace("├─", "└─");
       return this.withTrailingSpacer(lines);
     }
 
@@ -146,8 +145,30 @@ export class TodoOverlay {
     if (layout.hiddenCompleted > 0) parts.push(`${layout.hiddenCompleted} ${formatStatusLabel("completed")}`);
     if (layout.truncatedTail > 0) parts.push(`${layout.truncatedTail} ${formatStatusLabel("pending")}`);
     const summary = totalHidden > 0 ? `+${totalHidden} 更多 (${parts.join(", ")})` : `+${totalHidden} 更多`;
-    lines.push(`${theme.fg("dim", "└─")} ${theme.fg("dim", summary)}`);
+    lines.push(`${theme.fg("dim", summary)}`);
     return this.withTrailingSpacer(lines);
+  }
+
+  /** opencode todos 风格行：`[✓]`（完成/灰）/ `[•]`（进行中/黄）/ `[ ]`（待办/灰） */
+  private formatCheckboxLine(task: { id: number; subject: string; status: "pending" | "in_progress" | "completed" | "blocked" | "deleted"; activeForm?: string }, theme: Theme): string {
+    const check =
+      task.status === "completed"
+        ? "[✓]"
+        : task.status === "in_progress"
+          ? "[•]"
+          : task.status === "blocked"
+            ? "[⏸]"
+            : "[ ]";
+    const color = task.status === "in_progress" ? "warning" : "dim";
+    const subject =
+      task.subject.length > 60
+        ? `${task.subject.slice(0, 59)}…`
+        : task.subject;
+    let line = `${theme.fg(color, check)} ${theme.fg(color, subject)}`;
+    if (task.status === "in_progress" && task.activeForm) {
+      line += ` ${theme.fg("dim", `(${task.activeForm})`)}`;
+    }
+    return line;
   }
 
   private withTrailingSpacer(lines: string[]): string[] {

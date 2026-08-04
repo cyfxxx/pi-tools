@@ -17,7 +17,7 @@ report() {
 }
 
 cyn "== vitest 套件 =="
-for ext in pi-web-search pi-memory pi-autopilot pi-browser; do
+for ext in pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode; do
   if [ -d "$EXTS/$ext" ]; then
     (cd "$EXTS/$ext" && ./node_modules/.bin/vitest run >/dev/null 2>&1)
     report $? "$ext vitest"

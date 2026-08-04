@@ -147,7 +147,7 @@ async function main() {
       'admin:restart',
       'schedule',
       'memory',
-      'plan', 'planclear', 'planresume', 'planview', 'todos',
+      'plan', 'planclear', 'planresume', 'planview', 'todos', 'usage-diag',
     ]
     const actual = Object.keys(cmdMap).sort()
     for (const c of expected) {

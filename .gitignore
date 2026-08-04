@@ -67,3 +67,7 @@ agent/.pi-autopilot-config.json
 agent/.pi-autopilot-telemetry.json
 agent/.pi-autopilot-lastgood.json
 agent/.pi-autopilot-crash.json
+
+# pi-context 用量诊断运行时数据
+agent/.usage-diag.jsonl
+agent/extensions/*/node_modules

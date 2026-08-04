@@ -99,6 +99,13 @@ export function isSafeCommand(command: string): boolean {
 
 import type { Task } from "./state.ts";
 
+/** 任务名称截断：聊天/命令展示用，避免超长 subject 撑满界面 */
+export function truncateSubject(subject: string, max = 40): string {
+  const s = (subject || "").replace(/\s+/g, " ").trim();
+  if (s.length <= max) return s;
+  return `${s.slice(0, max - 1)}…`;
+}
+
 export function cleanStepText(text: string): string {
   let cleaned = text
     .replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1")
