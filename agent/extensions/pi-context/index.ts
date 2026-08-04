@@ -3,7 +3,8 @@ import {
 	setContextWindow,
 	recordCacheUsage,
 } from "../../lib/context-budget.ts";
-import { makeCompactDecider } from "../../lib/auto-compact.ts";
+import { makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
+import { pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
 import {
 	formatUsageSummary,
 	loadDiagLines,
@@ -17,6 +18,11 @@ export default function (pi: ExtensionAPI) {
 	const KEEP_THINKING_TURNS = 2;
 	// 按窗口比例自动压缩（见 lib/auto-compact.ts 说明）
 	const compactDecider = makeCompactDecider();
+
+	// 压缩后自动继续门（见 lib/auto-compact.ts AutoContinueGate）：
+	// ctx.compact() 触发的 session_compact reason 恒为 "manual"（无法与用户手动
+	// /compact 区分），用门判断"压缩完成后是否自动继续"。
+	const autoContinueGate = makeAutoContinueGate();
 
 	// 诊断类消息（/usage-diag 输出）只展示、不进 LLM 上下文
 	const DIAG_CUSTOM_TYPES = new Set(["usage-diag"]);
@@ -37,6 +43,15 @@ export default function (pi: ExtensionAPI) {
 			filteredMessages.push(m);
 		}
 		if (modified) messages = filteredMessages;
+
+		// Prune：工具输出分层擦除（借鉴 opencode，零 LLM 成本）。
+		// 最近 2 轮 + 40K 保护带内保留，更早的旧工具输出替换为占位；
+		// 回收 <20K 不应用。判定确定性、擦除点单调后移 → 缓存前缀稳定。
+		const pruned = pruneToolResults(messages as PruneMessage[]);
+		if (pruned.modified) {
+			messages = pruned.messages as typeof messages;
+			modified = true;
+		}
 
 		let latestSummaryIdx = -1;
 		for (let i = messages.length - 1; i >= 0; i--) {
@@ -146,12 +161,31 @@ export default function (pi: ExtensionAPI) {
 
 		recordAutoCompact(usage.tokens, decision.threshold);
 		compactDecider.markCompact();
+		autoContinueGate.arm();
 		ctx.compact({
 			onError: (err) => {
+				autoContinueGate.disarm();
 				// 压缩失败不致命：内置 96.7 万兜底仍在
 				console.error("pi-context: auto-compact failed:", err);
 			},
 		});
+	});
+
+	// 压缩完成后自动继续（借鉴 opencode compaction.autocontinue）：
+	// 压缩会 abort 当前 agent，运行已结束；session_compact 由 compact() 内部 emitted，
+	// 此时注入继续指令并启动新一轮。
+	// 防递归：180s cooldown 保证新轮结束不会立刻再次压缩。
+	pi.on("session_compact", () => {
+		if (!autoContinueGate.shouldContinue()) return;
+		pi.sendMessage(
+			{
+				customType: "continue-after-compact",
+				content:
+					"上下文已自动压缩。如果你还有下一步行动，请继续执行；如果已完成或不确定，请停下来向用户说明。",
+				display: true,
+			},
+			{ triggerTurn: true },
+		);
 	});
 
 	// 用量诊断汇总（输出仅展示，已被 context 过滤排除）
