@@ -153,3 +153,56 @@ export function pruneToolResults(
 
   return { messages: next, modified: true, prunedCount: toPrune.length, prunedTokens, prunedChars };
 }
+
+/**
+ * Thinking 保留预算：从后往前累计 assistant 消息的 thinking token，
+ * 预算耗尽处及更早的 thinking 块全部删除（保留消息其余内容）。
+ * 确定性：判定只依赖消息内容，内容不变结果不变 → 缓存前缀稳定。
+ * 默认预算与 pi-context 的 KEEP_THINKING_TOKENS 一致。
+ */
+export const DEFAULT_KEEP_THINKING_TOKENS = 16_000;
+
+export function pruneThinkingBudget(input: PruneMessage[], budgetTokens = DEFAULT_KEEP_THINKING_TOKENS): PruneResult {
+  const n = input.length;
+  let thinkingBudget = budgetTokens;
+  let cutoff = -1;
+  for (let i = n - 1; i >= 0; i--) {
+    const m = input[i];
+    if (m.role !== "assistant" || !Array.isArray(m.content)) continue;
+    const thinkingText = (m.content as { type?: string; thinking?: string }[])
+      .filter((b) => b && b.type === "thinking" && typeof b.thinking === "string")
+      .map((b) => b.thinking as string)
+      .join("\n");
+    const t = estimateTokens(thinkingText);
+    if (t === 0) continue;
+    if (thinkingBudget - t < 0) {
+      cutoff = i;
+      break;
+    }
+    thinkingBudget -= t;
+  }
+  if (cutoff < 0) {
+    return { messages: input, modified: false, prunedCount: 0, prunedTokens: 0, prunedChars: 0 };
+  }
+
+  let removedChars = 0;
+  const next = input.map((m, i) => {
+    if (i > cutoff || m.role !== "assistant" || !Array.isArray(m.content)) return m;
+    const filtered = (m.content as { type?: string; thinking?: string }[]).filter((b) => {
+      if (b && b.type === "thinking") {
+        removedChars += typeof b.thinking === "string" ? b.thinking.length : 0;
+        return false;
+      }
+      return true;
+    });
+    return { ...m, content: filtered };
+  });
+
+  return {
+    messages: next,
+    modified: true,
+    prunedCount: 1,
+    prunedTokens: Math.ceil(removedChars / 4),
+    prunedChars: removedChars,
+  };
+}

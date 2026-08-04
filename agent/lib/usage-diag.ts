@@ -29,7 +29,15 @@ export interface AutoCompactEvent {
   threshold: number;
 }
 
-export type DiagLine = UsageRecord | AutoCompactEvent;
+export interface PruneEvent {
+  type: "prune";
+  ts: number;
+  prunedTokens: number;
+  prunedChars: number;
+  prunedCount: number;
+}
+
+export type DiagLine = UsageRecord | AutoCompactEvent | PruneEvent;
 
 const DIAG_FILE = join(homedir(), ".pi", "agent", ".usage-diag.jsonl");
 const MAX_LINES = 20_000;
@@ -49,6 +57,15 @@ export function recordUsage(record: UsageRecord): void {
 export function recordAutoCompact(contextTokens: number, threshold: number): void {
   try {
     const event: AutoCompactEvent = { type: "auto-compact", ts: Date.now(), contextTokens, threshold };
+    appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
+  } catch {
+    // ignore
+  }
+}
+
+export function recordPrune(prunedTokens: number, prunedChars: number, prunedCount: number): void {
+  try {
+    const event: PruneEvent = { type: "prune", ts: Date.now(), prunedTokens, prunedChars, prunedCount };
     appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
   } catch {
     // ignore
@@ -129,6 +146,15 @@ export function formatUsageSummary(lines: DiagLine[]): string {
         )} @ 阈值 ${fmt((compactEvents[compactEvents.length - 1] as AutoCompactEvent).threshold)}）`
       : "  自动压缩触发: 0 次";
 
+  const pruneEvents = lines.filter((l) => "type" in l && l.type === "prune") as PruneEvent[];
+  const prunedTotal = pruneEvents.reduce((s, e) => s + e.prunedTokens, 0);
+  const pruneLine =
+    pruneEvents.length > 0
+      ? `  分层擦除: ${pruneEvents.length} 次 · 累计回收 ${fmt(prunedTotal)} token · 最近 ${fmt(
+          pruneEvents[pruneEvents.length - 1].prunedTokens,
+        )}`
+      : "  分层擦除: 0 次（上下文未超过保护带）";
+
   return [
     "=== 会话用量诊断 ===",
     `请求数: ${summary.requests}`,
@@ -136,6 +162,7 @@ export function formatUsageSummary(lines: DiagLine[]): string {
     `缓存命中: ${fmt(summary.cacheReadTotal)} (${summary.cacheHitRatio}%)`,
     `输出: ${fmt(summary.outputTotal)}（其中 reasoning ${fmt(summary.reasoningTotal)}）`,
     compactLines,
+    pruneLine,
     `最近 ${Math.min(20, summary.recentTrend.length)} 轮总输入(contextTokens):`,
     `  ${trend.trim()}`,
     "注: 平台统计量 = 输入未命中 + 缓存命中 + 输出；缓存命中按低价计费。",

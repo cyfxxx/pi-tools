@@ -4,7 +4,14 @@
  * 背景：pi 内置 shouldCompact 阈值 = contextWindow - settings.reserveTokens，
  * 对 1M 窗口模型（deepseek-v4-flash）阈值高达 96.7 万 token，自动压缩形同虚设，
  * 会话每轮全量重发持续膨胀，平台 token 统计量远超及时压缩的工具。
- * 这里按窗口比例给出合理阈值，由扩展在 turn_end 触发 ctx.compact()。
+ * 这里按窗口比例给出合理阈值，由扩展在 agent_end 触发 ctx.compact()。
+ *
+ * 阈值选择依据（2026-08 长任务实测：缓存命中率 86%，deepseek 缓存命中价格
+ * 为输入的 1/50）：
+ *  - 每轮全量重发的 cacheRead 成本可忽略 → 晚压缩更优（模型视野更大、压缩次数更少）
+ *  - 窗口 > 256K（如 deepseek-v4-flash 1M）：40% 触发（压缩间隔 ~360K 增长，
+ *    远低于早期 20% 的频繁压缩；400K 离 1M 上限仍有 60% 余量）
+ *  - 窗口 ≤ 256K（如 local-llama 131K）：85% 触发，接近原生压缩行为
  */
 
 export type CompactReason = "over-threshold" | "cooldown" | "no-window";
@@ -16,10 +23,10 @@ export interface CompactDecision {
   reason: CompactReason;
 }
 
-// 窗口 > 256K（如 deepseek-v4-flash 1M）：20% 触发，封顶每轮发送量
+// 窗口 > 256K（如 deepseek-v4-flash 1M）：40% 触发
 // 窗口 ≤ 256K（如 local-llama 131K）：85% 触发，接近原生压缩行为
 export const LARGE_WINDOW_SIZE = 256_000;
-export const LARGE_WINDOW_RATIO = 0.2;
+export const LARGE_WINDOW_RATIO = 0.4;
 export const SMALL_WINDOW_RATIO = 0.85;
 export const DEFAULT_COOLDOWN_MS = 180_000;
 

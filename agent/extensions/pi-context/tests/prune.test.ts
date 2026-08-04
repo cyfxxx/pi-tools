@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   pruneToolResults,
+  pruneThinkingBudget,
   PRUNE_PROTECT_TOKENS,
   PRUNE_MINIMUM_TOKENS,
   KEEP_RECENT_TURNS,
@@ -106,5 +107,58 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(PRUNE_PROTECT_TOKENS).toBe(40_000)
     expect(PRUNE_MINIMUM_TOKENS).toBe(20_000)
     expect(KEEP_RECENT_TURNS).toBe(2)
+  })
+})
+
+describe('pruneThinkingBudget: thinking 按 token 预算保留', () => {
+  function assistantWithThinking(thinking: string, text = '回复'): PruneMessage {
+    return { role: 'assistant', content: [{ type: 'thinking', thinking }, { type: 'text', text }] }
+  }
+  function user(): PruneMessage {
+    return { role: 'user', content: [{ type: 'text', text: '用户消息' }] }
+  }
+
+  it('预算内（thinking 总量 < 预算）→ 不修改', () => {
+    const msgs = [user(), assistantWithThinking('x'.repeat(1000)), assistantWithThinking('y'.repeat(2000))]
+    const r = pruneThinkingBudget(msgs, 16_000)
+    expect(r.modified).toBe(false)
+  })
+
+  it('超预算 → 预算耗尽处及更早的 thinking 删除，保留 text 块', () => {
+    // 3 条 assistant，各 20K 字符 thinking ≈ 5K token；预算 8K 只够 1 条
+    const msgs = [
+      user(),
+      assistantWithThinking('a'.repeat(20_000), '回复1'),
+      assistantWithThinking('b'.repeat(20_000), '回复2'),
+      assistantWithThinking('c'.repeat(20_000), '回复3'),
+    ]
+    const r = pruneThinkingBudget(msgs, 8_000)
+    expect(r.modified).toBe(true)
+    const contents = r.messages.map((m) => (Array.isArray(m.content) ? m.content : []))
+    // 最近一条（index 3）完整保留
+    expect(contents[3].filter((b) => b.type === 'thinking')).toHaveLength(1)
+    // index 1、2 的 thinking 被删除，text 保留
+    expect(contents[1].filter((b) => b.type === 'thinking')).toHaveLength(0)
+    expect(contents[1].some((b) => b.type === 'text' && b.text === '回复1')).toBe(true)
+    expect(contents[2].filter((b) => b.type === 'thinking')).toHaveLength(0)
+    expect(contents[2].some((b) => b.type === 'text' && b.text === '回复2')).toBe(true)
+    // 非 assistant 消息不受影响
+    expect(r.messages[0].role).toBe('user')
+  })
+
+  it('预算刚好覆盖多条时按从后往前累计', () => {
+    const big = [assistantWithThinking('c'.repeat(10_000)), assistantWithThinking('d'.repeat(10_000))]
+    // 每条 10K 字符 ≈ 2500 token；预算 3000 只够保留最近 1 条
+    const r = pruneThinkingBudget(big, 3_000)
+    expect(r.modified).toBe(true)
+    const contents = r.messages.map((m) => (Array.isArray(m.content) ? m.content : []))
+    expect(contents[1].filter((b) => b.type === 'thinking')).toHaveLength(1)
+    expect(contents[0].filter((b) => b.type === 'thinking')).toHaveLength(0)
+  })
+
+  it('无 thinking 的消息序列 → 不修改', () => {
+    const msgs = [user(), { role: 'assistant', content: [{ type: 'text', text: '回复' }] }]
+    const r = pruneThinkingBudget(msgs, 1_000)
+    expect(r.modified).toBe(false)
   })
 })
