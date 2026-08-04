@@ -68,3 +68,47 @@ export function makeCompactDecider(cooldownMs = DEFAULT_COOLDOWN_MS): CompactDec
     },
   };
 }
+
+/**
+ * 压缩后自动继续门（借鉴 opencode compaction.autocontinue）
+ *
+ * 场景：本扩展触发 ctx.compact() 后（agent_end），压缩完成由 session_compact
+ * 事件通知。此时应注入"继续指令"启动新一轮，让长任务不断裂。
+ * 问题：ctx.compact() 触发的 session_compact reason 恒为 "manual"，无法与用户
+ * 手动 /compact 区分。这里用一个门：本扩展触发压缩时 arm()，压缩失败时
+ * disarm()；session_compact 回调里 shouldContinue() 返回 true 则自动继续并自动 disarm。
+ * enabled=false 时直接拒绝（可做配置开关，当前默认开启）。
+ */
+export interface AutoContinueGate {
+  readonly enabled: boolean;
+  readonly armed: boolean;
+  /** 本扩展触发压缩时调用（压缩开始前） */
+  arm(): void;
+  /** 压缩失败/异常时调用（放弃自动继续） */
+  disarm(): void;
+  /** session_compact 回调：若是本扩展触发的且开启 → disarm 并返回 true */
+  shouldContinue(): boolean;
+}
+
+export function makeAutoContinueGate(enabled = true): AutoContinueGate {
+  let armed = false;
+  return {
+    get enabled() {
+      return enabled;
+    },
+    get armed() {
+      return armed;
+    },
+    arm(): void {
+      armed = enabled;
+    },
+    disarm(): void {
+      armed = false;
+    },
+    shouldContinue(): boolean {
+      if (!armed) return false;
+      armed = false;
+      return enabled;
+    },
+  };
+}

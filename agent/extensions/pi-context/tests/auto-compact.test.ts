@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   computeCompactThreshold,
   makeCompactDecider,
+  makeAutoContinueGate,
   LARGE_WINDOW_SIZE,
   LARGE_WINDOW_RATIO,
   SMALL_WINDOW_RATIO,
@@ -78,5 +79,43 @@ describe('auto-compact: 判定与防抖', () => {
     const decision = d.decide(500_000, 0, now)
     expect(decision.shouldCompact).toBe(false)
     expect(decision.reason).toBe('no-window')
+  })
+})
+
+describe('auto-continue gate: 压缩后自动继续', () => {
+  it('默认 arm 后 shouldContinue 返回 true（压缩成功 → 自动继续）', () => {
+    const g = makeAutoContinueGate()
+    expect(g.armed).toBe(false)
+    g.arm()
+    expect(g.armed).toBe(true)
+    expect(g.shouldContinue()).toBe(true)
+    expect(g.armed).toBe(false) // 一次性
+  })
+
+  it('未 arm（如手动 /compact）→ shouldContinue 返回 false', () => {
+    const g = makeAutoContinueGate()
+    expect(g.shouldContinue()).toBe(false)
+  })
+
+  it('压缩失败 disarm 后不再自动继续', () => {
+    const g = makeAutoContinueGate()
+    g.arm()
+    g.disarm()
+    expect(g.shouldContinue()).toBe(false)
+    expect(g.armed).toBe(false)
+  })
+
+  it('enabled=false 时 arm 无效（开关关闭）', () => {
+    const g = makeAutoContinueGate(false)
+    g.arm()
+    expect(g.armed).toBe(false)
+    expect(g.shouldContinue()).toBe(false)
+  })
+
+  it('连续两次 shouldContinue 只返回一次 true', () => {
+    const g = makeAutoContinueGate()
+    g.arm()
+    expect(g.shouldContinue()).toBe(true)
+    expect(g.shouldContinue()).toBe(false)
   })
 })
