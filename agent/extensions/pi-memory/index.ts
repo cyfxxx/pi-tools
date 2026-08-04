@@ -33,9 +33,12 @@ export default function (pi: ExtensionAPI): void {
     }
 
     // 消费上次退出时入队的延迟提取（后台执行，不阻塞启动）
+    // 注意：异步回调里不可用 ctx（session 可能已被替换 → stale ctx 抛错），先捕获 hasUI
+    const hasUI = ctx.hasUI
+    const notify = ctx.ui?.notify
     void processPendingExtracts().then(({ ok, failed }) => {
-      if (ok > 0 && ctx.hasUI) {
-        ctx.ui.notify(`pi-memory: 已补提取 ${ok} 个待处理会话${failed > 0 ? `（${failed} 个失败保留）` : ''}`, 'info')
+      if (ok > 0 && hasUI && notify) {
+        notify(`pi-memory: 已补提取 ${ok} 个待处理会话${failed > 0 ? `（${failed} 个失败保留）` : ''}`, 'info')
       }
     })
 

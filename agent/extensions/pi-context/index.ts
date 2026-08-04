@@ -3,15 +3,40 @@ import {
 	setContextWindow,
 	recordCacheUsage,
 } from "../../lib/context-budget.ts";
+import { makeCompactDecider } from "../../lib/auto-compact.ts";
+import {
+	formatUsageSummary,
+	loadDiagLines,
+	recordAutoCompact,
+	recordUsage,
+	type UsageRecord,
+} from "../../lib/usage-diag.ts";
 
 export default function (pi: ExtensionAPI) {
 	const MAX_TOOL_BYTES = 5000;
 	const KEEP_THINKING_TURNS = 2;
+	// 按窗口比例自动压缩（见 lib/auto-compact.ts 说明）
+	const compactDecider = makeCompactDecider();
+
+	// 诊断类消息（/usage-diag 输出）只展示、不进 LLM 上下文
+	const DIAG_CUSTOM_TYPES = new Set(["usage-diag"]);
 
 	// R2/R3：context 阶段确定性过滤（结果每轮一致，不破坏缓存前缀）
 	pi.on("context", (event) => {
 		let messages = event.messages;
 		let modified = false;
+
+		// 诊断类 custom 消息（/usage-diag 输出）仅展示，不进 LLM 上下文
+		const filteredMessages: typeof messages = [];
+		for (const m of messages) {
+			const customType = (m as any).customType;
+			if (customType && DIAG_CUSTOM_TYPES.has(customType)) {
+				modified = true;
+				continue;
+			}
+			filteredMessages.push(m);
+		}
+		if (modified) messages = filteredMessages;
 
 		let latestSummaryIdx = -1;
 		for (let i = messages.length - 1; i >= 0; i--) {
@@ -85,6 +110,68 @@ export default function (pi: ExtensionAPI) {
 			typeof usage.cacheReadTokens === "number" ? usage.cacheReadTokens : undefined,
 			typeof usage.cacheWriteTokens === "number" ? usage.cacheWriteTokens : undefined,
 		);
+	});
+
+	// 每轮用量记录 + 按窗口比例自动压缩
+	// 根因修复：pi 内置压缩阈值 = 窗口 - reserveTokens，对 1M 窗口模型高达 96.7 万，
+	// 会话每轮全量重发持续膨胀。这里在 20%（大窗口）/85%（小窗口）处主动触发压缩。
+	// 注意：ctx.compact() 会 abort 当前 agent 运行，因此判定放在 agent_end（run 结束）而非 turn_end。
+	pi.on("turn_end", (event) => {
+		const usage = (event as { message?: { usage?: Partial<UsageRecord> & { input?: number; cacheRead?: number } } }).message?.usage;
+		if (!usage || typeof usage.input !== "number") return;
+
+		const input = usage.input || 0;
+		const cacheRead = usage.cacheRead || 0;
+		recordUsage({
+			ts: Date.now(),
+			input,
+			cacheRead,
+			cacheWrite: usage.cacheWrite || 0,
+			output: usage.output || 0,
+			reasoning: usage.reasoning || 0,
+			total: usage.total || 0,
+			contextTokens: input + cacheRead,
+			compacted: false,
+		});
+	});
+
+	pi.on("agent_end", (_event, ctx) => {
+		const usage = ctx.getContextUsage();
+		if (!usage || typeof usage.tokens !== "number" || usage.tokens <= 0) return;
+		const contextWindow = usage.contextWindow;
+		if (!contextWindow || contextWindow <= 0) return;
+
+		const decision = compactDecider.decide(usage.tokens, contextWindow);
+		if (!decision.shouldCompact) return;
+
+		recordAutoCompact(usage.tokens, decision.threshold);
+		compactDecider.markCompact();
+		ctx.compact({
+			onError: (err) => {
+				// 压缩失败不致命：内置 96.7 万兜底仍在
+				console.error("pi-context: auto-compact failed:", err);
+			},
+		});
+	});
+
+	// 用量诊断汇总（输出仅展示，已被 context 过滤排除）
+	pi.registerCommand("usage-diag", {
+		description: "显示会话 LLM 用量诊断（每轮 input/缓存/输出汇总）",
+		handler: async (_args, ctx) => {
+			const content = formatUsageSummary(loadDiagLines());
+			ctx.ui.notify(
+				`usage-diag: ${content.split("\n").length} 行，已发送到聊天（不进 LLM 上下文）。`,
+				"info",
+			);
+			pi.sendMessage(
+				{
+					customType: "usage-diag",
+					content,
+					display: true,
+				},
+				{ triggerTurn: false },
+			);
+		},
 	});
 
 	// 融合 pi-router：before_agent_start 注入主动路由策略 + 档位化压力提示

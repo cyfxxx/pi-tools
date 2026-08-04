@@ -1,0 +1,17 @@
+{
+  "name": "plan-mode",
+  "version": "2.0.0",
+  "private": true,
+  "description": "计划模式扩展 — 只读规划 / 计划追踪 / 进度展示",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

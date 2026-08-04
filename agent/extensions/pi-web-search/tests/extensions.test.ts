@@ -64,12 +64,13 @@ describe('pi-context extension', () => {
     expect(events).toContain('before_agent_start')
   })
 
-  it('does not register tools or commands', async () => {
+  it('does not register tools; registers only the usage-diag command', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context/index')).default
     await main(pi as any)
     expect(pi.registerTool).not.toHaveBeenCalled()
-    expect(pi.registerCommand).not.toHaveBeenCalled()
+    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
+    expect(cmdNames).toEqual(['usage-diag'])
   })
 
   it('before_agent_start does not change systemPrompt when context is idle (cache-friendly)', async () => {

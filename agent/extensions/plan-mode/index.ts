@@ -11,6 +11,7 @@ import {
   extractTodoItems,
   isPlanRevisionIntent,
   isSafeCommand,
+  truncateSubject,
 } from "./utils.ts";
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
 import { loadNotes, clearCompactionFlag } from "../../lib/note-store.ts";
@@ -18,6 +19,7 @@ import { loadNotes, clearCompactionFlag } from "../../lib/note-store.ts";
 import { type Task, applyTaskMutation } from "./state.ts";
 import { getState, commitState, replaceState, resetState } from "./store.ts";
 import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
+import { formatPlanMessageLine } from "./view.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
@@ -259,7 +261,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       pi.sendMessage(
         {
           customType: "plan-mode-execute",
-          content: `继续执行计划。剩余 ${remaining.length} 步，从以下步骤开始: ${first.subject}`,
+          content: `继续执行计划。剩余 ${remaining.length} 步，从以下步骤开始: ${truncateSubject(first.subject)}`,
           display: true,
         },
         { triggerTurn: true },
@@ -370,6 +372,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     "plan-complete",
     "plan-revise",
     "plan-todo-list",
+    "plan-progress",
   ]);
 
   pi.on("context", async (event) => {
@@ -563,6 +566,30 @@ ${todoList}
     if (!executionMode) return;
     if (!isAssistantMessage(event.message)) return;
 
+    // 实时进度：任务状态变化时发一条精简进度消息（仅保留最新，不刷屏）
+    const state = getState();
+    const currentHash = todoHash();
+    if (currentHash !== knownTodoHash) {
+      knownTodoHash = currentHash;
+      const visible = state.tasks.filter((t) => t.status !== "deleted");
+      if (visible.length > 0) {
+        const counts = selectTodoCounts(state);
+        const lines = visible
+          .filter((t) => t.status === "in_progress" || t.status === "completed")
+          .map((t) => formatPlanMessageLine(t));
+        const remaining = counts.total - counts.completed;
+        const tail = remaining > 0 ? `\n剩余 ${remaining} 步` : "";
+        pi.sendMessage(
+          {
+            customType: "plan-progress",
+            content: `**计划进度 (${counts.completed}/${counts.total}):**\n${lines.join("\n") || "(无进行中步骤)"}${tail}`,
+            display: true,
+          },
+          { triggerTurn: false },
+        );
+      }
+    }
+
     updateStatus(ctx);
     todoOverlay?.update();
     persistState();
@@ -611,7 +638,7 @@ ${todoList}
       const state = getState();
       const visible = state.tasks.filter((t) => t.status !== "deleted");
       if (visible.length > 0 && visible.every((t) => t.status === "completed")) {
-        const completedList = visible.map((t) => `~~${t.subject}~~`).join("\n");
+        const completedList = visible.map((t) => `~~${truncateSubject(t.subject)}~~`).join("\n");
         pi.sendMessage(
           {
             customType: "plan-complete",
@@ -701,13 +728,12 @@ ${todoList}
 
     // Show plan steps (仅在计划有变化时展示，避免重复刷屏)
     if (visible.length > 0) {
-      const todoListText = visible
-        .map((t) => `${t.id}. ☐ ${t.subject}`)
-        .join("\n");
+      const counts = selectTodoCounts(state);
+      const todoListText = visible.map((t) => formatPlanMessageLine(t)).join("\n");
       pi.sendMessage(
         {
           customType: "plan-todo-list",
-          content: `**计划步骤 (${visible.length}):**\n\n${todoListText}`,
+          content: `**计划步骤 (${counts.completed}/${counts.total}):**\n\n${todoListText}`,
           display: true,
         },
         { triggerTurn: false },
@@ -733,7 +759,7 @@ ${todoList}
       const firstTask = visible[0];
       const execMessage =
         firstTask
-          ? `执行计划。从以下步骤开始: ${firstTask.subject}`
+          ? `执行计划。从以下步骤开始: ${truncateSubject(firstTask.subject)}`
           : "执行你刚创建的计划。";
       pi.sendMessage(
         {

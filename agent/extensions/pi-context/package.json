@@ -1,0 +1,17 @@
+{
+  "name": "pi-context",
+  "version": "2.0.0",
+  "private": true,
+  "description": "上下文效率扩展 — 确定性过滤 / 工具输出截断 / 缓存统计 / 按窗口比例自动压缩 / 用量诊断",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

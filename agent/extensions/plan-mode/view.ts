@@ -68,6 +68,18 @@ export function formatCommandTaskLine(t: Task, glyph: string): string {
   return `  ${glyph} #${t.id} ${t.subject}${form}`;
 }
 
+/** 聊天消息里的计划步骤行：opencode todos 风格勾选 + 截断名称 + 进行中表单 */
+export function formatPlanMessageLine(t: Task, maxSubject = 40): string {
+  const check =
+    t.status === "completed" ? "[✓]" : t.status === "in_progress" ? "[•]" : t.status === "blocked" ? "[⏸]" : "[ ]";
+  const subject =
+    t.subject.length > maxSubject
+      ? `${t.subject.slice(0, maxSubject - 1)}…`
+      : t.subject;
+  const form = t.status === "in_progress" && t.activeForm ? ` (${t.activeForm})` : "";
+  return `${t.id}. ${check} ${subject}${form}`;
+}
+
 export function formatListLine(t: Task): string {
   const form = t.status === "in_progress" && t.activeForm ? ` (${t.activeForm})` : "";
   return `[${STATUS_LABEL[t.status]}] #${t.id} ${t.subject}${form}`;
