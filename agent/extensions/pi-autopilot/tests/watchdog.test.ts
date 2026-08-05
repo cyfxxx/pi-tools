@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll, beforeEach } from 'vitest'
-import { mkdtemp, rm, writeFile } from 'fs/promises'
+import { mkdir, mkdtemp, rm, utimes, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -32,6 +32,30 @@ describe('watchdog', () => {
   it('no hanging when threshold disabled', async () => {
     touchActivity()
     expect(await isHanging(0, Date.now() + 1000000)).toBe(false)
+  })
+
+  it('not hanging right after startup even if old session files exist', async () => {
+    // 复现 bug：启动初期 lastActivity 新鲜，但会话文件还是旧文件的 mtime
+    const oldDir = join(TEST_DIR, 'sessions', '--stale-cwd--')
+    await mkdir(oldDir, { recursive: true })
+    const oldFile = join(oldDir, 'old.jsonl')
+    await writeFile(oldFile, '')
+    const longAgo = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+    await utimes(oldFile, longAgo, longAgo)
+    touchActivity()
+    expect(await isHanging(5, Date.now() + 60 * 1000)).toBe(false)
+  })
+
+  it('hanging only when both activity idle AND session file stale', async () => {
+    const oldDir = join(TEST_DIR, 'sessions', '--stale-cwd-2--')
+    await mkdir(oldDir, { recursive: true })
+    const oldFile = join(oldDir, 'old.jsonl')
+    await writeFile(oldFile, '')
+    const longAgo = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+    await utimes(oldFile, longAgo, longAgo)
+    touchActivity()
+    // lastActivity 超时 + 会话文件同样陈旧 → 挂死
+    expect(await isHanging(5, Date.now() + 10 * 60 * 1000)).toBe(true)
   })
 
   it('triggerHangRecovery writes restart state and returns true', async () => {
