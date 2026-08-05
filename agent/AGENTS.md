@@ -19,14 +19,14 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 bash scripts/test-all.sh          # 一键：7 套测试 + tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 86 / pi-browser 23 / pi-context 35 / plan-mode 15 用例）
-subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs`（34 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 15 用例）
+subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（34 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（6 项）
 
 ## 关键约定
 
-- **扩展注册**：新扩展须同步 settings.json extensions、extensions/tsconfig.json include、tests/conflict-check.mjs 监听者清单、extensions.test.ts
+- **扩展注册**：pi 0.83+ 从 `~/.pi/agent/extensions/` 目录自动发现扩展，settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制包含 / `-` 强制排除），不再承担注册职责；新扩展须同步目录 index.ts、extensions/tsconfig.json include、tests/conflict-check.mjs 监听者清单、extensions.test.ts
 - **缓存友好**：system prompt 注入禁止时间戳与精确数值；压力提示按档位（相对 auto-compact 阈值：<75% 不注入、≥75%/≥90% 固定文案）；共享估算统一用 `lib/context-budget.ts` 的 `estimateTokens`
 - **自动压缩**：pi 内置压缩阈值 = 窗口 − reserveTokens，对 1M 窗口模型高达 96.7 万形同虚设；由 pi-context 按窗口比例触发（>256K 窗口 40% / ≤256K 85%）：agent_end 判定 + session_start 恢复时立即压缩（resume 大会话避免首轮全量浪费）；阈值计算与防抖见 `lib/auto-compact.ts`；ctx.compact() 会 abort 当前 agent 且不 await 完成（扩展 API 为 void + onComplete 回调），故判定放 agent_end、压缩完成由 session_compact 事件通知；`AutoContinueGate` 在压缩完成后自动注入继续指令（triggerTurn:true 启动新一轮），180s cooldown 防递归；阈值依据 2026-08 长任务实测（缓存命中率 86%、命中价 1/50 → 晚压缩成本更低）
 - **分层擦除**：pi-context 在 context 事件阶段做工具输出事后擦除（借鉴 opencode prune）：最近 2 轮 + 40K token 保护带内保留，更早的 toolResult 输出替换为 `[pruned]` 占位（保留结构），预计回收 ≥20K 才应用；判定确定性、擦除点单调后移，缓存前缀稳定；见 `lib/prune.ts`

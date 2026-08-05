@@ -1,9 +1,23 @@
 // Test loader: resolves @earendil-works/* and typebox to the real pi SDK packages.
 // Usage: node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve as pathResolve } from "node:path";
+import { register } from "node:module";
 
-const SDK_BASE = process.env.PI_SDK_PATH || "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent";
+function detectSdkBase() {
+  if (process.env.PI_SDK_PATH) return process.env.PI_SDK_PATH;
+  try {
+    const root = execFileSync("npm", ["root", "-g"], { encoding: "utf8" }).trim();
+    const candidate = pathResolve(root, "@earendil-works/pi-coding-agent");
+    if (existsSync(candidate)) return candidate;
+  } catch {
+    /* fall through to legacy default */
+  }
+  return "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent";
+}
+
+const SDK_BASE = detectSdkBase();
 
 function pkgBaseDir(pkgName) {
 	return pkgName === "@earendil-works/pi-coding-agent" ? SDK_BASE : pathResolve(SDK_BASE, "node_modules", pkgName);
@@ -38,3 +52,5 @@ export async function resolve(specifier, context, next) {
 	}
 	return next(specifier, context);
 }
+
+register(new URL("./loader.mjs", import.meta.url), import.meta.url);

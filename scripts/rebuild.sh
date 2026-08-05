@@ -150,33 +150,16 @@ EOF
   mkdir -p "$PI_HOME/agent/bin"
   ok "agent/bin/ 已就绪"
 
-  # 注册全部 6 个扩展到 settings.json（清理已融合的旧扩展名）
-  if [ -f "$PI_HOME/agent/settings.json" ]; then
-    python3 -c "
-import json
-p = '$PI_HOME/agent/settings.json'
-d = json.load(open(p))
-legacy = ('extensions/pi-admin/index.ts', 'extensions/pi-scheduler/index.ts',
-          'extensions/pi-router/index.ts', 'extensions/pi-context-efficiency/index.ts')
-d.setdefault('extensions', [])
-d['extensions'] = [e for e in d['extensions'] if e not in legacy]
-required = [
-    'extensions/subagent/index.ts',
-    'extensions/pi-context/index.ts',
-    'extensions/plan-mode/index.ts',
-    'extensions/pi-autopilot/index.ts',
-    'extensions/pi-memory/index.ts',
-    'extensions/pi-web-search/index.ts',
-    'extensions/pi-browser/index.ts',
-]
-added = 0
-for ext in required:
-    if ext not in d['extensions']:
-        d['extensions'].append(ext)
-        added += 1
-json.dump(d, open(p, 'w'), indent=2)
-print('registered +%d' % added)
-" 2>/dev/null && ok "7 个扩展已注册到 settings.json（subagent/pi-context/plan-mode/pi-autopilot/pi-memory/pi-web-search/pi-browser）" || true
+  # 扩展自动发现：pi 0.83+ 从 ~/.pi/agent/extensions/ 目录自动加载，无需写入 settings.json extensions
+  # （settings.json 的 extensions 数组仅作覆盖模式：! 排除 / + 强制包含 / - 强制排除，不再承担注册职责）
+  missing=""
+  for ext in subagent pi-context plan-mode pi-autopilot pi-memory pi-web-search pi-browser; do
+    [ -f "$PI_HOME/agent/extensions/$ext/index.ts" ] || missing="$missing $ext"
+  done
+  if [ -z "$missing" ]; then
+    ok "7 个扩展目录 index.ts 齐备（subagent/pi-context/plan-mode/pi-autopilot/pi-memory/pi-web-search/pi-browser）"
+  else
+    warn "扩展目录缺失:$missing（重建后自动发现将不完整）"
   fi
 }
 
@@ -437,16 +420,16 @@ verify() {
     fi
   done
 
-  # 扩展注册完整性（7 项齐备）
+  # 扩展自动发现完整性（7 项齐备；pi 0.83+ 从目录自动加载）
   python3 -c "
-import json
-d = json.load(open('$PI_HOME/agent/settings.json'))
-required = ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/plan-mode/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts']
-missing = [e for e in required if e not in d.get('extensions', [])]
+import os
+ext_dir = '$PI_HOME/agent/extensions'
+required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser']
+missing = [e for e in required if not os.path.isfile(os.path.join(ext_dir, e, 'index.ts'))]
 print('missing' if missing else 'ok')
 " 2>/dev/null | grep -q ok \
-    && ok "settings.json: 7 个扩展注册完整" \
-    || warn "settings.json: 扩展注册不完整，运行 rebuild 的 phase1 修复"
+    && ok "扩展自动发现: 7 个扩展目录 index.ts 齐备" \
+    || warn "扩展自动发现不完整，运行 rebuild 的 phase1 修复"
   # 检查 cron / systemd 是否已配置
   if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
     ok "pi-autopilot: crontab 已安装"

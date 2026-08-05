@@ -262,7 +262,7 @@ GitHub 同步完成
 
 | settings.yml | `python3 -c "import yaml; yaml.safe_load(open('$HOME/.pi/searxng/settings.yml'))" 2>/dev/null \|\| echo "YAML 校验失败"` |
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
-| 扩展注册 | `python3 -c "import json; d=json.load(open('$HOME/.pi/agent/settings.json')); assert all(e in d['extensions'] for e in ['extensions/subagent/index.ts','extensions/pi-context/index.ts','extensions/plan-mode/index.ts','extensions/pi-autopilot/index.ts','extensions/pi-memory/index.ts','extensions/pi-web-search/index.ts','extensions/pi-browser/index.ts'])" 2>/dev/null \|\| echo "扩展注册不完整"` |
+| 扩展完整性 | `for e in subagent pi-context plan-mode pi-autopilot pi-memory pi-web-search pi-browser; do [ -f "$HOME/.pi/agent/extensions/$e/index.ts" ] \|\| echo "$e MISSING"; done` |
 
 **示例输出：**
 

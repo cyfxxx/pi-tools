@@ -47,8 +47,7 @@
 # 1. 安装依赖
 bash ~/.pi/agent/extensions/pi-browser/install.sh
 
-# 2. 确认 settings.json 已注册（详见下方"配置"）
-# 3. 启动 Pi
+# 2. 启动 Pi（pi 0.83+ 从 extensions/ 目录自动发现，无需手动注册）
 pi
 ```
 
@@ -56,13 +55,10 @@ CloakBrowser 首次启动会自动下载隐身 Chromium（约 200MB，存放在 
 
 ## 配置
 
-编辑 `~/.pi/agent/settings.json`（全局）或 `.pi/settings.json`（项目级）：
+编辑 `~/.pi/agent/settings.json`（全局）或 `.pi/settings.json`（项目级），仅需 `pi-browser` 配置段（扩展已由目录自动发现）：
 
 ```json
 {
-  "extensions": [
-    "extensions/pi-browser/index.ts"
-  ],
   "pi-browser": {
     "headless": false,
     "viewport_width": 1280,
