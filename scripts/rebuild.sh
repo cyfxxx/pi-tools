@@ -247,6 +247,14 @@ phase2_searxng_deps() {
         return 1
       }
     fi
+    # start.sh 使用 granian 启动（在 requirements-server.txt 中），缺失会导致无法启动
+    if ! "$PI_HOME/searxng/venv/bin/python" -c "import granian" 2>/dev/null; then
+      info "安装 SearXNG server 依赖（granian）..."
+      "$PI_HOME/searxng/venv/bin/pip" install -q -r "$PI_HOME/searxng/repo/requirements-server.txt" 2>&1 | tail -3 || {
+        warn "SearXNG server 依赖安装失败（start.sh 将无法启动）"
+        return 1
+      }
+    fi
     ok "SearXNG 依赖已就绪"
   else
     warn "venv 或 repo 不完整，跳过 SearXNG 依赖安装"
