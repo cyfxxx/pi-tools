@@ -1,0 +1,17 @@
+{
+  "name": "pi-tmux",
+  "version": "1.0.0",
+  "private": true,
+  "description": "tmux 集成扩展 — 持久后台任务会话、输出落盘日志、send-keys 交互、wait 模式（6 个 tmux_* 工具 + /tmux 命令）",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

@@ -27,6 +27,7 @@
     "subagent/**/*.ts",
     "plan-mode/**/*.ts",
     "pi-browser/**/*.ts",
-    "pi-web-search/**/*.ts"
+    "pi-web-search/**/*.ts",
+    "pi-tmux/**/*.ts"
   ]
 }

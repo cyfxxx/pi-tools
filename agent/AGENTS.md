@@ -5,7 +5,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 目录结构
 
 - `agent/settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
-- `agent/extensions/` — 7 个已注册扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser
+- `agent/extensions/` — 8 个已注册扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`（按窗口比例自动压缩阈值+防抖+压缩后自动继续门）、`prune.ts`（兼容层 + 工具输出分层擦除 + thinking 预算保留）、`usage-diag.ts`（每轮 LLM 用量诊断记录/汇总，含 prune/压缩事件）、`note-store.ts`、`token-budget.ts`（兼容层）
 - `agent/prompts/` — 提示词文档（PI-SDK-EXTENSION.md）
 - `agent/agents/`、`agent/skills/` — 子代理模板与技能
@@ -16,10 +16,10 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 验证命令（全量回归）
 
 ```bash
-bash scripts/test-all.sh          # 一键：7 套测试 + tsc + conflict-check
+bash scripts/test-all.sh          # 一键：8 套测试 + tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 15 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 15 / pi-tmux 10 用例）
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（34 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（6 项）
@@ -34,3 +34,11 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **用量诊断**：`/usage-diag` 显示每轮 input/缓存/输出汇总 + prune 擦除量 + 压缩触发（记录在 `~/.pi/agent/.usage-diag.jsonl`，仅展示不进 LLM 上下文）；扩展的异步回调不得使用捕获的 ctx（session 替换后 stale ctx 抛错），需先取值
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **旧扩展名残留**：pi-web-toolkit / pi-router / pi-admin / pi-scheduler 均已融合或更名，新代码禁止引用
+
+## tmux 集成（pi-tmux 扩展 + 用户使用）
+
+pi 自身 TUI 与 pi-tmux 扩展均基于 tmux 3.4（前缀键 C-a，见 `~/.tmux.conf`）。部署问题与修复见 `alacritty-tmux-setup.md`（WSL2/WSLg、GPU、clipboard、resurrect/continuum 等 7 项）。
+
+- **长任务/交互程序走 pi-tmux 工具**：`tmux_run`（detached + 日志落盘 `~/.pi/logs/tmux/<会话>.log`）、`tmux_read`、`tmux_send`、`tmux_wait`、`tmux_stop`、`tmux_status`；比内建 bash 工具（非交互管道、带 timeout）更适合长任务。会话统一 `pi-` 前缀，pi 退出自动清理（不碰用户会话）。
+- **用户手动用法**：`tmux a` 附加；`C-a d` 脱离；`C-a |` 分屏；`C-a C-s` 保存 / `C-a C-r` 恢复（resurrect/continuum）。Alacritty 窗口启动即自动进入 `main` 会话（bashrc 检测）。
+- **环境缺失处理**：tmux 未安装时 pi-tmux 工具返回带安装命令的错误（apt/dnf/pacman/brew），模型可按指引安装修复，不崩溃。

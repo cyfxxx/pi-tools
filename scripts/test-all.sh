@@ -17,7 +17,7 @@ report() {
 }
 
 cyn "== vitest 套件 =="
-for ext in pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode; do
+for ext in pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode pi-tmux; do
   if [ -d "$EXTS/$ext" ]; then
     (cd "$EXTS/$ext" && ./node_modules/.bin/vitest run >/dev/null 2>&1)
     report $? "$ext vitest"
@@ -46,13 +46,13 @@ cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载） =="
 python3 -c "
 import os
 ext_dir = '$EXTS'
-required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser']
+required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser','pi-tmux']
 missing = [e for e in required if not os.path.isfile(os.path.join(ext_dir, e, 'index.ts'))]
 if missing:
     print('missing:', ', '.join(missing))
     raise SystemExit(1)
 " >/dev/null 2>&1
-report $? "7 个扩展目录 index.ts 齐备"
+report $? "8 个扩展目录 index.ts 齐备"
 
 if [ "$FAILED" -gt 0 ]; then
   printf '\n\033[0;31m✗ 回归失败（%s 项）\033[0m\n' "$FAILED"
