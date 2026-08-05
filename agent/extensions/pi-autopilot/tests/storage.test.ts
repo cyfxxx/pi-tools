@@ -107,9 +107,9 @@ describe('computeNextRun', () => {
   it('cron task computes next 9am weekday', () => {
     const next = computeNextRun({ ...createTaskShape({ ...base, type: 'cron', schedule: '0 9 * * 1-5' }) } as any)!
     const d = new Date(next)
-    expect(d.getUTCHours()).toBe(9)
-    expect(d.getUTCMinutes()).toBe(0)
-    expect([1, 2, 3, 4, 5]).toContain(d.getUTCDay())
+    expect(d.getHours()).toBe(9)
+    expect(d.getMinutes()).toBe(0)
+    expect([1, 2, 3, 4, 5]).toContain(d.getDay())
     expect(d.getTime()).toBeGreaterThan(Date.now())
   })
 
