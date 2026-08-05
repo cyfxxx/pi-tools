@@ -122,6 +122,7 @@ async function main() {
       'web_search', 'fetch_url', 'web_fetch',
       'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
       'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
+      'tmux_run', 'tmux_status', 'tmux_read', 'tmux_send', 'tmux_stop', 'tmux_wait',
     ]
     const actual = Object.keys(toolMap).sort()
     assertEqual(actual.length, expected.length, 'tool count')

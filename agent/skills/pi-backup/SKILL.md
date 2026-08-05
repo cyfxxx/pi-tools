@@ -137,7 +137,8 @@ GitHub 同步完成
      -C ~ .pi/agent/settings.json .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
         .pi/agent/agents .pi/agent/prompts .pi/agent/npm/package.json \
-        .pi/memory .pi/searxng/settings.yml .pi/scripts
+        .pi/memory .pi/searxng/settings.yml .pi/scripts \
+        .tmux.conf .config/alacritty/alacritty.toml
    ```
 
 **阶段 3：解压**
@@ -158,7 +159,7 @@ GitHub 同步完成
 恢复完成
   来源：~/pi-backups/pi-backup-myhost-20260701_120000.tar.gz
   文件：已解压 52 个
-   重建：npm 依赖 ✓ | 扩展依赖 ✓ | fd/rg ✓ | SearXNG venv ✓
+   重建：npm 依赖 ✓ | 扩展依赖 ✓ | fd/rg ✓ | SearXNG venv ✓ | tmux 环境 ✓
   跳过：sessions（未请求）| auth.json（备份中不含）
   快照：~/.pi/pre-restore-20260701_120500.tar.gz
   ⚠ 重启 pi 使更改生效
@@ -243,11 +244,28 @@ GitHub 同步完成
 | 7 | `agent/bin/fd` | `fd` 命令不可用 | `apt-get install -y fd-find 2>&1` 并软链到 `~/.pi/agent/bin/fd` |
 | 8 | `agent/bin/rg` | `rg` 命令不可用 | `apt-get install -y ripgrep 2>&1` 并软链到 `~/.pi/agent/bin/rg` |
 
+**Phase 3 — tmux 环境（跨系统兼容，单独一组）：**
+
+tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不同，重建命令需按发行版选择：
+
+| # | 重建项 | 条件 | 命令 |
+|---|--------|------|------|
+| 9 | `tmux` 命令 | `tmux -V` 失败 | 按系统安装：`apt-get install -y tmux`（Debian/Ubuntu）\| `dnf install -y tmux`（Fedora/RHEL）\| `pacman -S tmux`（Arch）\| `zypper install tmux`（openSUSE）\| `brew install tmux`（macOS） |
+| 10 | `~/.tmux.conf` | 文件不存在 | 从备份恢复（`tmux.conf` 已纳入归档），无备份则提示手动重建（含 WSL2 专属调优，见 `alacritty-tmux-setup.md`） |
+| 11 | tmux 插件（tpm/resurrect/continuum） | `~/.tmux/plugins/tpm` 不存在 | `git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm`，然后 `~/.tmux/plugins/tpm/bin/install_plugins`（`~/.tmux.conf` 需含 plugin 配置） |
+
+> **跨系统兼容要点**：
+> - **WSL2（当前环境）**：Alacritty 渲染需 `GALLIUM_DRIVER=d3d12`、`unset WAYLAND_DISPLAY`（wrapper 在 `/usr/bin/alacritty`）；tmux 用 `apt` 安装。详见 `alacritty-tmux-setup.md`。
+> - **原生 Linux**：无需 Wayland unset，包管理器按发行版（apt/dnf/pacman/zypper）。
+> - **macOS**：`brew install tmux`；`~/.tmux.conf` 中 `xclip` 绑定需替换为 `pbcopy`。
+> - 不同系统 tmux 会话恢复依赖 `tmux-resurrect` 快照目录 `~/.local/share/tmux/resurrect`（不跨机器复制，恢复后需重新保存快照）。
+> - tmux 缺失时 pi-tmux 扩展会返回可安装指引错误，重建即修复。
 
 **不重建的项（始终跳过）：**
 
 - `agent/sessions/` — 对话历史无法重建，如需保留应使用 `--include-sessions` 参数恢复
 - `agent/auth.json` — API 密钥无法自动重建，需用户手动创建或从备份恢复
+- tmux-resurrect 快照（`~/.local/share/tmux/resurrect/`）与 `~/.tmux/plugins/` — 插件可重装、快照属本机运行时数据，均不纳入归档
 
 **验证步骤（每项重建后执行）：**
 
@@ -376,6 +394,12 @@ GitHub 同步完成
 | 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
 | 回归测试脚本 | `scripts/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
+| tmux 配置 | `tmux/tmux.conf`（从 `~/.tmux.conf` 收录） | tmux 键位/插件/持久化配置（WSL2 调优见 alacritty-tmux-setup.md） |
+| Alacritty 配置 | `tmux/alacritty.toml`（从 `~/.config/alacritty/alacritty.toml` 收录） | 终端渲染配置（若存在） |
+| tmux 部署文档 | `alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
+| tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
+
+> **tmux 配置收录方式**：`~/.tmux.conf` 与 `~/.config/alacritty/alacritty.toml` 位于 `~/.pi/` 之外，归档时单独收集到归档内 `tmux/` 目录；`restore` 时写回原路径。
 
 
 ### 默认排除（`--full` 时额外包含）
@@ -416,4 +440,6 @@ GitHub 同步完成
 6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
 7. **调度任务文件**：`agent/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
 8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
+9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 Phase 3 自动按系统包管理器安装；若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `alacritty-tmux-setup.md`。
+10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
 

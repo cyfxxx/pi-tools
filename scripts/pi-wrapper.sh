@@ -236,6 +236,21 @@ fi
 # Save original args for restart reuse
 ORIG_ARGS="$@"
 
+# L1: tmux 自启（可选）。设置 PI_TMUX_SESSION 时，把 pi 放进指定 tmux 会话运行
+# （创建或附加），脱离/重连方便。仅交互式（stdout 是 TTY）才生效，
+# 避免 pi-autopilot 子进程 / pi-cron 离线调用被卷入 tmux。
+if [ -n "${PI_TMUX_SESSION:-}" ] && [ -t 1 ] && command -v tmux >/dev/null 2>&1; then
+  _cur_session=""
+  if [ -n "${TMUX:-}" ]; then
+    _cur_session=$(tmux display-message -p '#S' 2>/dev/null || echo "")
+  fi
+  if [ "$_cur_session" != "$PI_TMUX_SESSION" ]; then
+    echo "[pi-wrapper] 进入 tmux 会话 '$PI_TMUX_SESSION'（脱离: C-a d / 重连: tmux attach -t $PI_TMUX_SESSION）" >&2
+    tmux new-session -d -s "$PI_TMUX_SESSION" -c "$PWD" "$0" "$@" 2>/dev/null
+    exec tmux attach -t "$PI_TMUX_SESSION"
+  fi
+fi
+
 while true; do
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then

@@ -71,3 +71,8 @@ agent/.pi-autopilot-crash.json
 # pi-context 用量诊断运行时数据
 agent/.usage-diag.jsonl
 agent/extensions/*/node_modules
+
+# pi-tmux 运行时数据
+logs/tmux/
+agent/.pi-tmux-registry.json
+

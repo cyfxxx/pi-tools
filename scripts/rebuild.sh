@@ -153,11 +153,11 @@ EOF
   # 扩展自动发现：pi 0.83+ 从 ~/.pi/agent/extensions/ 目录自动加载，无需写入 settings.json extensions
   # （settings.json 的 extensions 数组仅作覆盖模式：! 排除 / + 强制包含 / - 强制排除，不再承担注册职责）
   missing=""
-  for ext in subagent pi-context plan-mode pi-autopilot pi-memory pi-web-search pi-browser; do
+  for ext in subagent pi-context plan-mode pi-autopilot pi-memory pi-web-search pi-browser pi-tmux; do
     [ -f "$PI_HOME/agent/extensions/$ext/index.ts" ] || missing="$missing $ext"
   done
   if [ -z "$missing" ]; then
-    ok "7 个扩展目录 index.ts 齐备（subagent/pi-context/plan-mode/pi-autopilot/pi-memory/pi-web-search/pi-browser）"
+    ok "8 个扩展目录 index.ts 齐备（subagent/pi-context/plan-mode/pi-autopilot/pi-memory/pi-web-search/pi-browser/pi-tmux）"
   else
     warn "扩展目录缺失:$missing（重建后自动发现将不完整）"
   fi
@@ -417,7 +417,7 @@ verify() {
     info "运行: cd $PI_HOME/agent/extensions/pi-autopilot && npm install"
   fi
 
-  # 其余扩展（subagent/pi-context 零依赖；pi-memory/pi-web-search/pi-browser 需 node_modules）
+  # 其余扩展（subagent/pi-context/pi-tmux 零依赖；pi-memory/pi-web-search/pi-browser 需 node_modules）
   for ext in pi-memory pi-web-search pi-browser; do
     if [ -d "$PI_HOME/agent/extensions/$ext/node_modules" ]; then
       local pkgs=$(ls "$PI_HOME/agent/extensions/$ext/node_modules" 2>/dev/null | wc -l)
@@ -428,15 +428,15 @@ verify() {
     fi
   done
 
-  # 扩展自动发现完整性（7 项齐备；pi 0.83+ 从目录自动加载）
+  # 扩展自动发现完整性（8 项齐备；pi 0.83+ 从目录自动加载）
   python3 -c "
 import os
 ext_dir = '$PI_HOME/agent/extensions'
-required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser']
+required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser','pi-tmux']
 missing = [e for e in required if not os.path.isfile(os.path.join(ext_dir, e, 'index.ts'))]
 print('missing' if missing else 'ok')
 " 2>/dev/null | grep -q ok \
-    && ok "扩展自动发现: 7 个扩展目录 index.ts 齐备" \
+    && ok "扩展自动发现: 8 个扩展目录 index.ts 齐备" \
     || warn "扩展自动发现不完整，运行 rebuild 的 phase1 修复"
   # 检查 cron / systemd 是否已配置
   if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
