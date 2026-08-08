@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
+import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-coding-agent'
 import { readSettings } from './config.ts'
 import { writeRestartRequest } from './state.ts'
 import {
@@ -55,12 +55,16 @@ function parseValue(raw: string): unknown {
   return raw
 }
 
+/** 命令输出统一经 ctx.sendMessage 展示（0.84 handler 不再返回 string）。 */
+function reply(pi: ExtensionAPI, text: string): void {
+  pi.sendMessage({ customType: 'cmd-output', content: text, display: true })
+}
+
 export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler): void {
   // ── /auto:status ─────────────────────────────────────────────────
   pi.registerCommand('auto:status', {
     description: '显示自主运行状态：模型、会话、任务、遥测、预算、failover 链。--stats 附加遥测统计（按模型/按任务）。',
-    usage: '/auto:status [--stats]',
-    handler: async (args: string) => {
+    handler: async (args: string, ctx: ExtensionCommandContext): Promise<void> => {
       const settings = readSettings()
       const config = await readAutopilotConfig()
       const tasks = await listTasks()
@@ -84,19 +88,18 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
         lines.push('按任务:')
         for (const t of byTask.slice(0, 10)) lines.push(`  ${t.taskName}: ${Math.round(t.successRate * 100)}%, ${t.runs} 次, ${t.failures} 失败`)
       }
-      return lines.join('\n')
+      reply(pi, lines.join('\n'))
     },
   })
 
   // ── /auto:policy ─────────────────────────────────────────────────
   pi.registerCommand('auto:policy', {
     description: '查看或修改自主运行策略。只读: /auto:policy；修改: /auto:policy set <路径> <值>。路径支持 enabled / maxIdleMinutes / requeueOnRestart / policy.failoverAfter / policy.suspendAfter / policy.timeoutFactor / budget.maxRunsPerDay / budget.maxCostPerDay / budget.allowedModels / fallbackModels（JSON 数组）。',
-    usage: '/auto:policy [set <path> <value>]',
-    handler: async (args: string) => {
+    handler: async (args: string, ctx): Promise<void> => {
       const m = args.trim().match(/^set\s+(\S+)\s+([\s\S]+)$/)
       if (!m) {
         const config = await readAutopilotConfig()
-        return [
+        reply(pi, [
           '自主运行策略（修改: /auto:policy set <路径> <值>）',
           `  enabled: ${config.enabled}`,
           `  fallbackModels: ${JSON.stringify(config.fallbackModels)}`,
@@ -108,7 +111,8 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           `  budget.maxRunsPerDay: ${config.budget.maxRunsPerDay}`,
           `  budget.maxCostPerDay: ${config.budget.maxCostPerDay}`,
           `  budget.allowedModels: ${JSON.stringify(config.budget.allowedModels || [])}`,
-        ].join('\n')
+        ].join('\n'))
+        return
       }
       const path = m[1]
       const value = parseValue(m[2].trim())
@@ -125,50 +129,49 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
       }
       setDeep(config as unknown as Record<string, unknown>, path, value)
       await writeAutopilotConfig(config)
-      return `已更新策略: ${path} = ${JSON.stringify(value)}`
+      reply(pi, `已更新策略: ${path} = ${JSON.stringify(value)}`)
     },
   })
 
   // ── /auto:failover ───────────────────────────────────────────────
   pi.registerCommand('auto:failover', {
     description: 'dry-run 测试 failover 目标选择。可选参数 --exec 实际执行切换重启。',
-    usage: '/auto:failover [--exec]',
-    handler: async (args: string) => {
+    handler: async (args: string, ctx): Promise<void> => {
       const config = await readAutopilotConfig()
       const { provider, model } = currentModel()
       const plan = await planFailover(config.fallbackModels, provider, model)
-      if (!plan.target) return `当前 ${provider}/${model}\nfailover: ${plan.reason}`
-      if (args.trim().includes('--exec')) {
-        const msg = await executeFailover(plan.target, plan.reason, false)
-        return msg
+      if (!plan.target) {
+        reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}`)
+        return
       }
-      return `当前 ${provider}/${model}\nfailover: ${plan.reason}\n（dry-run，使用 --exec 实际执行）`
+      if (args.trim().includes('--exec')) {
+        reply(pi, await executeFailover(plan.target, plan.reason, false))
+        return
+      }
+      reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}\n（dry-run，使用 --exec 实际执行）`)
     },
   })
 
   // ── /auto:pause /auto:resume ─────────────────────────────────────
   pi.registerCommand('auto:pause', {
     description: '全局暂停调度与自主运行动作（保留现有任务与状态）。',
-    usage: '/auto:pause',
-    handler: async () => {
+    handler: async (_args, ctx): Promise<void> => {
       await setSettings({ paused: true })
-      return '已全局暂停调度'
+      reply(pi, '已全局暂停调度')
     },
   })
 
   pi.registerCommand('auto:resume', {
     description: '恢复全局调度。',
-    usage: '/auto:resume',
-    handler: async () => {
+    handler: async (_args, ctx): Promise<void> => {
       await setSettings({ paused: false })
-      return '已恢复调度'
+      reply(pi, '已恢复调度')
     },
   })
 
   // ── /admin:restart（保留：需用户确认的重启） ──────────────────────
   pi.registerCommand('admin:restart', {
     description: '重启 Agent。自动保存当前会话，重启后恢复。',
-    usage: '/admin:restart [reason]',
     handler: async (args, ctx) => {
       const reason = args.trim() || '用户请求重启'
       const confirmed = await ctx.ui.confirm('重启 Agent', `确认重启？\n原因: ${reason}`)
@@ -182,32 +185,40 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
   // ── /schedule（迁自 pi-scheduler；/loop /remind 已并入子命令） ────
   pi.registerCommand('schedule', {
     description: '管理定时任务，并支持 loop/remind 子命令创建循环任务与提醒。',
-    usage: '/schedule [list|edit|delete|enable|disable|cron|test|history|export|import|pause|resume|loop|remind] [args...]',
-    handler: async (args: string) => {
+    handler: async (args: string, ctx): Promise<void> => {
       const parts = args.trim().split(/\s+/)
       const subcmd = parts[0]?.toLowerCase() || 'list'
 
       if (subcmd === 'loop') {
         const { prompt: cleaned, maxRunTime, tags, retries } = extractFlags(parts.slice(1).join(' '))
         const m = cleaned.match(/^(\S+)\s+(.+)/s)
-        if (!m) return '用法: /schedule loop <interval> <prompt> [--timeout <秒>] [--tags a,b] [--retries <n>]\n示例: /schedule loop 5m check CI status'
+        if (!m) {
+          reply(pi, '用法: /schedule loop <interval> <prompt> [--timeout <秒>] [--tags a,b] [--retries <n>]\n示例: /schedule loop 5m check CI status')
+          return
+        }
         const interval = m[1]
         const prompt = m[2]
         const ms = parseIntervalToMs(interval)
-        if (!ms) return `无效间隔: ${interval}。支持格式: 30s, 5m, 1h, 2d`
+        if (!ms) {
+          reply(pi, `无效间隔: ${interval}。支持格式: 30s, 5m, 1h, 2d`)
+          return
+        }
         const name = `loop-${Date.now().toString(36)}`
         try {
           const task = await addTask({ name, type: 'interval', schedule: interval, prompt, enabled: true, maxRunTime, tags, retries })
           await scheduler.runNow(task)
-          return `已创建循环任务 "${name}" 并立即执行一次: 每 ${formatInterval(ms)} 重复\n  ${prompt}\nID: ${task.id}\n下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '未知'}`
+          reply(pi, `已创建循环任务 "${name}" 并立即执行一次: 每 ${formatInterval(ms)} 重复\n  ${prompt}\nID: ${task.id}\n下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '未知'}`)
         } catch (err) {
-          return `创建失败: ${(err as Error).message}`
+          reply(pi, `创建失败: ${(err as Error).message}`)
         }
       }
 
       if (subcmd === 'remind') {
         const m = parts.slice(1).join(' ').match(/^(\S+)\s+(.+)/s)
-        if (!m) return '用法: /schedule remind <time> <prompt>\n示例: /schedule remind +30m review PR\n示例: /schedule remind 2026-07-15T09:00 standup'
+        if (!m) {
+          reply(pi, '用法: /schedule remind <time> <prompt>\n示例: /schedule remind +30m review PR\n示例: /schedule remind 2026-07-15T09:00 standup')
+          return
+        }
         const time = m[1]
         const prompt = m[2]
         const isAbsolute = /^\d{4}-\d{2}-\d{2}/.test(time)
@@ -216,9 +227,9 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
         try {
           const task = await addTask({ name, type: 'once', schedule, prompt, enabled: true })
           const next = task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效时间'
-          return `已创建提醒 "${name}": ${next}\n  ${prompt}\nID: ${task.id}\n（执行后自动移除）`
+          reply(pi, `已创建提醒 "${name}": ${next}\n  ${prompt}\nID: ${task.id}\n（执行后自动移除）`)
         } catch (err) {
-          return `创建失败: ${(err as Error).message}`
+          reply(pi, `创建失败: ${(err as Error).message}`)
         }
       }
 
@@ -227,40 +238,62 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
         const tagIdx = parts.indexOf('--tag')
         const tag = tagIdx !== -1 ? parts[tagIdx + 1] : undefined
         const filtered = tag ? tasks.filter(t => t.tags.includes(tag)) : tasks
-        if (filtered.length === 0) return tag ? `没有标签为 #${tag} 的任务` : '暂无定时任务'
-        return `定时任务 (${filtered.length}${tag ? `, 标签 #${tag}` : ''}):\n${filtered.map((t, i) => `  ${i + 1}. ${taskStatus(t)}`).join('\n')}`
+        if (filtered.length === 0) {
+          reply(pi, tag ? `没有标签为 #${tag} 的任务` : '暂无定时任务')
+          return
+        }
+        reply(pi, `定时任务 (${filtered.length}${tag ? `, 标签 #${tag}` : ''}):\n${filtered.map((t, i) => `  ${i + 1}. ${taskStatus(t)}`).join('\n')}`)
+        return
       }
 
       if (subcmd === 'delete' || subcmd === 'rm') {
         const idOrName = parts.slice(1).join(' ')
-        if (!idOrName) return '用法: /schedule delete <id|name>'
+        if (!idOrName) {
+          reply(pi, '用法: /schedule delete <id|name>')
+          return
+        }
         const ok = await deleteTask(idOrName)
-        return ok ? `已删除任务: ${idOrName}` : `未找到任务: ${idOrName}`
+        reply(pi, ok ? `已删除任务: ${idOrName}` : `未找到任务: ${idOrName}`)
+        return
       }
 
       if (subcmd === 'enable') {
         const idOrName = parts.slice(1).join(' ')
-        if (!idOrName) return '用法: /schedule enable <id|name>'
+        if (!idOrName) {
+          reply(pi, '用法: /schedule enable <id|name>')
+          return
+        }
         const t = await updateTask(idOrName, { enabled: true })
-        return t ? `已启用任务: ${t.name}` : `未找到任务: ${idOrName}`
+        reply(pi, t ? `已启用任务: ${t.name}` : `未找到任务: ${idOrName}`)
+        return
       }
 
       if (subcmd === 'disable') {
         const idOrName = parts.slice(1).join(' ')
-        if (!idOrName) return '用法: /schedule disable <id|name>'
+        if (!idOrName) {
+          reply(pi, '用法: /schedule disable <id|name>')
+          return
+        }
         const t = await updateTask(idOrName, { enabled: false })
-        return t ? `已禁用任务: ${t.name}` : `未找到任务: ${idOrName}`
+        reply(pi, t ? `已禁用任务: ${t.name}` : `未找到任务: ${idOrName}`)
+        return
       }
 
       if (subcmd === 'edit') {
         const idOrName = parts.slice(1).find(p => !p.startsWith('--')) || ''
-        if (!idOrName) return '用法: /schedule edit <id|name> [--schedule <expr>] [--timeout <秒>] [--retries <n>] [--prompt <text>]'
+        if (!idOrName) {
+          reply(pi, '用法: /schedule edit <id|name> [--schedule <expr>] [--timeout <秒>] [--retries <n>] [--prompt <text>]')
+          return
+        }
         const rest = args.trim().replace(new RegExp(`^edit\\s+${idOrName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`), '').trim()
         const scheduleM = rest.match(/--schedule\s+(\S+)/i)
         const timeoutM = rest.match(/--timeout\s+(\d+)/i)
         const retriesM = rest.match(/--retries\s+(\d+)/i)
         const promptM = rest.match(/--prompt\s+([\s\S]+)/i)
-        if (!scheduleM && !timeoutM && !retriesM && !promptM) return '未指定任何修改项。可用: --schedule <expr> --timeout <秒> --retries <n> --prompt <text>'
+        if (!scheduleM && !timeoutM && !retriesM && !promptM) {
+          reply(pi, '未指定任何修改项。可用: --schedule <expr> --timeout <秒> --retries <n> --prompt <text>')
+          return
+        }
         const updates: Parameters<typeof updateTask>[1] = {}
         if (scheduleM) updates.schedule = scheduleM[1]
         if (timeoutM) updates.maxRunTime = parseInt(timeoutM[1], 10)
@@ -268,84 +301,110 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
         if (promptM) updates.prompt = promptM[1].replace(/\s+$/g, '')
         try {
           const t = await updateTask(idOrName, updates)
-          if (!t) return `未找到任务: ${idOrName}`
-          return `已更新任务: ${t.name}\n  调度: ${t.schedule}  超时: ${t.maxRunTime}s  重试: ${t.retries}\n  下次执行: ${t.nextRun ? new Date(t.nextRun).toLocaleString('zh-CN') : '—'}\n  prompt: ${t.prompt.slice(0, 80)}`
+          if (!t) {
+            reply(pi, `未找到任务: ${idOrName}`)
+            return
+          }
+          reply(pi, `已更新任务: ${t.name}\n  调度: ${t.schedule}  超时: ${t.maxRunTime}s  重试: ${t.retries}\n  下次执行: ${t.nextRun ? new Date(t.nextRun).toLocaleString('zh-CN') : '—'}\n  prompt: ${t.prompt.slice(0, 80)}`)
         } catch (err) {
-          return `更新失败: ${(err as Error).message}`
+          reply(pi, `更新失败: ${(err as Error).message}`)
         }
       }
 
       if (subcmd === 'cron') {
         const { prompt: cleaned, maxRunTime, tags, retries } = extractFlags(args)
         const m = cleaned.match(/^cron\s+"([^"]+)"\s+(.+)/s) || cleaned.match(/^cron\s+'([^']+)'\s+(.+)/s)
-        if (!m) return '用法: /schedule cron "<expr>" <prompt> [--timeout <秒>] [--tags a,b] [--retries <n>]\n示例: /schedule cron "0 9 * * 1-5" daily standup'
+        if (!m) {
+          reply(pi, '用法: /schedule cron "<expr>" <prompt> [--timeout <秒>] [--tags a,b] [--retries <n>]\n示例: /schedule cron "0 9 * * 1-5" daily standup')
+          return
+        }
         const name = `cron-${Date.now().toString(36)}`
         try {
           const task = await addTask({ name, type: 'cron', schedule: m[1], prompt: m[2], enabled: true, maxRunTime, tags, retries })
-          return `已创建定时任务 "${name}": ${m[1]}\n  下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效表达式'}\n  ${m[2]}\nID: ${task.id}`
+          reply(pi, `已创建定时任务 "${name}": ${m[1]}\n  下次执行: ${task.nextRun ? new Date(task.nextRun).toLocaleString('zh-CN') : '无效表达式'}\n  ${m[2]}\nID: ${task.id}`)
         } catch (err) {
-          return `创建失败: ${(err as Error).message}`
+          reply(pi, `创建失败: ${(err as Error).message}`)
         }
       }
 
       if (subcmd === 'test') {
         const expr = parts.slice(1).join(' ')
-        if (!expr) return '用法: /schedule test "<expr>"\n示例: /schedule test "0 9 * * 1-5"'
+        if (!expr) {
+          reply(pi, '用法: /schedule test "<expr>"\n示例: /schedule test "0 9 * * 1-5"')
+          return
+        }
         try {
           const times = await previewCron(expr)
-          return `未来 ${times.length} 次触发时间:\n${times.map(t => `  ${new Date(t).toLocaleString('zh-CN')}`).join('\n')}`
+          reply(pi, `未来 ${times.length} 次触发时间:\n${times.map(t => `  ${new Date(t).toLocaleString('zh-CN')}`).join('\n')}`)
         } catch (err) {
-          return (err as Error).message
+          reply(pi, (err as Error).message)
         }
       }
 
       if (subcmd === 'history') {
         const idOrName = parts.slice(1).join(' ')
-        if (!idOrName) return '用法: /schedule history <id|name>'
+        if (!idOrName) {
+          reply(pi, '用法: /schedule history <id|name>')
+          return
+        }
         const tasks = await listTasks()
         const t = tasks.find(x => x.id === idOrName || x.name === idOrName)
-        if (!t) return `未找到任务: ${idOrName}`
-        if (t.history.length === 0) return `任务 "${t.name}" 暂无执行历史`
+        if (!t) {
+          reply(pi, `未找到任务: ${idOrName}`)
+          return
+        }
+        if (t.history.length === 0) {
+          reply(pi, `任务 "${t.name}" 暂无执行历史`)
+          return
+        }
         const lines = t.history.map((h, i) => {
           const icon = h.result === 'success' ? '✓' : '✗'
           const dur = typeof h.durationMs === 'number' ? ` ${(h.durationMs / 1000).toFixed(1)}s` : ''
           return `  ${i + 1}. ${icon} ${h.time}${dur}\n     ${h.output.replace(/\n/g, '\n     ').slice(0, 200)}`
         })
-        return `任务 "${t.name}" 执行历史 (${t.history.length}):\n${lines.join('\n')}`
+        reply(pi, `任务 "${t.name}" 执行历史 (${t.history.length}):\n${lines.join('\n')}`)
+        return
       }
 
       if (subcmd === 'export') {
         try {
           const tasks = await listTasks()
           const path = await exportTasks()
-          return `已导出 ${tasks.length} 个任务到: ${path}`
+          reply(pi, `已导出 ${tasks.length} 个任务到: ${path}`)
         } catch (err) {
-          return `导出失败: ${(err as Error).message}`
+          reply(pi, `导出失败: ${(err as Error).message}`)
         }
+        return
       }
 
       if (subcmd === 'import') {
         const file = parts.slice(1).join(' ').trim()
-        if (!file) return '用法: /schedule import <文件路径>'
+        if (!file) {
+          reply(pi, '用法: /schedule import <文件路径>')
+          return
+        }
         try {
           const { imported, skipped } = await importTasks(file)
-          return `导入完成: 新增 ${imported} 个任务` + (skipped.length > 0 ? `，跳过 ${skipped.length} 个（${skipped.join(', ')}）` : '')
+          reply(pi, `导入完成: 新增 ${imported} 个任务` + (skipped.length > 0 ? `，跳过 ${skipped.length} 个（${skipped.join(', ')}）` : ''))
         } catch (err) {
-          return `导入失败: ${(err as Error).message}`
+          reply(pi, `导入失败: ${(err as Error).message}`)
         }
+        return
       }
 
       if (subcmd === 'pause') {
         await setSettings({ paused: true })
-        return '已全局暂停调度（在线与离线均跳过执行）'
+        reply(pi, '已全局暂停调度（在线与离线均跳过执行）')
+        return
       }
 
       if (subcmd === 'resume') {
         await setSettings({ paused: false })
-        return '已恢复调度'
+        reply(pi, '已恢复调度')
+        return
       }
 
-      return `未知子命令: ${subcmd}\n可用: list [--tag <t>], edit <id>, delete <id>, enable <id>, disable <id>, cron "<expr>" <prompt>, test "<expr>", history <id>, export, import <file>, pause, resume`
+      reply(pi, `未知子命令: ${subcmd}\n可用: list [--tag <t>], edit <id>, delete <id>, enable <id>, disable <id>, cron "<expr>" <prompt>, test "<expr>", history <id>, export, import <file>, pause, resume`)
     },
   })
 }

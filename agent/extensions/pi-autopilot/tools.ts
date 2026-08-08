@@ -40,7 +40,7 @@ export function registerTools(pi: ExtensionAPI): void {
       sections.push(`  今日预算: ${todayRuns(telemetry)} 次 / $${todayCost(telemetry).toFixed(4)}`)
       sections.push(`  failover 链: ${config.fallbackModels.length ? config.fallbackModels.map(f => `${f.provider}/${f.model}`).join(' → ') : '(未配置)'}`)
 
-      return { content: [{ type: 'text', text: sections.join('\n') }] }
+      return { content: [{ type: 'text', text: sections.join('\n') }], details: null }
     },
   })
 
@@ -63,7 +63,7 @@ export function registerTools(pi: ExtensionAPI): void {
       for (const t of byTask.slice(0, 10)) {
         lines.push(`  ${t.taskName}: ${Math.round(t.successRate * 100)}% 成功率, ${t.runs} 次, ${t.failures} 失败`)
       }
-      return { content: [{ type: 'text', text: lines.join('\n') }] }
+      return { content: [{ type: 'text', text: lines.join('\n') }], details: null }
     },
   })
 
@@ -86,7 +86,7 @@ export function registerTools(pi: ExtensionAPI): void {
         `  requeueOnRestart: ${config.requeueOnRestart}`,
         `  预算: 日运行上限 ${config.budget.maxRunsPerDay} 次, 日成本上限 $${config.budget.maxCostPerDay}, 模型白名单 ${config.budget.allowedModels?.length ? config.budget.allowedModels.join(', ') : '(无)'}`,
       ]
-      return { content: [{ type: 'text', text: lines.join('\n') }] }
+      return { content: [{ type: 'text', text: lines.join('\n') }], details: null }
     },
   })
 
@@ -101,9 +101,9 @@ export function registerTools(pi: ExtensionAPI): void {
       const { provider, model } = currentModel()
       const plan = await planFailover(config.fallbackModels, provider, model)
       if (!plan.target) {
-        return { content: [{ type: 'text', text: `当前 ${provider}/${model}\nfailover: ${plan.reason}` }] }
+        return { content: [{ type: 'text', text: `当前 ${provider}/${model}\nfailover: ${plan.reason}` }], details: null }
       }
-      return { content: [{ type: 'text', text: `当前 ${provider}/${model}\nfailover: ${plan.reason}\n（dry-run，未实际执行）` }] }
+      return { content: [{ type: 'text', text: `当前 ${provider}/${model}\nfailover: ${plan.reason}\n（dry-run，未实际执行）` }], details: null }
     },
   })
 
@@ -126,7 +126,7 @@ export function registerTools(pi: ExtensionAPI): void {
         `  思考层级: ${settings.defaultThinkingLevel || '未设置'}`,
         `  Provider 总数: ${models.providers ? Object.keys(models.providers).length : 0}`,
       ]
-      return { content: [{ type: 'text', text: sections.join('\n') }] }
+      return { content: [{ type: 'text', text: sections.join('\n') }], details: null }
     },
   })
 
@@ -137,7 +137,7 @@ export function registerTools(pi: ExtensionAPI): void {
     parameters: { type: 'object', properties: {} },
     execute: async () => {
       const providers = listAvailableModels()
-      if (!providers.length) return { content: [{ type: 'text', text: '(未找到可用模型)' }] }
+      if (!providers.length) return { content: [{ type: 'text', text: '(未找到可用模型)' }], details: null }
       const lines: string[] = ['可用模型列表:']
       for (const p of providers) {
         lines.push(`\n[${p.name}]`)
@@ -149,7 +149,7 @@ export function registerTools(pi: ExtensionAPI): void {
           lines.push(`  - ${m.id}${m.name ? ` (${m.name})` : ''}${[ctx, maxT, reas].filter(Boolean).join(' ')}`)
         }
       }
-      return { content: [{ type: 'text', text: lines.join('\n') }] }
+      return { content: [{ type: 'text', text: lines.join('\n') }], details: null }
     },
   })
 
@@ -169,16 +169,16 @@ export function registerTools(pi: ExtensionAPI): void {
       const provider = params.provider as string
       const model = params.model as string
       const result = updateModelConfig(provider, model)
-      if (!result.success) return { content: [{ type: 'text', text: result.error || '设置失败' }], isError: true }
+      if (!result.success) return { content: [{ type: 'text', text: result.error || '设置失败' }], details: null, isError: true }
       const confirmed = ctx.hasUI ? await ctx.ui.confirm('切换模型', `将切换为 ${provider}/${model}，需要重启 Agent。是否继续？`) : true
-      if (!confirmed) return { content: [{ type: 'text', text: `已保存配置但未重启。下次启动将使用 ${provider}/${model}` }] }
+      if (!confirmed) return { content: [{ type: 'text', text: `已保存配置但未重启。下次启动将使用 ${provider}/${model}` }], details: null }
       writeRestartRequest('set_model', {
         targetProvider: provider,
         targetModel: model,
         reason: `切换模型为 ${provider}/${model}`,
       })
       try { ctx.shutdown() } catch { process.exit(0) }
-      return { content: [{ type: 'text', text: `正在重启以加载模型 ${provider}/${model}...` }] }
+      return { content: [{ type: 'text', text: `正在重启以加载模型 ${provider}/${model}...` }], details: null }
     },
   })
 
@@ -196,10 +196,10 @@ export function registerTools(pi: ExtensionAPI): void {
       if (key) {
         const val = settings[key]
         const safeVal = isSensitiveKey(key) && typeof val === 'string' ? '***' : val
-        return { content: [{ type: 'text', text: `${key}: ${typeof safeVal === 'string' ? safeVal : JSON.stringify(safeVal, null, 2)}` }] }
+        return { content: [{ type: 'text', text: `${key}: ${typeof safeVal === 'string' ? safeVal : JSON.stringify(safeVal, null, 2)}` }], details: null }
       }
       const safe = maskSensitive(settings)
-      return { content: [{ type: 'text', text: JSON.stringify(safe, null, 2) }] }
+      return { content: [{ type: 'text', text: JSON.stringify(safe, null, 2) }], details: null }
     },
   })
 
@@ -239,11 +239,11 @@ export function registerTools(pi: ExtensionAPI): void {
       }
       if (isSensitiveKey(key) && ctx.hasUI) {
         const ok = await ctx.ui.confirm('修改敏感配置', `确认修改 "${key}" 为 ${JSON.stringify(parsedValue)}？`)
-        if (!ok) return { content: [{ type: 'text', text: '已取消' }] }
+        if (!ok) return { content: [{ type: 'text', text: '已取消' }], details: null }
       }
       const result = updateSettings(key, parsedValue)
-      if (!result.success) return { content: [{ type: 'text', text: result.error || '写入失败' }], isError: true }
-      return { content: [{ type: 'text', text: `已更新配置: ${key} = ${JSON.stringify(parsedValue)}` }] }
+      if (!result.success) return { content: [{ type: 'text', text: result.error || '写入失败' }], details: null, isError: true }
+      return { content: [{ type: 'text', text: `已更新配置: ${key} = ${JSON.stringify(parsedValue)}` }], details: null }
     },
   })
 
@@ -258,7 +258,7 @@ export function registerTools(pi: ExtensionAPI): void {
     execute: async (_toolCallId, params) => {
       const cwd = params.cwd as string | undefined
       const sessions = listSessions(cwd)
-      if (!sessions.length) return { content: [{ type: 'text', text: `(未找到会话${cwd ? ` 在 ${cwd}` : ''})` }] }
+      if (!sessions.length) return { content: [{ type: 'text', text: `(未找到会话${cwd ? ` 在 ${cwd}` : ''})` }], details: null }
       const lines: string[] = [`会话列表 (${sessions.length} 个，按修改时间倒序):`]
       for (const s of sessions.slice(0, 30)) {
         const sizeKB = (s.sizeBytes / 1024).toFixed(1)
@@ -266,7 +266,7 @@ export function registerTools(pi: ExtensionAPI): void {
         lines.push(`  ${s.sessionId}  [${sizeKB} KB] [${mtime}]`)
         lines.push(`    摘要: ${s.firstLinePreview}`)
       }
-      return { content: [{ type: 'text', text: lines.join('\n') }] }
+      return { content: [{ type: 'text', text: lines.join('\n') }], details: null }
     },
   })
 
@@ -286,15 +286,15 @@ export function registerTools(pi: ExtensionAPI): void {
       const target = params.target as string
       const reason = params.reason as string | undefined
       const session = resolveSession(target)
-      if (!session) return { content: [{ type: 'text', text: `未找到匹配的会话: ${target}` }], isError: true }
+      if (!session) return { content: [{ type: 'text', text: `未找到匹配的会话: ${target}` }], details: null, isError: true }
       const confirmed = ctx.hasUI ? await ctx.ui.confirm('切换会话', `将切换到会话 ${session.sessionId}，需要重启 Agent。是否继续？`) : true
-      if (!confirmed) return { content: [{ type: 'text', text: '已取消会话切换' }] }
+      if (!confirmed) return { content: [{ type: 'text', text: '已取消会话切换' }], details: null }
       writeRestartRequest('switch_session', {
         targetSession: session.filePath,
         reason: reason || `切换到会话 ${session.sessionId}`,
       })
       try { ctx.shutdown() } catch { process.exit(0) }
-      return { content: [{ type: 'text', text: `正在切换到会话 ${session.sessionId}...` }] }
+      return { content: [{ type: 'text', text: `正在切换到会话 ${session.sessionId}...` }], details: null }
     },
   })
 
@@ -310,7 +310,7 @@ export function registerTools(pi: ExtensionAPI): void {
       const reason = params.reason as string | undefined
       writeRestartRequest('restart', { reason: reason || '用户请求重启' })
       try { ctx.shutdown() } catch { process.exit(0) }
-      return { content: [{ type: 'text', text: '正在重启...' }] }
+      return { content: [{ type: 'text', text: '正在重启...' }], details: null }
     },
   })
 
@@ -352,7 +352,7 @@ prompt 支持模板变量: {{date}} {{time}} {{datetime}} {{cwd}}。
 
       if (action === 'add') {
         if (!params.name || !params.type || !params.schedule || !params.prompt) {
-          return { content: [{ type: 'text', text: '缺少参数: name, type, schedule, prompt 为必需' }] }
+          return { content: [{ type: 'text', text: '缺少参数: name, type, schedule, prompt 为必需' }], details: null }
         }
         try {
           const task = await addTask({
@@ -366,47 +366,47 @@ prompt 支持模板变量: {{date}} {{time}} {{datetime}} {{cwd}}。
             tags: params.tags as string[] | undefined,
             retries: params.retries as number | undefined,
           })
-          return { content: [{ type: 'text', text: `已创建任务: ${task.name}\nID: ${task.id}\n类型: ${task.type}\n调度: ${task.schedule}\n下次执行: ${task.nextRun || '无法计算'}\n标签: ${task.tags.join(', ') || '无'}\n重试: ${task.retries}` }] }
+          return { content: [{ type: 'text', text: `已创建任务: ${task.name}\nID: ${task.id}\n类型: ${task.type}\n调度: ${task.schedule}\n下次执行: ${task.nextRun || '无法计算'}\n标签: ${task.tags.join(', ') || '无'}\n重试: ${task.retries}` }], details: null }
         } catch (err) {
-          return { content: [{ type: 'text', text: `创建失败: ${(err as Error).message}` }] }
+          return { content: [{ type: 'text', text: `创建失败: ${(err as Error).message}` }], details: null }
         }
       }
 
       if (action === 'list') {
         const tasks = await listTasks()
-        if (tasks.length === 0) return { content: [{ type: 'text', text: '暂无定时任务' }] }
+        if (tasks.length === 0) return { content: [{ type: 'text', text: '暂无定时任务' }], details: null }
         const lines = tasks.map(t =>
           `${t.enabled ? '✓' : '✗'} ${t.name} (${t.type}) ${t.schedule}${t.tags.length > 0 ? ` #${t.tags.join('#')}` : ''}\n  next: ${t.nextRun ? new Date(t.nextRun).toLocaleString('zh-CN') : '—'} last: ${t.lastRun ? new Date(t.lastRun).toLocaleString('zh-CN') : '—'} (${t.lastResult || '—'})×${t.runCount} 重试: ${t.retries}\n  prompt: ${t.prompt.slice(0, 60)}`
         )
-        return { content: [{ type: 'text', text: `定时任务 (${tasks.length}):\n${lines.join('\n')}` }] }
+        return { content: [{ type: 'text', text: `定时任务 (${tasks.length}):\n${lines.join('\n')}` }], details: null }
       }
 
       if (action === 'pause') {
         await setSettings({ paused: true })
-        return { content: [{ type: 'text', text: '已全局暂停调度' }] }
+        return { content: [{ type: 'text', text: '已全局暂停调度' }], details: null }
       }
 
       if (action === 'resume') {
         await setSettings({ paused: false })
-        return { content: [{ type: 'text', text: '已恢复调度' }] }
+        return { content: [{ type: 'text', text: '已恢复调度' }], details: null }
       }
 
       const idOrName = (params.taskId || params.name) as string | undefined
-      if (!idOrName) return { content: [{ type: 'text', text: '缺少参数: taskId 或 name' }] }
+      if (!idOrName) return { content: [{ type: 'text', text: '缺少参数: taskId 或 name' }], details: null }
 
       if (action === 'delete') {
         const ok = await deleteTask(idOrName)
-        return { content: [{ type: 'text', text: ok ? `已删除任务: ${idOrName}` : `未找到任务: ${idOrName}` }] }
+        return { content: [{ type: 'text', text: ok ? `已删除任务: ${idOrName}` : `未找到任务: ${idOrName}` }], details: null }
       }
 
       if (action === 'enable') {
         const t = await updateTask(idOrName, { enabled: true })
-        return { content: [{ type: 'text', text: t ? `已启用任务: ${t.name}` : `未找到任务: ${idOrName}` }] }
+        return { content: [{ type: 'text', text: t ? `已启用任务: ${t.name}` : `未找到任务: ${idOrName}` }], details: null }
       }
 
       if (action === 'disable') {
         const t = await updateTask(idOrName, { enabled: false })
-        return { content: [{ type: 'text', text: t ? `已禁用任务: ${t.name}` : `未找到任务: ${idOrName}` }] }
+        return { content: [{ type: 'text', text: t ? `已禁用任务: ${t.name}` : `未找到任务: ${idOrName}` }], details: null }
       }
 
       if (action === 'update') {
@@ -419,18 +419,18 @@ prompt 支持模板变量: {{date}} {{time}} {{datetime}} {{cwd}}。
         if (params.retries !== undefined) updates.retries = params.retries as number
         if (params.tags !== undefined) updates.tags = params.tags as string[]
         if (Object.keys(updates).length === 0) {
-          return { content: [{ type: 'text', text: '未指定修改项: schedule / prompt / useSubagent / notifyOnCompletion / maxRunTime / retries / tags' }] }
+          return { content: [{ type: 'text', text: '未指定修改项: schedule / prompt / useSubagent / notifyOnCompletion / maxRunTime / retries / tags' }], details: null }
         }
         try {
           const t = await updateTask(idOrName, updates)
-          if (!t) return { content: [{ type: 'text', text: `未找到任务: ${idOrName}` }] }
-          return { content: [{ type: 'text', text: `已更新任务: ${t.name}\n调度: ${t.schedule}\n下次执行: ${t.nextRun || '—'}` }] }
+          if (!t) return { content: [{ type: 'text', text: `未找到任务: ${idOrName}` }], details: null }
+          return { content: [{ type: 'text', text: `已更新任务: ${t.name}\n调度: ${t.schedule}\n下次执行: ${t.nextRun || '—'}` }], details: null }
         } catch (err) {
-          return { content: [{ type: 'text', text: `更新失败: ${(err as Error).message}` }] }
+          return { content: [{ type: 'text', text: `更新失败: ${(err as Error).message}` }], details: null }
         }
       }
 
-      return { content: [{ type: 'text', text: `未知操作: ${action}` }] }
+      return { content: [{ type: 'text', text: `未知操作: ${action}` }], details: null }
     },
   })
 }
