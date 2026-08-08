@@ -40,7 +40,7 @@ report $? "tsc -p tsconfig.json"
 
 cyn "== 扩展冲突检查 =="
 (cd "$EXTS" && node tests/conflict-check.mjs >/dev/null 2>&1)
-report $? "conflict-check (6 项)"
+report $? "conflict-check (7 项)"
 
 cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载） =="
 python3 -c "

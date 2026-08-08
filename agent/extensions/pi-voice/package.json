@@ -2,7 +2,7 @@
   "name": "pi-voice",
   "version": "1.0.0",
   "private": true,
-  "description": "语音交流扩展 — Termux 麦克风录音 + 本地 Whisper 转写 + 系统 TTS 朗读（/voice /tts 命令 + Ctrl+R 快捷键）",
+  "description": "语音交流扩展 — Termux 麦克风录音 + 本地 Whisper 转写 + 系统 TTS 朗读（/voice /tts 命令 + Ctrl+Shift+R 快捷键）",
   "type": "module",
   "pi": {
     "extensions": [

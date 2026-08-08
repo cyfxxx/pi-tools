@@ -23,6 +23,7 @@ const TOOL_PATTERN = /registerTool\s*\(\s*\{[\s\S]*?name:\s*['"]([^'"]+)['"]/g
 const CMD_PATTERN = /registerCommand\s*\(\s*['"]([^'"]+)['"]/g
 const EVENT_PATTERN = /pi\.on\s*\(\s*['"]([^'"]+)['"]/g
 const FLAG_PATTERN = /registerFlag\s*\(\s*['"]([^'"]+)['"]/g
+const SHORTCUT_PATTERN = /registerShortcut\s*\(\s*(Key\.[a-zA-Z]+\(\s*['"][^'"]+['"]\s*\))/g
 
 function scanFile(filePath, patterns) {
   if (!existsSync(filePath) || filePath.endsWith('.d.ts')) return []
@@ -49,6 +50,7 @@ function scanExtension(dir) {
     { name: 'command', re: CMD_PATTERN },
     { name: 'event', re: EVENT_PATTERN },
     { name: 'flag', re: FLAG_PATTERN },
+    { name: 'shortcut', re: SHORTCUT_PATTERN },
   ]
 
   function walk(d) {
@@ -266,6 +268,25 @@ async function main() {
           }
           dataDirs[dir] = ext
         }
+      }
+    }
+  })
+
+    // ── 7. Shortcut reservations: avoid pi built-ins and cross-extension duplicates ──
+  const SHORTCUT_PATTERN = /registerShortcut\s*\(\s*(Key\.[a-zA-Z]+\(\s*['"][^'"]+['"]\s*\))/g
+  const BUILTIN_SHORTCUTS = ['Key.ctrl("r")', "Key.ctrl('r')"] // pi 内置：Ctrl+R → app.session.rename
+  await test('registered shortcuts avoid built-in keys (ctrl+r = session.rename) and other extensions', () => {
+    const shortcutMap = {}
+    for (const [ext, items] of Object.entries(all)) {
+      for (const item of items) {
+        if (item.type !== 'shortcut') continue
+        if (BUILTIN_SHORTCUTS.includes(item.value)) {
+          throw new Error(`Shortcut "${item.value}" in "${ext}" conflicts with pi built-in (app.session.rename)`)
+        }
+        if (shortcutMap[item.value]) {
+          throw new Error(`Shortcut "${item.value}" registered by "${shortcutMap[item.value]}" and "${ext}"`)
+        }
+        shortcutMap[item.value] = ext
       }
     }
   })
