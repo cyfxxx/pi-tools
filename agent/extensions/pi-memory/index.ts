@@ -1,4 +1,5 @@
-import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
+import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent'
+import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import {
   loadEntries,
   loadNotes,
@@ -82,11 +83,13 @@ export default function (pi: ExtensionAPI): void {
   })
 }
 
-function extractBranch(ctx: { sessionManager: { getSessionId(): string | null; getBranch(): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> } }): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> {
+type BranchCtx = Pick<ExtensionContext, 'sessionManager'>
+
+function extractBranch(ctx: BranchCtx): SessionEntry[] {
   return ctx.sessionManager.getBranch()
 }
 
-async function extractFromSession(ctx: { sessionManager: { getSessionId(): string | null; getBranch(): Array<{ type: string; role?: string; content?: unknown; message?: { role?: string; content?: unknown } }> } }): Promise<void> {
+async function extractFromSession(ctx: BranchCtx): Promise<void> {
   // 提取子进程（spawn 的 pi -p）禁止再触发提取，斩断递归链
   if (process.env.PI_MEMORY_EXTRACT === '1') return
   const sessionId = ctx.sessionManager.getSessionId() || null

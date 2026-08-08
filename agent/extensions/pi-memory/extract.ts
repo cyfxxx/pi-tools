@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync,
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import type { MemoryCategory, MemoryEntry, SummaryEntry } from './types.ts'
 import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR } from './storage.ts'
 import { mergeCandidates } from './merge.ts'
@@ -494,28 +495,33 @@ async function doExtract(
 
 // 从会话条目中提取纯文本消息（供事件层调用）
 // 长会话保留最近 200 条（头部是系统注入/早期上下文，尾部才贴近本次提取目标）
+// 入参使用官方 SessionEntry 类型；仅 message 条目承载对话文本（官方
+// SessionMessageEntry.message: AgentMessage），其余条目（模型变更/压缩等）无内容可提
 const MAX_EXTRACT_MESSAGES = 200
-export function extractTextFromEntries(entries: Array<{ role?: string; content?: unknown; message?: { role?: string; content?: unknown } }>): ExtractMessage[] {
+export function extractTextFromEntries(entries: SessionEntry[]): ExtractMessage[] {
   const out: ExtractMessage[] = []
   for (const e of entries) {
-    const role = e.role || e.message?.role
-    const content = e.content ?? e.message?.content
-    if (!role || !content) continue
-    if (role !== 'user' && role !== 'assistant') continue
-    let text = ''
-    if (typeof content === 'string') text = content
-    else if (Array.isArray(content)) {
-      text = content
-        .filter((c: { type?: string; text?: string }) => c && c.type === 'text' && typeof c.text === 'string')
-        .map((c: { text: string }) => c.text)
-        .join('\n')
-    }
+    if (e.type !== 'message') continue
+    const msg = e.message
+    if (msg.role !== 'user' && msg.role !== 'assistant') continue
+    // role 收窄后 content 为官方 TextContent/ImageContent(及 thinking/toolCall) 数组或纯文本
+    const content = msg.content
+    if (!content) continue
+    const text = extractText(content)
     if (!text.trim()) continue
-    out.push({ role, content: text })
+    out.push({ role: msg.role, content: text })
     // 超过上限时丢弃最旧，保留最近消息
     if (out.length > MAX_EXTRACT_MESSAGES) out.shift()
   }
   return out
+}
+
+function extractText(content: string | readonly unknown[]): string {
+  if (typeof content === 'string') return content
+  return content
+    .filter((c) => c && typeof c === 'object' && (c as { type?: string }).type === 'text')
+    .map((c) => (c as { text?: string }).text ?? '')
+    .join('\n')
 }
 
 export { tokenize }

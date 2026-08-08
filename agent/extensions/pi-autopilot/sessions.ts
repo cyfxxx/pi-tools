@@ -39,9 +39,9 @@ function readFirstLine(filePath: string): string {
     fs.closeSync(fd)
     const firstLine = buffer.toString('utf-8', 0, bytesRead).split('\n')[0]
     try {
-      const parsed = parseSessionEntries(firstLine)
-      const session = parsed[0] as unknown as { type?: string; id?: string; timestamp?: number; header?: { type?: string; id?: string; timestamp?: number } } | undefined
-      const header = session?.type === 'session' ? session : (session as unknown as { header?: { type?: string; id?: string; timestamp?: number } })?.header
+      // parseSessionEntries 返回 FileEntry[]（SessionHeader | SessionEntry），
+      // 首条恒为 session header，按 type === 'session' 收窄即可
+      const [header] = parseSessionEntries(firstLine)
       if (header?.type === 'session') {
         const id = header.id || ''
         const ts = header.timestamp ? new Date(header.timestamp).toISOString().slice(0, 19) : ''

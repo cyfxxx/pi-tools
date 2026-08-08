@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Runner } from '../extract.ts'
+import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 
 let dir: string
 const ORIG_ENV = { ...process.env }
@@ -250,17 +251,17 @@ describe('extract: prompt building', () => {
 describe('extract: extractTextFromEntries', () => {
   it('extracts text blocks from session entries', async () => {
     const { extractTextFromEntries } = await import('../extract.ts')
+    const base = { id: '1', parentId: null, timestamp: '2026-01-01T00:00:00Z' }
     const entries = [
-      { type: 'message', role: 'user', content: [{ type: 'text', text: 'hello' }] },
-      { type: 'message', role: 'assistant', content: 'plain text' },
-      { type: 'tool', role: 'assistant', message: { role: 'assistant', content: 'tool result' } },
-      { type: 'message', role: 'system', content: 'ignored' },
-      { type: 'message', role: 'user', content: [{ type: 'image', text: 'no' }] },
-    ]
-    const messages = extractTextFromEntries(entries as Array<{ role?: string; content?: unknown; message?: { role?: string; content?: unknown } }>)
-    expect(messages).toHaveLength(3)
+      { ...base, id: 'a', type: 'message', message: { role: 'user', content: [{ type: 'text', text: 'hello' }], timestamp: 1 } },
+      { ...base, id: 'b', type: 'message', message: { role: 'assistant', content: [{ type: 'text', text: 'plain text' }], timestamp: 1 } },
+      { ...base, id: 'c', type: 'model_change', provider: 'anthropic', modelId: 'claude' },
+      { ...base, id: 'd', type: 'message', message: { role: 'custom', customType: 'usage-diag', content: 'ignored', display: true, timestamp: 1 } },
+      { ...base, id: 'e', type: 'message', message: { role: 'user', content: [{ type: 'image', data: 'x', mimeType: 'image/png' }], timestamp: 1 } },
+    ] as unknown as SessionEntry[]
+    const messages = extractTextFromEntries(entries)
+    expect(messages).toHaveLength(2)
     expect(messages[0].content).toBe('hello')
     expect(messages[1].content).toBe('plain text')
-    expect(messages[2].content).toBe('tool result')
   })
 })
