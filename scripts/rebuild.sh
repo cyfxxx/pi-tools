@@ -152,14 +152,20 @@ EOF
 
   # 扩展自动发现：pi 0.83+ 从 ~/.pi/agent/extensions/ 目录自动加载，无需写入 settings.json extensions
   # （settings.json 的 extensions 数组仅作覆盖模式：! 排除 / + 强制包含 / - 强制排除，不再承担注册职责）
+  # 动态扫描全部扩展目录（含新扩展免维护），逐个验证 index.ts 入口
+  EXT_DIRS=""
   missing=""
-  for ext in subagent pi-context plan-mode pi-autopilot pi-memory pi-web-search pi-browser pi-tmux; do
-    [ -f "$PI_HOME/agent/extensions/$ext/index.ts" ] || missing="$missing $ext"
+  for d in "$PI_HOME/agent/extensions"/*/; do
+    [ -d "$d" ] || continue
+    name="$(basename "$d")"
+    case "$name" in tests|node_modules) continue ;; esac
+    EXT_DIRS="$EXT_DIRS $name"
+    [ -f "$d/index.ts" ] || missing="$missing $name"
   done
   if [ -z "$missing" ]; then
-    ok "8 个扩展目录 index.ts 齐备（subagent/pi-context/plan-mode/pi-autopilot/pi-memory/pi-web-search/pi-browser/pi-tmux）"
+    ok "扩展目录 index.ts 齐备（$(echo $EXT_DIRS | wc -w) 个: $EXT_DIRS）"
   else
-    warn "扩展目录缺失:$missing（重建后自动发现将不完整）"
+    warn "扩展目录缺失 index.ts:$missing（重建后自动发现将不完整）"
   fi
 }
 
@@ -313,6 +319,90 @@ phase2_binaries() {
   true  # placeholder for future infra download
 }
 
+# ---- Phase 2-D: 扩展类型链接（tsconfig paths 同步到实际 pi 安装根） ----
+phase2_types() {
+  title "Phase 2-D" "扩展类型链接"
+  local tsconfig="$PI_HOME/agent/extensions/tsconfig.json"
+  [ -f "$tsconfig" ] || { warn "extensions/tsconfig.json 缺失"; return 1; }
+
+  # 定位 pi 安装根：优先 current，否则取最高版本目录
+  local pi_node_dir="$HOME/.local/share/pi-node"
+  local root=""
+  if [ -d "$pi_node_dir/current" ]; then
+    root="$(readlink -f "$pi_node_dir/current" 2>/dev/null || echo "$pi_node_dir/current")"
+  fi
+  if [ -z "$root" ] || [ ! -d "$root/lib/node_modules/@earendil-works" ]; then
+    for d in "$pi_node_dir"/*/; do
+      [ -d "$d/lib/node_modules/@earendil-works" ] && root="${d%/}" && break
+    done
+  fi
+  if [ -z "$root" ]; then
+    warn "未找到 pi 安装目录（$pi_node_dir/*），跳过 tsconfig 链接同步"
+    info "安装 pi（npm install -g @earendil-works/pi-coding-agent）后重跑 rebuild 即可补齐"
+    return 0
+  fi
+  root="$(cd "$root" && pwd -P 2>/dev/null || echo "$root")"
+
+  if grep -qF "$root/lib/node_modules" "$tsconfig"; then
+    ok "tsconfig paths 已指向 $root"
+    return 0
+  fi
+
+  python3 - "$tsconfig" "$root" <<'PY' && ok "tsconfig paths 已重写到 $root"
+import json, sys
+p, root = sys.argv[1], sys.argv[2]
+d = json.load(open(p))
+paths = d.get('compilerOptions', {}).get('paths', {})
+changed = False
+for k, v in paths.items():
+    for i, x in enumerate(v):
+        marker = '/lib/node_modules/'
+        j = x.find(marker)
+        if j > 0 and '.local/share/pi-node/' in x[:j]:
+            v[i] = root + x[j:]
+            changed = True
+if changed:
+    with open(p, 'w') as f:
+        json.dump(d, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+PY
+}
+
+# ---- Phase 2-E: pi-wrapper 自愈 ----
+phase2_wrapper() {
+  title "Phase 2-E" "Pi wrapper 自愈"
+  local sw="$PI_HOME/scripts/install-wrapper.sh"
+  if [ ! -f "$sw" ]; then
+    warn "install-wrapper.sh 缺失"
+    return 0
+  fi
+  if bash "$sw" --ensure --quiet; then
+    ok "wrapper 已就绪（cron 每分钟 + 交互 shell 双保险）"
+  else
+    warn "wrapper ensure 失败，请手动运行: bash $sw"
+  fi
+}
+
+# ---- Phase 2-F: Whisper 转写服务（pi-voice 后端） ----
+phase2_whisper() {
+  title "Phase 2-F" "Whisper 转写服务"
+  local wsv="$PI_HOME/scripts/pi-whisper.sh"
+  [ -f "$wsv" ] || { warn "pi-whisper.sh 缺失，跳过"; return 0; }
+  [ -x "${PI_WHISPER_VENV:-/opt/pi-whisper/venv}/bin/python" ] || {
+    warn "whisper venv 未就绪（faster-whisper 未安装）"
+    info "运行: python3 -m venv /opt/pi-whisper/venv && /opt/pi-whisper/venv/bin/pip install faster-whisper"
+    return 0
+  }
+  if [ ! -d /opt/pi-whisper/models ] || [ -z "$(ls -A /opt/pi-whisper/models 2>/dev/null)" ]; then
+    warn "whisper 模型目录 /opt/pi-whisper/models 为空"
+    info "启动后首次使用将自动下载模型（或提前放置 GGML 模型）"
+    return 0
+  fi
+  bash "$wsv" start >/dev/null 2>&1 \
+    && ok "whisper 服务已启动（$(bash "$wsv" status 2>/dev/null | head -1)）" \
+    || warn "whisper 启动失败，可稍后运行: bash $wsv start"
+}
+
 # ---- Phase 4: 验证 ----
 verify() {
   title "验证" "最终检查"
@@ -408,36 +498,40 @@ verify() {
     ok "pi-memory/checkpoints/ 已创建"
   fi
 
-  # pi-autopilot 扩展（融合 pi-scheduler + pi-admin）
-  if [ -d "$PI_HOME/agent/extensions/pi-autopilot/node_modules" ]; then
-    local pkgs=$(ls "$PI_HOME/agent/extensions/pi-autopilot/node_modules" 2>/dev/null | wc -l)
-    ok "pi-autopilot: $pkgs npm 包已安装"
-  else
-    warn "pi-autopilot: node_modules 未安装"
-    info "运行: cd $PI_HOME/agent/extensions/pi-autopilot && npm install"
-  fi
-
-  # 其余扩展（subagent/pi-context/pi-tmux 零依赖；pi-memory/pi-web-search/pi-browser 需 node_modules）
-  for ext in pi-memory pi-web-search pi-browser; do
-    if [ -d "$PI_HOME/agent/extensions/$ext/node_modules" ]; then
-      local pkgs=$(ls "$PI_HOME/agent/extensions/$ext/node_modules" 2>/dev/null | wc -l)
-      ok "$ext: $pkgs npm 包已安装"
+  # 扩展依赖：动态扫描全部扩展（有依赖的需 node_modules；无依赖的跳过）
+  for d in "$PI_HOME/agent/extensions"/*/; do
+    [ -d "$d" ] || continue
+    name="$(basename "$d")"
+    case "$name" in tests|node_modules) continue ;; esac
+    if [ -f "$d/package.json" ]; then
+      dep_count=$(python3 -c "import json; print(len(json.load(open('$d/package.json')).get('dependencies',{})))" 2>/dev/null || echo "?")
     else
-      warn "$ext: node_modules 未安装"
-      info "运行: cd $PI_HOME/agent/extensions/$ext && npm install"
+      dep_count=0
+    fi
+    if [ -d "$d/node_modules" ]; then
+      pkgs=$(ls "$d/node_modules" 2>/dev/null | wc -l)
+      [ "$dep_count" -gt 0 ] && ok "$name: $pkgs npm 包已安装" || ok "$name: $pkgs npm 包（无依赖声明）"
+    else
+      if [ "$dep_count" -gt 0 ]; then
+        warn "$name: node_modules 未安装"
+        info "运行: cd $PI_HOME/agent/extensions/$name && npm install"
+      fi
     fi
   done
 
-  # 扩展自动发现完整性（8 项齐备；pi 0.83+ 从目录自动加载）
+  # 扩展自动发现完整性（动态扫描；pi 0.83+ 从目录自动加载）
   python3 -c "
 import os
 ext_dir = '$PI_HOME/agent/extensions'
-required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser','pi-tmux']
-missing = [e for e in required if not os.path.isfile(os.path.join(ext_dir, e, 'index.ts'))]
-print('missing' if missing else 'ok')
-" 2>/dev/null | grep -q ok \
-    && ok "扩展自动发现: 8 个扩展目录 index.ts 齐备" \
-    || warn "扩展自动发现不完整，运行 rebuild 的 phase1 修复"
+names = sorted(d for d in os.listdir(ext_dir) if os.path.isdir(os.path.join(ext_dir, d)) and d not in ('tests','node_modules'))
+missing = [n for n in names if not os.path.isfile(os.path.join(ext_dir, n, 'index.ts'))]
+print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
+" 2>/dev/null | while IFS= read -r line; do
+    case "$line" in
+      ok:*) ok "扩展自动发现: ${line#ok:} 个扩展目录 index.ts 齐备" ;;
+      missing:*) warn "扩展自动发现缺失 index.ts: ${line#missing:}" ;;
+    esac
+  done
   # 检查 cron / systemd 是否已配置
   if command -v crontab &>/dev/null && crontab -l 2>/dev/null | grep -q pi-cron; then
     ok "pi-autopilot: crontab 已安装"
@@ -447,8 +541,13 @@ print('missing' if missing else 'ok')
     info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
   fi
 
-  # Provider 配置检查
-  if [ -f "$PI_HOME/agent/settings.json" ] && [ -f "$PI_HOME/agent/models.json" ]; then
+# Provider 配置检查
+  if [ ! -f "$PI_HOME/agent/settings.json" ] || [ ! -f "$PI_HOME/agent/models.json" ]; then
+    warn "settings.json / models.json 缺失——恢复到新设备后必须手动提供"
+    info "从原机安全传输: scp user@orig:~/.pi/agent/{settings.json,models.json,auth.json} $PI_HOME/agent/"
+    info "或原机打包: pi-backup create --with-auth 后 pi-backup restore 恢复"
+    info "未提供时 pi 无可用模型，无法启动对话"
+  elif [ -f "$PI_HOME/agent/settings.json" ] && [ -f "$PI_HOME/agent/models.json" ]; then
     DEFAULT_PROVIDER=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultProvider',''))" 2>/dev/null)
     DEFAULT_MODEL=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultModel',''))" 2>/dev/null)
     PROVIDER_EXISTS=$(python3 -c "
@@ -505,9 +604,14 @@ phase2_searxng_deps
 
 phase2_binaries
 
+# 类型链接需要 pi 已安装；wrapper/whisper 均为幂等
+phase2_types
+phase2_wrapper
+phase2_whisper
+
 # Scheduler 离线调度安装（可选）
 if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
-  title "Phase 2-D" "定时调度安装"
+  title "Phase 3" "定时调度安装"
   bash "$PI_HOME/scripts/install-cron.sh" 2>&1 | while IFS= read -r line; do
     if echo "$line" | grep -q "^✓"; then
       ok "${line#✓ }"
@@ -526,6 +630,8 @@ echo "  停止 SearXNG:    $PI_HOME/searxng/stop.sh"
 echo "  重新生成配置:    $PI_HOME/searxng/generate-config.sh --force"
 echo "  安装浏览器:      cd $PI_HOME && npx cloakbrowser install"
 echo "  安装定时调度:    $PI_HOME/scripts/install-cron.sh"
+echo "  Whisper 转写:    $PI_HOME/scripts/pi-whisper.sh {start|stop|status}"
+echo "  wrapper 自愈:    $PI_HOME/scripts/install-wrapper.sh --ensure"
 echo "  循环任务:        /loop 5m <prompt>"
 echo "  定时任务:        /schedule cron \"0 9 * * 1-5\" <prompt>"
 echo "  提醒:            /remind +30m <prompt>"

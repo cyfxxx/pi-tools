@@ -9,15 +9,29 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "ignoreDeprecations": "6.0",
-    "typeRoots": ["./pi-web-search/node_modules/@types"],
-    "types": ["node"],
+    "typeRoots": [
+      "./pi-web-search/node_modules/@types"
+    ],
+    "types": [
+      "node"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@earendil-works/pi-coding-agent": ["/root/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"],
-      "@earendil-works/pi-agent-core": ["/root/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-agent-core/dist/index.d.ts"],
-      "@earendil-works/pi-ai": ["/root/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/dist/index.d.ts"],
-      "@earendil-works/pi-tui": ["/root/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.d.ts"],
-      "typebox": ["/root/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/typebox/build/index.d.mts"]
+      "@earendil-works/pi-coding-agent": [
+        "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"
+      ],
+      "@earendil-works/pi-agent-core": [
+        "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-agent-core/dist/index.d.ts"
+      ],
+      "@earendil-works/pi-ai": [
+        "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/dist/index.d.ts"
+      ],
+      "@earendil-works/pi-tui": [
+        "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.d.ts"
+      ],
+      "typebox": [
+        "/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/typebox/build/index.d.mts"
+      ]
     }
   },
   "include": [
