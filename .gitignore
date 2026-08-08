@@ -75,4 +75,8 @@ agent/extensions/*/node_modules
 # pi-tmux 运行时数据
 logs/tmux/
 agent/.pi-tmux-registry.json
+# pi-voice 运行时数据
+logs/whisper/
+logs/voice/
+agent/pi-voice.json
 

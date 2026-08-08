@@ -5,21 +5,26 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 目录结构
 
 - `agent/settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
-- `agent/extensions/` — 8 个已注册扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux
+- `agent/extensions/` — 9 个已注册扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`（按窗口比例自动压缩阈值+防抖+压缩后自动继续门）、`prune.ts`（兼容层 + 工具输出分层擦除 + thinking 预算保留）、`usage-diag.ts`（每轮 LLM 用量诊断记录/汇总，含 prune/压缩事件）、`note-store.ts`、`token-budget.ts`（兼容层）
 - `agent/prompts/` — 提示词文档（PI-SDK-EXTENSION.md）
 - `agent/agents/`、`agent/skills/` — 子代理模板与技能
-- `scripts/` — rebuild.sh 一键重建、pi-wrapper.sh 生命周期、pi-cron.sh 定时、test-all.sh 回归
+- `scripts/` — rebuild.sh 一键重建、pi-wrapper.sh 生命周期、pi-cron.sh 定时、test-all.sh 回归、pi-whisper.sh whisper 转写服务管理（配套 `whisper-server.py`，faster-whisper 常驻于 127.0.0.1:18766；模型经 hf-mirror.com 下载，缓存 /opt/pi-whisper/models）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 - `memory/` — pi-memory 运行时数据（git 忽略）
+- `logs/whisper/` — whisper 服务日志与 pid（运行时数据）
+
+## 语音交流（pi-voice 扩展，Termux/Android 环境）
+
+pi-voice 提供双向语音：`/voice` + `Ctrl+R` 录音（termux-microphone-record）→ ffmpeg 转 16k wav → 本地 faster-whisper 常驻服务（`~/.pi/scripts/pi-whisper.sh start`，端口 18766）转写 → 插入输入框或直发；`message_end` 事件自动朗读 assistant 回复（termux-tts-speak，中文系统 TTS）。`/voice doctor` 诊断依赖（录音权限 / ffmpeg / whisper 服务 / TTS）。配置：环境变量或 `~/.pi/agent/pi-voice.json`，见扩展 README。注意：麦克风权限需在 Android 设置授予 Termux:API；HuggingFace 下载须走 hf-mirror.com（`HF_ENDPOINT` + `HF_HUB_DISABLE_XET=1` 已固化在 whisper-server.py）。
 
 ## 验证命令（全量回归）
 
 ```bash
-bash scripts/test-all.sh          # 一键：8 套测试 + tsc + conflict-check
+bash scripts/test-all.sh          # 一键：9 套测试 + tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 15 / pi-tmux 10 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 15 / pi-tmux 10 / pi-voice 29 用例）
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（34 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（6 项）
