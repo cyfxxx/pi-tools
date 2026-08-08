@@ -18,13 +18,17 @@ import {
 } from './core'
 import type { TmuxConfig } from './config'
 
+type ToolText = { type: 'text'; text: string }[]
+type ToolResultObj = { content: ToolText; details: unknown }
+type ToolErrorObj = { content: ToolText; details: unknown; isError: boolean }
+
 /** 统一错误输出：环境缺失时返回可修复指引，不抛异常崩溃。 */
-function err(text: string): { content: { type: 'text'; text: string }[]; isError: boolean } {
-  return { content: [{ type: 'text', text }], isError: true }
+function err(text: string): ToolErrorObj {
+  return { content: [{ type: 'text', text }], details: null, isError: true }
 }
 
-function ok(text: string): { content: { type: 'text'; text: string }[] } {
-  return { content: [{ type: 'text', text }] }
+function ok(text: string): ToolResultObj {
+  return { content: [{ type: 'text', text }], details: null }
 }
 
 function resolveName(params: Record<string, unknown>, prefix: string): string {

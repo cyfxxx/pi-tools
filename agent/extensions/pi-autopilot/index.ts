@@ -64,7 +64,7 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
       if (sections.length > 0) {
         const msg = sections.join('\n\n')
         try {
-          await pi.appendEntry?.({ role: 'user', content: msg })
+          await pi.sendUserMessage?.(msg)
         } catch { /* not critical */ }
       }
 

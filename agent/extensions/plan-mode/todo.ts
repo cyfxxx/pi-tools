@@ -64,7 +64,7 @@ export function registerTodoTool(pi: ExtensionAPI): void {
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       const err = validateParams(params);
       if (err) {
-        return { content: [{ type: "text", text: `Error: ${err}` }] };
+        return { content: [{ type: "text", text: `Error: ${err}` }], details: null };
       }
 
       const action = params.action as TaskAction;
@@ -73,9 +73,9 @@ export function registerTodoTool(pi: ExtensionAPI): void {
 
       const text = formatContent(result.op, result.state);
       if (result.op.kind === "error") {
-        return { content: [{ type: "text", text: `Error: ${text}` }] };
+        return { content: [{ type: "text", text: `Error: ${text}` }], details: null };
       }
-      return { content: [{ type: "text", text }] };
+      return { content: [{ type: "text", text }], details: null };
     },
   });
 }

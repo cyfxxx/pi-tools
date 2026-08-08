@@ -1,4 +1,4 @@
-import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResult } from '@earendil-works/pi-coding-agent'
+import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, AgentToolResult } from '@earendil-works/pi-coding-agent'
 import type { BrowserConfig } from './types'
 import { BrowserManager } from './impl'
 import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
@@ -333,7 +333,7 @@ function truncate(s: string, max: number): string {
   return s.length <= max ? s : s.slice(0, max) + `\n\n…… [已截断，共 ${s.length} 字符]`
 }
 
-function toolResult(text: string, toolName: string, recordUsage?: RecordUsage): ToolResult {
+function toolResult(text: string, toolName: string, recordUsage?: RecordUsage): AgentToolResult<Record<string, unknown>> {
   const result = pruneToolOutput(text, toolName)
   recordOutput(toolName, result.length)
   if (recordUsage) recordUsage(toolName, estimateTokens(result))

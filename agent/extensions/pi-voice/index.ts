@@ -55,7 +55,7 @@ export default function (pi: ExtensionAPI): void {
       onAutoComplete: (r) => {
 if (r.text) {
           lastAutoDictation = r.text
-          if (config.autoSend) pi.sendUserMessage(r.text, { deliverAs: 'nextTurn' })
+          if (config.autoSend) pi.sendUserMessage(r.text, { deliverAs: 'steer' })
         }
       },
     },
@@ -63,48 +63,52 @@ if (r.text) {
 
   pi.registerCommand('voice', {
     description: '语音输入：开始/停止录音并转写',
-    usage: 'voice [start|stop|cancel|doctor]',
     handler: async (args, ctx) => {
       const cmd = args.trim()
       if (cmd === 'start') {
-        return withStatus(ctx, dictation.start())
-      }
-      if (cmd === 'stop') {
+        withStatus(pi, ctx, dictation.start())
+      } else if (cmd === 'stop') {
         const r = await dictation.stop()
-        return deliverResult(pi, ctx, r)
-      }
-      if (cmd === 'cancel') {
-        return withStatus(ctx, dictation.cancel())
-      }
-      if (cmd === 'doctor') return cmdDoctor(ctx, config)
-      if (dictation.isRecording()) {
+        deliverResult(pi, ctx, r)
+      } else if (cmd === 'cancel') {
+        withStatus(pi, ctx, dictation.cancel())
+      } else if (cmd === 'doctor') {
+        await cmdDoctor(pi, ctx, config)
+      } else if (dictation.isRecording()) {
         const r = await dictation.stop()
-        return deliverResult(pi, ctx, r)
+        deliverResult(pi, ctx, r)
+      } else {
+        withStatus(pi, ctx, dictation.start())
       }
-      return withStatus(ctx, dictation.start())
     },
   })
 
   pi.registerCommand('tts', {
     description: '语音朗读：on/off/status/speak [文本]',
-    usage: 'tts [on|off|status|speak [文本]]',
     handler: async (args, ctx) => {
       const [cmd, ...rest] = args.trim().split(/\s+/)
       switch (cmd) {
         case 'on':
-          return setTts(pi, ctx, true)
+          setTts(pi, ctx, true)
+          break
         case 'off':
-          return setTts(pi, ctx, false)
+          setTts(pi, ctx, false)
+          break
         case 'status':
-          return `TTS ${ttsEnabled ? '开启' : '关闭'}；最近回复 ${lastAssistantText ? `${lastAssistantText.length} 字符` : '无'}；自动转写暂存 ${lastAutoDictation ? '有' : '无'}；转写服务 ${await whisperStatus(config)}`
+          reply(pi, `TTS ${ttsEnabled ? '开启' : '关闭'}；最近回复 ${lastAssistantText ? `${lastAssistantText.length} 字符` : '无'}；自动转写暂存 ${lastAutoDictation ? '有' : '无'}；转写服务 ${await whisperStatus(config)}`)
+          break
         case 'speak': {
           const text = rest.join(' ') || lastAssistantText
-          if (!text) return '暂无朗读内容'
+          if (!text) {
+            reply(pi, '暂无朗读内容')
+            break
+          }
           const res = await speak(config, text)
-          return res.code === 0 ? '已朗读' : `朗读失败: ${res.stderr}`
+          reply(pi, res.code === 0 ? '已朗读' : `朗读失败: ${res.stderr}`)
+          break
         }
         default:
-          return setTts(pi, ctx, !ttsEnabled)
+          setTts(pi, ctx, !ttsEnabled)
       }
     },
   })
@@ -115,7 +119,7 @@ if (r.text) {
       if (dictation.isRecording() || dictation.isTranscribing()) {
         void dictation.stop().then((r) => deliverResult(pi, ctx, r)).catch(() => {})
       } else {
-        withStatus(ctx, dictation.start())
+        withStatus(pi, ctx, dictation.start())
       }
     },
   })
@@ -138,23 +142,30 @@ if (r.text) {
   })
 }
 
-function withStatus(ctx: ExtensionContext, message: string): string {
+const OUTPUT_CUSTOM_TYPE = 'cmd-output'
+
+function reply(api: ExtensionAPI, text: string): void {
+  api.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: text, display: true })
+}
+
+function withStatus(api: ExtensionAPI, ctx: ExtensionContext, message: string): void {
   if (message.startsWith('🎤')) {
     ctx.ui.setStatus('pi-voice', '🎤 录音中')
   } else {
     ctx.ui.setStatus('pi-voice', undefined)
   }
-  return message
+  reply(api, message)
 }
 
 /** 转写结果交付：autoSend 直发，否则粘贴输入框供确认；不落盘音频。 */
-function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult): string {
+function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult): void {
   const cfg = loadConfig()
   if (r.text) {
     if (cfg.autoSend) {
-      pi.sendUserMessage(r.text, { deliverAs: 'nextTurn' })
+      pi.sendUserMessage(r.text, { deliverAs: 'steer' })
       ctx.ui.notify('已发送语音指令')
-      return `已发送：${r.text}`
+      reply(pi, `已发送：${r.text}`)
+      return
     }
     ctx.ui.setStatus('pi-voice', undefined)
     ctx.ui.pasteToEditor(r.text + ' ')
@@ -162,10 +173,10 @@ function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult): 
   } else {
     ctx.ui.setStatus('pi-voice', undefined)
   }
-  return r.message
+  reply(pi, r.message)
 }
 
-function setTts(pi: ExtensionAPI, ctx: ExtensionContext, enabled: boolean): string {
+function setTts(pi: ExtensionAPI, ctx: ExtensionContext, enabled: boolean): void {
   ttsEnabled = enabled
   try {
     persistConfig({ ttsEnabled }, process.env)
@@ -173,13 +184,13 @@ function setTts(pi: ExtensionAPI, ctx: ExtensionContext, enabled: boolean): stri
     // 持久化失败不阻塞开关
   }
   ctx.ui.notify(`TTS ${enabled ? '已开启' : '已关闭'}`)
-  return `TTS ${enabled ? '已开启' : '已关闭'}`
+  reply(pi, `TTS ${enabled ? '已开启' : '已关闭'}`)
 }
 
-async function cmdDoctor(ctx: ExtensionCommandContext, config: VoiceConfig): Promise<string> {
+async function cmdDoctor(api: ExtensionAPI, ctx: ExtensionCommandContext, config: VoiceConfig): Promise<void> {
   const lines = await doctor(config)
   ctx.ui.setStatus('pi-voice', undefined)
-  return lines.join('\n')
+  reply(api, lines.join('\n'))
 }
 
 async function whisperStatus(cfg: VoiceConfig): Promise<string> {

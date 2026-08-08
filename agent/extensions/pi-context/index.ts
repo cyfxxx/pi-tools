@@ -47,9 +47,9 @@ export default function (pi: ExtensionAPI) {
 		// Prune：工具输出分层擦除（借鉴 opencode，零 LLM 成本）。
 		// 最近 2 轮 + 40K 保护带内保留，更早的旧工具输出替换为占位；
 		// 回收 <20K 不应用。判定确定性、擦除点单调后移 → 缓存前缀稳定。
-		const pruned = pruneToolResults(messages as PruneMessage[]);
+		const pruned = pruneToolResults(messages as unknown as PruneMessage[]);
 		if (pruned.modified) {
-			messages = pruned.messages as typeof messages;
+			messages = pruned.messages as unknown as typeof messages;
 			modified = true;
 			recordPrune(pruned.prunedTokens, pruned.prunedChars, pruned.prunedCount);
 		}
@@ -77,9 +77,9 @@ export default function (pi: ExtensionAPI) {
 		// 下单轮 reasoning 可达 5-10K，2 轮上限不可控）。改为保留最近
 		// KEEP_THINKING_TOKENS token 的 thinking：预算耗尽处及更早的全部删除。
 		// 确定性：判定只依赖消息内容，内容不变结果不变 → 缓存前缀稳定。
-		const thinking = pruneThinkingBudget(messages as PruneMessage[]);
+		const thinking = pruneThinkingBudget(messages as unknown as PruneMessage[]);
 		if (thinking.modified) {
-			messages = thinking.messages as typeof messages;
+			messages = thinking.messages as unknown as typeof messages;
 			modified = true;
 		}
 		if (modified) return { messages };

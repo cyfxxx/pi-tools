@@ -179,7 +179,7 @@ export function registerTools(pi: ExtensionAPI): void {
         msg += `\n警告: 记忆库 ${(totalSize / (1024 * 1024)).toFixed(1)} MB，接近 1 MB 上限，请考虑 /memory prune 清理`
       }
 
-      return { content: [{ type: 'text', text: msg }] }
+      return { content: [{ type: 'text', text: msg }], details: null }
     },
   })
 
@@ -227,7 +227,7 @@ export function registerTools(pi: ExtensionAPI): void {
       )
 
       if (!results.length) {
-        return { content: [{ type: 'text', text: '(无匹配的记忆)' }] }
+        return { content: [{ type: 'text', text: '(无匹配的记忆)' }], details: null }
       }
 
       const lines = results.map((e, i) => {
@@ -241,7 +241,8 @@ export function registerTools(pi: ExtensionAPI): void {
 
       return {
         content: [{ type: 'text', text: `记忆搜索结果 (${results.length} 条):\n${lines.join('\n')}` }],
-      }
+      details: null,
+        }
     },
   })
 
@@ -264,6 +265,7 @@ export function registerTools(pi: ExtensionAPI): void {
         .join('\n')
 
       return {
+        details: [],
         content: [
           {
             type: 'text',
@@ -323,13 +325,14 @@ export function registerTools(pi: ExtensionAPI): void {
         const ok = deleteEntry(entries, id)
         return {
           content: [{ type: 'text', text: ok ? `已删除记忆 ${id}` : `未找到记忆 ${id}` }],
-        }
+        details: null,
+          }
       }
 
       if (category && olderThan) {
         const cutoff = new Date(olderThan).getTime()
         if (isNaN(cutoff)) {
-          return { content: [{ type: 'text', text: `无效日期: ${olderThan}` }], isError: true }
+          return { content: [{ type: 'text', text: `无效日期: ${olderThan}` }], details: null, isError: true }
         }
         const before = entries.length
         const kept = entries.filter(e => {
@@ -343,13 +346,15 @@ export function registerTools(pi: ExtensionAPI): void {
           content: [
             { type: 'text', text: `已删除 ${removed} 条 ${category} 类别记忆（${olderThan} 之前）` },
           ],
-        }
+        details: null,
+          }
       }
 
       return {
         content: [
           { type: 'text', text: '请指定 id 参数，或同时指定 category 和 olderThan 参数' },
         ],
+        details: null,
         isError: true,
       }
     },
@@ -422,7 +427,7 @@ export function registerTools(pi: ExtensionAPI): void {
         }
       }
 
-      return { content: [{ type: 'text', text: blocks.join('\n\n') }] }
+      return { content: [{ type: 'text', text: blocks.join('\n\n') }], details: null }
     },
   })
 
@@ -454,10 +459,10 @@ export function registerTools(pi: ExtensionAPI): void {
       const language = (params.language as string | undefined) || detectLanguage(code)
       const { stdout, stderr, status, error } = await execLanguageAsync(language, code, timeout, signal)
       if (error) {
-        return { content: [{ type: 'text', text: `Error: ${error}` }], isError: true }
+        return { content: [{ type: 'text', text: `Error: ${error}` }], details: null, isError: true }
       }
       if (status !== 0) {
-        return { content: [{ type: 'text', text: `Exit code ${status}\n${stderr || stdout}` }], isError: true }
+        return { content: [{ type: 'text', text: `Exit code ${status}\n${stderr || stdout}` }], details: null, isError: true }
       }
       let output = stdout || '(no output)'
       if (Number.isFinite(cap) && output.length > cap) {
@@ -500,6 +505,7 @@ export function registerTools(pi: ExtensionAPI): void {
       if (params.value === undefined) {
         return {
           content: [{ type: 'text', text: notes[key] !== undefined ? notes[key] : `(no note for "${key}")` }],
+        details: null,
         }
       }
       if (params.value === 'null' || params.value === null) {
@@ -510,7 +516,8 @@ export function registerTools(pi: ExtensionAPI): void {
         saveNotes(notes)
         return {
           content: [{ type: 'text', text: hadKey ? `Deleted note "${key}"` : `(no note "${key}" to delete)` }],
-        }
+        details: null,
+          }
       }
 
       const value = params.value as string
@@ -531,7 +538,7 @@ export function registerTools(pi: ExtensionAPI): void {
         msg += `\nWarning: total notes size ${sizeMB} MB exceeds 1 MB — consider cleaning up with /memory:cleanup`
       }
       if (ttl) msg += `\nExpires: ${ttl}`
-      return { content: [{ type: 'text', text: msg }] }
+      return { content: [{ type: 'text', text: msg }], details: null }
     },
   })
 
@@ -550,7 +557,7 @@ export function registerTools(pi: ExtensionAPI): void {
       const prefix = params.prefix as string | undefined
       const keys = prefix ? allKeys.filter(k => k.startsWith(prefix)) : allKeys
       if (keys.length === 0) {
-        return { content: [{ type: 'text', text: '(no notes)' }] }
+        return { content: [{ type: 'text', text: '(no notes)' }], details: null }
       }
       const totalSize = getNotesSize(notes)
       const detail = params.detail === true
@@ -569,7 +576,8 @@ export function registerTools(pi: ExtensionAPI): void {
       const totalMB = (totalSize / (1024 * 1024)).toFixed(2)
       return {
         content: [{ type: 'text', text: `Notes (${keys.length}):\n${lines.join('\n')}\nTotal: ${totalMB} MB` }],
-      }
+      details: null,
+        }
     },
   })
 
@@ -599,7 +607,7 @@ export function registerTools(pi: ExtensionAPI): void {
 
       if (name === 'list') {
         if (!existsSync(CHECKPOINTS_DIR)) {
-          return { content: [{ type: 'text', text: '(no checkpoints)' }] }
+          return { content: [{ type: 'text', text: '(no checkpoints)' }], details: null }
         }
         const files = readdirSync(CHECKPOINTS_DIR)
           .filter(f => f.endsWith('.json'))
@@ -607,7 +615,7 @@ export function registerTools(pi: ExtensionAPI): void {
           .reverse()
           .slice(0, MAX_CHECKPOINTS_LIST)
         if (files.length === 0) {
-          return { content: [{ type: 'text', text: '(no checkpoints)' }] }
+          return { content: [{ type: 'text', text: '(no checkpoints)' }], details: null }
         }
         const lines = files.map(f => {
           const snapName = f.replace(/\.json$/, '')
@@ -624,17 +632,18 @@ export function registerTools(pi: ExtensionAPI): void {
         })
         return {
           content: [{ type: 'text', text: `Checkpoints (${files.length}):\n${lines.join('\n')}` }],
-        }
+        details: null,
+          }
       }
 
       if (name.startsWith('restore:')) {
         const snapName = sanitizeSnapName(name.slice(8))
         if (!snapName) {
-          return { content: [{ type: 'text', text: `非法检查点名称: "${name.slice(8)}"` }], isError: true }
+          return { content: [{ type: 'text', text: `非法检查点名称: "${name.slice(8)}"` }], details: null, isError: true }
         }
         const snapFile = join(CHECKPOINTS_DIR, `${snapName}.json`)
         if (!existsSync(snapFile)) {
-          return { content: [{ type: 'text', text: `No checkpoint "${snapName}" found` }], isError: true }
+          return { content: [{ type: 'text', text: `No checkpoint "${snapName}" found` }], details: null, isError: true }
         }
         try {
           const data: SnapData = JSON.parse(readFileSync(snapFile, 'utf-8'))
@@ -646,18 +655,20 @@ export function registerTools(pi: ExtensionAPI): void {
                 text: `Restored checkpoint "${snapName}" (${Object.keys(data.notes || {}).length} notes, from ${new Date(data.timestamp).toISOString()})`,
               },
             ],
-          }
+          details: null,
+            }
         } catch (e: unknown) {
           return {
             content: [{ type: 'text', text: `Failed to restore: ${(e as Error).message}` }],
             isError: true,
+        details: null,
           }
         }
       }
 
       const snapName = sanitizeSnapName(name)
       if (!snapName) {
-        return { content: [{ type: 'text', text: `非法检查点名称: "${name}"（仅允许字母/数字/._-，且不含路径分隔符）` }], isError: true }
+        return { content: [{ type: 'text', text: `非法检查点名称: "${name}"（仅允许字母/数字/._-，且不含路径分隔符）` }], details: null, isError: true }
       }
       try {
         mkdirSync(CHECKPOINTS_DIR, { recursive: true })
@@ -665,6 +676,7 @@ export function registerTools(pi: ExtensionAPI): void {
         return {
           content: [{ type: 'text', text: `无法创建检查点目录: ${(e as Error).message}` }],
           isError: true,
+        details: null,
         }
       }
       const notes = loadNotes()
@@ -677,7 +689,8 @@ export function registerTools(pi: ExtensionAPI): void {
             text: `Saved checkpoint "${name}" (${Object.keys(notes).length} notes, ${new Date(snap.timestamp).toISOString()})`,
           },
         ],
-      }
+      details: null,
+        }
     },
   })
 }

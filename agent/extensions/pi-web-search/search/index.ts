@@ -1,4 +1,4 @@
-import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, ToolResult } from '@earendil-works/pi-coding-agent'
+import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, AgentToolResult } from '@earendil-works/pi-coding-agent'
 import type { SearchConfig } from './types'
 import { searchWeb } from './impl'
 import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
@@ -90,6 +90,6 @@ function truncate(s: string, max: number): string {
   return s.length <= max ? s : s.slice(0, max) + '...'
 }
 
-function toolResult(text: string): ToolResult {
+function toolResult(text: string): AgentToolResult<Record<string, unknown>> {
   return { content: [{ type: 'text' as const, text }], details: {} }
 }

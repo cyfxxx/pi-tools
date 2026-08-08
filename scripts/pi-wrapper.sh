@@ -7,33 +7,51 @@
 
 # 手动处理关键路径的错误，不使用 set -e
 
+# 持久化锚点：记录最近一次解析出的真实 cli.js 路径。
+# pi update 重装 npm 包后路径不变（更新目录内的同一 cli.js），
+# 而 bin/pi 可能被 update 覆盖成官方 symlink，导致 wrapper 被绕过，
+# 此锚点 + 自动重建 pi-original 保证 wrapper 在 update 后仍接管。
+ANCHOR_FILE="$HOME/.pi/scripts/.pi-cli-path"
+
 # 找到原始 pi CLI 的 JS 入口（绕过 wrapper 防循环）
 # 不能直接执行 pi-original symlink，因为 Node 拒绝非 .js 扩展名
 # 改为找到真实的 cli.js 用 node 执行
 PI_JS=""
+# 1. 持久化锚点优先
+if [ -z "$PI_JS" ] && [ -f "$ANCHOR_FILE" ]; then
+  ANCHOR="$(cat "$ANCHOR_FILE" 2>/dev/null || echo '')"
+  [ -f "$ANCHOR" ] && PI_JS="$ANCHOR"
+fi
 PI_BIN_DIR="$(dirname "$(command -v pi 2>/dev/null || echo '')")"
 if [ -d "$PI_BIN_DIR" ]; then
-  # 尝试通过 pi-original symlink 找到目标
-  if [ -L "$PI_BIN_DIR/pi-original" ]; then
+  # 2. 尝试通过 pi-original symlink 找到目标
+  if [ -z "$PI_JS" ] && [ -L "$PI_BIN_DIR/pi-original" ]; then
     PI_TARGET="$(readlink -f "$PI_BIN_DIR/pi-original" 2>/dev/null || readlink "$PI_BIN_DIR/pi-original")"
     if [ -f "$PI_TARGET" ]; then
       PI_JS="$PI_TARGET"
     fi
   fi
-  # 如果没有 pi-original，从原始 pi symlink 找
+  # 3. 如果没有 pi-original，从官方 pi symlink 找（并自动重建 pi-original 备份，
+  #    防止 pi update 删除该 symlink 后下次启动丢失入口）
   if [ -z "$PI_JS" ] && [ -L "$PI_BIN_DIR/pi" ]; then
     PI_JS="$(readlink -f "$PI_BIN_DIR/pi" 2>/dev/null || echo "")"
+    [ -f "$PI_JS" ] && [ ! -L "$PI_BIN_DIR/pi-original" ] && ln -s "$PI_JS" "$PI_BIN_DIR/pi-original" 2>/dev/null
     [ ! -f "$PI_JS" ] && PI_JS=""
   fi
-  # 找 dist/cli.js
+  # 4. 找 dist/cli.js
   if [ -z "$PI_JS" ]; then
     PI_JS="$PI_BIN_DIR/../lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js"
     [ ! -f "$PI_JS" ] && PI_JS=""
   fi
 fi
-# 兜底：直接试 pi 命令（可能走 wrapper 循环但概率低）
+# 5. 兜底：直接试 pi 命令（可能走 wrapper 循环但概率低）
 if [ -z "$PI_JS" ]; then
   PI_JS="$(command -v pi 2>/dev/null || echo '')"
+fi
+
+# 解析成功则刷新锚点
+if [ -n "$PI_JS" ] && [ -f "$PI_JS" ]; then
+  echo "$PI_JS" > "$ANCHOR_FILE" 2>/dev/null
 fi
 
 STATE_FILE="$HOME/.pi/agent/.pi-admin-state.json"

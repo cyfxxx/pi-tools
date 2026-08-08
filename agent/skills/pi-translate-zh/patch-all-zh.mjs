@@ -45,6 +45,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PI_DIR = join(__dirname, "..", ".."); // ~/.pi/
 const PINPM_DIR = join(PI_DIR, "npm/node_modules"); // ~/.pi/npm/node_modules
 
+// Dry-run 模式：只检测原文匹配情况，不改写任何文件。
+// 用法：node patch-all-zh.mjs --check
+// 输出各节替换命中数与未命中原文，便于评估补丁与当前 pi 版本的兼容度。
+const DRY_RUN =
+	process.argv.includes("--dry-run") || process.argv.includes("--check");
+let drySummary = [];
+
 // ============================================================
 // 第〇步：自动检测 pi 核心包路径
 // ============================================================
@@ -180,18 +187,27 @@ function apply(file, replacements) {
 	}
 	let content = readFileSync(file, "utf-8");
 	let changed = 0;
+	const missing = [];
 	for (const [from, to] of replacements) {
 		// 跳过已翻译的（目标字符串已存在）
 		if (content.includes(to)) continue;
 		// 精确匹配替换
 		const idx = content.indexOf(from);
 		if (idx === -1) {
-			console.warn(`  ! 未找到原文: ${from.slice(0, 80)}`);
+			missing.push(from);
 			continue;
 		}
 		// 用 replace (非 replaceAll) 精确替换一次，避免误伤
 		content = content.replace(from, to);
 		changed++;
+	}
+	if (DRY_RUN) {
+		if (changed > 0) {
+			drySummary.push(
+				`${file.replace(/.*node_modules\//, "")}: 将替换 ${changed} 项，未匹配 ${missing.length} 项`,
+			);
+		}
+		return changed;
 	}
 	if (changed > 0) {
 		backup(file);
@@ -1882,6 +1898,15 @@ for (let i = 0; i < sections.length; i++) {
 	console.log(
 		`  [${String(i + 1).padStart(2, " ")}/${String(sections.length).padStart(2, " ")}] ${label}`,
 	);
+}
+
+if (DRY_RUN) {
+	console.log("\n[干跑模式] 未写入任何文件。可替换项汇总：");
+	for (const line of drySummary) console.log(`  - ${line}`);
+	console.log(
+		"\n若可替换项接近 0：原文与当前 pi 版本不匹配，需更新补丁先例（pi 结构已变更）。",
+	);
+	process.exit(0);
 }
 
 console.log("\n翻译完成！");

@@ -24,7 +24,6 @@ export function registerCommands(pi: ExtensionAPI): void {
       '管理持久记忆库。子命令: search <关键词> [--category=] [--limit=N] 搜索；' +
       'stats 统计；summary [N] 会话摘要时间线；prune 清理低价值记忆；' +
       'cleanup [--keep=N] [--dry-run] 清理过期笔记/检查点，--all 清除全部。',
-    usage: '/memory <search|stats|summary|prune|cleanup> [args...]',
     handler: async (args: string, ctx) => {
       const parts = args.trim().split(/\s+/)
       const subcmd = parts[0]?.toLowerCase() || 'search'
