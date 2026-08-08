@@ -237,6 +237,13 @@ GitHub 同步完成
 | 5 | `searxng/venv/` | `searxng/settings.yml` 存在且 `searxng/venv/bin/python` 不存在 | `cd ~/.pi/searxng && python3 -m venv venv && venv/bin/pip install -r searxng/repo/requirements.txt 2>&1`（全量依赖） |
 | 6 | `searxng/repo/` | `searxng/repo/` 不存在或为空 | `git clone --depth 1 https://github.com/searxng/searxng ~/.pi/searxng/repo 2>&1`（中国网络通过镜像代理） |
 
+**Phase 2 — 并行组 B2（Whisper 转写服务）：**
+
+| # | 重建项 | 条件 | 命令 |
+|---|--------|------|------|
+| 6a | `/opt/pi-whisper/venv/` | `scripts/whisper-server.py` 存在且 venv 缺失 | `python3 -m venv /opt/pi-whisper/venv && /opt/pi-whisper/venv/bin/pip install faster-whisper 2>&1`（中国网络用清华 pypi 镜像） |
+| 6b | Whisper 模型 | whisper-server.py 存在但 `/opt/pi-whisper/models` 为空 | `HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 /opt/pi-whisper/venv/bin/python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8', download_root='/opt/pi-whisper/models')"` |
+
 **Phase 2 — 并行组 C（二进制下载，并发执行）：**
 
 | # | 重建项 | 条件 | 命令 |
@@ -393,6 +400,8 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | 生命周期直启脚本 | `scripts/pi-orig.sh` | 绕过 wrapper 直接启动（故障逃生） |
 | 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
 | 回归测试脚本 | `scripts/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
+| Whisper 服务脚本 | `scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
+| Whisper 服务源码 | `scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
 | tmux 配置 | `tmux/tmux.conf`（从 `~/.tmux.conf` 收录） | tmux 键位/插件/持久化配置（WSL2 调优见 alacritty-tmux-setup.md） |
 | Alacritty 配置 | `tmux/alacritty.toml`（从 `~/.config/alacritty/alacritty.toml` 收录） | 终端渲染配置（若存在） |

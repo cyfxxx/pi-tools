@@ -143,7 +143,7 @@ declare module '@earendil-works/pi-coding-agent' {
     registerProvider(name: string, config: Record<string, unknown>): void
     getFlag(name: string): boolean | string | undefined
     sendMessage(message: { customType: string; content?: unknown; display?: unknown; details?: unknown }, options?: { triggerTurn?: boolean; deliverAs?: 'steer' | 'followUp' | 'nextTurn' }): void
-    sendUserMessage(content: string | Array<{ type: string; text?: string }>, options?: { deliverAs?: 'steer' | 'followUp' }): void
+    sendUserMessage(content: string | Array<{ type: string; text?: string }>, options?: { deliverAs?: 'steer' | 'followUp' | 'nextTurn' }): void
     appendEntry(customType: string | { role?: string; content?: unknown; customType?: string; display?: unknown; details?: unknown }, data?: unknown): void
     setActiveTools(toolNames: string[]): void
     exec(command: string, args: string[], options?: Record<string, unknown>): Promise<unknown>
@@ -394,9 +394,53 @@ declare module '@earendil-works/pi-tui' {
   }
 
   export const Key: {
-    ctrlAlt(key: string): unknown
-    enter: unknown
-    escape: unknown
+    escape: 'escape'
+    esc: 'esc'
+    enter: 'enter'
+    return: 'return'
+    tab: 'tab'
+    space: 'space'
+    backspace: 'backspace'
+    delete: 'delete'
+    insert: 'insert'
+    home: 'home'
+    end: 'end'
+    pageUp: 'pageUp'
+    pageDown: 'pageDown'
+    up: 'up'
+    down: 'down'
+    left: 'left'
+    right: 'right'
+    f1: 'f1'
+    f2: 'f2'
+    f3: 'f3'
+    f4: 'f4'
+    f5: 'f5'
+    f6: 'f6'
+    f7: 'f7'
+    f8: 'f8'
+    f9: 'f9'
+    f10: 'f10'
+    f11: 'f11'
+    f12: 'f12'
+    ctrl(key: string): string
+    shift(key: string): string
+    alt(key: string): string
+    super(key: string): string
+    ctrlShift(key: string): string
+    shiftCtrl(key: string): string
+    ctrlAlt(key: string): string
+    altCtrl(key: string): string
+    shiftAlt(key: string): string
+    altShift(key: string): string
+    ctrlSuper(key: string): string
+    superCtrl(key: string): string
+    shiftSuper(key: string): string
+    superShift(key: string): string
+    altSuper(key: string): string
+    superAlt(key: string): string
+    ctrlShiftAlt(key: string): string
+    ctrlShiftSuper(key: string): string
   }
 }
 
