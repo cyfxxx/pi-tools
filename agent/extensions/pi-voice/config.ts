@@ -4,7 +4,7 @@
  * 纯模块，不依赖 pi API，便于 vitest 独立测试。
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -35,13 +35,27 @@ export interface VoiceConfig {
   language: string
 }
 
+/** Android（Termux）上 MediaRecorder 只能打开系统可访问路径；proot 容器内路径会 open failed: ENOENT。 */
+export function defaultTmpDir(): string {
+  if (existsSync('/storage/emulated/0')) {
+    try {
+      const dir = '/storage/emulated/0/pi-voice/'
+      mkdirSync(dir, { recursive: true })
+      return dir
+    } catch {
+      // 共享存储不可写时回退容器路径
+    }
+  }
+  return '/tmp/pi-voice'
+}
+
 export const DEFAULTS: VoiceConfig = {
   whisperEndpoint: 'http://127.0.0.1:18766',
   whisperToken: '',
   micBin: 'termux-microphone-record',
   ffmpegBin: 'ffmpeg',
   ttsBin: 'termux-tts-speak',
-  tmpDir: '/tmp/pi-voice',
+  tmpDir: defaultTmpDir(),
   audioDir: join(homedir(), '.pi', 'logs', 'voice'),
   ttsEnabled: true,
   ttsMaxChars: 400,
@@ -80,7 +94,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
     micBin: env.PI_VOICE_MIC_BIN || file.micBin || DEFAULTS.micBin,
     ffmpegBin: env.PI_VOICE_FFMPEG_BIN || file.ffmpegBin || DEFAULTS.ffmpegBin,
     ttsBin: env.PI_VOICE_TTS_BIN || file.ttsBin || DEFAULTS.ttsBin,
-    tmpDir: file.tmpDir || DEFAULTS.tmpDir,
+    tmpDir: env.PI_VOICE_TMP_DIR || file.tmpDir || DEFAULTS.tmpDir,
     audioDir: file.audioDir || DEFAULTS.audioDir,
     ttsEnabled: envBool(env.PI_VOICE_TTS_ENABLED, file.ttsEnabled ?? DEFAULTS.ttsEnabled),
     ttsMaxChars: numeric(env.PI_VOICE_TTS_MAX_CHARS, file.ttsMaxChars ?? DEFAULTS.ttsMaxChars),
@@ -132,6 +146,7 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
     ttsMaxChars: 'PI_VOICE_TTS_MAX_CHARS',
     autoSend: 'PI_VOICE_AUTO_SEND',
     maxSeconds: 'PI_VOICE_MAX_SECONDS',
+    tmpDir: 'PI_VOICE_TMP_DIR',
     language: 'PI_VOICE_LANGUAGE',
   }
   return map[key] ?? null

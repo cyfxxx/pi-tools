@@ -10,6 +10,7 @@
 - 转写文本默认**插入输入框**供确认（配置 `autoSend` 为 true 时直接发送）
 - 录音时长到上限（`maxSeconds`）自动转写；`/tts status` 显示自动转写结果暂存
 - 完全本地转写（faster-whisper），无需 API key，离线可用
+- 快捷键依赖终端转发修饰键序列：**tmux 会话须启用 `extended-keys`**（见下"安装与启动"第 4 步）
 
 ## 架构
 
@@ -33,6 +34,7 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 | `termux-microphone-record` | Android 麦克风录音 | `pkg install termux-api` + Termux:API 应用 |
 | `ffmpeg` | m4a → wav 转码 | `apt-get install ffmpeg` |
 | `termux-tts-speak` | 系统语音朗读（中文） | Termux:TTS（内置） |
+| tmux `extended-keys` | 透传 Ctrl+Shift+R 修饰键序列 | 见"安装与启动"第 4 步 |
 
 ## 安装与启动
 
@@ -48,9 +50,19 @@ apt-get install ffmpeg        # PRoot 侧
 
 # 3. 扩展自动发现（pi 0.83+ 从 ~/.pi/agent/extensions/ 自动加载索引）
 #    重启 pi 或 /reload 后即可使用 Ctrl+Shift+R / /voice
+
+# 4. tmux 透传组合键（快捷键必需，一次配置）
+#    ~/.tmux.conf 加入：set -g extended-keys always
+#    然后重启 tmux server：tmux kill-server; 重新连接后 pi 键序列才透传
 ```
 
 > 国内网络：模型从 hf-mirror.com 下载（`HF_ENDPOINT`/`HF_HUB_DISABLE_XET` 已固化在 `whisper-server.py`）。
+
+## 存储与权限
+
+- 录音默认存到 **`/storage/emulated/0/pi-voice/`**（Android 共享存储）：Termux:API 的 MediaRecorder 无法打开 PRoot 容器内路径（会报 `open failed: ENOENT`），这是录音"无反应/停不掉"的根因。可用 `PI_VOICE_TMP_DIR` 覆盖；非 Android 环境自动回落 `/tmp/pi-voice`。
+- 每次录音的前转换记录为 m4a + wav，转写完成后立即删除（即用即弃）；启动与 `session_shutdown` 时清理超过 24h 的残留。
+- 权限：在 Android 设置授予 **Termux:API 麦克风**权限；Termux 还需存储访问权限（读写 `/storage/emulated/0/pi-voice/`）。
 
 ## 配置
 
