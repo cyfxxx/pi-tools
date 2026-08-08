@@ -30,7 +30,7 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 | 参数 | 说明 |
 |------|------|
 | `--output <path>` | 输出路径（默认 `~/pi-backups/pi-backup-{hostname}-{timestamp}.tar.gz`） |
-| `--with-auth` | 包含 `auth.json`（API 密钥）。默认不包含。 |
+| `--with-auth` | 包含 `auth.json`（API 密钥）及同源敏感配置 `pi-voice.json`（whisper 令牌）、`models.json`（provider 密钥）。默认不包含。 |
 | `--full` | 包含 sessions、node_modules、venv、bin 等默认排除项 |
 | `--keep N` | 保留最近 N 份备份（默认 5），超出则删除最旧的文件 |
 
@@ -70,7 +70,9 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 
 ## `pi-backup sync`
 
-将当前 `~/.pi/` 的所有修改通过 git commit + push 同步到 GitHub。
+将当前 `~/.pi/` 的 git 追踪文件通过 commit + push 同步到 GitHub。
+
+> **git 模式的边界（重要）**：`.gitignore` 排除了 `agent/settings.json`、`agent/models.json`、`agent/pi-voice.json`、`agent/auth.json`、`agent/trust.json`、`searxng/settings.yml` 等含密钥/机器特定配置——git 同步**不含**这些文件。新设备 `clone` 后需手动提供（见 [clone](#pi-backup-clone) 与 `pi-backup create --with-auth`）。
 
 **参数：**
 
@@ -130,11 +132,12 @@ GitHub 同步完成
 
 **阶段 2：快照**
 
-5. 创建恢复前快照：
+5. 创建恢复前快照（含当前机器全部可覆盖配置；文件不存在时自动跳过）：
    ```
    SNAPSHOT_PATH="~/.pi/pre-restore-{timestamp}.tar.gz"
-   tar czf "$SNAPSHOT_PATH" \
-     -C ~ .pi/agent/settings.json .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
+   tar czf "$SNAPSHOT_PATH" --ignore-failed-read \
+     -C ~ .pi/agent/settings.json .pi/agent/models.json .pi/agent/pi-voice.json \
+        .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
         .pi/agent/agents .pi/agent/prompts .pi/agent/npm/package.json \
         .pi/memory .pi/searxng/settings.yml .pi/scripts \
@@ -145,7 +148,7 @@ GitHub 同步完成
 
 6. 解压归档：`tar xzf {backup_path} -C ~/`
 7. 验证关键文件：`ls -la ~/.pi/agent/settings.json` 等。
-8. 如果备份中不含 `auth.json` 且未指定 `--include-auth`：告知用户 `auth.json` 未被恢复，当前文件保持不变。
+8. 如果备份中不含 `auth.json` 且未指定 `--include-auth`：告知用户 `auth.json` 未被恢复，当前文件保持不变。`pi-voice.json` / `models.json` 同理——未随备份提供时保持现状（`--with-auth` 创建的归档会包含它们）。
 
 **阶段 4：重建依赖**
 
@@ -187,6 +190,13 @@ GitHub 同步完成
    - 如果未指定 `--repo`：运行 `cd ~/.pi && git pull` 拉取最新。
 2. 如果 `~/.pi/` 不存在且指定了 `--repo`：`git clone {url} ~/.pi`
 3. 验证 `~/.pi/agent/settings.json` 存在。
+   - **注意**：git 同步不含 `settings.json` / `models.json` / `pi-voice.json`（受 `.gitignore` 排除）。新设备 clone 后若缺失，**需手动提供**，否则 pi 无可用模型无法启动对话：
+     ```
+     scp user@orig:~/.pi/agent/settings.json user@orig:~/.pi/agent/models.json ~/.pi/agent/
+     # 语音扩展使用: scp user@orig:~/.pi/agent/pi-voice.json ~/.pi/agent/
+     # 或从原机打包: pi-backup create --with-auth，新机 pi-backup restore
+     ```
+     缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
 4. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
 5. 告知用户重启 pi。
 
@@ -251,6 +261,26 @@ GitHub 同步完成
 | 7 | `agent/bin/fd` | `fd` 命令不可用 | `apt-get install -y fd-find 2>&1` 并软链到 `~/.pi/agent/bin/fd` |
 | 8 | `agent/bin/rg` | `rg` 命令不可用 | `apt-get install -y ripgrep 2>&1` 并软链到 `~/.pi/agent/bin/rg` |
 
+**Phase 2-D — 扩展类型链接（顺序，需 pi 已安装）：**
+
+| # | 重建项 | 条件 | 命令 |
+|---|--------|------|------|
+| 8a | `agent/extensions/tsconfig.json` paths | paths 指向的 pi 安装根与实际不符（或指向不存在的 `current`） | 自动扫描 `~/.local/share/pi-node/`（优先 `current` 解析，回退最高版本）并把 `/lib/node_modules/` 前缀重写到实际安装根 |
+
+> **为何需要**：tsconfig paths 硬编码了 pi 官方类型的绝对路径，不同设备/版本的 node 安装根不同，不重写则扩展 `tsc` 类型检查失败。pi 未安装时跳过并警告，装好 pi 后重跑 `rebuild` 即可补齐。
+
+**Phase 2-E — Pi wrapper 自愈（幂等）：**
+
+| # | 重建项 | 条件 | 命令 |
+|---|--------|------|------|
+| 8b | wrapper shim（`pi` → pi-wrapper.sh） | npm 重装 pi 覆盖了 `bin/pi` | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（重装 shim，`pi-original` 保留） |
+
+**Phase 2-F — Whisper 转写服务（pi-voice 后端，幂等）：**
+
+| # | 重建项 | 条件 | 命令 |
+|---|--------|------|------|
+| 8c | whisper 服务启动 | venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token 从 `agent/pi-voice.json` 读取） |
+
 **Phase 3 — tmux 环境（跨系统兼容，单独一组）：**
 
 tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不同，重建命令需按发行版选择：
@@ -287,7 +317,10 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 
 | settings.yml | `python3 -c "import yaml; yaml.safe_load(open('$HOME/.pi/searxng/settings.yml'))" 2>/dev/null \|\| echo "YAML 校验失败"` |
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
-| 扩展完整性 | `for e in subagent pi-context plan-mode pi-autopilot pi-memory pi-web-search pi-browser; do [ -f "$HOME/.pi/agent/extensions/$e/index.ts" ] \|\| echo "$e MISSING"; done` |
+| 扩展完整性 | `for d in "$HOME/.pi/agent/extensions"/*/; do [ -d "$d" ] && { case "$(basename "$d")" in tests\|node_modules) continue;; esac; [ -f "$d/index.ts" ] \|\| echo "$(basename "$d") MISSING"; }; done`（动态扫描，新扩展免维护） |
+| 类型链接 | `grep -q "$(readlink -f ~/.local/share/pi-node/current 2>/dev/null \|\| ls -d ~/.local/share/pi-node/*/ 2>/dev/null \| tail -1)" ~/.pi/agent/extensions/tsconfig.json \|\| echo "tsconfig paths 过期"`（`rebuild` Phase 2-D 自动同步） |
+| wrapper 自愈 | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet && pi -p "回复OK即可" --no-session --no-tools`（exit 0 即就绪） |
+| whisper 服务 | `bash ~/.pi/scripts/pi-whisper.sh status`（输出"运行中"或重启后首用自动加载） |
 
 **示例输出：**
 
@@ -429,13 +462,15 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
 | 运行时状态 | `agent/.pi-admin-state.json` | pi-autopilot 重启状态标记（wrapper 契约） | 不可备份恢复 |
 | 自主运行状态 | `agent/.pi-autopilot-config.json`、`.pi-autopilot-telemetry.json`、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json` | pi-autopilot 配置/遥测/回滚快照 | 可重建，不恢复 |
-| 模型配置 | `agent/models.json` | provider/模型定义（可能含密钥） | 手动维护，不备份 |
+| 模型配置 | `agent/models.json` | provider/模型定义（机器特定，含 provider 密钥） | 默认不备份（与 settings.json 一同漏出会导致新设备无可用模型），需备份用 `pi-backup create --with-auth`；新设备经 scp 或 restore 提供 |
 
 ### 按需包含
 
 | 分组 | 相对路径 | 说明 |
 |------|----------|------|
 | auth | `agent/auth.json` | API 密钥。**默认不包含**，需 `--with-auth` 确认。包含后应提醒用户注意安全。 |
+| 语音配置 | `agent/pi-voice.json` | pi-voice 扩展配置（含 `whisperToken` 共享令牌）。**默认不包含**，随 `--with-auth` 一并收录（whisper 服务端与扩展同源读取该令牌，服务端依赖此文件鉴权）。 |
+| 模型配置 | `agent/models.json` | provider/模型定义（含密钥，属机器特定配置）。**默认不包含**，随 `--with-auth` 一并收录；否则新设备需手动提供。 |
 
 ---
 
@@ -451,4 +486,6 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
 9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 Phase 3 自动按系统包管理器安装；若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `alacritty-tmux-setup.md`。
 10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
+11. **配置类文件跨机边界**：`settings.json`（主配置）、`models.json`（模型/密钥）、`pi-voice.json`（whisper 令牌）三者均不在 git 同步范围内且默认不进归档。跨机迁移三选一：① `pi-backup create --with-auth` 打包 → restore；② scp 直接传；③ 新设备手动重建。`rebuild` 的验证阶段会探测缺失并给出对应指引。
+12. **tsconfig 路径重写**：`rebuild` Phase 2-D 会把 `agent/extensions/tsconfig.json` 的 paths 重写到本机实际 pi 安装根。手动 `pi update` 换版本后再次运行 `rebuild.sh`（或只跑类型链接步骤）即可同步。
 
