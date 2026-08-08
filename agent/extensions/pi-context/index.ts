@@ -1,4 +1,5 @@
-import { truncateHead, truncateTail, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { truncateHead, truncateTail, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
+import type { Usage } from "@earendil-works/pi-ai";
 import {
 	setContextWindow,
 	recordCacheUsage,
@@ -35,7 +36,9 @@ export default function (pi: ExtensionAPI) {
 		// 诊断类 custom 消息（/usage-diag 输出）仅展示，不进 LLM 上下文
 		const filteredMessages: typeof messages = [];
 		for (const m of messages) {
-			const customType = (m as any).customType;
+			// AgentMessage 为官方 union 类型，custom 消息的 customType 不在
+			// 基础成员上，先按 role 收窄再读取
+			const customType = m.role === "custom" ? (m as { customType?: string }).customType : undefined;
 			if (customType && DIAG_CUSTOM_TYPES.has(customType)) {
 				modified = true;
 				continue;
@@ -56,18 +59,18 @@ export default function (pi: ExtensionAPI) {
 
 		let latestSummaryIdx = -1;
 		for (let i = messages.length - 1; i >= 0; i--) {
-			if ((messages[i] as any).role === "compactionSummary") {
+			if (messages[i].role === "compactionSummary") {
 				latestSummaryIdx = i;
 				break;
 			}
 		}
 		if (latestSummaryIdx >= 0) {
 			const hasOlder = messages.slice(0, latestSummaryIdx).some(
-				(m: any) => m.role === "compactionSummary",
+				(m) => m.role === "compactionSummary",
 			);
 			if (hasOlder) {
 				messages = messages.filter(
-					(m: any, i: number) => !(m.role === "compactionSummary" && i !== latestSummaryIdx),
+					(m, i) => !(m.role === "compactionSummary" && i !== latestSummaryIdx),
 				);
 				modified = true;
 			}
@@ -88,11 +91,11 @@ export default function (pi: ExtensionAPI) {
 	// R4：工具输出截断（确定性变换，稳定）。
 	// bash/read 输出上限 5KB（最常见的超大输出源）；其他工具 20KB 兜底
 	// （防止未来新工具输出失控直达上下文，子代理等合理输出不受影响）。
-	pi.on("tool_result", (event) => {
+	pi.on("tool_result", (event: ToolResultEvent) => {
 		const cap = event.toolName === "bash" || event.toolName === "read" ? MAX_TOOL_BYTES : MAX_OTHER_TOOL_BYTES;
 		const totalText = event.content
-			.filter((c: any) => c.type === "text")
-			.map((c: any) => c.text)
+			.filter((c) => c.type === "text")
+			.map((c) => c.text)
 			.join("");
 		if (Buffer.byteLength(totalText, "utf8") <= cap) return;
 
@@ -105,19 +108,19 @@ export default function (pi: ExtensionAPI) {
 				{
 					type: "text",
 					text: `${result.content}\n\n[...truncated ${omittedBytes} bytes]`,
-				} as any,
+				},
 			],
 			details: event.details,
 		};
 	});
 
 	// 缓存命中统计：聚合每次调用的 cacheRead/cacheWrite（仅记录，不注入上下文）
-	pi.on("tool_result", (event) => {
-		const usage = (event as any).usage;
+	pi.on("tool_result", (event: ToolResultEvent) => {
+		const usage: Usage | undefined = event.usage;
 		if (!usage) return;
 		recordCacheUsage(
-			typeof usage.cacheReadTokens === "number" ? usage.cacheReadTokens : undefined,
-			typeof usage.cacheWriteTokens === "number" ? usage.cacheWriteTokens : undefined,
+			typeof usage.cacheRead === "number" ? usage.cacheRead : undefined,
+			typeof usage.cacheWrite === "number" ? usage.cacheWrite : undefined,
 		);
 	});
 
@@ -125,8 +128,8 @@ export default function (pi: ExtensionAPI) {
 	// 根因修复：pi 内置压缩阈值 = 窗口 - reserveTokens，对 1M 窗口模型高达 96.7 万，
 	// 会话每轮全量重发持续膨胀。这里在 20%（大窗口）/85%（小窗口）处主动触发压缩。
 	// 注意：ctx.compact() 会 abort 当前 agent 运行，因此判定放在 agent_end（run 结束）而非 turn_end。
-	pi.on("turn_end", (event) => {
-		const usage = (event as { message?: { usage?: Partial<UsageRecord> & { input?: number; cacheRead?: number } } }).message?.usage;
+	pi.on("turn_end", (event: TurnEndEvent) => {
+		const usage = (event.message as { usage?: Usage } | undefined)?.usage;
 		if (!usage || typeof usage.input !== "number") return;
 
 		const input = usage.input || 0;
@@ -138,7 +141,7 @@ export default function (pi: ExtensionAPI) {
 			cacheWrite: usage.cacheWrite || 0,
 			output: usage.output || 0,
 			reasoning: usage.reasoning || 0,
-			total: usage.total || 0,
+			total: usage.totalTokens || 0,
 			contextTokens: input + cacheRead,
 			compacted: false,
 		});
