@@ -31,6 +31,17 @@ if [ -z "$PI_BIN" ]; then
   exit 1
 fi
 
+# ── wrapper 自愈 ────────────────────────────────────
+# pi update 会把 bin/pi 覆盖为官方 symlink（绕过 pi-wrapper.sh）。
+# 每次 cron 周期幂等检查:已正确安装则 0 开销退出;被覆盖则自动重装。
+if [ -x "$PI_HOME/scripts/install-wrapper.sh" ]; then
+  "$PI_HOME/scripts/install-wrapper.sh" --ensure --quiet >> "$LOG_DIR/wrapper-ensure.log" 2>&1 || \
+    echo "[pi-cron] wrapper ensure 失败 ($(date '+%F %T'))" >> "$LOG_DIR/scheduler.log"
+  # ensure 可能重建 bin/pi，重新定位以保持后续逻辑使用 wrapper
+  PI_BIN="$(command -v pi 2>/dev/null || true)"
+  [ -z "$PI_BIN" ] && PI_BIN="$(ls "$HOME/.local/share/pi-node"/*/bin/pi 2>/dev/null | head -1 || true)"
+fi
+
 # ── 锁检测 ──────────────────────────────────────────
 check_lock() {
   if [ ! -f "$LOCK_FILE" ]; then
