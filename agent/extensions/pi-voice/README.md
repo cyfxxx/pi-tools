@@ -4,7 +4,7 @@
 
 ## 功能
 
-- **/voice** 开始/停止录音并转写（`Ctrl+R` 快捷键等价）
+- **/voice** 开始/停止录音并转写（`Ctrl+Shift+R` 快捷键等价）
 - **/voice start|stop|cancel|doctor** 录音子命令与依赖诊断（`cancel` 丢弃本次录音）
 - **/tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/tts speak [文本]** 手动朗读；**/tts status** 查看后端与服务状态
 - 转写文本默认**插入输入框**供确认（配置 `autoSend` 为 true 时直接发送）
@@ -47,7 +47,7 @@ pkg install termux-api        # Termux 侧；再装 Termux:API 应用并授权�
 apt-get install ffmpeg        # PRoot 侧
 
 # 3. 扩展自动发现（pi 0.83+ 从 ~/.pi/agent/extensions/ 自动加载索引）
-#    重启 pi 或 /reload 后即可使用 Ctrl+R / /voice
+#    重启 pi 或 /reload 后即可使用 Ctrl+Shift+R / /voice
 ```
 
 > 国内网络：模型从 hf-mirror.com 下载（`HF_ENDPOINT`/`HF_HUB_DISABLE_XET` 已固化在 `whisper-server.py`）。
@@ -89,7 +89,7 @@ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18766/health   # 401
 ## 使用
 
 ```
-/voice      开始录音（提示"录音中"）→ 再按一次 Ctrl+R 停止并转写，结果插入输入框供确认
+/voice      开始录音（提示"录音中"）→ 再按一次 Ctrl+Shift+R 停止并转写，结果插入输入框供确认
 /voice start/stop/cancel/doctor
 /tts on|off 开关自动朗读回复（状态持久化）；无参数等价切换
 /tts speak  朗读最近一条回复；/tts speak <文本> 朗读指定文本

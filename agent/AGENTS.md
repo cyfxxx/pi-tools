@@ -16,7 +16,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 
 ## 语音交流（pi-voice 扩展，Termux/Android 环境）
 
-pi-voice 提供双向语音：`/voice` + `Ctrl+R` 录音（termux-microphone-record）→ ffmpeg 转 16k wav → 本地 faster-whisper 常驻服务（`~/.pi/scripts/pi-whisper.sh start`，端口 18766）转写 → 插入输入框或直发；`message_end` 事件自动朗读 assistant 回复（termux-tts-speak，中文系统 TTS）。`/voice doctor` 诊断依赖（录音权限 / ffmpeg / whisper 服务 / TTS）。配置：环境变量或 `~/.pi/agent/pi-voice.json`，见扩展 README。注意：麦克风权限需在 Android 设置授予 Termux:API；HuggingFace 下载须走 hf-mirror.com（`HF_ENDPOINT` + `HF_HUB_DISABLE_XET=1` 已固化在 whisper-server.py）。
+pi-voice 提供双向语音：`/voice` + `Ctrl+Shift+R` 录音（termux-microphone-record）→ ffmpeg 转 16k wav → 本地 faster-whisper 常驻服务（`~/.pi/scripts/pi-whisper.sh start`，端口 18766）转写 → 插入输入框或直发；`message_end` 事件自动朗读 assistant 回复（termux-tts-speak，中文系统 TTS）。`/voice doctor` 诊断依赖（录音权限 / ffmpeg / whisper 服务 / TTS）。配置：环境变量或 `~/.pi/agent/pi-voice.json`，见扩展 README。注意：麦克风权限需在 Android 设置授予 Termux:API；HuggingFace 下载须走 hf-mirror.com（`HF_ENDPOINT` + `HF_HUB_DISABLE_XET=1` 已固化在 whisper-server.py）。
 
 ## 验证命令（全量回归）
 

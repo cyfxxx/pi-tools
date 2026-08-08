@@ -10,7 +10,8 @@
  * /tts speak [文本]  手动朗读（缺省朗读最近一条回复）
  * /tts status       朗读与后端状态
  *
- * 快捷键 Ctrl+R 等价于 /voice（录音期间再次按即停止转写）。
+ * 快捷键 Ctrl+Shift+R 等价于 /voice（录音期间再次按即停止转写）；
+ * Ctrl+R 为 pi 内置（app.session.rename），不可占用。
  *
  * 架构：状态机在 dictation.ts（纯逻辑，可单测）；本文件只做命令/快捷键/
  * 事件注册与 UI 接线（notify/setStatus/pasteToEditor/sendUserMessage）。
@@ -108,7 +109,7 @@ if (r.text) {
     },
   })
 
-  pi.registerShortcut(Key.ctrl('r'), {
+  pi.registerShortcut(Key.ctrlShift('r'), {
     description: '语音录制/停止转写',
     handler: (ctx) => {
       if (dictation.isRecording() || dictation.isTranscribing()) {
