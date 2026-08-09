@@ -142,8 +142,65 @@ export interface TranscribeResult {
   error?: string
 }
 
+/**
+ * 确保 whisper 常驻服务在线（转写前调用）。
+ * 服务未启动或已退出时自动执行 pi-whisper.sh start 拉起，并轮询等待就绪。
+ * 返回 { ok: true } 或 { ok: false, error }。
+ * deps 可注入（单测）：默认 health = 带 token 的 HTTP 检查、start = bash 脚本。
+ */
+export interface EnsureWhisperDeps {
+  health?: () => Promise<boolean>
+  start?: () => Promise<CommandResult>
+  pollIntervalMs?: number
+  pollTimeoutMs?: number
+}
+
+export function defaultWhisperHealth(cfg: VoiceConfig): () => Promise<boolean> {
+  return async () => {
+    try {
+      const headers: Record<string, string> = {}
+      if (cfg.whisperToken) headers['Authorization'] = `Bearer ${cfg.whisperToken}`
+      const res = await fetch(`${cfg.whisperEndpoint}/health`, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+}
+
+export async function ensureWhisperService(
+  cfg: VoiceConfig,
+  deps: EnsureWhisperDeps = {},
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const {
+    health = defaultWhisperHealth(cfg),
+    start = () => runCommand('bash', [cfg.whisperScript, 'start'], { timeoutMs: 30000 }),
+    pollIntervalMs = 2000,
+    pollTimeoutMs = 120000,
+  } = deps
+  if (await health()) return { ok: true }
+  // 服务不在线：尝试自动拉起（bash 脚本，模型加载可能需要数十秒）
+  const res = await start()
+  if (res.code !== 0) {
+    return { ok: false, error: `whisper 服务不可用且自动启动失败：${res.stderr.trim() || res.stdout.trim() || '未知错误'}（可手动运行 bash ${cfg.whisperScript} start）` }
+  }
+  const deadline = Date.now() + pollTimeoutMs
+  while (Date.now() < deadline) {
+    if (await health()) return { ok: true }
+    await new Promise((r) => setTimeout(r, pollIntervalMs))
+  }
+  return { ok: false, error: `whisper 服务自动启动后仍不可达（${cfg.whisperEndpoint}），请检查 ~/.pi/logs/whisper/server.log` }
+}
+
 /** 调 whisper 常驻服务转写 wav 字节。 */
 export async function transcribe(cfg: VoiceConfig, wavPath: string): Promise<TranscribeResult> {
+  const ready = await ensureWhisperService(cfg)
+  if (!ready.ok) {
+    return { text: '', language: '', error: (ready as { ok: false; error: string }).error }
+  }
   let body: Buffer
   try {
     body = readFileSync(wavPath)
@@ -204,6 +261,19 @@ export function cleanForSpeech(text: string, maxChars = 400): string {
   return out
 }
 
+/**
+ * 判断文本是否值得朗读：过滤 JSON/结构化摘要（会话总结、记忆等），
+ * 以及过短（<2 字符）或全为符号/空白的文本。仅用于自动朗读(message_end)，
+ * 手动 /tts speak 不过滤。
+ */
+export function isSpeechWorthy(text: string): boolean {
+  const t = text.trim()
+  if (t.length < 2) return false
+  if (/^[{[]/.test(t)) return false
+  if (/^[\s`~\-*#_>|+]+$/.test(t)) return false
+  return true
+}
+
 /** 从 assistant 消息 content 提取纯文本（对齐 pi AgentMessage.content 结构）。 */
 export function extractAssistantText(content: unknown): string {
   if (typeof content === 'string') return content
@@ -232,11 +302,17 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
   // 2. ffmpeg
   const ff = await runCommand(cfg.ffmpegBin, ['-version'], { timeoutMs: 10000 })
   lines.push(ff.code === 0 ? '✓ ffmpeg 可用' : '✗ ffmpeg 缺失：请 apt-get install ffmpeg')
-  // 3. whisper 服务
+  // 3. whisper 服务（带 token，与服务端鉴权一致；否则配置 token 后必误报不可达）
   try {
-    const res = await fetch(`${cfg.whisperEndpoint}/health`, { signal: AbortSignal.timeout(5000) })
-    const data = (await res.json()) as { ok?: boolean; model?: string }
-    lines.push(data.ok ? `✓ whisper 服务可用（模型 ${data.model ?? ''}）` : '✓ whisper 服务运行中（模型加载中）')
+    const headers: Record<string, string> = {}
+    if (cfg.whisperToken) headers['Authorization'] = `Bearer ${cfg.whisperToken}`
+    const res = await fetch(`${cfg.whisperEndpoint}/health`, { headers, signal: AbortSignal.timeout(5000) })
+    if (!res.ok) {
+      lines.push('✗ whisper 服务鉴权失败（401）：token 与 ~/.pi/scripts/pi-whisper.sh 读取的配置不一致')
+    } else {
+      const data = (await res.json()) as { ok?: boolean; model?: string }
+      lines.push(data.ok ? `✓ whisper 服务可用（模型 ${data.model ?? ''}）` : '✓ whisper 服务运行中（模型加载中）')
+    }
   } catch {
     lines.push('✗ whisper 服务不可达：请运行 ~/.pi/scripts/pi-whisper.sh start')
   }

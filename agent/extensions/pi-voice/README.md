@@ -10,6 +10,7 @@
 - **/voice model** 列出模型；`/voice model <名>` 切换（tiny/base/small/medium/large-v3，重启 whisper 服务生效）
 - **/voice bench** 录 5 秒音频测转写速度，输出实时率 RTF 与换模型建议
 - **/tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/tts speak [文本]** 手动朗读；**/tts status** 查看后端与服务状态
+- 自动朗读只朗读**最终回复**（`message_end` 中 `stopReason=stop` 的 assistant 消息），中间轮（toolUse、计划汇报、思考过程）不朗读；JSON/结构化摘要（会话总结、记忆输出）自动过滤，避免朗读垃圾内容与 TTS 进程堆积
 - 转写文本默认**插入输入框**供确认（配置 `autoSend` 为 true 时直接发送）
 - 录音时长到上限（`maxSeconds`）自动转写；`/tts status` 显示自动转写结果暂存
 - 完全本地转写（faster-whisper），无需 API key，离线可用

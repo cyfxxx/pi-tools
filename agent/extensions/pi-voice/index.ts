@@ -41,6 +41,7 @@ import {
   cleanupStaleAudio,
   speak,
   extractAssistantText,
+  isSpeechWorthy,
   doctor,
   benchmark,
   runCommand,
@@ -229,13 +230,15 @@ export default function (pi: ExtensionAPI): void {
     reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
   }
 
-  // 自动朗读 assistant 回复（仅文本部分，异步不阻塞）
+  // 自动朗读 assistant 回复（仅最终回复的文本部分，异步不阻塞）
+  // 中间轮（stopReason=toolUse）与 JSON/结构化摘要不朗读，避免语音轰炸与朗读垃圾内容
   pi.on('message_end', (event) => {
     if (!ttsEnabled) return
     const msg = event?.message
     if (!msg || msg.role !== 'assistant') return
+    if (msg.stopReason !== 'stop') return
     const text = extractAssistantText(msg.content)
-    if (!text) return
+    if (!text || !isSpeechWorthy(text)) return
     lastAssistantText = text
     void speak(config, text).catch(() => {})
   })
