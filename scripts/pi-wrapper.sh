@@ -269,7 +269,19 @@ if [ -n "${PI_TMUX_SESSION:-}" ] && [ -t 1 ] && command -v tmux >/dev/null 2>&1;
   fi
 fi
 
+# L2: cron 守护自愈（离线调度保障）。pi-cron.sh 由 crontab 每分钟触发，
+# 但 proot 环境 cron 守护可能未运行（重启后丢失、无人拉起），在此确保拉起。
+# 幂等：已在运行则跳过。
+ensure_cron() {
+  command -v cron >/dev/null 2>&1 || return 0
+  if ! ps -e -o comm 2>/dev/null | grep -qx cron; then
+    /usr/sbin/cron 2>/dev/null || cron 2>/dev/null || true
+    echo "[pi-wrapper] cron 守护已拉起（离线调度恢复）" >&2
+  fi
+}
+
 while true; do
+  ensure_cron
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
     node "$PI_JS" "$@"
