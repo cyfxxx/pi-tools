@@ -14,6 +14,16 @@ import {
 	type UsageRecord,
 } from "../../lib/usage-diag.ts";
 
+// 执行效率指令（静态注入，缓存友好）：批量工具调用 + 抑制中间答复。
+// 依据 2026-08 实测：同一任务 pi 40 请求 vs opencode 16（同模型 deepseek-v4-flash），
+// 根因是模型每轮仅发 1.4 个工具调用（内核已支持 parallel 批量，agent-loop.js）且
+// 每轮输出中间解释文本。此段与 delegationAdvice 同属静态前缀，不随时间变化。
+export const EFFICIENCY_ADVICE = `## Execution Efficiency
+
+- Independent tool calls (multiple reads, greps, globs) MUST be issued in a single assistant turn — batch them together; a parallel batch costs only one request.
+- During exploration/execution turns, do NOT write explanatory text or progress reports — output tool calls only. Summarize once when everything is done.
+- Exception: when todo progress updates are required or a plan summary is requested, output the required structured summary.`;
+
 export default function (pi: ExtensionAPI) {
 	const MAX_TOOL_BYTES = 5000;
 	const MAX_OTHER_TOOL_BYTES = 20 * 1024;
@@ -275,7 +285,7 @@ You have access to \`subagent\` tool with specialized agents (scout, planner, wo
 - If yes → parallel \`subagent\``;
 
 		return {
-			systemPrompt: event.systemPrompt + "\n\n" + delegationAdvice,
+			systemPrompt: event.systemPrompt + "\n\n" + delegationAdvice + "\n\n" + EFFICIENCY_ADVICE,
 		};
 	});
 }
