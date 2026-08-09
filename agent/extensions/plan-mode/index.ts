@@ -12,7 +12,6 @@ import {
   isPlanRevisionIntent,
   isSafeCommand,
   mergePlanRevision,
-  assertPlanSubagentAllowed,
   truncateSubject,
 } from "./utils.ts";
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
@@ -25,7 +24,7 @@ import { formatPlanMessageLine } from "./view.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "subagent"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
@@ -362,15 +361,9 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     handler: async (ctx) => togglePlanMode(ctx),
   });
 
-  // Block destructive bash commands / non-readonly subagents in plan mode
+  // Block destructive bash commands in plan mode
   pi.on("tool_call", async (event) => {
-    if (!planModeEnabled) return;
-    if (event.toolName === "subagent") {
-      const reason = assertPlanSubagentAllowed(event.input);
-      if (reason) return { block: true, reason };
-      return;
-    }
-    if (event.toolName !== "bash") return;
+    if (!planModeEnabled || event.toolName !== "bash") return;
 
     const command = event.input.command as string;
     if (!isSafeCommand(command)) {
@@ -448,10 +441,12 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
 限制:
-- 只能使用: read, bash, grep, glob, subagent
+- 只能使用: read, bash, grep, glob
 - 不能使用: edit, write（文件修改已禁用）
-- Bash 命令限制为只读白名单
-- subagent 仅可调用只读的 scout 子代理（独立上下文，返回压缩摘要；worker/reviewer 会被拦截）
+- Bash 命令仅接受白名单内的单条只读命令：cat/head/tail/less/grep/find/ls/stat/du/df/tree/which/wc/sort/uniq/diff/file/ps/free 及 git status/log/diff/show/branch/remote/ls-*、curl 仅打印、npm list/ls 等。
+- 允许 cd <目录> && <一条白名单只读命令> 与命令尾部的 2>/dev/null；其余复合一律禁止：多命令分号 ;、管道 |、重定向至文件。
+- 禁止: git clone、curl -o/-O（落盘）、写入类命令。
+- 远程仓库分析请用 git ls-remote / git log / git status（有白名单），不要 clone。
 
 创建计划前:
 - 如果需求不明确，先提出澄清问题。
