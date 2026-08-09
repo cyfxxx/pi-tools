@@ -89,20 +89,44 @@ const SAFE_PATTERNS = [
   /^\s*eza\b/,
 ];
 
+/**
+ * 规划模式 bash 只读校验。
+ * 借鉴 opencode 的"模式只是提示词、机制要可预期"思路，放宽两处高频误拦：
+ *  1. `cd <目录> && <单条白名单命令>` 前缀（模型习惯性打包导航）
+ *  2. 命令尾部 `2>/dev/null`（丢弃 stderr，非落盘）
+ * 其余复合（`;`、管道、`&&` 多重、命令替换、重定向到文件）一律拒绝。
+ */
 export function isSafeCommand(command: string): boolean {
-  const trimmed = command.trim()
-  if (!trimmed) return false
-  // 阻断管道/分号/&&/||/子 shell/反引号/命令替换：`curl URL | bash` 类绕过一律拒绝
-  if (/[;&|]|`|\$\(/.test(trimmed)) return false
-  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(trimmed)) && SAFE_PATTERNS.some((p) => p.test(trimmed))
+  const trimmed = command.trim();
+  if (!trimmed) return false;
+
+  // 尾部 2>/dev/null：允许且仅允许这一种重定向形态
+  const withStderrDiscard = /\s*2\s*>\s*\/dev\/null\s*$/.test(trimmed);
+  const core0 = withStderrDiscard ? trimmed.replace(/\s*2\s*>\s*\/dev\/null\s*$/, "").trimEnd() : trimmed;
+  if (!withStderrDiscard) {
+    // 未剥离的其它重定向一律拒绝（> / >> / 2> 非 /dev/null / 2>&1 等）
+    if (/>|>>/.test(core0)) return false;
+  }
+  // 剥离后不得再出现重定向（如 `ls 2>/dev/null > out`）
+  if (withStderrDiscard && />|>>/.test(core0)) return false;
+
+  // cd 前缀：cd <dir> && <核心命令>（核心命令仍须整体单条白名单）
+  const cdMatch = /^\s*cd\s+("[^"]*"|'[^']*'|\S+)\s*&&\s*/.exec(core0);
+  const core = /* cd 前缀剥离 */ cdMatch ? core0.slice(cdMatch[0].length).trim() : core0;
+  if (cdMatch && core.includes("&&")) return false;
+
+  // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()）
+  if (/[;&|&]|`|\$\(/.test(core)) return false;
+
+  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
 }
 
 /**
- * 规划模式 subagent 拦截判定（参考 opencode explore 只读隔离模式）：
- * 白名单开放 subagent 工具后，子进程以 --no-extensions 独立运行、不受本扩展
- * 白名单约束（worker/reviewer 及默认 general-purpose 均带写工具），故仅放行
- * 只读模板 scout。返回拒绝原因字符串，null 表示允许。
- * 参数形状对齐 subagent 工具：single { agent?, task } / parallel { tasks[] } / chain { chain[] }。
+ * 规划模式 subagent 拦截判定（参考 opencode explore 只读隔离模式）。
+ * ⚠️ 暂未启用：2026-08 实测 subagent 工具在 TUI 会话未进 registry（Tool subagent
+ * not found，白名单超前暴露）。待注册机制稳定后，将 PLAN_MODE_TOOLS 加回 subagent、
+ * 在 tool_call 拦截处调用本函数。参数形状对齐 subagent 工具
+ * single { agent?, task } / parallel { tasks[] } / chain { chain[] }。
  */
 export function assertPlanSubagentAllowed(input: unknown): string | null {
   const arg = (input ?? {}) as { agent?: unknown; tasks?: unknown; chain?: unknown };
@@ -110,7 +134,7 @@ export function assertPlanSubagentAllowed(input: unknown): string | null {
   if (Array.isArray(arg.tasks)) agents.push(...arg.tasks.map((t) => (t as { agent?: unknown })?.agent));
   else if (Array.isArray(arg.chain)) agents.push(...arg.chain.map((t) => (t as { agent?: unknown })?.agent));
   else agents.push(arg.agent);
-const names = agents.map((a) => (typeof a === "string" ? a : ""));
+  const names = agents.map((a) => (typeof a === "string" ? a : ""));
   if (names.some((n) => n !== "scout")) {
     return `规划模式: subagent 仅允许显式指定只读的 scout 子代理（未指定或 worker/reviewer 均不可用，未指定会落到可写的 general-purpose）。使用 subagent agent="scout" 或退出规划模式。`;
   }
