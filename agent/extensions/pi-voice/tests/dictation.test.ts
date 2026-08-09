@@ -16,6 +16,7 @@ const cfg = {
   autoSend: false,
   maxSeconds: 120,
   language: '',
+  whisperModel: 'base',
 } satisfies VoiceConfig
 
 const fakeChild = { pid: 1234, kill: vi.fn() } as unknown as ChildProcess
@@ -27,6 +28,7 @@ function makeDeps(overrides: Partial<RecordingDeps> = {}): RecordingDeps {
     convertToWav: vi.fn(async () => '/tmp/pi-voice-out/a.wav'),
     transcribe: vi.fn(async () => ({ text: '你好，世界', language: 'zh', error: undefined })),
     deleteAudioPair: vi.fn(),
+    fileExists: vi.fn(() => true),
     ...overrides,
   }
 }
@@ -107,6 +109,54 @@ describe('dictation 状态机', () => {
     expect(cbs.autoResults[0].text).toBe('你好，世界')
     expect(d.isRecording()).toBe(false)
     expect(d.isTranscribing()).toBe(false)
+  })
+
+  it('进程启动即失败（非零退出）→ 回调失败消息、不转写、状态回 idle', async () => {
+    const deps = makeDeps()
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(1)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].text).toBe('')
+    expect(cbs.autoResults[0].message).toContain('录音启动失败')
+    expect(cbs.autoResults[0].message).toContain('code 1')
+    expect(deps.transcribe).not.toHaveBeenCalled()
+    expect(d.isRecording()).toBe(false)
+    expect(d.isTranscribing()).toBe(false)
+  })
+
+  it('spawn 失败（-2）→ 回调含安装指引', async () => {
+    const deps = makeDeps()
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(-2)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].message).toContain('termux-microphone-record')
+    expect(deps.transcribe).not.toHaveBeenCalled()
+  })
+
+  it('exit 0 但无音频文件（单实例被占用）→ 报占用提示、不转写', async () => {
+    const deps = makeDeps({ fileExists: vi.fn(() => false) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].text).toBe('')
+    expect(cbs.autoResults[0].message).toContain('已退出且未生成音频')
+    expect(deps.transcribe).not.toHaveBeenCalled()
+    expect(d.isRecording()).toBe(false)
   })
 
   it('cancel 丢弃音频不转写', async () => {

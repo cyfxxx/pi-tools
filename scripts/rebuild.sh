@@ -609,9 +609,28 @@ phase2_types
 phase2_wrapper
 phase2_whisper
 
+# TUI 核心补丁（幂等：已打补丁输出跳过；pi update 后必须重跑，否则
+# patch-footer-live-context 缺失导致 footer 无实时 token，patch-voice-enter
+# 缺失导致 pi-voice 的 Key.enter 注册吞掉全部回车（输入提交失效））
+title "Phase 3" "TUI 核心补丁"
+if [ -f "$PI_HOME/scripts/patch-footer-live-context.mjs" ]; then
+  node "$PI_HOME/scripts/patch-footer-live-context.mjs" >/dev/null 2>&1 \
+    && ok "footer 实时上下文 token 补丁" \
+    || warn "footer 补丁未应用（pi 版本可能已改动），需人工核对"
+else
+  warn "patch-footer-live-context.mjs 缺失，跳过"
+fi
+if [ -f "$PI_HOME/scripts/patch-voice-enter.mjs" ]; then
+  node "$PI_HOME/scripts/patch-voice-enter.mjs" >/dev/null 2>&1 \
+    && ok "回车条件拦截补丁（pi-voice 听写）" \
+    || warn "回车补丁未应用（pi 版本可能已改动）：未打补丁时回车键会被 pi-voice 吞掉"
+else
+  warn "patch-voice-enter.mjs 缺失，跳过"
+fi
+
 # Scheduler 离线调度安装（可选）
 if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
-  title "Phase 3" "定时调度安装"
+  title "Phase 4" "定时调度安装"
   bash "$PI_HOME/scripts/install-cron.sh" 2>&1 | while IFS= read -r line; do
     if echo "$line" | grep -q "^✓"; then
       ok "${line#✓ }"

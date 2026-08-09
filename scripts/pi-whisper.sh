@@ -20,6 +20,14 @@ read_token() {
   fi
 }
 
+# 从 pi-voice 配置读取模型名（/voice model 切换时落盘；空=服务端默认 base）
+read_model() {
+  local cfg="$PI_HOME/agent/pi-voice.json"
+  if [ -f "$cfg" ]; then
+    python3 -c "import json,sys; v=json.load(open('$cfg')).get('whisperModel',''); print(v)" 2>/dev/null
+  fi
+}
+
 is_running() {
   [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
 }
@@ -33,17 +41,23 @@ start() {
     echo "错误: 未找到 $VENV/bin/python，请先: python3 -m venv $VENV && $VENV/bin/pip install faster-whisper" >&2
     return 1
   fi
-  local token
+  local token model
   token="$(read_token)"
-  if [ -n "$token" ]; then
-    PI_WHISPER_TOKEN="$token" nohup "$VENV/bin/python" "$SERVER" >>"$LOG" 2>&1 &
-    echo "whisper 服务启动（Bearer token 鉴权已启用）"
-  else
-    nohup "$VENV/bin/python" "$SERVER" >>"$LOG" 2>&1 &
-  fi
+  model="$(read_model)"
+  # 只在非空时传入：空串会被服务端 os.environ.get 原样接收（不回落默认）
+  local -a envs=()
+  [ -n "$token" ] && envs+=(PI_WHISPER_TOKEN="$token")
+  [ -n "$model" ] && envs+=(PI_WHISPER_MODEL="$model")
+  env "${envs[@]}" nohup "$VENV/bin/python" "$SERVER" >>"$LOG" 2>&1 &
+  echo "whisper 服务启动（${token:+Bearer token 鉴权已启用}${model:+，模型 $model}）"
   echo $! > "$PIDFILE"
   for _ in $(seq 1 60); do
-    if curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
+    if [ -n "$token" ]; then
+      curl -fsS -H "Authorization: Bearer $token" "http://127.0.0.1:$PORT/health" >/dev/null 2>&1
+    else
+      curl -fsS "http://127.0.0.1:$PORT/health" >/dev/null 2>&1
+    fi
+    if [ $? -eq 0 ]; then
       echo "whisper 服务已启动 (pid $(cat "$PIDFILE"), 模型加载完成)"
       return 0
     fi
@@ -65,7 +79,14 @@ stop() {
 }
 
 status() {
-  if curl -fsS "http://127.0.0.1:$PORT/health" 2>/dev/null | grep -q '"ok"'; then
+  local token="$(read_token)"
+  local code
+  if [ -n "$token" ]; then
+    code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" "http://127.0.0.1:$PORT/health" 2>/dev/null)
+  else
+    code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/health" 2>/dev/null)
+  fi
+  if [ "$code" = "200" ]; then
     echo "whisper 服务: 运行中 (模型已加载)"
     return 0
   fi

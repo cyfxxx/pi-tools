@@ -11,13 +11,14 @@ import {
   extractTodoItems,
   isPlanRevisionIntent,
   isSafeCommand,
+  mergePlanRevision,
   truncateSubject,
 } from "./utils.ts";
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
 import { loadNotes, clearCompactionFlag } from "../../lib/note-store.ts";
 
-import { type Task, applyTaskMutation } from "./state.ts";
-import { getState, commitState, replaceState, resetState } from "./store.ts";
+import { type Task } from "./state.ts";
+import { getState, replaceState, resetState } from "./store.ts";
 import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
 import { formatPlanMessageLine } from "./view.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
@@ -35,6 +36,19 @@ function getTextContent(message: AssistantMessage): string {
     .filter((block): block is TextContent => block.type === "text")
     .map((block) => block.text)
     .join("\n");
+}
+
+/** 取用户消息文本（content 可能为 string 或 TextContent[]） */
+function getUserText(message: AgentMessage): string {
+  if (!("content" in message) || message.content === undefined) return "";
+  if (typeof message.content === "string") return message.content;
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((b): b is TextContent => b.type === "text" && "text" in b)
+      .map((b) => b.text)
+      .join("\n");
+  }
+  return "";
 }
 
 const PLANS_DIR = join(homedir(), ".pi", "plans");
@@ -450,6 +464,11 @@ Plan:
 2. 第二步描述
 ...
 
+计划步骤跟踪（重要）:
+- 展示 Plan 块后，必须调用 todo 工具创建每个步骤（todo create subject="..."），用工具而非文本跟踪状态。
+- 每完成一步立即调用 todo update id=N status=completed；开始某步时 todo update id=N status=in_progress。
+- 修订计划时用 todo update 调整现有步骤（subject/status），禁止重复创建相同步骤。
+
 不要尝试修改文件——只描述你要做什么。
 
 计划展示后: 如果用户提出正常的后续问题
@@ -597,36 +616,35 @@ ${todoList}
 
   // Handle plan completion and plan mode UI
   pi.on("agent_end", async (event, ctx) => {
-    // 执行模式：检测计划修订（LLM 输出新的 Plan: 块且用户明确要求修改）
+    // 执行模式：检测计划修订——修订意图必须来自用户消息（assistant 汇报/总结含"修订"等词不触发）
     if (executionMode) {
+      const lastUser = [...event.messages].reverse().find((m) => m.role === "user");
+      const userText = lastUser ? getUserText(lastUser) : "";
       const lastAssistant = [...event.messages]
         .reverse()
         .find(isAssistantMessage);
       const lastText = lastAssistant ? getTextContent(lastAssistant) : "";
       const extracted = lastText ? extractTodoItems(lastText) : [];
-      if (extracted.length > 0 && isPlanRevisionIntent(lastText)) {
-        let state = getState();
-        const completed = state.tasks.filter(
-          (t) => t.status === "completed" || t.status === "deleted",
+      if (extracted.length > 0 && isPlanRevisionIntent(userText)) {
+        const { tasks, nextId, added, removed } = mergePlanRevision(
+          getState(),
+          extracted,
         );
-        const maxId =
-          completed.length > 0 ? Math.max(...completed.map((t) => t.id)) : 0;
-        const newTasks = [...completed];
-        for (const item of extracted) {
-          newTasks.push({
-            id: maxId + item.id,
-            subject: item.subject,
-            status: "pending",
-          });
-        }
-        replaceState({ tasks: newTasks, nextId: maxId + extracted.length + 1 });
+        replaceState({ tasks, nextId });
         persistState();
+        knownTodoHash = todoHash();
         updateStatus(ctx);
         todoOverlay?.update();
+        const summary = [
+          added.length > 0 ? `${added.length} 个新步骤` : "",
+          removed.length > 0 ? `${removed.length} 个旧步骤已移除` : "",
+        ]
+          .filter(Boolean)
+          .join("，");
         pi.sendMessage(
           {
             customType: "plan-revise",
-            content: `**计划已修订** — 未完成任务已替换为 ${extracted.length} 个新步骤：\n\n${extracted
+            content: `**计划已修订**${summary ? ` — ${summary}` : ""}：\n\n${extracted
               .map((t) => `${t.id}. ${t.subject}`)
               .join("\n")}`,
             display: true,
@@ -666,19 +684,14 @@ ${todoList}
       const lastText = getTextContent(lastAssistant);
       const extracted = extractTodoItems(lastText);
       if (extracted.length > 0) {
-        const isNewPlan = !planPresented || isPlanRevisionIntent(lastText);
+        // 修订意图来自用户消息（首次呈现或用户明确要求修改时重建）
+        const lastUser = [...event.messages].reverse().find((m) => m.role === "user");
+        const userText = lastUser ? getUserText(lastUser) : "";
+        const isNewPlan = !planPresented || isPlanRevisionIntent(userText);
         if (isNewPlan) {
-          // Create tasks via reducer
-          let state = getState();
-          for (const item of extracted) {
-            const result = applyTaskMutation(state, "create", {
-              subject: item.subject,
-            } as Record<string, unknown>);
-            if (result.op.kind !== "error") {
-              state = result.state;
-            }
-          }
-          commitState(state);
+          // 修订替换语义：匹配保留原任务（含状态），未匹配 pending 移除，新步骤追加
+          const { tasks, nextId } = mergePlanRevision(getState(), extracted);
+          replaceState({ tasks, nextId });
 
           // Save plan to git repo
           let iteration = 1;
@@ -774,6 +787,9 @@ ${todoList}
       if (refinement?.trim()) {
         pi.sendUserMessage(refinement.trim());
       }
+    } else {
+      // 继续计划模式（或取消选择）：确认当前任务状态，避免下一轮重复弹选择器
+      knownTodoHash = todoHash();
     }
   });
 

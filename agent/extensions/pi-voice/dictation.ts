@@ -20,6 +20,8 @@ export interface RecordingDeps {
   convertToWav(cfg: VoiceConfig, m4a: string): Promise<string | null>
   transcribe(cfg: VoiceConfig, wav: string): Promise<TranscribeResult>
   deleteAudioPair(cfg: VoiceConfig, m4a: string): void
+  /** 录音文件是否已生成（区分正常超时退出与启动即失败/单实例被占用）。 */
+  fileExists(m4a: string): boolean
 }
 
 export interface StopResult {
@@ -62,14 +64,38 @@ export function createDictation(
     if (busy) return '上一段仍在转写中，请稍候'
     if (currentFile !== null) return '已在录音中（再按 Ctrl+Shift+R 停止）'
     const { child, file } = deps.startRecording(cfg, (code) => {
-      // 子进程自行退出（超时/出错）：仅当仍是当前录音且未在转写时，自动进入转写
-      if (currentFile === file && !busy) {
-        currentFile = null
-        recordingChild = null
-        void finish(file, true).then((r) => cb.onAutoComplete(r))
+      // 子进程自行退出：仅当仍是当前录音且未在转写时处理（用户 stop/cancel 已先置空 currentFile，不会重复）
+      if (currentFile !== file || busy) return
+      currentFile = null
+      recordingChild = null
+      if (code === 0) {
+        if (deps.fileExists(file)) {
+          // 正常超时（-l 到达上限）：自动进入转写
+          void finish(file, true).then((r) => cb.onAutoComplete(r))
+        } else {
+          // exit 0 但无音频文件：单实例冲突（“Recording already in progress!”，退出码恰为 0）
+          cb.onAutoComplete({
+            message: '录音启动失败：录音进程已退出且未生成音频（可能已被其他录音占用）。请先执行 /voice stop 停止现有录音，或检查麦克风权限',
+            text: '',
+            language: '',
+          })
+        }
+      } else {
+        // 启动即失败或运行中异常退出：不转写空文件，直接把失败原因反馈给 UI
+        const reason =
+          code === -2
+            ? '无法启动录音程序（termux-microphone-record 缺失或不可执行）'
+            : `录音进程异常退出（code ${code}）`
+        cb.onAutoComplete({
+          message: `录音启动失败：${reason}。请检查：1) Android 设置 → 应用 → Termux:API → 麦克风权限 2) 录音路径可写（当前 ${cfg.tmpDir}） 3) pkg install termux-api`,
+          text: '',
+          language: '',
+        })
       }
     })
-    if (child.pid === undefined) return '录音启动失败'
+    if (child.pid === undefined) {
+      return '录音启动失败（无法启动录音程序，请确认已安装 termux-api：pkg install termux-api）'
+    }
     currentFile = file
     recordingChild = child
     return '🎤 录音中（再次 Ctrl+Shift+R 停止并转写；时长上限 ' + (cfg.maxSeconds > 0 ? `${cfg.maxSeconds}s` : '不限') + '）'

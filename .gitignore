@@ -84,3 +84,5 @@ agent/pi-voice.json
 # 类型链接与 wrapper 运行时锚点
 agent/extensions/node_modules/
 scripts/.pi-cli-path
+# pi-cron 运行时日志
+logs/scheduler/

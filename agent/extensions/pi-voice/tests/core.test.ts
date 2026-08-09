@@ -3,8 +3,31 @@ import {
   cleanForSpeech,
   extractAssistantText,
   nowStamp,
+  benchSuggestion,
 } from '../core'
 import { loadConfig, DEFAULTS } from '../config'
+
+describe('benchSuggestion', () => {
+  it('慢于实时（rtf>1）建议降级', () => {
+    expect(benchSuggestion(1.5)).toContain('tiny')
+  })
+
+  it('中间档（0.5~1）给出双向建议', () => {
+    const s = benchSuggestion(0.8)
+    expect(s).toContain('更大模型')
+    expect(s).toContain('tiny')
+  })
+
+  it('快于实时 2 倍以上（rtf<0.5）建议升档', () => {
+    expect(benchSuggestion(0.3)).toContain('small')
+  })
+
+  it('边界值', () => {
+    expect(benchSuggestion(1)).toContain('tiny')
+    expect(benchSuggestion(0.5)).toContain('small')
+    expect(benchSuggestion(1.001)).toContain('tiny')
+  })
+})
 
 describe('cleanForSpeech', () => {
   it('移除代码块标记', () => {
