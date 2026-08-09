@@ -17,6 +17,7 @@ const cfg = {
   maxSeconds: 120,
   language: '',
   whisperModel: 'base',
+  whisperScript: '/root/.pi/scripts/pi-whisper.sh',
 } satisfies VoiceConfig
 
 const fakeChild = { pid: 1234, kill: vi.fn() } as unknown as ChildProcess

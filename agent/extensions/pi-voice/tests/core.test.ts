@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   cleanForSpeech,
   extractAssistantText,
   nowStamp,
   benchSuggestion,
+  isSpeechWorthy,
+  ensureWhisperService,
 } from '../core'
-import { loadConfig, DEFAULTS } from '../config'
+import { loadConfig, DEFAULTS, type VoiceConfig } from '../config'
 
 describe('benchSuggestion', () => {
   it('慢于实时（rtf>1）建议降级', () => {
@@ -117,5 +119,75 @@ describe('loadConfig', () => {
     expect(cfg.ttsEnabled).toBe(false)
     expect(cfg.autoSend).toBe(true)
     expect(cfg.maxSeconds).toBe(30)
+  })
+})
+
+describe('isSpeechWorthy', () => {
+  it('正常文本值得朗读', () => {
+    expect(isSpeechWorthy('已修复完成')).toBe(true)
+    expect(isSpeechWorthy('a')).toBe(false)
+  })
+
+  it('JSON/结构化摘要不朗读', () => {
+    expect(isSpeechWorthy('{"summary":{"title":"x"}}')).toBe(false)
+    expect(isSpeechWorthy('[1,2,3]')).toBe(false)
+    expect(isSpeechWorthy('{"decisions":[]}')).toBe(false)
+  })
+
+  it('纯符号/空白不朗读', () => {
+    expect(isSpeechWorthy('---')).toBe(false)
+    expect(isSpeechWorthy('```')).toBe(false)
+    expect(isSpeechWorthy('**')).toBe(false)
+    expect(isSpeechWorthy('  \t ')).toBe(false)
+  })
+})
+
+describe('ensureWhisperService', () => {
+  const cfg = {
+    whisperEndpoint: 'http://127.0.0.1:18766',
+    whisperToken: 'tok',
+    whisperScript: '/root/.pi/scripts/pi-whisper.sh',
+  } as VoiceConfig
+
+  it('服务在线直接返回 ok，不触发拉起', async () => {
+    const start = vi.fn(async () => ({ code: 0, stdout: '', stderr: '' }))
+    const r = await ensureWhisperService(cfg, { health: async () => true, start })
+    expect(r).toEqual({ ok: true })
+    expect(start).not.toHaveBeenCalled()
+  })
+
+  it('离线且拉起成功 → 轮询等待就绪', async () => {
+    let healthy = false
+    const start = vi.fn(async () => { healthy = true; return { code: 0, stdout: '', stderr: '' } })
+    const r = await ensureWhisperService(cfg, {
+      health: async () => healthy,
+      start,
+      pollIntervalMs: 1,
+      pollTimeoutMs: 500,
+    })
+    expect(r).toEqual({ ok: true })
+    expect(start).toHaveBeenCalledTimes(1)
+  })
+
+  it('拉起命令失败 → 返回含指引的错误', async () => {
+    const r = await ensureWhisperService(cfg, {
+      health: async () => false,
+      start: async () => ({ code: 127, stdout: '', stderr: 'bash: not found' }),
+      pollIntervalMs: 1,
+      pollTimeoutMs: 100,
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok === false) expect(r.error).toContain('自动启动失败')
+  })
+
+  it('拉起后仍不可达 → 超时报错', async () => {
+    const r = await ensureWhisperService(cfg, {
+      health: async () => false,
+      start: async () => ({ code: 0, stdout: '', stderr: '' }),
+      pollIntervalMs: 1,
+      pollTimeoutMs: 50,
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok === false) expect(r.error).toContain('仍不可达')
   })
 })

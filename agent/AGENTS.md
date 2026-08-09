@@ -16,7 +16,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 
 ## 语音交流（pi-voice 扩展，Termux/Android 环境）
 
-pi-voice 提供双向语音：`/voice` + `Ctrl+Shift+R` 录音（termux-microphone-record）→ ffmpeg 转 16k wav → 本地 faster-whisper 常驻服务（`~/.pi/scripts/pi-whisper.sh start`，端口 18766）转写 → 插入输入框或直发；`message_end` 事件自动朗读 assistant 回复（termux-tts-speak，中文系统 TTS）。`/voice doctor` 诊断依赖（录音权限 / ffmpeg / whisper 服务 / TTS）。配置：环境变量或 `~/.pi/agent/pi-voice.json`，见扩展 README。注意：麦克风权限需在 Android 设置授予 Termux:API；HuggingFace 下载须走 hf-mirror.com（`HF_ENDPOINT` + `HF_HUB_DISABLE_XET=1` 已固化在 whisper-server.py）。
+pi-voice 提供双向语音：`/voice` + `Ctrl+Shift+R` 录音（termux-microphone-record）→ ffmpeg 转 16k wav → 本地 faster-whisper 常驻服务（`~/.pi/scripts/pi-whisper.sh start`，端口 18766）转写 → 插入输入框或直发；`message_end` 事件自动朗读 assistant **最终回复**（termux-tts-speak，中文系统 TTS）。**自动朗读只处理 stopReason=stop 的 assistant 消息**（中间轮 toolUse/思考过程不朗读），且经 `isSpeechWorthy` 过滤 JSON/结构化摘要（会话总结、记忆输出等）——2026-08 实测 TTS 曾因朗读每轮文本+JSON summary 产生 50+ 个永不退出的 termux-tts-speak 僵尸进程（Android TTS 引擎队列塞满、实际听不到声音）。**TTS 进程堆积清理：`pkill -f termux-tts-speak; pkill -f 'termux-api TextToSpeech'`**（扩展启动时会清理孤儿录音进程，但 TTS 进程由 message_end 触发需手动清一次后重启 pi 生效）。`transcribe` 前自动 `ensureWhisperService`（health 检查→不在线自动 pi-whisper.sh start→轮询 120s 就绪；依赖可注入单测）。`/voice doctor` 诊断依赖（带 token 鉴权，配置 token 后 401 会明确报 token 不一致）。配置：环境变量或 `~/.pi/agent/pi-voice.json`，见扩展 README。注意：麦克风权限需在 Android 设置授予 Termux:API；HuggingFace 下载须走 hf-mirror.com（`HF_ENDPOINT` + `HF_HUB_DISABLE_XET=1` 已固化在 whisper-server.py）。
 
 ## 验证命令（全量回归）
 
@@ -24,7 +24,7 @@ pi-voice 提供双向语音：`/voice` + `Ctrl+Shift+R` 录音（termux-micropho
 bash scripts/test-all.sh          # 一键：9 套测试 + tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 39 / plan-mode 51 / pi-tmux 10 / pi-voice 37 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 39 / plan-mode 51 / pi-tmux 10 / pi-voice 44 用例）
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（34 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（6 项）
