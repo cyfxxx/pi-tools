@@ -12,6 +12,7 @@ import {
   isPlanRevisionIntent,
   isSafeCommand,
   mergePlanRevision,
+  assertPlanSubagentAllowed,
   truncateSubject,
 } from "./utils.ts";
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
@@ -24,7 +25,7 @@ import { formatPlanMessageLine } from "./view.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "subagent"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
@@ -361,9 +362,15 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     handler: async (ctx) => togglePlanMode(ctx),
   });
 
-  // Block destructive bash commands in plan mode
+  // Block destructive bash commands / non-readonly subagents in plan mode
   pi.on("tool_call", async (event) => {
-    if (!planModeEnabled || event.toolName !== "bash") return;
+    if (!planModeEnabled) return;
+    if (event.toolName === "subagent") {
+      const reason = assertPlanSubagentAllowed(event.input);
+      if (reason) return { block: true, reason };
+      return;
+    }
+    if (event.toolName !== "bash") return;
 
     const command = event.input.command as string;
     if (!isSafeCommand(command)) {
@@ -441,9 +448,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
 限制:
-- 只能使用: read, bash, grep, glob
+- 只能使用: read, bash, grep, glob, subagent
 - 不能使用: edit, write（文件修改已禁用）
 - Bash 命令限制为只读白名单
+- subagent 仅可调用只读的 scout 子代理（独立上下文，返回压缩摘要；worker/reviewer 会被拦截）
 
 创建计划前:
 - 如果需求不明确，先提出澄清问题。

@@ -24,7 +24,7 @@ pi-voice 提供双向语音：`/voice` + `Ctrl+Shift+R` 录音（termux-micropho
 bash scripts/test-all.sh          # 一键：9 套测试 + tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 39 / pi-tmux 10 / pi-voice 37 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 39 / plan-mode 45 / pi-tmux 10 / pi-voice 37 用例）
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（34 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（6 项）
@@ -36,6 +36,8 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **自动压缩**：pi 内置压缩阈值 = 窗口 − reserveTokens，对 1M 窗口模型高达 96.7 万形同虚设；由 pi-context 按窗口比例触发（>256K 窗口 40% / ≤256K 85%）：agent_end 判定 + session_start 恢复时立即压缩（resume 大会话避免首轮全量浪费）；阈值计算与防抖见 `lib/auto-compact.ts`；ctx.compact() 会 abort 当前 agent 且不 await 完成（扩展 API 为 void + onComplete 回调），故判定放 agent_end、压缩完成由 session_compact 事件通知；`AutoContinueGate` 在压缩完成后自动注入继续指令（triggerTurn:true 启动新一轮），180s cooldown 防递归；阈值依据 2026-08 长任务实测（缓存命中率 86%、命中价 1/50 → 晚压缩成本更低）
 - **分层擦除**：pi-context 在 context 事件阶段做工具输出事后擦除（借鉴 opencode prune）：最近 2 轮 + 40K token 保护带内保留，更早的 toolResult 输出替换为 `[pruned]` 占位（保留结构），预计回收 ≥20K 才应用；判定确定性、擦除点单调后移，缓存前缀稳定；见 `lib/prune.ts`
 - **工具输出截断**：tool_result 事件写入时截断——bash/read 5KB（bash 保留尾部、read 保留头部），其他工具 20KB 兜底；thinking 保留最近 16K token（token 预算而非轮数规则，见 `lib/prune.ts pruneThinkingBudget`）
+- **执行效率注入**（pi-context `EFFICIENCY_ADVICE`，静态缓存友好）：要求模型一轮内批量发出独立工具调用（内核 agent-loop.js 已支持 parallel batch）、非终轮不写解释文本、todo/plan 摘要请求时例外。实测（2026-08，reverse-skill 全面分析同任务同模型）：请求 36→11、totalTokens 1.06M→329K、费用 ¥0.128→¥0.057，且低于 opencode 同任务（¥0.11）；模型保持每轮 2 工具批量、末轮一次性总结
+- **plan-mode subagent 开放**（参考 opencode explore 只读子代理）：规划模式白名单含 subagent，但 tool_call 拦截仅放行显式 `agent="scout"`（`assertPlanSubagentAllowed`，utils.ts）；未指定/worker/reviewer 一律 block——子进程 `--no-extensions` 不受本扩展白名单约束，非 scout 可写文件
 - **用量诊断**：`/usage-diag` 显示每轮 input/缓存/输出汇总 + prune 擦除量 + 压缩触发（记录在 `~/.pi/agent/.usage-diag.jsonl`，仅展示不进 LLM 上下文）；扩展的异步回调不得使用捕获的 ctx（session 替换后 stale ctx 抛错），需先取值
 - **footer 口径**（`dist/modes/interactive/components/footer.js`）：`↑↓RW$` 为整个会话文件累计消耗（含已压缩历史与 compaction 摘要 usage，压缩后不变）；context 为实时上下文（`getContextUsage`，基于最近有效 assistant usage + 尾部估算，压缩后为 `?` 直到下轮响应）。补丁 `scripts/patch-footer-live-context.mjs`（幂等）把实时 token 并入显示：`34.5k/200k (17.2%)`；rebuild.sh 自动执行，pi update 后重跑 rebuild.sh 即可
 - **补丁生命周期**：`patch-footer-live-context.mjs`/`patch-voice-enter.mjs` 均由 rebuild.sh Phase 3 自动执行（幂等，MARKER 跳过）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行两个脚本）。patch-voice-enter 缺失时 pi-voice 会禁用 Key.enter 注册（保护回车），但 patch-footer 缺失仅影响显示

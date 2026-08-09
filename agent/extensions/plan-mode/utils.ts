@@ -97,6 +97,26 @@ export function isSafeCommand(command: string): boolean {
   return !DESTRUCTIVE_PATTERNS.some((p) => p.test(trimmed)) && SAFE_PATTERNS.some((p) => p.test(trimmed))
 }
 
+/**
+ * 规划模式 subagent 拦截判定（参考 opencode explore 只读隔离模式）：
+ * 白名单开放 subagent 工具后，子进程以 --no-extensions 独立运行、不受本扩展
+ * 白名单约束（worker/reviewer 及默认 general-purpose 均带写工具），故仅放行
+ * 只读模板 scout。返回拒绝原因字符串，null 表示允许。
+ * 参数形状对齐 subagent 工具：single { agent?, task } / parallel { tasks[] } / chain { chain[] }。
+ */
+export function assertPlanSubagentAllowed(input: unknown): string | null {
+  const arg = (input ?? {}) as { agent?: unknown; tasks?: unknown; chain?: unknown };
+  const agents: unknown[] = [];
+  if (Array.isArray(arg.tasks)) agents.push(...arg.tasks.map((t) => (t as { agent?: unknown })?.agent));
+  else if (Array.isArray(arg.chain)) agents.push(...arg.chain.map((t) => (t as { agent?: unknown })?.agent));
+  else agents.push(arg.agent);
+const names = agents.map((a) => (typeof a === "string" ? a : ""));
+  if (names.some((n) => n !== "scout")) {
+    return `规划模式: subagent 仅允许显式指定只读的 scout 子代理（未指定或 worker/reviewer 均不可用，未指定会落到可写的 general-purpose）。使用 subagent agent="scout" 或退出规划模式。`;
+  }
+  return null;
+}
+
 import type { Task, TaskState } from "./state.ts";
 
 /** 任务名称截断：聊天/命令展示用，避免超长 subject 撑满界面 */
