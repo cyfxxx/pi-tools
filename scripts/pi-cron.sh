@@ -49,8 +49,9 @@ check_lock() {
     return 1
   fi
   read -r LOCKED_PID < "$LOCK_FILE" 2>/dev/null || return 1
-  # 检查 PID 是否存活
-  if kill -0 "$LOCKED_PID" 2>/dev/null; then
+  # 检查 PID 是否存活（用 /proc 而非 kill -0：proot 下 PID 1 等进程存在但
+  # 不可 signal，kill -0 会误判为已死）
+  if [ -d "/proc/$LOCKED_PID" ]; then
     return 0  # Pi 正在运行
   fi
   # 僵死锁 — 清理
@@ -59,8 +60,20 @@ check_lock() {
 }
 
 # ── 原子获取锁 ──────────────────────────────────────
+# 注意：锁文件与 pi-autopilot 扩展的 acquireSessionLock 共用（scheduler.lock）。
+# 锁可能被 pi 进程持有（在线时 cron 应在 check_lock 退出）；这里不得覆盖活跃锁，
+# 否则会把 pi 刚写入的锁顶掉（pi 的 150ms 验证失败 → 在线调度+看门狗静默失效）。
 acquire_lock() {
   local my_pid=$$
+  # 锁已存在且被其他存活进程持有 → 放弃（尊重 pi-autopilot / 并发 cron）。
+  # 存活判定用 /proc（kill -0 在 proot 下对不可 signal 进程会误判）
+  if [ -f "$LOCK_FILE" ]; then
+    local held_pid
+    held_pid=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
+    if [ -n "$held_pid" ] && [ "$held_pid" != "$my_pid" ] && [ -d "/proc/$held_pid" ]; then
+      return 1
+    fi
+  fi
   # 竞争写入 PID
   echo "$my_pid" > "$LOCK_FILE.tmp.$$" 2>/dev/null || return 1
   mv "$LOCK_FILE.tmp.$$" "$LOCK_FILE" 2>/dev/null || {
