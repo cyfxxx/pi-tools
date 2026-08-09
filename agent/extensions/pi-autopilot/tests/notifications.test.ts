@@ -11,7 +11,9 @@ const { __setAgentDir } = await import('./__mocks__/pi-coding-agent')
 beforeAll(async () => {
   TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-scheduler-notif-'))
   __setAgentDir(TEST_DIR)
+  // logDir() = AGENT_DIR/../logs/scheduler，需与扩展实现一致；先清残留避免跨运行污染
   LOG_DIR = join(TEST_DIR, '..', 'logs', 'scheduler')
+  await rm(LOG_DIR, { recursive: true, force: true })
   await mkdir(LOG_DIR, { recursive: true })
 })
 
@@ -40,6 +42,15 @@ describe('collectOfflineExecutions', () => {
     await rm(LOG_DIR, { recursive: true, force: true })
     expect(await collectOfflineExecutions()).toHaveLength(0)
     await mkdir(LOG_DIR, { recursive: true })
+  })
+
+  it('skips non-task logs without header separator (wrapper-ensure.log)', async () => {
+    // wrapper-ensure.log 是 install-wrapper 追加输出，无 "name | result | ts" 头
+    await writeFile(join(LOG_DIR, 'wrapper-ensure.log'), 'ensure 输出无 header 格式\n')
+    await writeFile(join(LOG_DIR, 'real-task.log'), 'real-task | success | 20260801T100000\nok')
+    const entries = await collectOfflineExecutions()
+    expect(entries.some(e => e.filename === 'wrapper-ensure.log')).toBe(false)
+    expect(entries.some(e => e.filename === 'real-task.log')).toBe(true)
   })
 })
 

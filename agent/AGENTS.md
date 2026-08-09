@@ -54,4 +54,4 @@ pi 自身 TUI 与 pi-tmux 扩展均基于 tmux 3.4（前缀键 C-a，见 `~/.tmu
 - **长任务/交互程序走 pi-tmux 工具**：`tmux_run`（detached + 日志落盘 `~/.pi/logs/tmux/<会话>.log`）、`tmux_read`、`tmux_send`、`tmux_wait`、`tmux_stop`、`tmux_status`；比内建 bash 工具（非交互管道、带 timeout）更适合长任务。会话统一 `pi-` 前缀，pi 退出自动清理（不碰用户会话）。
 - **用户手动用法**：`tmux a` 附加；`C-a d` 脱离；`C-a |` 分屏；`C-a C-s` 保存 / `C-a C-r` 恢复（resurrect/continuum）。Alacritty 窗口启动即自动进入 `main` 会话（bashrc 检测）。
 - **环境缺失处理**：tmux 未安装时 pi-tmux 工具返回带安装命令的错误（apt/dnf/pacman/brew），模型可按指引安装修复，不崩溃。
-- **`access not allowed` 故障**：所有 tmux 命令 stderr 报 `access not allowed` 但 exit 0、会话创建无效 → 陈旧 tmux 服务器（2026-08 曾发现 2023 年启动的进程）导致；修复：`kill -9 <tmux pid>` + `rm -rf /tmp/tmux-*` 后重试，无需重启机器
+- **`access not allowed` 故障**：所有 tmux 命令 stderr 报 `access not allowed` 但 exit 0、会话创建无效 → 陈旧 tmux 服务器（2026-08 曾发现 2023 年启动的进程）导致。2026-08-09 实证根因：proot 环境下 tmux server 被 kill -9 后 **socket 文件残留**（内核不清理），后续所有 tmux 命令报 access not allowed。修复：`kill -9 <tmux pid>` + `rm -rf /tmp/tmux-*` 后重试，无需重启机器。pi-wrapper.sh 已内置 `ensure_tmux` 自愈（每次 pi 启动检测 access not allowed 症状自动清理重建，pi 在 tmux 内时跳过防误杀）

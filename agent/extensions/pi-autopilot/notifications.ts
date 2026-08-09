@@ -29,6 +29,9 @@ export async function collectOfflineExecutions(): Promise<LogEntry[]> {
       const content = await readFile(join(dir, f), 'utf-8')
       const lines = content.split('\n')
       const header = lines[0] || ''
+      // 任务日志 header 格式为 "name | result | ts"；无分隔符的日志（如
+      // wrapper-ensure.log 的 install-wrapper 追加输出）不是任务执行记录，跳过
+      if (!header.includes('|')) continue
       const parts = header.split('|')
       entries.push({
         name: parts[0]?.trim() || f,
