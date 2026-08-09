@@ -30,34 +30,46 @@ export async function acquireSessionLock(): Promise<boolean> {
   const lockF = lockPath()
   const myPid = String(process.pid)
 
-  // 检查是否存在陈旧锁（持有锁的进程已死）
-  if (existsSync(lockF)) {
-    try {
-      const oldPid = (await readFile(lockF, 'utf-8')).trim()
-      if (oldPid && oldPid !== myPid) {
-        try {
-          await stat(`/proc/${oldPid}`)
-          // 进程仍存活，锁被其他实例持有
-          return false
-        } catch {
-          // /proc/${oldPid} 不存在 → 进程已死，清理陈旧锁
-          await unlink(lockF).catch(() => {})
+  // 单次获取尝试。锁可能被 pi-cron.sh（离线调度）短暂写入后释放，
+  // 或与之竞争——失败时由外层重试，避免把在线调度+看门狗静默关掉。
+  const tryOnce = async (): Promise<boolean> => {
+    // 检查是否存在陈旧锁（持有锁的进程已死）
+    if (existsSync(lockF)) {
+      try {
+        const oldPid = (await readFile(lockF, 'utf-8')).trim()
+        if (oldPid && oldPid !== myPid) {
+          try {
+            await stat(`/proc/${oldPid}`)
+            // 进程仍存活，锁被其他实例持有
+            return false
+          } catch {
+            // /proc/${oldPid} 不存在 → 进程已死，清理陈旧锁
+            await unlink(lockF).catch(() => {})
+          }
         }
-      }
-    } catch { /* 读锁文件失败，覆盖之 */ }
+      } catch { /* 读锁文件失败，覆盖之 */ }
+    }
+
+    try {
+      await writeFile(lockF + '.tmp', myPid, 'utf-8')
+      await rename(lockF + '.tmp', lockF)
+      await new Promise(r => setTimeout(r, 150))
+      const content = await readFile(lockF, 'utf-8')
+      return content.trim() === myPid
+    } catch {
+      return false
+    }
   }
 
-  try {
-    await writeFile(lockF + '.tmp', myPid, 'utf-8')
-    await rename(lockF + '.tmp', lockF)
-    await new Promise(r => setTimeout(r, 150))
-    const content = await readFile(lockF, 'utf-8')
-    const held = content.trim() === myPid
-    if (held) lockPid = myPid
-    return held
-  } catch {
-    return false
+  // 重试：cron 每 60s 触发一次，竞争窗口极短；5 次 × 400ms 足够避开
+  for (let i = 0; i < 5; i++) {
+    if (await tryOnce()) {
+      lockPid = myPid
+      return true
+    }
+    await new Promise(r => setTimeout(r, 400))
   }
+  return false
 }
 
 export async function releaseSessionLock(): Promise<void> {
