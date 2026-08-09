@@ -263,8 +263,8 @@ export function cleanForSpeech(text: string, maxChars = 400): string {
 
 /**
  * 判断文本是否值得朗读：过滤 JSON/结构化摘要（会话总结、记忆等），
- * 以及过短（<2 字符）或全为符号/空白的文本。仅用于自动朗读(message_end)，
- * 手动 /tts speak 不过滤。
+ * 以及过短（<2 字符）或全为符号/空白的文本。自动朗读与手动 /tts speak 均过滤，
+ * 手动朗读被过滤时会明确提示原因（不静默）。
  */
 export function isSpeechWorthy(text: string): boolean {
   const t = text.trim()
@@ -272,6 +272,68 @@ export function isSpeechWorthy(text: string): boolean {
   if (/^[{[]/.test(t)) return false
   if (/^[\s`~\-*#_>|+]+$/.test(t)) return false
   return true
+}
+
+export interface TtsDispatcherOptions {
+  speakFn: (text: string) => Promise<CommandResult>
+  onError?: (message: string) => void
+}
+
+export interface TtsDispatcher {
+  /** 加入朗读队列。合并策略：同时只保留一条待读文本（新文本替换旧的），
+   *  中间内容无需朗读；串行执行，同一时刻只有一条在朗读。 */
+  enqueue(text: string): void
+  /** 当前是否正在朗读（不含待读队列）。 */
+  isSpeaking(): boolean
+  /** 待读队列长度（合并后恒为 0 或 1）。 */
+  pendingCount(): number
+  /** 等待队列排空（含正在朗读的），测试与退出清理用。 */
+  flush(): Promise<void>
+}
+
+/**
+ * TTS 串行调度器：一次只朗读一条；新文本到来时丢弃中间待读内容，只读最新。
+ * speakFn 返回 CommandResult（code!==0 视为失败，经 onError 回调，不吞错）。
+ */
+export function createTtsDispatcher(opts: TtsDispatcherOptions): TtsDispatcher {
+  let pending: string | null = null
+  let speaking = false
+  let chain: Promise<void> = Promise.resolve()
+  let idle = true
+
+  function pump(): void {
+    if (!idle) return
+    idle = false
+    chain = chain.then(async () => {
+      try {
+        while (pending !== null) {
+          const text = pending
+          pending = null
+          speaking = true
+          try {
+            const r = await opts.speakFn(text)
+            if (r.code !== 0) opts.onError?.(r.stderr.trim() || r.stdout.trim() || `朗读进程退出码 ${r.code}`)
+          } catch (e) {
+            opts.onError?.((e as Error).message)
+          } finally {
+            speaking = false
+          }
+        }
+      } finally {
+        idle = true
+      }
+    })
+  }
+
+  return {
+    enqueue(text: string) {
+      pending = text
+      pump()
+    },
+    isSpeaking: () => speaking,
+    pendingCount: () => (pending === null ? 0 : 1),
+    flush: () => chain,
+  }
 }
 
 /** 从 assistant 消息 content 提取纯文本（对齐 pi AgentMessage.content 结构）。 */
