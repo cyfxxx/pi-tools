@@ -9,8 +9,8 @@
 - **听写模式**：录音中按**回车** = 结束当前段并转写（状态条显示「⚙ 转写中…」），完成后**自动续录**下一段；用快捷键/命令停止为正常退出（不续录）。各段文本追加到输入框，最后统一修改后发送
 - **/voice model** 列出模型；`/voice model <名>` 切换（tiny/base/small/medium/large-v3，重启 whisper 服务生效）
 - **/voice bench** 录 5 秒音频测转写速度，输出实时率 RTF 与换模型建议
-- **/tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/tts speak [文本]** 手动朗读；**/tts status** 查看后端与服务状态
-- 自动朗读只朗读**最终回复**（`message_end` 中 `stopReason=stop` 的 assistant 消息），中间轮（toolUse、计划汇报、思考过程）不朗读；JSON/结构化摘要（会话总结、记忆输出）自动过滤，避免朗读垃圾内容与 TTS 进程堆积
+- **/tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/tts speak [文本]** 手动朗读（JSON/纯符号内容会过滤并提示）；**/tts status** 查看朗读开关、队列与后端状态
+- **TTS 自动朗读语义**：默认关闭（非语音状态不朗读）；语音输入（开始录音/语音直发）后自动开启朗读，键盘输入自动关闭——形成语音对话闭环；手动 `/tts on|off` 后不再自动切换。只朗读最终回复（`message_end` 中 `stopReason=stop`），中间轮与 JSON/结构化摘要自动过滤；**串行队列合并策略**：同时只朗读一条，新回复到来时丢弃中间待读内容（中间内容无需朗读），杜绝 TTS 进程堆积
 - 转写文本默认**插入输入框**供确认（配置 `autoSend` 为 true 时直接发送）
 - 录音时长到上限（`maxSeconds`）自动转写；`/tts status` 显示自动转写结果暂存
 - 完全本地转写（faster-whisper），无需 API key，离线可用
@@ -80,7 +80,7 @@ apt-get install ffmpeg        # PRoot 侧
 | `PI_VOICE_MIC_BIN` | `termux-microphone-record` | 录音命令 |
 | `PI_VOICE_FFMPEG_BIN` | `ffmpeg` | 转码命令 |
 | `PI_VOICE_TTS_BIN` | `termux-tts-speak` | 朗读命令 |
-| `PI_VOICE_TTS_ENABLED` | `1` | 自动朗读回复开关（`/tts on|off` 落盘持久化） |
+| `PI_VOICE_TTS_ENABLED` | `0` | 自动朗读回复开关（默认关闭，语音输入自动开启；`/tts on|off` 落盘持久化并切换为手动模式） |
 | `PI_VOICE_TTS_MAX_CHARS` | `400` | 单次朗读最大字符数 |
 | `PI_VOICE_AUTO_SEND` | `0` | 转写后直接发送（不插入编辑框） |
 | `PI_VOICE_MAX_SECONDS` | `120` | 录音上限秒数（0 = 手动停止） |

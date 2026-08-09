@@ -61,7 +61,7 @@ export const DEFAULTS: VoiceConfig = {
   ttsBin: 'termux-tts-speak',
   tmpDir: defaultTmpDir(),
   audioDir: join(homedir(), '.pi', 'logs', 'voice'),
-  ttsEnabled: true,
+  ttsEnabled: false,
   ttsMaxChars: 400,
   autoSend: false,
   maxSeconds: 120,

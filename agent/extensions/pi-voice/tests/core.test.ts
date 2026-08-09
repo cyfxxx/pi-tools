@@ -6,6 +6,7 @@ import {
   benchSuggestion,
   isSpeechWorthy,
   ensureWhisperService,
+  createTtsDispatcher,
 } from '../core'
 import { loadConfig, DEFAULTS, type VoiceConfig } from '../config'
 
@@ -101,7 +102,7 @@ describe('loadConfig', () => {
     const cfg = loadConfig({})
     expect(cfg.whisperEndpoint).toBe(DEFAULTS.whisperEndpoint)
     expect(cfg.micBin).toBe('termux-microphone-record')
-    expect(cfg.ttsEnabled).toBe(true)
+    expect(cfg.ttsEnabled).toBe(false)
     expect(cfg.autoSend).toBe(false)
     expect(cfg.maxSeconds).toBe(120)
   })
@@ -139,6 +140,85 @@ describe('isSpeechWorthy', () => {
     expect(isSpeechWorthy('```')).toBe(false)
     expect(isSpeechWorthy('**')).toBe(false)
     expect(isSpeechWorthy('  \t ')).toBe(false)
+  })
+})
+
+describe('createTtsDispatcher', () => {
+  it('串行：同一时刻只有一条在朗读，前一条完成后才读下一条', async () => {
+    const spoken: string[] = []
+    let gate!: () => void
+    const gateP = new Promise<void>((r) => { gate = r })
+    const d = createTtsDispatcher({
+      speakFn: async (text) => {
+        spoken.push(text)
+        if (text === '第一条') await gateP
+        return { code: 0, stdout: '', stderr: '' }
+      },
+    })
+    d.enqueue('第一条')
+    // 等第一条真正开始朗读（挂在 gate 上）
+    await vi.waitFor(() => expect(d.isSpeaking()).toBe(true))
+    expect(d.pendingCount()).toBe(0)
+    // 第一条朗读期间入队第二条：排队而非并发
+    d.enqueue('第二条')
+    expect(d.isSpeaking()).toBe(true)
+    gate()
+    await d.flush()
+    expect(d.isSpeaking()).toBe(false)
+    expect(d.pendingCount()).toBe(0)
+    expect(spoken).toEqual(['第一条', '第二条'])
+  })
+
+  it('合并：新文本替换旧的待读，中间内容不朗读', async () => {
+    const spoken: string[] = []
+    let gate!: () => void
+    const gateP = new Promise<void>((r) => { gate = r })
+    const d = createTtsDispatcher({
+      speakFn: async (text) => {
+        spoken.push(text)
+        if (text === '第一条') await gateP
+        return { code: 0, stdout: '', stderr: '' }
+      },
+    })
+    d.enqueue('第一条')
+    await vi.waitFor(() => expect(d.isSpeaking()).toBe(true))
+    d.enqueue('第二条')
+    d.enqueue('第三条')
+    // 第二条尚未开始朗读即被第三条替换
+    expect(d.pendingCount()).toBe(1)
+    gate()
+    await d.flush()
+    expect(spoken).toEqual(['第一条', '第三条'])
+  })
+
+  it('朗读失败回调 onError 不吞错', async () => {
+    const errors: string[] = []
+    const d = createTtsDispatcher({
+      speakFn: async () => ({ code: 1, stdout: '', stderr: 'engine down' }),
+      onError: (m) => errors.push(m),
+    })
+    d.enqueue('会失败')
+    await d.flush()
+    expect(errors).toEqual(['engine down'])
+  })
+
+  it('speakFn 抛异常也回调 onError 且队列继续', async () => {
+    const errors: string[] = []
+    const spoken: string[] = []
+    const d = createTtsDispatcher({
+      speakFn: async (text) => {
+        if (text === '抛错') throw new Error('boom')
+        spoken.push(text)
+        return { code: 0, stdout: '', stderr: '' }
+      },
+      onError: (m) => errors.push(m),
+    })
+    d.enqueue('抛错')
+    await vi.waitFor(() => expect(errors.length).toBe(1))
+    d.enqueue('正常')
+    await d.flush()
+    expect(errors).toEqual(['boom'])
+    expect(spoken).toEqual(['正常'])
   })
 })
 

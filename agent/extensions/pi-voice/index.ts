@@ -9,7 +9,7 @@
  * /voice model      列出模型；/voice model <名> 切换（重启 whisper 服务）
  * /voice bench      录 5s 测转写速度（RTF）并给换模型建议
  * /tts on|off       开关自动朗读回复（/tts 无参数也切换；状态持久化）
- * /tts speak [文本]  手动朗读（缺省朗读最近一条回复）
+ * /tts speak [文本]  手动朗读（缺省朗读最近一条回复；JSON 等结构化内容会过滤并提示）
  * /tts status       朗读与后端状态
  *
  * 快捷键 Ctrl+Shift+R 等价于 /voice（录音期间再次按即停止转写）；
@@ -20,6 +20,13 @@
  * 架构：状态机在 dictation.ts（纯逻辑，可单测）；本文件只做命令/快捷键/
  * 事件注册与 UI 接线（notify/setStatus/pasteToEditor/sendUserMessage）。
  * 隐私：录音文件转写后立即删除（即用即弃），启动与退出时清理残留。
+ *
+ * TTS 自动朗读语义（2026-08 起）：
+ * - 默认关闭（非语音状态不朗读），持久化 ttsEnabled=false
+ * - 语音输入（录音转写直发/听写发送）后自动开启朗读，形成语音对话闭环
+ * - 键盘输入自动关闭朗读；仅"自动模式"下才自动切换，手动 /tts on|off 后不再自动切换
+ * - 只朗读最终回复（stopReason=stop），且过滤 JSON/结构化摘要
+ * - 串行队列：同时只保留一条待读文本（新文本替换旧的），一次只朗读一条
  */
 
 import type { ExtensionAPI, ExtensionContext, ExtensionCommandContext } from '@earendil-works/pi-coding-agent'
@@ -45,12 +52,22 @@ import {
   doctor,
   benchmark,
   runCommand,
+  createTtsDispatcher,
+  type TtsDispatcher,
 } from './core'
 
+/** 听写回车防抖窗口（ms）：连击只处理一次 */
+const ENTER_DEBOUNCE_MS = 800
+
+let config: VoiceConfig
 let lastAssistantText = ''
 let lastAutoDictation = ''
 let ttsEnabled: boolean
+/** 用户是否手动设置过 TTS（true 后不再被自动切换覆盖） */
+let ttsManual = false
+let lastEnterAt = 0
 let dictation: Dictation
+let ttsQueue: TtsDispatcher
 
 /** 可用 whisper 模型（faster-whisper）与设备说明 */
 const WHISPER_MODELS: Record<string, string> = {
@@ -101,24 +118,39 @@ function detectDistFromPath(explicit?: string): string {
 }
 
 export default function (pi: ExtensionAPI): void {
-  const config = loadConfig()
+  config = loadConfig()
   ttsEnabled = config.ttsEnabled
-  // 启动即清理超过 24h 的残留录音文件（隐私：不长期留存音频）
-  cleanupStaleAudio(config)
-  // 清理重启/崩溃遗留的孤儿录音进程（幂等：无录音时 -q 输出 No recording to stop 且 exit 0），
+  // 启动即清理残留：进程重启后必然无进行中录音，tmpDir 全部残留（m4a/wav）立即删除；
+  // 另清理重启/崩溃遗留的孤儿录音进程（幂等：无录音时 -q 输出 No recording to stop 且 exit 0），
   // 否则 termux-microphone-record 单实例占用会导致“只能开不能关”
+  cleanupStaleAudio(config, 0)
   void stopRecording(config).catch(() => undefined)
+  // 清理 TTS 僵尸进程（此前自动朗读崩溃遗留的 termux-tts-speak / termux-api TextToSpeech）
+  void runCommand('pkill', ['-f', 'termux-tts-speak'], { timeoutMs: 5000 }).catch(() => undefined)
+  void runCommand('pkill', ['-f', 'termux-api TextToSpeech'], { timeoutMs: 5000 }).catch(() => undefined)
+
+  ttsQueue = createTtsDispatcher({
+    speakFn: (text) => speak(config, text),
+    onError: (message) => {
+      pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⚠ 朗读失败：${message}`, display: true })
+    },
+  })
 
   dictation = createDictation(
     config,
     { startRecording, stopRecording, convertToWav, transcribe, deleteAudioPair, fileExists },
     {
       // 录音进程自行退出（超时/启动失败）的自动完成：无调用方 UI 上下文，
-      // 有文本时 autoSend 直发，否则暂存供查询；失败/无文本时也要展示原因，绝不静默。
+      // 用 sendMessage(display) 主动展示结果，成功失败都不静默。
       onAutoComplete: (r) => {
         if (r.text) {
           lastAutoDictation = r.text
-          if (config.autoSend) pi.sendUserMessage(r.text, { deliverAs: 'steer' })
+          if (config.autoSend) {
+            pi.sendUserMessage(r.text, { deliverAs: 'steer' })
+            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 录音超时，已自动转写并发送：${r.text}`, display: true })
+          } else {
+            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 录音超时，已自动转写（暂存，可 /tts speak 朗读）：${r.text}`, display: true })
+          }
         } else if (r.message) {
           lastAutoDictation = ''
           pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: r.message, display: true })
@@ -164,7 +196,7 @@ export default function (pi: ExtensionAPI): void {
           setTts(pi, ctx, false)
           break
         case 'status':
-          reply(pi, `TTS ${ttsEnabled ? '开启' : '关闭'}；最近回复 ${lastAssistantText ? `${lastAssistantText.length} 字符` : '无'}；自动转写暂存 ${lastAutoDictation ? '有' : '无'}；转写服务 ${await whisperStatus(config)}`)
+          reply(pi, `TTS ${ttsEnabled ? '开启' : '关闭'}${ttsManual ? '（手动）' : '（自动）'}；朗读队列 ${ttsQueue.pendingCount()} 待读${ttsQueue.isSpeaking() ? ' + 朗读中' : ''}；最近回复 ${lastAssistantText ? `${lastAssistantText.length} 字符` : '无'}；自动转写暂存 ${lastAutoDictation ? '有' : '无'}；转写服务 ${await whisperStatus(config)}`)
           break
         case 'speak': {
           const text = rest.join(' ') || lastAssistantText
@@ -172,8 +204,12 @@ export default function (pi: ExtensionAPI): void {
             reply(pi, '暂无朗读内容')
             break
           }
-          const res = await speak(config, text)
-          reply(pi, res.code === 0 ? '已朗读' : `朗读失败: ${res.stderr}`)
+          if (!isSpeechWorthy(text)) {
+            reply(pi, '内容为结构化数据（JSON/纯符号），已跳过朗读')
+            break
+          }
+          ttsQueue.enqueue(text)
+          reply(pi, '已加入朗读队列')
           break
         }
         default:
@@ -204,12 +240,20 @@ export default function (pi: ExtensionAPI): void {
   // 未录音/转写中返回 false 放行（依赖核心补丁 patch-voice-enter.mjs，否则 enter 被无条件拦截）。
   // 类型断言：核心补丁读取运行时返回值 false，ts 类型仅允许 void | Promise<void>。
   // 未检测到补丁时不注册：避免吞掉所有回车（输入提交/菜单选择失效）。
+  // 防抖：ENTER_DEBOUNCE_MS 内连击只处理一次；转写中回车给出提示而非静默。
   const enterReady = enterPatchApplied()
   if (enterReady) {
     pi.registerShortcut(Key.enter, {
       description: '录音中回车：切段转写并自动续录',
       handler: ((ctx: ExtensionContext) => {
         if (!dictation.isRecording()) return false
+        const now = Date.now()
+        if (now - lastEnterAt < ENTER_DEBOUNCE_MS) return true
+        lastEnterAt = now
+        if (dictation.isTranscribing()) {
+          ctx.ui.notify('正在转写中，请稍候…', 'warning')
+          return true
+        }
         ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
         void dictation.stop().then((r) => {
           deliverResult(pi, ctx, r, true)
@@ -230,6 +274,24 @@ export default function (pi: ExtensionAPI): void {
     reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
   }
 
+  // 输入事件：区分语音/键盘输入来源，控制自动 TTS 与防误操作。
+  // 键盘输入（interactive）→ 自动模式关闭朗读（语音对话结束）；
+  // 录音/转写进行中键盘提交 → 拦截并提示，避免误操作打断语音流程。
+  pi.on('input', (event) => {
+    if (event.source === 'interactive') {
+      if (!ttsManual && ttsEnabled) autoSetTts(false)
+      if (dictation.isRecording() || dictation.isTranscribing()) {
+        pi.sendMessage({
+          customType: OUTPUT_CUSTOM_TYPE,
+          content: dictation.isTranscribing() ? '正在转写中，请稍候（按 Ctrl+Shift+R 可查看状态）' : '正在录音中，请先停止录音（Ctrl+Shift+R）再输入文字',
+          display: true,
+        })
+        return { action: 'handled' }
+      }
+    }
+    return { action: 'continue' }
+  })
+
   // 自动朗读 assistant 回复（仅最终回复的文本部分，异步不阻塞）
   // 中间轮（stopReason=toolUse）与 JSON/结构化摘要不朗读，避免语音轰炸与朗读垃圾内容
   pi.on('message_end', (event) => {
@@ -240,13 +302,13 @@ export default function (pi: ExtensionAPI): void {
     const text = extractAssistantText(msg.content)
     if (!text || !isSpeechWorthy(text)) return
     lastAssistantText = text
-    void speak(config, text).catch(() => {})
+    ttsQueue.enqueue(text)
   })
 
   // 退出/重载时清理录音进程与残留文件（隐私兜底）
   pi.on('session_shutdown', () => {
     dictation.cleanup()
-    cleanupStaleAudio(config)
+    cleanupStaleAudio(config, 0)
   })
 }
 
@@ -259,6 +321,7 @@ function reply(api: ExtensionAPI, text: string): void {
 function withStatus(api: ExtensionAPI, ctx: ExtensionContext, message: string): void {
   if (message.startsWith('🎤')) {
     ctx.ui.setStatus('pi-voice', '🎤 录音中')
+    autoSetTts(true)
   } else {
     ctx.ui.setStatus('pi-voice', undefined)
   }
@@ -274,40 +337,48 @@ async function stopAndDeliver(pi: ExtensionAPI, ctx: ExtensionContext, dictating
 
 /**
  * 转写结果交付：autoSend 直发，否则粘贴输入框供确认；不落盘音频。
- * dictating（听写模式）时无论 autoSend 一律粘贴输入框（逐段累积、统一修改后发送），
- * 且成功不 reply（避免每段刷屏），失败仍提示。
+ * dictating（听写模式）时无论 autoSend 一律粘贴输入框（逐段累积、统一修改后发送）。
+ * 成功/失败均有明确提示；语音直发时自动开启朗读（语音对话闭环）。
  */
 function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult, dictating = false): void {
-  const cfg = loadConfig()
-  if (r.text && !dictating) {
-    if (cfg.autoSend) {
-      pi.sendUserMessage(r.text, { deliverAs: 'steer' })
-      ctx.ui.notify('已发送语音指令')
-      reply(pi, `已发送：${r.text}`)
-      return
-    }
-    ctx.ui.setStatus('pi-voice', undefined)
-    ctx.ui.pasteToEditor(r.text + ' ')
-    if (dictating) {
-      ctx.ui.notify('已插入输入框，可继续口述')
-    } else {
-      ctx.ui.notify('转写完成，已插入输入框')
-    }
-  } else {
-    ctx.ui.setStatus('pi-voice', undefined)
+  ctx.ui.setStatus('pi-voice', undefined)
+  if (!r.text) {
+    ctx.ui.notify('语音转写失败', 'error')
+    reply(pi, r.message)
+    return
   }
-  if (!dictating || !r.text) reply(pi, r.message)
+  if (dictating) {
+    ctx.ui.pasteToEditor(r.text + ' ')
+    ctx.ui.notify('已插入输入框，可继续口述')
+    return
+  }
+  if (config.autoSend) {
+    pi.sendUserMessage(r.text, { deliverAs: 'steer' })
+    ctx.ui.notify('已发送语音指令')
+    reply(pi, `已发送：${r.text}`)
+    autoSetTts(true)
+    return
+  }
+  ctx.ui.pasteToEditor(r.text + ' ')
+  ctx.ui.notify('转写完成，已插入输入框')
+}
+
+/** 自动模式下的 TTS 开关（不持久化；仅语音输入时开启、键盘输入时关闭）。 */
+function autoSetTts(enabled: boolean): void {
+  if (ttsManual || ttsEnabled === enabled) return
+  ttsEnabled = enabled
 }
 
 function setTts(pi: ExtensionAPI, ctx: ExtensionContext, enabled: boolean): void {
+  ttsManual = true
   ttsEnabled = enabled
   try {
     persistConfig({ ttsEnabled }, process.env)
   } catch {
     // 持久化失败不阻塞开关
   }
-  ctx.ui.notify(`TTS ${enabled ? '已开启' : '已关闭'}`)
-  reply(pi, `TTS ${enabled ? '已开启' : '已关闭'}`)
+  ctx.ui.notify(`TTS ${enabled ? '已开启' : '已关闭'}（手动，不再自动切换）`)
+  reply(pi, `TTS ${enabled ? '已开启' : '已关闭'}（手动，不再自动切换）`)
 }
 
 async function cmdDoctor(api: ExtensionAPI, ctx: ExtensionCommandContext, config: VoiceConfig): Promise<void> {
@@ -351,12 +422,14 @@ async function cmdModel(
   }
   ctx.ui.setStatus('pi-voice', '⚙ 切换模型并重启服务…')
   reply(api, `正在切换到 ${want}（首次使用需下载模型，可能耗时较长）…`)
-  const res = await runCommand('bash', [join(homedir(), '.pi', 'scripts', 'pi-whisper.sh'), 'restart'], { timeoutMs: 120000 })
+  const res = await runCommand('bash', [config.whisperScript, 'restart'], { timeoutMs: 120000 })
   ctx.ui.setStatus('pi-voice', undefined)
   if (res.code !== 0) {
     reply(api, `服务重启命令失败：${res.stderr || res.stdout}`)
     return
   }
+  // 重新加载配置（模型已切换，避免快照旧值误判"已在使用"）
+  config = loadConfig()
   // 轮询 health 直到新模型加载完成（最多 120s）
   const deadline = Date.now() + 120000
   let ok = false

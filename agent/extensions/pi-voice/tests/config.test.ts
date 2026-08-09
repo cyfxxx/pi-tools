@@ -54,4 +54,17 @@ describe('config 持久化', () => {
     expect(written).not.toContain('whisperModel')
     expect(loadConfig({ PI_VOICE_WHISPER_MODEL: 'tiny' }).whisperModel).toBe('tiny')
   })
+
+  it('ttsEnabled 默认关闭（非语音状态不朗读）', async () => {
+    const { loadConfig } = await import('../config')
+    expect(loadConfig({}).ttsEnabled).toBe(false)
+    // env 可开启
+    expect(loadConfig({ PI_VOICE_TTS_ENABLED: '1' }).ttsEnabled).toBe(true)
+  })
+
+  it('whisperScript 默认指向 pi-whisper.sh，env 可覆盖', async () => {
+    const { loadConfig, DEFAULTS } = await import('../config')
+    expect(loadConfig({}).whisperScript).toBe(DEFAULTS.whisperScript)
+    expect(loadConfig({ PI_VOICE_WHISPER_SCRIPT: '/tmp/whisper.sh' }).whisperScript).toBe('/tmp/whisper.sh')
+  })
 })
