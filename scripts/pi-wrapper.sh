@@ -269,6 +269,25 @@ if [ -n "${PI_TMUX_SESSION:-}" ] && [ -t 1 ] && command -v tmux >/dev/null 2>&1;
   fi
 fi
 
+# L1.5: tmux 孤儿 socket 自愈。proot 环境下 tmux server 被 kill 后 socket 残留，
+# 后续所有 tmux 命令报 "access not allowed" 且 exit 0（会话创建无效）——
+# AGENTS.md 已记录此故障。每次 pi 启动检测该症状并清理重建。
+# 仅在 pi 不在 tmux 内时执行（$TMUX 为空），避免误杀承载 pi 的会话。
+ensure_tmux() {
+  command -v tmux >/dev/null 2>&1 || return 0
+  [ -n "${TMUX:-}" ] && return 0
+  local out
+  out=$(tmux list-sessions 2>&1)
+  if echo "$out" | grep -q "access not allowed"; then
+    local tpid
+    tpid=$(ps -e -o pid,comm 2>/dev/null | awk '$2 == "tmux: server" {print $1; exit}')
+    [ -n "$tpid" ] && kill -9 "$tpid" 2>/dev/null
+    rm -rf /tmp/tmux-* 2>/dev/null
+    echo "[pi-wrapper] 清理陈旧 tmux server/socket 并重建" >&2
+    tmux new-session -d -s bootstrap -c "$HOME" >/dev/null 2>&1 || true
+  fi
+}
+
 # L2: cron 守护自愈（离线调度保障）。pi-cron.sh 由 crontab 每分钟触发，
 # 但 proot 环境 cron 守护可能未运行（重启后丢失、无人拉起），在此确保拉起。
 # 幂等：已在运行则跳过。
@@ -281,6 +300,7 @@ ensure_cron() {
 }
 
 while true; do
+  ensure_tmux
   ensure_cron
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
