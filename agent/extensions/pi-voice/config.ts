@@ -33,6 +33,8 @@ export interface VoiceConfig {
   maxSeconds: number
   /** 转写语言（空 = 自动检测） */
   language: string
+  /** whisper 模型名（tiny/base/small/medium/large-v3；切换需重启服务） */
+  whisperModel: string
 }
 
 /** Android（Termux）上 MediaRecorder 只能打开系统可访问路径；proot 容器内路径会 open failed: ENOENT。 */
@@ -62,6 +64,7 @@ export const DEFAULTS: VoiceConfig = {
   autoSend: false,
   maxSeconds: 120,
   language: '',
+  whisperModel: 'base',
 }
 
 const CONFIG_PATH = join(homedir(), '.pi', 'agent', 'pi-voice.json')
@@ -101,6 +104,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
     autoSend: envBool(env.PI_VOICE_AUTO_SEND, file.autoSend ?? DEFAULTS.autoSend),
     maxSeconds: numeric(env.PI_VOICE_MAX_SECONDS, file.maxSeconds ?? DEFAULTS.maxSeconds),
     language: env.PI_VOICE_LANGUAGE ?? file.language ?? DEFAULTS.language,
+    whisperModel: env.PI_VOICE_WHISPER_MODEL ?? file.whisperModel ?? DEFAULTS.whisperModel,
   }
   return merged
 }
@@ -148,6 +152,7 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
     maxSeconds: 'PI_VOICE_MAX_SECONDS',
     tmpDir: 'PI_VOICE_TMP_DIR',
     language: 'PI_VOICE_LANGUAGE',
+    whisperModel: 'PI_VOICE_WHISPER_MODEL',
   }
   return map[key] ?? null
 }

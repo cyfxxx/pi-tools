@@ -25,7 +25,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
-MODEL = os.environ.get("PI_WHISPER_MODEL", "base")
+MODEL = os.environ.get("PI_WHISPER_MODEL") or "base"
 PORT = int(os.environ.get("PI_WHISPER_PORT", "18766"))
 MODELS_DIR = os.environ.get("PI_WHISPER_MODELS", "/opt/pi-whisper/models")
 TOKEN = os.environ.get("PI_WHISPER_TOKEN", "")

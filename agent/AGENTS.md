@@ -9,7 +9,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`（按窗口比例自动压缩阈值+防抖+压缩后自动继续门）、`prune.ts`（兼容层 + 工具输出分层擦除 + thinking 预算保留）、`usage-diag.ts`（每轮 LLM 用量诊断记录/汇总，含 prune/压缩事件）、`note-store.ts`、`token-budget.ts`（兼容层）
 - `agent/prompts/` — 提示词文档（PI-SDK-EXTENSION.md）
 - `agent/agents/`、`agent/skills/` — 子代理模板与技能
-- `scripts/` — rebuild.sh 一键重建、pi-wrapper.sh 生命周期、pi-cron.sh 定时、test-all.sh 回归、pi-whisper.sh whisper 转写服务管理（配套 `whisper-server.py`，faster-whisper 常驻于 127.0.0.1:18766；模型经 hf-mirror.com 下载，缓存 /opt/pi-whisper/models）
+- `scripts/` — rebuild.sh 一键重建、pi-wrapper.sh 生命周期、pi-cron.sh 定时、test-all.sh 回归、pi-whisper.sh whisper 转写服务管理（配套 `whisper-server.py`，faster-whisper 常驻于 127.0.0.1:18766；模型经 hf-mirror.com 下载，缓存 /opt/pi-whisper/models）、patch-voice-enter.mjs 回车拦截核心补丁（rebuild.sh 自动幂等执行；**未打补丁时回车键会被 pi-voice 无条件吞掉**——扩展到全局拦截 enter，输入提交/菜单选择失效。pi-voice 启动时检测 MARKER，缺失则自动禁用回车听写并提示，避免吞回车）、patch-footer-live-context.mjs footer 实时 token 补丁（同 rebuild.sh 自动执行）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 - `memory/` — pi-memory 运行时数据（git 忽略）
 - `logs/whisper/` — whisper 服务日志与 pid（运行时数据）
@@ -24,7 +24,7 @@ pi-voice 提供双向语音：`/voice` + `Ctrl+Shift+R` 录音（termux-micropho
 bash scripts/test-all.sh          # 一键：9 套测试 + tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 15 / pi-tmux 10 / pi-voice 29 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 88 / pi-browser 23 / pi-context 35 / plan-mode 39 / pi-tmux 10 / pi-voice 37 用例）
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（34 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（6 项）
@@ -37,6 +37,10 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **分层擦除**：pi-context 在 context 事件阶段做工具输出事后擦除（借鉴 opencode prune）：最近 2 轮 + 40K token 保护带内保留，更早的 toolResult 输出替换为 `[pruned]` 占位（保留结构），预计回收 ≥20K 才应用；判定确定性、擦除点单调后移，缓存前缀稳定；见 `lib/prune.ts`
 - **工具输出截断**：tool_result 事件写入时截断——bash/read 5KB（bash 保留尾部、read 保留头部），其他工具 20KB 兜底；thinking 保留最近 16K token（token 预算而非轮数规则，见 `lib/prune.ts pruneThinkingBudget`）
 - **用量诊断**：`/usage-diag` 显示每轮 input/缓存/输出汇总 + prune 擦除量 + 压缩触发（记录在 `~/.pi/agent/.usage-diag.jsonl`，仅展示不进 LLM 上下文）；扩展的异步回调不得使用捕获的 ctx（session 替换后 stale ctx 抛错），需先取值
+- **footer 口径**（`dist/modes/interactive/components/footer.js`）：`↑↓RW$` 为整个会话文件累计消耗（含已压缩历史与 compaction 摘要 usage，压缩后不变）；context 为实时上下文（`getContextUsage`，基于最近有效 assistant usage + 尾部估算，压缩后为 `?` 直到下轮响应）。补丁 `scripts/patch-footer-live-context.mjs`（幂等）把实时 token 并入显示：`34.5k/200k (17.2%)`；rebuild.sh 自动执行，pi update 后重跑 rebuild.sh 即可
+- **补丁生命周期**：`patch-footer-live-context.mjs`/`patch-voice-enter.mjs` 均由 rebuild.sh Phase 3 自动执行（幂等，MARKER 跳过）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行两个脚本）。patch-voice-enter 缺失时 pi-voice 会禁用 Key.enter 注册（保护回车），但 patch-footer 缺失仅影响显示
+- **plan-mode 修订语义**：`mergePlanRevision`（utils.ts）——修订时未完成任务按 subject 匹配（规范化相等 → 子串包含 → Dice≥0.6 兜底）：匹配保留原 id/状态，未匹配 pending 移除、in_progress 降 pending（清 activeForm）、blocked 保留，completed/deleted 始终保留；不再重复 append 堆积任务。修订意图判定：**只看最后一条用户消息**（`isPlanRevisionIntent`），assistant 汇报/总结文本即使含编号列表与"修订"等词也不触发（2026-08 实测误触发：汇报文本被 `**plan-mode 修订语义**` 中的 plan 撞上 Plan 头正则提取成任务；plan-revise 消息副本被用户转发后含"修订"词再次触发——已加 `**计划已修订/进度/步骤/完成` 前缀过滤）；Plan 头正则已收紧为须后跟冒号/空白/行尾（`\*{0,2}(?:Plan|计划)\*{0,2}(?:[:：]|\s|$)`），`计划步骤 (0/9)` 类聊天展示行不提取。注入的 plan prompt 强制用 todo 工具跟踪步骤（文本 Plan 仅展示）
+- **plan-mode 缓存特性**：注入消息（plan-execution-context/todo-list/progress 等）均追加在消息流尾部，且 context 阶段按 customType 只保留最新一条——更新时仅使被删旧注入消息（约 100–500 token）失效，对前缀命中率影响 <0.3%；若注入消息累积在消息中部，删除会使其后全量失效，故单实例过滤必须保留
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **旧扩展名残留**：pi-web-toolkit / pi-router / pi-admin / pi-scheduler 均已融合或更名，新代码禁止引用
 
@@ -47,3 +51,4 @@ pi 自身 TUI 与 pi-tmux 扩展均基于 tmux 3.4（前缀键 C-a，见 `~/.tmu
 - **长任务/交互程序走 pi-tmux 工具**：`tmux_run`（detached + 日志落盘 `~/.pi/logs/tmux/<会话>.log`）、`tmux_read`、`tmux_send`、`tmux_wait`、`tmux_stop`、`tmux_status`；比内建 bash 工具（非交互管道、带 timeout）更适合长任务。会话统一 `pi-` 前缀，pi 退出自动清理（不碰用户会话）。
 - **用户手动用法**：`tmux a` 附加；`C-a d` 脱离；`C-a |` 分屏；`C-a C-s` 保存 / `C-a C-r` 恢复（resurrect/continuum）。Alacritty 窗口启动即自动进入 `main` 会话（bashrc 检测）。
 - **环境缺失处理**：tmux 未安装时 pi-tmux 工具返回带安装命令的错误（apt/dnf/pacman/brew），模型可按指引安装修复，不崩溃。
+- **`access not allowed` 故障**：所有 tmux 命令 stderr 报 `access not allowed` 但 exit 0、会话创建无效 → 陈旧 tmux 服务器（2026-08 曾发现 2023 年启动的进程）导致；修复：`kill -9 <tmux pid>` + `rm -rf /tmp/tmux-*` 后重试，无需重启机器

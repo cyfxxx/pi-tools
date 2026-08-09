@@ -4,7 +4,7 @@
  */
 
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
-import { mkdirSync, readdirSync, rmSync, statSync, readFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoiceConfig } from './config'
 
@@ -67,6 +67,9 @@ export function startRecording(
   const args = ['-e', 'aac', '-f', file]
   if (limit > 0) args.push('-l', String(limit))
   const child = spawn(cfg.micBin, args, { stdio: 'ignore' })
+  // spawn 失败（如二进制缺失 ENOENT）：必须监听 error，否则 Node 抛 unhandled error；
+  // 用退出码 -2 标记启动失败（区别于运行中退出），由状态机按非 0 分流报错。
+  child.on('error', () => onExit(-2))
   child.on('exit', (code) => onExit(code ?? -1))
   return { child, file }
 }
@@ -84,6 +87,15 @@ export function deleteAudioPair(cfg: VoiceConfig, m4a: string): void {
     } catch {
       // 删除失败不阻塞主流程
     }
+  }
+}
+
+/** 判断录音文件是否已生成（用于区分“正常超时退出”与“启动即失败/被占用”）。 */
+export function fileExists(m4a: string): boolean {
+  try {
+    return existsSync(m4a) && statSync(m4a).size > 0
+  } catch {
+    return false
   }
 }
 
@@ -237,4 +249,62 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
 /** 生成可安装指引错误（供模型直接修复环境）。 */
 export function voiceGuideError(detail: string): string {
   return `语音功能不可用：${detail}\n修复指引：\n1) 录音依赖：pkg install termux-api（Termux:API 应用 + Android 麦克风权限）\n2) 转写依赖：~/.pi/scripts/pi-whisper.sh start\n3) 转码依赖：apt-get install ffmpeg`
+}
+
+export interface BenchResult {
+  lines: string[]
+  /** 实时率：转写耗时 / 音频时长；测试失败为 null */
+  rtf: number | null
+}
+
+/** 模型档位建议（纯函数，便于单测）。rtf > 1 = 慢于实时，< 0.5 = 明显快于实时。 */
+export function benchSuggestion(rtf: number): string {
+  if (rtf > 1) return '转写慢于实时语速，建议换更小模型（/voice model tiny）提升速度'
+  if (rtf > 0.5) return '速度可接受；若追求准确率可尝试更大模型，若追求响应可换 tiny'
+  return '速度充裕（快于实时 2 倍以上），可尝试更大模型提升准确率（/voice model small）'
+}
+
+/** 性能基准：录 5s 音频 → 转写计时 → 返回评估行与 RTF。失败时 rtf 为 null。 */
+export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
+  const benchCfg = { ...cfg, maxSeconds: 5 }
+  const t0 = Date.now()
+  const rec = startRecording(benchCfg, () => {})
+  const file = rec.file
+  // 等待录音进程自行退出（-l 5 上限），15s 兜底
+  await new Promise<void>((resolve) => {
+    const timer = setInterval(() => {
+      if (rec.child.exitCode !== null) {
+        clearInterval(timer)
+        resolve()
+      }
+    }, 200)
+    setTimeout(() => {
+      clearInterval(timer)
+      resolve()
+    }, 15000)
+  })
+  const recordedMs = Math.max(Date.now() - t0, 1)
+  if (!fileExists(file)) {
+    deleteAudioPair(cfg, file)
+    return { lines: ['✗ 基准测试失败：录音未生成文件（检查麦克风权限与 termux-api）'], rtf: null }
+  }
+  const wav = await convertToWav(cfg, file)
+  if (!wav) {
+    deleteAudioPair(cfg, file)
+    return { lines: ['✗ 基准测试失败：m4a 转 wav 失败（检查 ffmpeg）'], rtf: null }
+  }
+  const t1 = Date.now()
+  const r = await transcribe(cfg, wav)
+  const transcribeMs = Date.now() - t1
+  deleteAudioPair(cfg, file)
+  if (r.error) return { lines: [`✗ 转写失败：${r.error}`], rtf: null }
+  const audioSec = recordedMs / 1000
+  const rtf = transcribeMs / 1000 / audioSec
+  const lines = [
+    `模型：${cfg.whisperModel}`,
+    `音频：${audioSec.toFixed(1)}s；转写耗时：${(transcribeMs / 1000).toFixed(1)}s`,
+    `实时率 RTF：${rtf.toFixed(2)}（${rtf <= 1 ? '快于实时' : '慢于实时'}）`,
+    `建议：${benchSuggestion(rtf)}`,
+  ]
+  return { lines, rtf }
 }

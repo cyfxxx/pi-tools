@@ -41,4 +41,17 @@ describe('config 持久化', () => {
     expect(file.autoSend).toBe(true)
     expect('ttsEnabled' in file).toBe(false)
   })
+
+  it('whisperModel 默认 base，可持久化，env 优先', async () => {
+    const { loadConfig, persistConfig, DEFAULTS } = await import('../config')
+    expect(loadConfig({}).whisperModel).toBe('base')
+    persistConfig({ whisperModel: 'small' })
+    expect(loadConfig({}).whisperModel).toBe('small')
+    // env 优先
+    expect(loadConfig({ PI_VOICE_WHISPER_MODEL: 'tiny' }).whisperModel).toBe('tiny')
+    // env 定义后不落盘
+    const written = persistConfig({ whisperModel: 'medium' }, { PI_VOICE_WHISPER_MODEL: 'tiny' })
+    expect(written).not.toContain('whisperModel')
+    expect(loadConfig({ PI_VOICE_WHISPER_MODEL: 'tiny' }).whisperModel).toBe('tiny')
+  })
 })
