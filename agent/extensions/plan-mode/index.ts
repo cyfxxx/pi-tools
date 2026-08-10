@@ -958,6 +958,15 @@ ${todoList}
 
     if (planModeEnabled) {
       pi.setActiveTools(PLAN_MODE_TOOLS);
+    } else if (!executionMode) {
+      // 普通会话工具快照修复：重启/热载后会话 tools 快照不含新注册的扩展工具
+      // （如 plan_enter），模型不可见。非计划/非执行模式时用全量工具重建。
+      // 执行模式会话（executionMode=true）保持 NORMAL_MODE_TOOLS 受限不干预。
+      const active = pi.getActiveTools();
+      if (active.length === 0 || !active.includes("plan_enter")) {
+        const all = pi.getAllTools().map((t) => t.name);
+        pi.setActiveTools(all);
+      }
     }
     updateStatus(ctx);
   });
