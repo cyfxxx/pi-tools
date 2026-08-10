@@ -33,7 +33,18 @@ import { Type } from "typebox";
 import { type AgentConfig, type AgentScope, discoverAgents } from "./agents.ts";
 
 const MAX_PARALLEL_TASKS = 8;
-const MAX_CONCURRENCY = 1; // 本地模型默认串行，多进程会竞争 GPU 内存
+const MAX_CONCURRENCY = 4; // 云端模型批量并行上限
+const LOCAL_CONCURRENCY = 1; // 本地模型串行：多进程会竞争 GPU 内存
+
+/**
+ * 判断 provider 是否为本地推理服务（ollama/localhost/lmstudio/vllm 等）。
+ * 本地模型资源有限且多进程会争抢 GPU/内存，须串行；云端模型可批量并行。
+ */
+export function isLocalProvider(provider?: string): boolean {
+  if (!provider) return false
+  const p = provider.toLowerCase()
+  return /ollama|localhost|127\.0\.0\.1|\blocal\b|lmstudio|lm\.studio|llama\.cpp|vllm|exo|koboldcpp|text-gen|llamacpp/i.test(p)
+}
 const COLLAPSED_ITEM_COUNT = 10;
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
 
@@ -520,7 +531,7 @@ export default function (pi: ExtensionAPI) {
 		promptSnippet: "Delegate tasks to subagents for parallel/isolated work",
 		promptGuidelines: [
 			"Use `subagent` for codebase exploration — it runs in an isolated context and returns compressed output, keeping your context clean",
-			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) — tasks run 1 at a time by default to avoid resource contention",
+			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) — cloud models batch-run tasks in parallel (up to 4); local models (ollama/localhost etc.) run 1 at a time to avoid resource contention",
 			"Use `subagent` chain mode for complex multi-step workflows — each step has an isolated context, avoiding context pollution; pass prior output via {previous}",
 			"For pure research or exploration questions, delegate entirely to a subagent and consume only its compressed summary",
 			"When context is getting large (>70% of limit), favor subagent delegation over reading more files yourself",
@@ -531,7 +542,7 @@ export default function (pi: ExtensionAPI) {
 			"",
 			"When to use this tool:",
 			"- Codebase exploration: delegates to isolated context, returns compressed output",
-			"- Parallel work: run N independent searches/analyses (up to 8 tasks, runs 1 at a time by default to avoid resource contention)",
+			"- Parallel work: run N independent searches/analyses (up to 8 tasks; cloud provider: parallel batch; local provider: serial 1-at-a-time)",
 			"- Multi-step workflows: chain agents together for complex implementations, passing output between steps with {previous}",
 			"- Heavy lifting: move large refactoring or batch changes to a sub-agent to keep main context clean",
 			"- Context preservation: delegate scoped tasks to avoid polluting the main conversation with intermediate results",
@@ -703,7 +714,10 @@ export default function (pi: ExtensionAPI) {
 					}
 				};
 
-				const results = await mapWithConcurrencyLimit(params.tasks, MAX_CONCURRENCY, async (t, index) => {
+				const results = await mapWithConcurrencyLimit(
+					params.tasks,
+					isLocalProvider(currentModel?.provider) ? LOCAL_CONCURRENCY : MAX_CONCURRENCY,
+					async (t, index) => {
 					const result = await runSingleAgent(
 						ctx.cwd,
 						agents,

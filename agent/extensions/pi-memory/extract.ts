@@ -203,8 +203,8 @@ export function buildExtractPrompt(messages: ExtractMessage[], maxChars = 16000)
   "memories": [
     {
       "category": "fact|preference|habit|procedure|reference",
-      "title": "15字以内的标题",
-      "content": "100字以内的详情，自包含、可直接复用",
+      "title": "20字以内的标题",
+      "content": "150字以内的详情，自包含、可直接复用",
       "tags": ["标签"],
       "confidence": 0.0-1.0
     }
@@ -213,7 +213,11 @@ export function buildExtractPrompt(messages: ExtractMessage[], maxChars = 16000)
 
 规则：
 - memories 最多 8 条，只提取值得长期记忆的内容：用户偏好/习惯、项目约定、环境事实、可复用流程、重要决策、经验教训
-- 临时性、一次性、纯闲聊内容不要提取
+- 不提取：临时性/一次性任务指令、当前会话的中间状态、时间戳类流水账、纯闲聊
+- 自包含：每条记忆须能在不看原文的情况下独立理解，写明对象与上下文，不用"它/他/那个"等指代
+- 保留专有名词、精确数字与限定词：产品名、版本号、端口、路径、人名不泛化（写"deepseek-v4-flash"不写"模型"）
+- 时间锚定：对话中的相对时间（昨天/上周/最近）一律解析为具体日期（YYYY-MM-DD）
+- 附带事实：用户在提问、抱怨、请求中顺带透露的个人/环境信息同样提取（如"我服务器磁盘80%"中的环境事实）
 - confidence：直接观察到的事实 0.9-1.0，推断 0.5-0.7
 - 没有可提取内容时 memories 返回空数组，summary 仍要输出
 

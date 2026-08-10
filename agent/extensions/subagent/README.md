@@ -103,7 +103,7 @@ subagent({ agent: "scout", task: "Find all authentication code" })
 
 ### ② Parallel（并行） — tasks[]
 
-多个 agent 并发执行（最大 8 个，1 并发）：
+多个 agent 并发执行（最大 8 个）：
 
 ```
 subagent({
@@ -114,9 +114,10 @@ subagent({
 })
 ```
 
-**并发控制**：
+**并发控制（按模型类型自适应）**：
 - `MAX_PARALLEL_TASKS = 8` — 最大任务数
-- `MAX_CONCURRENCY = 1` — 本地模型默认串行，避免多进程竞争 GPU 内存
+- 云端模型（API）：批量并行，`MAX_CONCURRENCY = 4`
+- 本地模型（provider 名匹配 ollama/localhost/127.0.0.1/lmstudio/vllm 等）：串行 `LOCAL_CONCURRENCY = 1`，避免多进程竞争 GPU 内存
 - 每任务输出截断到 **50 KB**（完整结果在 tool details 中）
 
 **结果格式**：

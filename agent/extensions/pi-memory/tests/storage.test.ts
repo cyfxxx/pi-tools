@@ -229,3 +229,83 @@ describe('storage: tokenize', () => {
     expect(jaccardSimilarity([], [])).toBe(0)
   })
 })
+
+describe('storage: secret scrubbing', () => {
+  it('scrubSecrets redacts github token / api key / jwt / bearer / aws', async () => {
+    const { scrubSecrets } = await import('../storage.ts')
+    const out = scrubSecrets(
+      'token=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 key=sk-abc12345def67890ghi ' +
+      'jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6y ' +
+      'bearer=Bearer abcdefghijklmnopqrstuvwxyz012345 aws=AKIAIOSFODNN7EXAMPLE'
+    )
+    expect(out).toContain('[REDACTED:github-token]')
+    expect(out).toContain('[REDACTED:api-key]')
+    expect(out).toContain('[REDACTED:jwt]')
+    expect(out).toContain('[REDACTED:bearer-token]')
+    expect(out).toContain('[REDACTED:aws-key]')
+    expect(out).not.toMatch(/ghp_[A-Za-z0-9]{20,}/)
+    expect(out).not.toMatch(/sk-[A-Za-z0-9]{15,}/)
+  })
+
+  it('does not false-positive on normal text and UUIDs', async () => {
+    const { scrubSecrets } = await import('../storage.ts')
+    const uuid = 'e0a1406c-1a6d-49b0-85ef-94804123f067'
+    const normal = 'sk-1 短后缀、AKIA 无长尾、Bearer 后短词、eyJ 单段不匹配'
+    expect(scrubSecrets(uuid)).toBe(uuid)
+    expect(scrubSecrets(normal)).toBe(normal)
+  })
+
+  it('saveEntries scrubs persisted entry fields', async () => {
+    const { saveEntries, loadEntries } = await import('../storage.ts')
+    saveEntries([makeEntry({
+      title: 'PAT 泄露核实',
+      content: 'token ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 仍有效',
+      tags: ['ghp_ABC123def456ghi789jkl012mno345p', '正常tag'],
+    })])
+    const loaded = loadEntries()
+    expect(loaded[0].content).toContain('[REDACTED:github-token]')
+    expect(loaded[0].content).not.toContain('ghp_ABCDEF')
+    expect(loaded[0].tags[0]).toBe('[REDACTED:github-token]')
+    expect(loaded[0].tags[1]).toBe('正常tag')
+  })
+
+  it('appendSummary scrubs summary fields', async () => {
+    const { appendSummary, loadSummaries } = await import('../storage.ts')
+    appendSummary({
+      id: 's1',
+      sessionId: 'ses1',
+      ts: new Date().toISOString(),
+      title: '会话含密钥',
+      decisions: ['使用 sk-proj-abcdefghijklmnopqrstuvwxyz123456 接入'],
+      facts: [],
+      prefs: [],
+      lessons: [],
+      fullText: 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.abc.def 已轮换，裸 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6y 也脱敏',
+    })
+    const loaded = loadSummaries()
+    expect(loaded[0].decisions[0]).toContain('[REDACTED:api-key]')
+    // Bearer 前缀的 JWT 由 bearer 规则整体替换
+    expect(loaded[0].fullText).toContain('[REDACTED:bearer-token]')
+    // 裸 JWT（无 Bearer 前缀）由 jwt 规则替换
+    expect(loaded[0].fullText).toContain('[REDACTED:jwt]')
+    expect(loaded[0].fullText).not.toContain('eyJ0eXAi')
+    expect(loaded[0].fullText).not.toContain('SflKxwRJ')
+  })
+
+  it('saveNotes scrubs values but keeps __ttl_ keys intact', async () => {
+    const { saveNotes, loadNotes } = await import('../storage.ts')
+    saveNotes({
+      'task.status': '使用 sk-abcdefghijklmnopqrstuvwxy 连接',
+      '__ttl_task.status': '2026-12-31T23:59:59Z',
+    })
+    const loaded = loadNotes()
+    expect(loaded['task.status']).toContain('[REDACTED:api-key]')
+    expect(loaded['__ttl_task.status']).toBe('2026-12-31T23:59:59Z')
+  })
+
+  it('scrub is idempotent (already-redacted text unchanged)', async () => {
+    const { scrubSecrets } = await import('../storage.ts')
+    const once = scrubSecrets('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+    expect(scrubSecrets(once)).toBe(once)
+  })
+})

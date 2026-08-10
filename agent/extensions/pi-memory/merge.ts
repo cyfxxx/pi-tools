@@ -10,6 +10,47 @@ export interface MergeDecision {
 
 // Mem0 式规则消解：候选记忆 vs 相似既有记忆 → ADD/UPDATE/DELETE/NOOP
 // 无需额外 LLM 调用（提取已由 LLM 完成，此处纯规则判定）
+
+// 对立词对：同一主体上语义反转的表达（双向匹配）
+const OPPOSITE_PAIRS: Array<[string, string]> = [
+  ['喜欢', '不喜欢'], ['喜欢', '讨厌'], ['喜欢', '厌恶'],
+  ['启用', '禁用'], ['启用', '关闭'], ['开启', '关闭'], ['开启', '禁用'],
+  ['支持', '反对'],
+  ['需要', '不需要'],
+  ['有用', '无用'], ['好用', '不好用'],
+  ['能', '不能'], ['能', '无法'],
+  ['会', '不会'],
+  ['是', '不是'],
+  ['继续', '停止'],
+  ['正常', '异常'], ['正常', '故障'],
+]
+
+/**
+ * 矛盾检测：双方各含对立词之一（如 A 含"喜欢"、B 含"不喜欢"），
+ * 且去词后有 ≥2 个公共 token（bigram 也算）证明讨论同一主体。
+ * 判定矛盾 → 新候选取代旧条目（superseded），而非合并。
+ */
+export function detectContradiction(existing: MemoryEntry, candidate: MemoryEntry): boolean {
+  const A = existing.content.toLowerCase()
+  const B = candidate.content.toLowerCase()
+  let hit = false
+  for (const [x, y] of OPPOSITE_PAIRS) {
+    if ((A.includes(x) && B.includes(y)) || (A.includes(y) && B.includes(x))) {
+      hit = true
+      break
+    }
+  }
+  if (!hit) return false
+  // 主体重叠验证：公共 token（含中文 bigram）≥2
+  const aToks = new Set(tokenize(A))
+  const bToks = new Set(tokenize(B))
+  let common = 0
+  for (const t of aToks) {
+    if (bToks.has(t) && t.length >= 2) common++
+  }
+  return common >= 2
+}
+
 export async function decideMerge(
   entries: MemoryEntry[],
   candidate: MemoryEntry,
@@ -32,6 +73,18 @@ export async function decideMerge(
       action: 'UPDATE',
       targetId: titleMatch.id,
       note: `标题匹配: ${titleMatch.title}`,
+    }
+  }
+
+  // 矛盾检测：同一主体的对立表达（喜欢→不喜欢）→ 取代而非合并
+  // 先于相似度合并判断，避免"用户喜欢咖啡"被并入"用户不喜欢咖啡"
+  if (detectContradiction(best.entry, candidate)) {
+    best.entry.supersededBy = candidate.id
+    best.entry.deleted = true
+    best.entry.updatedAt = new Date().toISOString()
+    return {
+      action: 'ADD',
+      note: `矛盾取代 ${best.entry.title}（语义反转，已标记 superseded）`,
     }
   }
 
