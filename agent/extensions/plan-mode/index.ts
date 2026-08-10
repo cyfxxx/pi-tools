@@ -1,5 +1,5 @@
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -963,10 +963,14 @@ ${todoList}
       // （如 plan_enter），模型不可见。非计划/非执行模式时用全量工具重建。
       // 执行模式会话（executionMode=true）保持 NORMAL_MODE_TOOLS 受限不干预。
       const active = pi.getActiveTools();
+      writeFileSync("/tmp/planmode-debug.log", `[session_start] active=${JSON.stringify(active)} plan=${planModeEnabled} exec=${executionMode}\n`, { flag: "a" });
       if (active.length === 0 || !active.includes("plan_enter")) {
         const all = pi.getAllTools().map((t) => t.name);
+        writeFileSync("/tmp/planmode-debug.log", `[session_start] rebuild all=${JSON.stringify(all)}\n`, { flag: "a" });
         pi.setActiveTools(all);
       }
+    } else {
+      writeFileSync("/tmp/planmode-debug.log", `[session_start] exec-mode skip plan=${planModeEnabled} exec=${executionMode}\n`, { flag: "a" });
     }
     updateStatus(ctx);
   });
@@ -1002,11 +1006,14 @@ ${todoList}
   // plan 模式会话会在 session_start 覆盖为 PLAN_MODE_TOOLS。
   try {
     const active = pi.getActiveTools();
+    writeFileSync("/tmp/planmode-debug.log", `[setup] active=${JSON.stringify(active)}\n`, { flag: "a" });
     if (active.length === 0 || !active.includes("plan_enter")) {
       const all = pi.getAllTools().map((t) => t.name);
+      writeFileSync("/tmp/planmode-debug.log", `[setup] rebuild all=${JSON.stringify(all)}\n`, { flag: "a" });
       pi.setActiveTools(all);
     }
-  } catch {
+  } catch (e) {
+    writeFileSync("/tmp/planmode-debug.log", `[setup] ERROR ${String(e)}\n`, { flag: "a" });
     // runtime 未激活时跳过；session_start 兜底重建
   }
 }

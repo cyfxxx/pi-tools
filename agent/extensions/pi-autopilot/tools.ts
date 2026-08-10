@@ -309,7 +309,18 @@ export function registerTools(pi: ExtensionAPI): void {
     execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => {
       const reason = params.reason as string | undefined
       writeRestartRequest('restart', { reason: reason || '用户请求重启' })
-      try { ctx.shutdown() } catch { process.exit(0) }
+      // ctx.shutdown() 在 TUI 环境实测不退出进程（admin_restart 后 PID 不变，
+      // 新代码永不加载）。强制退出让 wrapper 检测到退出码并按 restart 请求
+      // --continue 重启；1500ms 兜底（给 shutdown 异步保存会话的时间）。
+      try {
+        const p = ctx.shutdown() as unknown
+        if (p && typeof (p as Promise<unknown>).then === 'function') {
+          await (p as Promise<unknown>)
+        }
+      } catch {
+        /* ignore */
+      }
+      setTimeout(() => process.exit(0), 1500)
       return { content: [{ type: 'text', text: '正在重启...' }], details: null }
     },
   })
