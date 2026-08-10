@@ -95,7 +95,21 @@ describe('dictation 状态机', () => {
     expect(deps.transcribe).not.toHaveBeenCalled()
     expect(r.message).toContain('ffmpeg')
     expect(deps.deleteAudioPair).toHaveBeenCalledWith(cfg, '/tmp/pi-voice/a.m4a')
-  })
+  }, 15000)
+
+  it('wav 转码首次失败（moov 延迟写入）重试后成功', async () => {
+    const deps = makeDeps({
+      convertToWav: vi.fn()
+        .mockResolvedValueOnce(null) // 第一次：moov 未写完，转码失败
+        .mockResolvedValueOnce('/tmp/pi-voice-out/a.wav'), // 重试成功
+    })
+    const d = createDictation(cfg, deps, makeCallbacks())
+    d.start()
+    const r = await d.stop()
+    expect(r.text).toBe('你好，世界')
+    expect(deps.convertToWav).toHaveBeenCalledTimes(2)
+    expect(deps.transcribe).toHaveBeenCalledTimes(1)
+  }, 15000)
 
   it('录音进程自行退出（超时）触发自动转写并回调', async () => {
     const deps = makeDeps()
@@ -137,7 +151,7 @@ describe('dictation 状态机', () => {
     const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
     onExit(0)
     // 第一次失败自动重试（2s 释放间隔）
-    await new Promise((res) => setTimeout(res, 2300))
+    await new Promise((res) => setTimeout(res, 3300))
     expect(deps.startRecording).toHaveBeenCalledTimes(2)
     // 第二次仍失败 → 报错
     const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
@@ -189,7 +203,7 @@ describe('dictation 状态机', () => {
     d.start()
     const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
     onExit(0)
-    await new Promise((res) => setTimeout(res, 2300))
+    await new Promise((res) => setTimeout(res, 3300))
     expect(deps.startRecording).toHaveBeenCalledTimes(2)
     const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
     onExit2(0)
@@ -281,7 +295,7 @@ describe('dictation 状态机', () => {
     const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
     onExit(0, 'Recording already in progress!')
     // 等待自动重试（2s 释放间隔）
-    await new Promise((res) => setTimeout(res, 2300))
+    await new Promise((res) => setTimeout(res, 3300))
     expect(deps.startRecording).toHaveBeenCalledTimes(2)
     expect(d.isRecording()).toBe(true)
     // 第二次仍失败 → 报错并透传 termux 输出
@@ -308,7 +322,7 @@ describe('dictation 状态机', () => {
     d.start()
     const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
     onExit(0)
-    await new Promise((res) => setTimeout(res, 2300))
+    await new Promise((res) => setTimeout(res, 3300))
     expect(deps.startRecording).toHaveBeenCalledTimes(2)
     const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
     onExit2(0)

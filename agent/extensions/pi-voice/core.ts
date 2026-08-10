@@ -76,7 +76,7 @@ export function startRecording(
     // 无残留进程或 pkill 不可用：忽略
   }
   try {
-    execFileSync('sleep', ['0.5'])
+    execFileSync('sleep', ['1.5'])
   } catch {
     // 非 Unix 环境：忽略
   }
