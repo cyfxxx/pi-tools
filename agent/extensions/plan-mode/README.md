@@ -491,6 +491,14 @@ turn_end 触发
 
 ---
 
+### 修订合并语义（mergePlanRevision）
+
+未完成任务按 subject 匹配（规范化相等 → 子串包含 → Dice 系数 ≥0.6 兜底）：匹配保留原 id/状态；未匹配 pending 移除、in_progress 降 pending（清 activeForm）、blocked 保留；completed/deleted 始终保留；不再重复 append 堆积任务。修订意图判定只看最后一条用户消息（`isPlanRevisionIntent`）：assistant 汇报/总结文本即使含编号列表与"修订"等词也不触发（曾实测误触发：汇报文本中的 plan 撞上 Plan 头正则被提取成任务；plan-revise 消息副本被转发后含"修订"词再次触发——已加 `**计划已修订/进度/步骤/完成` 前缀过滤）。Plan 头正则须后跟冒号/空白/行尾（`\*{0,2}(?:Plan|计划)\*{0,2}(?:[:：]|\s|$)`），`计划步骤 (0/9)` 类聊天展示行不提取。
+
+### 缓存特性（注入消息与前缀命中）
+
+注入消息（plan-execution-context/todo-list/progress 等）均追加在消息流尾部，且 context 阶段按 customType 只保留最新一条——更新时仅使被删旧注入消息（约 100–500 token）失效，对前缀命中率影响 <0.3%；若注入消息累积在消息中部，删除会使其后全量失效，故单实例过滤必须保留。
+
 ## 八、会话持久化与恢复
 
 ### 持久化
