@@ -86,3 +86,7 @@ tmux 未安装时，所有工具返回**清晰的可修复错误**（含各系�
 npm install
 npx vitest run        # 纯函数 + 真实 tmux 生命周期集成测试
 ```
+
+## 故障排查
+
+**`access not allowed`**：所有 tmux 命令 stderr 报 `access not allowed` 但 exit 0、会话创建无效 → 陈旧 tmux 服务器导致（曾发现 2023 年启动的进程）。实证根因：proot 环境下 tmux server 被 kill -9 后 **socket 文件残留**（内核不清理），后续所有 tmux 命令报 access not allowed。修复：`kill -9 <tmux pid>` + `rm -rf /tmp/tmux-*` 后重试，无需重启机器。pi-wrapper.sh 已内置 ensure_tmux 自愈（每次 pi 启动检测 access not allowed 症状自动清理重建，pi 在 tmux 内时跳过防误杀）。
