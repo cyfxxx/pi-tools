@@ -96,6 +96,12 @@ export function createDictation(
       recordingChild = null
       if (code === 0) {
         void (async () => {
+          // 进程退出 ≠ 收尾：Termux:API 的 MediaRecorder 在 -l 超时（进程自动
+          // 退出）或进程被杀时不会写 moov atom（实测：无 "Recording finished"
+          // 输出，文件缺失 moov，转码报 moov atom not found）。必须补发一次
+          // -q 强制服务收尾写 moov（实测：补 -q 后输出 Recording finished，
+          // 文件可正常转码）。手动停止路径 stop() 已发过 -q，此处重复无害。
+          await deps.stopRecording(cfg).catch(() => undefined)
           // 进程退出 ≠ 文件写完：MediaRecorder 仍会写入尾部（moov atom），需等大小稳定
           // 才能区分“正常超时”与“启动即失败/单实例被占用”（后者无文件或恒为 0 字节）
           const stable = await deps.waitForFileStable(file)
