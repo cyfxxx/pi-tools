@@ -995,4 +995,18 @@ ${todoList}
   pi.on("agent_start", async () => {
     todoOverlay?.hideCompletedTasksFromPreviousTurn();
   });
+
+  // 工具快照重建（普通会话）：扩展加载即用全量工具集刷新会话 tools 快照，
+  // 保证新注册的工具（plan_enter/plan_exit 等）对模型可见——
+  // setActiveToolsByName 只重建系统提示，不自动同步注册表新增。
+  // plan 模式会话会在 session_start 覆盖为 PLAN_MODE_TOOLS。
+  try {
+    const active = pi.getActiveTools();
+    if (active.length === 0 || !active.includes("plan_enter")) {
+      const all = pi.getAllTools().map((t) => t.name);
+      pi.setActiveTools(all);
+    }
+  } catch {
+    // runtime 未激活时跳过；session_start 兜底重建
+  }
 }
