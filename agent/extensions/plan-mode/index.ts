@@ -25,8 +25,8 @@ import { formatPlanMessageLine } from "./view.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "todo", "web_search", "subagent"];
-const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "subagent"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "todo", "web_search", "fetch_url", "subagent"];
+const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
   return m.role === "assistant" && Array.isArray(m.content);
@@ -451,10 +451,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
 限制:
-- 只能使用: read, bash, grep, glob, todo, web_search, subagent
+- 只能使用: read, bash, grep, glob, todo, web_search, fetch_url, subagent
 - 不能使用: edit, write（文件修改已禁用）
 - Bash 命令仅接受白名单内的单条只读命令：cat/head/tail/less/more/grep/find/ls/lsblk/pwd/echo/printf/wc/sort/uniq/diff/file/stat/du/df/tree/which/whereis/type/uname/whoami/id/date/cal/uptime/ps/top/htop/free/awk/jq/rg/fd/bat/eza/sed -n、git status/log/diff/show/branch/remote/config、git ls-*、npm list/ls/view/info/search/outdated/audit、yarn list/info/why/audit、curl 仅打印、wget -O -、node/python --version 等。
-- web_search 可搜索网络资料辅助调研；subagent 仅允许 agent="scout"（只读调研子代理），worker/reviewer 与未指定 agent 均不可用（未指定会落到可写 general-purpose）。
+- web_search 可搜索网络资料辅助调研；fetch_url 可拉取远程文档/API 数据（只读 HTTP GET）；subagent 仅允许 agent="scout"（只读调研子代理），worker/reviewer 与未指定 agent 均不可用（未指定会落到可写 general-purpose）。
 - 允许 cd <目录> && <一条白名单只读命令> 与命令尾部的 2>/dev/null；其余复合一律禁止：多命令分号 ;、管道 |、重定向至文件。
 - 禁止: git clone、curl -o/-O（落盘）、写入类命令。
 - 远程仓库分析请用 git ls-remote / git log / git status（有白名单），不要 clone。
