@@ -62,7 +62,7 @@ export function createDictation(
 
   function start(): string {
     if (busy) return '上一段仍在转写中，请稍候'
-    if (currentFile !== null) return '已在录音中（再按 Ctrl+Shift+R 停止）'
+    if (currentFile !== null) return '已在录音中（再按 Ctrl+Alt+R 停止）'
     const { child, file } = deps.startRecording(cfg, (code) => {
       // 子进程自行退出：仅当仍是当前录音且未在转写时处理（用户 stop/cancel 已先置空 currentFile，不会重复）
       if (currentFile !== file || busy) return
@@ -98,7 +98,7 @@ export function createDictation(
     }
     currentFile = file
     recordingChild = child
-    return '🎤 录音中（再次 Ctrl+Shift+R 停止并转写；时长上限 ' + (cfg.maxSeconds > 0 ? `${cfg.maxSeconds}s` : '不限') + '）'
+    return '🎤 录音中（再次 Ctrl+Alt+R 停止并转写；时长上限 ' + (cfg.maxSeconds > 0 ? `${cfg.maxSeconds}s` : '不限') + '）'
   }
 
   async function stop(): Promise<StopResult> {
