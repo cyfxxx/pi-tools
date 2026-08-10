@@ -514,6 +514,10 @@ export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
     }, 15000)
   })
   const recordedMs = Math.max(Date.now() - t0, 1)
+  // 进程退出 ≠ 收尾：MediaRecorder 在 -l 超时/被杀时不写 moov atom（实测），
+  // 必须补 -q 强制服务收尾，再等文件稳定（moov 写入完成）才能转码。
+  await stopRecording(cfg).catch(() => undefined)
+  await waitForFileStable(file)
   if (!fileExists(file)) {
     deleteAudioPair(cfg, file)
     return { lines: ['✗ 基准测试失败：录音未生成文件（检查麦克风权限与 termux-api）'], rtf: null }
