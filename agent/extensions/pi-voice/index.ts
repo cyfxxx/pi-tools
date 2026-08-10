@@ -398,6 +398,9 @@ function reply(api: ExtensionAPI, text: string): void {
 }
 
 function withStatus(api: ExtensionAPI, ctx: ExtensionContext, message: string): void {
+  // 所有录音开始入口（快捷键/命令）都会经过这里：刷新 UI 上下文，
+  // 保证超时自动转写（无调用方 ctx）时能清状态条、粘贴进输入框
+  lastCtx = ctx
   if (message.startsWith('🎤')) {
     ctx.ui.setStatus('pi-voice', '🎤 录音中')
     autoSetTts(true)
