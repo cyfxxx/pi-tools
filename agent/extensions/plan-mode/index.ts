@@ -28,6 +28,18 @@ import { TodoOverlay } from "./overlay.ts";
 const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent", "plan_enter"];
 
+/**
+ * 退出受限状态时恢复全量工具（方案 1）。
+ * NORMAL_MODE_TOOLS 是写死的 9 个内置工具，不含扩展工具（admin、autopilot、
+ * memory、ctx、tmux 等系列工具均不在其中）；若退出计划/执行模式时用它重建
+ * 工具集，所有扩展工具在本会话内全部不可用（session_start 才恢复全量）。
+ * 退出只读/受限状态 = 恢复全量权限。
+ */
+function restoreAllTools(pi: ExtensionAPI): void {
+  const all = pi.getAllTools().map((t) => t.name);
+  pi.setActiveTools(all);
+}
+
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
   return m.role === "assistant" && Array.isArray(m.content);
 }
@@ -160,9 +172,9 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       pi.setActiveTools(PLAN_MODE_TOOLS);
       ctx.ui.notify(`规划模式已启用。工具: ${PLAN_MODE_TOOLS.join(", ")}`);
     } else {
-      // 退出规划模式：保留任务与进度（/plan clear 可清空）
+      // 退出规划模式：保留任务与进度（/plan clear 可清空）；恢复全量工具
       planPresented = false;
-      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      restoreAllTools(pi);
       persistState();
       const state = getState();
       const count = state.tasks.filter((t) => t.status !== "deleted").length;
@@ -293,7 +305,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       executionMode = true;
       planModeFullInjected = false;
       planPresented = false;
-      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      restoreAllTools(pi);
       persistState();
       ctx.ui.notify("规划模式已禁用（用户确认）。完整权限已恢复。");
       updateStatus(ctx);
@@ -827,7 +839,7 @@ ${todoList}
           { triggerTurn: false },
         );
         executionMode = false;
-        pi.setActiveTools(NORMAL_MODE_TOOLS);
+        restoreAllTools(pi);
         updateStatus(ctx);
         todoOverlay?.update();
         persistState();
@@ -1046,8 +1058,7 @@ ${todoList}
       // 执行模式会话（executionMode=true）保持 NORMAL_MODE_TOOLS 受限不干预。
       const active = pi.getActiveTools();
       if (active.length === 0 || !active.includes("plan_enter")) {
-        const all = pi.getAllTools().map((t) => t.name);
-        pi.setActiveTools(all);
+        restoreAllTools(pi);
       }
     }
     updateStatus(ctx);
