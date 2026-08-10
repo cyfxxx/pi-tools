@@ -12,7 +12,7 @@
  * /tts speak [文本]  手动朗读（缺省朗读最近一条回复；JSON 等结构化内容会过滤并提示）
  * /tts status       朗读与后端状态
  *
- * 快捷键 Ctrl+Shift+R 等价于 /voice（录音期间再次按即停止转写）；
+ * 快捷键 Ctrl+Alt+R 等价于 /voice（录音期间再次按即停止转写）；
  * Ctrl+R 为 pi 内置（app.session.rename），不可占用。
  * 听写模式：录音中按回车 = 切段转写 + 自动续录；快捷键/命令停止为正常退出（不续录）。
  * 回车条件拦截依赖核心补丁 scripts/patch-voice-enter.mjs（pi update 后需重跑）。
@@ -226,11 +226,8 @@ export default function (pi: ExtensionAPI): void {
     }
   }
 
-  // 主快捷键 Ctrl+Shift+R；Ctrl+Alt+R 为备选（Android 软键盘无 Shift 键时仍可按键）
-  pi.registerShortcut(Key.ctrlShift('r'), {
-    description: '语音录制/停止转写',
-    handler: toggleRecording,
-  })
+  // 仅保留备选快捷键 Ctrl+Alt+R（Android 软键盘有 CTRL/ALT 键）；
+  // Ctrl+Shift+R 已移除（与部分终端/输入法冲突，避免误触录音）
   pi.registerShortcut(Key.ctrlAlt('r'), {
     description: '语音录制/停止转写（备选，软键盘可用）',
     handler: toggleRecording,
@@ -283,7 +280,7 @@ export default function (pi: ExtensionAPI): void {
       if (dictation.isRecording() || dictation.isTranscribing()) {
         pi.sendMessage({
           customType: OUTPUT_CUSTOM_TYPE,
-          content: dictation.isTranscribing() ? '正在转写中，请稍候（按 Ctrl+Shift+R 可查看状态）' : '正在录音中，请先停止录音（Ctrl+Shift+R）再输入文字',
+          content: dictation.isTranscribing() ? '正在转写中，请稍候（按 Ctrl+Alt+R 可查看状态）' : '正在录音中，请先停止录音（Ctrl+Alt+R）再输入文字',
           display: true,
         })
         return { action: 'handled' }
