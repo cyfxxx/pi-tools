@@ -123,6 +123,9 @@ describe('dictation 状态机', () => {
       expect(cbs.autoResults.length).toBe(1)
     })
     expect(cbs.autoResults[0].text).toBe('你好，世界')
+    // 进程退出后补发 -q 强制服务收尾（moov atom），再等待文件稳定
+    expect(deps.stopRecording).toHaveBeenCalled()
+    expect(deps.waitForFileStable).toHaveBeenCalled()
     expect(cbs.autoResults[0].message).toContain('转写完成')
     expect(d.isRecording()).toBe(false)
     expect(d.isTranscribing()).toBe(false)
