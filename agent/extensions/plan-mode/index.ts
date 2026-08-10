@@ -1,5 +1,5 @@
 import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -447,6 +447,16 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   // Block destructive bash commands and unsafe subagent use in plan mode
   pi.on("tool_call", async (event) => {
     if (!planModeEnabled) return;
+
+    // 只读保护：edit/write 硬拦截（不依赖 setActiveTools 移除工具——
+    // 恢复会话工具快照可能残留，此拦截是防御性兜底，参考 opencode
+    // plan agent 的 edit: deny 权限设计）
+    if (event.toolName === "edit" || event.toolName === "write") {
+      return {
+        block: true,
+        reason: `规划模式: ${event.toolName} 被阻止（只读探索，文件修改已禁用）。使用 /plan 退出规划模式。`,
+      };
+    }
 
     if (event.toolName === "bash") {
       const command = event.input.command as string;
@@ -963,14 +973,10 @@ ${todoList}
       // （如 plan_enter），模型不可见。非计划/非执行模式时用全量工具重建。
       // 执行模式会话（executionMode=true）保持 NORMAL_MODE_TOOLS 受限不干预。
       const active = pi.getActiveTools();
-      writeFileSync("/tmp/planmode-debug.log", `[session_start] active=${JSON.stringify(active)} plan=${planModeEnabled} exec=${executionMode}\n`, { flag: "a" });
       if (active.length === 0 || !active.includes("plan_enter")) {
         const all = pi.getAllTools().map((t) => t.name);
-        writeFileSync("/tmp/planmode-debug.log", `[session_start] rebuild all=${JSON.stringify(all)}\n`, { flag: "a" });
         pi.setActiveTools(all);
       }
-    } else {
-      writeFileSync("/tmp/planmode-debug.log", `[session_start] exec-mode skip plan=${planModeEnabled} exec=${executionMode}\n`, { flag: "a" });
     }
     updateStatus(ctx);
   });
@@ -1006,14 +1012,11 @@ ${todoList}
   // plan 模式会话会在 session_start 覆盖为 PLAN_MODE_TOOLS。
   try {
     const active = pi.getActiveTools();
-    writeFileSync("/tmp/planmode-debug.log", `[setup] active=${JSON.stringify(active)}\n`, { flag: "a" });
     if (active.length === 0 || !active.includes("plan_enter")) {
       const all = pi.getAllTools().map((t) => t.name);
-      writeFileSync("/tmp/planmode-debug.log", `[setup] rebuild all=${JSON.stringify(all)}\n`, { flag: "a" });
       pi.setActiveTools(all);
     }
-  } catch (e) {
-    writeFileSync("/tmp/planmode-debug.log", `[setup] ERROR ${String(e)}\n`, { flag: "a" });
+  } catch {
     // runtime 未激活时跳过；session_start 兜底重建
   }
 }
