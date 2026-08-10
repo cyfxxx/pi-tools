@@ -108,8 +108,39 @@ describe('dictation 状态机', () => {
       expect(cbs.autoResults.length).toBe(1)
     })
     expect(cbs.autoResults[0].text).toBe('你好，世界')
+    expect(cbs.autoResults[0].message).toContain('转写完成')
     expect(d.isRecording()).toBe(false)
     expect(d.isTranscribing()).toBe(false)
+  })
+
+  it('超时自动转写失败 → 消息带"时长到上限"前缀（区别于用户主动停止）', async () => {
+    const deps = makeDeps({ transcribe: vi.fn(async () => ({ text: '', language: '', error: 'whisper 不可达' })) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].message).toContain('录音时长到上限')
+    expect(cbs.autoResults[0].message).toContain('whisper 不可达')
+    expect(d.isTranscribing()).toBe(false)
+  })
+
+  it('超时但无音频文件 → 提示可能被其他录音占用', async () => {
+    const deps = makeDeps({ fileExists: vi.fn(() => false) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].text).toBe('')
+    expect(cbs.autoResults[0].message).toContain('可能已被其他录音占用')
+    expect(deps.transcribe).not.toHaveBeenCalled()
   })
 
   it('进程启动即失败（非零退出）→ 回调失败消息、不转写、状态回 idle', async () => {

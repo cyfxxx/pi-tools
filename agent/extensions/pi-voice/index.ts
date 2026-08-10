@@ -147,9 +147,9 @@ export default function (pi: ExtensionAPI): void {
           lastAutoDictation = r.text
           if (config.autoSend) {
             pi.sendUserMessage(r.text, { deliverAs: 'steer' })
-            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 录音超时，已自动转写并发送：${r.text}`, display: true })
+            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 已达录音时长上限，已自动转写并发送：${r.text}`, display: true })
           } else {
-            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 录音超时，已自动转写（暂存，可 /tts speak 朗读）：${r.text}`, display: true })
+            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 已达录音时长上限，已自动转写（暂存，可 /voice tts speak 朗读）：${r.text}`, display: true })
           }
         } else if (r.message) {
           lastAutoDictation = ''
@@ -159,61 +159,103 @@ export default function (pi: ExtensionAPI): void {
     },
   )
 
-  pi.registerCommand('voice', {
-    description: '语音输入：开始/停止录音并转写',
-    handler: async (args, ctx) => {
-      const cmd = args.trim()
-      if (cmd === 'start') {
-        withStatus(pi, ctx, dictation.start())
-      } else if (cmd === 'stop') {
-        const r = await dictation.stop()
-        deliverResult(pi, ctx, r)
-      } else if (cmd === 'cancel') {
-        withStatus(pi, ctx, dictation.cancel())
-      } else if (cmd === 'doctor') {
-        await cmdDoctor(pi, ctx, config)
-      } else if (cmd === 'model' || cmd.startsWith('model ')) {
-        await cmdModel(pi, ctx, config, cmd === 'model' ? '' : cmd.slice('model '.length).trim())
-      } else if (cmd === 'bench') {
-        await cmdBench(pi, ctx, config)
-      } else if (dictation.isRecording()) {
-        await stopAndDeliver(pi, ctx, false)
-      } else {
-        withStatus(pi, ctx, dictation.start())
-      }
-    },
-  })
+  const VOICE_USAGE = [
+    '/voice                    录音中则停止转写，否则开始录音',
+    '/voice start              开始录音',
+    '/voice stop               停止录音并转写（不自动续录）',
+    '/voice cancel             取消录音并丢弃音频',
+    '/voice tts <on|off>       开关自动朗读回复',
+    '/voice tts status         查看朗读/转写状态',
+    '/voice tts speak [文本]   手动朗读（缺省朗读最近回复）',
+    '/voice doctor             诊断录音/转写/朗读依赖',
+    '/voice model [名称]       查看/切换 whisper 模型',
+    '/voice bench              录 5 秒测转写速度',
+    '/voice help               显示本帮助',
+    '（录音中按回车 = 切段转写并自动续录）',
+  ].join('\n')
 
-  pi.registerCommand('tts', {
-    description: '语音朗读：on/off/status/speak [文本]',
+  pi.registerCommand('voice', {
+    description: '语音：start/stop/cancel/tts/doctor/model/bench/help（/voice help 查看用法）',
+    getArgumentCompletions: () => [
+      { value: 'start', label: 'start', description: '开始录音' },
+      { value: 'stop', label: 'stop', description: '停止录音并转写' },
+      { value: 'cancel', label: 'cancel', description: '取消录音并丢弃音频' },
+      { value: 'tts', label: 'tts', description: '朗读：on/off/status/speak' },
+      { value: 'doctor', label: 'doctor', description: '诊断依赖' },
+      { value: 'model', label: 'model', description: '查看/切换 whisper 模型' },
+      { value: 'bench', label: 'bench', description: '转写速度基准' },
+      { value: 'help', label: 'help', description: '显示用法' },
+    ],
     handler: async (args, ctx) => {
       const [cmd, ...rest] = args.trim().split(/\s+/)
       switch (cmd) {
-        case 'on':
-          setTts(pi, ctx, true)
-          break
-        case 'off':
-          setTts(pi, ctx, false)
-          break
-        case 'status':
-          reply(pi, `TTS ${ttsEnabled ? '开启' : '关闭'}${ttsManual ? '（手动）' : '（自动）'}；朗读队列 ${ttsQueue.pendingCount()} 待读${ttsQueue.isSpeaking() ? ' + 朗读中' : ''}；最近回复 ${lastAssistantText ? `${lastAssistantText.length} 字符` : '无'}；自动转写暂存 ${lastAutoDictation ? '有' : '无'}；转写服务 ${await whisperStatus(config)}`)
-          break
-        case 'speak': {
-          const text = rest.join(' ') || lastAssistantText
-          if (!text) {
-            reply(pi, '暂无朗读内容')
-            break
+        case '':
+          if (dictation.isRecording()) {
+            await stopAndDeliver(pi, ctx, false)
+          } else {
+            withStatus(pi, ctx, dictation.start())
           }
-          if (!isSpeechWorthy(text)) {
-            reply(pi, '内容为结构化数据（JSON/纯符号），已跳过朗读')
-            break
-          }
-          ttsQueue.enqueue(text)
-          reply(pi, '已加入朗读队列')
+          break
+        case 'start':
+          withStatus(pi, ctx, dictation.start())
+          break
+        case 'stop': {
+          const r = await dictation.stop()
+          deliverResult(pi, ctx, r)
           break
         }
+        case 'cancel':
+          withStatus(pi, ctx, dictation.cancel())
+          break
+        case 'tts': {
+          const [sub, ...subRest] = rest
+          switch (sub) {
+            case 'on':
+              setTts(pi, ctx, true)
+              break
+            case 'off':
+              setTts(pi, ctx, false)
+              break
+            case 'status':
+              reply(pi, `TTS ${ttsEnabled ? '开启' : '关闭'}${ttsManual ? '（手动）' : '（自动）'}；朗读队列 ${ttsQueue.pendingCount()} 待读${ttsQueue.isSpeaking() ? ' + 朗读中' : ''}；最近回复 ${lastAssistantText ? `${lastAssistantText.length} 字符` : '无'}；自动转写暂存 ${lastAutoDictation ? '有' : '无'}；转写服务 ${await whisperStatus(config)}`)
+              break
+            case 'speak': {
+              const text = subRest.join(' ') || lastAssistantText
+              if (!text) {
+                reply(pi, '暂无朗读内容')
+                break
+              }
+              if (!isSpeechWorthy(text)) {
+                reply(pi, '内容为结构化数据（JSON/纯符号），已跳过朗读')
+                break
+              }
+              ttsQueue.enqueue(text)
+              reply(pi, '已加入朗读队列')
+              break
+            }
+            default:
+              reply(pi, sub
+                ? `未知子命令: /voice tts ${sub}\n用法: /voice tts <on|off|status|speak [文本]>`
+                : `用法: /voice tts <on|off|status|speak [文本]>（当前 TTS ${ttsEnabled ? '开启' : '关闭'}）`)
+          }
+          break
+        }
+        case 'doctor':
+          await cmdDoctor(pi, ctx, config)
+          break
+        case 'model':
+          await cmdModel(pi, ctx, config, rest.join(' '))
+          break
+        case 'bench':
+          await cmdBench(pi, ctx, config)
+          break
+        case 'help':
+        case '-h':
+        case '--help':
+          reply(pi, VOICE_USAGE)
+          break
         default:
-          setTts(pi, ctx, !ttsEnabled)
+          reply(pi, `未知子命令: /voice ${cmd}\n\n${VOICE_USAGE}`)
       }
     },
   })
@@ -243,7 +285,15 @@ export default function (pi: ExtensionAPI): void {
     pi.registerShortcut(Key.enter, {
       description: '录音中回车：切段转写并自动续录',
       handler: ((ctx: ExtensionContext) => {
-        if (!dictation.isRecording()) return false
+        if (!dictation.isRecording()) {
+          // 竞态兜底：录音进程刚达时长上限自行退出、正在自动转写时，吞掉回车并提示，
+          // 避免回车被放行当作普通输入提交（否则用户按回车中断，看到的却是"录音超时"提示）。
+          if (dictation.isTranscribing()) {
+            ctx.ui.notify('录音已达时长上限，自动转写中…', 'warning')
+            return true
+          }
+          return false
+        }
         const now = Date.now()
         if (now - lastEnterAt < ENTER_DEBOUNCE_MS) return true
         lastEnterAt = now

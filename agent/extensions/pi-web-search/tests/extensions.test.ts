@@ -158,16 +158,12 @@ describe('pi-autopilot extension', () => {
     ].sort())
   })
 
-  it('registers 7 commands: auto:* + admin:restart + schedule', async () => {
+  it('registers 2 commands: auto + schedule（auto:* 已整合为子命令）', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-autopilot/index')).default
     await main(pi as any)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual([
-      'admin:restart',
-      'auto:failover', 'auto:pause', 'auto:policy', 'auto:resume', 'auto:status',
-      'schedule',
-    ].sort())
+    expect(cmdNames).toEqual(['auto', 'schedule'].sort())
   })
 
   it('registers session_start and session_shutdown event handlers', async () => {
@@ -284,22 +280,22 @@ describe('pi-browser extension', () => {
 
 // ─── plan-mode (unregistered extension) ───────────────────────
 describe('plan-mode extension', () => {
-  it('registers 1 tool: todo', async () => {
+  it('registers 3 tools: plan_enter, plan_exit, todo', async () => {
     const pi = mockPi()
     const main = (await import('../../plan-mode/index')).default
     await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(1)
+    expect(pi.registerTool).toHaveBeenCalledTimes(3)
     const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name)
-    expect(toolNames).toEqual(['todo'])
+    expect(toolNames.sort()).toEqual(['plan_enter', 'plan_exit', 'todo'].sort())
   })
 
-  it('registers 5 plan commands: plan, planclear, planresume, planview, todos', async () => {
+  it('registers 1 plan command（plan/planclear/planresume/planview/todos 已整合为 /plan 子命令）', async () => {
     const pi = mockPi()
     const main = (await import('../../plan-mode/index')).default
     await main(pi as any)
-    expect(pi.registerCommand).toHaveBeenCalledTimes(5)
+    expect(pi.registerCommand).toHaveBeenCalledTimes(1)
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0]).sort()
-    expect(cmdNames).toEqual(['plan', 'planclear', 'planresume', 'planview', 'todos'].sort())
+    expect(cmdNames).toEqual(['plan'].sort())
   })
 
   it('registers plan flag', async () => {

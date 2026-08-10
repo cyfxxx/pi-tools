@@ -32,6 +32,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 ## 关键约定
 
 - **扩展注册**：pi 0.83+ 从 `~/.pi/agent/extensions/` 目录自动发现扩展，settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制包含 / `-` 强制排除），不再承担注册职责；新扩展须同步目录 index.ts、extensions/tsconfig.json include、tests/conflict-check.mjs 监听者清单、extensions.test.ts
+- **扩展命令整合规范**（2026-09，conflict-check.mjs 第 2/2b 项守门）：同一扩展的 slash 命令必须整合为 ≤2 个，具体功能用子命令参数指定（终端程序风格），并支持 `help`/`-h`/`--help` 子命令输出用法；命令 description 应包含子命令清单与 `/xxx help` 提示（这是 `/` 菜单唯一展示面）；子命令补全用 `getArgumentCompletions`（框架级支持）。当前命令面：`/voice <start|stop|cancel|tts|doctor|model|bench|help>`（含 tts 朗读）、`/auto <status|policy|failover|pause|resume|restart|help>`、`/schedule`（13 子命令，独立）、`/plan <enter|exit|clear|resume|view|todos|help>`（无参数=切换，兼容旧行为）、`/memory`、`/usage-diag`。旧命令名（/tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart）已移除，文档与提示文案已同步。新增命令若未同步 conflict-check.mjs 清单会直接报错。
 - **缓存友好**：system prompt 注入禁止时间戳与精确数值；压力提示按档位（相对 auto-compact 阈值：<75% 不注入、≥75%/≥90% 固定文案）；共享估算统一用 `lib/context-budget.ts` 的 `estimateTokens`
 - **自动压缩**：pi 内置压缩阈值 = 窗口 − reserveTokens，对 1M 窗口模型高达 96.7 万形同虚设；由 pi-context 按窗口比例触发（>256K 窗口 40% / ≤256K 85%）：agent_end 判定 + session_start 恢复时立即压缩（resume 大会话避免首轮全量浪费）；阈值计算与防抖见 `lib/auto-compact.ts`；ctx.compact() 会 abort 当前 agent 且不 await 完成（扩展 API 为 void + onComplete 回调），故判定放 agent_end、压缩完成由 session_compact 事件通知；`AutoContinueGate` 在压缩完成后自动注入继续指令（triggerTurn:true 启动新一轮），180s cooldown 防递归；阈值依据 2026-08 长任务实测（缓存命中率 86%、命中价 1/50 → 晚压缩成本更低）
 - **分层擦除**：pi-context 在 context 事件阶段做工具输出事后擦除（借鉴 opencode prune）：最近 2 轮 + 40K token 保护带内保留，更早的 toolResult 输出替换为 `[pruned]` 占位（保留结构），预计回收 ≥20K 才应用；判定确定性、擦除点单调后移，缓存前缀稳定；见 `lib/prune.ts`
@@ -48,6 +49,8 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **旧扩展名残留**：pi-web-toolkit / pi-router / pi-admin / pi-scheduler 均已融合或更名，新代码禁止引用
 
 ## tmux 集成（pi-tmux 扩展 + 用户使用）
+
+- **后台任务（pi-bg.sh）**：长任务不想阻塞前台对话时，用 `~/.pi/scripts/pi-bg.sh start|rpc <name> <prompt>` 在 tmux 里跑 headless pi（`-p` 一次性 / `--mode rpc` 长驻，`prompt`/`steer` 注入指令，`status`/`log`/`stop` 管理），四件套隔离（`--no-session` + `--no-extensions` + 默认只读 `--tools` + 独立日志 `~/.pi/logs/bg/<name>.log`）避免与前台实例的会话/扩展/文件冲突；详见 `~/.pi/scripts/README-pi-bg.md`。
 
 pi 自身 TUI 与 pi-tmux 扩展均基于 tmux 3.4（前缀键 C-a，见 `~/.tmux.conf`）。部署问题与修复见 `alacritty-tmux-setup.md`（WSL2/WSLg、GPU、clipboard、resurrect/continuum 等 7 项）。
 

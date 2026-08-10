@@ -71,12 +71,12 @@ export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'autopilot_policy',
     label: '查看自主运行策略',
-    description: '查看当前 failover 链、失败阈值、挂死检测、预算等自主运行策略配置。策略修改请使用 /auto:policy 命令。',
+    description: '查看当前 failover 链、失败阈值、挂死检测、预算等自主运行策略配置。策略修改请使用 /auto policy 命令。',
     parameters: { type: 'object', properties: {} },
     execute: async () => {
       const config = await readAutopilotConfig()
       const lines: string[] = [
-        '自主运行策略（修改请用 /auto:policy）:',
+        '自主运行策略（修改请用 /auto policy）:',
         `  enabled: ${config.enabled}`,
         `  failover 链: ${config.fallbackModels.length ? config.fallbackModels.map(f => `${f.provider}/${f.model}`).join(' → ') : '(未配置)'}`,
         `  failoverAfter: ${config.policy.failoverAfter} 次失败后切换`,
