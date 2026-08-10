@@ -1,0 +1,997 @@
+{
+  "version": 1,
+  "summaries": [
+    {
+      "id": "ee805f86-b40e-421e-87aa-e774a172bfe2",
+      "sessionId": "019fc7d4-a366-767a-8635-7d49d1777371",
+      "ts": "2026-08-03T13:35:39.011Z",
+      "title": "极简确认对话",
+      "decisions": [],
+      "facts": [
+        "用户发出'回复 OK 即可，不要调用工具'指令，助手照做未调用工具"
+      ],
+      "prefs": [
+        "用户偏好极简指令，期望助手仅回复 OK 不调用工具"
+      ],
+      "lessons": [],
+      "fullText": "本会话仅有一轮极简确认对话：用户指令'回复 OK 即可，不要调用工具'，助手回复 OK。无实质任务内容。该行为与用户已知的极简指令偏好一致（用户偏好极简指令，期望最简回应，不打断询问）。无其他可提取信息。"
+    },
+    {
+      "id": "10441c2d-628e-438c-9bce-3eb328704c69",
+      "sessionId": "019fc7d5-e040-7e08-9e90-d3917416a344",
+      "ts": "2026-08-03T13:36:44.473Z",
+      "title": "极简确认对话",
+      "decisions": [],
+      "facts": [
+        "用户发出'回复OK即可，不要调用工具'的测试性指令，助手遵守并仅回复OK，未调用任何工具"
+      ],
+      "prefs": [
+        "用户偏好极简指令，期望助手最简回应、严格遵循不调用工具的约束，不打断询问"
+      ],
+      "lessons": [],
+      "fullText": "本会话仅有一轮极简确认对话：用户指令'回复 OK 即可，不要调用工具'，助手回复 OK。无实质任务内容。该行为与用户已知的极简指令偏好一致——用户习惯用极简指令要求助手自主完成工作后一次性汇报，且会在无任务时明确要求不调用工具、不做多余操作。这可能是用户在测试助手的指令遵循能力（约束执行是否严格）。无其他可提取的新信息。"
+    },
+    {
+      "id": "14f8bda8-4adf-41b1-a3a3-55ae58cdef98",
+      "sessionId": "019fc7d6-d562-77f6-8161-ef78b123fa09",
+      "ts": "2026-08-04T00:48:06.222Z",
+      "title": "检查 pi 配置目录与 settings.json",
+      "decisions": [
+        "仅读取 settings.json 前 5 行，未触碰后续敏感字段"
+      ],
+      "facts": [
+        "默认模型 deepseek-v4-flash，思考深度 max，适配 pi 0.83.0"
+      ],
+      "prefs": [
+        "用户极简指令，要求严格按范围执行、不做多余操作"
+      ],
+      "lessons": [],
+      "fullText": "用户要求仅执行 ls /root/.pi/agent 与读取 settings.json 前 5 行并总结。目录结构完整：配置类文件（AGENTS.md、APPEND_SYSTEM.md、settings.json、auth.json、models.json、models-store.json、scheduled-tasks.json、scheduler.lock）与功能目录（agents、extensions、lib、npm、prompts、skills、bin、sessions）齐全。settings.json 显示 lastChangelogVersion=0.83.0、defaultProvider=deepseek、defaultModel=deepseek-v4-flash、defaultThinkingLevel=max。助手在第 5 行处停止读取，避免暴露后续 provider 密钥。用户再次以极简指令测试助手的约束执行能力。"
+    },
+    {
+      "id": "0a721af3-7222-4602-af54-ec318c752320",
+      "sessionId": "019fca3d-6fde-7794-93da-b8fe1fdcae12",
+      "ts": "2026-08-04T01:32:08.739Z",
+      "title": "极简指令测试对话",
+      "decisions": [],
+      "facts": [],
+      "prefs": [
+        "用户要求不调用工具直接回复，延续极简指令习惯"
+      ],
+      "lessons": [],
+      "fullText": "这是一段极短的测试性对话：用户指示助手仅回复 OK 且不调用任何工具，助手照做。对话本身无实质内容、无决策、无任务执行。仅再次印证用户已有的极简指令偏好（用户偏好极简指令，期望助手自主完成全流程后一次性汇报，不打断询问）。无可提取的长期记忆条目，不新增记忆。"
+    },
+    {
+      "id": "832d88fd-7c5e-4bce-b9f2-ea4a573cb3fe",
+      "sessionId": "019fca65-e3bc-7fe4-b9f3-28a0777d70e4",
+      "ts": "2026-08-04T01:33:30.807Z",
+      "title": "极简指令测试对话",
+      "decisions": [],
+      "facts": [
+        "用户测试助手对极简指令'回复OK，不要调用工具'的执行，助手按要求仅回复OK、未调用任何工具"
+      ],
+      "prefs": [
+        "用户偏好极简指令，期望助手严格照做不擅自行动"
+      ],
+      "lessons": [],
+      "fullText": "这是一段极短的测试性对话：用户指示助手仅回复 OK 且不调用任何工具，助手照做。对话本身无实质内容、无决策、无任务执行。仅再次印证用户已有的极简指令偏好（用户偏好极简指令，期望助手自主完成全流程后一次性汇报，不打断询问）。无可提取的长期记忆条目，不新增记忆。"
+    },
+    {
+      "id": "ae74a801-6dda-4106-95b2-9f692eb4fbe2",
+      "sessionId": "019fca67-2006-7b35-ace9-c64b64646b53",
+      "ts": "2026-08-04T02:08:27.538Z",
+      "title": "查询主机名：localhost.localdomain",
+      "decisions": [],
+      "facts": [
+        "该机器 /etc/hostname 内容为默认值 localhost.localdomain，未自定义主机名"
+      ],
+      "prefs": [
+        "用户指令极简，直接给出查询要求，期望一次回复"
+      ],
+      "lessons": [],
+      "fullText": "用户要求查看 /etc/hostname 内容，助手直接读取并回复为 localhost.localdomain。这是系统默认主机名，说明该机器未做过主机名自定义配置。对话极短，无决策、无任务执行、无代码改动。该信息为一次性系统查询，无长期复用价值，未提取记忆条目。"
+    },
+    {
+      "id": "42376749-65dd-4919-b5d2-930320cfc100",
+      "sessionId": "019fca76-aa1d-7de4-b927-9f4847e9d6d0",
+      "ts": "2026-08-04T02:09:14.283Z",
+      "title": "/root/.pi 仓库 25 步全面审计",
+      "decisions": [
+        "审计结论：仓库架构清晰、整体健康，无需紧急处理",
+        "pi-code-review 技能未注册，标记为待处理问题"
+      ],
+      "facts": [
+        "仓库含 7 扩展、3 技能、2 agents 模板、6 lib 模块、129 个 TS 文件",
+        "settings.json 用 deepseek-v4-flash、thinking=max，searxng 指向 127.0.0.1:8889",
+        "pi-code-review 技能未注册进 settings.json，与 AGENTS.md 约定不符",
+        "pi-wrapper.sh 崩溃回滚：3 次阈值、5 分钟限频、lastGood 快照"
+      ],
+      "prefs": [
+        "用户偏好一次性下达完整步骤清单，要求逐行汇报且不执行额外任务"
+      ],
+      "lessons": [
+        "批量 bash 输出易被截断，大文件与长列表需分批执行、单独补读"
+      ],
+      "fullText": "对 /root/.pi 仓库执行 25 步全面审计并逐行汇报。仓库含 7 个扩展（subagent 1100 行、plan-mode 876 行为最大，pi-autopilot index 仅 90 行属模块化注册入口）、3 个技能、2 个 agents 模板（reviewer/scout）、6 个 lib 模块（25595 字节）、129 个 TS 文件；agent 目录 333M 主要为各扩展独立 node_modules。主配置 deepseek-v4-flash、thinking=max、searxng 127.0.0.1:8889。发现问题：pi-code-review 技能未注册进 settings.json（与扩展注册同步约定不符）；AGENTS.md 未提及 reviewer/scout 模板及 ctx-lite/plans 目录。上下文管理三层方案（auto-compact 按窗口比例 20%/85% 触发+180s cooldown、prune 40K 保护带+最近 2 轮豁免+20K 最小回收、usage-diag 记录至 jsonl 上限 2 万行）设计严谨且有测试覆盖。pi-wrapper.sh 崩溃回滚（3 次阈值+5 分钟限频+lastGood）为可靠进程外自愈设计。整体健康无需紧急处理。执行教训：合并 bash 批次输出易被 50KB 截断，需分批重跑或补读。"
+    },
+    {
+      "id": "cf8476b3-634d-418a-aec2-786efd7c7b99",
+      "sessionId": "019fca87-1f16-75d4-8f18-2eee4fd3f301",
+      "ts": "2026-08-04T10:41:01.792Z",
+      "title": "空会话：无实质内容",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "该会话仅包含一次简短交互：用户要求助手直接回复 OK 且不调用任何工具，助手照做。无任务执行、无决策、无新信息产生，属于纯测试/占位性质的对话，无可衔接的上下文。"
+    },
+    {
+      "id": "869db149-740e-4b37-959a-9ebe7d95d6f7",
+      "sessionId": "019fcc5c-6544-7c2d-a739-9b9f9d40eed9",
+      "ts": "2026-08-05T14:40:28.781Z",
+      "title": "系统自检：修复 searxng 服务",
+      "decisions": [
+        "searxng 经 start.sh 重启修复，无需进一步处理",
+        "建议将 searxng 启动纳入 pi-wrapper.sh 生命周期（未实施）"
+      ],
+      "facts": [
+        "pi 0.83.0 + deepseek-v4-flash，7 扩展注册一致，全量回归通过",
+        "技能目录 ~/.pi/agent/skills/ 自动扫描，无需 settings.json 显式注册",
+        "searxng 首次请求延迟约 20s 属引擎初始化正常现象",
+        "环境为 Android proot，searxng 无自动拉起机制",
+        "磁盘 80%（剩 22G），内存 5.0G/7.5G 正常"
+      ],
+      "prefs": [],
+      "lessons": [
+        "curl 超时不等于服务不可用，可用 python 直连验证 200",
+        "test-all.sh 输出为空可能因中断，需重跑捕获完整输出"
+      ],
+      "fullText": "系统自检完成：pi 0.83.0 / deepseek-v4-flash / TUI，7 个扩展注册一致，3 个技能全部可用（pi-code-review 未在 settings.json 显式注册，但 pi 自动扫描 ~/.pi/agent/skills/ 目录已加载，无需处理）。全量回归 6 套 vitest + subagent 34 用例 + tsc + conflict-check 6 项全部通过。发现并修复 searxng 未运行问题：执行 start.sh 重启，bing 引擎实测可用；重启后首次请求因引擎初始化（wikidata/startpage 各约 20s 超时）延迟约 20s 属正常。startpage/wikidata 对国内网络超时不可用，建议只用 baidu/sogou/bing。环境为 Android（aid_u0_+）+ proot，curl 连接层失败但 python 直连返回 200。searxng 无自动拉起机制，设备重启后需手动 bash /root/.pi/searxng/start.sh，可考虑加入 pi-wrapper.sh。磁盘 80%（剩 22G）偏高，内存正常。"
+    },
+    {
+      "id": "c508fc50-d1c9-4dd7-88e0-bc4b9e8cd659",
+      "sessionId": "019fd25d-85d9-73f1-bcaa-607db0301ed1",
+      "ts": "2026-08-05T15:04:03.723Z",
+      "title": "pi-tmux 扩展全功能测试通过",
+      "decisions": [
+        "系统未装 tmux，按 pi-tmux 错误提示用 apt 安装 tmux 3.4",
+        "确认长任务跑完后需显式 tmux_stop 释放资源，不自动退出"
+      ],
+      "facts": [
+        "pi-tmux 扩展 8 项功能（run/status/read/wait/send/Ctrl+C/until_exit/stop）全部测试通过，无需修复",
+        "tmux 3.4 已通过 apt 安装到 Ubuntu 24.04，无需额外配置",
+        "日志落盘 ~/.pi/logs/tmux/<会话名>.log，与部署约定一致"
+      ],
+      "prefs": [
+        "用户用极简指令触发测试任务，期望助手自主完成全流程后一次性汇报结果"
+      ],
+      "lessons": [
+        "命令执行完后 tmux 会话不会自动退出（回到 shell 提示符），until_exit 等待会超时，这是 tmux 正常行为",
+        "tmux_send 交互输入与 Ctrl+C 中断均正常，日志出现 ^C 即中断生效"
+      ],
+      "fullText": "会话测试了 pi-tmux 扩展全套功能。系统原未安装 tmux，按扩展错误提示用 apt 安装 tmux 3.4（Ubuntu 24.04）后开始测试。逐项验证了 tmux_run（后台启动+日志落盘 ~/.pi/logs/tmux/）、tmux_status、tmux_read（尾部日志实时可见）、tmux_wait（pattern 关键字命中）、tmux_send（交互输入 Alice/42 被脚本接收回显）、tmux_send Ctrl+C（中断 60s 循环，日志出现 ^C）、tmux_wait until_exit（命令结束后会话保持存活导致超时，符合 tmux 默认行为）、tmux_stop（清理 3 个会话并删日志无残留）。结论：8 项功能全部正常，无需修复。经验：tmux 命令跑完不自动退出会话，长任务需显式 tmux_stop 释放资源；pi 退出时自动清理会话。用户以极简指令触发，期望自主完成测试后一次性汇报。"
+    },
+    {
+      "id": "8ac01aee-0017-4fbc-ac03-aea2525bf1f7",
+      "sessionId": "019fd273-5c06-7e0b-b8e7-6a08e2e641ed",
+      "ts": "2026-08-05T15:25:30.420Z",
+      "title": "查看现有记忆库状态",
+      "decisions": [],
+      "facts": [
+        "记忆库共58条：活跃40、被取代18，存储0.02MB/1MB，分类fact28/preference5/procedure4等",
+        "pi 0.83翻译适配与字符串变化明细条目各有5-6份重复，已被取代标记不参与检索",
+        "记忆库最早条目2026-07-31，最新2026-08-05"
+      ],
+      "prefs": [
+        "用户以极简指令查看记忆，未提出清理或查看详情需求"
+      ],
+      "lessons": [],
+      "fullText": "用户极简指令\"展示一下现有的记忆\"，助手按主题汇总了记忆库58条（活跃40、被取代18，0.02MB/1MB）的分类分布：pi翻译适配、/命令精简重构、proot重启机制、Git安全、SearXNG、pi-tmux、用户偏好、环境系统等主题。助手指出两处注意点：一是\"用户PAT已泄露需撤销\"若未处理应尽快处理；二是pi 0.83翻译适配完成与字符串变化明细各5-6份重复条目（已被取代标记，不参与检索，但可清理归档）。助手询问是否需要清理重复条目或查看详情，用户未回应，对话结束。"
+    },
+    {
+      "id": "9d011d21-2225-4092-bd06-f1f879564cf1",
+      "sessionId": "019fd273-5c06-7e0b-b8e7-6a08e2e641ed",
+      "ts": "2026-08-05T15:48:11.384Z",
+      "title": "展示记忆库：58条汇总与两处注意点",
+      "decisions": [],
+      "facts": [
+        "记忆库共58条：活跃40、被取代18，0.02MB/1MB",
+        "分类分布：fact 28、preference 5、procedure 4、reference/decision/habit 各1",
+        "翻译适配与字符串变化主题各有5-6份重复条目，已被取代标记"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "用户以极简指令\"展示一下现有的记忆\"要求查看记忆库状态。助手按主题汇总了58条记忆（活跃40、被取代18，0.02MB/1MB，时间跨度2026-07-31至2026-08-05）的分类分布：pi翻译适配、/命令精简重构、proot重启机制、Git安全、SearXNG、pi-tmux、用户偏好、环境系统等主题。助手指出两处注意点：一是\"用户PAT已泄露需撤销\"若未处理应尽快处理；二是\"pi 0.83翻译适配完成\"与\"字符串变化明细\"各有5-6份重复条目（旧版已标被取代，不参与检索但可清理归档）。助手询问是否需要清理重复条目或查看详情，用户未回复，会话结束。本次对话为纯展示，未产生新决策或偏好。"
+    },
+    {
+      "id": "327203b2-5365-4781-8822-feb7e8a1e8ac",
+      "sessionId": "019fdfff-3f16-74eb-9363-3580af30f2e3",
+      "ts": "2026-08-08T06:27:09.517Z",
+      "title": "无实质内容的空对话",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本会话仅有用户要求助手回复OK（'回复OK即可'）与助手应答'OK'两轮交互，无任何实质内容：未讨论任务、未做决策、未产生知识或偏好。无可提取的长期记忆，无需在后续会话中衔接任何上下文。"
+    },
+    {
+      "id": "8862ec13-de1b-44a3-b4ea-85fe06e9d332",
+      "sessionId": "019fe067-967f-73ed-8cf7-f4b3139f5d57",
+      "ts": "2026-08-09T12:34:32.549Z",
+      "title": "离线定时任务报告状态未知",
+      "decisions": [],
+      "facts": [
+        "离线期间定时任务执行报告中 wrapper-ensure.log 状态为 unknown，无进一步分析"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本会话仅包含一次离线期间定时任务执行报告的展示：wrapper-ensure.log 状态为 unknown，系统随即列出了可用技能清单（pi-backup、pi-code-review、pi-translate-zh）。用户未提出任务、问题或表达偏好，未产生任何决策、知识或经验教训。该报告为一次性运行状态展示，属于临时内容，无可提取的长期记忆，后续会话无需衔接本会话上下文。"
+    },
+    {
+      "id": "f7e8508c-4e8c-4c9b-a95b-c87d1f0f2dfb",
+      "sessionId": "019fe10a-c100-7977-86ae-7524408dc054",
+      "ts": "2026-08-09T12:35:28.638Z",
+      "title": "修复 pi-voice 录音状态机与快捷键",
+      "decisions": [
+        "exit 回调按退出码+文件存在性分流，0+无文件判单实例占用",
+        "扩展启动自动 -q 清理孤儿录音，根治重启后只能开不能关",
+        "新增 Ctrl+Alt+R 备选快捷键，应对 Android 软键盘无 Shift"
+      ],
+      "facts": [
+        "termux-microphone-record 单实例，重复 start 退出码 0 且无新文件",
+        "环境为 PRoot 容器 aarch64，tmux extended-keys 已生效",
+        "whisper 服务进程会死，pid 文件过期，已重启恢复",
+        "pi-voice 扩展 .ts 直接加载，修改后需 /reload 生效"
+      ],
+      "prefs": [],
+      "lessons": [
+        "退出码 0 不代表成功，须结合副作用（文件是否生成）判断",
+        "实测复现优于猜测：实测录音正常后才定位到孤儿进程占用根因"
+      ],
+      "fullText": "修复 pi-voice 三个问题：录音只能开不能关、多个'录音中'提示、快捷键无反应。根因：pi 重启（restart_hang）丢失录音状态，遗留孤儿录音进程占用麦克风（termux-microphone-record 单实例），新 start 立即退出且退出码恰为 0（'Recording already in progress!'），被旧代码当正常超时静默处理回 idle。修复：spawn 补 error 监听（-2 标记）；exit 按退出码+文件存在性分流（0+有文件→转写、0+无文件→单实例占用报错、非0→排查指引）；onAutoComplete 失败 sendMessage 反馈不再静默；扩展启动自动 -q 清孤儿；注册 Ctrl+Alt+R 备选快捷键（Android 软键盘无 Shift 按不出 Ctrl+Shift+R）。验证：32 测试全过、tsc 0 错误、冲突检查 7/7。环境：PRoot 容器 aarch64，tmux extended-keys 已生效（always），快捷键注册无冲突，按键实际触发但被静默失败掩盖；whisper 服务曾死（pid 文件过期）已重启恢复。变更文件：core.ts/dictation.ts/index.ts/tests/README。生效需 /reload 或重启 pi。"
+    },
+    {
+      "id": "8fb12834-146a-4893-9928-cab9069dafba",
+      "sessionId": "019fe10a-c100-7977-86ae-7524408dc054",
+      "ts": "2026-08-09T12:36:19.774Z",
+      "title": "pi-voice 状态机修复与听写模式开发",
+      "decisions": [
+        "打核心补丁：enter handler 返回 false 时放行按键",
+        "录音中回车切段转写并自动续录，快捷键退出不续录",
+        "注册 Ctrl+Alt+R 备选快捷键（软键盘无 Shift）",
+        "扩展启动时自动清理孤儿录音进程",
+        "新增 /voice model 与 /voice bench 子命令"
+      ],
+      "facts": [
+        "termux-microphone-record 单实例，重复 start 退出码 0 且不建文件",
+        "pi 重启丢状态致孤儿进程占用麦克风，为'只能开不能关'根因",
+        "whisper 服务端支持 PI_WHISPER_MODEL 环境变量",
+        "RTF>1 建议降级模型，<0.5 可升档"
+      ],
+      "prefs": [
+        "用户偏好极简指令，期望自主完成全流程后一次性汇报"
+      ],
+      "lessons": [
+        "空串环境变量不回退默认值，需显式 or 默认",
+        "带 token 的 health 轮询必须带 Authorization 头",
+        "test-all.sh 偶发失败需单独重跑确认",
+        "补丁脚本须幂等并验证'从未补丁状态应用'路径"
+      ],
+      "fullText": "本会话完成 pi-voice 扩展两轮工作。第一轮修复三问题：'只能开不能关+多个录音中提示'根因是 pi 重启丢录音状态，遗留孤儿 termux-microphone-record 进程占用麦克风（单实例），新 start 的进程退出码恰为 0（'Recording already in progress!'）被旧代码当正常超时静默回 idle。修复：exit 回调按退出码+文件存在性分流报错、启动时自动 -q 清孤儿进程、失败消息不再静默、注册 Ctrl+Alt+R 备选快捷键。快捷键无冲突（conflict-check 确认），tmux extended-keys 已生效，被静默失败掩盖。第二轮按 4 项需求开发：打核心补丁（interactive-mode.js 中 handler 返回 false 时放行按键，幂等脚本 scripts/patch-voice-enter.mjs 固化，pi update 后重跑 rebuild.sh）；注册 Key.enter 听写模式（录音中回车切段转写+自动续录，快捷键/命令退出不续录，转写中显示'⚙ 转写中…'）；新增 whisperModel 配置（默认 base、env 优先）、/voice model 切换（重启服务轮询 health）、/voice bench 性能测试（RTF 建议）。顺带修复 pi-whisper.sh 两个 bug：带 token 的 health 轮询缺 Authorization 永远 401 误报超时、空串环境变量不回退默认。whisper 服务重启恢复（base 模型）。37 测试全过、全量回归通过（test-all.sh 中 pi-autopilot 偶发失败，单独跑 88 全过）。生效需 /reload 或重启 pi。"
+    },
+    {
+      "id": "7b2669eb-3b06-4a56-a58d-79af78d649f5",
+      "sessionId": "019fe1ab-1dbb-7f9f-95df-d862227b6fa3",
+      "ts": "2026-08-09T12:37:14.875Z",
+      "title": "plan-mode 修订修复与 footer 实时 token",
+      "decisions": [
+        "footer 保留 ↑↓ 累计口径，新增实时 token 并入 context 显示",
+        "plan 修订改为替换语义，不再 append 堆积任务",
+        "修订意图判定只看最后一条用户消息",
+        "收紧 Plan 头正则，过滤 plan-mode 消息副本防误修订",
+        "plan prompt 强制用 todo 工具跟踪步骤"
+      ],
+      "facts": [
+        "↑↓RW$ 为会话累计消耗，压缩不归零；context 才是实时值",
+        "新增 patch-footer-live-context.mjs，pi update 后需重跑",
+        "plan-mode 39 测试 + 全量回归全部通过",
+        "缓存实测命中率 98.7%-99.8%，整体 88%",
+        "2023 年陈旧 tmux 服务器导致 access not allowed"
+      ],
+      "prefs": [
+        "用户参考 opencode 显示，要求实时数据而非累计值"
+      ],
+      "lessons": [
+        "汇报文本含 plan 词会撞 Plan 头正则触发误修订",
+        "plan-mode 注入消息 role 为 custom，不会污染 lastUser",
+        "3-4 字步骤不满足 isValidStepText 的 length>5 约束",
+        "Dice 阈值 0.7 对中文偏严，降为 0.6 并加长度下限"
+      ],
+      "fullText": "会话围绕两项任务：footer token 显示口径与 plan-mode 状态更新。调查确认 ↑↓RW$ 为会话累计消耗（压缩不归零），context 才是实时值；新增 scripts/patch-footer-live-context.mjs 显示 34.5k/200k (17.2%)，压缩后为 ?/200k。plan-mode 根因是修订时 append 不替换、且缺工具驱动强制；新增 mergePlanRevision 替换语义（subject 规范化相等→子串→Dice≥0.6，未匹配 pending 移除、in_progress 降级清 activeForm、completed/deleted 保留），plan prompt 强制 todo 跟踪。期间修复三层误修订：Plan 头正则收紧为须后跟冒号/空白/行尾、修订意图只看用户消息、plan-mode 消息副本前缀（**计划已修订/进度/步骤/完成）过滤。顺带修复继续计划模式不更新 knownTodoHash 导致重复弹窗。缓存实测最近 10 轮命中率 98.7%-99.8%，每轮未命中 70-534 token，整体 88%，<0.3% 影响得到确认。环境问题：2023 年陈旧 tmux 服务器致 access not allowed，kill -9 + 清理 /tmp/tmux-* 修复。plan-mode 39 测试 + 全量回归通过。会话三次挂死自动重启（40/49/38 分钟无活动），恢复顺利。遗留：footer 目视确认、pi update 后重跑补丁。"
+    },
+    {
+      "id": "47577cc3-301c-4fef-9702-5dbb1562a7b3",
+      "sessionId": "019fe4b7-2864-70b4-960d-3ef8398a3db0",
+      "ts": "2026-08-09T12:38:04.664Z",
+      "title": "reverse-skill 安全路由包分析",
+      "decisions": [
+        "分析双线并行：工程化机制 + 安全争议，结论直指越狱向量",
+        "大仓库改用 raw 直读 + Range 请求规避文件树截断"
+      ],
+      "facts": [
+        "reverse-skill：21.6k stars、544 文件、PowerShell 主导、MIT，3 个月增速异常快",
+        "核心机制：routing.json 41 条规则路由、case-init 作用域契约、供应链 pin 门禁",
+        "precedent-auth.md 明确设计覆盖 AI 默认安全审查，授权为自我声明制",
+        "CI 双平台 163 条路由回归 + 社区 PR 自动合并（含 prompt injection 检测）"
+      ],
+      "prefs": [
+        "用户偏好单次深度全面分析、末尾一次性汇总，不中途打断",
+        "分析要求直指风险与争议，不只罗列优点"
+      ],
+      "lessons": [
+        "GitHub 大仓库：文件树超限时改用 raw 直读关键文档 + HTTP Range 分段读取",
+        "star 增速与工程内容需对照核查：2 万 star 主要来自社区传播非代码审阅"
+      ],
+      "fullText": "应要求全面分析 GitHub zhaoxuya520/reverse-skill（AI 安全任务技能路由包，21.6k stars、544 文件、PowerShell 主导、MIT，v1.0.1）。采用元数据→文件树→README→核心文档→路由体系→CI 的逐层深读流程，文件树过大时改用 raw 直读与 Range 请求。结论：工程化程度高（routing.json 41 条规则单源、case-init 作用域契约、供应链 pin、双平台 CI 163 用例回归），但安全设计存在实质越狱向量——precedent-auth.md 明确以'覆盖 AI 默认安全审查'为目标、授权全程自我声明无外部验证、禁止输出安全警告。2 万 star 3 个月增速异常，主要靠社区传播。方法论可借鉴，作为全局配置注入需警惕安全语义。分析完成后用户未继续追问，会话自然结束。"
+    },
+    {
+      "id": "d6a7d8aa-da54-4796-ac28-5d5a92e02f25",
+      "sessionId": "019fe4ff-66e3-7827-acff-014f3488121a",
+      "ts": "2026-08-09T12:38:36.672Z",
+      "title": "reverse-skill 项目分析请求",
+      "decisions": [
+        "分析大项目采用元数据→文件树→README→核心文档→路由体系→CI 逐层深读流程",
+        "文件树过大时改用 raw 直读与 Range 请求避免整页拉取"
+      ],
+      "facts": [
+        "用户请求全面分析 GitHub zhaoxuya520/reverse-skill 项目",
+        "reverse-skill 是 AI 安全任务技能路由包：21.6k stars、544 文件、PowerShell 主导、MIT、v1.0.1",
+        "工程化程度高，routing.json 41 条规则单源管理"
+      ],
+      "prefs": [
+        "用户偏好对开源项目做深入全面的分析，期望助手自主完成调研后一次性完整汇报"
+      ],
+      "lessons": [
+        "GitHub 项目文件树过大时，raw 直读与 Range 请求比整页拉取更高效"
+      ],
+      "fullText": "用户请求全面分析 GitHub 项目 zhaoxuya520/reverse-skill（AI 安全任务技能路由包）。此前会话已完成该分析：21.6k stars、544 文件、PowerShell 主导、MIT 协议 v1.0.1。分析采用元数据→文件树→README→核心文档→路由体系→CI 的逐层深读流程，文件树过大时改用 raw 直读与 Range 请求。结论：工程化程度高，routing.json 41 条规则单源管理。用户偏好深度全面的技术分析，期望一次性完整汇报不打断询问。"
+    },
+    {
+      "id": "2f12bcde-dc71-4e13-9f8f-7b0f1ef78fd0",
+      "sessionId": "019fe508-c98a-7df2-b554-f598b57f3092",
+      "ts": "2026-08-09T12:39:18.542Z",
+      "title": "reverse-skill 项目全面分析",
+      "decisions": [
+        "判定 reverse-skill 为工程化程度显著高于平均的 AI 安全技能路由包",
+        "核心短板：CTF 模块与自动路由集成断裂、路由双源、合规面风险",
+        "部署建议：先跑 verify-routing-coherence + 回归套件，留意自动配置引导"
+      ],
+      "facts": [
+        "reverse-skill 为 AI 安全技能路由包，21,752 stars，543 文件，PowerShell 主导，MIT+GPLv3 混合许可，v1.0.1",
+        "routing.json 单一事实源，41 条规则+163 回归用例+CI 双平台，master-route 只读",
+        "CTF 模块在 routing.json 中引用为 0，自动路由永远分诊不到 42 个竞赛模块",
+        "含供应链 pin 门禁、证据链契约 E→F→P、scope.md 授权门禁三层安全机制",
+        "burp-mcp-full 自研 78 工具 MCP 桥，kali/ 适配层走 apt 直装"
+      ],
+      "prefs": [
+        "用户偏好极简指令（'全面的分析 <URL>'），期望助手自主完成调研一次性汇报",
+        "大型项目分析采用子代理并行委派，主上下文只消费压缩摘要"
+      ],
+      "lessons": [
+        "routing.json 自称唯一事实源却对 CTF 目录零引用，CI 全绿但集成实际断裂，验证需覆盖全部目录",
+        "双源（json+md）维护必然漂移，单一事实源声明与人工入口并存是隐患",
+        "授权门禁只是流程约定，脚本可被跳过，无法强制使用者合法性"
+      ],
+      "fullText": "本会话全面分析 GitHub 项目 zhaoxuya520/reverse-skill（AI 安全技能路由包）：21,752 stars、543 文件 9.7MB、PowerShell 主导、MIT 主体（CTF 子目录 GPLv3、pentestswarm AGPL）。流程：克隆后先看结构与核心文档，再委派三个子代理并行分析各模块，补读配置/规则/入口后汇总。结论：工程化程度显著高于平均——routing.json 单一事实源（41 条规则+163 回归用例+CI 双平台）、供应链 pin 门禁、证据链契约、授权门禁、平台中立。主要缺陷：CTF/competition 在 routing.json 中引用为 0，自动路由分诊不到 42 个竞赛模块（verify-routing-coherence 不覆盖该目录）；routing.json 与 341 行 routing.md 双源漂移；README_AI 引导 AI 自动注入客户端全局规则属双刃剑。后续使用该项目或分析同类安全项目时可复用本结论。"
+    },
+    {
+      "id": "cb420c1b-8059-4798-bc6e-1c0202714fb5",
+      "sessionId": "019fe515-38c4-7739-9c27-35e29a45cdb1",
+      "ts": "2026-08-09T12:40:11.034Z",
+      "title": "reverse-skill 项目全面分析",
+      "decisions": [
+        "用户仅回复'继续'即授权退出规划模式执行 clone 分析",
+        "subagent 不可用时改为直接批量读文件完成分析"
+      ],
+      "facts": [
+        "reverse-skill 是 AI 代理安全任务技能路由包，543 文件 14MB",
+        "架构五层：路由/授权门禁/行为链/工具管理/证据链",
+        "工程完成度高于同类平均，但版本管理混乱、双技能体系重叠",
+        "plan-mode 白名单阻止 clone/curl，subagent 在 TUI 会话不可用"
+      ],
+      "prefs": [
+        "用户极简指令，一次'继续'即授权全流程自主执行，不打断询问"
+      ],
+      "lessons": [
+        "分析外部项目需先退出规划模式或索取本地副本",
+        "git 仅单提交但内容引用 PR 编号可判断历史被重写"
+      ],
+      "fullText": "本会话全面分析 GitHub 项目 zhaoxuya520/reverse-skill（面向 AI 编码代理的安全任务技能路由包，目标 Claude Code/Codex/Cursor 等）。用户说'继续'即授权退出规划模式 clone（规划模式只读白名单阻止 git clone/curl）。克隆得 543 文件 14MB、422 markdown、可执行代码约 5000 行（PowerShell 主导）。架构五层：routing.json 41 条规则（R0-R40）路由、case-init/scope.md 授权门禁（network_profile 四档+CaseName 防路径穿越）、RULES.md 行为链+agent-obedience-engineering、tool-index+供应链 pin gate（jadx 1.5.6 等已钉版本哈希）、证据链+field-journal 17 种子案例。评价：单一事实源纪律、CI 双平台矩阵、163 回归基准、供应链自审计无后门，完成度高于同类；短板：版本号不一致（VERSION 1.1.0 vs CHANGELOG 1.0.1）、单提交无历史、主 skills/ 与 CTF 双体系重叠、reports/ gitignore 却仍跟踪真实渗透报告、授权门禁仅文档级。subagent 工具不可用改直接批量读文件。输出完整报告后询问是否深入某模块。"
+    },
+    {
+      "id": "61ee02fb-ebca-4677-bceb-ce2c7b6d6dac",
+      "sessionId": "019fe527-18e7-7097-84ab-eddfccff9ebf",
+      "ts": "2026-08-09T12:40:38.533Z",
+      "title": "列出当前目录的简短交互",
+      "decisions": [],
+      "facts": [
+        "本会话仅包含一次'列出当前目录'请求，助手回复了可用技能列表（pi-backup/pi-code-review/pi-translate-zh）",
+        "三个技能描述与系统提示中 AGENTS.md 记载一致，无新增信息"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本会话内容极少：用户请求列出当前目录，助手仅展示三个可用技能（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 翻译），技能描述与项目 AGENTS.md 中已有记录完全一致，无任何新决策、新事实、用户偏好或经验教训产生，无可提取的长期记忆。"
+    },
+    {
+      "id": "4704f7c7-5c0e-46ce-9d07-18bec214dfc6",
+      "sessionId": "019fe617-caab-763e-81ed-244ebe506d1a",
+      "ts": "2026-08-09T12:41:08.431Z",
+      "title": "查询语音模型状态",
+      "decisions": [],
+      "facts": [
+        "pi-voice 当前未配置 whisperModel，服务端默认 base 模型",
+        "已缓存 faster-whisper-base 于 /opt/pi-whisper/models",
+        "whisper 服务当前未运行"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "用户使用 /voice model 查询 pi-voice 扩展的语音转写模型状态。助手列出 faster-whisper 可用模型（tiny/base/small/medium/large-v3，从 hf-mirror.com 下载）及各自大小、速度、适用场景，并说明当前状态：pi-voice.json 未配置 whisperModel 字段（服务端默认 base）、已缓存 faster-whisper-base、whisper 服务未运行。助手询问用户是否需要切换模型或启动服务，用户未进一步操作。会话内容极少，仅为一次性查询，未产生新决策、偏好或经验教训。"
+    },
+    {
+      "id": "7e485162-4b93-4c55-816b-b2046fbed918",
+      "sessionId": "019fe637-aefd-7e41-abcb-261ffff43210",
+      "ts": "2026-08-09T12:42:05.143Z",
+      "title": "测试性对话，无实质内容",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本次对话为一次性测试：用户要求'只输出 hello 两个字'，未涉及任何实质性任务、项目或决策。对话中无代码修改、无环境操作、无用户偏好表达。唯一附带内容为系统注入的可用技能清单（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 中文翻译），属于环境固有信息而非本次对话产物。无可提取的长期记忆、项目约定或经验教训，后续会话无需依赖本对话的任何上下文。"
+    },
+    {
+      "id": "39839dd8-ea83-4d53-8d33-f571b06be9f8",
+      "sessionId": "019fe63e-a2b8-759c-a479-336b259035b4",
+      "ts": "2026-08-09T12:42:32.712Z",
+      "title": "测试性对话，无实质内容",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本次对话为一次性测试：用户要求'只输出 hello 两个字'，未涉及任何实质性任务、项目或决策。对话中无代码修改、无环境操作、无用户偏好表达。唯一附带内容为系统注入的可用技能清单（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 中文翻译），属于环境固有信息而非本次对话产物。无可提取的长期记忆、项目约定或经验教训，后续会话无需依赖本对话的任何上下文。"
+    },
+    {
+      "id": "a2fff38b-e0a6-4d66-bf20-968ea8cac425",
+      "sessionId": "019fe644-8415-78b7-9b7c-2642d48c58d8",
+      "ts": "2026-08-09T12:43:03.776Z",
+      "title": "分析 reverse-skill 网络安全项目",
+      "decisions": [],
+      "facts": [
+        "reverse-skill 是网络安全逆向技能路由包",
+        "含 53 技能模块、41 条路由规则",
+        "含 CTF 沙箱编排器与 Burp MCP 桥",
+        "用户关注网络安全逆向工程领域",
+        "分析任务已克隆但未产出最终结论"
+      ],
+      "prefs": [
+        "用户要求全面深入分析，可自行克隆仓库"
+      ],
+      "lessons": [],
+      "fullText": "用户要求全面分析 GitHub 项目 zhaoxuya520/reverse-skill。助手克隆至本地后发现这是网络安全逆向技能路由包：53 个技能模块、41 条路由规则、CTF 沙箱编排器、Burp MCP 桥。助手依次查看了项目概览、核心路由机制、架构文档，随后并行深入分析各模块。对话在分析进行中被截断，未产生最终分析报告或结论。该对话表明用户对网络安全、逆向工程领域有分析需求，但本次任务未完成，后续如需可继续该分析。"
+    },
+    {
+      "id": "60f4baee-3022-4db6-a131-04fe3c6532ed",
+      "sessionId": "019fe64d-959d-738d-a795-2d24b86dedaf",
+      "ts": "2026-08-09T12:43:49.259Z",
+      "title": "reverse-skill 安全路由包全面分析",
+      "decisions": [
+        "克隆到本地后基于 545 个文件实证分析，不依赖网络资料",
+        "派 5 个并行 subagent 分模块深入，主会话读核心配置"
+      ],
+      "facts": [
+        "reverse-skill 是面向 AI 客户端的安全任务技能路由包，22K stars/3K forks",
+        "41 条路由规则（routing.json 单一事实源）、163 回归用例、42 模块",
+        "burp-mcp-full 授权护栏纯装饰，无执行路径检查，可扫内网",
+        "PowerShell/bash 双实现已功能漂移，bootstrap-reverse.ps1 零测试"
+      ],
+      "prefs": [
+        "用户偏好一次性完整分析报告，全程不打断",
+        "用户关注安全/逆向领域，期待文件实证深度分析"
+      ],
+      "lessons": [
+        "护栏声明与实现存在落差，须代码层验证授权机制",
+        "核心精良、边缘粗放的实战演进特征，需抽查边缘模块",
+        "3 个月 22K stars 属异常增长，热度数据不排除运营成分"
+      ],
+      "fullText": "用户要求全面分析 GitHub 项目 zhaoxuya520/reverse-skill。助手克隆至本地（545 文件），先看整体结构，随后派 5 个并行 subagent 深入各子模块，主会话同步读核心配置。结论：这是一个真实可用的安全任务技能路由包（面向 Claude Code/Cursor 等 AI 客户端），routing.json 41 条规则为单一事实源，PS/bash 双实现，163 用例回归，供应链哈希 pin，授权门禁 case-init。核心模块深度高（实测工具版本、glibc 版本差异表、305 结构化 payload），CTF-Sandbox-Orchestrator 42 子技能独立补充。主要问题：burp-mcp-full 的 scope_gate/privacy_mode 纯装饰无执行路径检查（可扫内网）、CRLF 注入、密钥明文回传、bootstrap 零测试、双实现漂移、边缘模块薄壳、CTF 集合无授权声明。含 EDR 绕过/免杀等双用途内容，文档层有授权纪律但代码层有缺口。22K stars 3 个月异常增长，内容真实性可信但热度不排除运营成分。已输出完整分析报告。"
+    },
+    {
+      "id": "673beb5b-25b0-4f1a-aa11-edaf8468341e",
+      "sessionId": "019fe662-7b03-7d94-bf53-cb7528311636",
+      "ts": "2026-08-09T12:45:36.138Z",
+      "title": "pi-voice 语音链路修复",
+      "decisions": [
+        "pi-voice 转写前自动拉起 whisper 服务（ensureWhisperService，7 秒恢复）",
+        "tmpDir 显式固化 /storage/emulated/0/pi-voice/ 兜底共享存储",
+        "Ctrl+Shift+R 判定为终端限制，用 Ctrl+Alt+R 兜底、待验证 kitty 协议"
+      ],
+      "facts": [
+        "Termux:API app 沙箱隔离无法写 proot /tmp（ENOENT）",
+        "非 kitty 协议终端 Ctrl+Shift+R 与 Ctrl+R 字节相同（\\x12），Shift 在终端层丢失",
+        "whisper 服务无自启动机制，Termux:Boot 未安装",
+        "pi 直接跑在 Termux proot 容器终端，无 tmux",
+        "termux-api versionCode 48，Termux≥0.119 支持 kitty 协议"
+      ],
+      "prefs": [],
+      "lessons": [
+        "whisper 服务端期望原始 wav 字节，curl 测试须 --data-binary，用 -F multipart 报 Invalid data",
+        "whisper 静音环境返回空文本属正常，非故障",
+        "录音残留占用麦克风会触发\"录音启动失败\"保护提示，链路正常后消失"
+      ],
+      "fullText": "诊断并修复 pi-voice 语音链路三问题：(1) 转写失败根因是 whisper 服务已停且无自启动机制（rebuild.sh 才拉起、Termux:Boot 未安装），已在 core.ts+config.ts 新增 whisperScript 配置并实现转写前 ensureWhisperService 自动拉起（停止后 7 秒恢复），37 单测通过；(2) m4a 转 wav 失败根因是 Termux:API app 沙箱隔离无法写 proot /tmp（open failed: ENOENT），/storage/emulated/0 与 Termux home 可写，defaultTmpDir 优先共享存储，并在 pi-voice.json 显式固化 tmpDir=/storage/emulated/0/pi-voice/，录音→转码→whisper 全链路实测打通；(3) Ctrl+Shift+R 无效是终端协议限制：非 kitty 协议下与 Ctrl+R 发送字节相同（\\x12），Shift 信息在终端层丢失，Ctrl+Alt+R 走 ESC 前缀有效；pi-tui 启动时探测 kitty 协议已重启 pi，Termux≥0.119 支持，待用户实测；仍无效则从 F-Droid 升级 Termux。测试教训：whisper 服务端期望原始 wav 字节，-F multipart 会报 Invalid data。"
+    },
+    {
+      "id": "45b6c802-07ab-4ede-b641-410947190e8b",
+      "sessionId": "019fdfff-f519-7ed4-ac59-bc205a96495b",
+      "ts": "2026-08-09T13:59:52.687Z",
+      "title": "查询当前时间的一次性交互",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本会话为一次性简单交互：用户请求输出当前时间，助手回复 2026-08-08 06:12:06 UTC（星期六）。对话中未出现用户偏好、项目决策、环境事实或经验教训等值得长期记录的信息。会话末尾附带展示了三个可用技能（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 中文翻译），均为系统已注册技能，非本次对话产生的新信息。无任何可提取的持久记忆内容。"
+    },
+    {
+      "id": "ed6d09ee-c949-428c-ad6f-0af198826904",
+      "sessionId": "019fe00c-f6d9-7f3f-8344-a19f826fc122",
+      "ts": "2026-08-09T14:01:00.644Z",
+      "title": "时间查询一次性交互",
+      "decisions": [],
+      "facts": [
+        "用户查询当前时间，助手回复 2026-08-08 06:26:18 星期六（UTC）"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本会话为一次性简单交互：用户请求输出当前时间，助手回复 2026-08-08 06:26:18 UTC（星期六）。对话中未出现用户偏好、项目决策、环境事实或经验教训等值得长期记录的信息。会话末尾附带展示了三个可用技能（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 中文翻译），均为系统已注册技能，非本次对话产生的新信息。无任何可提取的持久记忆内容。"
+    },
+    {
+      "id": "0280d325-0cec-464d-96b9-9e2c8cae73ab",
+      "sessionId": "019fe00a-6272-7a25-a52a-8fa731e5f027",
+      "ts": "2026-08-09T14:50:26.741Z",
+      "title": "时间查询一次性交互",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "本会话为一次性简单交互：用户请求输出当前时间，助手回复 2026-08-08 06:23:30（星期六）。对话中未出现用户偏好、项目决策、环境事实或经验教训等值得长期记录的信息。会话末尾展示了三个可用技能（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 中文翻译），均为系统已注册技能，非本次对话产生的新信息。无任何可提取的持久记忆内容。"
+    },
+    {
+      "id": "78a213b1-e6d2-4cf2-b580-4df96858b02a",
+      "sessionId": "019fe635-de65-7b41-b1a7-b431a604a40b",
+      "ts": "2026-08-09T14:51:14.523Z",
+      "title": "列出 /tmp/opencode 文件数的一次性查询",
+      "decisions": [],
+      "facts": [
+        "用户执行了一次性极简指令：仅列出 /tmp/opencode 目录文件数后停止",
+        "会话仅含一条查询指令，无项目决策或偏好输出"
+      ],
+      "prefs": [
+        "用户偏好极简指令，期望快速执行后立即停止"
+      ],
+      "lessons": [],
+      "fullText": "本会话为一次性简单查询：用户发出极简指令'只列出 /tmp/opencode 目录的文件数并停止'，随后系统展示了三个可用技能（pi-backup 备份恢复、pi-code-review 代码审查、pi-translate-zh 中文翻译），均为已注册技能，非本会话产生的新信息。对话内容极少，未出现用户偏好、项目决策、环境事实或经验教训等值得长期记录的内容。用户指令极简、要求执行后停止的行为模式与既有记忆'用户指令极简'一致，无新增记忆点。"
+    },
+    {
+      "id": "07259117-fb3d-496b-8d92-e21f6d17fde1",
+      "sessionId": "019fe662-7b03-7d94-bf53-cb7528311636",
+      "ts": "2026-08-09T14:52:13.430Z",
+      "title": "pi-voice 语音故障排查与修复",
+      "decisions": [
+        "pi-voice 转写前自动拉起 whisper 服务（ensureWhisperService）",
+        "tmpDir 显式固化到 /storage/emulated/0/pi-voice/ 兜底",
+        "Ctrl+Shift+R 无法修复，用 Ctrl+Alt+R 或升级 Termux"
+      ],
+      "facts": [
+        "whisper 服务无自启动机制，仅 rebuild 时拉起，Termux:Boot 未安装",
+        "Termux:API 无法写 proot /tmp，共享存储与 Termux home 可写",
+        "非 kitty 终端 Ctrl+Shift+R 与 Ctrl+R 字节相同，Shift 丢失"
+      ],
+      "prefs": [],
+      "lessons": [
+        "whisper-server 期望原始 wav 字节，-F multipart 会报 Invalid data",
+        "静音环境转写返回空文本属正常，说话即有内容"
+      ],
+      "fullText": "排查 pi-voice 语音故障。转写失败直接原因：whisper 服务已停止且无自启动机制（rebuild 才拉起，Termux:Boot 未安装）——已修复为 pi-voice 转写前自动拉起服务（ensureWhisperService，实测 7 秒恢复），config.ts 新增 whisperScript 配置，37 个单测全过。m4a 转 wav 历史根因：Termux:API app 沙箱无法写 proot 的 /tmp（ENOENT），共享存储和 Termux home 可写；defaultTmpDir 优先共享存储，pi-voice.json 显式固化 tmpDir=/storage/emulated/0/pi-voice/。录音→转码→转写全链路实测打通，静音返回空文本属正常。Ctrl+Shift+R 无效是终端协议限制：非 kitty 终端其字节与 Ctrl+R 相同（\\x12），Shift 在终端层丢失，Ctrl+Alt+R 走 ESC 前缀有效；已重启 pi 重新探测，Termux ≥0.119 支持 kitty 协议。'录音启动失败'是首次录音残留占用麦克风的保护提示。"
+    },
+    {
+      "id": "3756bff1-f333-4b5d-ac97-5d73fa0c3df9",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-09T17:10:45.529Z",
+      "title": "pi 环境自检与多故障修复",
+      "decisions": [
+        "提交 pi-voice 改动与 plan-mode/cron 修复（0e63916/bf2f76b）",
+        "SearXNG 禁用 wikidata/startpage 引擎解决超时死亡",
+        "wrapper 新增 ensure_cron/ensure_tmux 幂等自愈",
+        "pi-autopilot 锁获取加重试，pi-cron.sh 不覆盖活跃锁",
+        "推送经 v2ray 代理 10808，不写入 git config"
+      ],
+      "facts": [
+        "GitHub 直连 DNS fake-IP 污染，需经本机 10808 代理",
+        "proot 下 kill -0 判定存活不可靠，改用 /proc",
+        "tmux 孤儿 socket 残留致 access not allowed",
+        "锁竞争导致调度与看门狗静默失效"
+      ],
+      "prefs": [
+        "提交前先跑 pi-code-review 审查流程",
+        "cron 离线调度是全自动运行保障，须修复"
+      ],
+      "lessons": [
+        "use_default_settings 会加载被墙引擎致 SearXNG 死亡",
+        "pi-cron.sh 无条件 mv 覆盖 pi-autopilot 调度锁",
+        "collectOfflineExecutions 把非任务日志误报为失败"
+      ],
+      "fullText": "全面自检 ~/.pi 后修复多项故障并全部提交推送。SearXNG 死亡根因：use_default_settings 加载 wikidata/startpage 引擎，SPARQL endpoint 被墙初始化超时，已禁用两引擎恢复。plan-mode todo 不可用根因：PLAN_MODE_TOOLS/NORMAL_MODE_TOOLS 白名单均不含 todo 与注入提示矛盾，两处已加 todo。cron 守护在 proot 内缺失，已拉起并给 pi-wrapper.sh 加 ensure_cron 自愈。重启后发现 pi-autopilot 离线报告误报（wrapper-ensure.log 被当任务日志）已修复并补测试；pi-voice TTS 语义改动（272 行）审查后提交 dbe9f5a；tmux 孤儿 socket 根因定位后加 ensure_tmux 自愈（afacc46）。最终定位调度锁竞争：pi-cron.sh acquire_lock 无条件 mv 覆盖 pi-autopilot 锁致看门狗静默失效，修复为 /proc 存活判定+不覆盖活跃锁，pi-autopilot 加重试（0095110，已推送）。GitHub 直连被 DNS fake-IP 污染，推送均经本机 v2ray 10808 代理临时参数完成。全量回归（8 套 vitest+subagent+tsc+conflict-check）多次全过。遗留：todo 工具需重启 pi 生效；磁盘 82% 待清理。"
+    },
+    {
+      "id": "1de00787-c7e1-485f-acfe-bccabb4fa689",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T01:05:59.265Z",
+      "title": "多故障修复与调度锁竞争根因排查",
+      "decisions": [
+        "pi-voice 改动先审查后提交（0e63916）",
+        "plan-mode 两模式白名单补 todo 修复矛盾",
+        "cron 守护拉起并接入 wrapper 自愈链",
+        "锁竞争根因：cron 不覆盖活跃锁+重试",
+        "git 推送经 v2ray 代理 10808 临时参数"
+      ],
+      "facts": [
+        "SearXNG 死因：wikidata/startpage 被墙超时",
+        "tmux 孤儿 socket 致 access not allowed",
+        "proot 下 kill -0 误判，改用 /proc 判定",
+        "连续 6 次 restart_hang，看门狗正常触发"
+      ],
+      "prefs": [
+        "提交前先审查，指令极简",
+        "推送用 token 经代理，remote 保持干净"
+      ],
+      "lessons": [
+        "锁竞争致调度+看门狗静默失效难察觉",
+        "测试 LOG_DIR 共享目录跨运行污染",
+        "wrapper-ensure.log 被误报为任务失败"
+      ],
+      "fullText": "本轮完成多轮系统修复。审查并提交 pi-voice 改动（0e63916）；修复 plan-mode 白名单缺 todo 导致模型无法调用 todo（plan 与执行两模式均补 todo，需重启生效）；拉起 cron 守护并接入 wrapper ensure_cron 自愈；禁用 SearXNG wikidata/startpage 引擎恢复搜索。发现 github.com 直连被 DNS fake-IP 污染，改经本机 v2ray 10808 代理推送。pi-autopilot 离线报告误把 wrapper-ensure.log 当任务日志（已过滤）；tmux 孤儿 socket（proot 内核不清理）复发，wrapper 加 ensure_tmux 自愈。核心根因：pi-cron.sh acquire_lock 无条件覆盖 scheduler.lock 与 pi-autopilot 竞争，致在线调度+挂死看门狗静默失效，修复后锁跨 cron 周期稳定（0095110）。连续 6 次 restart_hang 系看门狗正常触发（离开超 30 分钟），可调大 maxIdleMinutes。所有提交已推送，工作树干净。"
+    },
+    {
+      "id": "2d31b2fc-61f8-412a-b820-92e46d216c18",
+      "sessionId": "019fe924-9b19-791b-983a-63619c684762",
+      "ts": "2026-08-10T01:07:08.934Z",
+      "title": "简单算术问答1+1",
+      "decisions": [],
+      "facts": [
+        "用户询问了1+1的算术问题",
+        "助手正确回答了结果为2"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "这是一次极简的算术问答：用户提问1+1，助手直接给出答案2。对话无上下文背景、无任务、无决策，属于一次性闲聊内容，无可提取的长期记忆或经验教训。"
+    },
+    {
+      "id": "2087f3cc-b08c-4a30-94bc-d990f2943dc5",
+      "sessionId": "019fe925-85e5-7722-921e-555877959b19",
+      "ts": "2026-08-10T01:07:43.077Z",
+      "title": "规划模式工具能力问答",
+      "decisions": [],
+      "facts": [
+        "规划模式下禁止 edit/write，bash 仅白名单只读命令",
+        "subagent 在规划模式仅允许 agent=scout",
+        "退出规划模式后恢复完整编辑工具",
+        "可用技能：pi-backup、pi-code-review、pi-translate-zh"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "用户询问当前是否能修改文件并列出可用工具。助手说明当前会话处于规划模式（PLAN MODE），文件修改被禁用：不能使用 edit/write，bash 仅限白名单只读命令（禁止管道、重定向、写文件），subagent 仅允许 agent=scout 只读调研；可用工具为 read、bash（受限）、grep、todo、web_search、fetch_url、subagent。正常模式下额外开放 edit、write、memory_store、ctx_note 等。同时列出三个可用技能：pi-backup（备份恢复）、pi-code-review（代码审查）、pi-translate-zh（翻译 pi 界面）。这是一次一次性工具能力问答，无决策、无任务执行、无用户偏好暴露，对话以助手询问用户意图结束。"
+    },
+    {
+      "id": "210f30a7-2fca-4311-a0a9-0ca78ee03ed2",
+      "sessionId": "019fe92f-9c7d-71aa-b58f-ad162e725f6c",
+      "ts": "2026-08-10T01:12:08.792Z",
+      "title": "计划模式工具与plan切换确认",
+      "decisions": [],
+      "facts": [
+        "plan_exit 在计划模式可用，plan_enter 在执行模式侧可用，二者互补",
+        "计划模式白名单含 read/bash/grep/todo/web_search/fetch_url/subagent(仅scout)/plan_exit",
+        "模式提示中的 glob 不在实际工具注册表中",
+        "plan_exit 调用后弹确认选择器，用户确认才生效"
+      ],
+      "prefs": [],
+      "lessons": [
+        "模式提示与实际工具注册表可能有差异（glob），应以实际注册为准"
+      ],
+      "fullText": "用户确认当前模式与工具能力：处于计划模式（PLAN MODE），文件修改禁用。可用工具为 read、bash（白名单只读）、grep、todo、web_search、fetch_url、subagent（仅允许 scout）、plan_exit。plan_enter/plan_exit 为互补切换工具：plan_enter 仅执行模式可用（进入无需确认，只读），plan_exit 仅计划模式可用（弹出选择器需用户确认后生效）。注意模式提示中提到的 glob 并不在实际工具注册表中，以实际注册为准。此信息与 AGENTS.md plan-mode 白名单约定一致。"
+    },
+    {
+      "id": "c9848979-4269-46d7-bd60-565fd16b4cfb",
+      "sessionId": "019fe933-84f1-7596-a5a7-250d33f2030c",
+      "ts": "2026-08-10T01:18:48.731Z",
+      "title": "确认 plan_enter/plan_exit 工具可用",
+      "decisions": [
+        "确认 plan_enter/plan_exit 工具均注册可用，底层 plan-mode 扩展加载正常"
+      ],
+      "facts": [
+        "plan_enter 进入计划模式无需确认，plan_exit 退出需用户手动确认选择器",
+        "plan-mode 扩展位于 /root/.pi/agent/extensions/plan-mode，settings.json 已注册 index.ts"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "用户要求逐一确认工具集中 plan_enter 与 plan_exit 的存在性。助手通过工具列表确认两者均已注册：plan_enter 用于进入计划模式（工具集切换为只读白名单，无 edit/write，bash 仅白名单命令，已在计划模式时无操作），plan_exit 用于退出计划模式（恢复执行模式，需用户手动确认，取消则保持计划模式）。随后核实底层扩展：/root/.pi/agent/extensions/plan-mode 目录存在，settings.json 中注册了 extensions/plan-mode/index.ts，加载正常。计划模式白名单含 read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit，且子代理仅允许 agent=\"scout\" 的只读代理。结论：两个工具均可放心使用。"
+    },
+    {
+      "id": "edafa93a-1566-4fed-84ca-9b46ffe748fe",
+      "sessionId": "019fe935-07c1-75e5-a1f4-dd8d17f8c23a",
+      "ts": "2026-08-10T01:19:27.940Z",
+      "title": "确认计划模式工具可用",
+      "decisions": [],
+      "facts": [
+        "plan_enter 与 plan_exit 均确认在模型可用工具（function calling）列表中",
+        "plan_enter 进入只读计划模式，已在计划模式时无操作",
+        "plan_exit 退出计划模式需用户手动确认，取消则保持",
+        "工具描述与 AGENTS.md 中 plan-mode 白名单机制一致"
+      ],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "用户要求直接确认 plan_enter 与 plan_exit 是否在可用工具列表中，助手以是/否格式逐一回答：两者均在。plan_enter 用于进入只读计划模式（工具集切换为只读白名单，已在计划模式时无操作）；plan_exit 请求退出计划模式恢复执行模式，需用户手动确认后才生效，取消则保持。这与既有记忆中的 plan-mode 扩展机制（白名单工具集、退出需确认选择器）相互印证。此确认属于一次性验证，无新增长期信息，已有记忆条目覆盖该主题。"
+    },
+    {
+      "id": "fbcc3145-cd36-46b6-8b9e-a04e36602644",
+      "sessionId": "019fe939-6b63-751c-b533-5d2d97a931ce",
+      "ts": "2026-08-10T01:20:12.566Z",
+      "title": "验证计划模式工具集可用",
+      "decisions": [
+        "确认计划模式白名单与 AGENTS.md 记录完全一致，无需修改"
+      ],
+      "facts": [
+        "plan_enter 实测调用成功，已进入计划模式",
+        "计划模式工具集 9 个：read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit",
+        "计划模式限制：禁 edit/write，bash 仅白名单只读命令，subagent 仅允许 scout"
+      ],
+      "prefs": [
+        "用户偏好极简指令直接验证功能可用性，不依赖文档推断"
+      ],
+      "lessons": [],
+      "fullText": "用户要求立即调用 plan_enter 验证计划模式可用性。plan_enter 调用成功，进入计划模式后工具集为 9 个只读白名单工具：read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit。限制确认：文件修改禁用（无 edit/write）、bash 仅白名单只读命令（禁止管道/重定向/写文件/命令替换）、subagent 仅允许 agent=scout（worker/reviewer/未指定均拦截）。与 AGENTS.md 记录的 PLAN_MODE_TOOLS 白名单完全一致，机制运行正常无需修改。此会话为又一次功能可用性实测，与既往记忆中 plan-mode 扩展机制（白名单工具集、退出需用户确认）相互印证。"
+    },
+    {
+      "id": "aa6962f5-af91-4a35-a176-2718dd19e8dc",
+      "sessionId": "019fe940-6383-74d6-9b87-b1fec23d0a6a",
+      "ts": "2026-08-10T01:45:13.585Z",
+      "title": "验证计划模式工具集可用",
+      "decisions": [
+        "再次验证计划模式工具集可用性，确认 9 个只读白名单工具",
+        "subagent 仅允许 scout 只读代理，worker/reviewer 被拦截"
+      ],
+      "facts": [
+        "计划模式工具集为 9 个：read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit",
+        "bash 白名单支持 cd + 单条白名单命令及尾部 2>/dev/null，多命令/管道/重定向拒绝",
+        "计划模式已移除 edit/write/plan_enter，退出需 plan_exit 用户确认"
+      ],
+      "prefs": [
+        "用户用极简指令要求执行操作，期望助手自主完成验证并一次性汇报"
+      ],
+      "lessons": [],
+      "fullText": "用户发出极简指令「调用 plan_enter 工具进入计划模式，成功后报告当前工具集」。助手成功进入计划模式并汇报：当前工具集为 9 个只读白名单工具（read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit）；相比执行模式移除了 edit/write/plan_enter；bash 仅允许白名单命令（cd + 单条命令 + 尾部 2>/dev/null 放行，多命令/管道/重定向拒绝）；subagent 限定仅 scout 只读代理，worker/reviewer 拦截。这是对计划模式工具集可用性的再次验证，结果与既有记忆一致。退出计划模式需调用 plan_exit 并经用户确认。"
+    },
+    {
+      "id": "2c1b67d6-426e-4bc2-bdb3-c18d49f86f53",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T02:01:33.707Z",
+      "title": "plan-mode 工具切换与内核补丁修复",
+      "decisions": [
+        "fetch_url 加入 plan/执行双模式白名单",
+        "subagent 保持 scout-only 拦截",
+        "plan_exit 退出必须用户手动确认选择器",
+        "修复 admin_restart 加 process.exit(0) 退出兜底",
+        "plan 拦截补 edit/write 硬拒绝兜底",
+        "用户选定内核补丁修复恢复会话 schema，文档说明可回退"
+      ],
+      "facts": [
+        "ctx.shutdown() 在 TUI 环境不退出进程",
+        "恢复会话工具 schema 来自持久化旧快照，扩展无法绕过",
+        "会话 jsonl tool_calls 为 0 证明从未真正发出调用",
+        "pi --plan flag 已存在（unknownFlags→flagValues）",
+        "opencode 无 todo 定时提醒，靠每轮注入 context"
+      ],
+      "prefs": [
+        "计划模式退出必须用户手动确认，任何情况不得绕过",
+        "plan_enter 进入无需确认（只读）"
+      ],
+      "lessons": [
+        "多轮修改未生效先查 PID 是否真正重启（proot 时钟不可靠）",
+        "补丁中 tools.slice() 在刷新前求值返回旧快照",
+        "LLM 只能调用 schema 内工具，工具列表文本不可靠"
+      ],
+      "fullText": "plan-mode 扩展开发：调研 opencode/Claude Code 后确认计划模式已有切换确认选择器（无需新增），fetch_url 加入双模式白名单，subagent 保持 scout-only。新增模型侧切换工具 plan_enter/plan_exit，退出经 ctx.ui.select 用户确认。排查出 admin_restart 从不真正重启（ctx.shutdown() 在 TUI 不退出进程，PID 恒为 8212 导致 4 轮修改未生效），加 process.exit(0) 1500ms 兜底修复。发现 plan-mode 只读保护漏洞：tool_call 拦截仅覆盖 bash/subagent，补 edit/write 硬拒绝。核心问题：--continue 恢复会话的工具 schema 来自持久化旧快照，新注册的 plan_enter/plan_exit 模型无法调用（会话 jsonl 中 tool_calls 为 0 证实；--print 新进程正常）。用户选定内核补丁方案：agent-session.js prepareNextTurnWithContext 处用 _refreshToolRegistry 刷新工具集，注册 rebuild.sh，文档说明情况、后续不需要可回退方案 2（接受现状）。todo 定时提醒：opencode 无此功能，靠每轮注入，agent_end 校验钩子方案待用户确认实现。"
+    },
+    {
+      "id": "5cd6d9ff-452f-45e6-b06b-5d5153ce6e8c",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T02:58:04.551Z",
+      "title": "plan-mode 白名单扩展与重启修复",
+      "decisions": [
+        "移除 pi-voice Ctrl+Shift+R，仅保留 Ctrl+Alt+R",
+        "web_search/subagent/fetch_url 加入 plan 白名单",
+        "subagent 保持 scout-only 拦截，不做放宽",
+        "新增模型侧 plan_enter/plan_exit，退出须用户确认",
+        "admin_restart 加 process.exit(0) 1500ms 兜底修复不重启 bug"
+      ],
+      "facts": [
+        "plan 白名单 9 工具：read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit",
+        "plan-mode tool_call 拦截现覆盖 bash/subagent/edit/write",
+        "opencode 用独立 plan agent+权限模型，Claude Code 无独立 plan-mode 文档",
+        "LLM 只能调用 schema 中的工具，--continue 恢复会话快照缺新注册工具"
+      ],
+      "prefs": [
+        "退出计划模式必须用户手动确认，任何情况不可绕过",
+        "subagent 安全优先，保持 scout-only 策略"
+      ],
+      "lessons": [
+        "改扩展后必须验证 PID 变化，admin_restart 曾静默失效致 4 轮改动未加载",
+        "模型持续退化为 bash 即工具不在 schema 的决定性证据",
+        "诊断用文件日志落盘 /tmp 做决定性判断，避免反复猜测"
+      ],
+      "fullText": "本会话完成 plan-mode 白名单扩展与多项修复：pi-voice 移除 Ctrl+Shift+R（仅留 Ctrl+Alt+R，提交 a7f508d）；web_search/subagent（scout-only 拦截）/fetch_url 加入双模式白名单（5ba7f50、7cffd73）；新增模型侧切换工具 plan_enter/plan_exit，退出经 ctx.ui.select 用户确认（99a8770）。调研 opencode（独立 plan agent+权限模型）与 Claude Code（无独立 plan-mode 文档），确认计划完成选择器已存在。核心发现：admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 恒为 8212），导致 4 轮修改代码未加载——已加 process.exit(0) 1500ms 兜底（1e6d75f），重启后 PID 8212→20625 验证成功。另修复只读漏洞：tool_call 拦截原先只覆盖 bash/subagent，新增 edit/write 硬拒绝（0116a06）。遗留问题：--continue 恢复会话模型工具 schema 仍缺 plan_enter（--print 新会话正常），已在 agent_start 加强制刷新工具集方案，重启后待实测验证。"
+    },
+    {
+      "id": "ccc11388-bcd5-43aa-b258-5af743fa9d06",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T05:28:42.440Z",
+      "title": "plan-mode 模型侧切换与内核补丁修复",
+      "decisions": [
+        "新增 plan_enter/plan_exit 模型侧切换工具，plan_exit 退出须用户确认",
+        "选方案1：写内核补丁修复恢复会话工具 schema，文档注明可回退方案2",
+        "fetch_url 加入双模式白名单；subagent 保持 scout-only",
+        "实现 agent_end todo 状态校验提醒"
+      ],
+      "facts": [
+        "admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程，已加 process.exit(0) 兜底修复",
+        "--continue 恢复会话工具 schema 来自持久化旧快照，缺重启后新注册工具（--print 正常）",
+        "plan-mode 只读拦截原仅覆盖 bash/subagent，已补 edit/write 硬拒绝",
+        "agent_start 钩子在本轮工具快照之后触发，刷新下一轮才生效"
+      ],
+      "prefs": [
+        "计划模式退出必须用户手动确认，任何情况不可绕过",
+        "用户要求改动需文档说明并留回退路径"
+      ],
+      "lessons": [
+        "模型只能调用 schema 内工具，持续退化为 bash 即 schema 缺该工具的证据",
+        "会话 jsonl 的 tool_calls 计数可区分'调用被拒'与'从未发出'",
+        "判断进程是否真正重启须对比 PID（proot 时钟异常不可靠）",
+        "决定性诊断用 /tmp 文件日志，重启后核实执行路径"
+      ],
+      "fullText": "本会话完成 plan-mode 模型侧切换能力：新增 plan_enter/plan_exit 工具（执行/计划模式分别可见），plan_exit 经 ctx.ui.select 强制用户确认退出；fetch_url 加入双模式白名单（7cffd73）。调试中发现两个真实缺陷并修复：① admin_restart 的 ctx.shutdown() 在 TUI 不退出进程导致新代码永不加载，加 process.exit(0) 1500ms 兜底（1e6d75f）；② --continue 恢复会话工具 schema 来自持久化旧快照，模型无法调用重启后新注册工具（tool_calls 0 次为决定性证据），用户选方案1——写内核补丁（patch-plan-tools.mjs，prepareNextTurnWithContext 处 _refreshToolRegistry 刷新，注册 rebuild.sh，文档注明可回退方案2）。另修复 plan-mode 只读漏洞：tool_call 拦截补 edit/write 硬拒绝（0116a06）。todo 优化：agent_end 校验提醒模型更新任务状态。全程提交：5ba7f50→7cffd73→99a8770→1e6d75f→0116a06→9a23336→63d0dc6。"
+    },
+    {
+      "id": "02a50b4d-0cd3-4728-a6bf-c5ef9782143c",
+      "sessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "ts": "2026-08-10T05:29:19.386Z",
+      "title": "计划模式进入但无具体任务",
+      "decisions": [],
+      "facts": [],
+      "prefs": [],
+      "lessons": [],
+      "fullText": "用户发出'进行计划模式'指令后进入计划模式，但未提供具体任务目标。助手列出可规划的事项类型（扩展开发、代码库调研、备份/迁移/翻译等技能任务）作为询问选项，用户误将这些选项当作可执行任务要求执行，助手澄清选项仅为示例、需给出真实需求后才能建立可执行计划。随后展示可用技能清单（pi-backup、pi-code-review、pi-translate-zh）供用户按需触发。会话未产生任何实际决策、代码改动或可复用经验，属于等待用户明确任务目标的空转状态。"
+    },
+    {
+      "id": "fc165a1d-28c1-4add-9a3a-dadd570a7311",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T05:59:09.302Z",
+      "title": "plan-mode 模型侧切换工具开发与测试",
+      "decisions": [
+        "选方案1：写内核补丁 patch-plan-tools.mjs 刷新恢复会话工具 schema，文档说明情况，后续不需要则回退方案2",
+        "优化 todo：agent_end 校验提醒，仅当本轮有工具操作但完全没碰 todo 工具时才提醒",
+        "plan_exit 退出必须弹确认选择器，用户确认才真正退出"
+      ],
+      "facts": [
+        "admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），已加 process.exit(0) 1500ms 兜底修复（1e6d75f）",
+        "--continue 恢复会话的工具 schema 固定于会话创建时快照，新注册工具 plan_enter/plan_exit 不可调用；新会话（pi/--print）可用",
+        "plan-mode 只读保护已补 edit/write 硬拦截（0116a06），原只拦 bash/subagent",
+        "模型只能调用 function schema 内的工具；会话文件 tool_calls 记录 0 次是决定性证据"
+      ],
+      "prefs": [
+        "用户偏好极简指令（'你直接重启就行了'），期望自主完成调研修改验证全流程",
+        "用户重视真实测试：先测试验证再修复，要求模型主动实测切换功能"
+      ],
+      "lessons": [
+        "调试先确认进程是否真正重启（PID 对比），否则会在旧代码上白费功夫（30+ 次无效尝试）",
+        "无效循环要及时止损，基于代码事实做决定性诊断而非重复猜测",
+        "扩展层无法改变已存在会话的工具 schema，需内核补丁；补丁对已存在会话也不生效"
+      ],
+      "fullText": "本会话完成 plan-mode 模型侧切换工具（plan_enter/plan_exit）的开发测试。plan_exit 需用户确认选择器；plan_enter 仅执行模式可见。测试中发现并修复三个真实 bug：admin_restart 在 TUI 环境不重启进程（ctx.shutdown 不退出，PID 不变，新代码永不加载）——加 process.exit(0) 兜底（1e6d75f）；plan-mode 只读拦截缺 edit/write——补硬拦截（0116a06）；--continue 恢复会话工具 schema 不刷新——写内核补丁 patch-plan-tools.mjs（63d0dc6）。最终结论：模型侧 plan_enter 在新会话可用，恢复会话（--continue TUI）不可用（schema 固定于会话创建时，补丁只刷新 prepareNextTurnWithContext 路径）。用户决策：保留补丁+文档说明，后续不需要回退；并优化 todo 降频提醒（81cac46，仅当有工具操作但未碰 todo 时才提醒）。用户偏好极简指令，多次直接说'重启'。教训：调试先查 PID 确认进程真正重启，避免在旧代码上做 30+ 次无效尝试。"
+    },
+    {
+      "id": "c1360971-72d0-4cb9-bd37-a1e2a7c9014c",
+      "sessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "ts": "2026-08-10T05:59:57.408Z",
+      "title": "三任务交付：语音提示/命令整合/后台并发",
+      "decisions": [
+        "任务3采用 tmux 后台 headless pi + 四件套隔离方案，用户确认后执行",
+        "扩展命令整合为每扩展≤2个，必须含 help 子命令与参数补全",
+        "旧命令名（/tts、/planclear、/auto:*）直接移除，不保留别名",
+        "任务1用文案区分超时/主动停止 + enter 竞态兜底修复"
+      ],
+      "facts": [
+        "pi 核心无单实例锁，--mode rpc/-p 可 headless 后台运行",
+        "pi-bg.sh 四件套隔离实测零会话、零 memory 写入",
+        "plan_exit 工具在 --continue 恢复会话后仍未注册，遗留待排查",
+        "重启机制：state 文件 action=restart + SIGTERM，wrapper 1秒后自动拉起"
+      ],
+      "prefs": [
+        "用户要求重要方案（如任务3）须确认后才能执行",
+        "用户指令极简（如\"重启\"\"继续\"），期望自主完成全流程后汇报"
+      ],
+      "lessons": [
+        "extensions.test.ts 模块解析失败是环境依赖缺失，非改动问题，test-all.sh 不含它",
+        "plan 白名单禁止管道复合命令，需改用单命令或 read 工具"
+      ],
+      "fullText": "本会话完成三项任务：①pi-voice 回车中断录音显示\"超时\"提示——根因是录音进程 -l 120s 上限与回车竞态（超时退出后 isRecording() 已 false，回车被放行成普通提交），修复为文案区分主动停止/达时长上限，enter handler 加 isTranscribing() 兜底吞回车，52 测试通过；②扩展命令整合：/voice、/auto、/plan 单命令+子命令+help，conflict-check.mjs 新增守门（≤2命令+help 白名单）、AGENTS.md 写入规范、extensions.test.ts 断言同步，全量回归通过；③长任务并发方案：交付 ~/.pi/scripts/pi-bg.sh（start/rpc/prompt/steer/status/log/stop），四件套隔离（--no-session+--no-extensions+只读工具+独立日志）实测零会话零 memory 写入。随后推送 git（a49de6e）并完成重启。遗留：plan_exit 工具 not found（patch-plan-tools.mjs 未覆盖此场景）且确认退出后模型曾停止输出，已记录待排查，兜底 Ctrl+Alt+P//plan。"
+    },
+    {
+      "id": "86181185-cb43-4714-8c5b-6ad48ea5c9be",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T07:05:15.317Z",
+      "title": "plan-mode 模型侧切换工具与内核补丁",
+      "decisions": [
+        "plan_exit 退出必须用户手动确认（ctx.ui.select 阻塞等待）",
+        "选1写内核补丁修复恢复会话 schema，文档说明后续可回退方案2",
+        "todo 提醒降频：仅'有工具操作但未碰 todo'时提醒一次",
+        "接受现状：模型侧切换工具待补丁生效，用户快捷键切换正常"
+      ],
+      "facts": [
+        "admin_restart 曾不重启进程（ctx.shutdown 在 TUI 不退出），已加 process.exit(0) 兜底",
+        "--continue 恢复会话的工具 schema 来自持久化快照，缺重启后新注册工具",
+        "patch-plan-tools.mjs 内核补丁在 prepareNextTurn 刷新 schema，rebuild.sh 自动应用",
+        "plan-mode tool_call 拦截现覆盖 bash/subagent/edit/write"
+      ],
+      "prefs": [
+        "用户指令极简（'先测试''继续'），期望自主完成全流程后汇报",
+        "用户关注提醒频率，倾向低频精准而非每轮打扰"
+      ],
+      "lessons": [
+        "模型只能调用 schema 内工具，判断依据是会话文件 tool_calls 记录（0 次=从未发出）",
+        "30+ 次无效工具调用循环应立即停止，基于代码事实做决定性诊断",
+        "验证进程重启须对比 PID，proot 时钟不可靠"
+      ],
+      "fullText": "本会话完成 plan-mode 扩展的模型侧切换工具：plan_enter（执行模式可见，进入无需确认）/plan_exit（计划模式可见，退出经 ctx.ui.select 用户确认），参考 opencode 权限模型。过程中发现并修复三个问题：①admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程致新代码永不加载（加 process.exit(0) 1500ms 兜底，1e6d75f）；②计划模式只读漏洞——tool_call 拦截只覆盖 bash/subagent，edit/write 无拦截（0116a06 补硬拒绝）；③pi 内核缺陷——--continue 恢复会话的工具 schema 来自持久化旧快照，不含重启后新注册工具，写内核补丁 patch-plan-tools.mjs 在 prepareNextTurn 用 _refreshToolRegistry 刷新（63d0dc6，rebuild.sh 自动应用）。另优化 todo：agent_end 校验仅在本轮有工具操作但未碰 todo 工具时提醒（81cac46）。测试方法：--print 新进程验证功能通过，当前 --continue 会话模型侧调用仍不可用（会话文件 plan_enter tool_calls 记录 0 次），用户接受现状并保留补丁待后续验证。"
+    },
+    {
+      "id": "e3a1d1f9-1cfa-46c4-a993-3a6690641a09",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T07:20:00.717Z",
+      "title": "plan-mode 模型侧切换工具开发排障",
+      "decisions": [
+        "admin_restart 加 process.exit(0) 1500ms 兜底修复 TUI 不退出（1e6d75f）",
+        "plan-mode 拦截扩至 edit/write 补只读漏洞（0116a06）",
+        "写内核补丁 patch-plan-tools.mjs 刷恢复会话工具 schema（63d0dc6）",
+        "todo 提醒降频：仅干活但没碰 todo 才提醒（81cac46）",
+        "接受现状：模型侧切换仅新进程可用，保留补丁，用户侧切换正常",
+        "opencode 无定时提醒，不实现轮次提醒"
+      ],
+      "facts": [
+        "ctx.shutdown() 在 TUI 环境不退出进程，PID 不变是新代码未加载的铁证",
+        "--continue 恢复会话工具 schema 来自持久化快照，与 state.tools 不一致",
+        "会话 jsonl 中 plan_enter 的 tool_calls 记录为 0 = 从未发出调用",
+        "LLM 只能调用 schema 内工具，反复退化为 bash 是工具缺失证据",
+        "opencode 的 todo 无定时提醒，靠每轮注入 context"
+      ],
+      "prefs": [
+        "用户极简指令，期望自主完成全流程后一次性汇报",
+        "问'有/没有'时只答有/没有，不加解释",
+        "对频繁提醒敏感，主动要求降频"
+      ],
+      "lessons": [
+        "测试新代码前必须对比 PID 确认进程真正重启",
+        "重复失败 2-3 次后改用文件证据诊断，勿无效循环",
+        "commit 消息含换行时用 heredoc 避免 bash 拆解"
+      ],
+      "fullText": "本会话完成 plan-mode 扩展模型侧切换工具（plan_enter/plan_exit）开发与排障。功能验证正常（--print 新进程实测进入计划模式、bash 白名单与 edit/write 硬拦截生效、退出确认选择器正常），但 --continue 恢复会话中模型始终无法调用 plan_enter（tool_calls 记录 0 次，30+ 次尝试全部退化为 bash）。排障发现并修复两个真实 bug：①admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 始终 8212）致新代码永不加载，加 process.exit(0) 1500ms 兜底（1e6d75f）；②plan-mode 只读保护不完整，tool_call 拦截新增 edit/write 硬拒绝（0116a06）。另实现 agent_end todo 状态校验提醒并降频（仅干活但没碰 todo 才提醒，81cac46）。写内核补丁 patch-plan-tools.mjs 刷新恢复会话工具 schema（63d0dc6）已注册 rebuild.sh 但实测未生效。最终接受现状：用户侧 Ctrl+Alt+P//plan 切换完全正常，模型侧仅新进程可用，已写入文档。"
+    }
+  ]
+}

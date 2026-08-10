@@ -43,14 +43,19 @@ list_pi_bins() {
     command -v pi 2>/dev/null || true
     ls "$HOME/.local/share/pi-node"/*/bin/pi 2>/dev/null || true
     ls "$HOME/.nvm/versions/node"/*/bin/pi 2>/dev/null || true
-    echo /usr/local/bin/pi /usr/bin/pi
+    echo /usr/local/bin/pi
+    echo /usr/bin/pi
     [ -d /data/data/com.termux ] && echo /data/data/com.termux/files/usr/bin/pi
   } | while read -r p; do
     [ -n "$p" ] || continue
     if [ -L "$p" ] || [ -f "$p" ]; then
-      readlink -f "$p" 2>/dev/null || echo "$p"
+      # 关键: 输出原始路径（保留 symlink 本身），
+      # 用 readlink -f 解析后的真实路径做去重 key。
+      # 若直接输出解析结果，install_one 拿到的将是真实文件（如 dist/cli.js），
+      # readlink 备份会失败报"不是 symlink，无法备份"。
+      echo "$p|$(readlink -f "$p" 2>/dev/null || echo "$p")"
     fi
-  done | sort -u
+  done | sort -u -t'|' -k2 | cut -d'|' -f1
 }
 
 # ── 判断指定 pi 是否已是我们的 wrapper（幂等检测）──

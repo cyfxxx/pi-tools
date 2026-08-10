@@ -53,8 +53,10 @@ agent/models.json
 # ctx-lite 运行时数据（已并入 pi-memory）
 ctx-lite/
 
-# pi-memory 运行时数据（笔记+记忆+摘要+检查点）
-memory/
+# pi-memory 数据：笔记+记忆+摘要+检查点（已确认无密钥，入库备份）
+# 排除项：原始对话提取/临时提取（含对话全文，可能含敏感内容如 PAT 明文）
+memory/extract-sessions/
+memory/pending-extracts/
 agent/models-store.json
 
 
