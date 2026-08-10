@@ -25,8 +25,8 @@ import { formatPlanMessageLine } from "./view.ts";
 import { registerTodoTool, registerTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "todo", "web_search", "fetch_url", "subagent"];
-const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
+const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent", "plan_enter"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
   return m.role === "assistant" && Array.isArray(m.content);
@@ -231,6 +231,88 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 
   registerTodoTool(pi);
   registerTodosCommand(pi);
+
+  // 模型侧计划模式切换工具（参考 opencode plan_enter/plan_exit 权限设计）：
+  // plan_enter 仅执行模式白名单可见（模型可主动进入只读探索）；
+  // plan_exit 仅计划模式白名单可见（模型探索完可主动退出恢复写权限）。
+  // 与用户侧 /plan、Ctrl+Alt+P 等价，但由模型在对话中主动触发。
+  pi.registerTool({
+    name: "plan_enter",
+    label: "进入计划模式",
+    description:
+      "进入计划模式（只读探索）：工具集切换为只读白名单（无 edit/write，bash 仅白名单命令），可安全调研代码库/网络资料后制定计划。已在计划模式时无操作。",
+    promptSnippet: "进入计划模式（只读探索）",
+    promptGuidelines: [
+      "适合需要先安全调研再动手的复杂任务：进入计划模式后用 read/bash/grep 探索代码、web_search/fetch_url 查资料、subagent(agent=scout) 并行调研，再用 todo 建立计划步骤。",
+      "计划完成且用户同意后，调用 plan_exit 退出计划模式恢复编辑权限。",
+    ],
+    parameters: { type: "object", properties: {}, required: [] },
+    async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
+      if (planModeEnabled) {
+        return { content: [{ type: "text" as const, text: "已在计划模式（只读）。" }], details: null };
+      }
+      planModeEnabled = true;
+      executionMode = false;
+      planModeFullInjected = false;
+      resetState();
+      planPresented = false;
+      planDir = null;
+      qaMessages = [];
+      knownTodoHash = 0;
+      pi.setActiveTools(PLAN_MODE_TOOLS);
+      ctx.ui.notify(`规划模式已启用（模型主动）。工具: ${PLAN_MODE_TOOLS.join(", ")}`);
+      updateStatus(ctx);
+      return {
+        content: [{ type: "text" as const, text: `已进入计划模式（只读）。可用工具: ${PLAN_MODE_TOOLS.join(", ")}。探索完成后可调用 plan_exit 退出。` }],
+        details: null,
+      };
+    },
+  });
+
+  pi.registerTool({
+    name: "plan_exit",
+    label: "退出计划模式",
+    description:
+      "请求退出计划模式，恢复执行模式（可编辑文件、完整工具集）。计划任务保留（/todos 查看，/planresume 可继续执行）。退出需用户手动确认：调用后系统弹出确认选择器，用户确认后才生效；用户取消则保持计划模式。不在计划模式时无操作。",
+    promptSnippet: "退出计划模式（需用户确认）",
+    promptGuidelines: ["退出前先向用户说明计划完成情况与后续执行意向；调用本工具后等待用户确认，用户取消则继续计划模式。"],
+    parameters: { type: "object", properties: {}, required: [] },
+    async execute(_toolCallId, _params, _signal, _onUpdate, ctx) {
+      if (!planModeEnabled) {
+        return { content: [{ type: "text" as const, text: "不在计划模式。" }], details: null };
+      }
+      // 退出必须用户手动确认（参考 opencode plan_exit 的用户询问语义）
+      const choice = await ctx.ui.select("模型请求退出计划模式（恢复编辑权限）？", ["确认退出", "取消（继续计划模式）"]);
+      if (choice !== "确认退出") {
+        ctx.ui.notify("已取消退出计划模式，保持只读。");
+        return {
+          content: [{ type: "text" as const, text: "用户取消了退出请求，继续保持计划模式（只读）。" }],
+          details: null,
+        };
+      }
+      planModeEnabled = false;
+      executionMode = true;
+      planModeFullInjected = false;
+      planPresented = false;
+      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      persistState();
+      ctx.ui.notify("规划模式已禁用（用户确认）。完整权限已恢复。");
+      updateStatus(ctx);
+      const state = getState();
+      const count = state.tasks.filter((t) => t.status !== "deleted").length;
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: count > 0
+              ? `用户已确认退出计划模式，恢复完整权限。保留 ${count} 项计划任务（/todos 查看，/planresume 继续执行）。`
+              : "用户已确认退出计划模式，恢复完整权限。",
+          },
+        ],
+        details: null,
+      };
+    },
+  });
 
   pi.registerCommand("plan", {
     description: "切换规划模式（只读探索）",
@@ -451,10 +533,11 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 你处于规划模式 - 一种用于安全代码分析的只读探索模式。
 
 限制:
-- 只能使用: read, bash, grep, glob, todo, web_search, fetch_url, subagent
+- 只能使用: read, bash, grep, glob, todo, web_search, fetch_url, subagent, plan_exit
 - 不能使用: edit, write（文件修改已禁用）
 - Bash 命令仅接受白名单内的单条只读命令：cat/head/tail/less/more/grep/find/ls/lsblk/pwd/echo/printf/wc/sort/uniq/diff/file/stat/du/df/tree/which/whereis/type/uname/whoami/id/date/cal/uptime/ps/top/htop/free/awk/jq/rg/fd/bat/eza/sed -n、git status/log/diff/show/branch/remote/config、git ls-*、npm list/ls/view/info/search/outdated/audit、yarn list/info/why/audit、curl 仅打印、wget -O -、node/python --version 等。
 - web_search 可搜索网络资料辅助调研；fetch_url 可拉取远程文档/API 数据（只读 HTTP GET）；subagent 仅允许 agent="scout"（只读调研子代理），worker/reviewer 与未指定 agent 均不可用（未指定会落到可写 general-purpose）。
+- 探索完成且用户同意后，可调用 plan_exit 请求退出计划模式（系统会弹确认选择器，用户确认后生效；取消则保持只读）。
 - 允许 cd <目录> && <一条白名单只读命令> 与命令尾部的 2>/dev/null；其余复合一律禁止：多命令分号 ;、管道 |、重定向至文件。
 - 禁止: git clone、curl -o/-O（落盘）、写入类命令。
 - 远程仓库分析请用 git ls-remote / git log / git status（有白名单），不要 clone。
