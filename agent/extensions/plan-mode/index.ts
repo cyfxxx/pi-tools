@@ -1004,6 +1004,22 @@ ${todoList}
 
   pi.on("agent_start", async () => {
     todoOverlay?.hideCompletedTasksFromPreviousTurn();
+    // 每轮开始前按模式强制刷新工具集：--continue 恢复会话的工具快照可能不含
+    // 新注册工具（plan_enter/plan_exit），本轮 snapshot 已定、下一轮生效。
+    // 计划模式用白名单；执行/普通模式用全量（含全部扩展工具）。
+    try {
+      if (planModeEnabled) {
+        pi.setActiveTools(PLAN_MODE_TOOLS);
+      } else {
+        const active = pi.getActiveTools();
+        if (active.length === 0 || !active.includes("plan_enter")) {
+          const all = pi.getAllTools().map((t) => t.name);
+          pi.setActiveTools(all);
+        }
+      }
+    } catch {
+      // runtime 未激活时跳过
+    }
   });
 
   // 工具快照重建（普通会话）：扩展加载即用全量工具集刷新会话 tools 快照，
