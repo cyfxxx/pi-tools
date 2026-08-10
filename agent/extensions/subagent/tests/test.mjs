@@ -5,7 +5,7 @@ import assert from "node:assert";
 
 const mod = await import(new URL("../index.ts", import.meta.url).href);
 
-const { formatTokens, formatUsageStats, isFailedResult, getFinalOutput, getResultOutput, truncateParallelOutput, mapWithConcurrencyLimit } = mod;
+const { formatTokens, formatUsageStats, isFailedResult, getFinalOutput, getResultOutput, truncateParallelOutput, mapWithConcurrencyLimit, isLocalProvider } = mod;
 
 let passed = 0;
 let failed = 0;
@@ -139,6 +139,32 @@ test("mapWithConcurrencyLimit 并发控制 -> 峰值不超过 limit", async () =
 		},
 	);
 	assert.ok(peak <= 2, `peak ${peak} should be <= 2`);
+});
+
+// ---------- isLocalProvider (4) ----------
+test("isLocalProvider 本地推理服务判真", () => {
+	for (const p of ["ollama", "Ollama", "localhost:11434", "http://127.0.0.1:11434", "lmstudio", "vllm", "koboldcpp"]) {
+		assert.strictEqual(isLocalProvider(p), true, `${p} 应为本地`);
+	}
+});
+
+test("isLocalProvider 云端 provider 判假", () => {
+	for (const p of ["deepseek", "openai", "anthropic", "google", "claude", "gemini", undefined]) {
+		assert.strictEqual(isLocalProvider(p), false, `${p} 应为云端`);
+	}
+});
+
+test("isLocalProvider 大小写不敏感", () => {
+	assert.strictEqual(isLocalProvider("OLLAMA"), true);
+	assert.strictEqual(isLocalProvider("DeepSeek"), false);
+});
+
+test("isLocalProvider 边界：local 独立词才命中，子串不误伤", () => {
+	// 'local' 需作为独立词（\blocal\b）
+	assert.strictEqual(isLocalProvider("local"), true);
+	assert.strictEqual(isLocalProvider("mycloud"), false);
+	// 'localhost' 子串命中（域名含 localhost 视为本地）
+	assert.strictEqual(isLocalProvider("mycloud.localhost.example"), true);
 });
 test("mapWithConcurrencyLimit 结果保序即使完成顺序乱", async () => {
 	const out = await mapWithConcurrencyLimit(

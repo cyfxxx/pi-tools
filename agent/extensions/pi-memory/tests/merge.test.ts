@@ -62,6 +62,67 @@ describe('merge: decideMerge four actions', () => {
     expect(decision.targetId).toBe(existing.id)
   })
 
+  it('contradiction: 喜欢→不喜欢 supersedes old instead of merging', async () => {
+    const { decideMerge } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: '咖啡偏好',
+      category: 'preference',
+      content: '用户喜欢咖啡，每天一杯',
+      tags: ['偏好'],
+      confidence: 0.9,
+    })
+    const candidate = makeEntry({
+      title: '咖啡偏好更新',
+      category: 'preference',
+      content: '用户不喜欢咖啡，改喝茶',
+      tags: ['偏好'],
+      confidence: 0.95,
+    })
+    const decision = await decideMerge([existing], candidate)
+    expect(decision.action).toBe('ADD')
+    expect(existing.supersededBy).toBe(candidate.id)
+    expect(existing.deleted).toBe(true)
+    expect(decision.note).toContain('矛盾取代')
+  })
+
+  it('contradiction: 启用→禁用 supersedes (双向词对)', async () => {
+    const { decideMerge } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: 'HTTPS 配置',
+      category: 'fact',
+      content: '服务启用 HTTPS 访问',
+      tags: ['服务'],
+    })
+    const candidate = makeEntry({
+      title: 'HTTPS 新配置',
+      category: 'fact',
+      content: '服务关闭 HTTPS 访问',
+      tags: ['服务'],
+      confidence: 0.95,
+    })
+    const decision = await decideMerge([existing], candidate)
+    expect(decision.action).toBe('ADD')
+    expect(existing.deleted).toBe(true)
+  })
+
+  it('no false positive: 对立词命中但主体不重叠 → 正常 ADD', async () => {
+    const { decideMerge } = await import('../merge.ts')
+    const existing = makeEntry({ title: 'x', content: '项目支持 macOS 平台' })
+    const candidate = makeEntry({ title: 'y', content: '团队反对加班文化' })
+    const decision = await decideMerge([existing], candidate)
+    expect(decision.action).toBe('ADD')
+    expect(existing.deleted).toBeFalsy()
+  })
+
+  it('detectContradiction 直接单测', async () => {
+    const { detectContradiction } = await import('../merge.ts')
+    const mk = (c: string) => makeEntry({ content: c })
+    expect(detectContradiction(mk('用户喜欢咖啡'), mk('用户不喜欢咖啡'))).toBe(true)
+    expect(detectContradiction(mk('服务启用 HTTPS'), mk('服务关闭 HTTPS'))).toBe(true)
+    expect(detectContradiction(mk('项目支持 macOS'), mk('团队反对加班'))).toBe(false)
+    expect(detectContradiction(mk('今天天气很好'), mk('今天下雨了'))).toBe(false)
+  })
+
   it('conflict resolution: ADD + supersede conflicting manual-source old entry', async () => {
     const { decideMerge } = await import('../merge.ts')
     const existing = makeEntry({

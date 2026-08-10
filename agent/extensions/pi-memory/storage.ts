@@ -50,6 +50,52 @@ function writeJSONAtomic(file: string, data: unknown) {
   renameSync(tmp, file)
 }
 
+// ── 敏感信息脱敏（写时净化）──────────────────────────────────
+// 所有落盘文本（entries/summaries/notes）统一过 scrubSecrets，
+// 防止密钥形态（GitHub PAT/API key/JWT 等）进入持久存储。
+// 设计：形态匹配保守（长后缀+前缀限定），避免误伤 UUID 等正常文本；
+// 替换为占位符而非拒绝写入，保证记忆流程不中断。
+const SECRET_PATTERNS: Array<[RegExp, string]> = [
+  // GitHub token（ghp_ 个人 / gho_ OAuth / ghu_ 用户级 / ghs_ 服务器 / ghr_ 刷新 / github_pat_ 精细）
+  [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, '[REDACTED:github-token]'],
+  [/\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, '[REDACTED:github-token]'],
+  // OpenAI/DeepSeek 风格 API key（允许中缀连字符/下划线，如 sk-proj-xxx）
+  [/\bsk-[A-Za-z0-9_-]{15,}\b/g, '[REDACTED:api-key]'],
+  // AWS Access Key ID
+  [/\bAKIA[0-9A-Z]{16}\b/g, '[REDACTED:aws-key]'],
+  // JWT（eyJ 开头三段点分隔）
+  [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, '[REDACTED:jwt]'],
+  // Authorization Bearer 头
+  [/\bBearer\s+[A-Za-z0-9._-]{16,}\b/gi, '[REDACTED:bearer-token]'],
+]
+
+export function scrubSecrets(text: string): string {
+  let out = text
+  for (const [re, rep] of SECRET_PATTERNS) out = out.replace(re, rep)
+  return out
+}
+
+function sanitizeEntry(e: MemoryEntry): MemoryEntry {
+  return {
+    ...e,
+    title: scrubSecrets(e.title),
+    content: scrubSecrets(e.content),
+    tags: e.tags.map(t => scrubSecrets(t)),
+  }
+}
+
+function sanitizeSummary(s: SummaryEntry): SummaryEntry {
+  return {
+    ...s,
+    title: scrubSecrets(s.title),
+    fullText: scrubSecrets(s.fullText),
+    decisions: s.decisions.map(x => scrubSecrets(x)),
+    facts: s.facts.map(x => scrubSecrets(x)),
+    prefs: s.prefs.map(x => scrubSecrets(x)),
+    lessons: s.lessons.map(x => scrubSecrets(x)),
+  }
+}
+
 // ── L1 长期记忆 ──────────────────────────────────────────────
 
 export function loadEntries(): MemoryEntry[] {
@@ -68,7 +114,7 @@ function migrateEntry(e: MemoryEntry): MemoryEntry {
 }
 
 export function saveEntries(entries: MemoryEntry[]) {
-  writeJSONAtomic(ENTRIES_FILE, { version: STORE_VERSION, entries } satisfies MemoryStore)
+  writeJSONAtomic(ENTRIES_FILE, { version: STORE_VERSION, entries: entries.map(sanitizeEntry) } satisfies MemoryStore)
 }
 
 export function activeEntries(entries: MemoryEntry[]): MemoryEntry[] {
@@ -90,7 +136,7 @@ export function saveSummaries(summaries: SummaryEntry[]) {
 
 export function appendSummary(summary: SummaryEntry): SummaryEntry[] {
   const all = loadSummaries()
-  all.push(summary)
+  all.push(sanitizeSummary(summary))
   const trimmed = all.length > MAX_SUMMARIES ? all.slice(-MAX_SUMMARIES) : all
   saveSummaries(trimmed)
   return trimmed
@@ -121,7 +167,11 @@ export function loadNotes(): Record<string, string> {
 }
 
 export function saveNotes(notes: Record<string, string>) {
-  writeJSONAtomic(NOTES_FILE, notes)
+  const scrubbed: Record<string, string> = {}
+  for (const [k, v] of Object.entries(notes)) {
+    scrubbed[k] = k.startsWith('__ttl_') ? v : scrubSecrets(v)
+  }
+  writeJSONAtomic(NOTES_FILE, scrubbed)
 }
 
 // ctx-lite 数据首次迁移：notes.json + checkpoints 复制到新目录
