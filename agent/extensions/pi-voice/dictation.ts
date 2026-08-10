@@ -49,6 +49,24 @@ export interface Dictation {
   isTranscribing(): boolean
 }
 
+/**
+ * 转码带重试：MediaRecorder 在 -q/退出后仍会写 m4a 尾部（moov atom），
+ * waitForFileStable 判定大小稳定后 moov 可能尚未写完，立即转码报
+ * "moov atom not found"。失败后等 1s 重试（最多 3 次）兜底。
+ */
+async function convertWithRetry(
+  deps: RecordingDeps,
+  cfg: VoiceConfig,
+  m4a: string,
+): Promise<string | null> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const wav = await deps.convertToWav(cfg, m4a)
+    if (wav) return wav
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 1000))
+  }
+  return null
+}
+
 export function createDictation(
   cfg: VoiceConfig,
   deps: RecordingDeps,
@@ -93,14 +111,20 @@ export function createDictation(
             // 等 2s 再拉起新进程，避免用户反复手动触发同一故障。
             if (!retried) {
               retried = true
-              await new Promise((r2) => setTimeout(r2, 2000))
+              // MediaRecorderService 释放慢：pkill/-q 后服务侧可能仍需数秒才完全
+              // 释放麦克风，立即重试会再次假成功（stdout 显示 Recording started 但
+              // 无文件）。等 3s 再拉起新进程。
+              await new Promise((r2) => setTimeout(r2, 3000))
               if (expectGen !== gen || currentFile !== null || busy) return
               spawnRecorder(expectGen)
               return
             }
             const detailTxt = detail?.trim() ? `（termux-api 输出：${detail.trim().slice(0, 200)}）` : ''
+            const serviceAnomaly = detail?.includes('Recording started') && detail?.includes('Max Duration')
             cb.onAutoComplete({
-              message: `录音启动失败：录音进程已退出且未生成音频${detailTxt}（可能已被其他录音占用）。请先执行 /voice stop 停止现有录音，或检查麦克风权限`,
+              message: serviceAnomaly
+                ? `录音启动失败：termux-api 响应异常（接受请求但未写入音频文件）${detailTxt}。已自动重试，若仍失败请稍候再试`
+                : `录音启动失败：录音进程已退出且未生成音频${detailTxt}（可能已被其他录音占用）。请先执行 /voice stop 停止现有录音，或检查麦克风权限`,
               text: '',
               language: '',
             })
@@ -171,7 +195,7 @@ export function createDictation(
       if (!stable) {
         return { message: `${prefix}录音文件未生成或未写入完成（录音可能已被占用中断）`, text: '', language: '' }
       }
-      const wav = await deps.convertToWav(cfg, file)
+      const wav = await convertWithRetry(deps, cfg, file)
       if (!wav) return { message: `${prefix}m4a 转 wav 失败，请确认 ffmpeg 已安装`, text: '', language: '' }
       const out = await deps.transcribe(cfg, wav)
       if (out.error) return { message: `${prefix}${out.error}`, text: '', language: '' }
