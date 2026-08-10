@@ -3,7 +3,7 @@
  * 依赖注入 execFile/spawn/fetch 便于 vitest 独立测试；不依赖 pi API。
  */
 
-import { execFile, spawn, type ChildProcess } from 'node:child_process'
+import { execFile, spawn, execFileSync, type ChildProcess } from 'node:child_process'
 import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoiceConfig } from './config'
@@ -59,19 +59,68 @@ export function runCommand(
  */
 export function startRecording(
   cfg: VoiceConfig,
-  onExit: (code: number) => void,
+  onExit: (code: number, stderr?: string) => void,
 ): { child: ChildProcess; file: string } {
+  // 防御性清理：Termux:API 的 MediaRecorder 是单实例。若上次录音未正常释放
+  // （-q 未生效 / 进程残留 / 自动超时转写后立即重录），新实例会启动即退出
+  // （code 0 且无文件），表现为“录音启动失败：已退出且未生成音频”。
+  // 启动前清理残留实例并短暂等待服务释放；调用方已拦截进行中的录音，此处不会误杀。
+  try {
+    execFileSync('pkill', ['-f', 'termux-microphone-record'])
+  } catch {
+    // 无残留进程或 pkill 不可用：忽略
+  }
+  try {
+    execFileSync('sleep', ['0.5'])
+  } catch {
+    // 非 Unix 环境：忽略
+  }
   mkdirSync(cfg.tmpDir, { recursive: true })
   const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}.m4a`)
   const limit = cfg.maxSeconds > 0 ? cfg.maxSeconds : 0
   const args = ['-e', 'aac', '-f', file]
   if (limit > 0) args.push('-l', String(limit))
-  const child = spawn(cfg.micBin, args, { stdio: 'ignore' })
+  // stdio: 同时捕获 stdout+stderr（termux-microphone-record 的错误信息如
+  // "Recording already in progress!" 打到 stdout；stderr 也可能有内容），
+  // 报错时可向用户展示真实原因。
+  const child = spawn(cfg.micBin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+  let errBuf = ''
+  let outBuf = ''
+  child.stdout?.on('data', (d: Buffer) => {
+    outBuf = (outBuf + d.toString()).slice(-500)
+  })
+  child.stderr?.on('data', (d: Buffer) => {
+    errBuf = (errBuf + d.toString()).slice(-500)
+  })
+  const capture = (): string | undefined => {
+    const combined = [errBuf, outBuf].map(s => s.trim()).filter(Boolean).join(' | ')
+    return combined || undefined
+  }
   // spawn 失败（如二进制缺失 ENOENT）：必须监听 error，否则 Node 抛 unhandled error；
   // 用退出码 -2 标记启动失败（区别于运行中退出），由状态机按非 0 分流报错。
-  child.on('error', () => onExit(-2))
-  child.on('exit', (code) => onExit(code ?? -1))
+  child.on('error', () => onExit(-2, capture()))
+  child.on('exit', (code) => onExit(code ?? -1, capture()))
   return { child, file }
+}
+
+/**
+ * 检测 wav 音量水平（ffmpeg volumedetect）。转写为空时用于区分
+ * “麦克风未采集到声音”与“有声音但未识别出”。解析失败返回 null。
+ */
+export async function detectAudioLevel(
+  wavPath: string,
+): Promise<{ maxDb: number; meanDb: number } | null> {
+  const r = await runCommand(
+    'ffmpeg',
+    ['-i', wavPath, '-af', 'volumedetect', '-f', 'null', 'null'],
+    { timeoutMs: 30000 },
+  )
+  if (r.code !== 0) return null
+  const maxStr = /max_volume: ([-\.\d]+) dB/.exec(r.stderr)?.[1]
+  const meanStr = /mean_volume: ([-\.\d]+) dB/.exec(r.stderr)?.[1]
+  const maxDb = maxStr ? parseFloat(maxStr) : NaN
+  if (Number.isNaN(maxDb)) return null
+  return { maxDb, meanDb: meanStr ? parseFloat(meanStr) : -Infinity }
 }
 
 /** 停止录音并返回 m4a 文件路径；由调用方记录文件名。 */
@@ -97,6 +146,44 @@ export function fileExists(m4a: string): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * 等待 m4a 文件出现且大小稳定。
+ * termux-microphone-record（Termux:API MediaRecorder）的 bash 脚本退出（exit 0）后，
+ * Android 侧仍会继续写入文件（m4a 的 moov atom 在文件尾部），立即转码会报
+ * "moov atom not found"；文件也可能延迟创建（启动瞬间为 0 字节）。
+ * 连续 stableSamples 次采样大小一致（且 > 0）视为写入完成。
+ * 返回 true = 文件就绪；false = 超时（未创建或一直未稳定）。
+ */
+export async function waitForFileStable(
+  m4a: string,
+  opts: { pollMs?: number; stableSamples?: number; maxWaitMs?: number } = {},
+): Promise<boolean> {
+  const { pollMs = 300, stableSamples = 3, maxWaitMs = 15000 } = opts
+  const deadline = Date.now() + maxWaitMs
+  let lastSize = -1
+  let stable = 0
+  while (Date.now() < deadline) {
+    let size = 0
+    try {
+      size = statSync(m4a).size
+    } catch {
+      size = 0
+    }
+    if (size > 0) {
+      if (size === lastSize) {
+        stable += 1
+      } else {
+        // 首个有效样本也计一次疑似稳定：文件已写完时无需多等一个轮询周期
+        stable = lastSize === -1 ? 1 : 0
+      }
+      lastSize = size
+      if (stable >= stableSamples) return true
+    }
+    await new Promise((r) => setTimeout(r, pollMs))
+  }
+  return false
 }
 
 /** 清理录音临时目录中超过 staleMs 的残留文件（默认 24h，避免误删进行中录音）。返回清理数。 */

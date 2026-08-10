@@ -34,7 +34,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 ## 关键约定
 
 - **扩展注册**：pi 0.83+ 从 `~/.pi/agent/extensions/` 目录自动发现扩展（扫描含 index.ts 的子目录）；settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制包含 / `-` 强制排除，裸路径条目无效），不再承担注册职责；新扩展须同步目录 index.ts、extensions/tsconfig.json include、tests/conflict-check.mjs 监听者清单、extensions.test.ts
-- **扩展命令整合规范**（conflict-check.mjs 第 2/2b 项守门）：同一扩展的 slash 命令必须整合为 ≤2 个，具体功能用子命令参数指定（终端程序风格），并支持 `help`/`-h`/`--help` 子命令输出用法；命令 description 应包含子命令清单与 `/xxx help` 提示（这是 `/` 菜单唯一展示面）；子命令补全用 `getArgumentCompletions`。当前命令面：`/voice`、`/auto`、`/schedule`、`/plan`、`/memory`、`/usage-diag`（子命令清单见各扩展 README）。旧命令名（/tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart）已移除，新代码禁止引用。新增命令若未同步 conflict-check.mjs 清单会直接报错
+- **扩展命令整合规范**（conflict-check.mjs 第 2/2b 项守门）：同一扩展的 slash 命令必须整合为 ≤2 个，具体功能用子命令参数指定（终端程序风格），并支持 `help`/`-h`/`--help` 子命令输出用法；命令 description 用简短功能描述并附 `/xxx help` 提示（完整子命令清单由 help 输出与 `getArgumentCompletions` 补全承担，不再写入 description）；子命令补全用 `getArgumentCompletions`。当前命令面：`/voice`、`/auto`、`/schedule`、`/plan`、`/memory`、`/usage-diag`（子命令清单见各扩展 README）。旧命令名（/tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart）已移除，新代码禁止引用。新增命令若未同步 conflict-check.mjs 清单会直接报错
 - **缓存友好（跨扩展）**：system prompt 注入禁止时间戳与精确数值；压力提示按档位（<75% 不注入、≥75%/≥90% 固定文案）；共享估算统一用 `lib/context-budget.ts` 的 `estimateTokens`；机制细节见 pi-context README
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **旧扩展名残留**：pi-web-toolkit / pi-router / pi-admin / pi-scheduler 均已融合或更名，新代码禁止引用

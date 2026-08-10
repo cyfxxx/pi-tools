@@ -326,7 +326,25 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   ].join("\n")
 
   pi.registerCommand("plan", {
-    description: "计划模式：enter/exit/clear/resume/view/todos/help（/plan help 查看用法）",
+    description: "计划模式：只读探索与任务跟踪（/plan help 查看用法）",
+    getArgumentCompletions: (prefix) => {
+      const first = (prefix.trim().split(/\s+/)[0] ?? "").toLowerCase()
+      if (first === "view") {
+        return [
+          { value: "--diff", label: "view --diff", description: "显示与上一版差异" },
+          { value: "--qa", label: "view --qa", description: "查看规划讨论问答历史" },
+        ]
+      }
+      return [
+        { value: "enter", label: "enter", description: "进入规划模式（只读探索）" },
+        { value: "exit", label: "exit", description: "退出规划模式（保留任务）" },
+        { value: "clear", label: "clear", description: "清空所有计划任务" },
+        { value: "resume", label: "resume", description: "恢复执行模式并继续计划" },
+        { value: "view", label: "view", description: "查看计划全文（--diff/--qa）" },
+        { value: "todos", label: "todos", description: "按状态分组显示计划任务" },
+        { value: "help", label: "help", description: "显示用法" },
+      ]
+    },
     handler: async (args, ctx) => {
       const [sub, ...rest] = args.trim().split(/\s+/)
       const restArgs = rest.join(" ")

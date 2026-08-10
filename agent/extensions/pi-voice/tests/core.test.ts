@@ -1,4 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import { existsSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   cleanForSpeech,
   extractAssistantText,
@@ -7,6 +11,7 @@ import {
   isSpeechWorthy,
   ensureWhisperService,
   createTtsDispatcher,
+  detectAudioLevel,
 } from '../core'
 import { loadConfig, DEFAULTS, type VoiceConfig } from '../config'
 
@@ -269,5 +274,50 @@ describe('ensureWhisperService', () => {
     })
     expect(r.ok).toBe(false)
     if (r.ok === false) expect(r.error).toContain('仍不可达')
+  })
+})
+
+describe('detectAudioLevel（真实 ffmpeg 集成）', () => {
+  const hasFfmpeg = (() => {
+    try {
+      execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' })
+      return true
+    } catch {
+      return false
+    }
+  })()
+
+  const genWav = (filter: string): string => {
+    const wav = join(tmpdir(), `pi-voice-level-${Date.now()}-${Math.random().toString(36).slice(2)}.wav`)
+    // 必须限制时长：anullsrc 等源无 duration 会无限生成直到磁盘耗尽
+    execFileSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', filter, '-t', '1', '-ar', '16000', '-ac', '1', wav], { stdio: 'ignore', timeout: 30000 })
+    return wav
+  }
+
+  it.runIf(hasFfmpeg)('有声音频音量高于阈值', async () => {
+    const wav = genWav('sine=frequency=440:duration=1')
+    try {
+      const lv = await detectAudioLevel(wav)
+      expect(lv).not.toBeNull()
+      expect(lv!.maxDb).toBeGreaterThan(-45)
+    } finally {
+      if (existsSync(wav)) rmSync(wav)
+    }
+  })
+
+  it.runIf(hasFfmpeg)('静音音频判定为无信号', async () => {
+    const wav = genWav('anullsrc=r=16000:cl=mono')
+    try {
+      const lv = await detectAudioLevel(wav)
+      expect(lv).not.toBeNull()
+      expect(lv!.maxDb).toBeLessThan(-45)
+    } finally {
+      if (existsSync(wav)) rmSync(wav)
+    }
+  })
+
+  it.runIf(hasFfmpeg)('不存在文件返回 null', async () => {
+    const lv = await detectAudioLevel('/tmp/pi-voice-does-not-exist.wav')
+    expect(lv).toBeNull()
   })
 })

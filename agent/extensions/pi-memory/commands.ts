@@ -17,16 +17,37 @@ import { searchEntries } from './retrieval.ts'
 const CATEGORY_HINT =
   '类别: fact|preference|habit|procedure|reference'
 
+const MEMORY_USAGE = [
+  '/memory search <关键词> [--category=类别] [--limit=N]  搜索记忆库',
+  '/memory stats                                        记忆库统计',
+  '/memory summary [N]                                  最近 N 条会话摘要时间线',
+  '/memory prune                                        清理低价值记忆（需确认）',
+  '/memory cleanup [--keep=N] [--dry-run]                清理过期笔记/检查点，--all 清空',
+  '/memory help                                         显示本帮助',
+].join('\n')
+
 export function registerCommands(pi: ExtensionAPI): void {
-  // ── /memory（统一命令，子命令: search|stats|summary|prune|cleanup） ──
+  // ── /memory（统一命令，子命令: search|stats|summary|prune|cleanup|help） ──
   pi.registerCommand('memory', {
     description:
-      '管理持久记忆库。子命令: search <关键词> [--category=] [--limit=N] 搜索；' +
-      'stats 统计；summary [N] 会话摘要时间线；prune 清理低价值记忆；' +
-      'cleanup [--keep=N] [--dry-run] 清理过期笔记/检查点，--all 清除全部。',
+      '持久记忆：搜索/统计/清理（/memory help 查看用法）',
+    getArgumentCompletions: () => [
+      { value: 'search', label: 'search', description: '搜索记忆（关键词 + 过滤）' },
+      { value: 'stats', label: 'stats', description: '记忆库统计' },
+      { value: 'summary', label: 'summary', description: '会话摘要时间线' },
+      { value: 'prune', label: 'prune', description: '清理低价值记忆' },
+      { value: 'cleanup', label: 'cleanup', description: '清理过期笔记/检查点' },
+      { value: 'help', label: 'help', description: '显示用法' },
+    ],
     handler: async (args: string, ctx) => {
       const parts = args.trim().split(/\s+/)
       const subcmd = parts[0]?.toLowerCase() || 'search'
+
+      // ── help ──
+      if (subcmd === 'help' || subcmd === '-h' || subcmd === '--help') {
+        ctx.ui.notify(MEMORY_USAGE, 'info')
+        return
+      }
 
       // ── search ──
       if (subcmd === 'search') {
@@ -178,10 +199,7 @@ export function registerCommands(pi: ExtensionAPI): void {
         return
       }
 
-      ctx.ui.notify(
-        `未知子命令: ${subcmd}\n用法: /memory <search|stats|summary|prune|cleanup> [args...]`,
-        'error',
-      )
+      ctx.ui.notify(`未知子命令: ${subcmd}\n\n${MEMORY_USAGE}`, 'error')
     },
   })
 }

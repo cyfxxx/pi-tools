@@ -124,6 +124,7 @@ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18766/health   # 401
 
 ## Troubleshooting
 
+- **“m4a 转 wav 失败”/“录音启动失败：已退出且未生成音频”（ffmpeg 已装仍报错）**：Termux:API 的 MediaRecorder 在 bash 脚本退出（exit 0）后仍会继续写文件尾部（m4a 的 moov atom），立即转码会报 `moov atom not found`；启动瞬间文件也可能尚未创建（0 字节）。扩展已内置等待逻辑（`waitForFileStable`：轮询文件大小连续 3 次采样一致才判定就绪，最长 15s），正常情况下无需干预；若频繁出现，检查 `/storage/emulated/0/pi-voice/` 是否可写、是否有残留录音进程占用麦克风（`termux-microphone-record -q`）。
 - **重启后“只能开不能关”、反复显示录音中**：pi 重启会丢失录音状态，若重启前正在录音，遗留的孤儿录音进程会占用麦克风（termux-microphone-record 单实例），新录音立即退出且退出码为 0。新版扩展启动时自动执行 `-q` 清理孤儿进程；若仍占用，手动执行 `termux-microphone-record -q` 后重试。
 - **录音权限**：`/voice doctor` 显示“麦克风权限未授予” → Android 设置 → 应用 → Termux:API → 麦克风 → 允许。
 - **转写服务不可达**：`~/.pi/scripts/pi-whisper.sh status`；未运行则执行 `start`。

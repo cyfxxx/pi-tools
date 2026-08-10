@@ -2,36 +2,6 @@
   "version": 1,
   "summaries": [
     {
-      "id": "ee805f86-b40e-421e-87aa-e774a172bfe2",
-      "sessionId": "019fc7d4-a366-767a-8635-7d49d1777371",
-      "ts": "2026-08-03T13:35:39.011Z",
-      "title": "极简确认对话",
-      "decisions": [],
-      "facts": [
-        "用户发出'回复 OK 即可，不要调用工具'指令，助手照做未调用工具"
-      ],
-      "prefs": [
-        "用户偏好极简指令，期望助手仅回复 OK 不调用工具"
-      ],
-      "lessons": [],
-      "fullText": "本会话仅有一轮极简确认对话：用户指令'回复 OK 即可，不要调用工具'，助手回复 OK。无实质任务内容。该行为与用户已知的极简指令偏好一致（用户偏好极简指令，期望最简回应，不打断询问）。无其他可提取信息。"
-    },
-    {
-      "id": "10441c2d-628e-438c-9bce-3eb328704c69",
-      "sessionId": "019fc7d5-e040-7e08-9e90-d3917416a344",
-      "ts": "2026-08-03T13:36:44.473Z",
-      "title": "极简确认对话",
-      "decisions": [],
-      "facts": [
-        "用户发出'回复OK即可，不要调用工具'的测试性指令，助手遵守并仅回复OK，未调用任何工具"
-      ],
-      "prefs": [
-        "用户偏好极简指令，期望助手最简回应、严格遵循不调用工具的约束，不打断询问"
-      ],
-      "lessons": [],
-      "fullText": "本会话仅有一轮极简确认对话：用户指令'回复 OK 即可，不要调用工具'，助手回复 OK。无实质任务内容。该行为与用户已知的极简指令偏好一致——用户习惯用极简指令要求助手自主完成工作后一次性汇报，且会在无任务时明确要求不调用工具、不做多余操作。这可能是用户在测试助手的指令遵循能力（约束执行是否严格）。无其他可提取的新信息。"
-    },
-    {
       "id": "14f8bda8-4adf-41b1-a3a3-55ae58cdef98",
       "sessionId": "019fc7d6-d562-77f6-8161-ef78b123fa09",
       "ts": "2026-08-04T00:48:06.222Z",
@@ -848,6 +818,230 @@
         "commit 消息含换行时用 heredoc 避免 bash 拆解"
       ],
       "fullText": "本会话完成 plan-mode 扩展模型侧切换工具（plan_enter/plan_exit）开发与排障。功能验证正常（--print 新进程实测进入计划模式、bash 白名单与 edit/write 硬拦截生效、退出确认选择器正常），但 --continue 恢复会话中模型始终无法调用 plan_enter（tool_calls 记录 0 次，30+ 次尝试全部退化为 bash）。排障发现并修复两个真实 bug：①admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 始终 8212）致新代码永不加载，加 process.exit(0) 1500ms 兜底（1e6d75f）；②plan-mode 只读保护不完整，tool_call 拦截新增 edit/write 硬拒绝（0116a06）。另实现 agent_end todo 状态校验提醒并降频（仅干活但没碰 todo 才提醒，81cac46）。写内核补丁 patch-plan-tools.mjs 刷新恢复会话工具 schema（63d0dc6）已注册 rebuild.sh 但实测未生效。最终接受现状：用户侧 Ctrl+Alt+P//plan 切换完全正常，模型侧仅新进程可用，已写入文档。"
+    },
+    {
+      "id": "48b3e65e-35f1-4fa9-8dbb-0b892cfd4bc4",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T08:58:42.933Z",
+      "title": "plan-mode模型切换内核补丁与todo优化",
+      "decisions": [
+        "fetch_url 加入计划/执行模式白名单（7cffd73）",
+        "subagent 保持 scout-only 不做改动",
+        "选方案1写内核补丁，文档说明，不需要则回退方案2",
+        "实现 agent_end todo 状态校验提醒",
+        "plan_exit 退出必须用户手动确认（选择器）"
+      ],
+      "facts": [
+        "pi --plan flag 直接进入计划模式，功能已存在",
+        "admin_restart 的 ctx.shutdown() 在 TUI 不退出进程，已加 process.exit(0) 兜底（1e6d75f）",
+        "--continue 恢复会话工具 schema 来自旧快照，新注册工具不可见",
+        "会话文件 tool_calls 记录为 0 是 schema 不含工具的决定性证据",
+        "计划模式 tool_call 拦截补上 edit/write 硬拒绝（0116a06）",
+        "内核补丁在 prepareNextTurnWithContext 刷新工具 schema，已注册 rebuild.sh"
+      ],
+      "prefs": [
+        "用户偏好极简指令，如\"你直接重启就行了\"",
+        "用户要求文档说明补丁情况，便于后续回退",
+        "用户关注模型侧功能可用性，要求实测验证"
+      ],
+      "lessons": [
+        "排查\"新代码不生效\"先验证 PID 是否真的变化",
+        "LLM 只能调用 schema 内工具，调用退化 bash 即工具不在 schema",
+        "补丁需注意求值顺序与重复键，应用后验证语法",
+        "admin_restart 重启在 TUI 环境不可靠，必要时 bash 模拟重启"
+      ],
+      "fullText": "本会话完成 plan-mode 模型侧切换工具（plan_enter/plan_exit）的排障收尾与内核补丁。前期决策：计划模式确认机制已存在无需添加；fetch_url 加入白名单（7cffd73）；subagent 保持 scout-only。排障发现两个真实 bug：① admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 一直不变），新代码永不加载，已加 process.exit(0) 1500ms 兜底（1e6d75f）；② --continue 恢复会话的工具 schema 来自持久化旧快照，新注册扩展工具不进入 schema——决定性证据是会话文件 tool_calls 记录 0 次、30+ 次调用全部退化为 bash。用户选择方案 1：写内核补丁（agent-session.js prepareNextTurnWithContext 中刷新工具 schema，patch 脚本已注册 rebuild.sh），要求文档说明、不需要时回退方案 2；同时实现 todo 优化（agent_end 校验钩子提醒状态未更新）。计划模式只读保护补上 edit/write 硬拦截（0116a06）。--print 新进程实测 plan_enter 切换成功，退出确认选择器正常。"
+    },
+    {
+      "id": "a86c13b2-ce16-446b-9b5b-b726e08983fe",
+      "sessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "ts": "2026-08-10T08:59:38.103Z",
+      "title": "命令整合、pi-bg.sh与全量检修",
+      "decisions": [
+        "任务3采用tmux后台headless pi+四件套隔离（--no-session/--no-extensions/只读工具/独立日志）",
+        "扩展命令整合为单命令+子命令+help，旧命令名（/tts、/planclear、/auto:*）直接移除不留别名",
+        "settings.json extensions 数组清理为[]（裸路径条目在0.83+无效，靠目录自动发现）",
+        "subagent both模式项目级覆盖用户级核实为既有行为，补3测试固化，是否改设计留待决策"
+      ],
+      "facts": [
+        "pi内核无单实例锁，支持--mode rpc/--no-session/--no-extensions等headless参数",
+        "proot下wrapper循环重启可行：state文件action=restart+SIGTERM，1秒自动--continue",
+        "extensions.test.ts须在pi-web-search目录运行（mock alias），顶层跑subagent用例超时",
+        "test-all.sh已纳入extensions.test.ts，全量回归现13项全过"
+      ],
+      "prefs": [
+        "用户要求方案先确认再执行，确认后才动手",
+        "用户偏好深入核查问题（如对subagent覆盖方向要求'深入检查'）"
+      ],
+      "lessons": [
+        "pi update后extensions/node_modules的pi-coding-agent symlink会指向失效的current/路径致测试大面积失败",
+        "/voice help会误触发录音（help落入default分支），整合时须显式处理",
+        "plan_exit在工具注册前启动的会话中不可用（同--continue问题），可用Ctrl+Alt+P兜底"
+      ],
+      "fullText": "本会话完成三项任务：①pi-voice回车中断误显'录音超时'修复（文案区分上限/主动停止+enter竞态兜底，52测试过）；②扩展命令整合为/voice、/auto、/plan单命令+子命令+help（conflict-check守门+AGENTS.md规范，全量回归过），旧命令名直接移除；③交付pi-bg.sh后台任务脚本（四件套隔离实测零会话/零memory写入）。随后推送a49de6e、实测proot重启机制推翻旧结论'proot无自动拉起'、清理14个旧会话文件与5个历史目录、全量检修修复symlink断裂与test-all.sh覆盖缺失、修正22处文档，最后清理settings.json扩展数组为[]并核实subagent both模式覆盖方向补3测试（37/37过）。遗留：plan_exit工具缺失待排查；subagent覆盖方向是否改用户级优先待决策。"
+    },
+    {
+      "id": "8e4b2676-b124-422b-9874-08d45df551c9",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T09:48:09.804Z",
+      "title": "模型侧计划模式切换工具与内核补丁",
+      "decisions": [
+        "实现模型侧 plan_enter/plan_exit，退出必须用户确认选择器",
+        "选择内核补丁方案修复恢复会话工具 schema，配文档，不需要时回退方案2",
+        "todo 提醒降频：仅本轮有工具操作且未碰 todo 工具时才提醒",
+        "接受现状：当前会话模型无法主动调用 plan_enter，用户快捷键切换正常"
+      ],
+      "facts": [
+        "admin_restart 的 ctx.shutdown() 在 TUI 不退出进程，加 process.exit(0) 1500ms 兜底修复（1e6d75f）",
+        "计划模式 tool_call 拦截补上 edit/write 硬拒绝（0116a06）",
+        "--continue 恢复会话工具 schema 来自旧快照，新注册工具不可见，--print 新进程正常",
+        "内核补丁 patch-plan-tools.mjs 已写并注册 rebuild.sh（63d0dc6）",
+        "会话文件 tool_calls 中 plan_enter 记录为 0，模型从未真正发出该调用"
+      ],
+      "prefs": [
+        "用户偏好直接重启、如实汇报测试结果，先测试再修复",
+        "用户要求 plan_exit 必须用户手动确认，不能绕过"
+      ],
+      "lessons": [
+        "模型只能调用函数 schema 内工具，无法调用时输出会退化为 bash",
+        "用 PID 对比验证进程是否真正重启，proot 下进程时间不可靠",
+        "检查会话文件 tool_calls 区分'调用被拒'与'从未发出'，避免无效循环",
+        "30+ 次无效尝试浪费时间，应尽早做决定性验证"
+      ],
+      "fullText": "本会话实现并测试了模型侧计划模式切换工具 plan_enter/plan_exit（参考 opencode 权限设计）：进入无需确认，退出必须经 ctx.ui.select 弹确认选择器由用户手动确认。过程中发现并修复两个真实 bug：① admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 始终不变），导致新代码永不加载，加 process.exit(0) 1500ms 兜底（1e6d75f）；② 计划模式只读保护不完整，tool_call 拦截只覆盖 bash/subagent，补上 edit/write 硬拒绝（0116a06）。测试发现 pi 内核缺陷：--continue 恢复会话的工具 schema 来自持久化旧快照，新注册扩展工具（plan_enter）不可见（会话文件 tool_calls 记录 0 次为决定性证据），而 --print 新进程正常。用户决策选内核补丁方案：写 patch-plan-tools.mjs 刷新恢复会话 schema 并注册 rebuild.sh（63d0dc6），文档说明情况，后续不需要回退方案 2。另按用户要求优化 todo：agent_end 校验仅在有工具操作但未碰 todo 工具时提醒（81cac46），避免每轮提醒噪音。opencode 并无定时提醒机制，靠每轮注入 todo 状态。补丁验证受阻，当前会话模型侧调用仍不可用，用户侧切换完全正常。测试仍在进行中。"
+    },
+    {
+      "id": "e98dba67-c824-4509-a6d6-18c3d25dd7e5",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T10:04:11.427Z",
+      "title": "计划模式模型侧切换与内核补丁调试",
+      "decisions": [
+        "plan_exit 退出必须经 ctx.ui.select 用户确认，任何情况不绕过",
+        "用户选方案1：写内核补丁修恢复会话 schema，文档说明，不需要时回退方案2",
+        "todo 提醒降频：仅本轮有工具操作但完全没碰 todo 工具才提醒",
+        "tool_call 拦截新增 edit/write 硬拒绝，补计划模式只读漏洞"
+      ],
+      "facts": [
+        "--continue 恢复会话工具 schema 固定于创建时快照，新注册工具不可见，新建会话可见",
+        "admin_restart 的 ctx.shutdown() 在 TUI 不退出进程，需 process.exit(0) 1500ms 兜底",
+        "opencode 无定时提醒，靠每轮把 todo 状态注入 context",
+        "会话文件 tool_calls 中 plan_enter 记录 0 次，证明模型从未真正发出调用"
+      ],
+      "prefs": [
+        "用户指令极简（'重启''继续''先测试'），期望自主完成全流程后汇报",
+        "用户偏好低频精准的提醒，对高频重复打扰敏感"
+      ],
+      "lessons": [
+        "模型反复退化为 bash = 工具 schema 不含该工具的决定性证据",
+        "proot 下判断进程是否重启只能对比 PID，进程时间不可靠",
+        "admin_restart 不可用时：写 restart 请求 + kill，wrapper 自动 --continue 重启"
+      ],
+      "fullText": "本会话实现并调试模型侧计划模式切换：plan_enter（执行模式可见、免确认）与 plan_exit（计划模式可见、退出必须弹 ctx.ui.select 确认选择器，提交 99a8770）。调试中发现三个真实问题并修复：① admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 始终 8212），新代码永不加载，加 process.exit(0) 1500ms 兜底（1e6d75f）；② 计划模式 tool_call 拦截只覆盖 bash/subagent，edit/write 无拦截，补硬拒绝（0116a06）；③ 恢复会话工具 schema 固定于会话创建快照，模型无法调用新注册工具（30+ 次尝试全退化为 bash，会话文件 tool_calls 记录 0 次），写内核补丁 patch-plan-tools.mjs 刷新 prepareNextTurn 注入路径（63d0dc6，注册 rebuild.sh）。结论：模型侧 plan_enter 仅新建会话可用，当前 --continue 会话不可用（补丁对已存在会话不生效），用户侧 Ctrl+Alt+P//plan 切换完全正常。另实现 todo 降频提醒（81cac46）：仅'本轮有工具操作但完全没碰 todo 工具'时提醒一次，计划模式不提醒；opencode 无定时提醒机制，靠每轮注入 todo 状态。用户决策：保留补丁，不需要时回退方案2（接受现状）。"
+    },
+    {
+      "id": "8fea791d-9fe0-47c9-a231-c3238a13ab98",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T10:15:06.445Z",
+      "title": "计划模式切换调试与内核补丁",
+      "decisions": [
+        "plan_exit 退出必须弹 ctx.ui.select 确认选择器（99a8770）",
+        "admin_restart 加 process.exit(0) 1500ms 兜底修复 TUI 不退出（1e6d75f）",
+        "计划模式 tool_call 拦截新增 edit/write 硬拒绝（0116a06）",
+        "用户选方案1：内核补丁+文档，后续不需要回退方案2",
+        "todo 提醒降频：仅'有工具活动但未碰 todo'才提醒（81cac46）"
+      ],
+      "facts": [
+        "--continue 恢复会话工具 schema 来自创建时快照，新注册工具不可见",
+        "LLM 持续退化为 bash 输出 = schema 无该工具的决定性证据",
+        "会话 jsonl 中 tool_calls 记录 0 次 = 从未真正发出调用",
+        "opencode 无定时提醒，todo 状态每轮注入 context",
+        "patch-plan-tools.mjs 已注册 rebuild.sh，对已存在会话不生效"
+      ],
+      "prefs": [
+        "用户选方案1（内核补丁+文档），不需要时回退方案2",
+        "用户对无效重复尝试不耐烦，要求直接重启、高效执行"
+      ],
+      "lessons": [
+        "模型无法调用 schema 外工具，应尽早查 jsonl tool_calls 避免无效循环",
+        "PID 对比是判断进程是否真正重启的方法",
+        "--print 新进程结果不能代表 --continue 恢复会话行为"
+      ],
+      "fullText": "本会话实现并验证模型侧计划模式切换：plan_enter（执行模式可见、免确认进入）与 plan_exit（计划模式可见、退出必须弹 ctx.ui.select 确认选择器，提交 99a8770）。调试中发现三个真实问题并修复：① admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 始终 8212），新代码永不加载，加 process.exit(0) 1500ms 兜底（1e6d75f）；② 计划模式 tool_call 拦截只覆盖 bash/subagent，edit/write 无拦截，新增硬拒绝（0116a06）；③ 写内核补丁 patch-plan-tools.mjs 刷新恢复会话工具 schema（63d0dc6，注册 rebuild.sh）。最终验证结论：--continue 恢复会话的工具 schema 固定来自会话创建时快照，新注册工具不可见，补丁无法改变已存在会话——模型侧 plan_enter 仅新建会话（--print）可用，当前 TUI 会话靠用户 Ctrl+Alt+P//plan 切换（完全正常）。调试方法：LLM 只能调用 schema 内工具，持续退化为 bash 即 schema 缺失的决定性证据；会话 jsonl 的 tool_calls 记录可区分'调用被拒'与'从未发出'。另实现 todo 状态提醒优化（81cac46）：agent_end 校验，仅'本轮有工具操作但完全没碰 todo 工具'时提醒一次，计划模式不提醒。用户确认接受现状：补丁保留（对新会话无害），当前会话用快捷键切换。"
+    },
+    {
+      "id": "def9c568-3eba-47aa-bcbe-df9197907923",
+      "sessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "ts": "2026-08-10T10:16:05.780Z",
+      "title": "扩展命令整合、pi-bg 封装与全量文档体检",
+      "decisions": [
+        "命令整合为 /voice、/auto、/plan 单命令+子命令+help，旧命令名移除",
+        "长任务并发采用 pi-bg.sh 后台 headless pi 四件套隔离方案",
+        "settings.json extensions 裸路径残留清理为 []",
+        "subagent both 模式项目级优先为正确行为，补 3 测试固化"
+      ],
+      "facts": [
+        "proot 下 wrapper 循环可自动拉起重启，推翻旧结论'proot 无自动拉起'",
+        "extensions.test.ts 须在 pi-web-search 目录跑，顶层会因真实包加载 12s 超时",
+        "AGENTS.md 重构为 60 行，低频细节移至各扩展 README",
+        "提交 a49de6e、0096671、de4ba93 已推送 cyfxxx/pi-tools"
+      ],
+      "prefs": [
+        "用户偏好文档与代码严格对齐，要求清理过时内容",
+        "用户指令极简（'重启''推送''继续'），期望自主完成全流程"
+      ],
+      "lessons": [
+        "pi update 后 extensions/node_modules symlink 可能断裂，需重建指向真实版本目录",
+        "plan_exit 在工具注册前启动的会话中不可调用，重启后恢复",
+        "全量回归时 test-all.sh 易遗漏注册面测试，需核对覆盖"
+      ],
+      "fullText": "2026-08-10 会话完成三阶段工作。①任务执行：pi-voice 超时文案改'已达录音时长上限'+enter 竞态兜底（52 测试过）；命令整合 /voice、/auto、/plan（conflict-check 新增守门、extensions.test.ts 同步）；封装 pi-bg.sh 后台任务工具（start/rpc/prompt/steer/status/log/stop，四件套隔离实测零共享写入）。②运维验证：实证 proot 下写 .pi-admin-state.json + SIGTERM 可经 wrapper 自动 --continue 重启；清理 14 个历史会话；全量体检发现 extensions/node_modules symlink 断裂（pi update 后 current 失效）已重建，test-all.sh 纳入 extensions.test.ts；9 份 README 修正 22 处文档-代码不一致；settings.json extensions 裸路径残留清为 [] 重启验证 9 扩展正常；subagent 覆盖方向确认项目级优先并补测试。③文档重构：AGENTS.md 80→60 行，低频内容移至各扩展 README，新增深度文档指向段。三笔提交均已推送 cyfxxx/pi-tools。遗留：plan_exit 工具缺失问题重启后理论消失，如再遇需排查 dist 补丁状态。"
+    },
+    {
+      "id": "f687b4ae-5d66-42b1-935b-dda8b5b1b4cc",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-10T10:18:01.783Z",
+      "title": "全量回归测试与 pi-memory help 子命令",
+      "decisions": [
+        "为 /memory 命令补 help/-h/--help 子命令及补全",
+        "SearXNG 与 whisper 服务按需手动启动，不常驻"
+      ],
+      "facts": [
+        "9 个扩展全量回归与冒烟测试全部通过，无失败项",
+        "whisper 服务未运行属 pi-voice 惰性启动设计，非故障"
+      ],
+      "prefs": [],
+      "lessons": [
+        "tmux_run 会话结束日志可能未落盘，尾部缺失时手动补跑验证"
+      ],
+      "fullText": "全量回归+冒烟测试会话。test-all.sh 10 套全过：8 套 vitest（pi-web-search 72/pi-memory 53/pi-autopilot 89/pi-browser 23/pi-context 39/plan-mode 51/pi-tmux 10/pi-voice 52）、subagent 34、tsc、注册面 23、conflict-check 8；9 个扩展真机冒烟全正常。发现两处服务问题：SearXNG 未运行导致 web_search fetch failed（已 start.sh 启动，API 端口 8889，与既往记忆排查流程一致）；whisper 服务未运行属 pi-voice 转写前自动拉起的惰性启动设计，非故障。tmux 会话结束时日志 flush 未落盘致尾部缺失，手动补跑 tsc/注册面/conflict-check 收尾验证。用户随后要求补 /memory help 子命令：commands.ts 新增 MEMORY_USAGE 常量、help 分支、getArgumentCompletions（search/stats/summary/prune/cleanup/help）、description 追加用法提示，tsc+63 用例+conflict-check 8/8 全过。"
+    },
+    {
+      "id": "a9bda9c8-17c1-49b7-9033-9b9f1796bc24",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-10T11:14:54.466Z",
+      "title": "扩展全量回归与命令面优化",
+      "decisions": [
+        "pi-voice 录音启动失败改为自动重试一次并捕获 stdout 错误",
+        "空转写用 ffmpeg volumedetect 区分静音与识别失败",
+        "全部扩展命令显示对齐 /voice 标准：help+补全",
+        "admin_restart 不可用时代码改动待重启加载，不强行热更新"
+      ],
+      "facts": [
+        "pi 补全接口 getArgumentCompletions 原生支持多级子命令",
+        "termux-microphone-record 错误信息输出到 stdout 而非 stderr",
+        "全量回归 10 套测试全过：8 vitest + subagent 34 + tsc + 注册面 23 + conflict-check 8",
+        "pi-memory 与 pi-voice vitest 现为 63 用例",
+        "SearXNG 与 whisper 服务本次均为手动启动恢复"
+      ],
+      "prefs": [
+        "用户指令极简，期望自主完成调研-修改-验证-汇报全流程"
+      ],
+      "lessons": [
+        "ffmpeg anullsrc 源无时长限制会无限生成音频，测试须加 -t",
+        "finish 内部也调用 waitForFileStable，mock 序列长度要覆盖",
+        "MediaRecorder 单实例冲突特征：exit 0 且无文件生成"
+      ],
+      "fullText": "本会话完成三件事。其一：全量回归 test-all.sh 10 套全过（8 套 vitest、subagent 34、tsc、注册面 23、conflict-check 8），冒烟发现 SearXNG 服务未运行（start.sh 修复）与 whisper 惰性启动（属正常设计）。其二：pi-memory 的 memory 命令补齐 help 子命令（USAGE 常量 + help 分支 + getArgumentCompletions + description 提示）。其三：pi-voice 录音故障修复——定位到 termux-microphone-record 单实例冲突（exit 0 + 无文件），错误信息在 stdout 被 stdio ignore 丢弃；startRecording 改为捕获 stdout、失败自动重试一次（pkill + 2s 等待 MediaRecorderService 释放），空转写加 detectAudioLevel 音量诊断（-45dB 阈值区分静音/识别失败）；index.ts 确认 pi 补全接口原生支持多级（getArgumentCompletions 收到完整参数前缀），/voice tts 二级补全实现。其四：命令显示对齐 /voice 标准——/schedule 补齐 help/USAGE(15 子命令)/补全，/auto、/plan 加多级补全，/usage-diag 单功能命令不动。验证：pi-voice 63 测试、tsc、conflict-check 全过。admin_restart 工具当前不可用，所有扩展代码改动需重启 pi 加载。"
     }
   ]
 }

@@ -44,7 +44,7 @@ import {
   convertToWav,
   transcribe,
   deleteAudioPair,
-  fileExists,
+  waitForFileStable,
   cleanupStaleAudio,
   speak,
   extractAssistantText,
@@ -52,6 +52,7 @@ import {
   doctor,
   benchmark,
   runCommand,
+  detectAudioLevel,
   createTtsDispatcher,
   type TtsDispatcher,
 } from './core'
@@ -138,7 +139,7 @@ export default function (pi: ExtensionAPI): void {
 
   dictation = createDictation(
     config,
-    { startRecording, stopRecording, convertToWav, transcribe, deleteAudioPair, fileExists },
+    { startRecording, stopRecording, convertToWav, transcribe, deleteAudioPair, waitForFileStable, detectAudioLevel },
     {
       // 录音进程自行退出（超时/启动失败）的自动完成：无调用方 UI 上下文，
       // 用 sendMessage(display) 主动展示结果，成功失败都不静默。
@@ -175,17 +176,36 @@ export default function (pi: ExtensionAPI): void {
   ].join('\n')
 
   pi.registerCommand('voice', {
-    description: '语音：start/stop/cancel/tts/doctor/model/bench/help（/voice help 查看用法）',
-    getArgumentCompletions: () => [
-      { value: 'start', label: 'start', description: '开始录音' },
-      { value: 'stop', label: 'stop', description: '停止录音并转写' },
-      { value: 'cancel', label: 'cancel', description: '取消录音并丢弃音频' },
-      { value: 'tts', label: 'tts', description: '朗读：on/off/status/speak' },
-      { value: 'doctor', label: 'doctor', description: '诊断依赖' },
-      { value: 'model', label: 'model', description: '查看/切换 whisper 模型' },
-      { value: 'bench', label: 'bench', description: '转写速度基准' },
-      { value: 'help', label: 'help', description: '显示用法' },
-    ],
+    description: '语音：录音转写与朗读（/voice help 查看用法）',
+    // 多级补全：pi 传入完整参数前缀（含多级与空格），按第一级子命令分发
+    getArgumentCompletions: (prefix) => {
+      const first = (prefix.trim().split(/\s+/)[0] ?? '').toLowerCase()
+      if (first === 'tts') {
+        return [
+          { value: 'on', label: 'tts on', description: '开启自动朗读' },
+          { value: 'off', label: 'tts off', description: '关闭自动朗读' },
+          { value: 'status', label: 'tts status', description: '查看朗读/转写状态' },
+          { value: 'speak', label: 'tts speak [文本]', description: '手动朗读（缺省朗读最近回复）' },
+        ]
+      }
+      if (first === 'model') {
+        return Object.entries(WHISPER_MODELS).map(([name, desc]) => ({
+          value: name,
+          label: `model ${name}`,
+          description: desc,
+        }))
+      }
+      return [
+        { value: 'start', label: 'start', description: '开始录音' },
+        { value: 'stop', label: 'stop', description: '停止录音并转写' },
+        { value: 'cancel', label: 'cancel', description: '取消录音并丢弃音频' },
+        { value: 'tts', label: 'tts', description: '朗读：on/off/status/speak' },
+        { value: 'doctor', label: 'doctor', description: '诊断依赖' },
+        { value: 'model', label: 'model', description: '查看/切换 whisper 模型' },
+        { value: 'bench', label: 'bench', description: '转写速度基准' },
+        { value: 'help', label: 'help', description: '显示用法' },
+      ]
+    },
     handler: async (args, ctx) => {
       const [cmd, ...rest] = args.trim().split(/\s+/)
       switch (cmd) {
