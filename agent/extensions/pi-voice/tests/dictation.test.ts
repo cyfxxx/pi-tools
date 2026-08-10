@@ -29,7 +29,8 @@ function makeDeps(overrides: Partial<RecordingDeps> = {}): RecordingDeps {
     convertToWav: vi.fn(async () => '/tmp/pi-voice-out/a.wav'),
     transcribe: vi.fn(async () => ({ text: '你好，世界', language: 'zh', error: undefined })),
     deleteAudioPair: vi.fn(),
-    fileExists: vi.fn(() => true),
+    waitForFileStable: vi.fn(async () => true),
+    detectAudioLevel: vi.fn(async () => ({ maxDb: -20, meanDb: -30 })),
     ...overrides,
   }
 }
@@ -128,13 +129,19 @@ describe('dictation 状态机', () => {
     expect(d.isTranscribing()).toBe(false)
   })
 
-  it('超时但无音频文件 → 提示可能被其他录音占用', async () => {
-    const deps = makeDeps({ fileExists: vi.fn(() => false) })
+  it('超时但无音频文件 → 自动重试一次后仍无文件才提示占用', async () => {
+    const deps = makeDeps({ waitForFileStable: vi.fn(async () => false) })
     const cbs = makeCallbacks()
     const d = createDictation(cfg, deps, cbs)
     d.start()
     const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
     onExit(0)
+    // 第一次失败自动重试（2s 释放间隔）
+    await new Promise((res) => setTimeout(res, 2300))
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+    // 第二次仍失败 → 报错
+    const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
+    onExit2(0)
     await vi.waitFor(() => {
       expect(cbs.autoResults.length).toBe(1)
     })
@@ -175,13 +182,17 @@ describe('dictation 状态机', () => {
     expect(deps.transcribe).not.toHaveBeenCalled()
   })
 
-  it('exit 0 但无音频文件（单实例被占用）→ 报占用提示、不转写', async () => {
-    const deps = makeDeps({ fileExists: vi.fn(() => false) })
+  it('exit 0 但无音频文件（单实例被占用）→ 重试后报占用提示、不转写', async () => {
+    const deps = makeDeps({ waitForFileStable: vi.fn(async () => false) })
     const cbs = makeCallbacks()
     const d = createDictation(cfg, deps, cbs)
     d.start()
     const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
     onExit(0)
+    await new Promise((res) => setTimeout(res, 2300))
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+    const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
+    onExit2(0)
     await vi.waitFor(() => {
       expect(cbs.autoResults.length).toBe(1)
     })
@@ -231,5 +242,80 @@ describe('dictation 状态机', () => {
     expect(busy.message).toContain('转写')
     release()
     await p
+  })
+
+  it('空转写 + 低音量提示检查麦克风', async () => {
+    const deps = makeDeps({
+      transcribe: vi.fn(async () => ({ text: '', language: '', error: undefined })),
+      detectAudioLevel: vi.fn(async () => ({ maxDb: -91, meanDb: -91 }) as { maxDb: number; meanDb: number } | null),
+    })
+    const d = createDictation(cfg, deps, makeCallbacks())
+    d.start()
+    const r = await d.stop()
+    expect(r.text).toBe('')
+    expect(r.message).toContain('未检测到声音信号')
+    expect(r.message).toContain('麦克风')
+  })
+
+  it('空转写 + 有声音提示靠近重试', async () => {
+    const deps = makeDeps({
+      transcribe: vi.fn(async () => ({ text: '', language: '', error: undefined })),
+    })
+    const d = createDictation(cfg, deps, makeCallbacks())
+    d.start()
+    const r = await d.stop()
+    expect(r.text).toBe('')
+    expect(r.message).toContain('未识别到语音内容')
+    expect(deps.detectAudioLevel).toHaveBeenCalled()
+  })
+
+  it('启动失败（无文件）自动重试一次，仍失败透传 termux 详情', async () => {
+    const deps = makeDeps({
+      waitForFileStable: vi.fn(async () => false),
+      startRecording: vi.fn(() => ({ child: fakeChild, file: '/tmp/pi-voice/a.m4a' })),
+    })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    expect(deps.startRecording).toHaveBeenCalledTimes(1)
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0, 'Recording already in progress!')
+    // 等待自动重试（2s 释放间隔）
+    await new Promise((res) => setTimeout(res, 2300))
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+    expect(d.isRecording()).toBe(true)
+    // 第二次仍失败 → 报错并透传 termux 输出
+    const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
+    onExit2(0, 'Recording already in progress!')
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].message).toContain('录音启动失败')
+    expect(cbs.autoResults[0].message).toContain('Recording already in progress!')
+    expect(d.isRecording()).toBe(false)
+  })
+
+  it('启动失败自动重试后成功 → 正常自动转写', async () => {
+    const deps = makeDeps({
+      waitForFileStable: vi.fn()
+        .mockResolvedValueOnce(false) // 第 1 次 exit：无文件 → 失败
+        .mockResolvedValueOnce(true) // 第 2 次 exit 异步块：文件稳定 → 进 finish
+        .mockResolvedValue(true), // finish 内部再次确认稳定
+      startRecording: vi.fn(() => ({ child: fakeChild, file: '/tmp/pi-voice/a.m4a' })),
+    })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await new Promise((res) => setTimeout(res, 2300))
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+    const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
+    onExit2(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].text).toBe('你好，世界')
+    expect(d.isRecording()).toBe(false)
   })
 })

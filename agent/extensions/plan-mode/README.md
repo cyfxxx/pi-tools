@@ -590,7 +590,7 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 命令 | 描述 | 实现位置 |
 |------|------|----------|
-| `/plan` | 无参切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:328`（registerCommand），无参分支 `index.ts:460` |
+| `/plan` | 无参切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:328`（registerCommand），无参分支 `index.ts:478` |
 | `/plan enter` | 启用规划模式（已在规划模式时无操作） | `index.ts:328` |
 | `/plan exit` | 退出规划模式（任务保留） | `index.ts:328` |
 | `/plan help` | 输出全部子命令用法（`-h`/`--help` 同义；PLAN_USAGE 定义于 `index.ts:316`） | `index.ts:328` |

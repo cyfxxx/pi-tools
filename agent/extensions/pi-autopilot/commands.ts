@@ -74,7 +74,28 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
   ].join('\n')
 
   pi.registerCommand('auto', {
-    description: '自主运行：status/policy/failover/pause/resume/restart/help（/auto help 查看用法）',
+    description: '自主运行与定时调度（/auto help 查看用法）',
+    getArgumentCompletions: (prefix) => {
+      const first = (prefix.trim().split(/\s+/)[0] ?? '').toLowerCase()
+      if (first === 'policy') {
+        return [{ value: 'set', label: 'policy set', description: '修改策略（路径 值）' }]
+      }
+      if (first === 'failover') {
+        return [{ value: '--exec', label: 'failover --exec', description: '实际执行切换重启' }]
+      }
+      if (first === 'status') {
+        return [{ value: '--stats', label: 'status --stats', description: '附加按模型/按任务统计' }]
+      }
+      return [
+        { value: 'status', label: 'status', description: '显示状态（--stats 附加统计）' },
+        { value: 'policy', label: 'policy', description: '查看/修改自主运行策略' },
+        { value: 'failover', label: 'failover', description: '测试 failover 目标' },
+        { value: 'pause', label: 'pause', description: '全局暂停调度' },
+        { value: 'resume', label: 'resume', description: '恢复全局调度' },
+        { value: 'restart', label: 'restart', description: '重启 Agent' },
+        { value: 'help', label: 'help', description: '显示用法' },
+      ]
+    },
     handler: async (args: string, ctx: ExtensionCommandContext): Promise<void> => {
       const [sub, ...rest] = args.trim().split(/\s+/)
       const restArgs = rest.join(' ')
@@ -188,8 +209,66 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
   })
 
   // ── /schedule（迁自 pi-scheduler；/loop /remind 已并入子命令） ────
+  const SCHEDULE_USAGE = [
+    '/schedule list [--tag <t>]           列出定时任务（可按标签过滤）',
+    '/schedule loop <interval> <prompt>    创建循环任务并立即执行一次',
+    '             [--timeout <秒>] [--tags a,b] [--retries <n>]',
+    '/schedule remind <time> <prompt>      一次性提醒（+30m / 2026-07-15T09:00）',
+    '/schedule cron "<expr>" <prompt>      创建 cron 定时任务',
+    '             [--timeout <秒>] [--tags a,b] [--retries <n>]',
+    '/schedule edit <id> [--schedule <expr>] [--timeout <秒>] [--retries <n>] [--prompt <text>]  修改任务',
+    '/schedule delete <id|name>           删除任务',
+    '/schedule enable <id|name>           启用任务',
+    '/schedule disable <id|name>          禁用任务',
+    '/schedule test "<expr>"               预览 cron 未来触发时间',
+    '/schedule history <id|name>          任务执行历史',
+    '/schedule export                     导出全部任务到文件',
+    '/schedule import <文件路径>            从文件导入任务',
+    '/schedule pause                      全局暂停调度',
+    '/schedule resume                     恢复调度',
+    '/schedule help                       显示本帮助',
+  ].join('\n')
+
   pi.registerCommand('schedule', {
-    description: '管理定时任务，并支持 loop/remind 子命令创建循环任务与提醒。',
+    description: '定时任务与提醒（/schedule help 查看用法）',
+    getArgumentCompletions: (prefix) => {
+      const first = (prefix.trim().split(/\s+/)[0] ?? '').toLowerCase()
+      if (first === 'list' || first === 'ls') {
+        return [{ value: '--tag', label: 'list --tag <标签>', description: '按标签过滤' }]
+      }
+      if (first === 'loop' || first === 'cron') {
+        return [
+          { value: '--timeout', label: '--timeout <秒>', description: '最大运行时长' },
+          { value: '--tags', label: '--tags <a,b>', description: '标签列表' },
+          { value: '--retries', label: '--retries <n>', description: '失败重试次数' },
+        ]
+      }
+      if (first === 'edit') {
+        return [
+          { value: '--schedule', label: '--schedule <expr>', description: '修改调度表达式' },
+          { value: '--timeout', label: '--timeout <秒>', description: '最大运行时长' },
+          { value: '--retries', label: '--retries <n>', description: '失败重试次数' },
+          { value: '--prompt', label: '--prompt <text>', description: '修改提示词' },
+        ]
+      }
+      return [
+        { value: 'list', label: 'list', description: '列出定时任务' },
+        { value: 'loop', label: 'loop', description: '创建循环任务' },
+        { value: 'remind', label: 'remind', description: '一次性提醒' },
+        { value: 'cron', label: 'cron', description: '创建 cron 定时任务' },
+        { value: 'edit', label: 'edit', description: '修改任务' },
+        { value: 'delete', label: 'delete', description: '删除任务' },
+        { value: 'enable', label: 'enable', description: '启用任务' },
+        { value: 'disable', label: 'disable', description: '禁用任务' },
+        { value: 'test', label: 'test', description: '预览 cron 触发时间' },
+        { value: 'history', label: 'history', description: '任务执行历史' },
+        { value: 'export', label: 'export', description: '导出全部任务' },
+        { value: 'import', label: 'import', description: '从文件导入任务' },
+        { value: 'pause', label: 'pause', description: '全局暂停调度' },
+        { value: 'resume', label: 'resume', description: '恢复调度' },
+        { value: 'help', label: 'help', description: '显示用法' },
+      ]
+    },
     handler: async (args: string, ctx): Promise<void> => {
       const parts = args.trim().split(/\s+/)
       const subcmd = parts[0]?.toLowerCase() || 'list'
@@ -409,7 +488,12 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
         return
       }
 
-      reply(pi, `未知子命令: ${subcmd}\n可用: list [--tag <t>], edit <id>, delete <id>, enable <id>, disable <id>, cron "<expr>" <prompt>, test "<expr>", history <id>, export, import <file>, pause, resume`)
+      if (subcmd === 'help' || subcmd === '-h' || subcmd === '--help') {
+        reply(pi, SCHEDULE_USAGE)
+        return
+      }
+
+      reply(pi, `未知子命令: /schedule ${subcmd}\n\n${SCHEDULE_USAGE}`)
     },
   })
 }

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdtempSync, writeFileSync, rmSync, existsSync, mkdirSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { cleanupStaleAudio, deleteAudioPair } from '../core'
+import { cleanupStaleAudio, deleteAudioPair, waitForFileStable } from '../core'
 import type { VoiceConfig } from '../config'
 
 function tmpCfg(): { cfg: VoiceConfig; dir: string } {
@@ -75,5 +75,49 @@ describe('cleanupStaleAudio', () => {
     const { cfg, dir } = tmpCfg()
     rmSync(dir, { recursive: true, force: true })
     expect(cleanupStaleAudio(cfg)).toBe(0)
+  })
+})
+
+describe('waitForFileStable', () => {
+  it('文件出现且大小稳定 → true（模拟 MediaRecorder 延迟写入）', async () => {
+    const { dir } = tmpCfg()
+    const file = join(dir, 'a.m4a')
+    // 模拟延迟写入：300ms 后创建，再 300ms 后增长到最终大小（moov atom 尾部写入）
+    setTimeout(() => writeFileSync(file, 'x'.repeat(1000)), 100)
+    setTimeout(() => writeFileSync(file, 'x'.repeat(2000)), 400)
+    const ok = await waitForFileStable(file, { pollMs: 100, stableSamples: 3, maxWaitMs: 5000 })
+    expect(ok).toBe(true)
+  })
+
+  it('文件一直不存在（启动即失败/单实例被占用）→ 超时 false', async () => {
+    const { dir } = tmpCfg()
+    const file = join(dir, 'never.m4a')
+    const t0 = Date.now()
+    const ok = await waitForFileStable(file, { pollMs: 50, stableSamples: 2, maxWaitMs: 300 })
+    expect(ok).toBe(false)
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(280)
+  })
+
+  it('恒为 0 字节（已创建但未写入）→ 超时 false', async () => {
+    const { dir } = tmpCfg()
+    const file = join(dir, 'empty.m4a')
+    writeFileSync(file, '')
+    const ok = await waitForFileStable(file, { pollMs: 50, stableSamples: 2, maxWaitMs: 300 })
+    expect(ok).toBe(false)
+  })
+
+  it('持续增长的文件最终稳定 → true', async () => {
+    const { dir } = tmpCfg()
+    const file = join(dir, 'grow.m4a')
+    let size = 100
+    writeFileSync(file, 'a'.repeat(size))
+    // 模拟真实 MediaRecorder：多次增长后停止（写入完成）
+    const sizes = [200, 400, 700, 1100, 1100]
+    for (const s of sizes) {
+      await new Promise((r) => setTimeout(r, 150))
+      writeFileSync(file, 'a'.repeat(s))
+    }
+    const ok = await waitForFileStable(file, { pollMs: 100, stableSamples: 2, maxWaitMs: 3000 })
+    expect(ok).toBe(true)
   })
 })
