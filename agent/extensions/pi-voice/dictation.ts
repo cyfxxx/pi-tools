@@ -79,6 +79,8 @@ export function createDictation(
   let gen = 0
   /** 本次录音是否已自动重试过（防止重试失败后无限循环）。 */
   let retried = false
+  /** 当前录音进程启动时间戳：退出时计算实际录音时长（区分正常超时与异常提前退出）。 */
+  let startedAt = 0
 
   function isRecording(): boolean {
     return currentFile !== null
@@ -89,6 +91,7 @@ export function createDictation(
 
   /** 启动一次录音进程并绑定退出回调；成功返回 null 以外的 {child,file} 并设置状态。 */
   function spawnRecorder(expectGen: number): { child: ChildProcess; file: string } | null {
+    startedAt = Date.now()
     const { child, file } = deps.startRecording(cfg, (code, detail) => {
       // 子进程自行退出：仅当仍是当前录音且未在转写时处理（用户 stop/cancel 已先置空 currentFile，不会重复）
       if (currentFile !== file || busy) return
@@ -108,8 +111,10 @@ export function createDictation(
           // 等待期间用户 cancel / 开始了新录音：旧文件作废，静默丢弃
           if (expectGen !== gen) return
           if (stable) {
-            // 正常超时（-l 到达上限）：自动进入转写
-            const r = await finish(file, true)
+            // 进程自行退出（-l 超时或异常提前退出）：自动进入转写，
+            // 实际时长远小于上限时按异常提前退出提示（服务不稳定会中途停录）
+            const actualSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000))
+            const r = await finish(file, true, actualSec)
             cb.onAutoComplete(r)
           } else {
             // 等待窗口内始终无有效文件：单实例冲突（“Recording already in progress!”，退出码恰为 0）
@@ -191,10 +196,18 @@ export function createDictation(
     return '已取消'
   }
 
-  async function finish(file: string, auto: boolean): Promise<StopResult> {
+  async function finish(file: string, auto: boolean, actualSec?: number): Promise<StopResult> {
     busy = true
     try {
-      const prefix = auto ? '录音时长到上限，自动开始转写：' : ''
+      // 自动路径：实际录音时长远小于上限时提示异常提前退出（MediaRecorder 服务
+      // 不稳定会中途停录），避免误导为“录音时长到上限”
+      const limit = cfg.maxSeconds
+      const premature = auto && actualSec !== undefined && limit > 0 && actualSec < limit * 0.5
+      const prefix = premature
+        ? `录音异常提前结束（${actualSec}s），自动转写：`
+        : auto
+          ? '录音时长到上限，自动开始转写：'
+          : ''
       // 用户手动 stop 同样存在竞态：-q 使脚本退出后 MediaRecorder 仍会写文件尾部，
       // 转码前统一等待大小稳定（exit 回调路径此时文件已稳定，立即返回）
       const stable = await deps.waitForFileStable(file)

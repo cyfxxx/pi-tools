@@ -135,15 +135,44 @@ describe('dictation 状态机', () => {
     const deps = makeDeps({ transcribe: vi.fn(async () => ({ text: '', language: '', error: 'whisper 不可达' })) })
     const cbs = makeCallbacks()
     const d = createDictation(cfg, deps, cbs)
-    d.start()
-    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
-    onExit(0)
-    await vi.waitFor(() => {
-      expect(cbs.autoResults.length).toBe(1)
-    })
-    expect(cbs.autoResults[0].message).toContain('录音时长到上限')
-    expect(cbs.autoResults[0].message).toContain('whisper 不可达')
-    expect(d.isTranscribing()).toBe(false)
+    // 模拟录音已跑 61s（> maxSeconds 120 的 50% 阈值 → 判为正常超时而非提前退出）
+    const now0 = Date.now()
+    const spy = vi.spyOn(Date, 'now').mockReturnValueOnce(now0).mockReturnValue(now0 + 61_000)
+    try {
+      d.start()
+      const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+      onExit(0)
+      await vi.waitFor(() => {
+        expect(cbs.autoResults.length).toBe(1)
+      })
+      expect(cbs.autoResults[0].message).toContain('录音时长到上限')
+      expect(cbs.autoResults[0].message).toContain('whisper 不可达')
+      expect(d.isTranscribing()).toBe(false)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('录音进程提前退出（远小于上限）→ 提示异常提前结束', async () => {
+    const deps = makeDeps({ transcribe: vi.fn(async () => ({ text: '', language: '', error: 'whisper 不可达' })) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    // startedAt 与 exit 时差仅 3s（< 120s 上限的 50%）→ 判为异常提前退出
+    const now0 = Date.now()
+    const spy = vi.spyOn(Date, 'now').mockReturnValueOnce(now0).mockReturnValue(now0 + 3_000)
+    try {
+      d.start()
+      const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+      onExit(0)
+      await vi.waitFor(() => {
+        expect(cbs.autoResults.length).toBe(1)
+      })
+      expect(cbs.autoResults[0].message).toContain('录音异常提前结束')
+      expect(cbs.autoResults[0].message).toContain('3s')
+      expect(cbs.autoResults[0].message).toContain('whisper 不可达')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('超时但无音频文件 → 自动重试一次后仍无文件才提示占用', async () => {
