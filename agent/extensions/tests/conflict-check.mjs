@@ -120,7 +120,7 @@ async function main() {
       'autopilot_status', 'autopilot_stats', 'autopilot_policy', 'autopilot_failover',
       'memory_store', 'memory_search', 'memory_stats', 'memory_forget', 'memory_recall',
       'schedule_task', 'ctx_exec', 'ctx_note', 'ctx_list', 'ctx_snap',
-      'todo', 'subagent',
+      'todo', 'subagent', 'plan_enter', 'plan_exit',
       'web_search', 'fetch_url', 'web_fetch',
       'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
       'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
@@ -145,16 +145,39 @@ async function main() {
         cmdMap[item.value] = ext
       }
     }
-    const expected = [
-      'auto:status', 'auto:policy', 'auto:failover', 'auto:pause', 'auto:resume',
-      'admin:restart',
-      'schedule',
-      'memory',
-      'plan', 'planclear', 'planresume', 'planview', 'todos', 'usage-diag',
-    ]
+    // 命令整合规范（2026-09）：每扩展 ≤2 命令，具体功能用子命令参数指定，description 标注 help 用法；
+    // 新增命令必须同步更新此清单（防 / 菜单噪音回归）
+    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice']
     const actual = Object.keys(cmdMap).sort()
-    for (const c of expected) {
-      assert(cmdMap[c], `command "${c}" not found in any extension`)
+    const missing = expected.filter((c) => !cmdMap[c])
+    const extra = actual.filter((c) => !expected.includes(c))
+    if (missing.length) throw new Error(`expected commands missing: ${missing.join(', ')}`)
+    if (extra.length) throw new Error(`unexpected commands: ${extra.join(', ')}（每扩展命令须整合为 ≤2 个并同步更新本清单）`)
+  })
+
+  // ── 2b. Command integration gate ──
+  await test('extension commands follow integration convention (≤2 per ext, help supported)', () => {
+    const perExt = {}
+    for (const [ext, items] of Object.entries(all)) {
+      for (const item of items) {
+        if (item.type !== 'command') continue
+        if (!perExt[ext]) perExt[ext] = []
+        perExt[ext].push(item)
+      }
+    }
+    for (const [ext, cmds] of Object.entries(perExt)) {
+      if (cmds.length > 2) {
+        throw new Error(`Extension "${ext}" registers ${cmds.length} commands (>2)。请整合为单命令 + 子命令参数（如 /voice start|stop），并保留 help 子命令`)
+      }
+      for (const c of cmds) {
+        if (c.value === 'usage-diag') continue // 单功能命令例外
+        const filePath = join(EXTENSIONS_DIR, c.file)
+        if (!existsSync(filePath)) continue
+        const content = readFileSync(filePath, 'utf-8')
+        if (!content.includes('help')) {
+          console.log(`  ⚠ Command "${c.value}" (${ext}) 未包含 help 支持（建议: 子命令 help / -h / --help）`)
+        }
+      }
     }
   })
 

@@ -33,14 +33,14 @@
 
 ### 3. 自管理
 
-命令：`/admin:restart`（重启需确认）
+命令：`/auto restart`（重启需确认）
 工具：`admin_status` `admin_list_models` `admin_set_model` `admin_list_sessions` `admin_switch_session` `admin_get_config` `admin_set_config` `admin_restart`
 
-状态/统计：`/auto:status [--stats]`（--stats 附加遥测统计） `/auto:policy` `/auto:failover [--exec]` `/auto:pause` `/auto:resume`
+状态/统计：`/auto status [--stats]`（--stats 附加遥测统计） `/auto policy` `/auto failover [--exec]` `/auto pause` `/auto resume`（`/auto help` 查看全部用法）
 
 > 精简说明：`/admin:model` `/admin:session` `/admin:config` 已移除（分别由内置 `/model`、`/resume` `/session` `/tree`、`/settings` 或模型侧 admin_* 工具替代）；`/loop` `/remind` 已并入 `/schedule loop|remind`。
 
-**安全约束**：策略/预算配置仅 `/auto:policy` 命令可写；`autopilot_policy` 工具只读；failover 链为配置白名单。
+**安全约束**：策略/预算配置仅 `/auto policy` 命令可写；`autopilot_policy` 工具只读；failover 链为配置白名单。
 
 ## 配置
 
@@ -92,4 +92,4 @@ npx vitest run        # 88 用例：storage/notifications + policy/failover/budg
 
 ## 升级说明
 
-替换 `settings.json` 中 `extensions/pi-admin/index.ts` 与 `extensions/pi-scheduler/index.ts` 两条目为 `extensions/pi-autopilot/index.ts`（rebuild.sh 已自动处理）。工具 `admin_*`、`schedule_task` 全部保留；命令已精简（见上文）：仅保留 `/admin:restart`、`/auto:*` 与 `/schedule`（`/loop` `/remind` 并入其子命令）。
+替换 `settings.json` 中 `extensions/pi-admin/index.ts` 与 `extensions/pi-scheduler/index.ts` 两条目为 `extensions/pi-autopilot/index.ts`（rebuild.sh 已自动处理）。工具 `admin_*`、`schedule_task` 全部保留；命令已精简（见上文）：仅保留 `/auto` 与 `/schedule`（`/loop` `/remind` 并入其子命令）。

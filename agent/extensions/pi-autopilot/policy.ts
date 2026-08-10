@@ -46,7 +46,7 @@ export function decide(
     }
     return {
       type: 'fail',
-      note: `超时（${Math.round(info.durationMs / 1000)}s），建议通过 /auto:policy 调整 maxRunTime 或配置 fallbackModels（超时因子 ${timeoutFactor}）`,
+      note: `超时（${Math.round(info.durationMs / 1000)}s），建议通过 /auto policy 调整 maxRunTime 或配置 fallbackModels（超时因子 ${timeoutFactor}）`,
     }
   }
 

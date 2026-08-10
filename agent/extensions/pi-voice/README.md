@@ -5,14 +5,14 @@
 ## 功能
 
 - **/voice** 开始/停止录音并转写（快捷键 `Ctrl+Alt+R`；软键盘/外接键盘均可，或用 `/voice` 命令）
-- **/voice start|stop|cancel|doctor|model|bench** 录音子命令、依赖诊断、模型切换、速度基准
+- **/voice <start|stop|cancel|tts|doctor|model|bench|help>** 录音/朗读子命令（`/voice help` 查看全部用法）；无参数 = 录音中则停止转写，否则开始录音
 - **听写模式**：录音中按**回车** = 结束当前段并转写（状态条显示「⚙ 转写中…」），完成后**自动续录**下一段；用快捷键/命令停止为正常退出（不续录）。各段文本追加到输入框，最后统一修改后发送
 - **/voice model** 列出模型；`/voice model <名>` 切换（tiny/base/small/medium/large-v3，重启 whisper 服务生效）
 - **/voice bench** 录 5 秒音频测转写速度，输出实时率 RTF 与换模型建议
-- **/tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/tts speak [文本]** 手动朗读（JSON/纯符号内容会过滤并提示）；**/tts status** 查看朗读开关、队列与后端状态
-- **TTS 自动朗读语义**：默认关闭（非语音状态不朗读）；语音输入（开始录音/语音直发）后自动开启朗读，键盘输入自动关闭——形成语音对话闭环；手动 `/tts on|off` 后不再自动切换。只朗读最终回复（`message_end` 中 `stopReason=stop`），中间轮与 JSON/结构化摘要自动过滤；**串行队列合并策略**：同时只朗读一条，新回复到来时丢弃中间待读内容（中间内容无需朗读），杜绝 TTS 进程堆积
+- **/voice tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/voice tts speak [文本]** 手动朗读（JSON/纯符号内容会过滤并提示）；**/voice tts status** 查看朗读开关、队列与后端状态
+- **TTS 自动朗读语义**：默认关闭（非语音状态不朗读）；语音输入（开始录音/语音直发）后自动开启朗读，键盘输入自动关闭——形成语音对话闭环；手动 `/voice tts on|off` 后不再自动切换。只朗读最终回复（`message_end` 中 `stopReason=stop`），中间轮与 JSON/结构化摘要自动过滤；**串行队列合并策略**：同时只朗读一条，新回复到来时丢弃中间待读内容（中间内容无需朗读），杜绝 TTS 进程堆积
 - 转写文本默认**插入输入框**供确认（配置 `autoSend` 为 true 时直接发送）
-- 录音时长到上限（`maxSeconds`）自动转写；`/tts status` 显示自动转写结果暂存
+- 录音时长到上限（`maxSeconds`）自动转写；`/voice tts status` 显示自动转写结果暂存
 - 完全本地转写（faster-whisper），无需 API key，离线可用
 - 快捷键依赖终端转发修饰键序列：**tmux 会话须启用 `extended-keys`**（见下"安装与启动"第 4 步）；录音快捷键仅 `Ctrl+Alt+R`（Ctrl+Shift+R 已移除——与部分终端/输入法冲突易误触），也可直接用 `/voice` 命令
 - 录音中回车拦截依赖核心补丁 `scripts/patch-voice-enter.mjs`（pi update 后需重跑，`rebuild.sh` 会自动执行；**未打补丁时回车键会被扩展无条件吞掉（输入提交/菜单选择失效），且扩展检测不到补丁时将自动禁用回车听写并提示**，其余功能正常）
@@ -80,7 +80,7 @@ apt-get install ffmpeg        # PRoot 侧
 | `PI_VOICE_MIC_BIN` | `termux-microphone-record` | 录音命令 |
 | `PI_VOICE_FFMPEG_BIN` | `ffmpeg` | 转码命令 |
 | `PI_VOICE_TTS_BIN` | `termux-tts-speak` | 朗读命令 |
-| `PI_VOICE_TTS_ENABLED` | `0` | 自动朗读回复开关（默认关闭，语音输入自动开启；`/tts on|off` 落盘持久化并切换为手动模式） |
+| `PI_VOICE_TTS_ENABLED` | `0` | 自动朗读回复开关（默认关闭，语音输入自动开启；`/voice tts on|off` 落盘持久化并切换为手动模式） |
 | `PI_VOICE_TTS_MAX_CHARS` | `400` | 单次朗读最大字符数 |
 | `PI_VOICE_AUTO_SEND` | `0` | 转写后直接发送（不插入编辑框） |
 | `PI_VOICE_MAX_SECONDS` | `120` | 录音上限秒数（0 = 手动停止） |
@@ -112,14 +112,15 @@ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18766/health   # 401
 /voice model         列出当前与可用模型
 /voice model <名称>  切换模型（重启 whisper 服务，加载/下载耗时）
 /voice bench         录 5 秒测转写速度（RTF 与换模型建议）
-/tts on|off 开关自动朗读回复（状态持久化）；无参数等价切换
-/tts speak  朗读最近一条回复；/tts speak <文本> 朗读指定文本
-/tts status 朗读开关、最近回复长度、自动转写暂存、whisper 服务状态
+/voice tts on|off 开关自动朗读回复（状态持久化）；无参数等价切换
+/voice tts speak  朗读最近一条回复；/voice tts speak <文本> 朗读指定文本
+/voice tts status 朗读开关、最近回复长度、自动转写暂存、whisper 服务状态
+/voice help       全部子命令用法（含未知子命令提示）
 ```
 
 **听写模式**：`/voice start` 或快捷键开始录音后，每说完一段按**回车**：立即停止录音并转写（状态条显示「⚙ 转写中…」），文本追加进输入框，随后自动开始下一段录音；继续口述、回车切段。全部说完用 `Ctrl+Alt+R`/`/voice` 正常停止（不自动续录），修改输入框中的累积文本后发送。听写模式下转写文本始终进输入框（不随 `autoSend` 直发）。录音中回车切段**依赖核心补丁** `scripts/patch-voice-enter.mjs`（pi update 后重跑，或直接跑 `rebuild.sh`；**未检测到补丁时扩展自动禁用回车键**，避免回车被吞导致输入提交失效，其余功能正常）。
 
-录音超过 `maxSeconds` 会自动停止转写（此时无编辑框上下文：`autoSend` 开启则直发，否则暂存，可用 `/tts status` 查看）。
+录音超过 `maxSeconds` 会自动停止转写（此时无编辑框上下文：`autoSend` 开启则直发，否则暂存，可用 `/voice tts status` 查看）。
 
 ## Troubleshooting
 

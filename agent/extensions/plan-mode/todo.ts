@@ -118,14 +118,11 @@ function statusLabel(status: string): string {
   return labels[status] ?? status;
 }
 
-export function registerTodosCommand(pi: ExtensionAPI): void {
-  pi.registerCommand("todos", {
-    description: "按状态分组显示所有计划任务",
-    handler: async (_args, ctx) => {
-      if (!ctx.hasUI) {
-        ctx.ui.notify("/todos 需要交互模式", "error");
-        return;
-      }
+export async function runTodosCommand(pi: ExtensionAPI, ctx: any): Promise<void> {
+  if (!ctx.hasUI) {
+    ctx.ui.notify("/plan todos 需要交互模式", "error");
+    return;
+  }
       const state = getState();
       const visible = selectVisibleTasks(state);
       if (visible.length === 0) {
@@ -160,6 +157,4 @@ export function registerTodosCommand(pi: ExtensionAPI): void {
       }
 
       ctx.ui.notify(lines.join("\n"), "info");
-    },
-  });
 }

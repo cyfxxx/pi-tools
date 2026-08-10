@@ -61,124 +61,129 @@ function reply(pi: ExtensionAPI, text: string): void {
 }
 
 export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler): void {
-  // ── /auto:status ─────────────────────────────────────────────────
-  pi.registerCommand('auto:status', {
-    description: '显示自主运行状态：模型、会话、任务、遥测、预算、failover 链。--stats 附加遥测统计（按模型/按任务）。',
+  // ── /auto（整合 auto:status/policy/failover/pause/resume 与 admin:restart） ──
+  const AUTO_USAGE = [
+    '/auto status [--stats]   显示状态（--stats 附加按模型/按任务遥测统计）',
+    '/auto policy             查看自主运行策略',
+    '/auto policy set <路径> <值>  修改策略（enabled/maxIdleMinutes/requeueOnRestart/policy.*/budget.*/fallbackModels）',
+    '/auto failover [--exec]  dry-run 测试 failover 目标（--exec 实际执行切换重启）',
+    '/auto pause              全局暂停调度与自主运行动作',
+    '/auto resume             恢复全局调度',
+    '/auto restart            重启 Agent（需确认，自动恢复会话）',
+    '/auto help               显示本帮助',
+  ].join('\n')
+
+  pi.registerCommand('auto', {
+    description: '自主运行：status/policy/failover/pause/resume/restart/help（/auto help 查看用法）',
     handler: async (args: string, ctx: ExtensionCommandContext): Promise<void> => {
-      const settings = readSettings()
-      const config = await readAutopilotConfig()
-      const tasks = await listTasks()
-      const telemetry = await readTelemetry()
-      const byModel = statsByModel(telemetry)
-      const enabled = tasks.filter(t => t.enabled).length
-      const lines = [
-        '自主运行状态',
-        `  模型: ${settings.defaultProvider || '?'}/${settings.defaultModel || '?'}`,
-        `  自主运行: ${config.enabled ? '开启' : '关闭'} | 全局暂停: ${(await readTasks()).settings.paused ? '是' : '否'}`,
-        `  定时任务: ${tasks.length}（启用 ${enabled}）`,
-        `  遥测: ${telemetry.length} 条`,
-      ]
-      if (byModel.length) lines.push(`  最佳模型: ${byModel[0].provider}/${byModel[0].model} (${Math.round(byModel[0].successRate * 100)}%)`)
-      lines.push(`  今日: ${todayRuns(telemetry)} 次 / $${todayCost(telemetry).toFixed(4)}`)
-      lines.push(`  failover: ${config.fallbackModels.length ? config.fallbackModels.map(f => `${f.provider}/${f.model}`).join(' → ') : '(未配置)'}`)
-      if (args.trim().includes('--stats')) {
-        const byTask = statsByTask(telemetry)
-        lines.push('', '按模型:')
-        for (const m of byModel.slice(0, 10)) lines.push(`  ${m.provider}/${m.model}: ${Math.round(m.successRate * 100)}%, ${m.runs} 次, 平均 ${Math.round(m.avgDurationMs / 1000)}s, $${m.totalCost.toFixed(4)}`)
-        lines.push('按任务:')
-        for (const t of byTask.slice(0, 10)) lines.push(`  ${t.taskName}: ${Math.round(t.successRate * 100)}%, ${t.runs} 次, ${t.failures} 失败`)
-      }
-      reply(pi, lines.join('\n'))
-    },
-  })
-
-  // ── /auto:policy ─────────────────────────────────────────────────
-  pi.registerCommand('auto:policy', {
-    description: '查看或修改自主运行策略。只读: /auto:policy；修改: /auto:policy set <路径> <值>。路径支持 enabled / maxIdleMinutes / requeueOnRestart / policy.failoverAfter / policy.suspendAfter / policy.timeoutFactor / budget.maxRunsPerDay / budget.maxCostPerDay / budget.allowedModels / fallbackModels（JSON 数组）。',
-    handler: async (args: string, ctx): Promise<void> => {
-      const m = args.trim().match(/^set\s+(\S+)\s+([\s\S]+)$/)
-      if (!m) {
-        const config = await readAutopilotConfig()
-        reply(pi, [
-          '自主运行策略（修改: /auto:policy set <路径> <值>）',
-          `  enabled: ${config.enabled}`,
-          `  fallbackModels: ${JSON.stringify(config.fallbackModels)}`,
-          `  maxIdleMinutes: ${config.maxIdleMinutes}`,
-          `  requeueOnRestart: ${config.requeueOnRestart}`,
-          `  policy.failoverAfter: ${config.policy.failoverAfter}`,
-          `  policy.suspendAfter: ${config.policy.suspendAfter}`,
-          `  policy.timeoutFactor: ${config.policy.timeoutFactor}`,
-          `  budget.maxRunsPerDay: ${config.budget.maxRunsPerDay}`,
-          `  budget.maxCostPerDay: ${config.budget.maxCostPerDay}`,
-          `  budget.allowedModels: ${JSON.stringify(config.budget.allowedModels || [])}`,
-        ].join('\n'))
-        return
-      }
-      const path = m[1]
-      const value = parseValue(m[2].trim())
-      const config = await readAutopilotConfig()
-      const setDeep = (obj: Record<string, unknown>, p: string, v: unknown): boolean => {
-        const parts = p.split('.')
-        let cur = obj
-        for (let i = 0; i < parts.length - 1; i++) {
-          if (typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) cur[parts[i]] = {}
-          cur = cur[parts[i]] as Record<string, unknown>
+      const [sub, ...rest] = args.trim().split(/\s+/)
+      const restArgs = rest.join(' ')
+      switch (sub) {
+        case 'status': {
+          const settings = readSettings()
+          const config = await readAutopilotConfig()
+          const tasks = await listTasks()
+          const telemetry = await readTelemetry()
+          const byModel = statsByModel(telemetry)
+          const enabled = tasks.filter(t => t.enabled).length
+          const lines = [
+            '自主运行状态',
+            `  模型: ${settings.defaultProvider || '?'}/${settings.defaultModel || '?'}`,
+            `  自主运行: ${config.enabled ? '开启' : '关闭'} | 全局暂停: ${(await readTasks()).settings.paused ? '是' : '否'}`,
+            `  定时任务: ${tasks.length}（启用 ${enabled}）`,
+            `  遥测: ${telemetry.length} 条`,
+          ]
+          if (byModel.length) lines.push(`  最佳模型: ${byModel[0].provider}/${byModel[0].model} (${Math.round(byModel[0].successRate * 100)}%)`)
+          lines.push(`  今日: ${todayRuns(telemetry)} 次 / $${todayCost(telemetry).toFixed(4)}`)
+          lines.push(`  failover: ${config.fallbackModels.length ? config.fallbackModels.map(f => `${f.provider}/${f.model}`).join(' → ') : '(未配置)'}`)
+          if (restArgs.includes('--stats')) {
+            const byTask = statsByTask(telemetry)
+            lines.push('', '按模型:')
+            for (const m of byModel.slice(0, 10)) lines.push(`  ${m.provider}/${m.model}: ${Math.round(m.successRate * 100)}%, ${m.runs} 次, 平均 ${Math.round(m.avgDurationMs / 1000)}s, $${m.totalCost.toFixed(4)}`)
+            lines.push('按任务:')
+            for (const t of byTask.slice(0, 10)) lines.push(`  ${t.taskName}: ${Math.round(t.successRate * 100)}%, ${t.runs} 次, ${t.failures} 失败`)
+          }
+          reply(pi, lines.join('\n'))
+          break
         }
-        cur[parts[parts.length - 1]] = v
-        return true
+        case 'policy': {
+          const m = restArgs.match(/^set\s+(\S+)\s+([\s\S]+)$/)
+          if (!m) {
+            const config = await readAutopilotConfig()
+            reply(pi, [
+              '自主运行策略（修改: /auto policy set <路径> <值>）',
+              `  enabled: ${config.enabled}`,
+              `  fallbackModels: ${JSON.stringify(config.fallbackModels)}`,
+              `  maxIdleMinutes: ${config.maxIdleMinutes}`,
+              `  requeueOnRestart: ${config.requeueOnRestart}`,
+              `  policy.failoverAfter: ${config.policy.failoverAfter}`,
+              `  policy.suspendAfter: ${config.policy.suspendAfter}`,
+              `  policy.timeoutFactor: ${config.policy.timeoutFactor}`,
+              `  budget.maxRunsPerDay: ${config.budget.maxRunsPerDay}`,
+              `  budget.maxCostPerDay: ${config.budget.maxCostPerDay}`,
+              `  budget.allowedModels: ${JSON.stringify(config.budget.allowedModels || [])}`,
+            ].join('\n'))
+            break
+          }
+          const path = m[1]
+          const value = parseValue(m[2].trim())
+          const config = await readAutopilotConfig()
+          const setDeep = (obj: Record<string, unknown>, p: string, v: unknown): boolean => {
+            const parts = p.split('.')
+            let cur = obj
+            for (let i = 0; i < parts.length - 1; i++) {
+              if (typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) cur[parts[i]] = {}
+              cur = cur[parts[i]] as Record<string, unknown>
+            }
+            cur[parts[parts.length - 1]] = v
+            return true
+          }
+          setDeep(config as unknown as Record<string, unknown>, path, value)
+          await writeAutopilotConfig(config)
+          reply(pi, `已更新策略: ${path} = ${JSON.stringify(value)}`)
+          break
+        }
+        case 'failover': {
+          const config = await readAutopilotConfig()
+          const { provider, model } = currentModel()
+          const plan = await planFailover(config.fallbackModels, provider, model)
+          if (!plan.target) {
+            reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}`)
+            break
+          }
+          if (restArgs.includes('--exec')) {
+            reply(pi, await executeFailover(plan.target, plan.reason, false))
+            break
+          }
+          reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}\n（dry-run，使用 --exec 实际执行）`)
+          break
+        }
+        case 'pause':
+          await setSettings({ paused: true })
+          reply(pi, '已全局暂停调度')
+          break
+        case 'resume':
+          await setSettings({ paused: false })
+          reply(pi, '已恢复调度')
+          break
+        case 'restart': {
+          const reason = restArgs.trim() || '用户请求重启'
+          const confirmed = await ctx.ui.confirm('重启 Agent', `确认重启？\n原因: ${reason}`)
+          if (!confirmed) break
+          ctx.ui.notify('正在重启...', 'info')
+          writeRestartRequest('restart', { reason })
+          try { ctx.shutdown() } catch { process.exit(0) }
+          break
+        }
+        case 'help':
+        case '-h':
+        case '--help':
+        case '':
+          reply(pi, AUTO_USAGE)
+          break
+        default:
+          reply(pi, `未知子命令: /auto ${sub}\n\n${AUTO_USAGE}`)
       }
-      setDeep(config as unknown as Record<string, unknown>, path, value)
-      await writeAutopilotConfig(config)
-      reply(pi, `已更新策略: ${path} = ${JSON.stringify(value)}`)
-    },
-  })
-
-  // ── /auto:failover ───────────────────────────────────────────────
-  pi.registerCommand('auto:failover', {
-    description: 'dry-run 测试 failover 目标选择。可选参数 --exec 实际执行切换重启。',
-    handler: async (args: string, ctx): Promise<void> => {
-      const config = await readAutopilotConfig()
-      const { provider, model } = currentModel()
-      const plan = await planFailover(config.fallbackModels, provider, model)
-      if (!plan.target) {
-        reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}`)
-        return
-      }
-      if (args.trim().includes('--exec')) {
-        reply(pi, await executeFailover(plan.target, plan.reason, false))
-        return
-      }
-      reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}\n（dry-run，使用 --exec 实际执行）`)
-    },
-  })
-
-  // ── /auto:pause /auto:resume ─────────────────────────────────────
-  pi.registerCommand('auto:pause', {
-    description: '全局暂停调度与自主运行动作（保留现有任务与状态）。',
-    handler: async (_args, ctx): Promise<void> => {
-      await setSettings({ paused: true })
-      reply(pi, '已全局暂停调度')
-    },
-  })
-
-  pi.registerCommand('auto:resume', {
-    description: '恢复全局调度。',
-    handler: async (_args, ctx): Promise<void> => {
-      await setSettings({ paused: false })
-      reply(pi, '已恢复调度')
-    },
-  })
-
-  // ── /admin:restart（保留：需用户确认的重启） ──────────────────────
-  pi.registerCommand('admin:restart', {
-    description: '重启 Agent。自动保存当前会话，重启后恢复。',
-    handler: async (args, ctx) => {
-      const reason = args.trim() || '用户请求重启'
-      const confirmed = await ctx.ui.confirm('重启 Agent', `确认重启？\n原因: ${reason}`)
-      if (!confirmed) return
-      ctx.ui.notify('正在重启...', 'info')
-      writeRestartRequest('restart', { reason })
-      try { ctx.shutdown() } catch { process.exit(0) }
     },
   })
 
