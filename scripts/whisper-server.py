@@ -28,6 +28,28 @@ os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 MODEL = os.environ.get("PI_WHISPER_MODEL") or "base"
 PORT = int(os.environ.get("PI_WHISPER_PORT", "18766"))
 MODELS_DIR = os.environ.get("PI_WHISPER_MODELS", "/opt/pi-whisper/models")
+
+# OpenCC 繁→简（whisper 对中文默认输出繁体，转写后统一转简体）；
+# 延迟导入：opencc 缺失时仅跳过转换，不阻塞服务启动。
+_t2s = None
+
+def _get_t2s():
+    global _t2s
+    if _t2s is None:
+        try:
+            import opencc
+
+            _t2s = opencc.OpenCC("t2s")
+        except Exception:
+            _t2s = False
+    return _t2s
+
+def _to_simplified(text, language):
+    """中文转写结果统一转简体（俄语/英语等其他语言不受影响）。"""
+    if not text or not language or not language.startswith("zh"):
+        return text
+    c = _get_t2s()
+    return c.convert(text) if c else text
 TOKEN = os.environ.get("PI_WHISPER_TOKEN", "")
 
 _model = None
@@ -95,6 +117,7 @@ class Handler(BaseHTTPRequestHandler):
                     vad_filter=True,
                 )
                 text = "".join(s.text.strip() + " " for s in segments).strip()
+                text = _to_simplified(text, info.language)
                 self._send(200, {"text": text, "language": info.language, "model": MODEL})
             finally:
                 os.unlink(path)
