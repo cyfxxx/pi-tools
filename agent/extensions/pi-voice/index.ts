@@ -63,6 +63,9 @@ const ENTER_DEBOUNCE_MS = 800
 let config: VoiceConfig
 let lastAssistantText = ''
 let lastAutoDictation = ''
+/** 最近一次 UI 上下文（input/message_end 事件更新）：超时自动转写无调用方 ctx，
+ *  需要它来清状态条、粘贴转写文本进输入框。会话存活期间事件频繁触发，引用基本实时。 */
+let lastCtx: ExtensionContext | null = null
 let ttsEnabled: boolean
 /** 用户是否手动设置过 TTS（true 后不再被自动切换覆盖） */
 let ttsManual = false
@@ -149,11 +152,18 @@ export default function (pi: ExtensionAPI): void {
           if (config.autoSend) {
             pi.sendUserMessage(r.text, { deliverAs: 'steer' })
             pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 已达录音时长上限，已自动转写并发送：${r.text}`, display: true })
+          } else if (lastCtx) {
+            // 与手动停止一致的交付：清状态条 + 转写文本进输入框供确认
+            lastCtx.ui.setStatus('pi-voice', undefined)
+            lastCtx.ui.pasteToEditor(r.text + ' ')
+            lastCtx.ui.notify('⏰ 已达录音时长上限，转写完成，已插入输入框', 'info')
           } else {
             pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 已达录音时长上限，已自动转写（暂存，可 /voice tts speak 朗读）：${r.text}`, display: true })
           }
         } else if (r.message) {
           lastAutoDictation = ''
+          // 失败/空转写也清除状态条（录音中提示不应残留）
+          lastCtx?.ui.setStatus('pi-voice', undefined)
           pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: r.message, display: true })
         }
       },
@@ -344,7 +354,8 @@ export default function (pi: ExtensionAPI): void {
   // 输入事件：区分语音/键盘输入来源，控制自动 TTS 与防误操作。
   // 键盘输入（interactive）→ 自动模式关闭朗读（语音对话结束）；
   // 录音/转写进行中键盘提交 → 拦截并提示，避免误操作打断语音流程。
-  pi.on('input', (event) => {
+  pi.on('input', (event, ctx) => {
+    lastCtx = ctx
     if (event.source === 'interactive') {
       if (!ttsManual && ttsEnabled) autoSetTts(false)
       if (dictation.isRecording() || dictation.isTranscribing()) {
@@ -361,7 +372,8 @@ export default function (pi: ExtensionAPI): void {
 
   // 自动朗读 assistant 回复（仅最终回复的文本部分，异步不阻塞）
   // 中间轮（stopReason=toolUse）与 JSON/结构化摘要不朗读，避免语音轰炸与朗读垃圾内容
-  pi.on('message_end', (event) => {
+  pi.on('message_end', (event, ctx) => {
+    lastCtx = ctx
     if (!ttsEnabled) return
     const msg = event?.message
     if (!msg || msg.role !== 'assistant') return
