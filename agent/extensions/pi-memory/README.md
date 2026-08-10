@@ -95,7 +95,7 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 1. **session_before_compact** — compaction 前异步提取（不阻塞压缩）
 2. **session_shutdown** — 会话结束提取
 
-提取通道：`pi -p` 子进程（同 pi-cron.sh 离线通道），模型可用 `PI_MEMORY_EXTRACT_MODEL` 覆盖。
+提取通道：`pi -p` 子进程（同 pi-cron.sh 离线通道，使用当前配置的模型）。
 
 防护机制：
 - **递归斩断**：提取子进程携带 `PI_MEMORY_EXTRACT=1`，其自身不再触发提取（否则每次提取进程退出又 spawn 下一轮，形成无限链条与并行进程）
@@ -187,7 +187,7 @@ ctx-lite 已合并入 pi-memory：
 ## 九、测试
 
 ```
-cd agent/extensions/pi-memory && npm test   # vitest, 49 用例
+cd agent/extensions/pi-memory && npm test   # vitest, 53 用例
 ```
 
 覆盖：存储迁移/TTL/原子写、四操作消解、冲突取代、BM25 排序、中文 bigram、注入预算截断、提取 JSON 容错解析、幂等限频、全流程 mock runner。
@@ -202,5 +202,4 @@ cd agent/extensions/pi-memory && npm test   # vitest, 49 用例
 |----------|------|------|
 | `PI_MEMORY_DIR` | `~/.pi/memory` | 数据目录 |
 | `PI_MEMORY_INJECT_TOKENS` | `500` | 常驻注入预算 |
-| `PI_MEMORY_EXTRACT_MODEL` | 当前模型 | 提取用模型（`pi -p` 通道） |
 | `CTX_LITE_DIR` | `~/.pi/ctx-lite` | 旧数据迁移源 |

@@ -140,7 +140,7 @@ export function registerCommands(pi: ExtensionAPI): void {
           ctx.ui.notify(`已清除全部笔记数据 (${noteCount} 条笔记, ${cpCount} 个检查点)`, 'info')
           return
         }
-        const keepMatch = rest.match(/--keep\s+(\d+)/)
+        const keepMatch = rest.match(/--keep[=\s]+(\d+)/)
         const keep = Math.min(Math.max(keepMatch ? parseInt(keepMatch[1], 10) : 10, 1), 100)
         const dryRun = rest.includes('--dry-run')
 

@@ -535,7 +535,7 @@ export function registerTools(pi: ExtensionAPI): void {
       let msg = `Saved note "${key}" (${valueKB} KB)`
       if (totalSize > MAX_NOTES_SIZE) {
         const sizeMB = (totalSize / (1024 * 1024)).toFixed(1)
-        msg += `\nWarning: total notes size ${sizeMB} MB exceeds 1 MB — consider cleaning up with /memory:cleanup`
+        msg += `\nWarning: total notes size ${sizeMB} MB exceeds 1 MB — consider cleaning up with /memory cleanup`
       }
       if (ttl) msg += `\nExpires: ${ttl}`
       return { content: [{ type: 'text', text: msg }], details: null }

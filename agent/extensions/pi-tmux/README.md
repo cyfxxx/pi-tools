@@ -54,9 +54,9 @@ tmux_stop(name="build", remove_log=true)
   "pi-tmux": {
     "bin": "tmux",
     "prefix": "pi-",
-    "log_dir": "~/.pi/logs/tmux",
-    "default_lines": 100,
-    "default_timeout_sec": 120
+    "logDir": "~/.pi/logs/tmux",
+    "defaultLines": 100,
+    "defaultTimeoutSec": 120
   }
 }
 ```
