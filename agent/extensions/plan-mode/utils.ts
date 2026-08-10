@@ -123,9 +123,8 @@ export function isSafeCommand(command: string): boolean {
 
 /**
  * 规划模式 subagent 拦截判定（参考 opencode explore 只读隔离模式）。
- * ⚠️ 暂未启用：2026-08 实测 subagent 工具在 TUI 会话未进 registry（Tool subagent
- * not found，白名单超前暴露）。待注册机制稳定后，将 PLAN_MODE_TOOLS 加回 subagent、
- * 在 tool_call 拦截处调用本函数。参数形状对齐 subagent 工具
+ * 已启用：PLAN_MODE_TOOLS/NORMAL_MODE_TOOLS 均含 subagent，tool_call 拦截处调用本函数。
+ * 参数形状对齐 subagent 工具
  * single { agent?, task } / parallel { tasks[] } / chain { chain[] }。
  */
 export function assertPlanSubagentAllowed(input: unknown): string | null {
