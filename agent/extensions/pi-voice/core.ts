@@ -61,10 +61,15 @@ export function startRecording(
   cfg: VoiceConfig,
   onExit: (code: number, stderr?: string) => void,
 ): { child: ChildProcess; file: string } {
-  // 防御性清理：Termux:API 的 MediaRecorder 是单实例。若上次录音未正常释放
-  // （-q 未生效 / 进程残留 / 自动超时转写后立即重录），新实例会启动即退出
-  // （code 0 且无文件），表现为“录音启动失败：已退出且未生成音频”。
-  // 启动前清理残留实例并短暂等待服务释放；调用方已拦截进行中的录音，此处不会误杀。
+  // 清理残留录音：先 -q 优雅停止 Termux:API 服务侧的 MediaRecorder（pkill 杀 CLI
+  // 进程不会释放服务侧麦克风占用，残留状态会让新实例报 "Recording already in
+  // progress!" 并秒退），再 pkill 兜底杀 CLI 进程，最后等待服务释放。
+  // 调用方已拦截进行中的录音，此处不会误杀当前会话录音。
+  try {
+    execFileSync(cfg.micBin, ['-q'], { timeout: 8000 })
+  } catch {
+    // 无进行中录音或 -q 失败：忽略，继续
+  }
   try {
     execFileSync('pkill', ['-f', 'termux-microphone-record'])
   } catch {
