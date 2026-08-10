@@ -722,6 +722,13 @@ ${todoList}
   });
 
   // Handle plan completion and plan mode UI
+  // 记录本轮是否有工具活动（todo 状态校验提醒用）：模型有操作但未同步任务状态时，
+  // agent_end 注入提醒核对（不主动改状态，仅提示）。
+  let lastTurnToolActivity = false;
+  pi.on("tool_execution_end", async () => {
+    lastTurnToolActivity = true;
+  });
+
   pi.on("agent_end", async (event, ctx) => {
     // 执行模式：检测计划修订——修订意图必须来自用户消息（assistant 汇报/总结含"修订"等词不触发）
     if (executionMode) {
@@ -777,7 +784,23 @@ ${todoList}
         updateStatus(ctx);
         todoOverlay?.update();
         persistState();
+      } else if (lastTurnToolActivity) {
+        // 任务状态校验提醒：本轮有工具操作，但存在未完成任务未更新状态。
+        // 温和提醒模型核对（不主动改状态），避免任务状态与实际脱节。
+        const pending = visible.filter((t) => t.status !== "completed");
+        if (pending.length > 0) {
+          const done = visible.filter((t) => t.status === "completed").length;
+          pi.sendMessage(
+            {
+              customType: "plan-mode-recovery",
+              content: `[任务状态提醒] 上轮有工具操作但 ${pending.length} 项任务状态未同步（${done}/${visible.length} 完成）。请调用 todo 工具核对：已完成用 todo update id=N status=completed，未完成的保持 in_progress 并继续。`,
+              display: false,
+            },
+            { triggerTurn: false },
+          );
+        }
       }
+      lastTurnToolActivity = false;
       return;
     }
 

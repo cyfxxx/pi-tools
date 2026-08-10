@@ -627,6 +627,13 @@ if [ -f "$PI_HOME/scripts/patch-voice-enter.mjs" ]; then
 else
   warn "patch-voice-enter.mjs 缺失，跳过"
 fi
+if [ -f "$PI_HOME/scripts/patch-plan-tools.mjs" ]; then
+  node "$PI_HOME/scripts/patch-plan-tools.mjs" >/dev/null 2>&1 \
+    && ok "工具 schema 恢复补丁（plan-mode 模型侧切换）" \
+    || warn "工具 schema 补丁未应用（pi 版本可能已改动）：恢复会话模型无法调用新注册工具（plan_enter/plan_exit），可移除补丁改用用户侧快捷键切换（方案 2）"
+else
+  warn "patch-plan-tools.mjs 缺失，跳过"
+fi
 
 # Scheduler 离线调度安装（可选）
 if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
