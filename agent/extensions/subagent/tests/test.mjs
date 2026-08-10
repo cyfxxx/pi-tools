@@ -152,6 +152,70 @@ test("mapWithConcurrencyLimit 结果保序即使完成顺序乱", async () => {
 	assert.deepStrictEqual(out, [1, 2, 3, 4]);
 });
 
+// ---------- discoverAgents 覆盖顺序（3） ----------
+// 用临时目录 + PI_CODING_AGENT_DIR 隔离验证 both 模式下项目级覆盖用户级
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { discoverAgents } from "../agents.ts";
+
+function makeAgentDiscoveryFixtures() {
+	const base = mkdtempSync(join(tmpdir(), "pi-subagent-agents-"));
+	const userAgents = join(base, "agent", "agents");
+	const proj = join(base, "proj", ".pi");
+	mkdirSync(userAgents, { recursive: true });
+	mkdirSync(join(proj, "agents"), { recursive: true });
+	const agentMd = (name, desc) =>
+		`---\nname: ${name}\ndescription: ${desc}\n---\n\n${desc} 的 system prompt`;
+	writeFileSync(join(userAgents, "foo.md"), agentMd("foo", "user-foo"));
+	writeFileSync(join(userAgents, "bar.md"), agentMd("bar", "user-bar"));
+	writeFileSync(join(proj, "agents", "foo.md"), agentMd("foo", "project-foo"));
+	const oldEnv = process.env.PI_CODING_AGENT_DIR;
+	process.env.PI_CODING_AGENT_DIR = join(base, "agent");
+	const cleanup = () => {
+		if (oldEnv === undefined) delete process.env.PI_CODING_AGENT_DIR;
+		else process.env.PI_CODING_AGENT_DIR = oldEnv;
+		rmSync(base, { recursive: true, force: true });
+	};
+	return { cwd: join(base, "proj"), cleanup };
+}
+
+test("discoverAgents both 同名 agent 项目级覆盖用户级", () => {
+	const { cwd, cleanup } = makeAgentDiscoveryFixtures();
+	try {
+		const { agents } = discoverAgents(cwd, "both");
+		const foo = agents.find((a) => a.name === "foo");
+		assert.strictEqual(foo.description, "project-foo", "both 模式下 foo 应来自项目级");
+		assert.strictEqual(foo.source, "project");
+		assert.strictEqual(agents.length, 2, "bar 仍来自用户级");
+	} finally {
+		cleanup();
+	}
+});
+
+test("discoverAgents user 只取用户级", () => {
+	const { cwd, cleanup } = makeAgentDiscoveryFixtures();
+	try {
+		const { agents } = discoverAgents(cwd, "user");
+		assert.strictEqual(agents.length, 2);
+		assert.ok(agents.every((a) => a.source === "user"));
+	} finally {
+		cleanup();
+	}
+});
+
+test("discoverAgents project 只取项目级", () => {
+	const { cwd, cleanup } = makeAgentDiscoveryFixtures();
+	try {
+		const { agents } = discoverAgents(cwd, "project");
+		assert.strictEqual(agents.length, 1);
+		assert.strictEqual(agents[0].name, "foo");
+		assert.strictEqual(agents[0].source, "project");
+	} finally {
+		cleanup();
+	}
+});
+
 // ---------- summary ----------
 console.log(`\n${passed} passed, ${failed} failed${failed ? `\n${failures.map((f) => `  ✗ ${f}`).join("\n")}` : ""}`);
 if (failed > 0) process.exit(1);

@@ -28,7 +28,7 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 ```
 
 - 状态机在 `dictation.ts`（纯逻辑 + 依赖注入，可单测）；`index.ts` 只做命令注册与 UI 接线
-- 隐私（即用即弃）：录音文件转写完成后立即删除；启动时与 `session_shutdown` 时清理超过 24h 的残留音频
+- 隐私（即用即弃）：录音文件转写完成后立即删除；清空 tmpDir 全部残留音频（启动时与 `session_shutdown` 时）
 - 安全：可配置共享 Bearer token 保护 whisper 服务（见下文"鉴权"）
 
 ## 依赖
@@ -66,7 +66,7 @@ apt-get install ffmpeg        # PRoot 侧
 ## 存储与权限
 
 - 录音默认存到 **`/storage/emulated/0/pi-voice/`**（Android 共享存储）：Termux:API 的 MediaRecorder 无法打开 PRoot 容器内路径（会报 `open failed: ENOENT`），这是录音"无反应/停不掉"的根因。可用 `PI_VOICE_TMP_DIR` 覆盖；非 Android 环境自动回落 `/tmp/pi-voice`。
-- 每次录音的前转换记录为 m4a + wav，转写完成后立即删除（即用即弃）；启动与 `session_shutdown` 时清理超过 24h 的残留。
+- 每次录音的前转换记录为 m4a + wav，转写完成后立即删除（即用即弃）；清空 tmpDir 全部残留音频（启动时与 `session_shutdown` 时）。
 - 权限：在 Android 设置授予 **Termux:API 麦克风**权限；Termux 还需存储访问权限（读写 `/storage/emulated/0/pi-voice/`）。
 
 ## 配置
@@ -112,7 +112,7 @@ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18766/health   # 401
 /voice model         列出当前与可用模型
 /voice model <名称>  切换模型（重启 whisper 服务，加载/下载耗时）
 /voice bench         录 5 秒测转写速度（RTF 与换模型建议）
-/voice tts on|off 开关自动朗读回复（状态持久化）；无参数等价切换
+/voice tts on|off 开关自动朗读回复（状态持久化）；无参数显示用法
 /voice tts speak  朗读最近一条回复；/voice tts speak <文本> 朗读指定文本
 /voice tts status 朗读开关、最近回复长度、自动转写暂存、whisper 服务状态
 /voice help       全部子命令用法（含未知子命令提示）

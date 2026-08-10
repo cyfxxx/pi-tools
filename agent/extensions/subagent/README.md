@@ -27,7 +27,8 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 - **上下文隔离** — 每个子进程独立上下文，互不干扰
 - **任务专业化** — 不同 agent 负责不同角色（侦察/计划/执行/审阅）
 - **流式进度** — 实时看到子代理的工具调用和输出
-- **模型降级** — LLM API 失败时自动尝试备用模型
+
+> 注：早期设想中的「模型降级」（LLM API 失败时自动尝试备用模型）**未实现** —— `agents.ts` 只解析 `model` 单字段，无 `fallback_models` 自动降级。
 
 ---
 
@@ -37,7 +38,7 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 ┌──────────────────────────────────────────────────────────────────┐
 │                      subagent 扩展                               │
 │                                                                  │
-│  index.ts (1040 行)                    agents.ts (126 行)        │
+│  index.ts (1100 行)                   agents.ts (126 行)        │
 │  ┌────────────────────────────┐       ┌──────────────────────┐  │
 │  │ 1 个 LLM 工具: subagent    │       │ 核心函数:             │  │
 │  │   ├─ execute() 主逻辑      │       │ discoverAgents()     │  │
@@ -200,7 +201,8 @@ You are a specialized agent. Your system prompt goes here.
 | `description` | 是 | 用途描述 |
 | `tools` | 否 | 工具白名单（逗号分隔，默认全部） |
 | `model` | 否 | 指定模型 ID。省略则继承当前会话模型 |
-| `fallback_models` | 否 | 备用模型列表，主模型不可用时自动降级 |
+
+> ⚠️ `fallback_models`（备用模型自动降级）**未实现**，请勿在 frontmatter 中使用。
 
 ### 内置 agent
 
@@ -223,7 +225,7 @@ You are a specialized agent. Your system prompt goes here.
 | `~/.pi/agent/agents/*.md` | 用户级 | 始终（默认） |
 | `.pi/agents/*.md` | 项目级 | `agentScope:"project"` 或 `"both"` |
 
-同名时，`agentScope:"both"` 下用户级覆盖项目级。
+同名时，`agentScope:"both"` 下**项目级覆盖用户级**（`discoverAgents` 先写入用户级再写入项目级，同名后者生效）。
 
 ---
 

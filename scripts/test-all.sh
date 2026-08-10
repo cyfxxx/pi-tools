@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-all.sh — pi-tools 一键全量回归
-# 5 套扩展测试 + subagent mjs 测试 + 根 typecheck + 扩展冲突检查
+# 8 套 vitest + subagent mjs 测试 + 扩展注册面测试 + 根 typecheck + 扩展冲突检查
 # 任一失败以非零码退出并汇总失败清单
 set -uo pipefail
 
@@ -38,9 +38,13 @@ cyn "== 根 typecheck (tsc) =="
 (cd "$EXTS" && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit >/dev/null 2>&1)
 report $? "tsc -p tsconfig.json"
 
+cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
+(cd "$EXTS/pi-web-search" && ./node_modules/.bin/vitest run tests/extensions.test.ts >/dev/null 2>&1)
+report $? "extensions.test.ts (23 用例)"
+
 cyn "== 扩展冲突检查 =="
 (cd "$EXTS" && node tests/conflict-check.mjs >/dev/null 2>&1)
-report $? "conflict-check (7 项)"
+report $? "conflict-check (8 项)"
 
 cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载） =="
 python3 -c "

@@ -50,7 +50,7 @@
 |------|------|
 | **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），5 状态机（pending→in_progress→completed→deleted，blocked 阻塞可回退） |
 | **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓/⏸）、删除线、溢出折叠、标题行高亮当前执行步骤 |
-| **只读工具集** | 限制可用工具为 read、bash、grep、glob |
+| **只读工具集** | 限制可用工具为 read、bash、grep、glob、todo、web_search、fetch_url、subagent、plan_exit（共 9 个，`PLAN_MODE_TOOLS`） |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
 | **`[DONE:n]` 标记** ~~→ 已移除~~ | 统一使用 `todo update status=completed` 完成步骤 |
@@ -86,8 +86,10 @@
               │          Plan Mode                   │
               │         (只读探索阶段)                 │
               │                                      │
-│  可用工具:                            │
-│    read / bash / grep / glob         │
+              │  可用工具 (9 个):                      │
+              │    read / bash / grep / glob / todo   │
+              │    web_search / fetch_url / subagent  │
+              │    plan_exit                           │
               │                                      │
               │  Bash 受 allowlist 限制               │
               │  (cat、grep、ls 等只读命令)            │
@@ -222,7 +224,7 @@
         │   └── planPresented = true
         │
         ├── 捕获本轮 Q&A 对 (用户输入 + agent 回复)
-        │   └── 自动清理：超过 6 条时移除最早的 2 条
+        │   └── 自动清理：超过 6 条时保留最近 6 条（qaMessages.slice(-6)）
         │
         ├── 展示待办列表消息（customType: "plan-todo-list"）
         │
@@ -259,7 +261,7 @@
 
 ### 5.2 核心状态变量
 
-所有状态定义在 `index.ts:77-83`：
+所有状态定义在 `index.ts:95-99`：
 
 ```typescript
 let planModeEnabled = false;    // 是否处于规划模式（只读）
@@ -269,19 +271,20 @@ let planDir: string | null = null; // 当前计划的 git 版本库路径
 let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 ```
 
-`lastPersistedHash`（`index.ts:168`）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
+`lastPersistedHash`（`index.ts:197`）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
 
 ### 5.3 事件处理器详解
 
-扩展通过 Pi Coding Agent 的 `pi.on()` API 监听 **6 个生命周期事件**：
+扩展通过 Pi Coding Agent 的 `pi.on()` API 监听 **11 个生命周期事件**：`tool_call`、`context`、`before_agent_start`、`turn_end`、`tool_execution_end`、`agent_end`、`session_start`、`session_compact`、`session_tree`、`session_shutdown`、`agent_start`（`pi.on` 注册共 12 次，其中 `tool_execution_end` 注册 2 次）。以下详解主要事件：
 
-#### `pi.on("tool_call", ...)` — Bash 安全拦截
-- 只在 `planModeEnabled=true` 且工具名为 `bash` 时生效
-- 调用 `isSafeCommand()` 做双重检查
-- 不安全命令返回 `{ block: true, reason }` 阻止执行
+#### `pi.on("tool_call", ...)` — 只读工具强制拦截
+只在 `planModeEnabled=true` 时生效，三类拦截：
+- **edit / write 硬拦截**：直接返回 `{ block: true, reason }`，不依赖 `setActiveTools` 移除工具（恢复会话的工具快照可能残留旧工具，此拦截是防御性兜底）
+- **bash 安全检查**：调用 `isSafeCommand()` 双重检查，不安全命令返回 `{ block: true, reason }` 阻止执行
+- **subagent 隔离**：调用 `assertPlanSubagentAllowed()`，仅允许 `agent="scout"`（worker/reviewer/未指定均拦截，防落可写 general-purpose）
 
 #### `pi.on("context", ...)` — 消息上下文过滤
-- 对所有 `plan-*` 注入型消息（`plan-mode-context`、`plan-execution-context`、`plan-pressure-tag`、`plan-mode-recovery`、`plan-urgency-hint`、`plan-summary-request`、`plan-skill-list`、`plan-complete`、`plan-todo-list`）执行**只保留最新一条**去重
+- 对所有 `plan-*` 注入型消息（共 11 种：`plan-mode-context`、`plan-execution-context`、`plan-pressure-tag`、`plan-mode-recovery`、`plan-urgency-hint`、`plan-summary-request`、`plan-skill-list`、`plan-complete`、`plan-revise`、`plan-todo-list`、`plan-progress`，见 `index.ts` 的 `INJECTED_CUSTOM_TYPES`）执行**只保留最新一条**去重
 - 防止历史注入消息作为 user 消息永久累积在上下文中，浪费 token
 - 本轮新注入的消息不受影响（保留最新一条）
 
@@ -324,6 +327,14 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 - 恢复 overlay UI 与状态栏
 - 如果恢复后处于规划模式，设置只读工具集
 
+#### 其余 5 个事件（简介）
+
+- `pi.on("tool_execution_end", ...)`（注册 2 次）：① 记录本轮是否有 todo/其它工具活动（`lastTurnTodoActivity` / `lastTurnToolActivity`）；② todo 工具成功执行后刷新 TodoOverlay
+- `pi.on("session_compact", ...)` — 压缩完成后重置 TodoOverlay 完成态显示并刷新
+- `pi.on("session_tree", ...)` — 会话树切换后重置 TodoOverlay 完成态显示并刷新
+- `pi.on("session_shutdown", ...)` — 会话关闭时 dispose TodoOverlay
+- `pi.on("agent_start", ...)` — 每轮开始前按模式强制刷新工具集（`--continue` 恢复会话的工具快照可能不含新注册的 `plan_enter`/`plan_exit`），并隐藏上一轮已完成的步骤
+
 ### 5.4 UI 集成
 
 | UI 组件 | 代码 | 视觉效果 |
@@ -339,13 +350,32 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 
 ## 六、安全模型：Bash Allowlist
 
-安全模型位于 `utils.ts:97-101`，采用**双重检查**机制：
+安全模型位于 `utils.ts:99`，采用**先规范化、再双重检查**的机制：
 
 ```typescript
 export function isSafeCommand(command: string): boolean {
-  const isDestructive = DESTRUCTIVE_PATTERNS.some((p) => p.test(command));
-  const isSafe = SAFE_PATTERNS.some((p) => p.test(command));
-  return !isDestructive && isSafe;
+  const trimmed = command.trim();
+  if (!trimmed) return false;
+
+  // 尾部 2>/dev/null：允许且仅允许这一种重定向形态
+  const withStderrDiscard = /\s*2\s*>\s*\/dev\/null\s*$/.test(trimmed);
+  const core0 = withStderrDiscard ? trimmed.replace(/\s*2\s*>\s*\/dev\/null\s*$/, "").trimEnd() : trimmed;
+  if (!withStderrDiscard) {
+    // 未剥离的其它重定向一律拒绝（> / >> / 2> 非 /dev/null / 2>&1 等）
+    if (/>|>>/.test(core0)) return false;
+  }
+  // 剥离后不得再出现重定向（如 `ls 2>/dev/null > out`）
+  if (withStderrDiscard && />|>>/.test(core0)) return false;
+
+  // cd 前缀：cd <dir> && <核心命令>（核心命令仍须整体单条白名单）
+  const cdMatch = /^\s*cd\s+("[^"]*"|'[^']*'|\S+)\s*&&\s*/.exec(core0);
+  const core = /* cd 前缀剥离 */ cdMatch ? core0.slice(cdMatch[0].length).trim() : core0;
+  if (cdMatch && core.includes("&&")) return false;
+
+  // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()）
+  if (/[;&|&]|`|\$\(/.test(core)) return false;
+
+  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
 }
 ```
 
@@ -371,7 +401,7 @@ export function isSafeCommand(command: string): boolean {
 | 文件查看 | `cat` `head` `tail` `less` `more` `wc` `sort` `uniq` `diff` `file` `stat` `du` `df` `tree` |
 | 搜索 | `grep` `find` `rg` `fd` `awk` `jq` `sed -n` |
 | 目录 | `ls` `pwd` `which` `whereis` `type` |
-| 系统信息 | `uname` `whoami` `id` `date` `uptime` `free` `ps` `top` `htop` `env` `printenv` `cal` |
+| 系统信息 | `uname` `whoami` `id` `date` `uptime` `free` `ps` `top` `htop` `cal` |
 | Git 读 | `git status/log/diff/show/branch/remote/ls-*` |
 | 包信息 | `npm list/ls/view/info/search/outdated/audit` `yarn list/info/why/audit` |
 | 网络 | `curl` `wget -O -` |
@@ -382,8 +412,9 @@ export function isSafeCommand(command: string): boolean {
 1. **双重检查**：防止单一规则遗漏（例如一个命令不在黑名单但也不在白名单 → 拒绝）
 2. **正则精确性**：`^\s*cat\b` 使用行首锚定 + 词边界，防止 `cat foo | something_dangerous` 中的误判
 3. **Git 读/写分离**：`git status` 允许，`git push` 禁止
-4. **重定向保护**：`(^|[^<])>` 模式防止输出重定向覆盖文件
-5. **前缀空格处理**：所有白名单正则以 `^\s*` 开头，兼容前导空格
+4. **重定向保护**：仅允许尾部 `2>/dev/null` 这一种形态；其余任何重定向（`>`、`>>`、`2>` 非 /dev/null、`2>&1`）一律拒绝
+5. **复合命令限制**：仅放行 `cd <dir> && <单条白名单命令>` 前缀；管道、分号、多重 `&&`、反引号、`$()` 命令替换一律拒绝
+6. **前缀空格处理**：所有白名单正则以 `^\s*` 开头，兼容前导空格
 
 ---
 
@@ -491,7 +522,7 @@ function persistState(): void {
 
 ### 恢复
 
-在 `session_start` 事件中恢复（`index.ts:619-688`）：
+在 `session_start` 事件中恢复（`index.ts:958-1038`）：
 
 1. 从 `ctx.sessionManager.getEntries()` 中找到最后一个 `customType === "plan-mode"` 的 entry
 2. 恢复所有状态变量（模式、执行状态、计划目录、QA 历史、任务列表）
@@ -514,7 +545,7 @@ function persistState(): void {
 ### 版本化流程
 
 ```typescript
-// index.ts:150-166
+// index.ts:178
 async function savePlanIteration(planText: string, iteration: number): Promise<string> {
   const timestamp = Date.now();
   const dir = planDir ?? join(PLANS_DIR, `plan-${timestamp}`);
@@ -539,8 +570,8 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 // index.ts
 // 默认: 读取 planDir/plan.md，通过 customType: "plan-view" 消息展示全文
 // --diff: 通过 runGit 执行 git diff HEAD~1..HEAD -- plan.md（无上一版本回退 git show --stat HEAD），
-//         结果以 customType: "plan-diff" 消息展示（原 /plandiff）
-// --qa: 回溯 qaMessages 数组中的用户-agent 问答对按时间展示（原 /planqa）
+//         结果以 customType: "plan-diff" 消息展示
+// --qa: 回溯 qaMessages 数组中的用户-agent 问答对按时间展示
 ```
 
 ---
@@ -551,11 +582,14 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 命令 | 描述 | 实现位置 |
 |------|------|----------|
-| `/plan` | 切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:218-221` |
+| `/plan` | 无参切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:328`（registerCommand），无参分支 `index.ts:460` |
+| `/plan enter` | 启用规划模式（已在规划模式时无操作） | `index.ts:328` |
+| `/plan exit` | 退出规划模式（任务保留） | `index.ts:328` |
+| `/plan help` | 输出全部子命令用法（`-h`/`--help` 同义；PLAN_USAGE 定义于 `index.ts:316`） | `index.ts:328` |
 | `/plan todos` | 按状态分组显示所有计划任务 | `todo.ts` |
-| `/plan view` | 显示当前版本计划全文；`--diff` 显示与上一版差异；`--qa` 显示问答历史 | `index.ts` |
-| `/plan clear` | 清空所有计划任务（手动重置） | `index.ts` |
-| `/plan resume` | 恢复执行模式，继续未完成的计划 | `index.ts` |
+| `/plan view` | 显示当前版本计划全文；`--diff` 显示与上一版差异；`--qa` 显示问答历史 | `index.ts:328` |
+| `/plan clear` | 清空所有计划任务（手动重置） | `index.ts:328` |
+| `/plan resume` | 恢复执行模式，继续未完成的计划 | `index.ts:328` |
 
 ### 工具
 
@@ -583,13 +617,13 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 快捷键 | 操作 | 实现位置 |
 |--------|------|----------|
-| `Ctrl+Alt+P` | 切换规划模式 | `index.ts:343-345` |
+| `Ctrl+Alt+P` | 切换规划模式 | `index.ts:468` |
 
 ### CLI 参数
 
 | 参数 | 描述 | 实现位置 |
 |------|------|----------|
-| `--plan` | 以规划模式启动（只读） | `index.ts:102-104` |
+| `--plan` | 以规划模式启动（只读） | `index.ts:119` |
 
 ---
 
@@ -783,7 +817,7 @@ pi.on("agent_end", async (event, ctx) => {
 | 文件查看 | `cat` `head` `tail` `less` `more` `wc` `sort` `uniq` `diff` `file` `stat` `du` `df` `tree` `which` `whereis` `type` |
 | 搜索 | `grep` `find` `rg` `fd` `awk` `jq` `sed -n` |
 | 目录 | `ls` `pwd` `lsblk` `eza` `bat` |
-| 系统信息 | `uname` `whoami` `id` `date` `cal` `uptime` `free` `ps` `top` `htop` `env` `printenv` |
+| 系统信息 | `uname` `whoami` `id` `date` `cal` `uptime` `free` `ps` `top` `htop` |
 | Git 只读 | `git status` `git log` `git diff` `git show` `git branch` `git remote` `git ls-files` `git ls-tree` `git config --get` |
 | 包信息 | `npm list/ls/view/info/search/outdated/audit` `yarn list/info/why/audit` |
 | 版本 | `node --version` `python --version` |

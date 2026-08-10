@@ -171,7 +171,6 @@ bash ~/.pi/searxng/stop.sh && bash ~/.pi/searxng/start.sh
 ├── index.ts                   # ★ 入口 orchestrator
 ├── config.ts                  # 配置聚合器：settings.json → 环境变量 → 默认值
 ├── types.ts                   # SearchOnlyConfig
-├── env.d.ts                   # Pi ExtensionAPI 类型声明
 ├── package.json               # npm 包配置，入口 → ./index.ts
 ├── tsconfig.json
 ├── install.sh                 # 一键安装脚本（部署扩展 + 可选 SearXNG）
@@ -473,4 +472,4 @@ pi-web-search 集成了 Token 预算管理模块 (`lib/token-budget.ts`、`lib/p
 | `fetch_url` | `max_length` 默认 8000，无浏览器开销 | ~50% vs browser |
 | `web_fetch` | 纯标题+URL，无摘要 | ~80% vs web_search |
 
-每次工具调用结束后自动调用 `recordToolUsage()` 记录到全局预算，LLM 可通过压力标签感知上下文窗口使用率。
+每次工具调用结束后自动调用 `recordToolUsage()` 记录工具使用计数（按工具累计 token 估算，仅供诊断统计，不注入 LLM 上下文）。上下文压力提示由 pi-context 扩展统一承担，本扩展不注入。

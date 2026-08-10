@@ -274,4 +274,4 @@ pi-browser 集成了 Token 预算管理模块 (`lib/token-budget.ts`、`lib/prun
 | `browser_screenshot` | 返回文件路径而非图片数据 | ~100% |
 | `browser_extract` / `browser_evaluate` | 自动记录用量 + 输出截断 | — |
 
-每次工具调用结束后自动调用 `recordToolUsage()` 记录到全局预算，LLM 可通过压力标签感知上下文窗口使用率。
+每次工具调用结束后自动调用 `recordToolUsage()` 记录工具使用计数（按工具累计 token 估算，仅供诊断统计，不注入 LLM 上下文）。上下文压力提示由 pi-context 扩展统一承担，本扩展不注入。

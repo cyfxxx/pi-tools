@@ -12,9 +12,9 @@
 | cron | `/schedule cron "0 9 * * 1-5" standup` | 5 字段 POSIX cron |
 | once | `/schedule remind +30m review PR` | 一次性提醒，执行后自动禁用 |
 
-- 会话内：1s 轮询触发；离线：`pi-cron.sh` 由系统 cron 每分钟调用
-- 任务属性：标签、历史记录、最大运行时间、重试次数、完成通知（邮件/Webhook）
-- 导出/导入（JSON）、cron 表达式预览、模板变量 `{{date}}`/`{{time}}`/`{{model}}`/`{{provider}}`
+- 会话内：30s 轮询触发；离线：`pi-cron.sh` 由系统 cron 每分钟调用
+- 任务属性：标签、历史记录、最大运行时间、重试次数、完成通知（Webhook）
+- 导出/导入（JSON）、cron 表达式预览、模板变量 `{{date}}`/`{{time}}`/`{{datetime}}`/`{{cwd}}`
 
 ### 2. 失败自愈
 
@@ -72,7 +72,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `scheduler.ts` | 1s 轮询、触发、错误处置闭环 |
+| `scheduler.ts` | 30s 轮询、触发、错误处置闭环 |
 | `policy.ts` | 错误分类 + 决策矩阵 |
 | `failover.ts` | fallback 链选择/执行（成功率排序，dry-run） |
 | `watchdog.ts` | 挂死检测与恢复 |
