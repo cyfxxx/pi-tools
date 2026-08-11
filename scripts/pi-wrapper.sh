@@ -54,6 +54,14 @@ if [ -n "$PI_JS" ] && [ -f "$PI_JS" ]; then
   echo "$PI_JS" > "$ANCHOR_FILE" 2>/dev/null
 fi
 
+# 导出 PI_DIST（dist 目录）：wrapper 接管 pi 命令后，扩展/补丁脚本的
+# `which pi` + readlink 探测会解析到 wrapper 自身而失败（如 pi-voice 的
+# enterPatchApplied、patch-*.mjs 的 detectDist）。cli.js 位于 dist/ 下，
+# dirname 即得 dist 目录，供扩展与补丁脚本直接使用。
+if [ -n "$PI_JS" ] && [ -f "$PI_JS" ]; then
+  export PI_DIST="$(dirname "$PI_JS")"
+fi
+
 STATE_FILE="$HOME/.pi/agent/.pi-admin-state.json"
 CRASH_FILE="$HOME/.pi/agent/.pi-autopilot-crash.json"
 LASTGOOD_FILE="$HOME/.pi/agent/.pi-autopilot-lastgood.json"
