@@ -201,8 +201,9 @@ GitHub 同步完成
      # 或从原机打包: pi-backup create --with-auth，新机 pi-backup restore
      ```
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
-4. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
-5. 告知用户重启 pi。
+4. 从 `tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
+5. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
+6. 告知用户重启 pi。
 
 ---
 
@@ -293,7 +294,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 9 | `tmux` 命令 | `tmux -V` 失败 | 按系统安装：`apt-get install -y tmux`（Debian/Ubuntu）\| `dnf install -y tmux`（Fedora/RHEL）\| `pacman -S tmux`（Arch）\| `zypper install tmux`（openSUSE）\| `brew install tmux`（macOS） |
-| 10 | `~/.tmux.conf` | 文件不存在 | 从备份恢复（`tmux.conf` 已纳入归档），无备份则提示手动重建（含 WSL2 专属调优，见 `docs/alacritty-tmux-setup.md`） |
+| 10 | `~/.tmux.conf` | 文件不存在 | 从仓库 `tmux/tmux.conf` 写回（`cp ~/.pi/tmux/tmux.conf ~/.tmux.conf`）；缺失则提示手动重建（含 WSL2 专属调优，见 `docs/alacritty-tmux-setup.md`） |
 | 11 | tmux 插件（tpm/resurrect/continuum） | `~/.tmux/plugins/tpm` 不存在 | `git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm`，然后 `~/.tmux/plugins/tpm/bin/install_plugins`（`~/.tmux.conf` 需含 plugin 配置） |
 
 > **跨系统兼容要点**：
@@ -471,14 +472,20 @@ pi-backup verify
 | Whisper 服务脚本 | `scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
 | Whisper 服务源码 | `scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
-| tmux 配置 | `tmux/tmux.conf`（从 `~/.tmux.conf` 收录） | tmux 键位/插件/持久化配置（WSL2 调优见 docs/alacritty-tmux-setup.md） |
-| Alacritty 配置 | `tmux/alacritty.toml`（从 `~/.config/alacritty/alacritty.toml` 收录） | 终端渲染配置（若存在） |
-| Termux 配置 | `tmux/termux.properties`（从 `~/.termux/termux.properties` 收录） | Termux 键盘栏 extra-keys 等（若存在；语音快捷键依赖） |
+| tmux 配置 | `tmux/tmux.conf` | tmux 键位/插件/持久化配置副本（源 `~/.tmux.conf`；git 同步直接携带，WSL2 调优见 docs/alacritty-tmux-setup.md） |
+| Alacritty 配置 | `tmux/alacritty.toml` | 终端渲染配置副本（源 `~/.config/alacritty/alacritty.toml`，存在时收录） |
+| Termux 配置 | `tmux/termux.properties` | Termux 键盘栏 extra-keys 等副本（源 `~/.termux/termux.properties`，存在时收录；语音快捷键依赖） |
 | tmux 部署文档 | `docs/alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
 | tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
 | tmux 会话注册表 | `agent/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
 
-> **tmux/Termux 配置收录方式**：`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties` 位于 `~/.pi/` 之外，归档时单独收集到归档内 `tmux/` 目录；`restore` 时写回原路径（均"存在时收录"，缺失自动跳过）。
+> **tmux/Termux 配置收录方式**：外部配置（`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties`）以副本形式收在仓库内 `tmux/` 目录——**git 同步（sync/clone）直接携带**，本地归档也直接收录 `tmux/` 目录（不再单独收集外部路径）；`restore`/`clone` 后写回原路径：
+> ```
+> cp ~/.pi/tmux/tmux.conf ~/.tmux.conf            # tmux 配置
+> cp ~/.pi/tmux/termux.properties ~/.termux/      # Termux 键盘栏（Termux 环境）
+> cp ~/.pi/tmux/alacritty.toml ~/.config/alacritty/  # Alacritty（若存在）
+> ```
+> 均"存在时收录"，缺失自动跳过。外部源文件更新后需手动同步回 `tmux/` 再提交（`cp ~/.tmux.conf ~/.pi/tmux/tmux.conf && git add tmux/ && git commit`）。
 
 
 ### 默认排除（`--full` 时额外包含）
