@@ -12,20 +12,13 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 - `memory/` — pi-memory 运行时数据（git 忽略）；`logs/` — 运行时日志
 
-## 语音交流（pi-voice，Termux/Android）
-
-- 入口：`/voice <start|stop|cancel|tts|doctor|model|bench|help>`（无参数=切换）；快捷键 Ctrl+Shift+R
-- 架构：录音 → ffmpeg 16k → faster-whisper（本地 127.0.0.1:18766，`pi-whisper.sh start` 管理）→ 转写插入/直发；TTS 自动朗读最终回复
-- 关键机制：TTS 串行队列合并（防僵尸进程堆积）、录音超时自动转写、听写回车 800ms 防抖、补丁缺失自动禁用回车听写、转写前自动拉起 whisper 服务
-- 配置（`~/.pi/agent/pi-voice.json`）/故障排查（麦克风权限、tmux 组合键透传、TTS 无声音）：见 `extensions/pi-voice/README.md`
-
 ## 验证命令（全量回归）
 
 ```bash
 bash scripts/test-all.sh          # 一键：10 套测试（8 vitest + subagent + 注册面）+ tsc + conflict-check
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 89 / pi-browser 23 / pi-context 39 / plan-mode 51 / pi-tmux 10 / pi-voice 52 用例）
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 53 / pi-autopilot 89 / pi-browser 23 / pi-context 39 / plan-mode 51 / pi-tmux 10 / pi-voice 76 用例）
 注册面：`cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`（23 用例，须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（37 用例）
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
@@ -47,5 +40,6 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **pi-autopilot**（定时调度/看门狗/failover/预算）：`extensions/pi-autopilot/README.md`
 - **pi-tmux**（工具用法/环境缺失/access not allowed 故障）：`extensions/pi-tmux/README.md`
 - **pi-memory / pi-web-search / pi-browser / subagent**：各自 README
+- **pi-voice**（Termux 语音：入口 Ctrl+Alt+R 与 `/voice`，录音/转写/TTS/听写，配置 `pi-voice.json`、故障排查）：`extensions/pi-voice/README.md`
 - **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 只读工具集 + 独立日志）
 - **tmux 部署**（WSL2/WSLg、GPU、clipboard、resurrect/continuum）：`alacritty-tmux-setup.md`
