@@ -7,9 +7,10 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `agent/settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
 - `agent/extensions/` — 9 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice（能力与配置见各自 README）
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）
-- `agent/prompts/`、`agent/agents/`、`agent/skills/` — 提示词文档（PI-SDK-EXTENSION.md）、子代理模板、技能
+- `agent/agents/`、`agent/skills/` — 子代理模板、技能；`agent/prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 - `scripts/` — rebuild.sh（一键重建+补丁）、pi-wrapper.sh（生命周期）、pi-cron.sh（离线定时）、test-all.sh（回归）、pi-whisper.sh + whisper-server.py（whisper 服务）、pi-bg.sh（后台任务，见 README-pi-bg.md）、patch-*.mjs（见下方补丁生命周期）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
+- `docs/` — 开发与部署文档（Termux 注意事项/Pi 扩展注意事项/SDK/tmux 部署）
 - `memory/` — pi-memory 运行时数据（git 忽略）；`logs/` — 运行时日志
 
 ## 验证命令（全量回归）
@@ -42,4 +43,4 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **pi-memory / pi-web-search / pi-browser / subagent**：各自 README
 - **pi-voice**（Termux 语音：入口 Ctrl+Alt+R 与 `/voice`，录音/转写/TTS/听写，配置 `pi-voice.json`、故障排查）：`extensions/pi-voice/README.md`
 - **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 只读工具集 + 独立日志）
-- **tmux 部署**（WSL2/WSLg、GPU、clipboard、resurrect/continuum）：`alacritty-tmux-setup.md`
+- **tmux 部署**（WSL2/WSLg、GPU、clipboard、resurrect/continuum）：`docs/alacritty-tmux-setup.md`

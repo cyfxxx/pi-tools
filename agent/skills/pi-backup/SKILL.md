@@ -288,11 +288,11 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 9 | `tmux` 命令 | `tmux -V` 失败 | 按系统安装：`apt-get install -y tmux`（Debian/Ubuntu）\| `dnf install -y tmux`（Fedora/RHEL）\| `pacman -S tmux`（Arch）\| `zypper install tmux`（openSUSE）\| `brew install tmux`（macOS） |
-| 10 | `~/.tmux.conf` | 文件不存在 | 从备份恢复（`tmux.conf` 已纳入归档），无备份则提示手动重建（含 WSL2 专属调优，见 `alacritty-tmux-setup.md`） |
+| 10 | `~/.tmux.conf` | 文件不存在 | 从备份恢复（`tmux.conf` 已纳入归档），无备份则提示手动重建（含 WSL2 专属调优，见 `docs/alacritty-tmux-setup.md`） |
 | 11 | tmux 插件（tpm/resurrect/continuum） | `~/.tmux/plugins/tpm` 不存在 | `git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm`，然后 `~/.tmux/plugins/tpm/bin/install_plugins`（`~/.tmux.conf` 需含 plugin 配置） |
 
 > **跨系统兼容要点**：
-> - **WSL2（当前环境）**：Alacritty 渲染需 `GALLIUM_DRIVER=d3d12`、`unset WAYLAND_DISPLAY`（wrapper 在 `/usr/bin/alacritty`）；tmux 用 `apt` 安装。详见 `alacritty-tmux-setup.md`。
+> - **WSL2（当前环境）**：Alacritty 渲染需 `GALLIUM_DRIVER=d3d12`、`unset WAYLAND_DISPLAY`（wrapper 在 `/usr/bin/alacritty`）；tmux 用 `apt` 安装。详见 `docs/alacritty-tmux-setup.md`。
 > - **原生 Linux**：无需 Wayland unset，包管理器按发行版（apt/dnf/pacman/zypper）。
 > - **macOS**：`brew install tmux`；`~/.tmux.conf` 中 `xclip` 绑定需替换为 `pbcopy`。
 > - 不同系统 tmux 会话恢复依赖 `tmux-resurrect` 快照目录 `~/.local/share/tmux/resurrect`（不跨机器复制，恢复后需重新保存快照）。
@@ -418,7 +418,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | 扩展冲突测试 | `agent/extensions/tests/` | conflict-check 等扩展级测试脚本 |
 | 共享库 | `agent/lib/` | 共享库源码（context-budget/token-budget/prune/note-store/TOKEN-BUDGET.md） |
 | 子代理定义 | `agent/agents/` | 子代理模板（scout/worker/reviewer.md） |
-| 提示词文档 | `agent/prompts/` | SDK 提示词文档（PI-SDK-EXTENSION.md） |
+| 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup） |
 | npm 配置 | `agent/npm/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
@@ -436,9 +436,9 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | Whisper 服务脚本 | `scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
 | Whisper 服务源码 | `scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
-| tmux 配置 | `tmux/tmux.conf`（从 `~/.tmux.conf` 收录） | tmux 键位/插件/持久化配置（WSL2 调优见 alacritty-tmux-setup.md） |
+| tmux 配置 | `tmux/tmux.conf`（从 `~/.tmux.conf` 收录） | tmux 键位/插件/持久化配置（WSL2 调优见 docs/alacritty-tmux-setup.md） |
 | Alacritty 配置 | `tmux/alacritty.toml`（从 `~/.config/alacritty/alacritty.toml` 收录） | 终端渲染配置（若存在） |
-| tmux 部署文档 | `alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
+| tmux 部署文档 | `docs/alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
 | tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
 
 > **tmux 配置收录方式**：`~/.tmux.conf` 与 `~/.config/alacritty/alacritty.toml` 位于 `~/.pi/` 之外，归档时单独收集到归档内 `tmux/` 目录；`restore` 时写回原路径。
@@ -484,7 +484,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
 7. **调度任务文件**：`agent/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
 8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
-9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 Phase 3 自动按系统包管理器安装；若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `alacritty-tmux-setup.md`。
+9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 Phase 3 自动按系统包管理器安装；若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `docs/alacritty-tmux-setup.md`。
 10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
 11. **配置类文件跨机边界**：`settings.json`（主配置）、`models.json`（模型/密钥）、`pi-voice.json`（whisper 令牌）三者均不在 git 同步范围内且默认不进归档。跨机迁移三选一：① `pi-backup create --with-auth` 打包 → restore；② scp 直接传；③ 新设备手动重建。`rebuild` 的验证阶段会探测缺失并给出对应指引。
 12. **tsconfig 路径重写**：`rebuild` Phase 2-D 会把 `agent/extensions/tsconfig.json` 的 paths 重写到本机实际 pi 安装根。手动 `pi update` 换版本后再次运行 `rebuild.sh`（或只跑类型链接步骤）即可同步。
