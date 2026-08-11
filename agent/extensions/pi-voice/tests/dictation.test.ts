@@ -111,6 +111,98 @@ describe('dictation 状态机', () => {
     expect(deps.transcribe).toHaveBeenCalledTimes(1)
   }, 15000)
 
+  it('maxSeconds 到点自动停止并转写（Node 侧计时替代 -l 服务端超时）', async () => {
+    const deps = makeDeps()
+    const cbs = makeCallbacks()
+    const d = createDictation({ ...cfg, maxSeconds: 1 }, deps, cbs)
+    d.start()
+    expect(d.isRecording()).toBe(true)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    }, { timeout: 4000 })
+    const r = cbs.autoResults[0]
+    expect(r.text).toBe('你好，世界')
+    expect(r.message).toContain('转写完成')
+    expect(r.autoReason).toBe('timer')
+    // 定时器路径主动发 -q 停止（而非依赖服务端 -l 超时）
+    expect(deps.stopRecording).toHaveBeenCalled()
+    expect(d.isRecording()).toBe(false)
+    expect(d.isTranscribing()).toBe(false)
+  }, 6000)
+
+  it('手动 stop 后定时器取消，不再自动转写', async () => {
+    const deps = makeDeps()
+    const cbs = makeCallbacks()
+    const d = createDictation({ ...cfg, maxSeconds: 1 }, deps, cbs)
+    d.start()
+    const r = await d.stop()
+    expect(r.text).toBe('你好，世界')
+    // 等待超过定时器窗口，确认 timer 已取消、无第二次自动转写
+    await new Promise((res) => setTimeout(res, 1600))
+    expect(cbs.autoResults.length).toBe(0)
+    expect(deps.transcribe).toHaveBeenCalledTimes(1)
+  }, 6000)
+
+  it('cancel 后定时器取消，不触发自动转写', async () => {
+    const deps = makeDeps()
+    const cbs = makeCallbacks()
+    const d = createDictation({ ...cfg, maxSeconds: 1 }, deps, cbs)
+    d.start()
+    d.cancel()
+    await new Promise((res) => setTimeout(res, 1600))
+    expect(cbs.autoResults.length).toBe(0)
+    expect(deps.transcribe).not.toHaveBeenCalled()
+  }, 6000)
+
+  it('maxSeconds=0 不设定时器（仅手动停止）', async () => {
+    const deps = makeDeps()
+    const cbs = makeCallbacks()
+    const d = createDictation({ ...cfg, maxSeconds: 0 }, deps, cbs)
+    d.start()
+    await new Promise((res) => setTimeout(res, 300))
+    expect(cbs.autoResults.length).toBe(0)
+    const r = await d.stop()
+    expect(r.text).toBe('你好，世界')
+  }, 4000)
+
+  it('进程意外提前退出：提示异常提前结束而非误报时长到上限', async () => {
+    const deps = makeDeps({ transcribe: vi.fn(async () => ({ text: '', language: '', error: 'whisper 不可达' })) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    const r = cbs.autoResults[0]
+    // 转写失败时 message 带前缀：必须标注“异常提前结束”而非“时长到上限”
+    expect(r.message).toContain('录音异常提前结束')
+    expect(r.message).not.toContain('时长到上限')
+    expect(r.autoReason).toBe('exit')
+  })
+
+  it('启动失败自动重试时强制清理（forceClean）', async () => {
+    const deps = makeDeps({ waitForFileStable: vi.fn(async () => false) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    expect(deps.startRecording).toHaveBeenCalledTimes(1)
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await new Promise((res) => setTimeout(res, 3300))
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+    // 首次无残留：forceClean=false（默认）；重试：forceClean=true
+    expect(vi.mocked(deps.startRecording).mock.calls[0][2]).toEqual({ forceClean: false })
+    expect(vi.mocked(deps.startRecording).mock.calls[1][2]).toEqual({ forceClean: true })
+    // 收尾：第二次 exit 报占用错误，避免残留定时器
+    const onExit2 = vi.mocked(deps.startRecording).mock.calls[1][1]
+    onExit2(0, 'Recording already in progress!')
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+  }, 8000)
+
   it('录音进程自行退出（超时）触发自动转写并回调', async () => {
     const deps = makeDeps()
     const cbs = makeCallbacks()
@@ -123,6 +215,8 @@ describe('dictation 状态机', () => {
       expect(cbs.autoResults.length).toBe(1)
     })
     expect(cbs.autoResults[0].text).toBe('你好，世界')
+    // 进程意外退出标记：-l 0 后服务端无超时，进程退出必然异常
+    expect(cbs.autoResults[0].autoReason).toBe('exit')
     // 进程退出后补发 -q 强制服务收尾（moov atom），再等待文件稳定
     expect(deps.stopRecording).toHaveBeenCalled()
     expect(deps.waitForFileStable).toHaveBeenCalled()
@@ -131,11 +225,11 @@ describe('dictation 状态机', () => {
     expect(d.isTranscribing()).toBe(false)
   })
 
-  it('超时自动转写失败 → 消息带"时长到上限"前缀（区别于用户主动停止）', async () => {
+  it('进程自行退出（-l 0 后无服务端超时）→ 一律“异常提前结束”而非“时长到上限”', async () => {
     const deps = makeDeps({ transcribe: vi.fn(async () => ({ text: '', language: '', error: 'whisper 不可达' })) })
     const cbs = makeCallbacks()
     const d = createDictation(cfg, deps, cbs)
-    // 模拟录音已跑 61s（> maxSeconds 120 的 50% 阈值 → 判为正常超时而非提前退出）
+    // 模拟录音跑了 61s 后进程意外退出
     const now0 = Date.now()
     const spy = vi.spyOn(Date, 'now').mockReturnValueOnce(now0).mockReturnValue(now0 + 61_000)
     try {
@@ -145,7 +239,7 @@ describe('dictation 状态机', () => {
       await vi.waitFor(() => {
         expect(cbs.autoResults.length).toBe(1)
       })
-      expect(cbs.autoResults[0].message).toContain('录音时长到上限')
+      expect(cbs.autoResults[0].message).toContain('录音异常提前结束（61s）')
       expect(cbs.autoResults[0].message).toContain('whisper 不可达')
       expect(d.isTranscribing()).toBe(false)
     } finally {

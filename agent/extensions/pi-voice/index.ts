@@ -149,16 +149,18 @@ export default function (pi: ExtensionAPI): void {
       onAutoComplete: (r) => {
         if (r.text) {
           lastAutoDictation = r.text
+          // 区分自动停止原因：timer = 已到上限；exit = 进程意外提前退出（服务不稳定）
+          const head = r.autoReason === 'exit' ? '⚠️ 录音异常提前结束，已自动转写' : '⏰ 已达录音时长上限，已自动转写'
           if (config.autoSend) {
             pi.sendUserMessage(r.text, { deliverAs: 'steer' })
-            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 已达录音时长上限，已自动转写并发送：${r.text}`, display: true })
+            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `${head}并发送：${r.text}`, display: true })
           } else if (lastCtx) {
             // 与手动停止一致的交付：清状态条 + 转写文本进输入框供确认
             lastCtx.ui.setStatus('pi-voice', undefined)
             lastCtx.ui.pasteToEditor(r.text + ' ')
-            lastCtx.ui.notify('⏰ 已达录音时长上限，转写完成，已插入输入框', 'info')
+            lastCtx.ui.notify(`${head}，已插入输入框`, 'info')
           } else {
-            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `⏰ 已达录音时长上限，已自动转写（暂存，可 /voice tts speak 朗读）：${r.text}`, display: true })
+            pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: `${head}（暂存，可 /voice tts speak 朗读）：${r.text}`, display: true })
           }
         } else if (r.message) {
           lastAutoDictation = ''
