@@ -14,6 +14,8 @@
 │   │   ├── note-store.ts      ctx-lite 笔记持久化（已并入 pi-memory，保留兼容）
 │   │   ├── prune.ts           工具输出裁剪（兼容层 → context-budget.ts）
 │   │   ├── context-budget.ts  统一 Token 预算/估算/裁剪 + 缓存命中统计
+│   │   ├── usage-diag.ts      用量诊断（/usage-diag 数据源）
+│   │   ├── auto-compact.ts    自动压缩触发策略
 │   │   ├── TOKEN-BUDGET.md    使用文档
 │   │   └── tests/             单元测试
 │   ├── extensions/            自定义扩展
@@ -23,6 +25,8 @@
 │   │   ├── plan-mode/         计划模式（TUI 计划/任务管理）
 │   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
+│   │   ├── pi-tmux/           tmux 会话管理（后台任务/长任务）
+│   │   ├── pi-voice/          语音交流（Termux：录音转写 + TTS 朗读）
 │   │   └── pi-context/        token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
@@ -32,7 +36,8 @@
 │   │   └── PI-SDK-EXTENSION.md   Pi SDK 扩展开发说明
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   中文翻译
-│   │   └── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
+│   │   ├── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
+│   │   └── pi-code-review/    代码审查（确定性检查 + 分级报告）
 │   └── npm/
 │       ├── package.json       npm 包声明（rebuild.sh 按 settings.json packages 自动生成）
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
@@ -50,7 +55,11 @@
 │   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启）
 │   ├── install-wrapper.sh     wrapper 安装/卸载
 │   ├── pi-orig.sh             绕过 wrapper 直启（故障逃生）
-│   └── test-all.sh            一键全量回归（测试+类型+冲突检查）
+│   ├── test-all.sh            一键全量回归（测试+类型+冲突检查）
+│   ├── pi-whisper.sh          whisper 常驻服务管理（start/stop/status/restart）
+│   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
+│   ├── patch-*.mjs            核心补丁（voice-enter 回车拦截 / footer-live-context / plan-tools，rebuild.sh 自动执行）
+│   └── pi-bg.sh               后台任务四件套隔离（见 README-pi-bg.md）
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
@@ -148,9 +157,9 @@ pi-backup rebuild --yes          # 静默自动重建
 
 ### 自管理
 
-`/admin:status`、`/admin:model`、`/admin:session`、`/admin:config`、`/admin:restart`（工具 `admin_*` 同名兼容）；新增 `/auto:status`、`/auto:stats`、`/auto:policy set <path> <value>`、`/auto:failover --exec`、`/auto:pause`、`/auto:resume`。
+`/auto <status|stats|policy|failover|pause|resume|restart>`（自管理，`/auto help` 查看用法）与 `/schedule`（定时任务）；工具 `autopilot_*`（status/stats/policy/failover）+ `admin_*`（status/model/session/config/restart）同名兼容。
 
-**策略/预算仅 `/auto:policy` 命令可写**（工具只读，防止 Agent 自我豁免）。
+**策略/预算仅 `/auto policy` 命令可写**（工具只读，防止 Agent 自我豁免）。
 
 **配置：** `.pi-autopilot-config.json`（首次自动生成）；状态/遥测：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`。
 
@@ -177,9 +186,9 @@ bash scripts/install-systemd.sh        # 或安装 systemd timer
 - **自动提取** — compaction / 会话结束时 LLM 分析会话，提取决策/事实/偏好/约定/教训入长期记忆（`pi -p` 离线通道，失败静默，同会话幂等）
 - **自动消解** — Mem0 式四操作（ADD/UPDATE/DELETE/NOOP），同类别同标签冲突时新结论取代旧结论（标记 superseded）
 - **每轮常驻注入** — `before_agent_start` 把 ~500 token「持续记忆」块拼入 system prompt（高价值条目 + 最近会话摘要衔接），预算可用 `PI_MEMORY_INJECT_TOKENS` 调整
-- **手动触发** — `/memory:digest` 立即提取当前会话；`/memory:summary` 查看摘要时间线
+- **手动触发** — `/memory summary` 查看摘要时间线；`/memory search` 手动检索（提取为自动流程；`/memory help` 查看全部子命令）
 
-**文件位置：** `memory/`（entries.json 1 MB 上限 / notes.json / summaries.json / checkpoints/），ctx-lite 旧数据自动迁移。
+**文件位置：** `memory/`（entries.json 1 MB 上限 / notes.json / summaries.json / checkpoints/——检查点为瞬时快照，不入 git），ctx-lite 旧数据自动迁移。
 
 **数据流：**
 ```
@@ -187,7 +196,7 @@ bash scripts/install-systemd.sh        # 或安装 systemd timer
 compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文连续
 ```
 
-**清理：** `/memory:prune` 删除低置信度 + 长期未访问条目；`/ctx-lite:cleanup` 清理旧检查点。
+**清理：** `/memory prune` 删除低置信度 + 长期未访问条目；`/memory cleanup` 清理过期笔记/检查点。
 
 **安装：** 零外部依赖，注册到 `settings.json` 后即生效。无需额外安装步骤。
 
@@ -263,7 +272,7 @@ pi-context 作为 token 优化中枢，通过 `before_agent_start` 事件在每�
 | R2 | `context` | compaction summary 去重，只留最新一份 | 500-1500 tokens/turn |
 | R3 | `context` | 旧 turn（>2 轮）的 thinking 块剪枝 | 10-50% 旧 assistant 消息 |
 | R4 | `tool_result` | bash/read 输出 >5000 字符时截断 | 50-80% 工具结果 |
-| R6 | 命令 | `/ping` 免 LLM 响应 | 单次完全省掉 |
+| R6 | 命令 | `/usage-diag` 用量诊断（免 LLM 响应） | 单次完全省掉 |
 
 R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。工具输出统一经 `lib/context-budget.ts` 记账（默认 20K tokens 输出预算 / 5K per-tool），并聚合缓存命中统计（`recordCacheUsage`）。
 
@@ -274,6 +283,14 @@ R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >50
 - **按阶段拆会话**：一个会话聚焦一个阶段任务（侦察/规划/实现/验证），完成后新开会话继续，避免单会话无限累积。
 - **提前压缩**：长会话中当上下文接近窗口（compaction 触发线 = 窗口 − `compaction.reserveTokens`，默认配置已调至 32768）时，主动 `/compact` 压缩历史。
 - **批量执行**：引导 agent 合并多次 bash 为单次调用，减少固化进历史的碎工具调用（见 APPEND_SYSTEM.md）。
+
+## 语音交流（pi-voice）
+
+Termux/Android 双向语音：麦克风录音 → 本地 faster-whisper 转写 → 语音输入（插入输入框或直发）；回复 TTS 自动朗读。入口 `Ctrl+Alt+R` 或 `/voice`：开始/停止录音并转写；**听写模式**录音中按回车切段转写；支持 `/voice <start|stop|cancel|tts|doctor|model|bench>` 与 `/voice tts status` 诊断。转写完全本地、离线可用。依赖 `pi-whisper.sh`（常驻服务）与 Termux:API。配置 `agent/pi-voice.json`（`PI_VOICE_*` 环境变量）；详见 `agent/extensions/pi-voice/README.md`。
+
+## 后台任务与 tmux（pi-tmux / pi-bg.sh）
+
+`pi-tmux` 扩展提供 tmux 会话管理（`tmux_run/read/wait/send/status`），适合长任务/dev server/交互程序：detached 运行、日志落盘、不阻塞对话。`scripts/pi-bg.sh` 提供后台任务四件套隔离（--no-session + --no-extensions + 只读工具集 + 独立日志），详见 `scripts/README-pi-bg.md` 与 `agent/extensions/pi-tmux/README.md`。
 
 ## Wrapper 生命周期
 
