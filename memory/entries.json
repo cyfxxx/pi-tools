@@ -3798,10 +3798,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 5,
+      "recurrence": 11,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-10T11:17:35.949Z",
-      "accessedAt": "2026-08-10T11:17:35.949Z",
+      "updatedAt": "2026-08-11T15:09:26.696Z",
+      "accessedAt": "2026-08-11T15:09:26.696Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -6016,6 +6016,243 @@
       "updatedAt": "2026-08-11T10:12:45.677Z",
       "accessedAt": "2026-08-11T10:12:45.677Z",
       "observedAt": "2026-08-11T10:12:45.677Z",
+      "deleted": false
+    },
+    {
+      "id": "f3938d5d-f4fc-423d-a2cb-c22f28e96b4c",
+      "category": "fact",
+      "title": "WSLg 音频桥 bug: RDPSource 连接即卡死, pi-voice 在 WSL2 不可用",
+      "content": "WSL2 的 WSLg 音频桥存在 bug：客户端（parec/pactl 等）连接 RDPSource（module-rdp-source）后，wslg 实例内的 pulseaudio 主循环即阻塞卡死——日志定格在 \"RDP Source - Connected\"，之后所有 pactl/paplay/parec 请求无响应（python connect 成功但协议层挂起），录音文件恒为 44 字节空 WAV。2026-08-11 实测 Windows 更新 + wsl --update 均未修复，模式 100% 复现。因此 pi-voice 语音输入/输出在 WSL2 中不可用（非配置/权限/硬件问题，Windows 侧 Realtek 麦克风正常）。替代方案：Termux（Android）上使用 pi-voice；或 Windows 侧录音后 curl POST whisper 转写（127.0.0.1:18766 转写链路本身可用，PyAV 直解 flac/wav/m4a，无需系统 ffmpeg）。",
+      "tags": [
+        "wslg",
+        "audio",
+        "pulseaudio",
+        "pi-voice",
+        "bug",
+        "microphone"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:20:23.157Z",
+      "updatedAt": "2026-08-11T13:20:23.157Z",
+      "accessedAt": "2026-08-11T13:20:23.157Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-11T13:20:23.157Z",
+      "deleted": false
+    },
+    {
+      "id": "992c1a54-f740-4833-bd50-3579d02ed93c",
+      "category": "fact",
+      "title": "WSLg 音频桥 bug 确认: rdp-source 启动即阻塞, 循环重启无效（Win11 24H2 实测）",
+      "content": "WSL2 的 WSLg 音频桥 bug（2026-08-11 在 Win11 24H2 26100 + 最新 WSL 实测）：pulseaudio 启动时 module-rdp-source 同步 connect 到 /mnt/wslg/PulseAudioRDPSource 即阻塞，进程变单线程（Threads:1）卡死，wslg 监督机制循环重启（PID 21↔40 轮换）依然卡死，日志文件 21:19 后不再更新。已穷尽手段均无效：wsl --update、wsl --shutdown 重启、Windows 麦克风隐私权限同意（全局 Allow）、Windows 侧启动录音机激活麦克风通道、--system 进入 utility VM kill -9 强制重启。Windows 侧 Realtek 麦克风硬件 OK。可用操作路径：/mnt/c/Windows/System32/wsl.exe --system 进入 wslg 实例管理进程；PulseServer socket 真身在 /mnt/wslg/runtime-dir/pulse/native。结论：WSLg 麦克风转发在此环境彻底不可用，pi-voice 语音输入/输出走 Termux（Android）方案，或 Windows 侧录音后 curl POST 127.0.0.1:18766 转写（转写链路可用）。",
+      "tags": [
+        "wslg",
+        "audio",
+        "pulseaudio",
+        "pi-voice",
+        "bug",
+        "microphone",
+        "wsl"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:27:03.630Z",
+      "updatedAt": "2026-08-11T13:27:03.630Z",
+      "accessedAt": "2026-08-11T13:27:03.630Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-11T13:27:03.630Z",
+      "deleted": false
+    },
+    {
+      "id": "940fd971-46a6-413c-8cee-e4909ed9804a",
+      "category": "fact",
+      "title": "WSL2 麦克风链路已通: 根因是 Windows 权限弹窗未处理而非 WSLg bug",
+      "content": "WSL2 麦克风链路修复复盘（2026-08-11 Win11 24H2 实测）：此前误判为 WSLg rdp-source 阻塞 bug 不可修复，实际根因是 Windows 麦克风隐私权限未同意（Windows 侧弹窗未处理时，wslg pulseaudio 的 module-rdp-source 同步 connect 永久阻塞、进程单线程卡死、监督机制循环重启均无效；权限同意后重启 WSL 即完全正常）。可用链路验证：parec --device=RDPSource --format=s16le --rate=16000 --channels=1 --file-format=wav 录音 → whisper 127.0.0.1:18766 转写（实测\"现在是露营特势\"转写成功）；paplay --device=RDPSink 播放正常。故障现象特征（连接即卡死/44字节空文件）应首先怀疑 Windows 麦克风权限弹窗未处理，而非 WSLg bug。另：WSL 重启会清空 /tmp；可用 wsl.exe --system 进入 wslg 实例查看/重启 pulseaudio（PID 21/40 轮换，kill -9 后由监督机制自动拉起）。",
+      "tags": [
+        "wslg",
+        "audio",
+        "microphone",
+        "pi-voice",
+        "pulseaudio",
+        "troubleshooting"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:31:25.410Z",
+      "updatedAt": "2026-08-11T13:31:25.410Z",
+      "accessedAt": "2026-08-11T13:31:25.410Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-11T13:31:25.410Z",
+      "deleted": false
+    },
+    {
+      "id": "a1e3116f-11fe-41d0-9794-eba4bce041aa",
+      "category": "fact",
+      "title": "WSLg 音频桥 rdp-source 卡死 bug",
+      "content": "WSL2 + WSLg 环境下 pulseaudio 的 module-rdp-source 连接 RDP 音频通道时同步阻塞，主循环卡死（进程单线程），weston 监督机制循环重启（PID 轮换）。症状：录音仅 44 字节空 WAV、pactl/paplay 挂起、pulseaudio.log 定格在 \"RDP Source - Connected to fd\"。Win11 24H2（26100）+ wsl --update 最新版依旧；隐私权限 Allow、Windows 录音机激活通道均无效。结论：WSL2 麦克风转发不可用，属微软缺陷，勿再重复排查。",
+      "tags": [
+        "wslg",
+        "pulseaudio",
+        "麦克风",
+        "故障排查"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.745Z",
+      "updatedAt": "2026-08-11T13:54:24.745Z",
+      "accessedAt": "2026-08-11T13:54:24.745Z",
+      "observedAt": "2026-08-11T13:54:24.745Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "b4315c34-c970-44fb-a8ce-0dbb62894837",
+      "category": "fact",
+      "title": "whisper 转写服务部署与用法",
+      "content": "本机（WSL2）whisper 服务部署于 /opt/pi-whisper/venv（base 模型约 142M），监听 18766 端口，用 bash ~/.pi/scripts/pi-whisper.sh start 启动，非自启（重启后需手动拉起）。服务端 PyAV 内置解码，可直接转写 flac/wav/m4a，客户端无需系统 ffmpeg。实测 6 秒音频转写 0.84s（RTF≈0.14）。健康检查 GET / 返回 {\"ok\":true,\"model\":\"base\"}。",
+      "tags": [
+        "whisper",
+        "转写",
+        "pi-whisper",
+        "18766"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.745Z",
+      "updatedAt": "2026-08-11T13:54:24.745Z",
+      "accessedAt": "2026-08-11T13:54:24.745Z",
+      "observedAt": "2026-08-11T13:54:24.745Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "41e5f494-aab4-424d-9378-59e172efa187",
+      "category": "fact",
+      "title": "pi-voice 扩展硬编码 Termux 工具",
+      "content": "pi-voice 扩展录音用 termux-microphone-record（Android MediaRecorder），TTS 用 termux-tts-speak，无 Linux fallback；dictation.ts 状态机深度绑定 Android 行为（-i 续录查询、-q moov atom 收尾、单实例冲突重试），不是改 bin 路径即可替换。设计目标环境是 Termux/Android 手机，Linux/WSL 环境不可用属预期，诊断用 /voice doctor。",
+      "tags": [
+        "pi-voice",
+        "termux",
+        "语音",
+        "扩展架构"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "accessedAt": "2026-08-11T13:54:24.746Z",
+      "observedAt": "2026-08-11T13:54:24.746Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "1b0d69ae-cf06-40ff-9476-c6151726a44c",
+      "category": "fact",
+      "title": "tmux 仓库配置含 extended-keys always",
+      "content": "~/.pi 仓库下 tmux/tmux.conf（39 行）含 set -g extended-keys always（tmux 3.4+ CSI-u 加强透传，第 5 行），供 pi 的 Ctrl+Alt+R 录音、Shift+Enter 听写、Ctrl+Shift+R 等键盘依赖；另设前缀 C-a、TZ=Asia/Shanghai、tpm/resurrect/continuum 插件。tpm 插件安装前须先把配置 source 进 tmux server。文件缺失时 pi-backup clone/rebuild 自动写回 ~/.tmux.conf。",
+      "tags": [
+        "tmux",
+        "extended-keys",
+        "pi-backup",
+        "快捷键"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "accessedAt": "2026-08-11T13:54:24.746Z",
+      "observedAt": "2026-08-11T13:54:24.746Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "635528fb-bcb1-4195-9dd1-b7fa068df6c5",
+      "category": "preference",
+      "title": "tmux 状态栏绿底配色偏好",
+      "content": "用户偏好：tmux 状态栏右侧信息段为绿色背景时，字体不用绿色/青色/蓝色系（对比度低看不清）。已统一为：时间黄色、负载白色、内存红色（保留）、左侧会话名白色、前缀指示器黄色。修改已入库（提交 2605527 右侧、b90f333 左侧），其他设备同步后同样生效。",
+      "tags": [
+        "tmux",
+        "状态栏",
+        "配色",
+        "偏好"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "accessedAt": "2026-08-11T13:54:24.746Z",
+      "observedAt": "2026-08-11T13:54:24.746Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "918a61e2-089c-4f61-9010-bcc55731dc29",
+      "category": "fact",
+      "title": "pi 0.84.1 设置菜单新增 6 条翻译",
+      "content": "pi 0.84.1 设置菜单新增 3 个设置项：Mermaid diagrams（Mermaid 图表）、TUI mode（TUI 模式）、Fullscreen scrollbar（全屏滚动条），含各自 description 共 6 条字符串，位于 settings-selector.js 的 SETTINGS 节。patch-all-zh.mjs 已补对应条目，覆盖率 66→72/72（100%），提交 87b67c6 已入库；重启 pi 后生效。",
+      "tags": [
+        "翻译",
+        "patch-all-zh",
+        "settings-selector",
+        "pi 0.84.1"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "accessedAt": "2026-08-11T13:54:24.746Z",
+      "observedAt": "2026-08-11T13:54:24.746Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "d7eb002b-a172-419f-8d30-50e0a821ce64",
+      "category": "fact",
+      "title": "比对配置前须完整读取防漏行误判",
+      "content": "排查\"本机 tmux 配置比仓库多 extended-keys\"时，首次查看仓库 tmux/tmux.conf 看漏第 5 行 set -g extended-keys always，误判远程没有该配置，多加了无用的 on 行（会被 always 覆盖）。教训：比对配置差异前先完整读取（wc -l + 逐行核对）再下结论；用 tail -n +N 合并配置时注意保留注释行（tail -n +5 曾误删第 4 行分隔线注释）。",
+      "tags": [
+        "教训",
+        "配置比对",
+        "tmux",
+        "漏行"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "accessedAt": "2026-08-11T13:54:24.746Z",
+      "observedAt": "2026-08-11T13:54:24.746Z",
+      "environments": [
+        "wsl2"
+      ],
       "deleted": false
     }
   ]
