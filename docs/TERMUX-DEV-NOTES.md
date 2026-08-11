@@ -1,5 +1,8 @@
 # Termux 环境开发注意事项
 
+> **适用环境：Termux/Android（PRoot）**。WSL2/Linux/macOS 下不适用（录音链路为 Termux 专属）。
+> 多环境使用总览见 `docs/ENVIRONMENTS.md`。
+
 本机环境实测经验（2026-08 汇总，pi-voice 录音链路反复踩坑总结）。适用于在 Termux（PRoot 容器）内开发涉及 Android 系统 API 的功能。
 
 ## 路径与权限

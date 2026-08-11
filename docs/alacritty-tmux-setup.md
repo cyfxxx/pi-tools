@@ -1,5 +1,7 @@
 # Alacritty + tmux 部署问题总结
 
+> **适用环境：WSL2/WSLg**（Alacritty + tmux 部署）。Termux/Linux/macOS 下不适用。多环境使用总览见 `docs/ENVIRONMENTS.md`。
+
 > 环境: Ubuntu 24.04 (WSL2/WSLg), root 用户, 无独立 GPU
 > 日期: 2026-08-05
 

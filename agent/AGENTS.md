@@ -10,7 +10,14 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `agent/agents/`、`agent/skills/` — 子代理模板、技能；`agent/prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 - `scripts/` — rebuild.sh（一键重建+补丁）、pi-wrapper.sh（生命周期）、pi-cron.sh（离线定时）、test-all.sh（回归）、pi-whisper.sh + whisper-server.py（whisper 服务）、pi-bg.sh（后台任务，见 README-pi-bg.md）、patch-*.mjs（见下方补丁生命周期）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
-- `docs/` — 开发与部署文档（Termux 注意事项/Pi 扩展注意事项/SDK/tmux 部署）
+- `docs/` — 开发与部署文档（Termux 注意事项/Pi 扩展注意事项/SDK/tmux 部署/多环境指南 ENVIRONMENTS.md）
+
+## 多环境使用约定
+
+- 本仓库在 Termux/Android、WSL2、Linux 等环境间同步使用（GitHub）。**配置层（settings.json/models.json/auth.json）每环境独立**，不跨机覆盖（首次 clone 后按本机配置）
+- **记忆带环境标签**（pi-memory `environments` 字段）：`all` 通用 / `termux` / `wsl2` / `linux` / `macos`；注入与检索自动按当前环境过滤。判定原则：知识本身与环境相关才打标；只是"在该环境发现"的通用知识标 all
+- **运行时数据隔离**：notes.json / summaries.json / checkpoints / sessions / logs 不入库（多机 pull/push 会互相覆盖）；entries.json（长期记忆）入库共享，冲突时以最新 push 为准（`git checkout --theirs`）
+- 环境识别/差异表/切换流程：见 `docs/ENVIRONMENTS.md`
 - `memory/` — pi-memory 运行时数据（git 忽略）；`logs/` — 运行时日志
 
 ## 验证命令（全量回归）
