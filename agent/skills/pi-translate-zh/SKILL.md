@@ -20,7 +20,16 @@ node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs
 
 重启 pi 后生效。
 
-## 改进说明 (v10)
+## 改进说明 (v11)
+
+### v11 改进
+
+- **修复覆盖率双算**：中英混合模板（如 `启用/禁用 Ctrl+P 循环的模型`）此前同时匹配英文/中文两个正则导致 total 虚高、pct 偏低。现改为先收集全部 description/label 模板再按内容分类，slash-commands 85%→100%、settings-selector 88%→100%
+- **修复标识符误报**：纯标识符拼接模板（如 `${m.provider}/${m.id}`）去插值后无字母无中文，不再计入未翻译项（原报 interactive-mode 0/1 为误报）
+- **新增未翻译条目清单**：覆盖率报告后直接列出仍为英文的 description/label 条目（每文件前 3 条），pi update 后可据此快速定位新增字符串
+- **新增未匹配警告**：apply() 的未匹配条目（原文在当前版本不存在）不再仅在干跑模式输出，正常运行结束也汇总警告并附示例，提示可能已删除/移位/已被翻译
+- **跳过节汇总**："跳过：不存在"逐行输出后增加一行汇总（N 节跳过：对应扩展未安装，安装后重跑脚本即可自动翻译）
+- **新增 model-resolver 消息节**：`No models available. Check your installation or add models to models.json.` 自 interactive-mode.js 移位至 core/model-resolver.js（0.84 重构），已迁移翻译条目
 
 ### v10 改进
 
@@ -67,11 +76,12 @@ cp settings-selector.js.bak.1234567890 settings-selector.js
 
 | 文件 | 覆盖状态 |
 |------|---------|
-| `slash-commands.js` | ~85%（description/label 已 100% 中文，剩余为统计口径） |
-| `settings-selector.js` | ~88% |
+| `slash-commands.js` | 100%（22/22） |
+| `settings-selector.js` | 100%（66/66） |
 | `thinking-selector.js` | 100% |
 | `status-indicator.js` | 100% |
 | `interactive-mode.js` | ~40+ 条（非 description/label 格式的独立统计） |
+| `model-resolver.js` | 核心消息已覆盖 |
 | `agent-session.js` / `provider-composer.js` | 核心消息已覆盖 |
 | `pi-lens/index.ts` | ~53% |
 | `@plannotator/pi-extension/index.ts` | ~59% |
