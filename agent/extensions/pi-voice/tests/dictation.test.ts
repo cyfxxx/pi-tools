@@ -217,6 +217,7 @@ describe('dictation 状态机', () => {
     expect(cbs.autoResults[0].text).toBe('你好，世界')
     // 进程意外退出标记：-l 0 后服务端无超时，进程退出必然异常
     expect(cbs.autoResults[0].autoReason).toBe('exit')
+    expect(cbs.autoResults[0].autoSec).toBeDefined()
     // 进程退出后补发 -q 强制服务收尾（moov atom），再等待文件稳定
     expect(deps.stopRecording).toHaveBeenCalled()
     expect(deps.waitForFileStable).toHaveBeenCalled()
