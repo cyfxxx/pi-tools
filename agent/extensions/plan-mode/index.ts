@@ -140,10 +140,16 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     const total = counts.total;
 
     if (executionMode && total > 0) {
-      ctx.ui.setStatus(
-        "plan-mode",
-        ctx.ui.theme.fg("accent", `📋 ${counts.completed}/${total}`),
-      );
+      // 全部完成时直接清除状态条（不依赖消息事件里的 executionMode 退出——
+      // 最后任务由 todo 工具标记完成，发生在消息事件之后，事件不再触发）
+      if (counts.completed >= total) {
+        ctx.ui.setStatus("plan-mode", undefined);
+      } else {
+        ctx.ui.setStatus(
+          "plan-mode",
+          ctx.ui.theme.fg("accent", `📋 ${counts.completed}/${total}`),
+        );
+      }
     } else if (planModeEnabled) {
       ctx.ui.setStatus("plan-mode", ctx.ui.theme.fg("warning", "⏸ plan"));
     } else {
