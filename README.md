@@ -122,6 +122,62 @@ pi-backup rebuild --yes          # 静默自动重建
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
 
+### 新设备恢复引导
+
+```bash
+git clone https://github.com/cyfxxx/pi-tools.git ~/.pi
+cd ~/.pi && bash scripts/rebuild.sh --yes
+bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
+```
+
+> **`~/.pi/` 已存在时**：`git clone` 到非空目录会失败；不要直接 `rm -rf ~/.pi`（会删掉本地会话/配置/凭据且无法恢复）。建议先 `mv ~/.pi ~/.pi.bak` 再克隆，确认无误后删除备份。
+
+**前置条件：**
+
+| 检查项 | 要求 | 验证命令 |
+|--------|------|---------|
+| Node.js | >= 20 | `node -v` |
+| npm | 随 Node 自带 | `npm -v` |
+| python3 + venv | >= 3.10 | `python3 --version && python3 -m venv --help >/dev/null && echo ok` |
+| git | 任意版本 | `git --version` |
+| ca-certificates | 已安装（脚本会自动补装） | `dpkg -l ca-certificates` |
+| 磁盘空间 | >= 2GB 可用 | `df -h .` |
+
+**git 模式边界（缺失项，需手动提供）：** git 同步**不含**以下文件（`.gitignore` 排除），新设备 clone 后缺失是正常的，按表补救，否则 pi 无法启动或功能不完整：
+
+| 缺失项 | 后果 | 补救 |
+|--------|------|------|
+| `agent/settings.json` + `models.json` | pi 无模型配置，无法启动对话 | 原机 `scp` 拷贝，或原机 `pi-backup create --with-auth` 后新机 `pi-backup restore` |
+| `agent/auth.json` | 无 API 凭据 | 同上（`--with-auth` 归档） |
+| `agent/pi-voice.json` | 语音扩展/whisper token 不一致 | 原机拷贝（语音功能不使用可跳过） |
+| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | 手动拷贝（git 模式不含 `~/.pi` 外文件） |
+| 会话历史（`agent/sessions/`） | 新机无原机会话 | 原机 `pi-backup create --include-sessions` 归档恢复；git 模式**永不**含会话 |
+| 运行时日志（`logs/`） | 无法跨机排查问题 | 不入库，原机直接查看 |
+
+**重建后验证：**
+
+```bash
+# 配置校验
+python3 -c "import json; json.load(open('agent/settings.json'))" && echo "settings.json OK"
+python3 -c "import yaml; yaml.safe_load(open('searxng/settings.yml'))" && echo "settings.yml OK"
+
+# 核心依赖
+ls agent/bin/fd agent/bin/rg && echo "binaries OK"
+ls agent/extensions/pi-browser/node_modules/ | wc -l
+
+# SearXNG
+ls searxng/venv/bin/python && echo "venv OK"
+ls searxng/repo/.git && echo "repo OK"
+
+# 定时任务
+ls agent/extensions/pi-autopilot/node_modules/ | wc -l
+crontab -l | grep pi-cron && echo "crontab OK"
+
+# 持久记忆
+ls memory/entries.json && echo "memory OK"
+
+```
+
 ## 自主运行（pi-autopilot）
 
 `pi-autopilot` 融合了原 pi-scheduler（定时任务）与 pi-admin（自管理），并增加失败自愈闭环，目标是让 Pi 无人值守自驱动运行：
@@ -350,62 +406,6 @@ bash scripts/test-all.sh
 | `searxng/venv/` | ~94 MB | `python3 -m venv` | `scripts/rebuild.sh` 自动创建 |
 | `searxng/repo/` | ~28 MB | `git clone searxng/searxng`（--depth 1） | `scripts/rebuild.sh` 自动克隆 |
 | `agent/extensions/*/node_modules/` | ~330 MB（4 扩展合计） | `npm install` | `scripts/rebuild.sh` 自动安装 |
-
-### 首次使用
-
-```bash
-git clone https://github.com/cyfxxx/pi-tools.git ~/.pi
-cd ~/.pi && bash scripts/rebuild.sh --yes
-bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
-```
-
-`rebuild.sh` 会自动完成全部依赖重建（系统工具安装、npm install、venv 创建、二进制下载等）。
-
-## 恢复清单
-
-克隆后首次恢复，建议按以下顺序检查：
-
-### 前置条件
-
-| 检查项 | 要求 | 验证命令 |
-|--------|------|---------|
-| Node.js | >= 20 | `node -v` |
-| npm | 随 Node 自带 | `npm -v` |
-| python3 + venv | >= 3.10 | `python3 --version && python3 -m venv --help >/dev/null && echo ok` |
-| git | 任意版本 | `git --version` |
-| ca-certificates | 已安装（脚本会自动补装） | `dpkg -l ca-certificates` |
-| 磁盘空间 | >= 2GB 可用 | `df -h .` |
-
-### 首次恢复步骤
-
-```bash
-git clone https://github.com/cyfxxx/pi-tools.git ~/.pi
-cd ~/.pi && bash scripts/rebuild.sh --yes
-```
-
-### 重建后验证
-
-```bash
-# 配置校验
-python3 -c "import json; json.load(open('agent/settings.json'))" && echo "settings.json OK"
-python3 -c "import yaml; yaml.safe_load(open('searxng/settings.yml'))" && echo "settings.yml OK"
-
-# 核心依赖
-ls agent/bin/fd agent/bin/rg && echo "binaries OK"
-ls agent/extensions/pi-browser/node_modules/ | wc -l
-
-# SearXNG
-ls searxng/venv/bin/python && echo "venv OK"
-ls searxng/repo/.git && echo "repo OK"
-
-# 定时任务
-ls agent/extensions/pi-autopilot/node_modules/ | wc -l
-crontab -l | grep pi-cron && echo "crontab OK"
-
-# 持久记忆
-ls memory/entries.json && echo "memory OK"
-
-```
 
 ## 常见问题
 
