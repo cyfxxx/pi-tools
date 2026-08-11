@@ -26,6 +26,8 @@ function makeDeps(overrides: Partial<RecordingDeps> = {}): RecordingDeps {
   return {
     startRecording: vi.fn(() => ({ child: fakeChild, file: '/tmp/pi-voice/a.m4a' })),
     stopRecording: vi.fn(async () => ({ code: 0, stdout: '', stderr: '' })),
+    queryRecording: vi.fn(async () => ({ isRecording: false })),
+    fileExists: vi.fn(() => true),
     convertToWav: vi.fn(async () => '/tmp/pi-voice-out/a.wav'),
     transcribe: vi.fn(async () => ({ text: '你好，世界', language: 'zh', error: undefined })),
     deleteAudioPair: vi.fn(),
@@ -202,6 +204,57 @@ describe('dictation 状态机', () => {
       expect(cbs.autoResults.length).toBe(1)
     })
   }, 8000)
+
+  it('CLI 断线但服务端仍在录制 → 无感续录，不提示不转写，用户停止时正常完成', async () => {
+    const deps = makeDeps({ queryRecording: vi.fn(async () => ({ isRecording: true })) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    // 等待查询与判定完成
+    await new Promise((res) => setTimeout(res, 50))
+    // 无感续录：状态保持录音中，无自动转写，未补 -q（不打断录制）
+    expect(d.isRecording()).toBe(true)
+    expect(cbs.autoResults.length).toBe(0)
+    expect(deps.transcribe).not.toHaveBeenCalled()
+    expect(deps.stopRecording).not.toHaveBeenCalled()
+    // 用户手动停止：正常转写完成（手动路径，非异常）
+    const r = await d.stop()
+    expect(r.text).toBe('你好，世界')
+    expect(r.message).toContain('转写完成')
+    expect(r.autoReason).toBeUndefined()
+  })
+
+  it('CLI 断线续录期间定时器到点 → 正常“时长到上限”转写', async () => {
+    const deps = makeDeps({ queryRecording: vi.fn(async () => ({ isRecording: true })) })
+    const cbs = makeCallbacks()
+    const d = createDictation({ ...cfg, maxSeconds: 1 }, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    }, { timeout: 4000 })
+    const r = cbs.autoResults[0]
+    expect(r.text).toBe('你好，世界')
+    expect(r.autoReason).toBe('timer')
+    expect(d.isRecording()).toBe(false)
+  }, 6000)
+
+  it('CLI 断线且服务端已停（isRecording=false）→ 异常提前结束', async () => {
+    const deps = makeDeps({ queryRecording: vi.fn(async () => ({ isRecording: false })) })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+    onExit(0)
+    await vi.waitFor(() => {
+      expect(cbs.autoResults.length).toBe(1)
+    })
+    expect(cbs.autoResults[0].autoReason).toBe('exit')
+    expect(d.isRecording()).toBe(false)
+  })
 
   it('录音进程自行退出（超时）触发自动转写并回调', async () => {
     const deps = makeDeps()

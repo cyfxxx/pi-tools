@@ -53,6 +53,8 @@ import {
   benchmark,
   runCommand,
   detectAudioLevel,
+  queryRecording,
+  fileExists,
   createTtsDispatcher,
   type TtsDispatcher,
 } from './core'
@@ -142,7 +144,7 @@ export default function (pi: ExtensionAPI): void {
 
   dictation = createDictation(
     config,
-    { startRecording, stopRecording, convertToWav, transcribe, deleteAudioPair, waitForFileStable, detectAudioLevel },
+    { startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe, deleteAudioPair, waitForFileStable, detectAudioLevel },
     {
       // 录音进程自行退出（超时/启动失败）的自动完成：无调用方 UI 上下文，
       // 用 sendMessage(display) 主动展示结果，成功失败都不静默。
