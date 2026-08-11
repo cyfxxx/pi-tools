@@ -32,8 +32,7 @@
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
 │   │   ├── worker.md             通用执行 agent
 │   │   └── reviewer.md           代码审查
-│   ├── prompts/               SDK 提示词文档
-│   │   └── PI-SDK-EXTENSION.md   Pi SDK 扩展开发说明
+│   ├── prompts/               pi 全局 prompt templates（*.md 注册为 /name 斜杠命令）
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   中文翻译
 │   │   ├── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
@@ -41,6 +40,11 @@
 │   └── npm/
 │       ├── package.json       npm 包声明（rebuild.sh 按 settings.json packages 自动生成）
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
+├── docs/                      开发与部署文档
+│   ├── TERMUX-DEV-NOTES.md    Termux 环境开发注意事项（Android API/录音/网络）
+│   ├── PI-EXT-DEV-NOTES.md    Pi 扩展开发注意事项（隐性契约/踩坑/黑盒流程）
+│   ├── PI-SDK-EXTENSION.md    Pi SDK 扩展开发说明
+│   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
 ├── memory/                    pi-memory 运行时数据（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）

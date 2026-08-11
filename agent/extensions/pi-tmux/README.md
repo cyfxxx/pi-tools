@@ -73,7 +73,7 @@ tmux_stop(name="build", remove_log=true)
 
 ## 环境缺失时的行为
 
-tmux 未安装时，所有工具返回**清晰的可修复错误**（含各系统安装命令与排查指引），不会崩溃；模型可直接按指引安装后重试。参考 `~/.pi/alacritty-tmux-setup.md`（WSL2/Alacritty 部署问题汇总）。
+tmux 未安装时，所有工具返回**清晰的可修复错误**（含各系统安装命令与排查指引），不会崩溃；模型可直接按指引安装后重试。参考 `~/.pi/docs/alacritty-tmux-setup.md`（WSL2/Alacritty 部署问题汇总）。
 
 ## 数据
 

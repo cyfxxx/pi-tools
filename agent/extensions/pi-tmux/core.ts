@@ -66,7 +66,7 @@ export function tmuxMissingError(detail: string): string {
     '  openSUSE:       sudo zypper install tmux\n' +
     '  macOS (brew):   brew install tmux\n' +
     '安装完成后验证：tmux -V\n' +
-    '更多问题排查：~/.pi/alacritty-tmux-setup.md'
+    '更多问题排查：~/.pi/docs/alacritty-tmux-setup.md'
   )
 }
 
