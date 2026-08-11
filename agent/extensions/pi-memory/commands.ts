@@ -13,7 +13,7 @@ import {
   getNotesSize,
 } from './storage.ts'
 import { searchEntries } from './retrieval.ts'
-import { formatEnvironments, type RuntimeEnv } from './env.ts'
+import { ENVIRONMENTS, formatEnvironments, type RuntimeEnv } from './env.ts'
 
 const CATEGORY_HINT =
   '类别: fact|preference|habit|procedure|reference'
@@ -70,7 +70,13 @@ export function registerCommands(pi: ExtensionAPI): void {
         let env: RuntimeEnv | 'all' | undefined
         for (const p of parts.slice(1)) {
           if (p.startsWith('--env=')) {
-            env = p.slice('--env='.length) as RuntimeEnv | 'all'
+            const v = p.slice('--env='.length) as RuntimeEnv | 'all'
+            if (ENVIRONMENTS.includes(v)) {
+              env = v
+            } else {
+              ctx.ui.notify(`无效环境值: ${v}（可选: ${ENVIRONMENTS.join('/')}）`, 'error')
+              return
+            }
           }
         }
         const results = searchEntries(entries, queryParts.join(' '), category, undefined, limit, env)

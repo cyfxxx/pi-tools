@@ -12,7 +12,6 @@
  * 5. 其余 → linux
  */
 import { existsSync, readFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
 
 export const ENVIRONMENTS = ['all', 'termux', 'wsl2', 'linux', 'macos'] as const
 export type RuntimeEnv = (typeof ENVIRONMENTS)[number]
@@ -42,14 +41,10 @@ export function detectEnvironment(): RuntimeEnv {
   } catch {
     // 忽略
   }
-  try {
-    const uname = execSync('uname', { timeout: 3000 }).toString().trim().toLowerCase()
-    if (uname === 'darwin') {
-      cached = 'macos'
-      return cached
-    }
-  } catch {
-    // uname 不可用，回退 linux
+  // process.platform 零阻塞（Node 原生），替代 execSync('uname')
+  if (process.platform === 'darwin') {
+    cached = 'macos'
+    return cached
   }
   cached = 'linux'
   return cached
