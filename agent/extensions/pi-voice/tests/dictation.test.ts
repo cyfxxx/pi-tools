@@ -28,7 +28,7 @@ function makeDeps(overrides: Partial<RecordingDeps> = {}): RecordingDeps {
     stopRecording: vi.fn(async () => ({ code: 0, stdout: '', stderr: '' })),
     queryRecording: vi.fn(async () => ({ isRecording: false })),
     fileExists: vi.fn(() => true),
-    convertToWav: vi.fn(async () => '/tmp/pi-voice-out/a.wav'),
+    convertToWav: vi.fn(async () => ({ wav: '/tmp/pi-voice-out/a.wav', error: '' })),
     transcribe: vi.fn(async () => ({ text: '你好，世界', language: 'zh', error: undefined })),
     deleteAudioPair: vi.fn(),
     waitForFileStable: vi.fn(async () => true),
@@ -89,21 +89,22 @@ describe('dictation 状态机', () => {
     expect(deps.deleteAudioPair).toHaveBeenCalledWith(cfg, '/tmp/pi-voice/a.m4a')
   })
 
-  it('wav 转码失败不调用 transcribe 且删除音频', async () => {
-    const deps = makeDeps({ convertToWav: vi.fn(async () => null) })
+  it('wav 转码失败不调用 transcribe 且删除音频（提示带 ffmpeg 错误详情）', async () => {
+    const deps = makeDeps({ convertToWav: vi.fn(async () => ({ wav: null, error: 'moov atom not found' })) })
     const d = createDictation(cfg, deps, makeCallbacks())
     d.start()
     const r = await d.stop()
     expect(deps.transcribe).not.toHaveBeenCalled()
     expect(r.message).toContain('ffmpeg')
+    expect(r.message).toContain('moov atom not found')
     expect(deps.deleteAudioPair).toHaveBeenCalledWith(cfg, '/tmp/pi-voice/a.m4a')
   }, 20000)
 
   it('wav 转码首次失败（moov 延迟写入）重试后成功', async () => {
     const deps = makeDeps({
       convertToWav: vi.fn()
-        .mockResolvedValueOnce(null) // 第一次：moov 未写完，转码失败
-        .mockResolvedValueOnce('/tmp/pi-voice-out/a.wav'), // 重试成功
+        .mockResolvedValueOnce({ wav: null, error: 'moov atom not found' }) // 第一次：moov 未写完，转码失败
+        .mockResolvedValueOnce({ wav: '/tmp/pi-voice-out/a.wav', error: '' }), // 重试成功
     })
     const d = createDictation(cfg, deps, makeCallbacks())
     d.start()

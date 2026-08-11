@@ -250,8 +250,8 @@ export function cleanupStaleAudio(cfg: VoiceConfig, staleMs = 24 * 60 * 60 * 100
   return removed
 }
 
-/** 转码 m4a → 16kHz 单声道 wav（whisper 输入格式）。 */
-export async function convertToWav(cfg: VoiceConfig, m4a: string): Promise<string | null> {
+/** 转码 m4a → 16kHz 单声道 wav（whisper 输入格式）。失败时 error 携带 ffmpeg stderr（截断），便于定位文件损坏原因（moov 未写完等）。 */
+export async function convertToWav(cfg: VoiceConfig, m4a: string): Promise<{ wav: string | null; error: string }> {
   const wav = m4a.replace(/\.m4a$/, '.wav')
   const res = await runCommand(cfg.ffmpegBin, [
     '-y', '-loglevel', 'error',
@@ -259,7 +259,9 @@ export async function convertToWav(cfg: VoiceConfig, m4a: string): Promise<strin
     '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le',
     wav,
   ], { timeoutMs: 30000 })
-  return res.code === 0 ? wav : null
+  if (res.code === 0) return { wav, error: '' }
+  const err = res.stderr.trim() || res.stdout.trim()
+  return { wav: null, error: err ? err.slice(0, 200) : `ffmpeg 退出码 ${res.code}` }
 }
 
 export interface TranscribeResult {
@@ -560,7 +562,7 @@ export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
     deleteAudioPair(cfg, file)
     return { lines: ['✗ 基准测试失败：录音未生成文件（检查麦克风权限与 termux-api）'], rtf: null }
   }
-  const wav = await convertToWav(cfg, file)
+  const { wav } = await convertToWav(cfg, file)
   if (!wav) {
     deleteAudioPair(cfg, file)
     return { lines: ['✗ 基准测试失败：m4a 转 wav 失败（检查 ffmpeg）'], rtf: null }
