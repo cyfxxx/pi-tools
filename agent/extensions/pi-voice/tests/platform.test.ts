@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { detectPlatform, resolvePlatform, platformInstallGuide, type PlatformEnv } from '../platform'
 import { DEFAULTS, type VoiceConfig } from '../config'
-
 function env(cmds: string[], platform: NodeJS.Platform = 'linux'): PlatformEnv {
   return {
     platform,
@@ -94,21 +93,42 @@ describe('linux spec 命令构造', () => {
     expect(spec.recorder.residuePattern()).toBeNull()
   })
 
-  it('TTS：espeak-ng -w 生成 + paplay --device 播放', () => {
-    const spec = resolvePlatform({ ...baseCfg, platform: 'linux' }, env([]))
-    const args = spec.tts.speakArgs('你好世界')
-    expect(args[0]).toBe('-w')
+  it('TTS：espeak-ng 文本文件 → wav → paplay 播放', () => {
+    const spec = resolvePlatform({ ...baseCfg, platform: 'linux', ttsEngine: 'espeak-ng' }, env([]))
+    const args = spec.tts.synthesizeArgs('/tmp/tts-input.txt', '/tmp/tts-stage.wav')
+    expect(args[0]).toBe('-f')
+    expect(args).toContain('/tmp/tts-input.txt')
+    expect(args).toContain('-w')
+    expect(args).toContain('/tmp/tts-stage.wav')
     expect(args).toContain('-v')
     expect(args).toContain('cmn')
     expect(args).toContain('170')
-    expect(args).toContain('你好世界')
+    expect(spec.tts.kind).toBe('espeak-ng')
     expect(spec.tts.stageToWav).toBe(true)
     expect(spec.tts.playArgs('/tmp/tts.wav')).toEqual(['--device', 'RDPSink', '/tmp/tts.wav'])
+  })
+
+  it('TTS：piper 模型 → wav → paplay 播放（ttsEngine=auto 且 piper 存在）', () => {
+    const spec = resolvePlatform({ ...baseCfg, platform: 'linux' }, { ...env([]), commandExists: (n) => n === 'piper' })
+    expect(spec.tts.kind).toBe('piper')
+    const args = spec.tts.synthesizeArgs('/tmp/tts-input.txt', '/tmp/tts-stage.wav')
+    expect(args).toEqual(['-m', DEFAULTS.linuxPiperModel, '-i', '/tmp/tts-input.txt', '-f', '/tmp/tts-stage.wav'])
+    expect(spec.tts.playArgs('/tmp/tts.wav')).toEqual(['--device', 'RDPSink', '/tmp/tts.wav'])
+  })
+
+  it('ttsEngine=piper 强制（即使命令不存在）', () => {
+    const spec = resolvePlatform({ ...baseCfg, platform: 'linux', ttsEngine: 'piper' }, env([]))
+    expect(spec.tts.kind).toBe('piper')
   })
 
   it('sink 为空 → paplay 不带 --device', () => {
     const spec = resolvePlatform({ ...baseCfg, platform: 'linux', linuxTtsSink: '' }, env([]))
     expect(spec.tts.playArgs('/tmp/tts.wav')).toEqual(['/tmp/tts.wav'])
+  })
+
+  it('TTS 检查命令', () => {
+    const spec = resolvePlatform({ ...baseCfg, platform: 'linux', ttsEngine: 'espeak-ng' }, env([]))
+    expect(spec.tts.checkArgs()).toEqual(['--version'])
   })
 
   it('micBin/ttsBin 为 termux 默认值时映射为 parec/espeak-ng', () => {

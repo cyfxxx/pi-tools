@@ -115,13 +115,14 @@ describe('linux queryRecording / convertToWav', () => {
 })
 
 describe('linux speak 两段式', () => {
-  it('espeak-ng 生成 wav → paplay 播放 → 清理暂存', async () => {
+  it('espeak-ng 文本文件 → wav → paplay 播放 → 清理暂存', async () => {
     const stage = '/tmp/pi-voice/tts-stage.wav'
     execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
       if (bin === 'espeak-ng') {
-        expect(args).toContain('-w')
-        expect(args[0]).toBe('-w')
-        expect(args).toContain('你好世界')
+        expect(args[0]).toBe('-f')
+        expect(args).toContain(stage)
+        expect(args).toContain('-v')
+        expect(args).toContain('cmn')
         cb(null, '', '')
       } else if (bin === 'paplay') {
         expect(args).toContain('--device')
@@ -130,11 +131,27 @@ describe('linux speak 两段式', () => {
         cb(null, '', '')
       }
     })
-    const r = await speak(linuxCfg, '你好世界')
+    const r = await speak({ ...linuxCfg, ttsEngine: 'espeak-ng' }, '你好世界')
     expect(r.code).toBe(0)
     // 暂存文件已清理（rmSync force 后不存在）
     const { existsSync } = await import('node:fs')
     expect(existsSync(stage)).toBe(false)
+  })
+
+  it('piper 文本文件 → wav → paplay 播放（ttsEngine=piper）', async () => {
+    const stage = '/tmp/pi-voice/tts-stage.wav'
+    execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
+      if (bin === 'piper') {
+        expect(args[0]).toBe('-m')
+        expect(args).toContain('/opt/pi-tts/models/zh_CN-huayan-medium.onnx')
+        expect(args).toContain(stage)
+        cb(null, '', '')
+      } else if (bin === 'paplay') {
+        cb(null, '', '')
+      }
+    })
+    const r = await speak({ ...linuxCfg, ttsEngine: 'piper' }, '你好世界')
+    expect(r.code).toBe(0)
   })
 
   it('espeak-ng 失败 → 附带安装提示', async () => {

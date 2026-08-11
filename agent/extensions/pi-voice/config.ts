@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { PlatformKind } from './platform'
+import type { PlatformKind, TtsEngine } from './platform'
 
 export interface VoiceConfig {
   /** whisper 转写服务地址 */
@@ -26,6 +26,10 @@ export interface VoiceConfig {
   linuxMicDevice: string
   /** linux TTS 播放输出 sink（paplay --device，如 RDPSink；空 = 默认输出） */
   linuxTtsSink: string
+  /** linux TTS 引擎：auto = piper 存在则用（自然中文），否则 espeak-ng */
+  ttsEngine: TtsEngine
+  /** linux piper 模型路径（.onnx；config 自动取同目录 .onnx.json） */
+  linuxPiperModel: string
   /** linux TTS 语音（espeak-ng -v，如 cmn/zh/en） */
   linuxTtsVoice: string
   /** linux TTS 语速（espeak-ng -s，词/分钟） */
@@ -46,6 +50,8 @@ export interface VoiceConfig {
   language: string
   /** whisper 模型名（tiny/base/small/medium/large-v3；切换需重启服务） */
   whisperModel: string
+  /** whisper 推理设备：auto/cpu/cuda（auto = nvidia-smi 可用则 cuda；服务端读取） */
+  whisperDevice: 'auto' | 'cpu' | 'cuda'
   /** whisper 服务管理脚本（转写前自动拉起时使用） */
   whisperScript: string
 }
@@ -73,6 +79,8 @@ export const DEFAULTS: VoiceConfig = {
   ttsBin: 'termux-tts-speak',
   linuxMicDevice: 'RDPSource',
   linuxTtsSink: 'RDPSink',
+  ttsEngine: 'auto',
+  linuxPiperModel: '/opt/pi-tts/models/zh_CN-huayan-medium.onnx',
   linuxTtsVoice: 'cmn',
   linuxTtsRate: 170,
   tmpDir: defaultTmpDir(),
@@ -83,6 +91,7 @@ export const DEFAULTS: VoiceConfig = {
   maxSeconds: 120,
   language: '',
   whisperModel: 'base',
+  whisperDevice: 'auto',
   whisperScript: join(homedir(), '.pi', 'scripts', 'pi-whisper.sh'),
 }
 
@@ -119,6 +128,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
     ttsBin: env.PI_VOICE_TTS_BIN || file.ttsBin || DEFAULTS.ttsBin,
     linuxMicDevice: env.PI_VOICE_LINUX_MIC_DEVICE ?? file.linuxMicDevice ?? DEFAULTS.linuxMicDevice,
     linuxTtsSink: env.PI_VOICE_LINUX_TTS_SINK ?? file.linuxTtsSink ?? DEFAULTS.linuxTtsSink,
+    ttsEngine: (env.PI_VOICE_TTS_ENGINE ?? file.ttsEngine ?? DEFAULTS.ttsEngine) as TtsEngine,
+    linuxPiperModel: env.PI_VOICE_PIPER_MODEL ?? file.linuxPiperModel ?? DEFAULTS.linuxPiperModel,
     linuxTtsVoice: env.PI_VOICE_LINUX_TTS_VOICE ?? file.linuxTtsVoice ?? DEFAULTS.linuxTtsVoice,
     linuxTtsRate: numeric(env.PI_VOICE_LINUX_TTS_RATE, file.linuxTtsRate ?? DEFAULTS.linuxTtsRate),
     tmpDir: env.PI_VOICE_TMP_DIR || file.tmpDir || DEFAULTS.tmpDir,
@@ -129,6 +140,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
     maxSeconds: numeric(env.PI_VOICE_MAX_SECONDS, file.maxSeconds ?? DEFAULTS.maxSeconds),
     language: env.PI_VOICE_LANGUAGE ?? file.language ?? DEFAULTS.language,
     whisperModel: env.PI_VOICE_WHISPER_MODEL ?? file.whisperModel ?? DEFAULTS.whisperModel,
+    whisperDevice: (env.PI_VOICE_WHISPER_DEVICE ?? file.whisperDevice ?? DEFAULTS.whisperDevice) as 'auto' | 'cpu' | 'cuda',
     whisperScript: env.PI_VOICE_WHISPER_SCRIPT ?? file.whisperScript ?? DEFAULTS.whisperScript,
   }
   return merged
@@ -174,6 +186,8 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
     ttsBin: 'PI_VOICE_TTS_BIN',
     linuxMicDevice: 'PI_VOICE_LINUX_MIC_DEVICE',
     linuxTtsSink: 'PI_VOICE_LINUX_TTS_SINK',
+    ttsEngine: 'PI_VOICE_TTS_ENGINE',
+    linuxPiperModel: 'PI_VOICE_PIPER_MODEL',
     linuxTtsVoice: 'PI_VOICE_LINUX_TTS_VOICE',
     linuxTtsRate: 'PI_VOICE_LINUX_TTS_RATE',
     ttsEnabled: 'PI_VOICE_TTS_ENABLED',
@@ -183,6 +197,7 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
     tmpDir: 'PI_VOICE_TMP_DIR',
     language: 'PI_VOICE_LANGUAGE',
     whisperModel: 'PI_VOICE_WHISPER_MODEL',
+    whisperDevice: 'PI_VOICE_WHISPER_DEVICE',
     whisperScript: 'PI_VOICE_WHISPER_SCRIPT',
   }
   return map[key] ?? null

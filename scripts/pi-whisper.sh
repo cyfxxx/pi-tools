@@ -28,6 +28,13 @@ read_model() {
   fi
 }
 
+read_device() {
+  local cfg="$PI_HOME/agent/pi-voice.json"
+  if [ -f "$cfg" ]; then
+    python3 -c "import json,sys; v=json.load(open('$cfg')).get('whisperDevice',''); print(v)" 2>/dev/null
+  fi
+}
+
 is_running() {
   [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
 }
@@ -45,15 +52,22 @@ start() {
   if ! "$VENV/bin/python" -c 'import opencc' >/dev/null 2>&1; then
     echo "警告: opencc 未安装，中文转写将保持繁体。修复: $VENV/bin/pip install opencc-python-reimplemented"
   fi
-  local token model
+  local token model device
   token="$(read_token)"
   model="$(read_model)"
+  device="$(read_device)"
   # 只在非空时传入：空串会被服务端 os.environ.get 原样接收（不回落默认）
   local -a envs=()
   [ -n "$token" ] && envs+=(PI_WHISPER_TOKEN="$token")
   [ -n "$model" ] && envs+=(PI_WHISPER_MODEL="$model")
+  [ -n "$device" ] && envs+=(PI_WHISPER_DEVICE="$device")
+  # ctranslate2 CUDA 依赖（nvidia-cublas/cudnn pip 包）不在系统库路径，需显式加入
+  local nv_lib="$VENV/lib/python3.12/site-packages/nvidia"
+  if [ -d "$nv_lib/cublas/lib" ] || [ -d "$nv_lib/cudnn/lib" ]; then
+    envs+=(LD_LIBRARY_PATH="$nv_lib/cublas/lib:$nv_lib/cudnn/lib:${LD_LIBRARY_PATH:-}")
+  fi
   env "${envs[@]}" nohup "$VENV/bin/python" "$SERVER" >>"$LOG" 2>&1 &
-  echo "whisper 服务启动（${token:+Bearer token 鉴权已启用}${model:+，模型 $model}）"
+  echo "whisper 服务启动（${token:+Bearer token 鉴权已启用}${model:+，模型 $model}${device:+，设备 $device}）"
   echo $! > "$PIDFILE"
   for _ in $(seq 1 60); do
     if [ -n "$token" ]; then

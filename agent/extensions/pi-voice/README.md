@@ -55,7 +55,8 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 - 平台由 `platform` 配置项决定：`auto`（探测：有 termux 工具 → termux，否则 linux）/ `termux` / `linux`；探测逻辑见 `platform.ts`
 - 新增设备适配：在 `platform.ts` 增加 spec 分支即可（录音命令构造 + TTS 构造 + 安装指引），上层 core/dictation 无需改动
 - WSL 注意：麦克风需 Windows 隐私权限允许；`PULSE_SERVER` 指向 WSLg（`unix:/mnt/wslg/PulseServer`）；录音输入源/输出 sink 见 `pactl list sources/sinks`
-- linux TTS 中文为拼音式合成（espeak-ng cmn）；需要自然中文可换 piper 等神经 TTS（改 `ttsBin` 即可，架构已解耦）
+- linux TTS 引擎 `ttsEngine`：`auto`（检测到 piper 命令 → 用 piper 神经 TTS（中文自然，需安装 piper-tts + 模型，模型路径 `linuxPiperModel`），否则 espeak-ng）/ `espeak-ng` / `piper`
+- **GPU 推理**：whisper 服务 `whisperDevice`（`auto`/`cpu`/`cuda`，默认 auto = nvidia-smi 可用则 cuda + float16）。GPU 依赖：`pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`（ctranslate2 CUDA 库，需 LD_LIBRARY_PATH 指向 venv nvidia 目录，pi-whisper.sh 已处理）；base 小模型 GPU 收益有限，medium/large-v3 才有显著加速
 
 ## 安装与启动
 
