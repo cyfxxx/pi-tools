@@ -21,6 +21,7 @@ import sys
 import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
 
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
@@ -28,6 +29,7 @@ os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 MODEL = os.environ.get("PI_WHISPER_MODEL") or "base"
 PORT = int(os.environ.get("PI_WHISPER_PORT", "18766"))
 MODELS_DIR = os.environ.get("PI_WHISPER_MODELS", "/opt/pi-whisper/models")
+LANGUAGE = os.environ.get("PI_WHISPER_LANGUAGE") or None  # 服务级默认语言；None = 自动检测
 
 # OpenCC 繁→简（whisper 对中文默认输出繁体，转写后统一转简体）；
 # 延迟导入：opencc 缺失时仅跳过转换，不阻塞服务启动。
@@ -98,13 +100,18 @@ class Handler(BaseHTTPRequestHandler):
         if not self._authorized():
             self._send(401, {"error": "unauthorized"})
             return
-        if self.path != "/transcribe":
+        # self.path 含 query string（?lang=zh），先解析出纯路径再判断
+        parsed = urlparse(self.path)
+        if parsed.path != "/transcribe":
             self._send(404, {"error": "not found"})
             return
         length = int(self.headers.get("Content-Length", "0"))
         if length <= 0:
             self._send(400, {"error": "empty body"})
             return
+        # 语言优先级：请求 query lang > 环境变量 PI_WHISPER_LANGUAGE > 自动检测
+        query = parse_qs(parsed.query)
+        lang = (query.get("lang") or [None])[0] or LANGUAGE
         try:
             raw = self.rfile.read(length)
             fd, path = tempfile.mkstemp(suffix=".wav", dir=tempfile.gettempdir())
@@ -113,7 +120,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 segments, info = get_model().transcribe(
                     path,
-                    language=None,
+                    language=lang,
                     vad_filter=True,
                 )
                 text = "".join(s.text.strip() + " " for s in segments).strip()

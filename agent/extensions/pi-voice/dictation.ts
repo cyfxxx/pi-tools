@@ -2,7 +2,8 @@
  * pi-voice dictation — 录音/转写状态机（对照 Myna 的 Dictation 管理层）。
  *
  * 生命周期：idle → recording → transcribing → idle
- * - 用户触发 stop 或录音进程自行退出（maxSeconds 超时）都会进入转写流程
+ * - 用户触发 stop 或 Node 侧定时器到点（maxSeconds）自动停止都会进入转写流程；
+ *   录音进程意外退出同样进入转写（补 -q 收尾写 moov）
  * - 转写完成（含失败/异常路径）后立即删除音频文件（即用即弃）
  * - 超时自动转写时可能没有调用方 UI 上下文，结果通过 onAutoComplete 钩子处理
  * - cleanup() 用于 session_shutdown / 卸载时杀进程并清残留
@@ -15,7 +16,7 @@ import type { VoiceConfig } from './config'
 import type { CommandResult, TranscribeResult } from './core'
 
 export interface RecordingDeps {
-  startRecording(cfg: VoiceConfig, onExit: (code: number, stderr?: string) => void): { child: ChildProcess; file: string }
+  startRecording(cfg: VoiceConfig, onExit: (code: number, stderr?: string) => void, opts?: { forceClean?: boolean }): { child: ChildProcess; file: string }
   stopRecording(cfg: VoiceConfig): Promise<CommandResult>
   convertToWav(cfg: VoiceConfig, m4a: string): Promise<string | null>
   transcribe(cfg: VoiceConfig, wav: string): Promise<TranscribeResult>
@@ -24,7 +25,7 @@ export interface RecordingDeps {
    * 等待录音文件出现且大小稳定（MediaRecorder 在进程退出后仍会写文件尾部）。
    * 返回 true = 文件就绪；false = 超时（启动即失败/单实例被占用时文件不存在或恒为 0 字节）。
    */
-  waitForFileStable(m4a: string): Promise<boolean>
+  waitForFileStable(m4a: string, opts?: { pollMs?: number; stableSamples?: number; maxWaitMs?: number }): Promise<boolean>
   /** 检测 wav 音量水平（转写为空时区分“未采集到声音”与“有声音但未识别”）。 */
   detectAudioLevel(wav: string): Promise<{ maxDb: number; meanDb: number } | null>
 }
@@ -33,6 +34,8 @@ export interface StopResult {
   message: string
   text: string
   language: string
+  /** 自动停止原因：timer = Node 定时器到点；exit = 录音进程意外退出；undefined = 手动停止。 */
+  autoReason?: 'timer' | 'exit'
 }
 
 export interface DictationCallbacks {
@@ -81,6 +84,15 @@ export function createDictation(
   let retried = false
   /** 当前录音进程启动时间戳：退出时计算实际录音时长（区分正常超时与异常提前退出）。 */
   let startedAt = 0
+  /** Node 侧计时器：到 maxSeconds 自动停止录音（替代 MediaRecorder -l 服务端计时）。 */
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  function clearTimer(): void {
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
 
   function isRecording(): boolean {
     return currentFile !== null
@@ -90,7 +102,7 @@ export function createDictation(
   }
 
   /** 启动一次录音进程并绑定退出回调；成功返回 null 以外的 {child,file} 并设置状态。 */
-  function spawnRecorder(expectGen: number): { child: ChildProcess; file: string } | null {
+  function spawnRecorder(expectGen: number, forceClean = false): { child: ChildProcess; file: string } | null {
     startedAt = Date.now()
     const { child, file } = deps.startRecording(cfg, (code, detail) => {
       // 子进程自行退出：仅当仍是当前录音且未在转写时处理（用户 stop/cancel 已先置空 currentFile，不会重复）
@@ -99,22 +111,23 @@ export function createDictation(
       recordingChild = null
       if (code === 0) {
         void (async () => {
-          // 进程退出 ≠ 收尾：Termux:API 的 MediaRecorder 在 -l 超时（进程自动
-          // 退出）或进程被杀时不会写 moov atom（实测：无 "Recording finished"
-          // 输出，文件缺失 moov，转码报 moov atom not found）。必须补发一次
-          // -q 强制服务收尾写 moov（实测：补 -q 后输出 Recording finished，
-          // 文件可正常转码）。手动停止路径 stop() 已发过 -q，此处重复无害。
+          // 进程退出 ≠ 收尾：Termux:API 的 MediaRecorder 在进程被杀/异常退出时
+          // 不会写 moov atom（实测：无 "Recording finished" 输出，文件缺失 moov，
+          // 转码报 moov atom not found）。必须补发一次 -q 强制服务收尾写 moov
+          // （实测：补 -q 后输出 Recording finished，文件可正常转码）。
+          // 手动停止路径 stop() 已发过 -q，此处重复无害。
           await deps.stopRecording(cfg).catch(() => undefined)
           // 进程退出 ≠ 文件写完：MediaRecorder 仍会写入尾部（moov atom），需等大小稳定
           // 才能区分“正常超时”与“启动即失败/单实例被占用”（后者无文件或恒为 0 字节）
-          const stable = await deps.waitForFileStable(file)
+          // 失败判定窗口缩短到 5s：启动失败时尽快进入重试（默认 15s 会让用户等太久）
+          const stable = await deps.waitForFileStable(file, { maxWaitMs: 5000 })
           // 等待期间用户 cancel / 开始了新录音：旧文件作废，静默丢弃
           if (expectGen !== gen) return
           if (stable) {
-            // 进程自行退出（-l 超时或异常提前退出）：自动进入转写，
-            // 实际时长远小于上限时按异常提前退出提示（服务不稳定会中途停录）
+            // -l 0 后服务端不再有超时机制：进程自行退出必然是异常（服务不稳定
+            // 中途停录等），一律按“异常提前结束”提示，不再误报“时长到上限”
             const actualSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000))
-            const r = await finish(file, true, actualSec)
+            const r = await finish(file, 'exit', actualSec)
             cb.onAutoComplete(r)
           } else {
             // 等待窗口内始终无有效文件：单实例冲突（“Recording already in progress!”，退出码恰为 0）
@@ -127,7 +140,8 @@ export function createDictation(
               // 无文件）。等 3s 再拉起新进程。
               await new Promise((r2) => setTimeout(r2, 3000))
               if (expectGen !== gen || currentFile !== null || busy) return
-              spawnRecorder(expectGen)
+              // 重试强制清理（forceClean）：上次失败说明服务侧大概率残留 MediaRecorder
+              spawnRecorder(expectGen, true)
               return
             }
             const detailTxt = detail?.trim() ? `（termux-api 输出：${detail.trim().slice(0, 200)}）` : ''
@@ -153,7 +167,7 @@ export function createDictation(
           language: '',
         })
       }
-    })
+    }, { forceClean })
     if (child.pid === undefined) {
       return null
     }
@@ -171,23 +185,51 @@ export function createDictation(
     if (!r) {
       return '录音启动失败（无法启动录音程序，请确认已安装 termux-api：pkg install termux-api）'
     }
+    // Node 侧计时到点自动停止（不依赖 MediaRecorder -l 服务端计时，见 core.startRecording）
+    clearTimer()
+    if (cfg.maxSeconds > 0) {
+      timer = setTimeout(() => {
+        timer = null
+        // 自动路径（定时器触发）无调用方 UI 上下文：结果经 onAutoComplete 分发；
+        // 状态机正常时 busy/未在录音不会出现（stop/cancel 已先 clearTimer），
+        // stopInternal 对它们返回 null，此处不会分发。
+        void stopInternal(true).then((res) => {
+          if (res) cb.onAutoComplete(res)
+        })
+      }, cfg.maxSeconds * 1000)
+    }
     return '🎤 录音中（再次 Ctrl+Alt+R 停止并转写；时长上限 ' + (cfg.maxSeconds > 0 ? `${cfg.maxSeconds}s` : '不限') + '）'
   }
 
-  async function stop(): Promise<StopResult> {
-    if (busy) return { message: '正在转写，请稍候', text: '', language: '' }
-    if (currentFile === null) return { message: '未在录音', text: '', language: '' }
+  /** 停止录音并转写；auto=true 为自动路径（定时器到点），结果由调用方决定分发方式。 */
+  async function stopInternal(auto: boolean): Promise<StopResult | null> {
+    if (busy) return null
+    if (currentFile === null) return null
+    clearTimer()
     const file = currentFile
     currentFile = null
     recordingChild = null
-    // 用户主动停止：发 -q；进程可能已自行退出，忽略失败
+    // 发 -q 停止；进程可能已自行退出，忽略失败
     await deps.stopRecording(cfg).catch(() => undefined)
-    return finish(file, false)
+    // 定时器路径 = 已到上限，actualSec 按实际计时传入（提示用）；手动路径无前缀
+    return finish(file, auto ? 'timer' : 'manual', Math.max(1, Math.round((Date.now() - startedAt) / 1000)))
+  }
+
+  function stop(): Promise<StopResult> {
+    // 外部契约：busy/未在录音时返回提示消息（timer 路径无需提示，返回 null 即可）
+    return stopInternal(false).then((r) =>
+      r ?? {
+        message: busy ? '正在转写，请稍候' : '未在录音',
+        text: '',
+        language: '',
+      },
+    )
   }
 
   function cancel(): string {
     if (currentFile === null) return '未在录音'
     gen += 1
+    clearTimer()
     const file = currentFile
     currentFile = null
     recordingChild = null
@@ -196,28 +238,28 @@ export function createDictation(
     return '已取消'
   }
 
-  async function finish(file: string, auto: boolean, actualSec?: number): Promise<StopResult> {
+  async function finish(file: string, reason: 'manual' | 'timer' | 'exit', actualSec?: number): Promise<StopResult> {
     busy = true
     try {
-      // 自动路径：实际录音时长远小于上限时提示异常提前退出（MediaRecorder 服务
-      // 不稳定会中途停录），避免误导为“录音时长到上限”
-      const limit = cfg.maxSeconds
-      const premature = auto && actualSec !== undefined && limit > 0 && actualSec < limit * 0.5
-      const prefix = premature
-        ? `录音异常提前结束（${actualSec}s），自动转写：`
-        : auto
+      // -l 0 后服务端无超时机制：exit = 进程意外退出（服务不稳定中途停录），
+      // 一律按异常提前结束提示；timer = Node 定时器到点，正常提示到上限
+      const prefix =
+        reason === 'timer'
           ? '录音时长到上限，自动开始转写：'
-          : ''
+          : reason === 'exit'
+            ? `录音异常提前结束（${actualSec ?? '?'}s），自动转写：`
+            : ''
+      const autoReason = reason === 'manual' ? undefined : reason
       // 用户手动 stop 同样存在竞态：-q 使脚本退出后 MediaRecorder 仍会写文件尾部，
       // 转码前统一等待大小稳定（exit 回调路径此时文件已稳定，立即返回）
       const stable = await deps.waitForFileStable(file)
       if (!stable) {
-        return { message: `${prefix}录音文件未生成或未写入完成（录音可能已被占用中断）`, text: '', language: '' }
+        return { message: `${prefix}录音文件未生成或未写入完成（录音可能已被占用中断）`, text: '', language: '', autoReason }
       }
       const wav = await convertWithRetry(deps, cfg, file)
-      if (!wav) return { message: `${prefix}m4a 转 wav 失败，请确认 ffmpeg 已安装`, text: '', language: '' }
+      if (!wav) return { message: `${prefix}m4a 转 wav 失败，请确认 ffmpeg 已安装`, text: '', language: '', autoReason }
       const out = await deps.transcribe(cfg, wav)
-      if (out.error) return { message: `${prefix}${out.error}`, text: '', language: '' }
+      if (out.error) return { message: `${prefix}${out.error}`, text: '', language: '', autoReason }
       if (!out.text) {
         // 区分“麦克风未采到声音”与“有声音但识别失败”：音量检测失败时按后者提示
         const level = await deps.detectAudioLevel(wav)
@@ -226,15 +268,17 @@ export function createDictation(
             message: `${prefix}未检测到声音信号（最大音量 ${level.maxDb.toFixed(0)} dB），请检查麦克风权限与音量`,
             text: '',
             language: '',
+            autoReason,
           }
         }
-        return { message: `${prefix}未识别到语音内容，请靠近麦克风重试`, text: '', language: '' }
+        return { message: `${prefix}未识别到语音内容，请靠近麦克风重试`, text: '', language: '', autoReason }
       }
       const final = out.text.trim()
       return {
         message: `转写完成（${out.language}）：${final}`,
         text: final,
         language: out.language,
+        autoReason,
       }
     } finally {
       // 即用即弃：无论成功失败，立即删除本次录音文件
@@ -244,6 +288,7 @@ export function createDictation(
   }
 
   function cleanup(): void {
+    clearTimer()
     recordingChild?.kill()
     recordingChild = null
     if (currentFile !== null) {

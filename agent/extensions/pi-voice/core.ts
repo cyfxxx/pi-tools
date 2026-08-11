@@ -60,31 +60,48 @@ export function runCommand(
 export function startRecording(
   cfg: VoiceConfig,
   onExit: (code: number, stderr?: string) => void,
+  opts: { forceClean?: boolean } = {},
 ): { child: ChildProcess; file: string } {
   // 清理残留录音：先 -q 优雅停止 Termux:API 服务侧的 MediaRecorder（pkill 杀 CLI
   // 进程不会释放服务侧麦克风占用，残留状态会让新实例报 "Recording already in
   // progress!" 并秒退），再 pkill 兜底杀 CLI 进程，最后等待服务释放。
   // 调用方已拦截进行中的录音，此处不会误杀当前会话录音。
-  try {
-    execFileSync(cfg.micBin, ['-q'], { timeout: 8000 })
-  } catch {
-    // 无进行中录音或 -q 失败：忽略，继续
+  // termux-microphone-record 每次调用（-q/-i）需 ~3s termux-api 通信往返，正常
+  // 场景（上次录音已 -q 优雅停止）无残留进程，pgrep 门控跳过整套清理可省
+  // ~4.7s 启动延迟；forceClean 用于启动失败后的自动重试（此时服务侧大概率残留）。
+  let hasResidue = opts.forceClean
+  if (!hasResidue) {
+    try {
+      execFileSync('pgrep', ['-f', 'termux-microphone-record'])
+      hasResidue = true
+    } catch {
+      // 无残留进程：跳过清理直接启动
+    }
   }
-  try {
-    execFileSync('pkill', ['-f', 'termux-microphone-record'])
-  } catch {
-    // 无残留进程或 pkill 不可用：忽略
-  }
-  try {
-    execFileSync('sleep', ['1.5'])
-  } catch {
-    // 非 Unix 环境：忽略
+  if (hasResidue) {
+    try {
+      execFileSync(cfg.micBin, ['-q'], { timeout: 8000 })
+    } catch {
+      // 无进行中录音或 -q 失败：忽略，继续
+    }
+    try {
+      execFileSync('pkill', ['-f', 'termux-microphone-record'])
+    } catch {
+      // 无残留进程或 pkill 不可用：忽略
+    }
+    try {
+      execFileSync('sleep', ['1.5'])
+    } catch {
+      // 非 Unix 环境：忽略
+    }
   }
   mkdirSync(cfg.tmpDir, { recursive: true })
   const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}.m4a`)
-  const limit = cfg.maxSeconds > 0 ? cfg.maxSeconds : 0
-  const args = ['-e', 'aac', '-f', file]
-  if (limit > 0) args.push('-l', String(limit))
+  // 时长控制由调用方（dictation）在 Node 侧 setTimeout 到点发 -q 实现：
+  // MediaRecorder.setMaxDuration 基于媒体时间戳计时而非墙钟，实际停止时间与
+  // 设定值偏差大（实测经常提前一半以上停止），不可依赖。
+  // -l 0 = 服务端不限时（不传则 termux-api 默认 15 分钟）。
+  const args = ['-e', 'aac', '-f', file, '-l', '0']
   // stdio: 同时捕获 stdout+stderr（termux-microphone-record 的错误信息如
   // "Recording already in progress!" 打到 stdout；stderr 也可能有内容），
   // 报错时可向用户展示真实原因。
@@ -305,7 +322,11 @@ export async function transcribe(cfg: VoiceConfig, wavPath: string): Promise<Tra
       'Content-Length': String(body.length),
     }
     if (cfg.whisperToken) headers['Authorization'] = `Bearer ${cfg.whisperToken}`
-    const res = await fetch(`${cfg.whisperEndpoint}/transcribe`, {
+    // cfg.language 非空时固定转写语言（如 zh），避免 whisper 自动检测误判
+    const url = cfg.language
+      ? `${cfg.whisperEndpoint}/transcribe?lang=${encodeURIComponent(cfg.language)}`
+      : `${cfg.whisperEndpoint}/transcribe`
+    const res = await fetch(url, {
       method: 'POST',
       headers,
       body: new Uint8Array(body),

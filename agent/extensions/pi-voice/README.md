@@ -84,7 +84,7 @@ apt-get install ffmpeg        # PRoot 侧
 | `PI_VOICE_TTS_MAX_CHARS` | `400` | 单次朗读最大字符数 |
 | `PI_VOICE_AUTO_SEND` | `0` | 转写后直接发送（不插入编辑框） |
 | `PI_VOICE_MAX_SECONDS` | `120` | 录音上限秒数（0 = 手动停止） |
-| `PI_VOICE_LANGUAGE` | 空 | 转写语言（空 = 自动检测） |
+| `PI_VOICE_LANGUAGE` | `zh`（json 已设） | 转写语言（空 = 自动检测）。固定 `zh` 避免 whisper 自动检测误判英文；请求时通过 `?lang=` 传给服务端，改动即时生效 |
 | `PI_VOICE_WHISPER_MODEL` | `base` | 转写模型（tiny/base/small/medium/large-v3；`/voice model` 切换并重启服务） |
 
 > 注意：环境变量优先于 json；由环境变量定义的字段不会写入 json。
