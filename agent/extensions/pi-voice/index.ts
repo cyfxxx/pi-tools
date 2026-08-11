@@ -72,6 +72,8 @@ let ttsEnabled: boolean
 /** 用户是否手动设置过 TTS（true 后不再被自动切换覆盖） */
 let ttsManual = false
 let lastEnterAt = 0
+/** 听写待续录：回车转写成功后等待用户确认（再次回车清空输入框后开始新录音）。 */
+let awaitingResume = false
 let dictation: Dictation
 let ttsQueue: TtsDispatcher
 
@@ -234,9 +236,11 @@ export default function (pi: ExtensionAPI): void {
           }
           break
         case 'start':
+          awaitingResume = false
           withStatus(pi, ctx, dictation.start())
           break
         case 'stop': {
+          awaitingResume = false
           // 与 stopAndDeliver 一致：停止期间先显示转写中，避免状态条残留'录音中'
           if (dictation.isRecording()) ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
           const r = await dictation.stop()
@@ -244,6 +248,7 @@ export default function (pi: ExtensionAPI): void {
           break
         }
         case 'cancel':
+          awaitingResume = false
           withStatus(pi, ctx, dictation.cancel())
           break
         case 'tts': {
@@ -301,8 +306,10 @@ export default function (pi: ExtensionAPI): void {
 
   const toggleRecording = (ctx: ExtensionContext): void => {
     if (dictation.isRecording() || dictation.isTranscribing()) {
+      awaitingResume = false // 手动停止：不进入听写待续录
       void stopAndDeliver(pi, ctx, false)
     } else {
+      awaitingResume = false // 手动开始：退出待续录状态
       withStatus(pi, ctx, dictation.start())
     }
   }
@@ -333,6 +340,18 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify('录音已达时长上限，自动转写中…', 'warning')
           return true
         }
+        // 听写待续录：用户确认上一段 → 清空输入框 → 开始新录音
+        if (awaitingResume) {
+          awaitingResume = false
+          ctx.ui.setEditorText('')
+          const m = dictation.start()
+          if (m.startsWith('🎤')) {
+            ctx.ui.setStatus('pi-voice', '🎤 录音中')
+          } else {
+            reply(pi, m)
+          }
+          return true
+        }
         return false
       }
       const now = Date.now()
@@ -345,14 +364,10 @@ export default function (pi: ExtensionAPI): void {
       ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
       void dictation.stop().then((r) => {
         deliverResult(pi, ctx, r, true)
-        // 转写成功才自动续录（失败不进入死循环）；续录静默，仅状态条提示
+        // 转写成功 → 待续录（不自动开始）；用户再次回车清空输入框后开始下一段。
+        // 失败/空转写不置位（回车恢复普通提交行为）。
         if (r.text && !dictation.isTranscribing()) {
-          const m = dictation.start()
-          if (m.startsWith('🎤')) {
-            ctx.ui.setStatus('pi-voice', '🎤 录音中')
-          } else {
-            reply(pi, m)
-          }
+          awaitingResume = true
         }
       }).catch(() => {})
       return true
@@ -450,7 +465,7 @@ function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult, d
   }
   if (dictating) {
     ctx.ui.pasteToEditor(r.text + ' ')
-    ctx.ui.notify('已插入输入框，可继续口述')
+    ctx.ui.notify('已插入输入框，按回车开始下一段')
     return
   }
   if (config.autoSend) {
