@@ -22,7 +22,7 @@ export interface RecordingDeps {
   queryRecording(cfg: VoiceConfig): Promise<{ isRecording: boolean } | null>
   /** 文件是否存在且 > 0 字节（区分正常录制与启动即失败/单实例占用）。 */
   fileExists(m4a: string): boolean
-  convertToWav(cfg: VoiceConfig, m4a: string): Promise<string | null>
+  convertToWav(cfg: VoiceConfig, m4a: string): Promise<{ wav: string | null; error: string }>
   transcribe(cfg: VoiceConfig, wav: string): Promise<TranscribeResult>
   deleteAudioPair(cfg: VoiceConfig, m4a: string): void
   /**
@@ -67,13 +67,15 @@ async function convertWithRetry(
   deps: RecordingDeps,
   cfg: VoiceConfig,
   m4a: string,
-): Promise<string | null> {
+): Promise<{ wav: string | null; error: string }> {
+  let error = ''
   for (let attempt = 0; attempt < 3; attempt++) {
-    const wav = await deps.convertToWav(cfg, m4a)
-    if (wav) return wav
-    if (attempt < 2) await new Promise((r) => setTimeout(r, 1000))
+    const r = await deps.convertToWav(cfg, m4a)
+    if (r.wav) return { wav: r.wav, error: '' }
+    error = r.error
+    if (attempt < 2) await new Promise((r2) => setTimeout(r2, 1000))
   }
-  return null
+  return { wav: null, error }
 }
 
 export function createDictation(
@@ -310,8 +312,11 @@ export function createDictation(
             : `${prefix}录音文件未生成或未写入完成（录音可能已被占用中断）`
         return { message: msg, text: '', language: '', autoReason }
       }
-      const wav = await convertWithRetry(deps, cfg, file)
-      if (!wav) return { message: `${prefix}m4a 转 wav 失败，请确认 ffmpeg 已安装`, text: '', language: '', autoReason }
+      const { wav, error } = await convertWithRetry(deps, cfg, file)
+      if (!wav) {
+        const detail = error ? `（${error}）` : ''
+        return { message: `${prefix}m4a 转 wav 失败${detail}，请确认 ffmpeg 已安装`, text: '', language: '', autoReason }
+      }
       const out = await deps.transcribe(cfg, wav)
       if (out.error) return { message: `${prefix}${out.error}`, text: '', language: '', autoReason }
       if (!out.text) {
