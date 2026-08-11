@@ -319,11 +319,13 @@ export default function (pi: ExtensionAPI): void {
   // 类型断言：核心补丁读取运行时返回值 false，ts 类型仅允许 void | Promise<void>。
   // 未检测到补丁时不注册：避免吞掉所有回车（输入提交/菜单选择失效）。
   // 防抖：ENTER_DEBOUNCE_MS 内连击只处理一次；转写中回车给出提示而非静默。
-  // 同时注册 enter 与 shift+enter：Termux TTY 的 ICRNL 会把回车转成 \n，Kitty 协议
-  // 激活时 pi 将 \n 解析为 shift+enter（不匹配 enter），导致回车无法触发听写。
+  // 键位说明：不能注册 'enter'——tui.input.submit 默认绑 enter 且属保留键
+  // （RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS），扩展注册会被静默丢弃
+  // （实测 shortcuts 快照无 enter）。改用 'return'：matchesKey 的 case enter/return
+  // 同一分支，'\r' 命中；shift+enter 覆盖 Termux TTY ICRNL（'\n'）与 Kit yy 解析场景。
   const enterReady = enterPatchApplied()
   if (enterReady) {
-    const enterTapHandler = ((ctx: ExtensionContext, source: string) => {
+    const enterTapHandler = ((ctx: ExtensionContext) => {
       if (!dictation.isRecording()) {
         // 竞态兜底：录音进程刚达时长上限自行退出、正在自动转写时，吞掉回车并提示，
         // 避免回车被放行当作普通输入提交（否则用户按回车中断，看到的却是"录音超时"提示）。
@@ -340,8 +342,6 @@ export default function (pi: ExtensionAPI): void {
         ctx.ui.notify('正在转写中，请稍候…', 'warning')
         return true
       }
-      // [诊断] 确认回车路径（enter / shift+enter）；定位后移除
-      ctx.ui.notify(`诊断: ${source} 已捕获，正在停止录音并转写`, 'info')
       ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
       void dictation.stop().then((r) => {
         deliverResult(pi, ctx, r, true)
@@ -356,14 +356,15 @@ export default function (pi: ExtensionAPI): void {
         }
       }).catch(() => {})
       return true
-    }) as (ctx: ExtensionContext, source: string) => void
-    pi.registerShortcut(Key.enter, {
+    }) as (ctx: ExtensionContext) => void
+    // 'return' 匹配键盘栏回车（'\r'）；shift+enter 匹配 ICRNL/Kitty（'\n'）路径
+    pi.registerShortcut(Key.return, {
       description: '录音中回车：切段转写并自动续录',
-      handler: (ctx: ExtensionContext) => enterTapHandler(ctx, 'enter'),
+      handler: enterTapHandler,
     })
     pi.registerShortcut(Key.shift('enter'), {
-      description: '录音中回车（Kitty 协议下 \n 解析为 shift+enter）：切段转写并自动续录',
-      handler: (ctx: ExtensionContext) => enterTapHandler(ctx, 'shift+enter'),
+      description: '录音中回车（ICRNL/Kitty 路径）：切段转写并自动续录',
+      handler: enterTapHandler,
     })
   } else {
     reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
