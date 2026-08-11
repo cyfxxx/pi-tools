@@ -30,7 +30,9 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 
 | 参数 | 说明 |
 |------|------|
-| `--output <path>` | 输出路径（默认 `~/pi-backups/pi-backup-{hostname}-{timestamp}.tar.gz`） |
+| `--output <path>` | 输出路径（默认见下方[备份目录约定](#备份目录约定)） |
+
+> **备份目录约定**：Termux/Android 环境默认 `/storage/emulated/0/我的文件/pi-backup/`；其他环境默认 `~/pi-backups/`。归档文件名 `pi-backup-{hostname}-{timestamp}.tar.gz`。
 | `--with-auth` | 包含 `auth.json`（API 密钥）及同源敏感配置 `pi-voice.json`（whisper 令牌）、`models.json`（provider 密钥）。默认不包含。 |
 | `--full` | 包含 sessions、node_modules、venv、bin 等默认排除项 |
 | `--keep N` | 保留最近 N 份备份（默认 5），超出则删除最旧的文件 |
@@ -56,13 +58,13 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 5. 运行 `tar czf {output_path} -C /tmp/pi-backup-{timestamp}/ .`
 6. 清理临时目录：`rm -rf /tmp/pi-backup-{timestamp}/`
 7. 验证完整性：`tar tzf {output_path} | head -5` 检查可读。
-8. 执行保留轮转：如果 `~/pi-backups/` 下同模式备份超过 `--keep N` 份，删除最旧的。
+8. 执行保留轮转：如果备份目录下同模式备份超过 `--keep N` 份（默认 5），删除最旧的。
 9. 报告备份文件路径、大小、文件数量。
 
 **示例输出：**
 
 ```
-备份完成：~/pi-backups/pi-backup-myhost-20260701_120000.tar.gz (1.4 MB)
+备份完成：/storage/emulated/0/我的文件/pi-backup/pi-backup-myhost-20260701_120000.tar.gz (1.4 MB)
 包含 52 个文件（默认模式，不含 auth）
 保留 5 份，已清理 0 份旧备份
 ```
@@ -141,7 +143,7 @@ GitHub 同步完成
 
 **阶段 1：准备**
 
-1. 如果未指定 `--backup`，列出 `~/pi-backups/pi-backup-*.tar.gz` 并按时间排序，让用户选择。
+1. 如果未指定 `--backup`，列出备份目录下 `pi-backup-*.tar.gz`（目录见 create 节备份目录约定）并按时间排序，让用户选择。
 2. 检查备份文件完整性：`tar tzf {backup_path} | head -1`，若失败则报错。
 3. 显示差异摘要——列出备份中包含的目录和当前 `~/.pi/` 的差异概要。
 4. 确认用户确要恢复。
@@ -176,7 +178,7 @@ GitHub 同步完成
 
 ```
 恢复完成
-  来源：~/pi-backups/pi-backup-myhost-20260701_120000.tar.gz
+  来源：/storage/emulated/0/我的文件/pi-backup/pi-backup-myhost-20260701_120000.tar.gz
   文件：已解压 52 个
    重建：npm 依赖 ✓ | 扩展依赖 ✓ | fd/rg ✓ | SearXNG venv ✓ | tmux 环境 ✓
   跳过：sessions（未请求）| auth.json（备份中不含）
@@ -417,12 +419,12 @@ pi-backup verify
 
 | 参数 | 说明 |
 |------|------|
-| `--backup <path>` | 指定备份文件路径（默认扫描 `~/pi-backups/pi-backup-*.tar.gz`） |
+| `--backup <path>` | 指定备份文件路径（默认扫描备份目录下 `pi-backup-*.tar.gz`） |
 | `--remote` | 显示 git 远程仓库信息和最新 commit |
 
 **执行步骤（默认）：**
 
-1. 运行 `ls -lh ~/pi-backups/pi-backup-*.tar.gz 2>/dev/null` 列出所有本地备份。
+1. 运行 `ls -lh {备份目录}/pi-backup-*.tar.gz 2>/dev/null`（Termux: `/storage/emulated/0/我的文件/pi-backup/`；其他: `~/pi-backups/`）列出所有本地备份。
 2. 如果无备份，提示用户尚未创建过备份。
 3. 每个备份文件显示：文件名、大小、修改时间。
 
@@ -435,7 +437,7 @@ pi-backup verify
 **示例输出：**
 
 ```
-本地备份（~/pi-backups/）：
+本地备份（备份目录）：
   pi-backup-myhost-20260701_120000.tar.gz  1.4 MB  (7月1日 12:00)
   pi-backup-myhost-20260616_083000.tar.gz  1.2 MB  (6月16日 08:30)
 
