@@ -192,9 +192,11 @@ export function createDictation(
     currentFile = file
     recordingChild = child
     // 启动验证：spawn 成功 ≠ 服务端真在录（假成功：进程存活但文件从未生成，
-    // 常见于 MediaRecorderService 刚清理完的状态错乱）。4s 后检查：进程仍存活
+    // 常见于 MediaRecorderService 刚清理完的状态错乱）。8s 后检查：进程仍存活
     // 且文件未出现 → 判定假成功 → 主动清理重试一次，仍失败则报启动失败，
     // 避免用户白录后才发现无文件。进程已退时由 exit 回调负责（-i 续录判定）。
+    // 8s 依据：实测本机 MediaRecorder 文件生成延迟可达 4s（设备省电/后台限制
+    // 时初始化变慢），4s 判定会把正常录音误杀。
     setTimeout(() => {
       if (expectGen !== gen || currentFile !== file) return
       if (recordingChild === null || recordingChild.exitCode != null) return
@@ -221,7 +223,7 @@ export function createDictation(
           language: '',
         })
       })()
-    }, 4000)
+    }, 8000)
     return { child, file }
   }
 
