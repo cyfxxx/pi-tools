@@ -18,6 +18,10 @@ import type { CommandResult, TranscribeResult } from './core'
 export interface RecordingDeps {
   startRecording(cfg: VoiceConfig, onExit: (code: number, stderr?: string) => void, opts?: { forceClean?: boolean }): { child: ChildProcess; file: string }
   stopRecording(cfg: VoiceConfig): Promise<CommandResult>
+  /** 查询服务端录音状态（-i）：断线后区分“服务端仍在录（续录）”与“已停（异常）”。失败返回 null。 */
+  queryRecording(cfg: VoiceConfig): Promise<{ isRecording: boolean } | null>
+  /** 文件是否存在且 > 0 字节（区分正常录制与启动即失败/单实例占用）。 */
+  fileExists(m4a: string): boolean
   convertToWav(cfg: VoiceConfig, m4a: string): Promise<string | null>
   transcribe(cfg: VoiceConfig, wav: string): Promise<TranscribeResult>
   deleteAudioPair(cfg: VoiceConfig, m4a: string): void
@@ -109,15 +113,23 @@ export function createDictation(
     const { child, file } = deps.startRecording(cfg, (code, detail) => {
       // 子进程自行退出：仅当仍是当前录音且未在转写时处理（用户 stop/cancel 已先置空 currentFile，不会重复）
       if (currentFile !== file || busy) return
-      currentFile = null
-      recordingChild = null
       if (code === 0) {
         void (async () => {
-          // 进程退出 ≠ 收尾：Termux:API 的 MediaRecorder 在进程被杀/异常退出时
-          // 不会写 moov atom（实测：无 "Recording finished" 输出，文件缺失 moov，
-          // 转码报 moov atom not found）。必须补发一次 -q 强制服务收尾写 moov
-          // （实测：补 -q 后输出 Recording finished，文件可正常转码）。
-          // 手动停止路径 stop() 已发过 -q，此处重复无害。
+          // CLI 断线（Termux:API SocketListener EOF 是已知问题，录制本身不受影响）：
+          // 先查服务端 MediaRecorder 是否仍在录制。仍在录 → 无感续录（不打断、
+          // 不提示，等用户停止或 Node 定时器到点）；已停 → 走异常提前结束路径。
+          const info = await deps.queryRecording(cfg)
+          if (expectGen !== gen || currentFile !== file || busy) return
+          const stillRecording = info?.isRecording === true && deps.fileExists(file)
+          if (stillRecording) {
+            // 服务端仍在录制：无感续录。进程已退出（后续 -q 仍能正常停止服务端），
+            // currentFile 保持，停止/定时器路径照常工作。
+            recordingChild = null
+            return
+          }
+          currentFile = null
+          recordingChild = null
+          // 服务端也已停/从未录：补发 -q 强制服务收尾（moov atom），再等文件稳定
           await deps.stopRecording(cfg).catch(() => undefined)
           // 进程退出 ≠ 文件写完：MediaRecorder 仍会写入尾部（moov atom），需等大小稳定
           // 才能区分“正常超时”与“启动即失败/单实例被占用”（后者无文件或恒为 0 字节）
@@ -159,6 +171,8 @@ export function createDictation(
         })()
       } else {
         // 启动即失败或运行中异常退出：不转写空文件，直接把失败原因反馈给 UI
+        currentFile = null
+        recordingChild = null
         const reason =
           code === -2
             ? '无法启动录音程序（termux-microphone-record 缺失或不可执行）'

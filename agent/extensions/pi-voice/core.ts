@@ -150,6 +150,23 @@ export async function stopRecording(cfg: VoiceConfig): Promise<CommandResult> {
   return runCommand(cfg.micBin, ['-q'], { timeoutMs: 15000 })
 }
 
+/**
+ * 查询 Termux:API 当前录音状态（termux-microphone-record -i，JSON）。
+ * CLI 连接断线（SocketListener EOF 是 Termux:API 已知问题）时用于区分
+ * “服务端仍在录制（无感续录）”与“服务端也已停止（异常结束）”。
+ * 调用失败或解析失败返回 null（按异常处理）。
+ */
+export async function queryRecording(cfg: VoiceConfig): Promise<{ isRecording: boolean } | null> {
+  const r = await runCommand(cfg.micBin, ['-i'], { timeoutMs: 10000 })
+  if (r.code !== 0) return null
+  try {
+    const data = JSON.parse(r.stdout.trim()) as { isRecording?: unknown }
+    return { isRecording: data?.isRecording === true }
+  } catch {
+    return null
+  }
+}
+
 /** 删除一次录音产出的 m4a + wav 文件（即用即弃：转写后立即清除）。 */
 export function deleteAudioPair(cfg: VoiceConfig, m4a: string): void {
   for (const p of [m4a, m4a.replace(/\.m4a$/, '.wav')]) {
