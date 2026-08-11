@@ -88,3 +88,6 @@ agent/extensions/node_modules/
 scripts/.pi-cli-path
 # pi-cron 运行时日志
 logs/scheduler/
+
+# pi-memory 压缩检查点（瞬时快照，时效性数据，不入库）
+memory/checkpoints/

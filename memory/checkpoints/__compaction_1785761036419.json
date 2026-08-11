@@ -1,9 +1,0 @@
-{
-  "timestamp": 1785761036419,
-  "notes": {
-    "selftest.status": "自我检查进行中(2026-07-31)。已完成: 配置/扩展/技能文件完好; 修复 SearXNG granian 缺失(腾讯云镜像装 granian 2.7.9, 服务已运行 127.0.0.1:8889, bing/google 引擎可用); 修复 Chromium 缺失(装依赖+chromium 146, headless 验证成功); 中文化补丁未应用(需用户确认); apt 源已切换腾讯云(备份在 ubuntu.sources.bak)。待办: ①用户手动重启 pi 使 headless:true 生效(settings.json 已写入, admin_restart 在 proot 不真正重启) ②可选运行 pi-translate-zh 补丁 ③创建 pi-backup 备份",
-    "__ttl_selftest.status": "2026-12-31T23:59:59Z",
-    "_ctx.compacted_at": "2026-08-03T12:43:56.415Z"
-  },
-  "compaction": true
-}
