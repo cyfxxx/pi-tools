@@ -75,6 +75,16 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 
 > **git 模式的边界（重要）**：`.gitignore` 排除了 `agent/settings.json`、`agent/models.json`、`agent/pi-voice.json`、`agent/auth.json`、`agent/trust.json`、`searxng/settings.yml` 等含密钥/机器特定配置——git 同步**不含**这些文件。新设备 `clone` 后需手动提供（见 [clone](#pi-backup-clone) 与 `pi-backup create --with-auth`）。
 
+> **与本地归档（`create`）的差异**：git 同步只含入库文件；本地归档另含 gitignored 配置（`settings.json`/`trust.json`）与运行时数据（`memory/notes.json`/`summaries.json` 等）。git 缺失项均为刻意排除，各有替代路径：
+
+> | 归档含但 git 不含 | 性质 | 替代路径 |
+> |---|---|---|
+> | `agent/settings.json`、`agent/trust.json` | 每环境独立配置（多环境约定） | clone 后 scp 或 `create --with-auth` 归档恢复 |
+> | `memory/notes.json`/`summaries.json`（会话级记忆） | 运行时数据隔离（P1 决策） | `create` 归档全量带走 |
+> | `searxng/settings.yml`（secret_key） | 机器特定 | `generate-config.sh` 一键重建 |
+>
+> 定位差异：**git = 配置骨架 + 源码增量同步**（不含密钥/会话）；**归档 = 全量快照**（含运行时数据）。换机完整迁移建议两者都用：`create --with-auth` 归档带走全部 + git 同步源码（见 [clone](#pi-backup-clone) 恢复流程）。
+
 **参数：**
 
 | 参数 | 说明 |
