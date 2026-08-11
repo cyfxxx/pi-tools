@@ -319,44 +319,51 @@ export default function (pi: ExtensionAPI): void {
   // 类型断言：核心补丁读取运行时返回值 false，ts 类型仅允许 void | Promise<void>。
   // 未检测到补丁时不注册：避免吞掉所有回车（输入提交/菜单选择失效）。
   // 防抖：ENTER_DEBOUNCE_MS 内连击只处理一次；转写中回车给出提示而非静默。
+  // 同时注册 enter 与 shift+enter：Termux TTY 的 ICRNL 会把回车转成 \n，Kitty 协议
+  // 激活时 pi 将 \n 解析为 shift+enter（不匹配 enter），导致回车无法触发听写。
   const enterReady = enterPatchApplied()
   if (enterReady) {
-    pi.registerShortcut(Key.enter, {
-      description: '录音中回车：切段转写并自动续录',
-      handler: ((ctx: ExtensionContext) => {
-        if (!dictation.isRecording()) {
-          // 竞态兜底：录音进程刚达时长上限自行退出、正在自动转写时，吞掉回车并提示，
-          // 避免回车被放行当作普通输入提交（否则用户按回车中断，看到的却是"录音超时"提示）。
-          if (dictation.isTranscribing()) {
-            ctx.ui.notify('录音已达时长上限，自动转写中…', 'warning')
-            return true
-          }
-          return false
-        }
-        const now = Date.now()
-        if (now - lastEnterAt < ENTER_DEBOUNCE_MS) return true
-        lastEnterAt = now
+    const enterTapHandler = ((ctx: ExtensionContext, source: string) => {
+      if (!dictation.isRecording()) {
+        // 竞态兜底：录音进程刚达时长上限自行退出、正在自动转写时，吞掉回车并提示，
+        // 避免回车被放行当作普通输入提交（否则用户按回车中断，看到的却是"录音超时"提示）。
         if (dictation.isTranscribing()) {
-          ctx.ui.notify('正在转写中，请稍候…', 'warning')
+          ctx.ui.notify('录音已达时长上限，自动转写中…', 'warning')
           return true
         }
-        // [诊断] 确认回车是否到达扩展 handler；定位后移除
-        ctx.ui.notify('诊断: 回车已捕获，正在停止录音并转写', 'info')
-        ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
-        void dictation.stop().then((r) => {
-          deliverResult(pi, ctx, r, true)
-          // 转写成功才自动续录（失败不进入死循环）；续录静默，仅状态条提示
-          if (r.text && !dictation.isTranscribing()) {
-            const m = dictation.start()
-            if (m.startsWith('🎤')) {
-              ctx.ui.setStatus('pi-voice', '🎤 录音中')
-            } else {
-              reply(pi, m)
-            }
-          }
-        }).catch(() => {})
+        return false
+      }
+      const now = Date.now()
+      if (now - lastEnterAt < ENTER_DEBOUNCE_MS) return true
+      lastEnterAt = now
+      if (dictation.isTranscribing()) {
+        ctx.ui.notify('正在转写中，请稍候…', 'warning')
         return true
-      }) as (ctx: ExtensionContext) => void,
+      }
+      // [诊断] 确认回车路径（enter / shift+enter）；定位后移除
+      ctx.ui.notify(`诊断: ${source} 已捕获，正在停止录音并转写`, 'info')
+      ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
+      void dictation.stop().then((r) => {
+        deliverResult(pi, ctx, r, true)
+        // 转写成功才自动续录（失败不进入死循环）；续录静默，仅状态条提示
+        if (r.text && !dictation.isTranscribing()) {
+          const m = dictation.start()
+          if (m.startsWith('🎤')) {
+            ctx.ui.setStatus('pi-voice', '🎤 录音中')
+          } else {
+            reply(pi, m)
+          }
+        }
+      }).catch(() => {})
+      return true
+    }) as (ctx: ExtensionContext, source: string) => void
+    pi.registerShortcut(Key.enter, {
+      description: '录音中回车：切段转写并自动续录',
+      handler: (ctx: ExtensionContext) => enterTapHandler(ctx, 'enter'),
+    })
+    pi.registerShortcut(Key.shift('enter'), {
+      description: '录音中回车（Kitty 协议下 \n 解析为 shift+enter）：切段转写并自动续录',
+      handler: (ctx: ExtensionContext) => enterTapHandler(ctx, 'shift+enter'),
     })
   } else {
     reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
