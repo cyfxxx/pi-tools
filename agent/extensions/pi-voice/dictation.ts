@@ -36,6 +36,8 @@ export interface StopResult {
   language: string
   /** 自动停止原因：timer = Node 定时器到点；exit = 录音进程意外退出；undefined = 手动停止。 */
   autoReason?: 'timer' | 'exit'
+  /** exit 异常提前结束时的实际录音秒数（提示用）。 */
+  autoSec?: number
 }
 
 export interface DictationCallbacks {
@@ -250,6 +252,7 @@ export function createDictation(
             ? `录音异常提前结束（${actualSec ?? '?'}s），自动转写：`
             : ''
       const autoReason = reason === 'manual' ? undefined : reason
+      const autoSec = reason === 'exit' ? actualSec : undefined
       // 用户手动 stop 同样存在竞态：-q 使脚本退出后 MediaRecorder 仍会写文件尾部，
       // 转码前统一等待大小稳定（exit 回调路径此时文件已稳定，立即返回）
       const stable = await deps.waitForFileStable(file)
@@ -279,6 +282,7 @@ export function createDictation(
         text: final,
         language: out.language,
         autoReason,
+        autoSec,
       }
     } finally {
       // 即用即弃：无论成功失败，立即删除本次录音文件
