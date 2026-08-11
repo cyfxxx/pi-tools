@@ -516,6 +516,21 @@ sections.push(() => {
 			'"  Enter to select \u00b7 Esc to go back"',
 			'"  回车选择 \u00b7 Esc 返回"',
 		],
+		['label: "Mermaid diagrams"', 'label: `Mermaid 图表`'],
+		[
+			'description: "Render Mermaid code blocks as Unicode diagrams"',
+			'description: `将 Mermaid 代码块渲染为 Unicode 图表`',
+		],
+		['label: "TUI mode"', 'label: `TUI 模式`'],
+		[
+			'description: "Interface layout; fullscreen mode is experimental"',
+			'description: `界面布局；全屏模式为实验性功能`',
+		],
+		['label: "Fullscreen scrollbar"', 'label: `全屏滚动条`'],
+		[
+			'description: "Scrollbar behavior in fullscreen mode; has no effect in regular mode"',
+			'description: `全屏模式下的滚动条行为；在常规模式下无效果`',
+		],
 	]);
 
 	// follow-up mode 描述（含模板变量，用正则）
