@@ -3297,10 +3297,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 7,
+      "recurrence": 5,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-11T07:31:11.228Z",
-      "accessedAt": "2026-08-11T07:31:11.228Z",
+      "updatedAt": "2026-08-10T11:17:35.949Z",
+      "accessedAt": "2026-08-10T11:17:35.949Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false
     },
@@ -5146,6 +5146,63 @@
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
       "deleted": false
+    },
+    {
+      "id": "4defc232-20b9-4053-acc6-1489540b5fab",
+      "category": "fact",
+      "title": "GitHub 推送记录: pi-voice 修复批次已推送",
+      "content": "2026-08-11 推送 pi-tools 仓库 16 个提交（ffabd2a..dcb333d，pi-voice 全套修复+README+memory 备份+检查点清理），一次性 PAT 内联 URL 推送后 remote 保持无凭证，git fetch 修正 origin/master。检查点 memory/checkpoints/ 已不入库（时效性快照）。",
+      "tags": [
+        "github",
+        "push",
+        "pi-tools"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T05:55:10.220Z",
+      "updatedAt": "2026-08-11T05:55:10.220Z",
+      "accessedAt": "2026-08-11T05:55:10.220Z",
+      "observedAt": "2026-08-11T05:55:10.220Z",
+      "deleted": false
+    },
+    {
+      "id": "85ad158d-66cc-4ecd-a1c7-4c8380c4c77a",
+      "category": "procedure",
+      "title": "黑盒系统开发流程检查清单（5 阶段）",
+      "content": "黑盒系统（硬件/平台 SDK 集成）开发流程检查清单（来自 pi-voice 12 个问题复盘）：\n阶段0 侦察：通读依赖链每层源码/脚本/文档，列出隐性契约（如 termux-api 脚本、pi-tui keys/autocomplete 实现、RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS 列表）\n阶段1 观测：先建持久日志（logcat -v time > 文件 落盘、dist 临时日志），先于一切修改\n阶段2 基准：写最小集成冒烟脚本（真实全流程），跑通记录正常行为基线\n阶段3 假设显式化：把隐含假设（如\"进程退出=录制结束\"）写成文档并用对照实验验证（-i 查询真实状态）\n阶段4 修改：每次修改跑冒烟对比基线；修复会揭开掩盖层，主动复查\"这次改变了哪些观察信号\"\n阶段5 交互验证：UI 交互先与用户确认心智模型（如\"回车=发送\"而非清空）\n另：归因必须验证（复现不了不修，修前抓到根因日志）；用户反馈主动索取量化信息（\"提前结束\"→附秒数）。",
+      "tags": [
+        "procedure",
+        "blackbox",
+        "development",
+        "lessons"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T06:33:34.690Z",
+      "updatedAt": "2026-08-11T06:33:34.690Z",
+      "accessedAt": "2026-08-11T06:33:34.690Z",
+      "observedAt": "2026-08-11T06:33:34.690Z",
+      "deleted": false
+    },
+    {
+      "id": "3e18d9bc-d748-44e5-86d8-ade6640fc784",
+      "category": "fact",
+      "title": "pi-voice 复盘：12 问题因果网络与三层黑盒",
+      "content": "pi-voice 12 问题复盘核心结论（2026-08-11）：\n1. 因果网络中心是 CLI 断线（Termux:API SocketListener EOF）：CLI 进程退出≠录制结束，服务端 MediaRecorder 继续录，-l 超时掩盖了断线症状\n2. 三层黑盒：Android MediaRecorder（PTS 计时/假成功/慢启动 1→4s 漂移）、Termux:API（socket 与录制生命周期分离/调用 3.1s/释放数秒）、pi 平台（enter 保留键静默丢弃/补全 value 整体替换前缀）\n3. 76 单测全部建立在错误假设上（mock 假设进程退出=结束），单测验证\"实现符合假设\"而非\"假设符合真实\"\n4. 掩盖关系链：每次修复揭开一层掩盖暴露下一问题（-l 掩盖断线、Node 计时掩盖假成功、pgrep 掩盖残留盲区）\n5. 线索事后看都在（-i 查询、EOF 日志、RESERVED 列表、applyCompletion 源码），缺的是阶段0 系统侦察\n6. 正确模型：以服务端真实状态（-i）为权威信号，不以中间进程推断",
+      "tags": [
+        "fact",
+        "pi-voice",
+        "lessons",
+        "blackbox"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-11T06:33:54.084Z",
+      "updatedAt": "2026-08-11T06:33:54.084Z",
+      "accessedAt": "2026-08-11T06:33:54.084Z"
     }
   ]
 }
