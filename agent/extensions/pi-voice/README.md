@@ -38,17 +38,31 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 | 组件 | 用途 | 来源 |
 |------|------|------|
 | `faster-whisper`（/opt/pi-whisper/venv） | 本地语音转写 | pip |
+| `opencc-python-reimplemented` | 转写结果繁→简（缺失时中文输出繁体） | pip（同 venv） |
 | `termux-microphone-record` | Android 麦克风录音 | `pkg install termux-api` + Termux:API 应用 |
-| `ffmpeg` | m4a → wav 转码 | `apt-get install ffmpeg` |
-| `termux-tts-speak` | 系统语音朗读（中文） | Termux:TTS（内置） |
-| tmux `extended-keys` | 透传 Ctrl+Alt+R 修饰键序列 | 见"安装与启动"第 4 步 |
+| `ffmpeg` | m4a → wav 转码（仅 termux；linux 平台直出 wav 不需要） | `apt-get install ffmpeg` |
+| `termux-tts-speak` | 系统语音朗读（中文；termux 平台） | Termux:TTS（内置） |
+| `espeak-ng` + `paplay` | 本地朗读（linux 平台：生成 wav + PulseAudio 播放） | `apt-get install espeak-ng pulseaudio-utils` |
+| tmux `extended-keys` | 透传 Ctrl+Alt+R 修饰键序列 | 见“安装与启动”第 4 步 |
+
+## 平台适配
+
+| 平台 | 录音 | 转码 | TTS |
+|------|------|------|-----|
+| termux（Android，默认） | termux-microphone-record（m4a） | ffmpeg m4a→wav | termux-tts-speak |
+| linux（桌面/WSL） | parec → `linuxMicDevice`（默认 RDPSource）直出 wav | 不需要 | espeak-ng 生成 wav + paplay → `linuxTtsSink`（默认 RDPSink） |
+
+- 平台由 `platform` 配置项决定：`auto`（探测：有 termux 工具 → termux，否则 linux）/ `termux` / `linux`；探测逻辑见 `platform.ts`
+- 新增设备适配：在 `platform.ts` 增加 spec 分支即可（录音命令构造 + TTS 构造 + 安装指引），上层 core/dictation 无需改动
+- WSL 注意：麦克风需 Windows 隐私权限允许；`PULSE_SERVER` 指向 WSLg（`unix:/mnt/wslg/PulseServer`）；录音输入源/输出 sink 见 `pactl list sources/sinks`
+- linux TTS 中文为拼音式合成（espeak-ng cmn）；需要自然中文可换 piper 等神经 TTS（改 `ttsBin` 即可，架构已解耦）
 
 ## 安装与启动
 
 ```bash
 # 1. 转写后端（一次性）
 python3 -m venv /opt/pi-whisper/venv
-/opt/pi-whisper/venv/bin/pip install faster-whisper
+/opt/pi-whisper/venv/bin/pip install faster-whisper opencc-python-reimplemented
 ~/.pi/scripts/pi-whisper.sh start        # 常驻服务启动（含断线自恢复提示）
 
 # 2. 录音依赖

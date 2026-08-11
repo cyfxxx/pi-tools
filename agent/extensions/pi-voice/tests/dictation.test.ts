@@ -6,9 +6,14 @@ import type { ChildProcess } from 'node:child_process'
 const cfg = {
   whisperEndpoint: 'http://127.0.0.1:18766',
   whisperToken: '',
+  platform: 'termux',
   micBin: 'termux-microphone-record',
   ffmpegBin: 'ffmpeg',
   ttsBin: 'termux-tts-speak',
+  linuxMicDevice: 'RDPSource',
+  linuxTtsSink: 'RDPSink',
+  linuxTtsVoice: 'cmn',
+  linuxTtsRate: 170,
   tmpDir: '/tmp/pi-voice',
   audioDir: '/tmp/pi-voice-out',
   ttsEnabled: true,
@@ -33,6 +38,9 @@ function makeDeps(overrides: Partial<RecordingDeps> = {}): RecordingDeps {
     deleteAudioPair: vi.fn(),
     waitForFileStable: vi.fn(async () => true),
     detectAudioLevel: vi.fn(async () => ({ maxDb: -20, meanDb: -30 })),
+    micLabel: 'termux-microphone-record',
+    micInstallHint: 'pkg install termux-api',
+    micPermissionHint: 'Android 设置 → 应用 → Termux:API → 麦克风权限',
     ...overrides,
   }
 }

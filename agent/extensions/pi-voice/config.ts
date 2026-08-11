@@ -7,18 +7,29 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import type { PlatformKind } from './platform'
 
 export interface VoiceConfig {
   /** whisper 转写服务地址 */
   whisperEndpoint: string
   /** whisper 服务 Bearer token（服务端 PI_WHISPER_TOKEN，空 = 不鉴权） */
   whisperToken: string
-  /** Termux 录音命令 */
+  /** 平台：auto = 启动时自动探测（termux 工具存在 → termux，否则 linux） */
+  platform: PlatformKind
+  /** 录音命令 */
   micBin: string
-  /** ffmpeg 转码命令 */
+  /** ffmpeg 转码命令（termux m4a → wav；linux 直出 wav 不需要） */
   ffmpegBin: string
   /** TTS 朗读命令 */
   ttsBin: string
+  /** linux 录音输入源（pulse source 名，如 RDPSource；空 = 默认源） */
+  linuxMicDevice: string
+  /** linux TTS 播放输出 sink（paplay --device，如 RDPSink；空 = 默认输出） */
+  linuxTtsSink: string
+  /** linux TTS 语音（espeak-ng -v，如 cmn/zh/en） */
+  linuxTtsVoice: string
+  /** linux TTS 语速（espeak-ng -s，词/分钟） */
+  linuxTtsRate: number
   /** 录音临时目录 */
   tmpDir: string
   /** 录音输出目录（wav 落盘） */
@@ -56,9 +67,14 @@ export function defaultTmpDir(): string {
 export const DEFAULTS: VoiceConfig = {
   whisperEndpoint: 'http://127.0.0.1:18766',
   whisperToken: '',
+  platform: 'auto',
   micBin: 'termux-microphone-record',
   ffmpegBin: 'ffmpeg',
   ttsBin: 'termux-tts-speak',
+  linuxMicDevice: 'RDPSource',
+  linuxTtsSink: 'RDPSink',
+  linuxTtsVoice: 'cmn',
+  linuxTtsRate: 170,
   tmpDir: defaultTmpDir(),
   audioDir: join(homedir(), '.pi', 'logs', 'voice'),
   ttsEnabled: false,
@@ -97,9 +113,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
   const merged: VoiceConfig = {
     whisperEndpoint: env.PI_VOICE_WHISPER_ENDPOINT || file.whisperEndpoint || DEFAULTS.whisperEndpoint,
     whisperToken: env.PI_VOICE_WHISPER_TOKEN || file.whisperToken || DEFAULTS.whisperToken,
+    platform: (env.PI_VOICE_PLATFORM ?? file.platform ?? DEFAULTS.platform) as PlatformKind,
     micBin: env.PI_VOICE_MIC_BIN || file.micBin || DEFAULTS.micBin,
     ffmpegBin: env.PI_VOICE_FFMPEG_BIN || file.ffmpegBin || DEFAULTS.ffmpegBin,
     ttsBin: env.PI_VOICE_TTS_BIN || file.ttsBin || DEFAULTS.ttsBin,
+    linuxMicDevice: env.PI_VOICE_LINUX_MIC_DEVICE ?? file.linuxMicDevice ?? DEFAULTS.linuxMicDevice,
+    linuxTtsSink: env.PI_VOICE_LINUX_TTS_SINK ?? file.linuxTtsSink ?? DEFAULTS.linuxTtsSink,
+    linuxTtsVoice: env.PI_VOICE_LINUX_TTS_VOICE ?? file.linuxTtsVoice ?? DEFAULTS.linuxTtsVoice,
+    linuxTtsRate: numeric(env.PI_VOICE_LINUX_TTS_RATE, file.linuxTtsRate ?? DEFAULTS.linuxTtsRate),
     tmpDir: env.PI_VOICE_TMP_DIR || file.tmpDir || DEFAULTS.tmpDir,
     audioDir: file.audioDir || DEFAULTS.audioDir,
     ttsEnabled: envBool(env.PI_VOICE_TTS_ENABLED, file.ttsEnabled ?? DEFAULTS.ttsEnabled),
@@ -147,9 +168,14 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
   const map: Partial<Record<keyof VoiceConfig, string>> = {
     whisperEndpoint: 'PI_VOICE_WHISPER_ENDPOINT',
     whisperToken: 'PI_VOICE_WHISPER_TOKEN',
+    platform: 'PI_VOICE_PLATFORM',
     micBin: 'PI_VOICE_MIC_BIN',
     ffmpegBin: 'PI_VOICE_FFMPEG_BIN',
     ttsBin: 'PI_VOICE_TTS_BIN',
+    linuxMicDevice: 'PI_VOICE_LINUX_MIC_DEVICE',
+    linuxTtsSink: 'PI_VOICE_LINUX_TTS_SINK',
+    linuxTtsVoice: 'PI_VOICE_LINUX_TTS_VOICE',
+    linuxTtsRate: 'PI_VOICE_LINUX_TTS_RATE',
     ttsEnabled: 'PI_VOICE_TTS_ENABLED',
     ttsMaxChars: 'PI_VOICE_TTS_MAX_CHARS',
     autoSend: 'PI_VOICE_AUTO_SEND',
