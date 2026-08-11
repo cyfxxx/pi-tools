@@ -22,6 +22,8 @@ const linuxCfg: VoiceConfig = {
   platform: 'linux',
   micBin: 'parec',
   ttsBin: 'espeak-ng',
+  // 显式指定（Termux 环境 defaultTmpDir 返回共享存储路径，与测试断言不符）
+  tmpDir: '/tmp/pi-voice',
 }
 
 /** 构造 fake ChildProcess（EventEmitter + pid/kill） */
