@@ -233,6 +233,10 @@ GitHub 同步完成
 |------|------|
 | `--yes` | 非交互式，自动重建全部项 |
 | `--china` | 启用中国镜像加速（apt/npm/GitHub），默认自动检测 |
+| `--voice` / `--no-voice` | 强制包含/跳过语音依赖重建（默认条件触发：`agent/pi-voice.json` 存在即重建） |
+| `--whisper-model=<名>` | whisper 模型档位（tiny/base/small/medium/large-v3，默认 base） |
+| `--no-gpu` | 跳过 CUDA 库安装提示（GPU 检测仍会输出提示，安装为可选） |
+| `--no-piper` | 跳过 piper 神经 TTS 安装提示 |
 
 **前置检查（在重建前执行一次）：**
 
@@ -269,12 +273,17 @@ GitHub 同步完成
 | 5 | `searxng/venv/` | `searxng/settings.yml` 存在且 `searxng/venv/bin/python` 不存在 | `cd ~/.pi/searxng && python3 -m venv venv && venv/bin/pip install -r searxng/repo/requirements.txt 2>&1`（全量依赖） |
 | 6 | `searxng/repo/` | `searxng/repo/` 不存在或为空 | `git clone --depth 1 https://github.com/searxng/searxng ~/.pi/searxng/repo 2>&1`（中国网络通过镜像代理） |
 
-**Phase 2 — 并行组 B2（Whisper 转写服务）：**
+**Phase 2 — 并行组 B2（Whisper 转写服务，条件触发）：**
+
+> **触发条件**：`agent/pi-voice.json` 存在（该机配置过语音，文件本身是 git 排除的机器配置）→ 自动重建；`--voice` 强制包含；`--no-voice` 强制跳过（如无麦克风的服务器）。跳过时输出提示，不装任何语音依赖（防多余）。
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 6a | `/opt/pi-whisper/venv/` | `scripts/whisper-server.py` 存在且 venv 缺失 | `python3 -m venv /opt/pi-whisper/venv && /opt/pi-whisper/venv/bin/pip install faster-whisper 2>&1`（中国网络用清华 pypi 镜像） |
-| 6b | Whisper 模型 | whisper-server.py 存在但 `/opt/pi-whisper/models` 为空 | `HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 /opt/pi-whisper/venv/bin/python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8', download_root='/opt/pi-whisper/models')"` |
+| 6a | `/opt/pi-whisper/venv/` | 语音条件满足且 venv 缺失 | `python3 -m venv /opt/pi-whisper/venv && /opt/pi-whisper/venv/bin/pip install faster-whisper opencc-python-reimplemented`（opencc 缺失时中文转写输出繁体；中国网络用清华 pypi 镜像） |
+| 6b | Whisper 模型 | 语音条件满足且 `/opt/pi-whisper/models` 为空 | `HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 /opt/pi-whisper/venv/bin/python -c "from faster_whisper import WhisperModel; WhisperModel('<模型>', device='cpu', compute_type='int8', download_root='/opt/pi-whisper/models')"`（模型档位由 `--whisper-model` 指定，默认 base；检测到 GPU 时提示可换更大档位） |
+| 6c | GPU 推理（可选） | linux 且 `nvidia-smi` 存在且 ctranslate2 报 CUDA 不可用 | 提示安装：`/opt/pi-whisper/venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`（约 500MB，`--no-gpu` 跳过；装后 whisper 自动 cuda/float16） |
+| 6d | TTS 依赖（linux） | `espeak-ng` 或 `paplay` 缺失 | `apt-get install -y espeak-ng pulseaudio-utils`；piper 神经 TTS（自然中文，63MB）可选提示（`--no-piper` 跳过，安装见 pi-voice README） |
+| 6e | TTS 依赖（termux） | termux 平台 | 提示手动 `pkg install termux-api`（rebuild 无法代跑 Android 侧） |
 
 **Phase 2 — 并行组 C（二进制下载，并发执行）：**
 
@@ -297,11 +306,11 @@ GitHub 同步完成
 |---|--------|------|------|
 | 8b | wrapper shim（`pi` → pi-wrapper.sh） | npm 重装 pi 覆盖了 `bin/pi` | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（重装 shim，`pi-original` 保留） |
 
-**Phase 2-F — Whisper 转写服务（pi-voice 后端，幂等）：**
+**Phase 2-F — 语音服务（条件触发，见 B2 说明）：**
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 8c | whisper 服务启动 | venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token 从 `agent/pi-voice.json` 读取） |
+| 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
 
 **Phase 3 — tmux 环境（跨系统兼容，单独一组）：**
 
@@ -344,6 +353,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | wrapper 自愈 | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（幂等重装 shim，`pi-original` 保留） |
 | 端到端冒烟测试 | `timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即全部扩展加载成功 + 模型链路可用；失败会指明具体扩展（如 pi-voice 报 `Extension runtime not initialized` 时检查 `PI_DIST`，见注意事项 13） |
 | whisper 服务 | `bash ~/.pi/scripts/pi-whisper.sh status`（输出"运行中"或重启后首用自动加载） |
+| 语音跳过提示 | `bash ~/.pi/scripts/rebuild.sh --yes`（无 `pi-voice.json` 时输出"跳过 whisper/语音依赖"一行提示，确认不装多余） |
 
 **示例输出：**
 
