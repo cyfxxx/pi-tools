@@ -6,7 +6,8 @@
 
 - **/voice** 开始/停止录音并转写（快捷键 `Ctrl+Alt+R`；软键盘/外接键盘均可，或用 `/voice` 命令）
 - **/voice <start|stop|cancel|tts|doctor|model|bench|help>** 录音/朗读子命令（`/voice help` 查看全部用法）；无参数 = 录音中则停止转写，否则开始录音
-- **听写模式**：录音中按**回车** = 结束当前段并转写（状态条显示「⚙ 转写中…」），完成后**自动续录**下一段；用快捷键/命令停止为正常退出（不续录）。各段文本追加到输入框，最后统一修改后发送
+- **听写模式**：录音中按**回车** = 结束当前段并转写（状态条显示「⚙ 转写中…」），文本插入输入框后**不自动续录**（等待确认）；再次按回车：**输入框有内容 = 正常发送**（放行提交），**输入框为空 = 开始下一段录音**（听写循环）。用快捷键/命令停止为正常退出。各段文本追加到输入框，统一修改后发送
+- **录音时长精确控制**：时长由扩展在 Node 侧计时（服务端 `-l 0` 不限时，规避 MediaRecorder 时间戳漂移），到 `maxSeconds` 自动 `-q` 优雅收尾并转写
 - **/voice model** 列出模型；`/voice model <名>` 切换（tiny/base/small/medium/large-v3，重启 whisper 服务生效）
 - **/voice bench** 录 5 秒音频测转写速度，输出实时率 RTF 与换模型建议
 - **/voice tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/voice tts speak [文本]** 手动朗读（JSON/纯符号内容会过滤并提示）；**/voice tts status** 查看朗读开关、队列与后端状态
@@ -15,7 +16,7 @@
 - 录音时长到上限（`maxSeconds`）自动转写；`/voice tts status` 显示自动转写结果暂存
 - 完全本地转写（faster-whisper），无需 API key，离线可用
 - 快捷键依赖终端转发修饰键序列：**tmux 会话须启用 `extended-keys`**（见下"安装与启动"第 4 步）；录音快捷键仅 `Ctrl+Alt+R`（Ctrl+Shift+R 已移除——与部分终端/输入法冲突易误触），也可直接用 `/voice` 命令
-- 录音中回车拦截依赖核心补丁 `scripts/patch-voice-enter.mjs`（pi update 后需重跑，`rebuild.sh` 会自动执行；**未打补丁时回车键会被扩展无条件吞掉（输入提交/菜单选择失效），且扩展检测不到补丁时将自动禁用回车听写并提示**，其余功能正常）
+- 录音中回车拦截依赖核心补丁 `scripts/patch-voice-enter.mjs`（pi update 后需重跑，`rebuild.sh` 会自动执行；**未检测到补丁时扩展自动禁用回车听写**——不注册回车快捷键，避免回车被吞导致输入提交/菜单选择失效，其余功能正常）
 
 ## 架构
 
@@ -28,6 +29,7 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 ```
 
 - 状态机在 `dictation.ts`（纯逻辑 + 依赖注入，可单测）；`index.ts` 只做命令注册与 UI 接线
+- **启动健壮性**：正常场景 pgrep 门控跳过清理序列实现快启；spawn 后 8s 启动验证检测"假成功"（服务端响应但未写文件）并自动重试；Termux:API 的 CLI 连接断线（SocketListener EOF 已知问题，录制本身不受影响）时通过 `-i` 查询服务端，仍在录制则无感续录不打断；服务端确已停止才按异常提前结束处理（提示附实际时长）
 - 隐私（即用即弃）：录音文件转写完成后立即删除；清空 tmpDir 全部残留音频（启动时与 `session_shutdown` 时）
 - 安全：可配置共享 Bearer token 保护 whisper 服务（见下文"鉴权"）
 
@@ -118,13 +120,18 @@ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18766/health   # 401
 /voice help       全部子命令用法（含未知子命令提示）
 ```
 
-**听写模式**：`/voice start` 或快捷键开始录音后，每说完一段按**回车**：立即停止录音并转写（状态条显示「⚙ 转写中…」），文本追加进输入框，随后自动开始下一段录音；继续口述、回车切段。全部说完用 `Ctrl+Alt+R`/`/voice` 正常停止（不自动续录），修改输入框中的累积文本后发送。听写模式下转写文本始终进输入框（不随 `autoSend` 直发）。录音中回车切段**依赖核心补丁** `scripts/patch-voice-enter.mjs`（pi update 后重跑，或直接跑 `rebuild.sh`；**未检测到补丁时扩展自动禁用回车键**，避免回车被吞导致输入提交失效，其余功能正常）。
+**听写模式**：`/voice start` 或快捷键开始录音后，每说完一段按**回车**：立即停止录音并转写（状态条显示「⚙ 转写中…」），文本追加进输入框，随后**不再自动续录**；按回车确认：**输入框有内容则正常发送**（不会清空或丢字），**输入框为空则开始下一段录音**。全部说完用 `Ctrl+Alt+R`/`/voice` 正常停止。听写模式下转写文本始终进输入框（不随 `autoSend` 直发）。
+
+> 回车键位说明：`enter` 是 pi 的保留键（`tui.input.submit`，扩展注册会被静默丢弃），扩展实际注册 `return` + `shift+enter` 覆盖两种解析路径（键盘栏回车 `\r`；Termux TTY ICRNL 转 `\n` 时 Kit yy 解析为 `shift+enter`）。录音中回车切段**依赖核心补丁** `scripts/patch-voice-enter.mjs`（pi update 后重跑，或直接跑 `rebuild.sh`；**未检测到补丁时扩展自动禁用回车键**，避免回车被吞导致输入提交失效，其余功能正常）。
 
 录音超过 `maxSeconds` 会自动停止转写（此时无编辑框上下文：`autoSend` 开启则直发，否则暂存，可用 `/voice tts status` 查看）。
 
 ## Troubleshooting
 
-- **“m4a 转 wav 失败”/“录音启动失败：已退出且未生成音频”（ffmpeg 已装仍报错）**：Termux:API 的 MediaRecorder 在 bash 脚本退出（exit 0）后仍会继续写文件尾部（m4a 的 moov atom），立即转码会报 `moov atom not found`；启动瞬间文件也可能尚未创建（0 字节）。扩展已内置等待逻辑（`waitForFileStable`：轮询文件大小连续 3 次采样一致才判定就绪，最长 15s），正常情况下无需干预；若频繁出现，检查 `/storage/emulated/0/pi-voice/` 是否可写、是否有残留录音进程占用麦克风（`termux-microphone-record -q`）。
+- **“m4a 转 wav 失败（moov atom not found / Invalid data 等）”**：转码失败提示现在**附带 ffmpeg 具体错误**（截断 200 字符），据此判断是写入竞态（moov 未写完，转码前已等待文件稳定并重试 3 次）还是文件损坏。Termux:API 的 MediaRecorder 在进程退出后仍会写文件尾部；若频繁出现，检查 `/storage/emulated/0/pi-voice/` 是否可写、是否有残留录音进程占用麦克风（`termux-microphone-record -q`）。
+- **“录音启动失败：服务端未实际开始录音（无音频文件生成）”**：启动验证（8s 内文件未生成）判定服务端"假成功"（响应了但没写文件，常见于 MediaRecorderService 刚清理完的状态错乱），已自动清理重试一次仍失败。等几秒再试；持续出现可执行 `termux-microphone-record -q` 手动清理后重试。
+- **“录音异常提前结束（Xs）”**：录音进程意外退出且服务端也已停止（排查时先看提示中的实际秒数：几秒 = 启动级故障，几十秒 = 中途中断）。常见诱因：其他应用抢占麦克风（AudioFocus）、系统后台限制 Termux:API、音频栈偶发错误。若 Xs 较长但文件完整，转写仍会正常进行。
+- **“未识别到语音内容”**：whisper 返回空文本。先确认说话音量（检测到声音但 < -45dB 时会提示"未检测到声音信号"）；环境噪声大或语速快时可切换更大模型（`/voice model small`）提升识别率。
 - **重启后“只能开不能关”、反复显示录音中**：pi 重启会丢失录音状态，若重启前正在录音，遗留的孤儿录音进程会占用麦克风（termux-microphone-record 单实例），新录音立即退出且退出码为 0。新版扩展启动时自动执行 `-q` 清理孤儿进程；若仍占用，手动执行 `termux-microphone-record -q` 后重试。
 - **录音权限**：`/voice doctor` 显示“麦克风权限未授予” → Android 设置 → 应用 → Termux:API → 麦克风 → 允许。
 - **转写服务不可达**：`~/.pi/scripts/pi-whisper.sh status`；未运行则执行 `start`。
