@@ -199,17 +199,20 @@ export default function (pi: ExtensionAPI): void {
     // 多级补全：pi 传入完整参数前缀（含多级与空格），按第一级子命令分发
     getArgumentCompletions: (prefix) => {
       const first = (prefix.trim().split(/\s+/)[0] ?? '').toLowerCase()
+      // 注意：参数补全的 value 是整体替换参数前缀（pi 的 applyCompletion 用
+      // beforePrefix + item.value），必须含完整参数（'tts on'），否则会变
+      // 成 '/voice on' 之类的错命令
       if (first === 'tts') {
         return [
-          { value: 'on', label: 'tts on', description: '开启自动朗读' },
-          { value: 'off', label: 'tts off', description: '关闭自动朗读' },
-          { value: 'status', label: 'tts status', description: '查看朗读/转写状态' },
-          { value: 'speak', label: 'tts speak [文本]', description: '手动朗读（缺省朗读最近回复）' },
+          { value: 'tts on', label: 'tts on', description: '开启自动朗读' },
+          { value: 'tts off', label: 'tts off', description: '关闭自动朗读' },
+          { value: 'tts status', label: 'tts status', description: '查看朗读/转写状态' },
+          { value: 'tts speak [文本]', label: 'tts speak [文本]', description: '手动朗读（缺省朗读最近回复）' },
         ]
       }
       if (first === 'model') {
         return Object.entries(WHISPER_MODELS).map(([name, desc]) => ({
-          value: name,
+          value: `model ${name}`,
           label: `model ${name}`,
           description: desc,
         }))
