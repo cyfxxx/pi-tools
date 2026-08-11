@@ -13,6 +13,7 @@ import {
   getNotesSize,
 } from './storage.ts'
 import { searchEntries } from './retrieval.ts'
+import { formatEnvironments, type RuntimeEnv } from './env.ts'
 
 const CATEGORY_HINT =
   '类别: fact|preference|habit|procedure|reference'
@@ -66,7 +67,13 @@ export function registerCommands(pi: ExtensionAPI): void {
           }
         }
         const entries = loadEntries()
-        const results = searchEntries(entries, queryParts.join(' '), category, undefined, limit)
+        let env: RuntimeEnv | 'all' | undefined
+        for (const p of parts.slice(1)) {
+          if (p.startsWith('--env=')) {
+            env = p.slice('--env='.length) as RuntimeEnv | 'all'
+          }
+        }
+        const results = searchEntries(entries, queryParts.join(' '), category, undefined, limit, env)
         if (!results.length) {
           ctx.ui.notify('(无匹配的记忆)', 'info')
           return
@@ -75,7 +82,7 @@ export function registerCommands(pi: ExtensionAPI): void {
           const age = Math.round(
             (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24),
           )
-          return `${i + 1}. [${e.category}] ${e.title} (${e.confidence}, ${age}d)`
+          return `${i + 1}. [${e.category}] ${e.title}（${formatEnvironments(e.environments)}）(${e.confidence}, ${age}d)`
         })
         ctx.ui.notify(`记忆搜索结果 (${results.length}):\n${lines.join('\n')}`, 'info')
         return

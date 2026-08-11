@@ -1,5 +1,6 @@
 import type { MemoryEntry, MemoryCategory } from './types.ts'
 import { activeEntries, tokenize } from './storage.ts'
+import { isEnvVisible, type RuntimeEnv } from './env.ts'
 
 const K1 = 1.5
 const B = 0.75
@@ -64,6 +65,8 @@ export interface SearchOptions {
   category?: MemoryCategory
   tags?: string[]
   limit?: number
+  /** 环境过滤：缺省不过滤；传具体环境则只返回 all + 该环境条目 */
+  env?: RuntimeEnv | 'all'
 }
 
 // 混合检索：有 query 时 70% 词法 + 30% 质量；无 query 时纯质量
@@ -73,32 +76,34 @@ export function searchEntries(
   category?: MemoryCategory,
   tags?: string[],
   limit = 5,
+  env?: RuntimeEnv | 'all',
 ): MemoryEntry[] {
-  const live = activeEntries(entries)
+  let live = activeEntries(entries)
   if (!live.length) return []
-
-  let filtered = live
-  if (category) filtered = filtered.filter(e => e.category === category)
+  if (env && env !== 'all') {
+    live = live.filter(e => isEnvVisible(e.environments, env))
+  }
+  if (category) live = live.filter(e => e.category === category)
   if (tags && tags.length > 0) {
     const lowerTags = tags.map(t => t.toLowerCase())
-    filtered = filtered.filter(e =>
+    live = live.filter(e =>
       lowerTags.some(t => e.tags.some(et => et.toLowerCase() === t)),
     )
   }
-  if (!filtered.length) return []
+  if (!live.length) return []
 
   const queryTokens = query ? tokenize(query) : []
 
   if (queryTokens.length === 0) {
-    return filtered
+    return live
       .map(e => ({ e, score: qualityScore(e) }))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
       .map(x => x.e)
   }
 
-  const docs = filtered.map(e => buildDoc(e))
-  const n = filtered.length
+  const docs = live.map(e => buildDoc(e))
+  const n = live.length
   const avgLen = docs.reduce((s, d) => s + docLength(d), 0) / n
 
   // 文档频率（词法匹配：包含或互为子串）
@@ -111,7 +116,7 @@ export function searchEntries(
     df.set(q, count)
   }
 
-  return filtered
+  return live
     .map((e, i) => ({
       e,
       score: 0.7 * bm25Score(queryTokens, docs[i], df, n, avgLen) + 0.3 * qualityScore(e),

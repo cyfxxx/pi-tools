@@ -19,7 +19,10 @@
       "updatedAt": "2026-07-31T13:00:27.399Z",
       "accessedAt": "2026-07-31T13:00:27.399Z",
       "observedAt": "2026-07-31T13:00:27.399Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ad87c0aa-8181-4a18-81cb-6c180088daf7",
@@ -39,7 +42,10 @@
       "updatedAt": "2026-07-31T13:00:33.061Z",
       "accessedAt": "2026-07-31T13:00:33.061Z",
       "observedAt": "2026-07-31T13:00:33.061Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "0216e7fc-91ab-4f0b-9ec2-0957df5980b3",
@@ -59,7 +65,10 @@
       "updatedAt": "2026-07-31T13:00:33.063Z",
       "accessedAt": "2026-07-31T13:00:33.063Z",
       "observedAt": "2026-07-31T13:00:33.063Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "66e62fe6-582f-4990-ad20-83216603c80e",
@@ -80,7 +89,10 @@
       "accessedAt": "2026-08-02T08:40:02.561Z",
       "observedAt": "2026-08-02T08:40:02.561Z",
       "supersededBy": "e347a724-2618-44df-a3a5-a3d769168533",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "e347a724-2618-44df-a3a5-a3d769168533",
@@ -101,7 +113,10 @@
       "accessedAt": "2026-08-02T08:40:02.562Z",
       "observedAt": "2026-08-02T08:40:02.562Z",
       "deleted": true,
-      "supersededBy": "78e95871-4ef9-4110-ab99-49fea7a67a16"
+      "supersededBy": "78e95871-4ef9-4110-ab99-49fea7a67a16",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "6c7ef129-a16d-4d95-bf2e-0313ad17c918",
@@ -123,7 +138,10 @@
       "updatedAt": "2026-08-03T13:32:38.668Z",
       "accessedAt": "2026-08-02T08:40:02.562Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "af33892e-388d-47d4-a5b6-bc70d68b1e49",
@@ -146,7 +164,10 @@
       "updatedAt": "2026-08-03T13:32:38.669Z",
       "accessedAt": "2026-08-02T08:40:02.562Z",
       "observedAt": "2026-08-03T13:32:38.669Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "180c9813-2add-471d-8cae-22daa5f2fca1",
@@ -168,7 +189,10 @@
       "updatedAt": "2026-08-03T13:32:38.669Z",
       "accessedAt": "2026-08-02T08:40:02.562Z",
       "observedAt": "2026-08-03T13:32:38.669Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40",
@@ -187,7 +211,10 @@
       "updatedAt": "2026-08-03T13:32:38.669Z",
       "accessedAt": "2026-08-02T08:40:02.562Z",
       "observedAt": "2026-08-03T13:32:38.669Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "fa9e701b-72a1-4b05-aeb6-bf5ebc3071b6",
@@ -208,7 +235,10 @@
       "accessedAt": "2026-08-03T11:41:21.167Z",
       "observedAt": "2026-08-03T11:41:21.167Z",
       "deleted": true,
-      "supersededBy": "7fc97850-cb98-4679-8c00-93875de837be"
+      "supersededBy": "7fc97850-cb98-4679-8c00-93875de837be",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "1521d1f6-5c35-4884-b447-27953227e074",
@@ -230,7 +260,10 @@
       "supersededBy": null,
       "sourceSessions": [],
       "observedAt": "2026-08-03T12:32:10.198028+00:00",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "9ba77085-7fc5-4b36-98e4-17cd230462ae",
@@ -249,7 +282,10 @@
       "updatedAt": "2026-08-03T12:36:18.760Z",
       "accessedAt": "2026-08-03T12:36:18.760Z",
       "observedAt": "2026-08-03T12:36:18.760Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8135fb1e-e09f-4553-a063-f138ca2a77eb",
@@ -268,7 +304,10 @@
       "updatedAt": "2026-08-03T12:36:18.761Z",
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "6b87ae38-5f1f-480e-a6ec-c7fb16b01b85",
@@ -287,7 +326,10 @@
       "updatedAt": "2026-08-03T12:36:18.761Z",
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "94c18d69-fb50-41e7-8e51-b5b93ff37c34",
@@ -307,7 +349,10 @@
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
       "supersededBy": "c884f8de-da98-4015-af1f-c1352f288426",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c884f8de-da98-4015-af1f-c1352f288426",
@@ -327,7 +372,10 @@
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
       "deleted": true,
-      "supersededBy": "5499d51a-a908-4502-9d35-875cd9d4b1ec"
+      "supersededBy": "5499d51a-a908-4502-9d35-875cd9d4b1ec",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "e0a1406c-1a6d-49b0-85ef-94804123f067",
@@ -347,7 +395,10 @@
       "updatedAt": "2026-08-03T12:36:18.761Z",
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
@@ -366,7 +417,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1b17db54-acdb-4fe6-b743-d32e7f45e143",
@@ -385,7 +439,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "3b9736cb-af89-4376-8738-bdc0dd8e5910",
@@ -405,7 +462,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a2cdcd62-e7c4-4d74-97e0-69f918616d09",
@@ -424,7 +484,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "947be7fa-cc35-4304-8f8f-49e446d598b6",
@@ -443,7 +506,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c816975a-0ce4-4a2c-a978-c234d62f4153",
@@ -462,7 +528,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b6f9ec95-332b-49b6-8e65-d1e17d27118c",
@@ -481,7 +550,10 @@
       "updatedAt": "2026-08-03T13:33:21.832Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c57c0431-39e7-41a7-957e-74818047f2d0",
@@ -500,7 +572,10 @@
       "updatedAt": "2026-08-03T13:35:38.945Z",
       "accessedAt": "2026-08-03T13:35:38.945Z",
       "observedAt": "2026-08-03T13:35:38.945Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8b50733e-55a6-44a4-934d-6e944422bc8c",
@@ -519,7 +594,10 @@
       "updatedAt": "2026-08-03T13:36:44.442Z",
       "accessedAt": "2026-08-03T13:36:44.442Z",
       "observedAt": "2026-08-03T13:36:44.442Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "54c21fcf-e64d-4d30-88f2-3da1844b7bce",
@@ -540,7 +618,10 @@
       "accessedAt": "2026-08-04T00:48:06.201Z",
       "observedAt": "2026-08-04T00:48:06.201Z",
       "deleted": true,
-      "supersededBy": "e9740b9f-fc7f-44d2-89ad-11ef94db2051"
+      "supersededBy": "e9740b9f-fc7f-44d2-89ad-11ef94db2051",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ff7e6882-3e2c-4292-b444-8e292bb1a48c",
@@ -560,7 +641,10 @@
       "accessedAt": "2026-08-04T02:09:14.118Z",
       "observedAt": "2026-08-04T02:09:14.118Z",
       "supersededBy": "40399fa6-a129-41a8-b70f-1f57622d428b",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "06264bed-c183-4737-81ed-73b7837060c4",
@@ -580,7 +664,10 @@
       "accessedAt": "2026-08-04T02:09:14.119Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
       "supersededBy": "c07b9834-ecd1-4c53-9c3a-7196105267ce",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "40399fa6-a129-41a8-b70f-1f57622d428b",
@@ -599,7 +686,10 @@
       "updatedAt": "2026-08-04T02:09:14.119Z",
       "accessedAt": "2026-08-04T02:09:14.119Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "9bc15ce4-5953-4e7e-8356-2719e316e3d2",
@@ -618,7 +708,10 @@
       "updatedAt": "2026-08-04T02:09:14.119Z",
       "accessedAt": "2026-08-04T02:09:14.119Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c07b9834-ecd1-4c53-9c3a-7196105267ce",
@@ -637,7 +730,10 @@
       "updatedAt": "2026-08-04T02:09:14.119Z",
       "accessedAt": "2026-08-04T02:09:14.119Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "e9740b9f-fc7f-44d2-89ad-11ef94db2051",
@@ -656,7 +752,10 @@
       "updatedAt": "2026-08-04T02:09:14.120Z",
       "accessedAt": "2026-08-04T02:09:14.120Z",
       "observedAt": "2026-08-04T02:09:14.120Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b8899344-647a-4ade-aae1-5678480930a9",
@@ -675,7 +774,10 @@
       "updatedAt": "2026-08-04T02:09:14.120Z",
       "accessedAt": "2026-08-04T02:09:14.120Z",
       "observedAt": "2026-08-04T02:09:14.120Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "648f3e7c-a471-4386-9edd-8af9d16c3ec2",
@@ -694,7 +796,10 @@
       "updatedAt": "2026-08-04T02:09:14.120Z",
       "accessedAt": "2026-08-04T02:09:14.120Z",
       "observedAt": "2026-08-04T02:09:14.120Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "83b73d4a-e52d-46df-8310-18b98923f7e0",
@@ -714,7 +819,10 @@
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
       "deleted": true,
-      "supersededBy": "7db8d2f6-5fcf-4192-a440-2b1565abdc65"
+      "supersededBy": "7db8d2f6-5fcf-4192-a440-2b1565abdc65",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c7fcb46b-83f4-44a3-84af-a5415250f461",
@@ -733,7 +841,10 @@
       "updatedAt": "2026-08-05T14:40:28.496Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "0388e58f-f7ff-4b48-b864-ac4f0b3520c1",
@@ -752,7 +863,10 @@
       "updatedAt": "2026-08-05T14:40:28.496Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "7cb84be3-fa0c-4c1e-9f26-dd8045ea47cb",
@@ -771,7 +885,10 @@
       "updatedAt": "2026-08-05T14:40:28.496Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "10c166ab-ff11-4abf-9d00-4d98ce8ed5aa",
@@ -789,7 +906,10 @@
       "updatedAt": "2026-08-05T14:40:28.496Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "d33921da-2f60-4e5e-8a16-f44361950b16",
@@ -808,7 +928,10 @@
       "updatedAt": "2026-08-05T14:40:28.496Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "73fafec9-c7dd-4792-893c-66d8701c6481",
@@ -828,7 +951,10 @@
       "updatedAt": "2026-08-05T15:04:03.663Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8de6cde3-d222-464b-9a18-fc42de2f537c",
@@ -847,7 +973,10 @@
       "updatedAt": "2026-08-05T15:04:03.663Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "37e312c5-cf8b-47e6-b809-e421516b6e51",
@@ -865,7 +994,10 @@
       "updatedAt": "2026-08-05T15:04:03.663Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "78e533fd-b990-4520-aadb-41d70d6bd628",
@@ -885,7 +1017,10 @@
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
       "supersededBy": "cfb10b23-f75f-4154-b16c-8536c5bb797e",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "cfb10b23-f75f-4154-b16c-8536c5bb797e",
@@ -905,7 +1040,10 @@
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
       "deleted": true,
-      "supersededBy": "5a746c07-311d-4717-a88d-944cbafc18a6"
+      "supersededBy": "5a746c07-311d-4717-a88d-944cbafc18a6",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "dcccdcd7-7575-4cb9-81d1-58925c093c4a",
@@ -925,7 +1063,10 @@
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
       "supersededBy": "e1c2e7c9-1ba2-480f-aebc-3bb089b1b40f",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "e1c2e7c9-1ba2-480f-aebc-3bb089b1b40f",
@@ -945,7 +1086,10 @@
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
       "deleted": true,
-      "supersededBy": "60c413a4-0b10-4d5a-a586-9d34dc24c145"
+      "supersededBy": "60c413a4-0b10-4d5a-a586-9d34dc24c145",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "95ecc816-a5d2-40ef-807a-5874053d686d",
@@ -965,7 +1109,10 @@
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
       "deleted": true,
-      "supersededBy": "ed6064c4-d7e2-49fc-a591-d3f394eac401"
+      "supersededBy": "ed6064c4-d7e2-49fc-a591-d3f394eac401",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "c6b04b78-8ade-4605-8666-839a6b2f05be",
@@ -984,7 +1131,10 @@
       "updatedAt": "2026-08-09T12:35:28.505Z",
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "23397548-0cfc-4fa0-b94d-94688e6db3f9",
@@ -1003,7 +1153,10 @@
       "updatedAt": "2026-08-09T12:35:28.505Z",
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "51a2cba6-725a-479f-a9d2-02bd66fc18d1",
@@ -1024,7 +1177,10 @@
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
       "supersededBy": "b1fa04d6-175c-48e6-86c0-3020e4916bcc",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "5a746c07-311d-4717-a88d-944cbafc18a6",
@@ -1045,7 +1201,10 @@
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
       "deleted": true,
-      "supersededBy": "aae97567-f8ec-496b-86d0-7e39408bf1f5"
+      "supersededBy": "aae97567-f8ec-496b-86d0-7e39408bf1f5",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "b1fa04d6-175c-48e6-86c0-3020e4916bcc",
@@ -1066,7 +1225,10 @@
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
       "deleted": true,
-      "supersededBy": "077807bf-052b-4083-8821-cce45e0e73c3"
+      "supersededBy": "077807bf-052b-4083-8821-cce45e0e73c3",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "ed6064c4-d7e2-49fc-a591-d3f394eac401",
@@ -1087,7 +1249,10 @@
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
       "supersededBy": "2702b269-eb1d-41cc-9d5c-9efbc7fc9220",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "2702b269-eb1d-41cc-9d5c-9efbc7fc9220",
@@ -1107,7 +1272,10 @@
       "updatedAt": "2026-08-09T12:36:19.648Z",
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "5e3ccd20-3e23-444d-9e07-611b3c58c68a",
@@ -1127,7 +1295,10 @@
       "updatedAt": "2026-08-09T12:36:19.648Z",
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "083d00df-3f0e-458e-b35f-b9ebeccff2b3",
@@ -1147,7 +1318,10 @@
       "updatedAt": "2026-08-09T12:36:19.648Z",
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "82ff2c7a-a357-4893-b681-09c325f9c871",
@@ -1167,7 +1341,10 @@
       "updatedAt": "2026-08-09T12:36:19.648Z",
       "accessedAt": "2026-08-09T12:36:19.648Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "6d9f8858-a395-4381-9afe-bf1569135736",
@@ -1187,7 +1364,10 @@
       "updatedAt": "2026-08-09T12:37:14.756Z",
       "accessedAt": "2026-08-09T12:37:14.756Z",
       "observedAt": "2026-08-09T12:37:14.756Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1ea4e85b-16a9-4f62-9ff5-e0c001fca163",
@@ -1207,7 +1387,10 @@
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
       "supersededBy": "280655b7-974d-4ce5-9f6b-c8b113f5e3ea",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "280655b7-974d-4ce5-9f6b-c8b113f5e3ea",
@@ -1228,7 +1411,10 @@
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
       "supersededBy": "fa156b69-d6fe-467c-93d2-f9d76673336f",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "fa156b69-d6fe-467c-93d2-f9d76673336f",
@@ -1249,7 +1435,10 @@
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
       "deleted": true,
-      "supersededBy": "ecbaa446-2e36-4b64-a51d-d839d857d5ad"
+      "supersededBy": "ecbaa446-2e36-4b64-a51d-d839d857d5ad",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "6a9b0f38-a5b2-4a20-88fe-5567d90f950a",
@@ -1268,7 +1457,10 @@
       "updatedAt": "2026-08-09T12:37:14.757Z",
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ab02d7ad-17f7-4b47-bcf0-32431fb86e1e",
@@ -1288,7 +1480,10 @@
       "updatedAt": "2026-08-09T12:37:14.757Z",
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "64508d4b-b49e-431a-8eff-75a4fee7b098",
@@ -1309,7 +1504,10 @@
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
       "deleted": true,
-      "supersededBy": "b978cc6e-fd9e-4308-99b7-dc6f085b6f1a"
+      "supersededBy": "b978cc6e-fd9e-4308-99b7-dc6f085b6f1a",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ede06b2d-1f5b-42a1-b6bc-2ac63b475458",
@@ -1328,7 +1526,10 @@
       "updatedAt": "2026-08-09T12:37:14.757Z",
       "accessedAt": "2026-08-09T12:37:14.757Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "4e74925a-d0d4-474e-aabb-54698d7ae769",
@@ -1347,7 +1548,10 @@
       "accessedAt": "2026-08-09T12:38:04.565Z",
       "observedAt": "2026-08-09T12:38:04.565Z",
       "deleted": true,
-      "supersededBy": "ad4dda94-f789-445b-bcb3-7e4d3e0e3848"
+      "supersededBy": "ad4dda94-f789-445b-bcb3-7e4d3e0e3848",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "feb9f0f9-756b-45be-86d4-6935c934d3a1",
@@ -1366,7 +1570,10 @@
       "updatedAt": "2026-08-09T12:38:04.565Z",
       "accessedAt": "2026-08-09T12:38:04.565Z",
       "observedAt": "2026-08-09T12:38:04.565Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "232d0e66-4caa-49a5-b9ee-8aeeb2efb0b2",
@@ -1386,7 +1593,10 @@
       "updatedAt": "2026-08-09T12:38:36.636Z",
       "accessedAt": "2026-08-09T12:38:04.565Z",
       "observedAt": "2026-08-09T12:38:36.636Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "3ed7b29a-7aa2-4fb2-afde-a2dcda684b71",
@@ -1406,7 +1616,10 @@
       "updatedAt": "2026-08-09T12:39:18.466Z",
       "accessedAt": "2026-08-09T12:39:18.466Z",
       "observedAt": "2026-08-09T12:39:18.466Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "f999e6f5-eddb-4340-9e0e-a467af5287f1",
@@ -1425,7 +1638,10 @@
       "updatedAt": "2026-08-09T12:40:10.933Z",
       "accessedAt": "2026-08-09T12:40:10.933Z",
       "observedAt": "2026-08-09T12:40:10.933Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "60c413a4-0b10-4d5a-a586-9d34dc24c145",
@@ -1445,7 +1661,10 @@
       "updatedAt": "2026-08-09T12:45:36.011Z",
       "accessedAt": "2026-08-09T12:45:36.011Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "bbb632cf-0030-4911-a0cd-591925db7cde",
@@ -1466,7 +1685,10 @@
       "accessedAt": "2026-08-09T12:45:36.011Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
       "supersededBy": "ece8b578-507f-430f-baf4-6fd2bc6683eb",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "ece8b578-507f-430f-baf4-6fd2bc6683eb",
@@ -1486,7 +1708,10 @@
       "accessedAt": "2026-08-09T12:45:36.011Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
       "deleted": true,
-      "supersededBy": "34bb9fc2-5e9b-4912-9bb9-a3fcadc51031"
+      "supersededBy": "34bb9fc2-5e9b-4912-9bb9-a3fcadc51031",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "1045bed9-6384-4c19-84bb-b3027d293ae6",
@@ -1506,7 +1731,10 @@
       "updatedAt": "2026-08-09T12:45:36.011Z",
       "accessedAt": "2026-08-09T12:45:36.011Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "4fa07ab4-d3ea-4e21-ad65-954c8ed44a3b",
@@ -1526,7 +1754,10 @@
       "updatedAt": "2026-08-09T12:45:36.011Z",
       "accessedAt": "2026-08-09T12:45:36.011Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "574f53db-3646-4448-8b96-90d9c9a90354",
@@ -1546,7 +1777,10 @@
       "updatedAt": "2026-08-09T12:45:36.011Z",
       "accessedAt": "2026-08-09T12:45:36.011Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "c1b80f12-dde1-4f32-b15d-174d8d4d066b",
@@ -1565,7 +1799,10 @@
       "updatedAt": "2026-08-09T14:18:57.615Z",
       "accessedAt": "2026-08-09T14:18:57.615Z",
       "observedAt": "2026-08-09T14:18:57.615Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "34bb9fc2-5e9b-4912-9bb9-a3fcadc51031",
@@ -1586,7 +1823,10 @@
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
       "supersededBy": "906abeb2-9a99-441e-b68c-8cdd353c8a9e",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "d5b9e320-13a1-43e8-93eb-304a05b7c045",
@@ -1606,7 +1846,10 @@
       "updatedAt": "2026-08-09T14:52:13.231Z",
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "e072aef9-83e2-4193-a562-ce109e8c0259",
@@ -1626,7 +1869,10 @@
       "updatedAt": "2026-08-09T14:52:13.231Z",
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "215308a9-6b11-4817-9cdd-c7900dcdb43a",
@@ -1645,7 +1891,10 @@
       "updatedAt": "2026-08-09T14:52:13.231Z",
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1bad8fb8-f571-440f-8f10-bdd453b16f0b",
@@ -1664,7 +1913,10 @@
       "updatedAt": "2026-08-09T14:52:13.231Z",
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "906abeb2-9a99-441e-b68c-8cdd353c8a9e",
@@ -1683,7 +1935,10 @@
       "updatedAt": "2026-08-09T14:52:13.231Z",
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "84e899e0-9af0-4064-85a2-273474c7b92f",
@@ -1703,7 +1958,10 @@
       "updatedAt": "2026-08-09T15:01:09.739Z",
       "accessedAt": "2026-08-09T15:01:09.739Z",
       "observedAt": "2026-08-09T15:01:09.739Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "6850a497-e68a-4a47-93fc-c0520104717a",
@@ -1723,7 +1981,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "4d7f45cc-9633-407f-a3db-60b6baab71b3",
@@ -1743,7 +2004,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "7db8d2f6-5fcf-4192-a440-2b1565abdc65",
@@ -1763,7 +2027,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "82789a19-00f2-4b34-b71d-4f5faae666f3",
@@ -1783,7 +2050,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "3dcbcce1-2d13-4020-9a1a-ae748f864681",
@@ -1803,7 +2073,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "edb44fab-72ce-40b2-84cb-c05b5190ff15",
@@ -1822,7 +2095,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "5ecd1c9b-9f0a-4c00-93f2-52ecc0d5d5db",
@@ -1842,7 +2118,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "fe1f06a1-c659-4eac-b8d4-a45fd2663d3d",
@@ -1862,7 +2141,10 @@
       "updatedAt": "2026-08-09T17:10:45.300Z",
       "accessedAt": "2026-08-09T17:10:45.300Z",
       "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "611a7a0b-2957-4fd0-be02-3bcd4b5596df",
@@ -1881,7 +2163,10 @@
       "updatedAt": "2026-08-10T01:05:58.946Z",
       "accessedAt": "2026-08-10T01:05:58.946Z",
       "observedAt": "2026-08-10T01:05:58.946Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "732ee391-40e2-4bd8-a5c2-5fa549877d47",
@@ -1900,7 +2185,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "965f0ebc-689e-4d90-9902-8a15670d2987",
@@ -1919,7 +2207,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "f5dd85ba-2ec7-4179-94f7-235d28933220",
@@ -1938,7 +2229,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "74b41a71-d52f-4a47-8218-fd30f158a409",
@@ -1957,7 +2251,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b978cc6e-fd9e-4308-99b7-dc6f085b6f1a",
@@ -1976,7 +2273,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b192c673-3dd8-4aa3-a470-9b547689396f",
@@ -1995,7 +2295,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "6db74bb8-57f5-4387-b18f-c545839194f7",
@@ -2014,7 +2317,10 @@
       "updatedAt": "2026-08-10T01:05:58.947Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b557b34c-3545-4010-8874-d0fb22b6ef6d",
@@ -2033,7 +2339,10 @@
       "updatedAt": "2026-08-10T01:12:08.684Z",
       "accessedAt": "2026-08-10T01:12:08.684Z",
       "observedAt": "2026-08-10T01:12:08.684Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "4211b28e-e692-4942-a572-968bfe8ff2e7",
@@ -2054,7 +2363,10 @@
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
       "deleted": true,
-      "supersededBy": "8ded0233-a022-423f-89b2-75620396ca8e"
+      "supersededBy": "8ded0233-a022-423f-89b2-75620396ca8e",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "5a087e5c-492f-401b-ae15-44fc544c4bac",
@@ -2075,7 +2387,10 @@
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
       "deleted": true,
-      "supersededBy": "03b0be20-dd68-4e3d-80fe-db0788696b73"
+      "supersededBy": "03b0be20-dd68-4e3d-80fe-db0788696b73",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "61a6a4d2-8ebc-4dff-8421-65926eb15a63",
@@ -2094,7 +2409,10 @@
       "updatedAt": "2026-08-10T02:01:33.439Z",
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8697154b-a194-4521-b481-0edf6baeb978",
@@ -2114,7 +2432,10 @@
       "updatedAt": "2026-08-10T02:01:33.439Z",
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "78a02c3e-966f-4c55-a914-9c113e3bf1f5",
@@ -2134,7 +2455,10 @@
       "accessedAt": "2026-08-10T02:58:04.175Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
       "deleted": true,
-      "supersededBy": "f8f2dd23-7eb1-4d9a-b04a-ee4d8784cacd"
+      "supersededBy": "f8f2dd23-7eb1-4d9a-b04a-ee4d8784cacd",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "077807bf-052b-4083-8821-cce45e0e73c3",
@@ -2153,7 +2477,10 @@
       "accessedAt": "2026-08-10T02:58:04.175Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
       "deleted": true,
-      "supersededBy": "2296e2c7-c698-4ad0-910c-5d3f0c79bb35"
+      "supersededBy": "2296e2c7-c698-4ad0-910c-5d3f0c79bb35",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "77b1744c-c0bc-4100-bd66-39e6a19b1f0a",
@@ -2172,7 +2499,10 @@
       "updatedAt": "2026-08-10T02:58:04.175Z",
       "accessedAt": "2026-08-10T02:58:04.175Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c7e22f29-a43f-462a-890b-ecc6a087cf0b",
@@ -2191,7 +2521,10 @@
       "updatedAt": "2026-08-10T02:58:04.175Z",
       "accessedAt": "2026-08-10T02:58:04.175Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "885afe67-36b3-4735-bcdc-c93abeffbaa4",
@@ -2210,7 +2543,10 @@
       "updatedAt": "2026-08-10T05:28:42.036Z",
       "accessedAt": "2026-08-10T05:28:42.036Z",
       "observedAt": "2026-08-10T05:28:42.036Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "dcf0efb4-f1cc-4e69-bae4-4fbfc074fd2e",
@@ -2229,7 +2565,10 @@
       "updatedAt": "2026-08-10T05:28:42.036Z",
       "accessedAt": "2026-08-10T05:28:42.036Z",
       "observedAt": "2026-08-10T05:28:42.036Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "fe68050b-6445-410c-b1d5-c96bf9cb6804",
@@ -2248,7 +2587,10 @@
       "updatedAt": "2026-08-10T05:28:42.037Z",
       "accessedAt": "2026-08-10T05:28:42.037Z",
       "observedAt": "2026-08-10T05:28:42.037Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "e666f503-2166-4135-a7d2-7e9b6957966d",
@@ -2267,7 +2609,10 @@
       "updatedAt": "2026-08-10T05:47:03.339Z",
       "accessedAt": "2026-08-10T05:47:03.339Z",
       "observedAt": "2026-08-10T05:47:03.339Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "338c5ba2-9b62-4b00-bb60-10046a3f34c5",
@@ -2286,7 +2631,10 @@
       "updatedAt": "2026-08-10T05:52:42.178Z",
       "accessedAt": "2026-08-10T05:52:42.178Z",
       "observedAt": "2026-08-10T05:52:42.178Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "10229f8f-934a-4a6b-bbbb-c2e0a7e4da87",
@@ -2306,7 +2654,10 @@
       "updatedAt": "2026-08-10T05:59:08.973Z",
       "accessedAt": "2026-08-10T05:59:08.973Z",
       "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "8ded0233-a022-423f-89b2-75620396ca8e",
@@ -2327,7 +2678,10 @@
       "accessedAt": "2026-08-10T05:59:08.973Z",
       "observedAt": "2026-08-10T05:59:08.973Z",
       "deleted": true,
-      "supersededBy": "79844067-0af6-47be-976d-7407c37c386e"
+      "supersededBy": "79844067-0af6-47be-976d-7407c37c386e",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "56d80807-b6e1-41f8-9718-b0da94ee1ceb",
@@ -2347,7 +2701,10 @@
       "updatedAt": "2026-08-10T05:59:08.973Z",
       "accessedAt": "2026-08-10T05:59:08.973Z",
       "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "df0e5629-326c-4f0b-9f95-4863bb614ae6",
@@ -2365,7 +2722,10 @@
       "updatedAt": "2026-08-10T05:59:08.973Z",
       "accessedAt": "2026-08-10T05:59:08.973Z",
       "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "3d141fee-aa80-4b95-aa1c-2d6a0bfd28aa",
@@ -2384,7 +2744,10 @@
       "updatedAt": "2026-08-10T05:59:57.196Z",
       "accessedAt": "2026-08-10T05:59:57.196Z",
       "observedAt": "2026-08-10T05:59:57.196Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "891a7fbf-6c6b-4a30-8eae-fd26ec3a848f",
@@ -2403,7 +2766,10 @@
       "updatedAt": "2026-08-10T05:59:57.197Z",
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "44d23597-c887-418c-a84d-00cd0ca2c36d",
@@ -2423,7 +2789,10 @@
       "updatedAt": "2026-08-10T05:59:57.197Z",
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "496eb8f0-a265-40b7-89ed-ed2662302a01",
@@ -2443,7 +2812,10 @@
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
       "deleted": true,
-      "supersededBy": "e084860d-a3df-45a2-b8c3-3c40c51e8b28"
+      "supersededBy": "e084860d-a3df-45a2-b8c3-3c40c51e8b28",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c68d8e73-8f60-470c-a90e-ca0d7e29c542",
@@ -2462,7 +2834,10 @@
       "updatedAt": "2026-08-10T05:59:57.197Z",
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "29f25d6f-dadc-4408-8638-be0727c72381",
@@ -2480,7 +2855,10 @@
       "updatedAt": "2026-08-10T05:59:57.197Z",
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "16b52750-2839-43af-9449-447b68ccb3f6",
@@ -2500,7 +2878,10 @@
       "updatedAt": "2026-08-10T06:36:51.133Z",
       "accessedAt": "2026-08-10T06:36:51.133Z",
       "observedAt": "2026-08-10T06:36:51.133Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b04a21b0-d4d0-4477-aed8-70d594524ab2",
@@ -2520,7 +2901,10 @@
       "updatedAt": "2026-08-10T07:05:14.775Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "981145be-8abb-4883-bb0c-f853baf2c964",
@@ -2541,7 +2925,10 @@
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
       "deleted": true,
-      "supersededBy": "2476e709-c42d-4ad7-b131-4e00d1ef0787"
+      "supersededBy": "2476e709-c42d-4ad7-b131-4e00d1ef0787",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "d8a2899b-c321-4d34-9dee-071549a954c3",
@@ -2562,7 +2949,10 @@
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
       "deleted": true,
-      "supersededBy": "d88e5662-050b-4e8a-b62d-4785b2339b75"
+      "supersededBy": "d88e5662-050b-4e8a-b62d-4785b2339b75",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "bbcbbce3-d7c4-4d23-85d9-12afa552fa31",
@@ -2582,7 +2972,10 @@
       "updatedAt": "2026-08-10T07:05:14.776Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1bb0cbd7-5844-4637-9e61-62fcf012e5a7",
@@ -2602,7 +2995,10 @@
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
       "deleted": true,
-      "supersededBy": "f952eb6b-5848-4a55-94ab-6db828ce06ad"
+      "supersededBy": "f952eb6b-5848-4a55-94ab-6db828ce06ad",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "923aba49-8ba2-481f-81d3-063167c0b821",
@@ -2622,7 +3018,10 @@
       "updatedAt": "2026-08-10T07:05:14.776Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "9883695d-d9b7-40b3-9eb7-65d62ca96242",
@@ -2641,7 +3040,10 @@
       "updatedAt": "2026-08-10T07:05:14.776Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "bc157245-3a41-4275-89d5-0903ee3cf976",
@@ -2661,7 +3063,10 @@
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
       "deleted": true,
-      "supersededBy": "95406166-e6b6-4097-87c3-bd7e848271bd"
+      "supersededBy": "95406166-e6b6-4097-87c3-bd7e848271bd",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "2476e709-c42d-4ad7-b131-4e00d1ef0787",
@@ -2680,7 +3085,10 @@
       "updatedAt": "2026-08-10T07:20:00.317Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "bef9904b-0e45-4f48-80ce-2c77ca606dd9",
@@ -2699,7 +3107,10 @@
       "updatedAt": "2026-08-10T07:20:00.317Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "0d9fdaed-e879-4a27-88d3-955985bbd2f2",
@@ -2718,7 +3129,10 @@
       "updatedAt": "2026-08-10T07:20:00.317Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "33d1d217-316c-4058-828b-d9af3f4c2fc7",
@@ -2736,7 +3150,10 @@
       "updatedAt": "2026-08-10T07:20:00.317Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "79b20b32-2a35-4b50-bc57-d783d248b8de",
@@ -2756,7 +3173,10 @@
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
       "deleted": true,
-      "supersededBy": "82d4c1ef-9c02-483a-aa7f-407a9463c757"
+      "supersededBy": "82d4c1ef-9c02-483a-aa7f-407a9463c757",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "f952eb6b-5848-4a55-94ab-6db828ce06ad",
@@ -2775,7 +3195,10 @@
       "updatedAt": "2026-08-10T07:20:00.317Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "af349dd7-204b-4ecf-a5a4-c79e1d671607",
@@ -2796,7 +3219,10 @@
       "updatedAt": "2026-08-10T07:20:15.460Z",
       "accessedAt": "2026-08-10T07:20:15.460Z",
       "observedAt": "2026-08-10T07:20:15.460Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "27a1dd18-f103-4ef1-a100-1b3db6efc3e7",
@@ -2817,7 +3243,10 @@
       "updatedAt": "2026-08-10T07:28:42.015Z",
       "accessedAt": "2026-08-10T07:28:42.015Z",
       "observedAt": "2026-08-10T07:28:42.015Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b210a48d-d16a-475b-9696-a63c97c9b765",
@@ -2837,7 +3266,10 @@
       "updatedAt": "2026-08-10T08:58:42.550Z",
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8a552ac9-e373-45da-88f0-9ce830fb7b7f",
@@ -2858,7 +3290,10 @@
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
       "deleted": true,
-      "supersededBy": "474024d4-6a44-4fd1-b737-f4ff4f3cfa22"
+      "supersededBy": "474024d4-6a44-4fd1-b737-f4ff4f3cfa22",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "460eab89-1cea-4ee8-8974-8b22218fc70b",
@@ -2878,7 +3313,10 @@
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
       "deleted": true,
-      "supersededBy": "8cc9bf5b-b861-4dbf-a4bb-389c10dfc2c9"
+      "supersededBy": "8cc9bf5b-b861-4dbf-a4bb-389c10dfc2c9",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "883399dc-7a56-4e85-8ea0-7dec812d7ad8",
@@ -2898,7 +3336,10 @@
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
       "deleted": true,
-      "supersededBy": "d591921b-f324-4497-be10-1d801c124b04"
+      "supersededBy": "d591921b-f324-4497-be10-1d801c124b04",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "df14f6ec-099e-4550-9a55-eb0552bbe223",
@@ -2917,7 +3358,10 @@
       "updatedAt": "2026-08-10T08:58:42.550Z",
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "9e531d43-a8d6-443d-8836-1620d2cd338d",
@@ -2937,7 +3381,10 @@
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
       "deleted": true,
-      "supersededBy": "94ec3bcf-6b5f-4078-9cf4-818bee7f8a26"
+      "supersededBy": "94ec3bcf-6b5f-4078-9cf4-818bee7f8a26",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "b4c8c074-b008-4e8b-85bf-6ff62c282334",
@@ -2956,7 +3403,10 @@
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
       "deleted": true,
-      "supersededBy": "c9d0c7a6-9801-434e-ac16-a140df7fe677"
+      "supersededBy": "c9d0c7a6-9801-434e-ac16-a140df7fe677",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a79fa553-c4dc-4db7-afa2-2290d50db97c",
@@ -2975,7 +3425,10 @@
       "updatedAt": "2026-08-10T08:58:42.550Z",
       "accessedAt": "2026-08-10T08:58:42.550Z",
       "observedAt": "2026-08-10T08:58:42.550Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "66d2cb9f-f4b3-4de4-a113-710aac7fbf6f",
@@ -2994,7 +3447,10 @@
       "updatedAt": "2026-08-10T08:59:37.714Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "f4c57db1-a18c-45c6-a47b-0374432cf5dc",
@@ -3013,7 +3469,10 @@
       "updatedAt": "2026-08-10T08:59:37.714Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "416e67fa-4ed2-46ef-b88b-b523f9f9f6d6",
@@ -3032,7 +3491,10 @@
       "updatedAt": "2026-08-10T08:59:37.714Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "0973f6e4-a854-488e-8411-910ddb506657",
@@ -3051,7 +3513,10 @@
       "updatedAt": "2026-08-10T08:59:37.714Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ddb56bf7-879a-4f5b-8918-6a906ace5bb2",
@@ -3070,7 +3535,10 @@
       "updatedAt": "2026-08-10T08:59:37.714Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a1b33604-60ac-40b3-bb5b-e941675c3611",
@@ -3090,7 +3558,10 @@
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
       "deleted": true,
-      "supersededBy": "bc925ab9-808c-431f-868d-aeba9d2c6036"
+      "supersededBy": "bc925ab9-808c-431f-868d-aeba9d2c6036",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "99e95879-5385-4ec2-8c9f-c972b355df56",
@@ -3109,7 +3580,10 @@
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
       "deleted": true,
-      "supersededBy": "7492e886-6645-43d0-b53b-69bb0104588c"
+      "supersededBy": "7492e886-6645-43d0-b53b-69bb0104588c",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "e4e86750-e171-45d6-a24a-c9bb8f764ad5",
@@ -3129,7 +3603,10 @@
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
       "deleted": true,
-      "supersededBy": "cc271c3a-7a1b-41e2-901c-d0ee31a3a50b"
+      "supersededBy": "cc271c3a-7a1b-41e2-901c-d0ee31a3a50b",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8cc9bf5b-b861-4dbf-a4bb-389c10dfc2c9",
@@ -3148,7 +3625,10 @@
       "updatedAt": "2026-08-10T09:48:09.454Z",
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8ceac074-8cf8-4249-b756-fb70d49a1544",
@@ -3168,7 +3648,10 @@
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
       "deleted": true,
-      "supersededBy": "32ffc6b0-aaef-4776-a76f-ac1bbf82bfea"
+      "supersededBy": "32ffc6b0-aaef-4776-a76f-ac1bbf82bfea",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "d591921b-f324-4497-be10-1d801c124b04",
@@ -3189,7 +3672,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "d88e5662-050b-4e8a-b62d-4785b2339b75",
@@ -3209,7 +3695,10 @@
       "updatedAt": "2026-08-10T09:48:09.454Z",
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "82d4c1ef-9c02-483a-aa7f-407a9463c757",
@@ -3228,7 +3717,10 @@
       "updatedAt": "2026-08-10T09:48:09.454Z",
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "94ec3bcf-6b5f-4078-9cf4-818bee7f8a26",
@@ -3248,7 +3740,10 @@
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
       "deleted": true,
-      "supersededBy": "9d60903f-d8ff-46b7-b33b-d845df7ef8eb"
+      "supersededBy": "9d60903f-d8ff-46b7-b33b-d845df7ef8eb",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "de350f75-85c5-45e8-970e-83e1ca6bb7f4",
@@ -3268,7 +3763,10 @@
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
       "deleted": true,
-      "supersededBy": "949b2466-f53f-46f0-9343-619f6c1e6175"
+      "supersededBy": "949b2466-f53f-46f0-9343-619f6c1e6175",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "cfe5c0ec-a973-4f13-af98-4a23e03abab8",
@@ -3287,7 +3785,10 @@
       "updatedAt": "2026-08-10T09:48:09.454Z",
       "accessedAt": "2026-08-10T09:48:09.454Z",
       "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
@@ -3302,7 +3803,10 @@
       "updatedAt": "2026-08-10T11:17:35.949Z",
       "accessedAt": "2026-08-10T11:17:35.949Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "474024d4-6a44-4fd1-b737-f4ff4f3cfa22",
@@ -3322,7 +3826,10 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "95406166-e6b6-4097-87c3-bd7e848271bd",
@@ -3342,7 +3849,10 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "d670a554-3c41-4f58-9bce-a3358533a088",
@@ -3362,7 +3872,10 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "949b2466-f53f-46f0-9343-619f6c1e6175",
@@ -3382,7 +3895,10 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "08013b2a-3afd-45fe-9447-b7662f3e5a06",
@@ -3403,7 +3919,10 @@
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
       "deleted": true,
-      "supersededBy": "8087ca60-14e6-4605-8c62-20fa32b53cd5"
+      "supersededBy": "8087ca60-14e6-4605-8c62-20fa32b53cd5",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "bbd74b73-2404-4c26-a1a2-b7885e158dbe",
@@ -3422,7 +3941,10 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c9d0c7a6-9801-434e-ac16-a140df7fe677",
@@ -3441,7 +3963,10 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "2c4e4ab2-cd64-4088-bab0-495ef92fb960",
@@ -3460,7 +3985,10 @@
       "updatedAt": "2026-08-10T10:06:13.524Z",
       "accessedAt": "2026-08-10T10:06:13.524Z",
       "observedAt": "2026-08-10T10:06:13.524Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a7eefc8a-5c38-4baa-bb2b-206574b8f83d",
@@ -3481,7 +4009,10 @@
       "accessedAt": "2026-08-10T10:15:05.955Z",
       "observedAt": "2026-08-10T10:15:05.955Z",
       "supersededBy": "af6f837d-076e-418c-84d7-9293121ec390",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "79844067-0af6-47be-976d-7407c37c386e",
@@ -3500,7 +4031,10 @@
       "updatedAt": "2026-08-10T10:15:05.955Z",
       "accessedAt": "2026-08-10T10:15:05.955Z",
       "observedAt": "2026-08-10T10:15:05.955Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "d929197f-8a1f-4f49-a4ad-11820042f6de",
@@ -3519,7 +4053,10 @@
       "updatedAt": "2026-08-10T10:15:05.956Z",
       "accessedAt": "2026-08-10T10:15:05.956Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "65203c5a-e935-4283-bead-2a4af871cbd9",
@@ -3538,7 +4075,10 @@
       "updatedAt": "2026-08-10T10:15:05.956Z",
       "accessedAt": "2026-08-10T10:15:05.956Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "3dfde583-b156-4b1e-8956-34047f64feee",
@@ -3558,7 +4098,10 @@
       "updatedAt": "2026-08-10T10:15:05.956Z",
       "accessedAt": "2026-08-10T10:15:05.956Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "9d60903f-d8ff-46b7-b33b-d845df7ef8eb",
@@ -3577,7 +4120,10 @@
       "updatedAt": "2026-08-10T10:15:05.956Z",
       "accessedAt": "2026-08-10T10:15:05.956Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "4ffa3651-749b-427a-b546-51c75d99f69f",
@@ -3596,7 +4142,10 @@
       "updatedAt": "2026-08-10T10:15:05.956Z",
       "accessedAt": "2026-08-10T10:15:05.956Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "af6f837d-076e-418c-84d7-9293121ec390",
@@ -3615,7 +4164,10 @@
       "updatedAt": "2026-08-10T10:15:05.956Z",
       "accessedAt": "2026-08-10T10:15:05.956Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "05bb4931-802f-4133-bdd5-91dfa60059bd",
@@ -3635,7 +4187,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "e42dc92d-7678-4ee9-9915-e3fbd1a8ac08",
@@ -3655,7 +4210,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "759dfd37-f2f9-4e6e-8dfb-0130ed39127e",
@@ -3676,7 +4234,10 @@
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
       "supersededBy": "42306440-c6ef-48fb-8528-9477a34bfa77",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "bc925ab9-808c-431f-868d-aeba9d2c6036",
@@ -3696,7 +4257,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "7492e886-6645-43d0-b53b-69bb0104588c",
@@ -3716,7 +4280,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "cc271c3a-7a1b-41e2-901c-d0ee31a3a50b",
@@ -3735,7 +4302,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "42306440-c6ef-48fb-8528-9477a34bfa77",
@@ -3754,7 +4324,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "e084860d-a3df-45a2-b8c3-3c40c51e8b28",
@@ -3774,7 +4347,10 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ecc7d002-a747-4618-8245-bc66ef106821",
@@ -3793,7 +4369,10 @@
       "updatedAt": "2026-08-10T10:18:01.558Z",
       "accessedAt": "2026-08-10T10:18:01.558Z",
       "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "ff0f9df5-a674-43cd-b0a2-d6d6ad5c69ee",
@@ -3812,7 +4391,10 @@
       "updatedAt": "2026-08-10T10:18:01.558Z",
       "accessedAt": "2026-08-10T10:18:01.558Z",
       "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "20420458-34ed-43d9-a516-45d6aa90c142",
@@ -3831,7 +4413,10 @@
       "updatedAt": "2026-08-10T10:18:01.558Z",
       "accessedAt": "2026-08-10T10:18:01.558Z",
       "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "57f52bfc-9f50-4a06-a873-bb2a672a1660",
@@ -3850,7 +4435,10 @@
       "updatedAt": "2026-08-10T10:18:01.558Z",
       "accessedAt": "2026-08-10T10:18:01.558Z",
       "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "24984fd3-b50a-45fe-94cf-5054894c2539",
@@ -3870,7 +4458,10 @@
       "updatedAt": "2026-08-10T11:14:54.132Z",
       "accessedAt": "2026-08-10T11:14:54.132Z",
       "observedAt": "2026-08-10T11:14:54.132Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "f96ea1bc-a318-42c2-8e0c-7dbdd9262913",
@@ -3891,7 +4482,10 @@
       "accessedAt": "2026-08-10T11:14:54.132Z",
       "observedAt": "2026-08-10T11:14:54.132Z",
       "supersededBy": "b0f8efcc-8a28-451f-b674-1b1ec7931ca3",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "b0f8efcc-8a28-451f-b674-1b1ec7931ca3",
@@ -3912,7 +4506,10 @@
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
       "deleted": true,
-      "supersededBy": "0cc13027-df87-453c-86e5-6424ea1ee714"
+      "supersededBy": "0cc13027-df87-453c-86e5-6424ea1ee714",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "8087ca60-14e6-4605-8c62-20fa32b53cd5",
@@ -3933,7 +4530,10 @@
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
       "deleted": true,
-      "supersededBy": "6c28caa7-731f-46f3-a367-91eaf398b7e7"
+      "supersededBy": "6c28caa7-731f-46f3-a367-91eaf398b7e7",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "c3f44099-386b-496d-b343-ed23f3614294",
@@ -3954,7 +4554,10 @@
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
       "deleted": true,
-      "supersededBy": "506c1278-0703-403e-be8a-0c971f0f7505"
+      "supersededBy": "506c1278-0703-403e-be8a-0c971f0f7505",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "fbd6e4a3-ff11-4706-80ac-0c89050e4009",
@@ -3974,7 +4577,10 @@
       "updatedAt": "2026-08-10T11:14:54.133Z",
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "bab42a73-5622-4d1d-82e3-b6b2ca059043",
@@ -3995,7 +4601,10 @@
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
       "deleted": true,
-      "supersededBy": "53fa67af-4392-4fc0-827c-265f34c0ad34"
+      "supersededBy": "53fa67af-4392-4fc0-827c-265f34c0ad34",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "697dcec7-49f8-4f92-95a0-9d56f19c6da6",
@@ -4015,7 +4624,10 @@
       "updatedAt": "2026-08-10T11:14:54.133Z",
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "6f2f535a-ab93-4047-94c5-031a21e24d8c",
@@ -4036,7 +4648,10 @@
       "accessedAt": "2026-08-10T12:55:49.913Z",
       "observedAt": "2026-08-10T12:55:49.913Z",
       "deleted": true,
-      "supersededBy": "a596b6cb-5bde-440e-ac8d-3f65bf12fd5f"
+      "supersededBy": "a596b6cb-5bde-440e-ac8d-3f65bf12fd5f",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "dbdfef60-22a0-4381-97b1-c3662524a049",
@@ -4056,7 +4671,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "b199a75f-d939-4906-8c2f-937de0c3a080",
@@ -4077,7 +4695,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "2a027aae-1fcc-4b92-911f-c824b63b912a",
@@ -4098,7 +4719,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a795dfb8-5973-41af-84ec-718145f8116b",
@@ -4119,7 +4743,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1932f7ff-e3b2-4f9c-817a-128670202851",
@@ -4140,7 +4767,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "bfcc55bb-e383-4f2e-b157-76cf3dc8fc75",
@@ -4161,7 +4791,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "07ed7e3a-6d79-44db-bc63-500133f7f00c",
@@ -4181,7 +4814,10 @@
       "updatedAt": "2026-08-10T23:16:51.279Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "386c20a5-d8d6-470e-b3d9-682c553f4f72",
@@ -4201,7 +4837,10 @@
       "updatedAt": "2026-08-10T23:19:51.165Z",
       "accessedAt": "2026-08-10T23:19:51.165Z",
       "observedAt": "2026-08-10T23:19:51.165Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "aae97567-f8ec-496b-86d0-7e39408bf1f5",
@@ -4222,7 +4861,10 @@
       "accessedAt": "2026-08-10T23:19:51.165Z",
       "observedAt": "2026-08-10T23:19:51.165Z",
       "deleted": true,
-      "supersededBy": "c052ab9c-5f94-4371-9b5a-9f8a7f160e34"
+      "supersededBy": "c052ab9c-5f94-4371-9b5a-9f8a7f160e34",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "9f46ab58-b6c1-4f01-87bb-4963b86b34c2",
@@ -4242,7 +4884,10 @@
       "updatedAt": "2026-08-10T23:19:51.166Z",
       "accessedAt": "2026-08-10T23:19:51.166Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "506c1278-0703-403e-be8a-0c971f0f7505",
@@ -4262,7 +4907,10 @@
       "updatedAt": "2026-08-10T23:19:51.166Z",
       "accessedAt": "2026-08-10T23:19:51.166Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "8a221b5e-b47a-46a0-bb9c-114e206bf50b",
@@ -4282,7 +4930,10 @@
       "updatedAt": "2026-08-10T23:19:51.166Z",
       "accessedAt": "2026-08-10T23:19:51.166Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "0cc13027-df87-453c-86e5-6424ea1ee714",
@@ -4302,7 +4953,10 @@
       "updatedAt": "2026-08-10T23:19:51.166Z",
       "accessedAt": "2026-08-10T23:19:51.166Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "6c28caa7-731f-46f3-a367-91eaf398b7e7",
@@ -4323,7 +4977,10 @@
       "accessedAt": "2026-08-10T23:19:51.166Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
       "deleted": true,
-      "supersededBy": "e4bb1c0e-04ef-4c67-824d-ec0e6fd1715d"
+      "supersededBy": "e4bb1c0e-04ef-4c67-824d-ec0e6fd1715d",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "53fa67af-4392-4fc0-827c-265f34c0ad34",
@@ -4343,7 +5000,10 @@
       "updatedAt": "2026-08-10T23:19:51.166Z",
       "accessedAt": "2026-08-10T23:19:51.166Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "eca9fb65-d4d8-4507-839c-19eba9c5a78d",
@@ -4363,7 +5023,10 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "fcc1418a-b836-4d26-8f62-8ec3d06c4fa7",
@@ -4383,7 +5046,10 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "32ffc6b0-aaef-4776-a76f-ac1bbf82bfea",
@@ -4403,7 +5069,10 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "3fe472f7-3012-4121-8685-a47fcfd947b6",
@@ -4422,7 +5091,10 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a7263a0a-7bef-45c4-a1ff-d89b9945561a",
@@ -4441,7 +5113,10 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "2296e2c7-c698-4ad0-910c-5d3f0c79bb35",
@@ -4460,7 +5135,10 @@
       "updatedAt": "2026-08-11T02:49:34.878Z",
       "accessedAt": "2026-08-11T02:49:34.878Z",
       "observedAt": "2026-08-11T02:49:34.878Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "12119f52-2415-473c-94df-130c3351e0fa",
@@ -4480,7 +5158,10 @@
       "updatedAt": "2026-08-11T02:49:34.878Z",
       "accessedAt": "2026-08-11T02:49:34.878Z",
       "observedAt": "2026-08-11T02:49:34.878Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "03b0be20-dd68-4e3d-80fe-db0788696b73",
@@ -4499,7 +5180,10 @@
       "updatedAt": "2026-08-11T02:49:34.878Z",
       "accessedAt": "2026-08-11T02:49:34.878Z",
       "observedAt": "2026-08-11T02:49:34.878Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "99f0d020-935f-4bf9-9dec-01bb606f10cb",
@@ -4519,7 +5203,10 @@
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
       "deleted": true,
-      "supersededBy": "30dbc697-36af-498c-9419-bab157535a7a"
+      "supersededBy": "30dbc697-36af-498c-9419-bab157535a7a",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "c052ab9c-5f94-4371-9b5a-9f8a7f160e34",
@@ -4539,7 +5226,10 @@
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
       "deleted": true,
-      "supersededBy": "3a92bef1-6377-4b11-93d9-f0b88a67ae11"
+      "supersededBy": "3a92bef1-6377-4b11-93d9-f0b88a67ae11",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "03bcce75-d2db-4701-bc60-10c7dd8ce141",
@@ -4559,7 +5249,10 @@
       "updatedAt": "2026-08-11T02:53:35.449Z",
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "b9c4ec57-984c-4216-a11c-ba645b5ae309",
@@ -4579,7 +5272,10 @@
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
       "deleted": true,
-      "supersededBy": "152b2e9e-2fa5-4e8a-83ac-cb866fe4bacb"
+      "supersededBy": "152b2e9e-2fa5-4e8a-83ac-cb866fe4bacb",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "e4bb1c0e-04ef-4c67-824d-ec0e6fd1715d",
@@ -4599,7 +5295,10 @@
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
       "deleted": true,
-      "supersededBy": "ece90703-de96-42ca-b03f-f39030ba43c8"
+      "supersededBy": "ece90703-de96-42ca-b03f-f39030ba43c8",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "6302331c-b9cc-46df-bca1-db6acfcf8bc5",
@@ -4618,7 +5317,10 @@
       "updatedAt": "2026-08-11T02:53:35.449Z",
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "f69d2c09-c8cb-4781-90c7-5e96ce57d773",
@@ -4638,7 +5340,10 @@
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
       "deleted": true,
-      "supersededBy": "baba6bbf-6663-436f-8603-47328b163ea2"
+      "supersededBy": "baba6bbf-6663-436f-8603-47328b163ea2",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "bf7bd63e-be68-4a93-a947-3915efbcb12d",
@@ -4657,7 +5362,10 @@
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
       "deleted": true,
-      "supersededBy": "1f702010-dabd-4ed0-8edc-8aa20832e489"
+      "supersededBy": "1f702010-dabd-4ed0-8edc-8aa20832e489",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "a596b6cb-5bde-440e-ac8d-3f65bf12fd5f",
@@ -4678,7 +5386,10 @@
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
       "supersededBy": "66e4e698-1753-44f2-83d9-ac1853cb070e",
-      "deleted": true
+      "deleted": true,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "66e4e698-1753-44f2-83d9-ac1853cb070e",
@@ -4699,7 +5410,10 @@
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
       "deleted": true,
-      "supersededBy": "8e8db840-a743-4727-bb44-1e27128ff39b"
+      "supersededBy": "8e8db840-a743-4727-bb44-1e27128ff39b",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "3a92bef1-6377-4b11-93d9-f0b88a67ae11",
@@ -4720,7 +5434,10 @@
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
       "deleted": true,
-      "supersededBy": "36cb9b7f-6e4e-4336-b782-3328b9eddcd4"
+      "supersededBy": "36cb9b7f-6e4e-4336-b782-3328b9eddcd4",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "30dbc697-36af-498c-9419-bab157535a7a",
@@ -4741,7 +5458,10 @@
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
       "deleted": true,
-      "supersededBy": "7a701f0c-58cb-43f0-8613-0569a42250af"
+      "supersededBy": "7a701f0c-58cb-43f0-8613-0569a42250af",
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "05317838-945b-4bb0-8461-4fb57f80059f",
@@ -4761,7 +5481,10 @@
       "updatedAt": "2026-08-11T02:54:32.645Z",
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "4253d51b-d51b-4371-8a13-ee538f991f29",
@@ -4781,7 +5504,10 @@
       "updatedAt": "2026-08-11T02:54:32.645Z",
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "152b2e9e-2fa5-4e8a-83ac-cb866fe4bacb",
@@ -4801,7 +5527,10 @@
       "updatedAt": "2026-08-11T02:54:32.645Z",
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1fec1f9d-58be-4b4a-b272-34bd649499d7",
@@ -4822,7 +5551,10 @@
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
       "deleted": true,
-      "supersededBy": "4dc8592a-158b-452f-b095-c98efff451de"
+      "supersededBy": "4dc8592a-158b-452f-b095-c98efff451de",
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "a5eec7bb-f070-42e2-802f-3a43f9573ec4",
@@ -4842,7 +5574,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1152baca-07e7-4c9f-adc9-5acfecc68b14",
@@ -4862,7 +5597,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "a59b45bd-4532-458a-b330-026286200140",
@@ -4882,7 +5620,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "ece90703-de96-42ca-b03f-f39030ba43c8",
@@ -4902,7 +5643,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "91810526-a752-4530-b43d-188257fd5f94",
@@ -4922,7 +5666,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "fbb73cf4-ba6a-48be-a28f-9988d9d551bf",
@@ -4942,7 +5689,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1f702010-dabd-4ed0-8edc-8aa20832e489",
@@ -4961,7 +5711,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "baba6bbf-6663-436f-8603-47328b163ea2",
@@ -4981,7 +5734,10 @@
       "updatedAt": "2026-08-11T03:32:17.685Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "1e736712-d6d1-4a98-99e9-3b5ec9600537",
@@ -5000,7 +5756,10 @@
       "updatedAt": "2026-08-11T03:35:04.526Z",
       "accessedAt": "2026-08-11T03:35:04.526Z",
       "observedAt": "2026-08-11T03:35:04.526Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "36cb9b7f-6e4e-4336-b782-3328b9eddcd4",
@@ -5019,7 +5778,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "8e8db840-a743-4727-bb44-1e27128ff39b",
@@ -5037,7 +5799,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "245f2693-723d-4f32-86d1-50555d2c38c8",
@@ -5056,7 +5821,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "7a701f0c-58cb-43f0-8613-0569a42250af",
@@ -5074,7 +5842,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "9b731868-e7e5-484d-83ee-5ae045165135",
@@ -5092,7 +5863,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "1109126c-7afa-41d0-87cf-0984f820ce4d",
@@ -5110,7 +5884,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "4dc8592a-158b-452f-b095-c98efff451de",
@@ -5128,7 +5905,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "0432ee5d-f662-415e-bc4e-7cf41a4cb8f4",
@@ -5145,7 +5925,10 @@
       "updatedAt": "2026-08-11T04:37:04.510Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "4defc232-20b9-4053-acc6-1489540b5fab",
@@ -5164,7 +5947,10 @@
       "updatedAt": "2026-08-11T05:55:10.220Z",
       "accessedAt": "2026-08-11T05:55:10.220Z",
       "observedAt": "2026-08-11T05:55:10.220Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "85ad158d-66cc-4ecd-a1c7-4c8380c4c77a",
@@ -5184,7 +5970,10 @@
       "updatedAt": "2026-08-11T06:33:34.690Z",
       "accessedAt": "2026-08-11T06:33:34.690Z",
       "observedAt": "2026-08-11T06:33:34.690Z",
-      "deleted": false
+      "deleted": false,
+      "environments": [
+        "termux"
+      ]
     },
     {
       "id": "3e18d9bc-d748-44e5-86d8-ade6640fc784",
@@ -5202,7 +5991,10 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T06:33:54.084Z",
       "updatedAt": "2026-08-11T06:33:54.084Z",
-      "accessedAt": "2026-08-11T06:33:54.084Z"
+      "accessedAt": "2026-08-11T06:33:54.084Z",
+      "environments": [
+        "termux"
+      ]
     }
   ]
 }

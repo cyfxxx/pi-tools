@@ -28,6 +28,7 @@ import {
   CHECKPOINTS_DIR,
 } from './storage.ts'
 import { searchEntries } from './retrieval.ts'
+import { detectEnvironment, ENVIRONMENTS, formatEnvironments, type RuntimeEnv } from './env.ts'
 
 const MAX_CHECKPOINTS_LIST = 100
 const MAX_NOTES_SIZE = 1024 * 1024
@@ -145,6 +146,11 @@ export function registerTools(pi: ExtensionAPI): void {
           maximum: 1,
           description: '置信度 0-1，根据信息可靠程度自评。直接观察到的事实填 1.0，推断的填 0.5-0.7',
         },
+        environment: {
+          type: 'string',
+          enum: ENVIRONMENTS as unknown as string[],
+          description: '适用运行环境（缺省 all=通用，所有环境可见）。环境专属知识显式指定：termux/wsl2/linux/macos',
+        },
       },
       required: ['category', 'title', 'content'],
     },
@@ -163,6 +169,7 @@ export function registerTools(pi: ExtensionAPI): void {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         accessedAt: new Date().toISOString(),
+        environments: params.environment ? [params.environment as RuntimeEnv] : ['all'],
       }
 
       const { action } = storeEntry(entries, entry)
@@ -214,16 +221,24 @@ export function registerTools(pi: ExtensionAPI): void {
           maximum: 20,
           description: '返回条数上限（默认 5）',
         },
+        env: {
+          type: 'string',
+          enum: ENVIRONMENTS as unknown as string[],
+          description: '按运行环境过滤（缺省 = 当前环境 + all；传 all 则不过滤）',
+        },
       },
     },
     execute: async (_toolCallId, params) => {
       const entries = loadEntries()
+      const currentEnv = detectEnvironment()
+      const envFilter: RuntimeEnv | 'all' = params.env ? (params.env as RuntimeEnv) : currentEnv
       const results = searchEntries(
         entries,
         params.query as string | undefined,
         params.category as MemoryCategory | undefined,
         params.tags as string[] | undefined,
         typeof params.limit === 'number' ? (params.limit as number) : 5,
+        envFilter,
       )
 
       if (!results.length) {
@@ -234,7 +249,7 @@ export function registerTools(pi: ExtensionAPI): void {
         const age = Math.round(
           (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24),
         )
-        return `${i + 1}. [${e.category}] ${e.title}
+        return `${i + 1}. [${e.category}] ${e.title}（${formatEnvironments(e.environments)}）
    置信度: ${e.confidence} | 引用: ${e.recurrence} 次 | ${age} 天前
    ${e.content.length > 200 ? e.content.slice(0, 200) + '...' : e.content}`
       })
@@ -396,6 +411,7 @@ export function registerTools(pi: ExtensionAPI): void {
         undefined,
         undefined,
         limit,
+        detectEnvironment(), // 默认只召回当前环境 + all 的条目
       )
 
       const blocks: string[] = []

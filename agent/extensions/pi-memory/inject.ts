@@ -2,6 +2,7 @@ import type { MemoryEntry, SummaryEntry } from './types.ts'
 import { activeEntries } from './storage.ts'
 import { qualityScore } from './retrieval.ts'
 import { estimateTokens } from '../../lib/context-budget.ts'
+import { detectEnvironment, isEnvVisible, type RuntimeEnv } from './env.ts'
 
 export const INJECT_TAG = 'pi-memory-injection'
 export const DEFAULT_BUDGET_TOKENS = 500
@@ -27,8 +28,9 @@ export function buildInjectionBlock(
   entries: MemoryEntry[],
   summaries: SummaryEntry[],
   budgetTokens: number = getBudget(),
+  currentEnv: RuntimeEnv = detectEnvironment(),
 ): InjectionResult {
-  const live = activeEntries(entries)
+  const live = activeEntries(entries).filter(e => isEnvVisible(e.environments, currentEnv))
 
   const lines: string[] = []
   lines.push('## 持续记忆（pi-memory 自动注入，每轮刷新）')
