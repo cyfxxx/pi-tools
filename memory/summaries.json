@@ -2,123 +2,6 @@
   "version": 1,
   "summaries": [
     {
-      "id": "14f8bda8-4adf-41b1-a3a3-55ae58cdef98",
-      "sessionId": "019fc7d6-d562-77f6-8161-ef78b123fa09",
-      "ts": "2026-08-04T00:48:06.222Z",
-      "title": "检查 pi 配置目录与 settings.json",
-      "decisions": [
-        "仅读取 settings.json 前 5 行，未触碰后续敏感字段"
-      ],
-      "facts": [
-        "默认模型 deepseek-v4-flash，思考深度 max，适配 pi 0.83.0"
-      ],
-      "prefs": [
-        "用户极简指令，要求严格按范围执行、不做多余操作"
-      ],
-      "lessons": [],
-      "fullText": "用户要求仅执行 ls /root/.pi/agent 与读取 settings.json 前 5 行并总结。目录结构完整：配置类文件（AGENTS.md、APPEND_SYSTEM.md、settings.json、auth.json、models.json、models-store.json、scheduled-tasks.json、scheduler.lock）与功能目录（agents、extensions、lib、npm、prompts、skills、bin、sessions）齐全。settings.json 显示 lastChangelogVersion=0.83.0、defaultProvider=deepseek、defaultModel=deepseek-v4-flash、defaultThinkingLevel=max。助手在第 5 行处停止读取，避免暴露后续 provider 密钥。用户再次以极简指令测试助手的约束执行能力。"
-    },
-    {
-      "id": "0a721af3-7222-4602-af54-ec318c752320",
-      "sessionId": "019fca3d-6fde-7794-93da-b8fe1fdcae12",
-      "ts": "2026-08-04T01:32:08.739Z",
-      "title": "极简指令测试对话",
-      "decisions": [],
-      "facts": [],
-      "prefs": [
-        "用户要求不调用工具直接回复，延续极简指令习惯"
-      ],
-      "lessons": [],
-      "fullText": "这是一段极短的测试性对话：用户指示助手仅回复 OK 且不调用任何工具，助手照做。对话本身无实质内容、无决策、无任务执行。仅再次印证用户已有的极简指令偏好（用户偏好极简指令，期望助手自主完成全流程后一次性汇报，不打断询问）。无可提取的长期记忆条目，不新增记忆。"
-    },
-    {
-      "id": "832d88fd-7c5e-4bce-b9f2-ea4a573cb3fe",
-      "sessionId": "019fca65-e3bc-7fe4-b9f3-28a0777d70e4",
-      "ts": "2026-08-04T01:33:30.807Z",
-      "title": "极简指令测试对话",
-      "decisions": [],
-      "facts": [
-        "用户测试助手对极简指令'回复OK，不要调用工具'的执行，助手按要求仅回复OK、未调用任何工具"
-      ],
-      "prefs": [
-        "用户偏好极简指令，期望助手严格照做不擅自行动"
-      ],
-      "lessons": [],
-      "fullText": "这是一段极短的测试性对话：用户指示助手仅回复 OK 且不调用任何工具，助手照做。对话本身无实质内容、无决策、无任务执行。仅再次印证用户已有的极简指令偏好（用户偏好极简指令，期望助手自主完成全流程后一次性汇报，不打断询问）。无可提取的长期记忆条目，不新增记忆。"
-    },
-    {
-      "id": "ae74a801-6dda-4106-95b2-9f692eb4fbe2",
-      "sessionId": "019fca67-2006-7b35-ace9-c64b64646b53",
-      "ts": "2026-08-04T02:08:27.538Z",
-      "title": "查询主机名：localhost.localdomain",
-      "decisions": [],
-      "facts": [
-        "该机器 /etc/hostname 内容为默认值 localhost.localdomain，未自定义主机名"
-      ],
-      "prefs": [
-        "用户指令极简，直接给出查询要求，期望一次回复"
-      ],
-      "lessons": [],
-      "fullText": "用户要求查看 /etc/hostname 内容，助手直接读取并回复为 localhost.localdomain。这是系统默认主机名，说明该机器未做过主机名自定义配置。对话极短，无决策、无任务执行、无代码改动。该信息为一次性系统查询，无长期复用价值，未提取记忆条目。"
-    },
-    {
-      "id": "42376749-65dd-4919-b5d2-930320cfc100",
-      "sessionId": "019fca76-aa1d-7de4-b927-9f4847e9d6d0",
-      "ts": "2026-08-04T02:09:14.283Z",
-      "title": "/root/.pi 仓库 25 步全面审计",
-      "decisions": [
-        "审计结论：仓库架构清晰、整体健康，无需紧急处理",
-        "pi-code-review 技能未注册，标记为待处理问题"
-      ],
-      "facts": [
-        "仓库含 7 扩展、3 技能、2 agents 模板、6 lib 模块、129 个 TS 文件",
-        "settings.json 用 deepseek-v4-flash、thinking=max，searxng 指向 127.0.0.1:8889",
-        "pi-code-review 技能未注册进 settings.json，与 AGENTS.md 约定不符",
-        "pi-wrapper.sh 崩溃回滚：3 次阈值、5 分钟限频、lastGood 快照"
-      ],
-      "prefs": [
-        "用户偏好一次性下达完整步骤清单，要求逐行汇报且不执行额外任务"
-      ],
-      "lessons": [
-        "批量 bash 输出易被截断，大文件与长列表需分批执行、单独补读"
-      ],
-      "fullText": "对 /root/.pi 仓库执行 25 步全面审计并逐行汇报。仓库含 7 个扩展（subagent 1100 行、plan-mode 876 行为最大，pi-autopilot index 仅 90 行属模块化注册入口）、3 个技能、2 个 agents 模板（reviewer/scout）、6 个 lib 模块（25595 字节）、129 个 TS 文件；agent 目录 333M 主要为各扩展独立 node_modules。主配置 deepseek-v4-flash、thinking=max、searxng 127.0.0.1:8889。发现问题：pi-code-review 技能未注册进 settings.json（与扩展注册同步约定不符）；AGENTS.md 未提及 reviewer/scout 模板及 ctx-lite/plans 目录。上下文管理三层方案（auto-compact 按窗口比例 20%/85% 触发+180s cooldown、prune 40K 保护带+最近 2 轮豁免+20K 最小回收、usage-diag 记录至 jsonl 上限 2 万行）设计严谨且有测试覆盖。pi-wrapper.sh 崩溃回滚（3 次阈值+5 分钟限频+lastGood）为可靠进程外自愈设计。整体健康无需紧急处理。执行教训：合并 bash 批次输出易被 50KB 截断，需分批重跑或补读。"
-    },
-    {
-      "id": "cf8476b3-634d-418a-aec2-786efd7c7b99",
-      "sessionId": "019fca87-1f16-75d4-8f18-2eee4fd3f301",
-      "ts": "2026-08-04T10:41:01.792Z",
-      "title": "空会话：无实质内容",
-      "decisions": [],
-      "facts": [],
-      "prefs": [],
-      "lessons": [],
-      "fullText": "该会话仅包含一次简短交互：用户要求助手直接回复 OK 且不调用任何工具，助手照做。无任务执行、无决策、无新信息产生，属于纯测试/占位性质的对话，无可衔接的上下文。"
-    },
-    {
-      "id": "869db149-740e-4b37-959a-9ebe7d95d6f7",
-      "sessionId": "019fcc5c-6544-7c2d-a739-9b9f9d40eed9",
-      "ts": "2026-08-05T14:40:28.781Z",
-      "title": "系统自检：修复 searxng 服务",
-      "decisions": [
-        "searxng 经 start.sh 重启修复，无需进一步处理",
-        "建议将 searxng 启动纳入 pi-wrapper.sh 生命周期（未实施）"
-      ],
-      "facts": [
-        "pi 0.83.0 + deepseek-v4-flash，7 扩展注册一致，全量回归通过",
-        "技能目录 ~/.pi/agent/skills/ 自动扫描，无需 settings.json 显式注册",
-        "searxng 首次请求延迟约 20s 属引擎初始化正常现象",
-        "环境为 Android proot，searxng 无自动拉起机制",
-        "磁盘 80%（剩 22G），内存 5.0G/7.5G 正常"
-      ],
-      "prefs": [],
-      "lessons": [
-        "curl 超时不等于服务不可用，可用 python 直连验证 200",
-        "test-all.sh 输出为空可能因中断，需重跑捕获完整输出"
-      ],
-      "fullText": "系统自检完成：pi 0.83.0 / deepseek-v4-flash / TUI，7 个扩展注册一致，3 个技能全部可用（pi-code-review 未在 settings.json 显式注册，但 pi 自动扫描 ~/.pi/agent/skills/ 目录已加载，无需处理）。全量回归 6 套 vitest + subagent 34 用例 + tsc + conflict-check 6 项全部通过。发现并修复 searxng 未运行问题：执行 start.sh 重启，bing 引擎实测可用；重启后首次请求因引擎初始化（wikidata/startpage 各约 20s 超时）延迟约 20s 属正常。startpage/wikidata 对国内网络超时不可用，建议只用 baidu/sogou/bing。环境为 Android（aid_u0_+）+ proot，curl 连接层失败但 python 直连返回 200。searxng 无自动拉起机制，设备重启后需手动 bash /root/.pi/searxng/start.sh，可考虑加入 pi-wrapper.sh。磁盘 80%（剩 22G）偏高，内存正常。"
-    },
-    {
       "id": "c508fc50-d1c9-4dd7-88e0-bc4b9e8cd659",
       "sessionId": "019fd25d-85d9-73f1-bcaa-607db0301ed1",
       "ts": "2026-08-05T15:04:03.723Z",
@@ -1042,6 +925,216 @@
         "MediaRecorder 单实例冲突特征：exit 0 且无文件生成"
       ],
       "fullText": "本会话完成三件事。其一：全量回归 test-all.sh 10 套全过（8 套 vitest、subagent 34、tsc、注册面 23、conflict-check 8），冒烟发现 SearXNG 服务未运行（start.sh 修复）与 whisper 惰性启动（属正常设计）。其二：pi-memory 的 memory 命令补齐 help 子命令（USAGE 常量 + help 分支 + getArgumentCompletions + description 提示）。其三：pi-voice 录音故障修复——定位到 termux-microphone-record 单实例冲突（exit 0 + 无文件），错误信息在 stdout 被 stdio ignore 丢弃；startRecording 改为捕获 stdout、失败自动重试一次（pkill + 2s 等待 MediaRecorderService 释放），空转写加 detectAudioLevel 音量诊断（-45dB 阈值区分静音/识别失败）；index.ts 确认 pi 补全接口原生支持多级（getArgumentCompletions 收到完整参数前缀），/voice tts 二级补全实现。其四：命令显示对齐 /voice 标准——/schedule 补齐 help/USAGE(15 子命令)/补全，/auto、/plan 加多级补全，/usage-diag 单功能命令不动。验证：pi-voice 63 测试、tsc、conflict-check 全过。admin_restart 工具当前不可用，所有扩展代码改动需重启 pi 加载。"
+    },
+    {
+      "id": "b83831f5-a432-4471-a853-dd58814e7ca0",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-10T23:16:51.847Z",
+      "title": "plan-mode 模型侧切换工具开发与内核补丁",
+      "decisions": [
+        "实现模型侧 plan_enter/plan_exit 切换工具，参考 opencode 权限设计",
+        "plan_exit 退出必须弹确认选择器，用户确认后才恢复编辑权限",
+        "选方案1：写内核补丁刷新恢复会话工具 schema，后续不需要则回退方案2接受现状",
+        "todo 提醒降频：仅'本轮有工具操作但没碰 todo 工具'时提醒一次",
+        "用户暂接受现状：快捷键切换正常，补丁保留待后续验证"
+      ],
+      "facts": [
+        "admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程，新代码不加载",
+        "LLM 只能调用函数 schema 内的工具，schema 不含则调用退化为 bash",
+        "--continue 恢复会话工具 schema 来自持久化快照，不含新注册扩展工具",
+        "plan-mode tool_call 拦截原先只覆盖 bash/subagent，edit/write 无拦截",
+        "opencode 无定时提醒功能，靠每轮 todo 状态注入与提示词纪律"
+      ],
+      "prefs": [
+        "用户偏好极简指令，期望助手自主完成全流程后一次性汇报",
+        "用户通过 TUI'执行计划'按钮退出计划模式，不是快捷键",
+        "用户要求退出计划模式必须手动确认，模型不可绕过"
+      ],
+      "lessons": [
+        "验证进程是否重启要看 PID 对比，proot 环境进程时间不可靠",
+        "会话文件 tool_calls 记录为 0 可证明模型从未真正发出调用",
+        "扩展调试写 /tmp 文件日志做决定性诊断，避免盲猜",
+        "连续多次失败应立即停止无效循环，基于代码事实定位"
+      ],
+      "fullText": "本会话为 plan-mode 扩展开发模型侧切换工具。实现了 plan_enter/plan_exit（参考 opencode 权限设计），plan_exit 退出必须用户确认（ctx.ui.select 弹选择器）。调试中发现并修复两个真实 bug：admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），导致 4 轮修改的新代码从未加载，已加 process.exit(0) 1500ms 兜底（1e6d75f）；plan-mode 只读保护 tool_call 拦截只覆盖 bash/subagent，edit/write 无拦截，已新增硬拒绝（0116a06）。模型侧 plan_enter 在 --print 新进程实测成功，但 --continue TUI 恢复会话工具 schema 来自持久化快照不含新工具，30+ 次调用全部退化为 bash（会话文件 tool_calls 记录为 0 证实从未发出调用）。已写内核补丁 patch-plan-tools.mjs 刷新恢复会话 schema 并注册 rebuild.sh（63d0dc6），补丁已加载但验证受阻，用户选择保留补丁接受现状。todo 提醒优化为仅'有工具操作但未碰 todo'时提醒（81cac46）。用户偏好极简指令，通过 TUI'执行计划'按钮退出计划模式。"
+    },
+    {
+      "id": "8dadab2a-bddf-48a8-ad65-28ecb0bc25ed",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-10T23:19:51.693Z",
+      "title": "pi-voice 录音修复与命令面统一",
+      "decisions": [
+        "pi-voice 录音清理序列改为 -q 优雅停止→pkill→0.5s 等待",
+        "startRecording stdio 改为捕获 stdout（termux 错误打 stdout）",
+        "命令 description 统一缩短为基础介绍+help 提示",
+        "/schedule、/auto、/plan 补齐多级补全与 help 输出",
+        "空转写用 ffmpeg volumedetect（<-45dB 判定静音）区分原因"
+      ],
+      "facts": [
+        "pi 的 getArgumentCompletions 接收完整参数前缀，多级补全原生支持",
+        "pi-voice 测试从 56 增至 63，提交 0749c74 与 2bd55f2 已推送 origin/master",
+        "admin_restart 工具当前环境不可用，扩展代码靠 wrapper 重启加载",
+        "AGENTS.md 命令规范已更新：description 简短功能+help 提示",
+        "环境无 GitHub 凭证，推送靠用户提供 PAT 临时 set-url"
+      ],
+      "prefs": [
+        "用户偏好极简指令（如\"重启\"），期望助手自主完成全流程后汇报",
+        "用户提供 token 时用完即弃，不落盘，推送后恢复无凭证 URL"
+      ],
+      "lessons": [
+        "pkill 杀 CLI 不释放 Termux:API 服务侧 MediaRecorder 麦克风占用，须先 -q",
+        "termux-microphone-record 错误信息（如 Recording already in progress!）输出到 stdout 而非 stderr",
+        "ffmpeg anullsrc 测试源无 -t 限制会无限生成音频导致测试超时",
+        "plan-mode README 引用代码行号，改代码后需同步修正"
+      ],
+      "fullText": "本会话围绕 pi-voice 录音稳定性与扩展命令面统一展开。录音故障定位为 Termux:API MediaRecorder 单实例占用：pkill 杀 CLI 不释放服务侧麦克风，快速连录报 'Recording already in progress!'；且 termux 错误输出在 stdout 而代码只捕获 stderr，真实原因曾被丢弃。修复：清理序列改 -q→pkill→0.5s（2bd55f2），stdio 捕获 stdout，启动失败自动重试一次，空转写用 volumedetect 区分静音。命令面：确认 getArgumentCompletions 接收完整参数前缀、多级补全原生可行，为 /schedule 补齐 SCHEDULE_USAGE+help 分支+补全，/auto、/plan 加多级补全，五命令 description 统一缩短并更新 AGENTS.md 约定，plan-mode README 行号 460→478 修正。pi-voice 63 测试全过，提交 0749c74、2bd55f2 推送 origin/master（用户提供 PAT 临时推送后恢复无凭证 URL）。admin_restart 当前不可用，代码靠 wrapper 写 restart state→杀进程→--continue 重启加载。"
+    },
+    {
+      "id": "c8e8aa59-82eb-490d-8749-874cfb41727c",
+      "sessionId": "019fe681-5d25-7045-9114-89b836a43021",
+      "ts": "2026-08-11T02:49:35.493Z",
+      "title": "plan-mode 增强与锁竞争/重启机制修复",
+      "decisions": [
+        "计划模式退出必须用户手动确认（选择器）",
+        "web_search/subagent/fetch_url 加入 plan 白名单",
+        "subagent 仅允许 scout，保持现状",
+        "移除 pi-voice Ctrl+Shift+R，仅保留 Ctrl+Alt+R"
+      ],
+      "facts": [
+        "admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程",
+        "proot 下 kill -0 判定不可靠，PID 1 不存在",
+        "pi-cron.sh 无条件 mv 覆盖锁导致看门狗静默失效",
+        "plan 白名单：read/bash/grep/glob/todo/web_search/fetch_url/subagent"
+      ],
+      "prefs": [
+        "用户频繁离开 30+ 分钟，连续 6 次 restart_hang，未调大 maxIdleMinutes",
+        "用户指令极简，期望自主完成全流程后一次性汇报"
+      ],
+      "lessons": [
+        "重复重启无效时先检查进程 PID 是否真的变化",
+        "锁存活判定用 /proc 存在性而非 kill -0",
+        "测试 LOG_DIR 用共享 /tmp 路径会跨运行残留污染",
+        "opencode 用独立 plan agent+权限模型，Claude Code 无独立 plan 文档"
+      ],
+      "fullText": "本轮围绕 pi 环境稳定化与 plan-mode 增强。1) 修复 pi-autopilot 离线报告误报（collectOfflineExecutions 过滤非任务日志）与 tmux 孤儿 socket（pi-wrapper.sh 新增 ensure_tmux 自愈）。2) 定位高危根因：pi-cron.sh 的 acquire_lock 无条件 mv 覆盖 scheduler.lock，与 pi-autopilot 的 acquireSessionLock（写锁+150ms 验证）竞争，失败导致 SessionScheduler 不启动、在线调度与看门狗静默失效（此前两次 restart_hang 实为看门狗失效）。修复：cron 侧用 /proc 判定存活且不覆盖活跃锁，storage.ts 重试 5 次×400ms。3) plan-mode 增强：web_search/subagent/fetch_url 加入白名单；subagent 仅 scout 拦截；新增模型侧 plan_enter/plan_exit 工具，plan_exit 必须用户确认；确认 pi --plan 可直接进入。4) 发现 admin_restart 在 TUI 环境不真正退出进程（PID 始终不变），新代码无法加载，已修复退出兜底。5) pi-voice 移除 Ctrl+Shift+R 快捷键。提交：afacc46、dbe9f5a、0095110、a7f508d、5ba7f50、7cffd73、99a8770 均已推送。当前 plan 白名单：read/bash/grep/glob/todo/web_search/fetch_url/subagent，执行模式另含 edit/write。"
+    },
+    {
+      "id": "9dd221f5-2018-4e51-869c-19a09b5edf9b",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-11T02:53:35.881Z",
+      "title": "pi-voice 修复与命令面统一",
+      "decisions": [
+        "plan-mode 退出计划模式改为恢复全量工具（5f825b5）",
+        "命令 description 统一缩短为简短描述+help 提示",
+        "pi-voice 清理序列改为 -q→pkill→等待0.5s",
+        "git 推送用用户 token 临时 set-url，完成后恢复无凭证"
+      ],
+      "facts": [
+        "plan-mode 白名单仅 9 个内置工具，退出后扩展工具本次会话失效",
+        "getArgumentCompletions 收到完整参数前缀，原生支持多级补全",
+        "proot 无守护拉起，重启需写 state 文件后 kill 由 wrapper --continue 恢复",
+        "环境无 GitHub 凭证，用户会提供 token 临时推送"
+      ],
+      "prefs": [
+        "用户指令极简，期望自主完成全流程后一次性汇报",
+        "用户会追问机制原因，期望底层原理级解释"
+      ],
+      "lessons": [
+        "termux-microphone-record 错误打到 stdout，需同时捕获 stdout+stderr",
+        "pkill 杀 CLI 不释放 Termux:API 服务侧 MediaRecorder 麦克风",
+        "anullsrc 源无时长限制会无限生成，测试需加 -t 1",
+        "重启后旧扩展代码才生效，推送的修复需重启验证"
+      ],
+      "fullText": "本轮完成三项工作：1) pi-voice 稳定性修复——startRecording 同时捕获 stdout+stderr（此前 termux 错误打到 stdout 被丢弃）、失败自动重试、空转写音量检测区分静音/无语音、getArgumentCompletions 多级补全（/voice tts 可补 on/off/status/speak），测试增至 63 个全过；录音占用根因是 pkill 不释放 Termux:API 服务侧 MediaRecorder，清理序列改为 -q→pkill→0.5s，提交 2bd55f2。2) 命令面统一——/schedule 补齐 help 与 15 项补全、/auto、/plan 加多级补全，随后按用户要求将各命令 description 缩短为简短描述+help 提示，AGENTS.md 约定同步更新，提交 0749c74。3) 查明 admin_restart 不可用根因：plan-mode 退出计划模式后工具被锁死为 9 个内置工具，修复为 restoreAllTools 恢复全量（5f825b5）。推送因环境无凭证受阻，用户提供 token 后完成推送并恢复无凭证 URL。用户最后重启加载新代码验证。"
+    },
+    {
+      "id": "451863d2-07d7-4540-a053-5a6c4a67db7e",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-11T02:54:33.139Z",
+      "title": "pi-voice 录音修复与 plan-mode 工具恢复",
+      "decisions": [
+        "plan-mode 退出计划模式改为恢复全量工具（方案1，提交 5f825b5）",
+        "watchdog maxIdleMinutes 从 30 调到 120，避免离开半小时被重启",
+        "pi-voice 清理序列改为 -q 优雅停止优先、pkill 兜底",
+        "录音进程退出后补发一次 -q 强制服务收尾写 moov atom"
+      ],
+      "facts": [
+        "Termux:API 在 -l 超时或进程被杀时不写 moov atom，文件损坏转码失败",
+        "Termux:API 连续录音不稳定：仅第 1 次跑满，之后 1.5-1.9s 提前退出",
+        "退出计划模式后扩展工具锁死 9 个内置，本次会话内不可用（已修复）",
+        "slash 命令不受 setActiveTools 工具过滤影响，手动 /auto restart 恒可用"
+      ],
+      "prefs": [
+        "用户偏好极简指令（如仅说\"重启\"\"执行\"），期望自主完成全流程",
+        "两个方案对比时用户倾向简单实现（方案1）"
+      ],
+      "lessons": [
+        "pkill 杀 CLI 进程不会释放 Termux:API 服务侧麦克风占用",
+        "注释里 admin_*/autopilot_*/ 的 */ 会提前终止块注释",
+        "修复推送后当前会话仍是旧代码，需重启加载才能验证修复"
+      ],
+      "fullText": "2026-08-10 会话围绕 pi-voice 录音稳定性与 plan-mode 工具恢复。命令面统一（description 简短化）提交 0749c74 推送；pi-voice 系列修复：pkill 不释放 Termux:API 服务侧麦克风，清理序列改 -q→pkill→等 1.5s（2bd55f2）；-l 超时/被杀不写 moov atom，exit 回调补发 -q（a734f5a）；转码失败重试 convertWithRetry（49fe11a）；缓存 ctx 使超时转写进输入框+状态条清除（fe07576）；连续录音不稳定，提前退出检测（e1d4320）。plan-mode 缺陷：退出计划模式后活动工具锁死 9 个内置，admin_restart not found，改为 restoreAllTools 恢复全量（5f825b5），重启验证生效。watchdog maxIdleMinutes 30→120。Git 推送需用户每次提供 PAT，临时 set-url 推送后恢复无凭证 URL。pi 运行在 tmux pane（bash→wrapper→pi），tmux 注入可测试输入框。"
+    },
+    {
+      "id": "92512a09-8191-4dc1-bf77-a8bf12adfa35",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-11T03:32:18.089Z",
+      "title": "pi-voice 录音修复与命令面统一",
+      "decisions": [
+        "pi-voice 清理序列改为 -q→pkill→等0.5s（2bd55f2）",
+        "一级命令 description 缩短为基础介绍+help 提示",
+        "startRecording 失败自动等 2s 重试一次",
+        "空转写用 volumedetect 区分静音与识别失败",
+        "命令补全统一为多级（tts→on/off、view→--diff 等）"
+      ],
+      "facts": [
+        "getArgumentCompletions 接收完整参数前缀，原生支持多级补全",
+        "termux-microphone-record 错误信息打在 stdout，stdio 需捕获",
+        "pkill 杀 CLI 不释放服务侧 MediaRecorder 麦克风",
+        "提交 0749c74、2bd55f2 已推送，remote 已恢复无凭证",
+        "admin_restart 重启后从工具集消失，当前不可用",
+        "环境无持久 GitHub 凭证，推送需用户 PAT 临时 set-url"
+      ],
+      "prefs": [
+        "一级命令 description 只要简短基础介绍，细节由 help/补全承担",
+        "用户提供 PAT 用完即弃，不落盘",
+        "用户期望重启类操作直接执行，减少前置调研"
+      ],
+      "lessons": [
+        "ffmpeg anullsrc 需加 -t 时长限制否则无限生成",
+        "proot 环境重启靠 wrapper 读 .pi-admin-state.json 拉起",
+        "MediaRecorder 单实例，退出后尾部写入需 waitForFileStable 等稳定",
+        "回车听写只对进行中录音生效，录音已死后回车无反应属正常"
+      ],
+      "fullText": "会话围绕 pi-voice 录音稳定性与扩展命令面统一。录音问题根因：termux-microphone-record 错误信息打在 stdout 而代码只捕获 stderr（已改 stdio 全管道）；pkill 杀 CLI 进程不释放 Termux:API 服务侧 MediaRecorder 麦克风占用，清理序列改为 -q→pkill→等0.5s（提交 2bd55f2）；启动失败（exit 0+无文件）自动等 2s 重试一次；空转写加 ffmpeg volumedetect 音量检测（max<-45dB 提示麦克风问题）。命令面：确认 getArgumentCompletions 接收完整参数前缀、原生支持多级补全；/schedule 补齐 help 与 SCHEDULE_USAGE（15 子命令），/auto、/plan 加多级补全；随后按用户要求把各扩展一级命令 description 缩短为基础介绍+help 提示，AGENTS.md 约定同步更新（提交 0749c74）。文档全部同步后用户提供 GitHub PAT 临时推送成功，token 用完即弃未落盘。重启机制：proot 无自动拉起，需先写 ~/.pi/agent/.pi-admin-state.json（action=restart）再杀 pi 进程，wrapper 自动 --continue 恢复；admin_restart 工具当前不可用。用户质疑重启前过多调研，期望直接执行。"
+    },
+    {
+      "id": "56e2641e-9d5c-494a-aace-6a402fa3b9d9",
+      "sessionId": "019feb1e-910c-7904-9e7e-49316230c1ac",
+      "ts": "2026-08-11T04:37:05.115Z",
+      "title": "pi-voice 录音修复与 plan-mode 工具缺陷修复",
+      "decisions": [
+        "plan_exit 采用恢复全量工具方案（方案1），非快照还原",
+        "watchdog maxIdleMinutes 从 30 改为 120（交互式使用）",
+        "whisper 中文输出统一 OpenCC 转简体",
+        "录音进程退出后补发 -q 强制服务收尾写 moov"
+      ],
+      "facts": [
+        "Termux:API 的 -l 超时/被杀不写 moov atom，需补发 -q 收尾",
+        "slash 命令不受 setActiveTools 限制，扩展工具受",
+        "Termux:API 连续录音不稳定，后续录音提前退出",
+        "TTS 扬声器→麦克风路由不通，端到端测试受限"
+      ],
+      "prefs": [
+        "用户极简指令但会追问机制，期望先解释再执行",
+        "用户会在新故障出现时让助手现场实测诊断"
+      ],
+      "lessons": [
+        "修复逻辑须覆盖所有调用路径（bench 漏补 -q 逻辑）",
+        "注释里 admin_*/autopilot_*/ 的 */ 会提前终止块注释",
+        "转码失败可能是 moov 延迟写入，重试可兜底"
+      ],
+      "fullText": "本轮会话（约 2026-08-10）围绕 pi-voice 录音稳定性与 plan-mode 缺陷修复。pi-voice 系列：pkill 不释放 Termux:API 服务侧 MediaRecorder 占用，清理序列改 -q→pkill→等 1.5s（2bd55f2）；-l 超时/进程被杀不写 moov atom 致转码失败，进程退出后补发 -q（a734f5a）；转码失败重试 3 次、清理等待加长（49fe11a）；服务连续录音不稳定提前退出，实际时长<上限 50% 提示异常（e1d4320）；超时转写进输入框靠 withStatus 刷新 lastCtx（59e71d1）；bench 路径补 -q 收尾（ffabd2a）。whisper 中文默认繁体，whisper-server.py 加 OpenCC t2s 转简体（898f040）。plan-mode 白名单写死 9 个内置工具不含扩展工具，退出计划模式后 admin_restart 等本会话内失效，修复 restoreAllTools 恢复全量（5f825b5），重启验证生效。watchdog maxIdleMinutes 30→120 防误重启。admin_restart 修复后不再需 wrapper 手动重启流程。"
     }
   ]
 }
