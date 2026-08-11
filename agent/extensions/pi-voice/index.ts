@@ -237,6 +237,8 @@ export default function (pi: ExtensionAPI): void {
           withStatus(pi, ctx, dictation.start())
           break
         case 'stop': {
+          // 与 stopAndDeliver 一致：停止期间先显示转写中，避免状态条残留'录音中'
+          if (dictation.isRecording()) ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
           const r = await dictation.stop()
           deliverResult(pi, ctx, r)
           break
@@ -338,6 +340,8 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify('正在转写中，请稍候…', 'warning')
           return true
         }
+        // [诊断] 确认回车是否到达扩展 handler；定位后移除
+        ctx.ui.notify('诊断: 回车已捕获，正在停止录音并转写', 'info')
         ctx.ui.setStatus('pi-voice', '⚙ 转写中…')
         void dictation.stop().then((r) => {
           deliverResult(pi, ctx, r, true)
