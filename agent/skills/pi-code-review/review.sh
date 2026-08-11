@@ -6,6 +6,9 @@
 #   bash review.sh --help          # 用法说明
 #
 # 仅检测并报告，不修改任何文件，不执行测试。退出码恒为 0。
+# 自检（使用前运行）:
+#   bash review.sh --selfcheck   # 检查技能自身是否有更新（本仓库远程 + 参考项目 open-code-review）
+# 技能版本: v1.2（2026-08-11：排除第三方大目录 + 扫描预览 + 自检）
 
 set -uo pipefail
 
@@ -24,19 +27,64 @@ usage() {
 pi-code-review 确定性检查
   默认: 审查 git 工作区变更（HEAD 与未跟踪文件）
   --all <dir>   扫描目录内全部源码文件（无需 git）
+  --selfcheck   检查技能自身更新（本仓库远程 + 参考项目 alibaba/open-code-review）
   --help        显示本帮助
+注: 大型目录全量扫描耗时（如 ~/.pi 约 40s），建议用 tmux_run 后台执行避免阻塞轮次
+   （tmux_run name=review command="bash review.sh --all /root/.pi"; tmux_wait name=review until_exit=true）
 EOF
 }
 
 for arg in "$@"; do
   case "$arg" in
     --help) usage; exit 0 ;;
+    --selfcheck) MODE="selfcheck" ;;
     --all) MODE="all" ;;
     --all=*) MODE="all"; SCAN_DIR="${arg#--all=}" ;;
     --*) say "未知参数: $arg（用 --help 查看用法）"; exit 0 ;;
     *) [ "$MODE" = "all" ] && SCAN_DIR="$arg" ;;
   esac
 done
+
+# ---------- 自检模式：检查技能自身更新 ----------
+if [ "$MODE" = "selfcheck" ]; then
+  say "== pi-code-review 技能自检 =="
+  say ""
+  say "--- 本仓库技能更新 ---"
+  if git rev-parse --git-dir >/dev/null 2>&1; then
+    git fetch -q origin 2>/dev/null
+    REMOTE_AHEAD=$(git rev-list --count HEAD..origin/master 2>/dev/null || echo 0)
+    LOCAL_SKILL_HASH=$(git log -1 --format=%h -- agent/skills/pi-code-review/ 2>/dev/null || echo "?")
+    REMOTE_SKILL_HASH=$(git log -1 --format=%h origin/master -- agent/skills/pi-code-review/ 2>/dev/null || echo "?")
+    if [ "$REMOTE_AHEAD" != "0" ] && [ "$LOCAL_SKILL_HASH" != "$REMOTE_SKILL_HASH" ]; then
+      warn "技能在远程仓库有更新（本地 $LOCAL_SKILL_HASH vs 远程 $REMOTE_SKILL_HASH，$REMOTE_AHEAD 个提交待拉取）→ 先 git pull 再使用"
+    else
+      ok "技能文件与远程仓库一致（$LOCAL_SKILL_HASH）"
+    fi
+  else
+    skip "git 仓库"
+  fi
+  say ""
+  say "--- 参考项目 alibaba/open-code-review ---"
+  if command -v curl >/dev/null 2>&1; then
+    RESP=$(curl -s --max-time 15 "https://api.github.com/repos/alibaba/open-code-review/releases/latest" 2>/dev/null)
+    LATEST=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('tag_name','?'))" 2>/dev/null || echo "?")
+    if [ "$LATEST" != "?" ]; then
+      BASELINE="v1.9.1"
+      if [ "$LATEST" != "$BASELINE" ]; then
+        warn "参考项目已更新: $BASELINE -> $LATEST -> 查看 https://github.com/alibaba/open-code-review/releases 确认是否吸收新能力"
+      else
+        ok "参考项目版本与技能基线一致（$LATEST）"
+      fi
+    else
+      warn "无法查询参考项目最新版本（网络/API 不可达），跳过"
+    fi
+  else
+    skip "curl"
+  fi
+  say ""
+  say "自检完成。技能版本: v1.2"
+  exit 0
+fi
 
 # ---------- 收集待审文件 ----------
 declare -a FILES=()
@@ -51,7 +99,16 @@ else
   [ -n "$SCAN_DIR" ] || { say "请指定目录: --all <dir>"; exit 0; }
   [ -d "$SCAN_DIR" ] || { say "目录不存在: $SCAN_DIR"; exit 0; }
   say "== 审查范围: $SCAN_DIR =="
-  mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' 2>/dev/null)
+  # 排除第三方依赖与运行时数据（与 node_modules 同级：venv 虚拟环境、SearXNG
+  # 第三方源码、日志、记忆提取缓存），避免逐文件语法检查拖垮扫描
+  mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' 2>/dev/null)
+  # 扫描预览：先大致查看范围（文件数 + 目录分布），确认无需再排除
+  TOTAL_FILES=$(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' 2>/dev/null | wc -l)
+  say "扫描预览: 源码文件 $TOTAL_FILES 个（已排除 node_modules/searxng venv+repo/logs/memory 运行时）"
+  if [ "$TOTAL_FILES" -gt 300 ]; then
+    say "  目录分布（前 15）:"
+    find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/*' 2>/dev/null | sed "s|$SCAN_DIR/||" | cut -d/ -f1-2 | sort | uniq -c | sort -rn | head -15
+  fi
 fi
 
 # 过滤掉删除的文件（仅剩磁盘上存在的）
