@@ -7,6 +7,7 @@ import { execFile, spawn, execFileSync, type ChildProcess } from 'node:child_pro
 import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoiceConfig } from './config'
+import { resolvePlatform, platformInstallGuide, TTS_STAGE_FILE, type PlatformSpec } from './platform'
 
 export interface CommandResult {
   code: number
@@ -52,40 +53,50 @@ export function runCommand(
   })
 }
 
+/** 当前平台活跃的 linux 录音进程（startRecording 记录，stopRecording 终止；termux 平台恒为 null）。 */
+let activeLinuxRecorder: { child: ChildProcess; file: string } | null = null
+
+/** 获取平台 spec（每次解析，探测开销毫秒级可忽略）。 */
+export function platformOf(cfg: VoiceConfig): PlatformSpec {
+  return resolvePlatform(cfg)
+}
+
 /**
- * 启动录音（Termux:API 麦克风）。
- * -e aac 输出 m4a；后台常驻直到 stop。
- * 返回 { child, file }：child 为录音进程，file 为 m4a 输出路径。
+ * 启动录音（平台相关）。
+ * termux：termux-microphone-record -e aac（m4a，需 ffmpeg 转码）；后台常驻直到 stop。
+ * linux：parec 直出 wav（16k 单声道 s16le = whisper 输入格式），前台进程直到 stop。
+ * 返回 { child, file }：child 为录音进程，file 为音频输出路径。
  */
 export function startRecording(
   cfg: VoiceConfig,
   onExit: (code: number, stderr?: string) => void,
   opts: { forceClean?: boolean } = {},
 ): { child: ChildProcess; file: string } {
-  // 清理残留录音：先 -q 优雅停止 Termux:API 服务侧的 MediaRecorder（pkill 杀 CLI
-  // 进程不会释放服务侧麦克风占用，残留状态会让新实例报 "Recording already in
-  // progress!" 并秒退），再 pkill 兜底杀 CLI 进程，最后等待服务释放。
-  // 调用方已拦截进行中的录音，此处不会误杀当前会话录音。
+  const spec = platformOf(cfg)
+  // 清理残留录音（termux 专用：-q 优雅停止 Termux:API 服务侧的 MediaRecorder，再 pkill
+  // 兜底杀 CLI 进程，最后等待服务释放。调用方已拦截进行中的录音，此处不会误杀当前
+  // 会话录音。linux 的 parec 无单实例限制，跳过清理）。
   // termux-microphone-record 每次调用（-q/-i）需 ~3s termux-api 通信往返，正常
   // 场景（上次录音已 -q 优雅停止）无残留进程，pgrep 门控跳过整套清理可省
   // ~4.7s 启动延迟；forceClean 用于启动失败后的自动重试（此时服务侧大概率残留）。
-  let hasResidue = opts.forceClean
-  if (!hasResidue) {
+  const residue = spec.recorder.residuePattern()
+  let hasResidue = opts.forceClean && residue !== null
+  if (residue !== null && !hasResidue) {
     try {
-      execFileSync('pgrep', ['-f', 'termux-microphone-record'])
+      execFileSync('pgrep', ['-f', residue])
       hasResidue = true
     } catch {
       // 无残留进程：跳过清理直接启动
     }
   }
-  if (hasResidue) {
+  if (hasResidue && residue !== null) {
     try {
-      execFileSync(cfg.micBin, ['-q'], { timeout: 8000 })
+      execFileSync(spec.recorder.bin, spec.recorder.stopArgs() ?? [], { timeout: 8000 })
     } catch {
       // 无进行中录音或 -q 失败：忽略，继续
     }
     try {
-      execFileSync('pkill', ['-f', 'termux-microphone-record'])
+      execFileSync('pkill', ['-f', residue])
     } catch {
       // 无残留进程或 pkill 不可用：忽略
     }
@@ -96,16 +107,17 @@ export function startRecording(
     }
   }
   mkdirSync(cfg.tmpDir, { recursive: true })
-  const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}.m4a`)
-  // 时长控制由调用方（dictation）在 Node 侧 setTimeout 到点发 -q 实现：
-  // MediaRecorder.setMaxDuration 基于媒体时间戳计时而非墙钟，实际停止时间与
-  // 设定值偏差大（实测经常提前一半以上停止），不可依赖。
-  // -l 0 = 服务端不限时（不传则 termux-api 默认 15 分钟）。
-  const args = ['-e', 'aac', '-f', file, '-l', '0']
+  const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}.${spec.recorder.ext}`)
+  // 时长控制由调用方（dictation）在 Node 侧 setTimeout 到点发停止实现：
+  // termux 的 MediaRecorder.setMaxDuration 基于媒体时间戳计时而非墙钟，实际停止
+  // 时间与设定值偏差大（实测经常提前一半以上停止），不可依赖；-l 0 = 服务端不限时。
+  // linux 的 parec 由 stopRecording 终止进程（无服务端计时概念）。
+  const args = spec.recorder.startArgs(file)
   // stdio: 同时捕获 stdout+stderr（termux-microphone-record 的错误信息如
   // "Recording already in progress!" 打到 stdout；stderr 也可能有内容），
   // 报错时可向用户展示真实原因。
-  const child = spawn(cfg.micBin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+  const child = spawn(spec.recorder.bin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+  if (spec.kind === 'linux') activeLinuxRecorder = { child, file }
   let errBuf = ''
   let outBuf = ''
   child.stdout?.on('data', (d: Buffer) => {
@@ -121,7 +133,10 @@ export function startRecording(
   // spawn 失败（如二进制缺失 ENOENT）：必须监听 error，否则 Node 抛 unhandled error；
   // 用退出码 -2 标记启动失败（区别于运行中退出），由状态机按非 0 分流报错。
   child.on('error', () => onExit(-2, capture()))
-  child.on('exit', (code) => onExit(code ?? -1, capture()))
+  child.on('exit', (code) => {
+    if (activeLinuxRecorder?.child === child) activeLinuxRecorder = null
+    onExit(code ?? -1, capture())
+  })
   return { child, file }
 }
 
@@ -145,19 +160,48 @@ export async function detectAudioLevel(
   return { maxDb, meanDb: meanStr ? parseFloat(meanStr) : -Infinity }
 }
 
-/** 停止录音并返回 m4a 文件路径；由调用方记录文件名。 */
+/** 停止录音（平台相关）。termux：发 -q 优雅停止服务端 MediaRecorder；linux：直接终止录音进程（SIGTERM → 1s 后 SIGKILL）。 */
 export async function stopRecording(cfg: VoiceConfig): Promise<CommandResult> {
-  return runCommand(cfg.micBin, ['-q'], { timeoutMs: 15000 })
+  const spec = platformOf(cfg)
+  if (spec.kind === 'linux') {
+    const rec = activeLinuxRecorder
+    if (!rec || rec.child.exitCode !== null || rec.child.pid === undefined) {
+      return { code: 0, stdout: '', stderr: '' }
+    }
+    return await new Promise<CommandResult>((resolvePromise) => {
+      const pid = rec.child.pid as number
+      const killTimer = setTimeout(() => {
+        try {
+          process.kill(pid, 'SIGKILL')
+        } catch {
+          // 已退出
+        }
+        resolvePromise({ code: 0, stdout: '', stderr: 'SIGTERM 超时已强制终止' })
+      }, 1000)
+      rec.child.once('exit', () => {
+        clearTimeout(killTimer)
+        resolvePromise({ code: 0, stdout: '', stderr: '' })
+      })
+      try {
+        process.kill(pid, 'SIGTERM')
+      } catch {
+        clearTimeout(killTimer)
+        resolvePromise({ code: 0, stdout: '', stderr: '' })
+      }
+    })
+  }
+  return runCommand(spec.recorder.bin, spec.recorder.stopArgs() ?? ['-q'], { timeoutMs: 15000 })
 }
 
 /**
- * 查询 Termux:API 当前录音状态（termux-microphone-record -i，JSON）。
- * CLI 连接断线（SocketListener EOF 是 Termux:API 已知问题）时用于区分
- * “服务端仍在录制（无感续录）”与“服务端也已停止（异常结束）”。
- * 调用失败或解析失败返回 null（按异常处理）。
+ * 查询当前录音状态（平台相关）。termux：termux-microphone-record -i（JSON），断线续录判定用；
+ * linux：进程退出即结束、无需续录判定，返回 null（调用方按异常处理）。
+ * 调用失败或解析失败返回 null。
  */
 export async function queryRecording(cfg: VoiceConfig): Promise<{ isRecording: boolean } | null> {
-  const r = await runCommand(cfg.micBin, ['-i'], { timeoutMs: 10000 })
+  const spec = platformOf(cfg)
+  if (spec.recorder.queryArgs() === null) return null
+  const r = await runCommand(spec.recorder.bin, spec.recorder.queryArgs()!, { timeoutMs: 10000 })
   if (r.code !== 0) return null
   try {
     const data = JSON.parse(r.stdout.trim()) as { isRecording?: unknown }
@@ -250,8 +294,9 @@ export function cleanupStaleAudio(cfg: VoiceConfig, staleMs = 24 * 60 * 60 * 100
   return removed
 }
 
-/** 转码 m4a → 16kHz 单声道 wav（whisper 输入格式）。失败时 error 携带 ffmpeg stderr（截断），便于定位文件损坏原因（moov 未写完等）。 */
+/** 转码（平台相关）。termux：m4a → 16kHz 单声道 wav（whisper 输入格式），失败时 error 携带 ffmpeg stderr（截断）；linux：录音已直出 wav，原样返回。 */
 export async function convertToWav(cfg: VoiceConfig, m4a: string): Promise<{ wav: string | null; error: string }> {
+  if (!platformOf(cfg).recorder.needsConvert) return { wav: m4a, error: '' }
   const wav = m4a.replace(/\.m4a$/, '.wav')
   const res = await runCommand(cfg.ffmpegBin, [
     '-y', '-loglevel', 'error',
@@ -362,12 +407,33 @@ export async function transcribe(cfg: VoiceConfig, wavPath: string): Promise<Tra
   }
 }
 
-/** TTS 朗读（Termux 系统 TTS，支持中文）。返回命令结果。 */
+/** TTS 朗读（平台相关）。termux：termux-tts-speak 单参数；linux：espeak-ng 生成 wav → paplay 播放 → 清理暂存文件。 */
 export async function speak(cfg: VoiceConfig, text: string): Promise<CommandResult> {
   const clean = cleanForSpeech(text, cfg.ttsMaxChars)
   if (!clean) return { code: 0, stdout: '', stderr: '（空文本，跳过朗读）' }
-  // termux-tts-speak 一次只接受一个参数，文本须作为单个 argv 传入
-  return runCommand(cfg.ttsBin, [clean], { timeoutMs: 60000 })
+  const spec = platformOf(cfg)
+  if (spec.kind === 'termux') {
+    // termux-tts-speak 一次只接受一个参数，文本须作为单个 argv 传入
+    return runCommand(spec.tts.bin, spec.tts.speakArgs(clean), { timeoutMs: 60000 })
+  }
+  // linux 两段式：espeak-ng -w 生成 wav（stageToWav），paplay 播放（可指定 sink）
+  mkdirSync(cfg.tmpDir, { recursive: true })
+  const stage = join(cfg.tmpDir, TTS_STAGE_FILE.split('/').pop()!)
+  const gen = await runCommand(spec.tts.bin, spec.tts.speakArgs(clean), { timeoutMs: 60000 })
+  if (gen.code !== 0) {
+    return { ...gen, stderr: `${gen.stderr.trim()}（请确认已安装 espeak-ng：apt-get install espeak-ng）` }
+  }
+  try {
+    const playArgs = spec.tts.playArgs(stage)
+    if (!playArgs) return { code: 0, stdout: '', stderr: '' }
+    return await runCommand('paplay', playArgs, { timeoutMs: 60000 })
+  } finally {
+    try {
+      rmSync(stage, { force: true })
+    } catch {
+      // 清理失败不阻塞
+    }
+  }
 }
 
 export function cleanForSpeech(text: string, maxChars = 400): string {
@@ -481,21 +547,29 @@ export function extractAssistantText(content: unknown): string {
   return ''
 }
 
-/** 诊断：逐项检查录音 / 转写 / 朗读 依赖。 */
+/** 诊断：逐项检查录音 / 转写 / 朗读 依赖（平台相关）。 */
 export async function doctor(cfg: VoiceConfig): Promise<string[]> {
+  const spec = platformOf(cfg)
   const lines: string[] = []
-  // 1. 录音二进制 + Termux 权限（调用 -i 获取状态）
-  const mic = await runCommand(cfg.micBin, ['-i'], { timeoutMs: 10000 })
-  if (mic.code === 127) {
-    lines.push('✗ termux-microphone-record 缺失：请运行 pkg install termux-api，并安装 Termux:API 应用')
+  // 1. 录音二进制 + 权限
+  const probeArgs = spec.recorder.queryArgs()
+  const mic = probeArgs !== null ? await runCommand(spec.recorder.bin, probeArgs, { timeoutMs: 10000 }) : null
+  if (mic === null) {
+    // linux：无 -i 查询，用 --version 探测命令存在性
+    const ver = await runCommand(spec.recorder.bin, ['--version'], { timeoutMs: 10000 })
+    lines.push(ver.code === 127 ? `✗ 录音命令 ${spec.recorder.bin} 缺失：${spec.recorder.installHint}` : `✓ 录音命令可用（${spec.recorder.micLabel}）`)
+  } else if (mic.code === 127) {
+    lines.push(`✗ 录音命令 ${spec.recorder.bin} 缺失：${spec.recorder.installHint}`)
   } else if (mic.stderr.toLowerCase().includes('permission') || mic.stderr.toLowerCase().includes('record_audio')) {
-    lines.push('✗ 麦克风权限未授予：Android 设置 → 应用 → Termux:API → 麦克风 → 允许')
+    lines.push(`✗ 麦克风权限未授予：${spec.recorder.permissionHint}`)
   } else {
-    lines.push(`✓ 麦克风可用（termux-microphone-record）`)
+    lines.push(`✓ 麦克风可用（${spec.recorder.micLabel}）`)
   }
-  // 2. ffmpeg
-  const ff = await runCommand(cfg.ffmpegBin, ['-version'], { timeoutMs: 10000 })
-  lines.push(ff.code === 0 ? '✓ ffmpeg 可用' : '✗ ffmpeg 缺失：请 apt-get install ffmpeg')
+  // 2. ffmpeg（仅 termux 需要；linux 直出 wav）
+  if (spec.recorder.needsConvert) {
+    const ff = await runCommand(cfg.ffmpegBin, ['-version'], { timeoutMs: 10000 })
+    lines.push(ff.code === 0 ? '✓ ffmpeg 可用' : '✗ ffmpeg 缺失：请 apt-get install ffmpeg')
+  }
   // 3. whisper 服务（带 token，与服务端鉴权一致；否则配置 token 后必误报不可达）
   try {
     const headers: Record<string, string> = {}
@@ -511,14 +585,24 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
     lines.push('✗ whisper 服务不可达：请运行 ~/.pi/scripts/pi-whisper.sh start')
   }
   // 4. TTS
-  const tts = await runCommand(cfg.ttsBin, ['--help'], { timeoutMs: 10000 })
-  lines.push(tts.code < 200 ? '✓ TTS 命令可用' : '✓ TTS 命令可用（无 --help，运行时验证）')
+  const ttsCheck = spec.tts.checkArgs()
+  if (ttsCheck === null) {
+    lines.push(`✓ TTS 命令可用（${spec.tts.label}）`)
+  } else {
+    const tts = await runCommand(spec.tts.bin, ttsCheck, { timeoutMs: 10000 })
+    if (tts.code === 127) {
+      lines.push(`✗ TTS 命令 ${spec.tts.bin} 缺失：${spec.kind === 'linux' ? 'apt-get install espeak-ng' : 'Termux:TTS 未安装（termux-tts-speak）'}`)
+    } else {
+      lines.push(`✓ TTS 命令可用（${spec.tts.label}）`)
+    }
+  }
   return lines
 }
 
-/** 生成可安装指引错误（供模型直接修复环境）。 */
-export function voiceGuideError(detail: string): string {
-  return `语音功能不可用：${detail}\n修复指引：\n1) 录音依赖：pkg install termux-api（Termux:API 应用 + Android 麦克风权限）\n2) 转写依赖：~/.pi/scripts/pi-whisper.sh start\n3) 转码依赖：apt-get install ffmpeg`
+/** 生成可安装指引错误（供模型直接修复环境）。平台相关。 */
+export function voiceGuideError(cfg: VoiceConfig, detail: string): string {
+  const spec = platformOf(cfg)
+  return `语音功能不可用：${detail}\n修复指引：\n${platformInstallGuide(spec)}`
 }
 
 export interface BenchResult {

@@ -36,6 +36,7 @@ import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { loadConfig, persistConfig, type VoiceConfig } from './config'
+import { platformOf } from './core'
 import { createDictation } from './dictation'
 import type { Dictation, StopResult } from './dictation'
 import {
@@ -133,9 +134,10 @@ export default function (pi: ExtensionAPI): void {
   // 否则 termux-microphone-record 单实例占用会导致“只能开不能关”
   cleanupStaleAudio(config, 0)
   void stopRecording(config).catch(() => undefined)
-  // 清理 TTS 僵尸进程（此前自动朗读崩溃遗留的 termux-tts-speak / termux-api TextToSpeech）
-  void runCommand('pkill', ['-f', 'termux-tts-speak'], { timeoutMs: 5000 }).catch(() => undefined)
-  void runCommand('pkill', ['-f', 'termux-api TextToSpeech'], { timeoutMs: 5000 }).catch(() => undefined)
+  // 清理 TTS 僵尸进程（平台相关：termux 为 termux-tts-speak / termux-api TextToSpeech；linux 为 espeak-ng / paplay）
+  for (const pat of platformOf(config).tts.zombiePatterns()) {
+    void runCommand('pkill', ['-f', pat], { timeoutMs: 5000 }).catch(() => undefined)
+  }
 
   ttsQueue = createTtsDispatcher({
     speakFn: (text) => speak(config, text),
@@ -144,9 +146,15 @@ export default function (pi: ExtensionAPI): void {
     },
   })
 
+  const spec = platformOf(config)
   dictation = createDictation(
     config,
-    { startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe, deleteAudioPair, waitForFileStable, detectAudioLevel },
+    {
+      startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe, deleteAudioPair, waitForFileStable, detectAudioLevel,
+      micLabel: spec.recorder.micLabel,
+      micInstallHint: spec.recorder.installHint,
+      micPermissionHint: spec.recorder.permissionHint,
+    },
     {
       // 录音进程自行退出（超时/启动失败）的自动完成：无调用方 UI 上下文，
       // 用 sendMessage(display) 主动展示结果，成功失败都不静默。

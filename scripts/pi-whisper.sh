@@ -38,8 +38,12 @@ start() {
     return 0
   fi
   if [ ! -x "$VENV/bin/python" ]; then
-    echo "错误: 未找到 $VENV/bin/python，请先: python3 -m venv $VENV && $VENV/bin/pip install faster-whisper" >&2
+    echo "错误: 未找到 $VENV/bin/python，请先: python3 -m venv $VENV && $VENV/bin/pip install faster-whisper opencc-python-reimplemented" >&2
     return 1
+  fi
+  # opencc 缺失时中文转写会输出繁体（服务端设计为缺失时跳过转换），警告但不阻塞启动
+  if ! "$VENV/bin/python" -c 'import opencc' >/dev/null 2>&1; then
+    echo "警告: opencc 未安装，中文转写将保持繁体。修复: $VENV/bin/pip install opencc-python-reimplemented"
   fi
   local token model
   token="$(read_token)"

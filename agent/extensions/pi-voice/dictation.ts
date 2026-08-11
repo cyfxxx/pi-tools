@@ -32,6 +32,12 @@ export interface RecordingDeps {
   waitForFileStable(m4a: string, opts?: { pollMs?: number; stableSamples?: number; maxWaitMs?: number }): Promise<boolean>
   /** 检测 wav 音量水平（转写为空时区分“未采集到声音”与“有声音但未识别”）。 */
   detectAudioLevel(wav: string): Promise<{ maxDb: number; meanDb: number } | null>
+  /** 录音程序显示名（平台相关，错误提示用；如 termux-microphone-record / parec (RDPSource)） */
+  micLabel: string
+  /** 录音依赖安装指引（平台相关） */
+  micInstallHint: string
+  /** 录音权限检查指引（平台相关） */
+  micPermissionHint: string
 }
 
 export interface StopResult {
@@ -177,10 +183,10 @@ export function createDictation(
         recordingChild = null
         const reason =
           code === -2
-            ? '无法启动录音程序（termux-microphone-record 缺失或不可执行）'
-            : `录音进程异常退出（code ${code}${detail?.trim() ? `，termux-api 输出：${detail.trim().slice(0, 200)}` : ''}）`
+            ? `无法启动录音程序（${deps.micLabel} 缺失或不可执行）`
+            : `录音进程异常退出（code ${code}${detail?.trim() ? `，${deps.micLabel} 输出：${detail.trim().slice(0, 200)}` : ''}）`
         cb.onAutoComplete({
-          message: `录音启动失败：${reason}。请检查：1) Android 设置 → 应用 → Termux:API → 麦克风权限 2) 录音路径可写（当前 ${cfg.tmpDir}） 3) pkg install termux-api`,
+          message: `录音启动失败：${reason}。请检查：1) ${deps.micPermissionHint} 2) 录音路径可写（当前 ${cfg.tmpDir}） 3) ${deps.micInstallHint}`,
           text: '',
           language: '',
         })
@@ -234,7 +240,7 @@ export function createDictation(
     retried = false
     const r = spawnRecorder(gen)
     if (!r) {
-      return '录音启动失败（无法启动录音程序，请确认已安装 termux-api：pkg install termux-api）'
+      return `录音启动失败（无法启动录音程序，请确认已安装：${deps.micInstallHint}）`
     }
     // Node 侧计时到点自动停止（不依赖 MediaRecorder -l 服务端计时，见 core.startRecording）
     clearTimer()
