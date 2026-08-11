@@ -340,17 +340,21 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify('录音已达时长上限，自动转写中…', 'warning')
           return true
         }
-        // 听写待续录：用户确认上一段 → 清空输入框 → 开始新录音
+        // 听写待续录：输入框为空 → 开始新录音；有内容 → 放行（pi 正常提交发送，
+        // 不再清空输入框——用户转写后按回车期望的是发送，不是丢字）
         if (awaitingResume) {
-          awaitingResume = false
-          ctx.ui.setEditorText('')
-          const m = dictation.start()
-          if (m.startsWith('🎤')) {
-            ctx.ui.setStatus('pi-voice', '🎤 录音中')
-          } else {
-            reply(pi, m)
+          const hasContent = (ctx.ui.getEditorText() ?? '').trim() !== ''
+          if (!hasContent) {
+            awaitingResume = false
+            const m = dictation.start()
+            if (m.startsWith('🎤')) {
+              ctx.ui.setStatus('pi-voice', '🎤 录音中')
+            } else {
+              reply(pi, m)
+            }
+            return true
           }
-          return true
+          return false
         }
         return false
       }
