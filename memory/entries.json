@@ -994,11 +994,10 @@
       "updatedAt": "2026-08-05T15:04:03.663Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
-      ],
-      "supersededBy": "389d6c79-1971-48e6-add7-699e4df713de"
+      ]
     },
     {
       "id": "78e533fd-b990-4520-aadb-41d70d6bd628",
@@ -5995,45 +5994,27 @@
       "accessedAt": "2026-08-11T06:33:54.084Z",
       "environments": [
         "termux"
-      ]
-    },
-    {
-      "id": "75d1cedc-a3f7-49f7-aed0-04668c16fd27",
-      "category": "fact",
-      "title": "GitHub DNS 污染绕过：curloptResolve 真实 IP 直连推送",
-      "content": "github.com 在 WSL 中 DNS 被污染：getent 返回 127.0.0.1（WSL DNS 代理 10.255.255.254 特征），公共 DNS 查询超时，v2ray 10808 未运行时无法走代理。但网络本身可直连 GitHub：用真实 IP（实测 140.82.113.3 code=200）加 git 一次性参数可推送：`git -c http.curloptResolve=github.com:443:140.82.113.3 push https://TOKEN@github.com/cyfxxx/pi-tools.git master`。不写 remote 配置、不写 /etc/hosts。比启动 v2ray 更快，作为无代理时的首选方案。",
-      "tags": [
-        "git",
-        "github",
-        "network",
-        "wsl",
-        "dns"
       ],
-      "confidence": 0.9,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T08:26:18.578Z",
-      "updatedAt": "2026-08-11T08:26:18.578Z",
-      "accessedAt": "2026-08-11T08:26:18.578Z",
-      "observedAt": "2026-08-11T08:26:18.578Z",
+      "observedAt": "2026-08-11T06:33:54.084Z",
       "deleted": false
     },
     {
-      "id": "389d6c79-1971-48e6-add7-699e4df713de",
-      "category": "preference",
-      "title": "用户偏好极简回复",
-      "content": "用户在会话中指示助手\"回复 OK 两字即可\"，要求回复极简、不赘述。与既有记忆\"用户偏好极简指令\"一致：收到极简指令时助手应直接执行、完成后一次性汇报结果，不打断询问。",
+      "id": "46e71c75-0b1f-4591-91ff-3d71868c6400",
+      "category": "fact",
+      "title": "推送经验: PAT 失效验证 + v2ray 代理推送",
+      "content": "2026-08-11 第二次推送（5 提交 558dd70..9c6eab7）：首个 PAT 失效（Bad credentials，被撤销/过期），用户提供新 PAT 后经 v2ray 代理（http://127.0.0.1:10808，github.com 直连被 DNS 污染）推送成功。经验：PAT 可能中途失效，推送失败报 'could not read Password' 时先用 curl -H \"Authorization: token\" api.github.com/user 验证 token 有效性，再判断是网络还是凭据问题。",
       "tags": [
-        "极简回复",
-        "用户偏好"
+        "github",
+        "push",
+        "token",
+        "v2ray"
       ],
-      "confidence": 1,
-      "source": "extract",
+      "confidence": 0.7,
+      "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-11T10:59:54.655Z",
-      "updatedAt": "2026-08-11T10:59:54.655Z",
-      "accessedAt": "2026-08-11T10:59:54.655Z",
-      "observedAt": "2026-08-11T10:59:54.655Z"
+      "createdAt": "2026-08-11T10:12:45.677Z",
+      "updatedAt": "2026-08-11T10:12:45.677Z",
+      "accessedAt": "2026-08-11T10:12:45.677Z"
     }
   ]
 }
