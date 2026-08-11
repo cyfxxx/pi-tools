@@ -95,3 +95,6 @@ logs/scheduler/
 
 # pi-memory 压缩检查点（瞬时快照，时效性数据，不入库）
 memory/checkpoints/
+
+# pi-backup 配置变更基线（gitignored 配置的 sha256 快照，不入库）
+.backup-baseline/

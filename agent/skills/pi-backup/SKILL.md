@@ -82,6 +82,7 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 | `--message "msg"` | 自定义 commit 信息（默认 `pi-backup: {ISO-8601}`） |
 | `--remote <name>` | 远程仓库名（默认 `origin`） |
 | `--branch <name>` | 分支名（默认 `master`） |
+| `--refresh-baseline` | 刷新 gitignored 配置变更基线（检测到配置变化且确认是有意修改后使用） |
 
 **前置检查（优先执行，任一不通过则中止并报错）：**
 
@@ -89,11 +90,14 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 2. 检查 `git remote` 已配置 → 否则报错 `未配置远程仓库，请先运行 git remote add`
 3. 运行 `git remote -v` 检查 remote URL 可到达 → 否则报错 `远程仓库不可达`
 4. 运行 `git status --porcelain` 检查是否有变更 → 若无变更则提示 `无变更需要同步`
-5. 检查 `~/.pi/.gitignore` 存在且包含 `agent/auth.json`、`agent/settings.json`、`agent/models*.json`、`agent/pi-voice.json`、`searxng/settings.yml` 等排除规则 → 缺失则报错：`缺少 .gitignore（rsync/手工拷贝同步时最易丢失，先恢复它再同步，否则密钥会被提交！）`
-6. 检查敏感文件是否被意外追踪：运行 `git ls-files`，检查 `agent/auth.json`、`agent/settings.json`、`agent/models.json`、`agent/models-store.json`、`agent/pi-voice.json`、`agent/trust.json`、`searxng/settings.yml` 是否出现在输出中——任一命中**立即报错中止**并给出移除指引：`git rm --cached <file> && git commit -m "remove secret"`
+5. **gitignored 配置变更检测**（基线对比）：`sha256sum agent/settings.json agent/models.json agent/models-store.json agent/pi-voice.json agent/auth.json searxng/settings.yml 2>/dev/null` 与 `.backup-baseline/ignored.sha256` diff 对比——有变化则警告：`以下配置自上次备份后有修改（不在 git 同步范围，跨机需 pi-backup create --with-auth 或 scp）`，确认是有意修改后运行 `--refresh-baseline` 刷新基线；基线不存在时自动创建
+6. **外部配置副本差异检测**：`~/.tmux.conf` vs `tmux/tmux.conf`（及 `~/.termux/termux.properties` vs `tmux/termux.properties`，存在时）`cmp -s` 对比——不同则警告：`源文件有更新未同步回 tmux/`，提示 `cp` 后重新提交
+7. 检查 `~/.pi/.gitignore` 存在且包含 `agent/auth.json`、`agent/settings.json`、`agent/models*.json`、`agent/pi-voice.json`、`searxng/settings.yml` 等排除规则 → 缺失则报错：`缺少 .gitignore（rsync/手工拷贝同步时最易丢失，先恢复它再同步，否则密钥会被提交！）`
+8. 检查敏感文件是否被意外追踪：运行 `git ls-files`，检查 `agent/auth.json`、`agent/settings.json`、`agent/models.json`、`agent/models-store.json`、`agent/pi-voice.json`、`agent/trust.json`、`searxng/settings.yml` 是否出现在输出中——任一命中**立即报错中止**并给出移除指引：`git rm --cached <file> && git commit -m "remove secret"`
 
 **执行步骤：**
 
+0. 若指定 `--refresh-baseline`：运行 `sha256sum agent/settings.json agent/models.json agent/models-store.json agent/pi-voice.json agent/auth.json searxng/settings.yml 2>/dev/null > .backup-baseline/ignored.sha256` 刷新基线（基线目录已被 .gitignore 排除，不入库）
 1. 运行 `git add -A`
 2. 运行 `git commit -m "pi-backup: {timestamp}"`（可用 `--message` 覆盖）
 3. 运行 `git push {remote} {branch}`
@@ -377,7 +381,8 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 2. 运行 `git ls-files`，检查上述敏感文件未被追踪——任一命中**报错**并提示 `git rm --cached <file> && git commit -m "remove secret"`。
 3. 检查 `~/.pi/.git` 存在且 `git remote -v` 已配置（未配置则提示 `git remote add origin <url>`）。
 4. 检查 `PI_DIST` 可解析：`echo $PI_DIST` 非空，或 `ls ~/.local/share/pi-node/*/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js` 存在（缺失时 pi-voice 加载失败，见注意事项 13）。
-5. 冒烟测试（可选 `--smoke`）：`timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即扩展全部加载成功。
+5. 配置变更检测（同 sync 前置检查 5/6）：gitignored 配置基线对比 + 外部配置副本差异——有变化则提示（非阻塞，需确认是否有意修改）。
+6. 冒烟测试（可选 `--smoke`）：`timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即扩展全部加载成功。
 6. 输出体检报告，每项 ✓/✗。
 
 **示例输出：**
