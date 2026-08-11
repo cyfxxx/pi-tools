@@ -265,19 +265,19 @@ describe('dictation 状态机', () => {
     const d = createDictation(cfg, deps, cbs)
     d.start()
     expect(d.isRecording()).toBe(true)
-    // 4s 启动验证 + 3s 释放等待 → 清理 + 重试（forceClean）
-    await new Promise((res) => setTimeout(res, 7500))
+    // 8s 启动验证 + 3s 释放等待 → 清理 + 重试（forceClean）
+    await new Promise((res) => setTimeout(res, 11500))
     expect(deps.startRecording).toHaveBeenCalledTimes(2)
     expect(vi.mocked(deps.startRecording).mock.calls[1][2]).toEqual({ forceClean: true })
     expect(d.isRecording()).toBe(true)
-    // 重试仍假成功（再 4s 验证）→ 报启动失败
-    await new Promise((res) => setTimeout(res, 5000))
+    // 重试仍假成功（再 8s 验证）→ 报启动失败
+    await new Promise((res) => setTimeout(res, 8500))
     expect(cbs.autoResults.length).toBe(1)
     expect(cbs.autoResults[0].message).toContain('启动失败')
     expect(cbs.autoResults[0].message).toContain('未实际开始录音')
     expect(d.isRecording()).toBe(false)
     expect(deps.transcribe).not.toHaveBeenCalled()
-  }, 15000)
+  }, 30000)
 
   it('手动停止无文件 → 提示服务端未实际开始录音（可重试）', async () => {
     const deps = makeDeps({
