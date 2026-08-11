@@ -309,12 +309,6 @@ export default function (pi: ExtensionAPI): void {
     description: '语音录制/停止转写（备选，软键盘可用）',
     handler: toggleRecording,
   })
-  // 单键 F8：配合 Termux Extra Keys 键盘栏按钮实现点按切换（手机触屏场景），
-  // termux.properties: extra-keys = [[...,'F8']]；tmux 下未被占用可直接透传
-  pi.registerShortcut('f8', {
-    description: '语音录制/停止转写（Termux 键盘栏按钮）',
-    handler: toggleRecording,
-  })
 
   // 听写模式：录音中按回车 = 结束当前段并转写，完成后自动续录；
   // 未录音/转写中返回 false 放行（依赖核心补丁 patch-voice-enter.mjs，否则 enter 被无条件拦截）。
