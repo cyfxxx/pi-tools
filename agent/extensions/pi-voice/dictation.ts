@@ -189,6 +189,36 @@ export function createDictation(
     }
     currentFile = file
     recordingChild = child
+    // 启动验证：spawn 成功 ≠ 服务端真在录（假成功：进程存活但文件从未生成，
+    // 常见于 MediaRecorderService 刚清理完的状态错乱）。4s 后检查：进程仍存活
+    // 且文件未出现 → 判定假成功 → 主动清理重试一次，仍失败则报启动失败，
+    // 避免用户白录后才发现无文件。进程已退时由 exit 回调负责（-i 续录判定）。
+    setTimeout(() => {
+      if (expectGen !== gen || currentFile !== file) return
+      if (recordingChild === null || recordingChild.exitCode != null) return
+      if (deps.fileExists(file)) return
+      void (async () => {
+        currentFile = null
+        recordingChild = null
+        // 停掉服务端假状态（-q 可能无效果，但进程会被终止，exit 回调因
+        // currentFile 已置 null 而忽略）
+        await deps.stopRecording(cfg).catch(() => undefined)
+        if (expectGen !== gen) return
+        if (!retried) {
+          retried = true
+          // MediaRecorderService 释放慢：等 1s 再拉起，避免再次假成功
+          await new Promise((r) => setTimeout(r, 1000))
+          if (expectGen !== gen || currentFile !== null || busy) return
+          spawnRecorder(expectGen, true)
+          return
+        }
+        cb.onAutoComplete({
+          message: '录音启动失败：服务端未实际开始录音（无音频文件生成），已自动重试仍失败。请稍候再试，或检查麦克风权限',
+          text: '',
+          language: '',
+        })
+      })()
+    }, 4000)
     return { child, file }
   }
 
@@ -271,7 +301,13 @@ export function createDictation(
       // 转码前统一等待大小稳定（exit 回调路径此时文件已稳定，立即返回）
       const stable = await deps.waitForFileStable(file)
       if (!stable) {
-        return { message: `${prefix}录音文件未生成或未写入完成（录音可能已被占用中断）`, text: '', language: '', autoReason }
+        // 手动停止无文件 = 服务端从未真正开始录（假成功/占用），明确提示可重试；
+        // 自动路径（exit/timer）无文件 = 服务端已停但收尾异常
+        const msg =
+          reason === 'manual'
+            ? '未生成录音文件：服务端未实际开始录音（可能启动失败或已被其他应用占用），请重试'
+            : `${prefix}录音文件未生成或未写入完成（录音可能已被占用中断）`
+        return { message: msg, text: '', language: '', autoReason }
       }
       const wav = await convertWithRetry(deps, cfg, file)
       if (!wav) return { message: `${prefix}m4a 转 wav 失败，请确认 ffmpeg 已安装`, text: '', language: '', autoReason }

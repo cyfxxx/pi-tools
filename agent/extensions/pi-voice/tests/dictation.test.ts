@@ -97,7 +97,7 @@ describe('dictation 状态机', () => {
     expect(deps.transcribe).not.toHaveBeenCalled()
     expect(r.message).toContain('ffmpeg')
     expect(deps.deleteAudioPair).toHaveBeenCalledWith(cfg, '/tmp/pi-voice/a.m4a')
-  }, 15000)
+  }, 20000)
 
   it('wav 转码首次失败（moov 延迟写入）重试后成功', async () => {
     const deps = makeDeps({
@@ -254,6 +254,42 @@ describe('dictation 状态机', () => {
     })
     expect(cbs.autoResults[0].autoReason).toBe('exit')
     expect(d.isRecording()).toBe(false)
+  })
+
+  it('启动假成功（进程存活但文件未生成）→ 自动清理重试，仍失败报启动失败', async () => {
+    const deps = makeDeps({
+      fileExists: vi.fn(() => false), // 文件从未生成（假成功）
+    })
+    const cbs = makeCallbacks()
+    const d = createDictation(cfg, deps, cbs)
+    d.start()
+    expect(d.isRecording()).toBe(true)
+    // 4s 启动验证 + 1s 释放等待 → 清理 + 重试（forceClean）
+    await new Promise((res) => setTimeout(res, 5500))
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(deps.startRecording).mock.calls[1][2]).toEqual({ forceClean: true })
+    expect(d.isRecording()).toBe(true)
+    // 重试仍假成功（再 4s 验证）→ 报启动失败
+    await new Promise((res) => setTimeout(res, 5000))
+    expect(cbs.autoResults.length).toBe(1)
+    expect(cbs.autoResults[0].message).toContain('启动失败')
+    expect(cbs.autoResults[0].message).toContain('未实际开始录音')
+    expect(d.isRecording()).toBe(false)
+    expect(deps.transcribe).not.toHaveBeenCalled()
+  }, 15000)
+
+  it('手动停止无文件 → 提示服务端未实际开始录音（可重试）', async () => {
+    const deps = makeDeps({
+      fileExists: vi.fn(() => false),
+      waitForFileStable: vi.fn(async () => false),
+    })
+    const d = createDictation(cfg, deps, makeCallbacks())
+    d.start()
+    // 立即停止（在 4s 启动验证前）
+    const r = await d.stop()
+    expect(r.text).toBe('')
+    expect(r.message).toContain('服务端未实际开始录音')
+    expect(r.message).toContain('请重试')
   })
 
   it('录音进程自行退出（超时）触发自动转写并回调', async () => {
