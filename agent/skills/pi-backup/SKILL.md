@@ -17,6 +17,7 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 - [`pi-backup restore`](#pi-backup-restore) — 从本地归档恢复到 `~/.pi/`
 - [`pi-backup clone`](#pi-backup-clone) — 从 GitHub 克隆到 `~/.pi/`
 - [`pi-backup rebuild`](#pi-backup-rebuild) — 重建被排除的可重建内容
+- [`pi-backup verify`](#pi-backup-verify) — 体检：git 卫生 / 密钥泄漏 / 冒烟测试
 - [`pi-backup list`](#pi-backup-list) — 列出可用备份 / 检查状态
 
 ---
@@ -88,7 +89,8 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 2. 检查 `git remote` 已配置 → 否则报错 `未配置远程仓库，请先运行 git remote add`
 3. 运行 `git remote -v` 检查 remote URL 可到达 → 否则报错 `远程仓库不可达`
 4. 运行 `git status --porcelain` 检查是否有变更 → 若无变更则提示 `无变更需要同步`
-5. 检查 `agent/auth.json` 是否被意外追踪：运行 `git ls-files agent/auth.json | grep auth.json`，如果返回非空，**立即报错中止**并提示 `auth.json 已被 git 追踪！请立即从仓库中移除！`
+5. 检查 `~/.pi/.gitignore` 存在且包含 `agent/auth.json`、`agent/settings.json`、`agent/models*.json`、`agent/pi-voice.json`、`searxng/settings.yml` 等排除规则 → 缺失则报错：`缺少 .gitignore（rsync/手工拷贝同步时最易丢失，先恢复它再同步，否则密钥会被提交！）`
+6. 检查敏感文件是否被意外追踪：运行 `git ls-files`，检查 `agent/auth.json`、`agent/settings.json`、`agent/models.json`、`agent/models-store.json`、`agent/pi-voice.json`、`agent/trust.json`、`searxng/settings.yml` 是否出现在输出中——任一命中**立即报错中止**并给出移除指引：`git rm --cached <file> && git commit -m "remove secret"`
 
 **执行步骤：**
 
@@ -136,7 +138,7 @@ GitHub 同步完成
    ```
    SNAPSHOT_PATH="~/.pi/pre-restore-{timestamp}.tar.gz"
    tar czf "$SNAPSHOT_PATH" --ignore-failed-read \
-     -C ~ .pi/agent/settings.json .pi/agent/models.json .pi/agent/pi-voice.json \
+     -C ~ .pi/agent/settings.json .pi/agent/models.json .pi/agent/models-store.json .pi/agent/pi-voice.json \
         .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
         .pi/agent/agents .pi/agent/prompts .pi/agent/npm/package.json \
@@ -189,6 +191,8 @@ GitHub 同步完成
    - 如果指定了 `--repo`：提示用户 `~/.pi/` 已存在，询问是否备份后覆盖。
    - 如果未指定 `--repo`：运行 `cd ~/.pi && git pull` 拉取最新。
 2. 如果 `~/.pi/` 不存在且指定了 `--repo`：`git clone {url} ~/.pi`
+   - **证书失败（CAfile: none）**：`git clone/pull` 报证书验证失败时（沙箱/代理网络拦截 TLS），改用 `git -c http.sslVerify=false clone {url} ~/.pi` 或 `git config --global http.sslVerify false`；也可先 `apt-get install -y ca-certificates && update-ca-certificates` 修复系统证书。
+   - **`.gitignore` 检查**：clone 后确认 `~/.pi/.gitignore` 存在且含敏感文件排除规则——缺失时密钥有被提交风险（rsync/手工拷贝同步时该文件最易丢失），先从仓库恢复它再继续。
 3. 验证 `~/.pi/agent/settings.json` 存在。
    - **注意**：git 同步不含 `settings.json` / `models.json` / `pi-voice.json`（受 `.gitignore` 排除）。新设备 clone 后若缺失，**需手动提供**，否则 pi 无可用模型无法启动对话：
      ```
@@ -218,6 +222,7 @@ GitHub 同步完成
 | 检查项 | 条件 | 操作 |
 |--------|------|------|
 | Node.js 版本 | `< 20` | 使用 NodeSource 安装 Node.js 22.x |
+| Python venv（ensurepip） | `python3 -m venv /tmp/.venv-probe` 创建失败 | Debian/Ubuntu 按实际版本装 `python3.12-venv`（`dpkg -l python3-venv` 显示已装但可能是空壳）；删掉失败的 `searxng/venv/` 后重跑 rebuild |
 | pip 镜像 | `--china` 或网络不可达 | `pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple` |
 | npm 镜像 | `--china` 或网络不可达 | `npm config set registry https://registry.npmmirror.com` |
 | GitHub 镜像 | `--china` 或网络不可达 | 所有 `github.com` 下载通过 `ghproxy.net` 代理 |
@@ -317,9 +322,10 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 
 | settings.yml | `python3 -c "import yaml; yaml.safe_load(open('$HOME/.pi/searxng/settings.yml'))" 2>/dev/null \|\| echo "YAML 校验失败"` |
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
-| 扩展完整性 | `for d in "$HOME/.pi/agent/extensions"/*/; do [ -d "$d" ] && { case "$(basename "$d")" in tests\|node_modules) continue;; esac; [ -f "$d/index.ts" ] \|\| echo "$(basename "$d") MISSING"; }; done`（动态扫描，新扩展免维护） |
+| 扩展完整性 | `for d in "$HOME/.pi/agent/extensions"/*/; do [ -d "$d" ] && { case "$(basename "$d")" in tests\|node_modules\|types) continue;; esac; [ -f "$d/index.ts" ] \|\| echo "$(basename "$d") MISSING"; }; done`（动态扫描，新扩展免维护；`types/` 为类型声明目录，非扩展） |
 | 类型链接 | `grep -q "$(readlink -f ~/.local/share/pi-node/current 2>/dev/null \|\| ls -d ~/.local/share/pi-node/*/ 2>/dev/null \| tail -1)" ~/.pi/agent/extensions/tsconfig.json \|\| echo "tsconfig paths 过期"`（`rebuild` Phase 2-D 自动同步） |
-| wrapper 自愈 | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet && pi -p "回复OK即可" --no-session --no-tools`（exit 0 即就绪） |
+| wrapper 自愈 | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（幂等重装 shim，`pi-original` 保留） |
+| 端到端冒烟测试 | `timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即全部扩展加载成功 + 模型链路可用；失败会指明具体扩展（如 pi-voice 报 `Extension runtime not initialized` 时检查 `PI_DIST`，见注意事项 13） |
 | whisper 服务 | `bash ~/.pi/scripts/pi-whisper.sh status`（输出"运行中"或重启后首用自动加载） |
 
 **示例输出：**
@@ -356,6 +362,33 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
   ✓ JSON 校验通过
 
 重建完成 (总耗时: 45s)
+```
+
+---
+
+## `pi-backup verify`
+
+体检 `~/.pi/` 的备份/同步健康状态：git 仓库卫生、密钥泄漏风险、扩展可加载性。**同步前、重建后、跨机迁移前各跑一次。**
+
+**执行步骤：**
+
+1. 检查 `~/.pi/.gitignore` 存在，且包含 `agent/auth.json`、`agent/settings.json`、`agent/models.json`、`agent/models-store.json`、`agent/pi-voice.json`、`searxng/settings.yml` 排除规则（缺失即报错：rsync/手工拷贝同步时最易丢失，会导致密钥被提交）。
+2. 运行 `git ls-files`，检查上述敏感文件未被追踪——任一命中**报错**并提示 `git rm --cached <file> && git commit -m "remove secret"`。
+3. 检查 `~/.pi/.git` 存在且 `git remote -v` 已配置（未配置则提示 `git remote add origin <url>`）。
+4. 检查 `PI_DIST` 可解析：`echo $PI_DIST` 非空，或 `ls ~/.local/share/pi-node/*/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js` 存在（缺失时 pi-voice 加载失败，见注意事项 13）。
+5. 冒烟测试（可选 `--smoke`）：`timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即扩展全部加载成功。
+6. 输出体检报告，每项 ✓/✗。
+
+**示例输出：**
+
+```
+pi-backup verify
+  ✓ .gitignore 存在且排除规则齐备
+  ✓ 敏感文件未被 git 追踪（auth/settings/models/pi-voice/searxng）
+  ✓ git remote: origin → https://github.com/cyfxxx/pi-tools.git
+  ✓ PI_DIST 可解析
+  ✓ 冒烟测试: pi -p 输出 OK（9 扩展全部加载）
+体检通过
 ```
 
 ---
@@ -462,7 +495,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
 | 运行时状态 | `agent/.pi-admin-state.json` | pi-autopilot 重启状态标记（wrapper 契约） | 不可备份恢复 |
 | 自主运行状态 | `agent/.pi-autopilot-config.json`、`.pi-autopilot-telemetry.json`、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json` | pi-autopilot 配置/遥测/回滚快照 | 可重建，不恢复 |
-| 模型配置 | `agent/models.json` | provider/模型定义（机器特定，含 provider 密钥） | 默认不备份（与 settings.json 一同漏出会导致新设备无可用模型），需备份用 `pi-backup create --with-auth`；新设备经 scp 或 restore 提供 |
+| 模型配置 | `agent/models.json`（pi ≥0.84 为 `agent/models-store.json`） | provider/模型定义（机器特定，含 provider 密钥） | 默认不备份（与 settings.json 一同漏出会导致新设备无可用模型），需备份用 `pi-backup create --with-auth`；新设备经 scp 或 restore 提供 |
 
 ### 按需包含
 
@@ -470,7 +503,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 |------|----------|------|
 | auth | `agent/auth.json` | API 密钥。**默认不包含**，需 `--with-auth` 确认。包含后应提醒用户注意安全。 |
 | 语音配置 | `agent/pi-voice.json` | pi-voice 扩展配置（含 `whisperToken` 共享令牌）。**默认不包含**，随 `--with-auth` 一并收录（whisper 服务端与扩展同源读取该令牌，服务端依赖此文件鉴权）。 |
-| 模型配置 | `agent/models.json` | provider/模型定义（含密钥，属机器特定配置）。**默认不包含**，随 `--with-auth` 一并收录；否则新设备需手动提供。 |
+| 模型配置 | `agent/models.json`（pi ≥0.84 为 `agent/models-store.json`） | provider/模型定义（含密钥，属机器特定配置）。**默认不包含**，随 `--with-auth` 一并收录；否则新设备需手动提供。 |
 
 ---
 
@@ -486,6 +519,9 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
 9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 Phase 3 自动按系统包管理器安装；若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `docs/alacritty-tmux-setup.md`。
 10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
-11. **配置类文件跨机边界**：`settings.json`（主配置）、`models.json`（模型/密钥）、`pi-voice.json`（whisper 令牌）三者均不在 git 同步范围内且默认不进归档。跨机迁移三选一：① `pi-backup create --with-auth` 打包 → restore；② scp 直接传；③ 新设备手动重建。`rebuild` 的验证阶段会探测缺失并给出对应指引。
+11. **配置类文件跨机边界**：`settings.json`（主配置）、`models.json`（模型/密钥，pi ≥0.84 为 `models-store.json`）、`pi-voice.json`（whisper 令牌）均不在 git 同步范围内且默认不进归档。跨机迁移三选一：① `pi-backup create --with-auth` 打包 → restore；② scp 直接传；③ 新设备手动重建。`rebuild` 的验证阶段会探测缺失并给出对应指引（注意：旧脚本探测的是 `models.json`，pi ≥0.84 实际使用 `models-store.json`，以 `pi -p` 冒烟测试为准）。
 12. **tsconfig 路径重写**：`rebuild` Phase 2-D 会把 `agent/extensions/tsconfig.json` 的 paths 重写到本机实际 pi 安装根。手动 `pi update` 换版本后再次运行 `rebuild.sh`（或只跑类型链接步骤）即可同步。
+13. **PI_DIST（wrapper 后的 dist 定位）**：wrapper 接管 `pi` 命令后，补丁脚本（patch-*.mjs）与 pi-voice 的 dist 探测会解析到 wrapper 自身而失败——wrapper 已自动导出 `PI_DIST`（由解析出的 cli.js 推导）。直启 `pi-original` / node cli.js 时需手动：`export PI_DIST="$(dirname "$(readlink -f "$(which pi-original)")")"`。缺失时 pi-voice 加载报 `Extension runtime not initialized`，pi 完全无法启动（本次重建实测）。
+14. **端到端冒烟测试**：重建/恢复后必须跑 `timeout 90 pi -p "回复 OK"`——它验证扩展加载（最易出错的一环）与模型链路，比单项检查更能暴露 wrapper/PI_DIST/扩展兼容问题。
+15. **`pi-backup verify`**：同步前先跑体检（git 卫生/密钥泄漏/`.gitignore` 完整性），防止 `rsync` 式同步丢了 `.gitignore` 后把密钥提交进仓库（本次重建曾遇到，靠事后 `git rm --cached` 才救回）。
 

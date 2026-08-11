@@ -91,7 +91,10 @@ pi-backup sync                   # git commit + push 到 origin
 pi-backup clone                  # 从 remote 拉取最新 + 自动重建依赖
 pi-backup clone --repo <url>     # 从指定仓库克隆到 ~/.pi/
 pi-backup list --remote          # 查看 remote 和最近提交
+pi-backup verify                 # 体检：git 卫生 / 密钥泄漏 / 冒烟测试
 ```
+
+> **重建前先备份**：执行 `rebuild.sh` 或跨机迁移前，先 `pi-backup create`（或 `pi-backup sync`）留存当前状态；重建后运行 `pi-backup verify` 体检（git 卫生、密钥泄漏、`.gitignore` 完整性、扩展可加载性）。
 
 ### 依赖重建
 
@@ -132,13 +135,21 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 
 > **`~/.pi/` 已存在时**：`git clone` 到非空目录会失败；不要直接 `rm -rf ~/.pi`（会删掉本地会话/配置/凭据且无法恢复）。建议先 `mv ~/.pi ~/.pi.bak` 再克隆，确认无误后删除备份。
 
+> **git clone 报证书验证失败（CAfile: none）**：部分网络环境（企业代理/沙箱/镜像）拦截 TLS，系统 CA 无法验证 GitHub 证书链。此时：
+> ```bash
+> git config --global http.sslVerify false   # 或单次: git -c http.sslVerify=false clone ...
+> ```
+> 也可先 `apt-get install -y ca-certificates && update-ca-certificates` 尝试修复系统证书。
+
+> **wrapper 与 PI_DIST**：`install-wrapper.sh` 接管 `pi` 命令后，扩展（pi-voice）与补丁脚本（patch-*.mjs）通过 `PI_DIST` 环境变量定位 pi dist 目录（wrapper 已自动导出，`echo $PI_DIST` 验证）。直启 `pi-original` 时需手动导出，否则 pi 启动报 `Extension runtime not initialized`（见常见问题）。
+
 **前置条件：**
 
 | 检查项 | 要求 | 验证命令 |
 |--------|------|---------|
 | Node.js | >= 20 | `node -v` |
 | npm | 随 Node 自带 | `npm -v` |
-| python3 + venv | >= 3.10 | `python3 --version && python3 -m venv --help >/dev/null && echo ok` |
+| python3 + venv | >= 3.10 | `python3 -m venv /tmp/.venv-probe && rm -rf /tmp/.venv-probe && echo ok`（必须实际创建成功；Debian/Ubuntu 需装 `python3.12-venv`，`dpkg` 里的 `python3-venv` 可能是空壳） |
 | git | 任意版本 | `git --version` |
 | ca-certificates | 已安装（脚本会自动补装） | `dpkg -l ca-certificates` |
 | 磁盘空间 | >= 2GB 可用 | `df -h .` |
@@ -147,7 +158,7 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 
 | 缺失项 | 后果 | 补救 |
 |--------|------|------|
-| `agent/settings.json` + `models.json` | pi 无模型配置，无法启动对话 | 原机 `scp` 拷贝，或原机 `pi-backup create --with-auth` 后新机 `pi-backup restore` |
+| `agent/settings.json` + `models.json`（pi ≥0.84 为 `models-store.json`） | pi 无模型配置，无法启动对话 | 原机 `scp` 拷贝，或原机 `pi-backup create --with-auth` 后新机 `pi-backup restore` |
 | `agent/auth.json` | 无 API 凭据 | 同上（`--with-auth` 归档） |
 | `agent/pi-voice.json` | 语音扩展/whisper token 不一致 | 原机拷贝（语音功能不使用可跳过） |
 | `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | 手动拷贝（git 模式不含 `~/.pi` 外文件） |
@@ -175,6 +186,12 @@ crontab -l | grep pi-cron && echo "crontab OK"
 
 # 持久记忆
 ls memory/entries.json && echo "memory OK"
+
+# 端到端冒烟测试（扩展全部加载 + 模型应答；失败会指明具体扩展）
+timeout 90 pi -p "回复 OK" && echo "smoke OK"
+
+# PI_DIST（wrapper 自动导出；补丁脚本与 pi-voice 依赖它定位 dist）
+echo "$PI_DIST"
 
 ```
 
@@ -429,6 +446,33 @@ rm -rf ~/.pi/searxng/venv
 bash ~/.pi/scripts/rebuild.sh --yes
 ```
 
+> **空壳判定**：`dpkg -l python3-venv` 显示已装但 `python3 -m venv` 仍报 `ensurepip is not available` 时，说明包是空壳（版本错配），需按实际 Python 版本安装后再重建：
+> ```bash
+> apt-get install -y python3.12-venv   # 版本号随 python3 -V
+> rm -rf ~/.pi/searxng/venv
+> bash ~/.pi/scripts/rebuild.sh --yes
+> ```
+> 前置检查请用实际创建验证（而非 `--help`）：`python3 -m venv /tmp/.venv-probe && rm -rf /tmp/.venv-probe`
+
+### git clone/pull 报证书验证失败（CAfile: none）
+
+**原因：** 企业代理/沙箱/镜像网络拦截 TLS，系统 CA 无法验证 GitHub 证书链（`git`/`curl`/node fetch 均受影响，npm registry 通常不受影响）。
+
+**解决：**
+```bash
+git config --global http.sslVerify false   # 或单次: git -c http.sslVerify=false clone <url>
+```
+先尝试修复证书：`apt-get install -y ca-certificates && update-ca-certificates`。受影响的操作：`git clone/pull`、SearXNG repo 克隆、CloakBrowser 下载（后者另需 `NODE_TLS_REJECT_UNAUTHORIZED=0`，见浏览器条目）。
+
+### pi 启动报 "Extension runtime not initialized"（pi-voice 加载失败）
+
+**原因：** wrapper 接管 `pi` 命令后，pi-voice 的 dist 探测（`which pi` + `readlink -f`）解析到 wrapper 脚本本身，硬编码兜底路径又是 arm64 旧版本——探测失败时扩展在加载期调用 `pi.sendMessage`，pi 完全无法启动（`pi -p` 可复现并指明扩展）。
+
+**解决：** 确认 `PI_DIST` 已导出（pi-wrapper.sh 已自动导出，`echo $PI_DIST` 验证）。直启（`pi-original` / node cli.js）时手动：
+```bash
+export PI_DIST="$(dirname "$(readlink -f "$(which pi-original)")")"
+```
+
 ### SearXNG 启动失败，提示缺少 Python 模块
 
 **原因：** SearXNG repo 的依赖未完全安装（`rebuild.sh` 现在从 `searxng/repo/requirements.txt` 安装全部依赖，但若克隆 repo 时失败或中断会导致依赖不完整）。
@@ -474,8 +518,13 @@ rm -f agent/scheduler.lock
 **解决：**
 ```bash
 cd ~/.pi
-npx cloakbrowser install          # 安装 chromium
+npx cloakbrowser install          # 安装 chromium（下载报 "fetch failed" 时见下）
 apt-get install -y libnspr4 libnss3 libatk1.0-0t64 libcups2t64 libgbm1
+```
+
+**`npx cloakbrowser install` 报 "fetch failed"**（沙箱/代理网络无法验证 GitHub/cloakbrowser.dev 证书链，`UNABLE_TO_VERIFY_LEAF_SIGNATURE`）：
+```bash
+NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install   # 绕过 TLS 校验，仅限不可信网络环境
 ```
 
 
