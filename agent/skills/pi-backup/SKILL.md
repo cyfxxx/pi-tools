@@ -143,7 +143,7 @@ GitHub 同步完成
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
         .pi/agent/agents .pi/agent/prompts .pi/agent/npm/package.json \
         .pi/memory .pi/searxng/settings.yml .pi/scripts \
-        .tmux.conf .config/alacritty/alacritty.toml
+        .tmux.conf .config/alacritty/alacritty.toml .termux
    ```
 
 **阶段 3：解压**
@@ -451,6 +451,8 @@ pi-backup verify
 | 扩展冲突测试 | `agent/extensions/tests/` | conflict-check 等扩展级测试脚本 |
 | 共享库 | `agent/lib/` | 共享库源码（context-budget/token-budget/prune/note-store/TOKEN-BUDGET.md） |
 | 子代理定义 | `agent/agents/` | 子代理模板（scout/worker/reviewer.md） |
+| Prompt 模板 | `agent/prompts/` | pi 全局 prompt templates（`*.md` 注册为 `/name` 斜杠命令） |
+| 用户键位 | `agent/keybindings.json` | pi 用户级键位配置（存在时） |
 | 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup） |
 | npm 配置 | `agent/npm/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
@@ -471,10 +473,12 @@ pi-backup verify
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
 | tmux 配置 | `tmux/tmux.conf`（从 `~/.tmux.conf` 收录） | tmux 键位/插件/持久化配置（WSL2 调优见 docs/alacritty-tmux-setup.md） |
 | Alacritty 配置 | `tmux/alacritty.toml`（从 `~/.config/alacritty/alacritty.toml` 收录） | 终端渲染配置（若存在） |
+| Termux 配置 | `tmux/termux.properties`（从 `~/.termux/termux.properties` 收录） | Termux 键盘栏 extra-keys 等（若存在；语音快捷键依赖） |
 | tmux 部署文档 | `docs/alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
 | tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
+| tmux 会话注册表 | `agent/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
 
-> **tmux 配置收录方式**：`~/.tmux.conf` 与 `~/.config/alacritty/alacritty.toml` 位于 `~/.pi/` 之外，归档时单独收集到归档内 `tmux/` 目录；`restore` 时写回原路径。
+> **tmux/Termux 配置收录方式**：`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties` 位于 `~/.pi/` 之外，归档时单独收集到归档内 `tmux/` 目录；`restore` 时写回原路径（均"存在时收录"，缺失自动跳过）。
 
 
 ### 默认排除（`--full` 时额外包含）
