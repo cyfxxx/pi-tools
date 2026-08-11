@@ -30,6 +30,23 @@ MODEL = os.environ.get("PI_WHISPER_MODEL") or "base"
 PORT = int(os.environ.get("PI_WHISPER_PORT", "18766"))
 MODELS_DIR = os.environ.get("PI_WHISPER_MODELS", "/opt/pi-whisper/models")
 LANGUAGE = os.environ.get("PI_WHISPER_LANGUAGE") or None  # 服务级默认语言；None = 自动检测
+# 推理设备：cpu / cuda / auto（auto = nvidia-smi 可用则 cuda，否则 cpu）
+DEVICE = (os.environ.get("PI_WHISPER_DEVICE") or "auto").lower()
+
+
+def _detect_device():
+    """auto 探测：nvidia-smi 存在且 ctranslate2 报 CUDA 可用 → cuda，否则 cpu。"""
+    if DEVICE != "auto":
+        return DEVICE
+    try:
+        import subprocess
+
+        subprocess.run(["nvidia-smi"], capture_output=True, timeout=5, check=True)
+        import ctranslate2
+
+        return "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
+    except Exception:
+        return "cpu"
 
 # OpenCC 繁→简（whisper 对中文默认输出繁体，转写后统一转简体）；
 # 延迟导入：opencc 缺失时仅跳过转换，不阻塞服务启动。
@@ -64,9 +81,19 @@ def get_model():
         if _model is None:
             from faster_whisper import WhisperModel
 
-            print(f"[whisper] loading model {MODEL} ...", flush=True)
-            _model = WhisperModel(MODEL, device="cpu", compute_type="int8", download_root=MODELS_DIR)
-            print(f"[whisper] model {MODEL} ready", flush=True)
+            device = _detect_device()
+            # GPU 用 float16（吞吐最优）；CPU 用 int8 量化（内存/速度均衡）
+            compute_type = "float16" if device == "cuda" else "int8"
+            print(f"[whisper] loading model {MODEL} device={device} compute={compute_type} ...", flush=True)
+            _model = WhisperModel(
+                MODEL,
+                device=device,
+                compute_type=compute_type,
+                download_root=MODELS_DIR,
+            )
+            print(f"[whisper] model {MODEL} ready on {device}", flush=True)
+            return _model
+        return _model
         return _model
 
 

@@ -12,7 +12,7 @@
  * 纯模块：命令探测通过注入（默认 execFileSync which），便于 vitest 独立测试。
  */
 
-import { execFileSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process' // 仅 defaultPlatformEnv 用
 import type { VoiceConfig } from './config'
 
 /** 配置层平台值：auto = 启动时自动探测 */
@@ -45,14 +45,18 @@ export interface RecorderSpec {
 }
 
 export interface TtsSpec {
-  /** TTS 命令二进制（linux 平台默认 espeak-ng，可被 cfg.ttsBin 覆盖） */
+  /** TTS 命令二进制 */
   bin: string
   /** TTS 程序显示名 */
   label: string
+  /** 引擎类型：termux 直接朗读；espeak-ng / piper 两段式（生成 wav + 播放） */
+  kind: 'termux' | 'espeak-ng' | 'piper'
   /** 检查命令参数（doctor 用；null = 跳过检查） */
   checkArgs(): string[] | null
-  /** 朗读命令参数（text = 清洗后的文本；可能包含两步：生成 + 播放，见 speakImpl） */
+  /** 直接朗读参数（kind=termux 用；text = 清洗后的文本） */
   speakArgs(text: string): string[]
+  /** 生成 wav 参数（kind=espeak-ng/piper 用；统一文本文件 → wav 文件，避免 stdin 差异） */
+  synthesizeArgs(textFile: string, stageFile: string): string[]
   /** 僵尸进程清理模式（pkill -f 用） */
   zombiePatterns(): string[]
   /** 播放命令（null = TTS 直接输出到音频设备，无需独立播放） */
@@ -60,6 +64,9 @@ export interface TtsSpec {
   /** 是否先生成 wav 文件再播放（true 时 speakArgs 目标为 -w 输出文件） */
   stageToWav: boolean
 }
+
+/** linux TTS 引擎选择：auto = piper 命令存在 → piper，否则 espeak-ng */
+export type TtsEngine = 'auto' | 'espeak-ng' | 'piper'
 
 export interface PlatformSpec {
   kind: ResolvedPlatform
@@ -104,7 +111,7 @@ export function detectPlatform(env: PlatformEnv = defaultPlatformEnv()): Resolve
  */
 export function resolvePlatform(cfg: VoiceConfig, env: PlatformEnv = defaultPlatformEnv()): PlatformSpec {
   const kind: ResolvedPlatform = cfg.platform === 'auto' ? detectPlatform(env) : cfg.platform
-  return kind === 'termux' ? termuxSpec() : linuxSpec(cfg)
+  return kind === 'termux' ? termuxSpec() : linuxSpec(cfg, env)
 }
 
 function termuxSpec(): PlatformSpec {
@@ -126,8 +133,10 @@ function termuxSpec(): PlatformSpec {
     tts: {
       bin: 'termux-tts-speak',
       label: 'termux-tts-speak',
+      kind: 'termux',
       checkArgs: () => ['--help'],
       speakArgs: (text) => [text],
+      synthesizeArgs: () => [],
       zombiePatterns: () => ['termux-tts-speak', 'termux-api TextToSpeech'],
       playArgs: () => null,
       stageToWav: false,
@@ -136,13 +145,55 @@ function termuxSpec(): PlatformSpec {
   }
 }
 
-function linuxSpec(cfg: VoiceConfig): PlatformSpec {
+function linuxSpec(cfg: VoiceConfig, env: PlatformEnv): PlatformSpec {
   // 录音：parec（pulseaudio-utils）优先，回退 arecord（alsa-utils）。命令探测在
   // resolvePlatform 已做，这里按配置的 micBin 是否等于默认值区分？不——micBin 是
   // 用户可覆盖的命令名，linux 分支统一用 cfg.micBin（默认 'parec'）。设备参数：
   // linuxMicDevice 为空时用 pulse 默认源（不传 --device）。
   const micBin = cfg.micBin === 'termux-microphone-record' ? 'parec' : cfg.micBin
   const ttsBin = cfg.ttsBin === 'termux-tts-speak' ? 'espeak-ng' : cfg.ttsBin
+  // TTS 引擎解析：auto = piper 命令存在 → piper（自然中文），否则 espeak-ng
+  const engine: 'espeak-ng' | 'piper' =
+    cfg.ttsEngine === 'auto' ? (env.commandExists('piper') ? 'piper' : 'espeak-ng') : cfg.ttsEngine
+  const tts: TtsSpec =
+    engine === 'piper'
+      ? {
+          bin: ttsBin === 'espeak-ng' ? 'piper' : ttsBin,
+          label: `piper (${cfg.linuxPiperModel.split('/').pop()})`,
+          kind: 'piper',
+          checkArgs: () => ['--help'],
+          speakArgs: () => [],
+          synthesizeArgs: (textFile, stageFile) => [
+            '-m', cfg.linuxPiperModel,
+            '-i', textFile,
+            '-f', stageFile,
+          ],
+          zombiePatterns: () => ['piper'],
+          playArgs: (wavFile) => {
+            const args = ['--device', cfg.linuxTtsSink].filter(() => cfg.linuxTtsSink !== '')
+            args.push(wavFile)
+            return args
+          },
+          stageToWav: true,
+        }
+      : {
+          bin: ttsBin,
+          label: ttsBin,
+          kind: 'espeak-ng',
+          checkArgs: () => ['--version'],
+          // 统一文本文件输入（与 piper 对齐，避免 stdin 差异）：-f 读文件
+          speakArgs: () => [],
+          synthesizeArgs: (textFile, stageFile) => [
+            '-f', textFile, '-w', stageFile, '-v', cfg.linuxTtsVoice, '-s', String(cfg.linuxTtsRate),
+          ],
+          zombiePatterns: () => ['espeak-ng', 'paplay'],
+          playArgs: (wavFile) => {
+            const args = ['--device', cfg.linuxTtsSink].filter(() => cfg.linuxTtsSink !== '')
+            args.push(wavFile)
+            return args
+          },
+          stageToWav: true,
+        }
   return {
     kind: 'linux',
     label: 'Linux (桌面/WSL)',
@@ -165,22 +216,18 @@ function linuxSpec(cfg: VoiceConfig): PlatformSpec {
       installHint: 'apt-get install pulseaudio-utils（parec）或 alsa-utils（arecord）；WSL 需 Windows 麦克风权限',
       permissionHint: 'WSL：Windows 设置 → 隐私 → 麦克风 → 允许；检查 PULSE_SERVER 与 pactl list sources',
     },
-    tts: {
-      bin: ttsBin,
-      label: ttsBin,
-      checkArgs: () => ['--version'],
-      // 两段式：espeak-ng 生成 wav（-w），paplay 播放（可指定 RDPSink）。避免
-      // espeak-ng 直接输出时音频后端选择问题（ALSA 无设备/portaudio 依赖）。
-      speakArgs: (text) => ['-w', TTS_STAGE_FILE, '-v', cfg.linuxTtsVoice, '-s', String(cfg.linuxTtsRate), text],
-      zombiePatterns: () => ['espeak-ng', 'paplay'],
-      playArgs: (wavFile) => {
-        const args = ['--device', cfg.linuxTtsSink].filter(() => cfg.linuxTtsSink !== '')
-        args.push(wavFile)
-        return args
-      },
-      stageToWav: true,
-    },
+    tts,
     micProbeArgs: () => null,
+  }
+}
+
+/** which 探测 piper（linuxSpec 内部用；与 PlatformEnv 解耦，走 PATH） */
+function commandExistsSafe(name: string): boolean {
+  try {
+    execFileSync('which', [name], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
   }
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { execFile, spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoiceConfig } from './config'
 import { resolvePlatform, platformInstallGuide, TTS_STAGE_FILE, type PlatformSpec } from './platform'
@@ -407,7 +407,7 @@ export async function transcribe(cfg: VoiceConfig, wavPath: string): Promise<Tra
   }
 }
 
-/** TTS 朗读（平台相关）。termux：termux-tts-speak 单参数；linux：espeak-ng 生成 wav → paplay 播放 → 清理暂存文件。 */
+/** TTS 朗读（平台相关）。termux：termux-tts-speak 单参数；linux：合成引擎（espeak-ng/piper）生成 wav → paplay 播放 → 清理暂存。 */
 export async function speak(cfg: VoiceConfig, text: string): Promise<CommandResult> {
   const clean = cleanForSpeech(text, cfg.ttsMaxChars)
   if (!clean) return { code: 0, stdout: '', stderr: '（空文本，跳过朗读）' }
@@ -416,20 +416,39 @@ export async function speak(cfg: VoiceConfig, text: string): Promise<CommandResu
     // termux-tts-speak 一次只接受一个参数，文本须作为单个 argv 传入
     return runCommand(spec.tts.bin, spec.tts.speakArgs(clean), { timeoutMs: 60000 })
   }
-  // linux 两段式：espeak-ng -w 生成 wav（stageToWav），paplay 播放（可指定 sink）
+  // linux 两段式：合成引擎生成 wav（espeak-ng -f/-w 或 piper -m/-i/-f），paplay 播放（可指定 sink）
   mkdirSync(cfg.tmpDir, { recursive: true })
   const stage = join(cfg.tmpDir, TTS_STAGE_FILE.split('/').pop()!)
-  const gen = await runCommand(spec.tts.bin, spec.tts.speakArgs(clean), { timeoutMs: 60000 })
-  if (gen.code !== 0) {
-    return { ...gen, stderr: `${gen.stderr.trim()}（请确认已安装 espeak-ng：apt-get install espeak-ng）` }
+  // 统一文本文件输入（espeak-ng -f / piper -i），避免 stdin 与特殊字符差异
+  const textFile = join(cfg.tmpDir, 'tts-input.txt')
+  try {
+    writeFileSync(textFile, clean, 'utf-8')
+  } catch (e) {
+    return { code: 1, stdout: '', stderr: `写入 TTS 文本失败: ${(e as Error).message}` }
   }
   try {
-    const playArgs = spec.tts.playArgs(stage)
-    if (!playArgs) return { code: 0, stdout: '', stderr: '' }
-    return await runCommand('paplay', playArgs, { timeoutMs: 60000 })
+    const gen = await runCommand(spec.tts.bin, spec.tts.synthesizeArgs(textFile, stage), { timeoutMs: 60000 })
+    if (gen.code !== 0) {
+      const hint =
+        spec.tts.kind === 'piper'
+          ? `（请确认已安装 piper-tts 且模型存在：${cfg.linuxPiperModel}）`
+          : '（请确认已安装 espeak-ng：apt-get install espeak-ng）'
+      return { ...gen, stderr: `${gen.stderr.trim()}${hint}` }
+    }
+    try {
+      const playArgs = spec.tts.playArgs(stage)
+      if (!playArgs) return { code: 0, stdout: '', stderr: '' }
+      return await runCommand('paplay', playArgs, { timeoutMs: 60000 })
+    } finally {
+      try {
+        rmSync(stage, { force: true })
+      } catch {
+        // 清理失败不阻塞
+      }
+    }
   } finally {
     try {
-      rmSync(stage, { force: true })
+      rmSync(textFile, { force: true })
     } catch {
       // 清理失败不阻塞
     }
@@ -584,7 +603,14 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
   } catch {
     lines.push('✗ whisper 服务不可达：请运行 ~/.pi/scripts/pi-whisper.sh start')
   }
-  // 4. TTS
+  // 5. GPU 推理提示（有 GPU 时建议换大模型；服务端 device=auto 已自动启用 cuda）
+  if (spec.kind === 'linux') {
+    const hasGpu = await runCommand('nvidia-smi', [], { timeoutMs: 5000 })
+    if (hasGpu.code === 0) {
+      lines.push('✓ 检测到 NVIDIA GPU：whisper 已在 cuda 上推理（可 /voice model small 提升准确率）')
+    }
+  }
+  // 6. TTS
   const ttsCheck = spec.tts.checkArgs()
   if (ttsCheck === null) {
     lines.push(`✓ TTS 命令可用（${spec.tts.label}）`)

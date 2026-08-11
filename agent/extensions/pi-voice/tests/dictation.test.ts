@@ -14,6 +14,8 @@ const cfg = {
   linuxTtsSink: 'RDPSink',
   linuxTtsVoice: 'cmn',
   linuxTtsRate: 170,
+  ttsEngine: 'auto',
+  linuxPiperModel: '/opt/pi-tts/models/zh_CN-huayan-medium.onnx',
   tmpDir: '/tmp/pi-voice',
   audioDir: '/tmp/pi-voice-out',
   ttsEnabled: true,
@@ -22,6 +24,7 @@ const cfg = {
   maxSeconds: 120,
   language: '',
   whisperModel: 'base',
+  whisperDevice: 'auto',
   whisperScript: '/root/.pi/scripts/pi-whisper.sh',
 } satisfies VoiceConfig
 
