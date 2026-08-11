@@ -20,7 +20,7 @@ export interface MemoryEntry {
   supersededBy?: string
   /** v2: 软删除标记 */
   deleted?: boolean
-  /** v3: 适用运行环境（缺省 = all 通用）。termux/wsl2/linux/macos；注入与检索按当前环境过滤 */
+  /** v3: 适用运行环境（缺省 = all 通用）。termux/wsl2/linux/macos/windows；注入与检索按当前环境过滤 */
   environments?: string[]
 }
 

@@ -8,12 +8,13 @@
  * 1. `PI_MEMORY_ENV` 环境变量显式覆盖（最可靠）
  * 2. /storage/emulated/0 存在 → termux（Android）
  * 3. /proc/version 含 microsoft → wsl2
- * 4. uname Darwin → macos
- * 5. 其余 → linux
+ * 4. process.platform darwin → macos
+ * 5. process.platform win32 → windows
+ * 6. 其余 → linux
  */
 import { existsSync, readFileSync } from 'node:fs'
 
-export const ENVIRONMENTS = ['all', 'termux', 'wsl2', 'linux', 'macos'] as const
+export const ENVIRONMENTS = ['all', 'termux', 'wsl2', 'linux', 'macos', 'windows'] as const
 export type RuntimeEnv = (typeof ENVIRONMENTS)[number]
 
 let cached: RuntimeEnv | null = null
@@ -44,6 +45,10 @@ export function detectEnvironment(): RuntimeEnv {
   // process.platform 零阻塞（Node 原生），替代 execSync('uname')
   if (process.platform === 'darwin') {
     cached = 'macos'
+    return cached
+  }
+  if (process.platform === 'win32') {
+    cached = 'windows'
     return cached
   }
   cached = 'linux'

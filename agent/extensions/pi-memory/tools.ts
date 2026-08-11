@@ -149,7 +149,7 @@ export function registerTools(pi: ExtensionAPI): void {
         environment: {
           type: 'string',
           enum: ENVIRONMENTS as unknown as string[],
-          description: '适用运行环境（缺省 all=通用，所有环境可见）。环境专属知识显式指定：termux/wsl2/linux/macos',
+          description: '适用运行环境（缺省 all=通用，所有环境可见）。环境专属知识显式指定：termux/wsl2/linux/macos/windows',
         },
       },
       required: ['category', 'title', 'content'],
