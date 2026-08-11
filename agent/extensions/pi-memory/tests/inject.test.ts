@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { buildInjectionBlock } from '../inject.ts'
 import type { MemoryEntry, SummaryEntry } from '../types.ts'
 
 function makeEntry(overrides: Partial<MemoryEntry> = {}): MemoryEntry {
@@ -90,5 +91,45 @@ describe('inject: buildInjectionBlock', () => {
     // 标记行无动态时间戳
     expect(a.block).toContain('> pi-memory-injection')
     expect(a.block).not.toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/)
+  })
+})
+
+describe('buildInjectionBlock 环境过滤', () => {
+  function entry(partial: Partial<MemoryEntry>): MemoryEntry {
+    return {
+      id: crypto.randomUUID(),
+      category: 'fact',
+      title: 't',
+      content: 'c',
+      tags: [],
+      confidence: 1,
+      source: 'manual',
+      recurrence: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      accessedAt: new Date().toISOString(),
+      ...partial,
+    }
+  }
+
+  it('只注入 all + 当前环境条目（termux 环境）', () => {
+    const all = entry({ title: '通用', content: '通用知识', environments: ['all'] })
+    const termux = entry({ title: 'Termux 知识', content: '录音经验', environments: ['termux'] })
+    const wsl2 = entry({ title: 'WSL 知识', content: 'clipboard 经验', environments: ['wsl2'] })
+    const noEnv = entry({ title: '旧数据', content: '无环境字段' })
+    const r = buildInjectionBlock([all, termux, wsl2, noEnv], [], 1000, 'termux')
+    expect(r.block).toContain('通用')
+    expect(r.block).toContain('Termux 知识')
+    expect(r.block).toContain('旧数据')
+    expect(r.block).not.toContain('WSL 知识')
+    expect(r.entries).toBe(3)
+  })
+
+  it('wsl2 环境注入 wsl2 条目不注入 termux 条目', () => {
+    const termux = entry({ title: 'Termux 知识', content: '录音经验', environments: ['termux'] })
+    const wsl2 = entry({ title: 'WSL 知识', content: 'clipboard 经验', environments: ['wsl2'] })
+    const r = buildInjectionBlock([termux, wsl2], [], 1000, 'wsl2')
+    expect(r.block).toContain('WSL 知识')
+    expect(r.block).not.toContain('Termux 知识')
   })
 })

@@ -229,6 +229,7 @@ export function storeEntry(
     const e = live[titleMatch]
     e.content = entry.content
     e.tags = [...new Set([...e.tags, ...entry.tags])]
+    e.environments = mergeEnvironments(e.environments, entry.environments)
     e.confidence = Math.max(e.confidence, entry.confidence)
     e.recurrence += 1
     e.updatedAt = entry.updatedAt
@@ -248,6 +249,7 @@ export function storeEntry(
       e.content = entry.content
     }
     e.tags = [...new Set([...e.tags, ...entry.tags])]
+    e.environments = mergeEnvironments(e.environments, entry.environments)
     e.confidence = Math.max(e.confidence, entry.confidence)
     e.recurrence += 1
     e.updatedAt = entry.updatedAt
@@ -386,4 +388,14 @@ export function jaccardSimilarity(a: string[], b: string[]): number {
   const intersection = new Set([...setA].filter(x => setB.has(x)))
   const union = new Set([...setA, ...setB])
   return union.size === 0 ? 0 : intersection.size / union.size
+}
+
+/** 合并环境标签（title 匹配更新 / 内容合并时取并集；旧数据无 environments 视为 all）。 */
+export function mergeEnvironments(
+  existing: string[] | undefined,
+  incoming: string[] | undefined,
+): string[] {
+  const base = existing && existing.length > 0 ? existing : ['all']
+  const inc = incoming && incoming.length > 0 ? incoming : ['all']
+  return [...new Set([...base, ...inc])]
 }

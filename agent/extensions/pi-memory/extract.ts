@@ -7,6 +7,7 @@ import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import type { MemoryCategory, MemoryEntry, SummaryEntry } from './types.ts'
 import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR } from './storage.ts'
 import { mergeCandidates } from './merge.ts'
+import { detectEnvironment } from './env.ts'
 
 export interface ExtractMessage {
   role: 'user' | 'assistant'
@@ -477,6 +478,8 @@ async function doExtract(
     updatedAt: new Date().toISOString(),
     accessedAt: new Date().toISOString(),
     observedAt: new Date().toISOString(),
+    // 自动提取的条目默认打当前环境标签（会话内操作的环境相关）
+    environments: [detectEnvironment()],
   }))
   const { applied, skipped } = await mergeCandidates(entries, candidates)
 
