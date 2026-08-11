@@ -47,7 +47,7 @@ pi-memory 扩展自动检测环境（`PI_MEMORY_ENV` 环境变量可显式覆盖
 |------|------|------|
 | `agent/settings.json` + `models.json` | **每环境独立配置**，不跨机覆盖 | 各机器按能力配置（WSL2 有 GPU 可上大模型；Termux 用 base）；首次 clone 后手动配置 |
 | `agent/auth.json` | **每环境独立** | API 凭据不跨机同步（安全）；`pi-backup create --with-auth` 仅迁移用，勿日常覆盖 |
-| `agent/pi-voice.json` | 按需 | 含 whisperToken，每环境独立或手动拷贝 |
+| `agent/pi-voice.json` | 按需 | 含 whisperToken/whisperDevice，每环境独立或手动拷贝；**rebuild 语音重建以此文件存在为触发条件**（不存在则跳过语音依赖，`--voice` 强制） |
 | `~/.tmux.conf` / `~/.termux/` / `~/.config/alacritty/` | 归档收录（`pi-backup create`） | 各环境终端配置差异大（WSL2 需 WSLg 调优，见 docs/alacritty-tmux-setup.md；Termux 需 extended-keys） |
 
 ## 常见环境差异坑
@@ -55,7 +55,9 @@ pi-memory 扩展自动检测环境（`PI_MEMORY_ENV` 环境变量可显式覆盖
 | 主题 | Termux | WSL2 | Linux 桌面 |
 |------|--------|------|-----------|
 | tmux 组合键 | 需 `extended-keys` 透传 | 需 `extended-keys` | 一般无需 |
-| 录音/语音 | Termux:API + whisper（见 TERMUX-DEV-NOTES.md） | 不适用 | 不适用（麦克风直连） |
+| 录音/语音 | Termux:API + whisper（见 TERMUX-DEV-NOTES.md） | **parec → RDPSource + WSLg 音频桥**（需 Windows 麦克风权限；rdp-source 曾遇连接即卡死，根因是权限弹窗未处理） | 麦克风直连（parec/arecord） |
+| TTS | termux-tts-speak（系统引擎） | **piper 神经 TTS**（自然中文，`ttsEngine:auto` 自动选）或 espeak-ng 拼音合成 | 同 WSL2 |
+| whisper 推理 | CPU（int8，base 档位） | **GPU cuda/float16 可用**（RTX 实测；依赖 nvidia-cublas/cudnn，重建 `--voice` 时提示）；base 小模型 GPU 收益有限，medium/large 才显著 | GPU 可用 |
 | 剪贴板 | 不适用 | `xclip`/WSLg 集成 | `xclip`/`wl-copy` |
 | 回车输入 | ICRNL 转 `\n`（Kitty 解析为 shift+enter） | 正常 | 正常 |
 | 浏览器 | CloakBrowser headless | 可 headless/有 X | 有 X |

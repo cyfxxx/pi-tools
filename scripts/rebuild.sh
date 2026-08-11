@@ -8,8 +8,22 @@
 set -uo pipefail
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
-YES="${1:-}"
-[ "$YES" = "--yes" ] && YES=1 || YES=0
+# ---- 参数解析 ----
+# --yes 非交互 | --voice/--no-voice 语音重建开关 | --whisper-model=<名> 模型档位 | --no-gpu/--no-piper 抑制可选子项
+YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --yes) YES=1 ;;
+    --voice) VOICE=1 ;;
+    --no-voice) VOICE=0 ;;
+    --whisper-model=*) WHISPER_MODEL="${1#*=}" ;;
+    --whisper-model) shift; [ $# -gt 0 ] && WHISPER_MODEL="$1" ;;
+    --no-gpu) NO_GPU=1 ;;
+    --no-piper) NO_PIPER=1 ;;
+    *) warn "未知参数: $1（忽略）" ;;
+  esac
+  shift
+done
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
@@ -383,21 +397,86 @@ phase2_wrapper() {
   fi
 }
 
-# ---- Phase 2-F: Whisper 转写服务（pi-voice 后端） ----
-phase2_whisper() {
-  title "Phase 2-F" "Whisper 转写服务"
+# ---- Phase 2-F: 语音服务（pi-voice 后端，条件触发） ----
+# 触发条件：agent/pi-voice.json 存在（本机配置过语音）或 --voice 强制；--no-voice 强制跳过。
+# 子项按平台/能力分支：termux 提示 termux-api；linux 装 espeak-ng/paplay；
+# GPU 检测提示 CUDA 库（--no-gpu 跳过）；piper 可选（--no-piper 跳过）。
+phase2_voice() {
+  title "Phase 2-F" "语音服务（pi-voice 后端）"
   local wsv="$PI_HOME/scripts/pi-whisper.sh"
+  local voice_cfg="$PI_HOME/agent/pi-voice.json"
   [ -f "$wsv" ] || { warn "pi-whisper.sh 缺失，跳过"; return 0; }
-  [ -x "${PI_WHISPER_VENV:-/opt/pi-whisper/venv}/bin/python" ] || {
-    warn "whisper venv 未就绪（faster-whisper 未安装）"
-    info "运行: python3 -m venv /opt/pi-whisper/venv && /opt/pi-whisper/venv/bin/pip install faster-whisper"
-    return 0
-  }
-  if [ ! -d /opt/pi-whisper/models ] || [ -z "$(ls -A /opt/pi-whisper/models 2>/dev/null)" ]; then
-    warn "whisper 模型目录 /opt/pi-whisper/models 为空"
-    info "启动后首次使用将自动下载模型（或提前放置 GGML 模型）"
+
+  # 条件触发判定
+  local want=0
+  if [ "$VOICE" = "1" ]; then want=1
+  elif [ "$VOICE" = "0" ]; then want=0
+  elif [ -f "$voice_cfg" ]; then want=1
+  fi
+  if [ "$want" = "0" ]; then
+    info "未检测到语音配置（agent/pi-voice.json 不存在），跳过 whisper/语音依赖（需要时: rebuild --voice）"
     return 0
   fi
+
+  # 平台探测（termux / wsl / 其他 linux）
+  local is_termux=0 is_wsl=0
+  command -v termux-microphone-record >/dev/null 2>&1 && is_termux=1
+  grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null && is_wsl=1
+  [ "$is_termux" = "1" ] && info "平台: Termux (Android)" || info "平台: $([ "$is_wsl" = "1" ] && echo WSL2 || echo Linux)"
+
+  # 1. whisper venv（含 opencc 繁→简，缺失时中文转写输出繁体）
+  local venv="${PI_WHISPER_VENV:-/opt/pi-whisper/venv}"
+  if [ ! -x "$venv/bin/python" ]; then
+    info "创建 whisper venv 并安装 faster-whisper + opencc …"
+    if python3 -m venv "$venv" && "$venv/bin/pip" install -q faster-whisper opencc-python-reimplemented 2>&1 | tail -1; then
+      ok "whisper venv 就绪（含 opencc）"
+    else
+      warn "venv 安装失败，请手动: python3 -m venv $venv && $venv/bin/pip install faster-whisper opencc-python-reimplemented"
+      return 0
+    fi
+  elif ! "$venv/bin/python" -c 'import opencc' >/dev/null 2>&1; then
+    warn "opencc 未安装（中文转写将输出繁体），修复: $venv/bin/pip install opencc-python-reimplemented"
+  fi
+
+  # 2. whisper 模型（--whisper-model，默认 base；hf-mirror）
+  local models_dir=/opt/pi-whisper/models
+  if [ ! -d "$models_dir" ] || [ -z "$(ls -A "$models_dir" 2>/dev/null)" ]; then
+    info "下载 whisper 模型 $WHISPER_MODEL（hf-mirror，${WHISPER_MODEL}≈74MB，大模型更久）…"
+    if HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 "$venv/bin/python" -c "from faster_whisper import WhisperModel; WhisperModel('$WHISPER_MODEL', device='cpu', compute_type='int8', download_root='$models_dir')" >/dev/null 2>&1; then
+      ok "whisper 模型 $WHISPER_MODEL 就绪"
+    else
+      warn "模型下载失败，可稍后手动运行: HF_ENDPOINT=https://hf-mirror.com $venv/bin/python -c \"from faster_whisper import WhisperModel; WhisperModel('$WHISPER_MODEL', device='cpu', compute_type='int8', download_root='$models_dir')\""
+    fi
+  else
+    ok "whisper 模型目录已有模型（如需切换档位: /voice model <tiny|base|small|medium|large-v3>）"
+  fi
+
+  # 3. GPU 推理（linux；CUDA 库可选，约 500MB）
+  if [ "$is_termux" = "0" ] && [ "$NO_GPU" = "0" ] && command -v nvidia-smi >/dev/null 2>&1; then
+    if "$venv/bin/python" -c 'import ctranslate2; exit(0 if ctranslate2.get_cuda_device_count() > 0 else 1)' >/dev/null 2>&1; then
+      ok "检测到 GPU：whisper 将自动 cuda/float16 推理（可 /voice model small 提升准确率）"
+    else
+      warn "检测到 NVIDIA GPU，但 CUDA 库未安装（whisper 仍可用 CPU 推理）"
+      info "可选安装（约 500MB，--no-gpu 跳过）: $venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12"
+    fi
+  fi
+
+  # 4. TTS 平台依赖
+  if [ "$is_termux" = "1" ]; then
+    info "Termux 录音依赖请手动: pkg install termux-api（rebuild 无法代跑 Android 侧）"
+  else
+    if ! command -v espeak-ng >/dev/null 2>&1 || ! command -v paplay >/dev/null 2>&1; then
+      info "安装 TTS 依赖（espeak-ng + pulseaudio-utils）…"
+      apt-get install -y espeak-ng pulseaudio-utils >/dev/null 2>&1 \
+        && ok "TTS 依赖就绪" || warn "TTS 依赖安装失败（不影响 whisper 转写）"
+    fi
+    if [ "$NO_PIPER" = "0" ] && ! command -v piper >/dev/null 2>&1; then
+      warn "piper 神经 TTS 未安装（当前用 espeak-ng 拼音合成）"
+      info "可选安装（63MB 模型，--no-piper 跳过）: 见 ~/.pi/agent/extensions/pi-voice/README.md"
+    fi
+  fi
+
+  # 5. 启动服务
   bash "$wsv" start >/dev/null 2>&1 \
     && ok "whisper 服务已启动（$(bash "$wsv" status 2>/dev/null | head -1)）" \
     || warn "whisper 启动失败，可稍后运行: bash $wsv start"
@@ -607,7 +686,7 @@ phase2_binaries
 # 类型链接需要 pi 已安装；wrapper/whisper 均为幂等
 phase2_types
 phase2_wrapper
-phase2_whisper
+phase2_voice
 
 # TUI 核心补丁（幂等：已打补丁输出跳过；pi update 后必须重跑，否则
 # patch-footer-live-context 缺失导致 footer 无实时 token，patch-voice-enter
