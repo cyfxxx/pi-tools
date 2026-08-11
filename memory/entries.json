@@ -6014,7 +6014,9 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T10:12:45.677Z",
       "updatedAt": "2026-08-11T10:12:45.677Z",
-      "accessedAt": "2026-08-11T10:12:45.677Z"
+      "accessedAt": "2026-08-11T10:12:45.677Z",
+      "observedAt": "2026-08-11T10:12:45.677Z",
+      "deleted": false
     }
   ]
 }
