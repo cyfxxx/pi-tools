@@ -15,7 +15,7 @@ pi-memory 扩展自动检测环境（`PI_MEMORY_ENV` 环境变量可显式覆盖
 
 ## 记忆环境标签（P0 已实施）
 
-记忆条目带 `environments` 字段（`all`/`termux`/`wsl2`/`linux`/`macos`）：
+记忆条目带 `environments` 字段（`all`/`termux`/`wsl2`/`linux`/`macos`/`windows`）：
 
 - **注入过滤**：每轮注入只显示 `all` + 当前环境的条目——Termux 会话看不到 WSL2 专属经验，反之亦然
 - **检索过滤**：`memory_search`/`memory_recall` 默认只召回当前环境条目；`env` 参数可指定（`env: 'all'` 不过滤）；`/memory search --env=wsl2` 同理
