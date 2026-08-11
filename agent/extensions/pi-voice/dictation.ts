@@ -206,8 +206,9 @@ export function createDictation(
         if (expectGen !== gen) return
         if (!retried) {
           retried = true
-          // MediaRecorderService 释放慢：等 1s 再拉起，避免再次假成功
-          await new Promise((r) => setTimeout(r, 1000))
+          // MediaRecorderService 释放慢（实测需数秒）：等 3s 再拉起，避免重试
+          // 撞上未释放窗口再次假成功（此前 1s 太短，连续 3 次录音失败）
+          await new Promise((r) => setTimeout(r, 3000))
           if (expectGen !== gen || currentFile !== null || busy) return
           spawnRecorder(expectGen, true)
           return

@@ -264,8 +264,8 @@ describe('dictation 状态机', () => {
     const d = createDictation(cfg, deps, cbs)
     d.start()
     expect(d.isRecording()).toBe(true)
-    // 4s 启动验证 + 1s 释放等待 → 清理 + 重试（forceClean）
-    await new Promise((res) => setTimeout(res, 5500))
+    // 4s 启动验证 + 3s 释放等待 → 清理 + 重试（forceClean）
+    await new Promise((res) => setTimeout(res, 7500))
     expect(deps.startRecording).toHaveBeenCalledTimes(2)
     expect(vi.mocked(deps.startRecording).mock.calls[1][2]).toEqual({ forceClean: true })
     expect(d.isRecording()).toBe(true)
