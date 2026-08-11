@@ -148,6 +148,8 @@ const REVIEW_HTML = join(
 	"@plannotator/pi-extension/review-editor.html",
 );
 
+const missingAll = [];
+
 const FIRST_NAMES = [
 	COMMANDS,
 	SETTINGS,
@@ -209,6 +211,13 @@ function apply(file, replacements) {
 		}
 		return changed;
 	}
+	if (missing.length > 0) {
+		missingAll.push({
+			file: file.replace(/.*node_modules\//, ""),
+			count: missing.length,
+			samples: missing.slice(0, 2).map((s) => s.slice(0, 80)),
+		});
+	}
 	if (changed > 0) {
 		backup(file);
 		writeFileSync(file, content, "utf-8");
@@ -217,22 +226,34 @@ function apply(file, replacements) {
 }
 
 /** 统计翻译覆盖率（仅统计 description/label 模板字面量） */
+/** 统计翻译覆盖率（仅统计 description/label 模板字面量） */
 function coverage(file) {
 	if (!existsSync(file))
-		return { total: 0, translated: 0, pct: "N/A", name: file };
+		return { total: 0, translated: 0, pct: "N/A", name: file, untranslated: [] };
 	const content = readFileSync(file, "utf-8");
-	const uiEn =
-		[...content.matchAll(/description:\s*`[^`]*[a-z][^`]*`/g)].length +
-		[...content.matchAll(/label:\s*`[^`]*[a-z][^`]*`/g)].length;
-	const uiZh =
-		[...content.matchAll(/description:\s*`[^`]*[\u4e00-\u9fff][^`]*`/g)]
-			.length +
-		[...content.matchAll(/label:\s*`[^`]*[\u4e00-\u9fff][^`]*`/g)].length;
-	const all = uiEn + uiZh;
+	const pick = (re) =>
+		[...content.matchAll(re)].map((m) =>
+			m[0].replace(/^(description|label):\s*`/, ""),
+		);
+	// 纯标识符拼接模板（如 `${m.provider}/${m.id}`）：去插值后无字母无中文 → 不算 UI 文本
+	const isIdent = (s) =>
+		s.includes("${") &&
+		!/[a-z\u4e00-\u9fff]/.test(s.replace(/\$\{[^}]*\}/g, ""));
+	// 先收集全部模板，再按内容分类，避免中英混合模板（如 `启用/禁用 Ctrl+P 循环的模型`）被 en/zh 双算
+	const all = [
+		...pick(/description:\s*`[^`]*`/g),
+		...pick(/label:\s*`[^`]*`/g),
+	];
+	const zh = all.filter((s) => /[\u4e00-\u9fff]/.test(s));
+	const en = all.filter(
+		(s) => !/[\u4e00-\u9fff]/.test(s) && /[a-z]/.test(s) && !isIdent(s),
+	);
+	const total = en.length + zh.length;
 	return {
-		total: all,
-		translated: uiZh,
-		pct: all > 0 ? `${Math.round((uiZh / all) * 100)}%` : "-",
+		total,
+		translated: zh.length,
+		untranslated: en,
+		pct: total > 0 ? `${Math.round((zh.length / total) * 100)}%` : "-",
 		name: file.split("/").pop(),
 	};
 }
@@ -602,7 +623,6 @@ sections.push(() => {
 		['"Update Available"', '"有可用更新"'],
 		['"Package Updates Available"', '"有可用的包更新"'],
 		['"Queued message for after compaction"', '"已排队等待压缩后发送的消息"'],
-		['"No models available"', '"没有可用模型"'],
 		['"Model selection saved to settings"', '"模型选择已保存到设置"'],
 		['"No messages to fork from"', '"没有可分支的消息"'],
 		['"Nothing to clone yet"', '"暂无内容可克隆"'],
@@ -721,6 +741,18 @@ sections.push(() => {
 		['message: "Enter API key"', 'message: "输入 API 密钥"'],
 	]);
 	return `provider-composer 登录提示 (${n} 项)`;
+});
+
+// ---- [3.3] model-resolver 消息（"No models available" 自 interactive-mode 移位至此） ----
+sections.push(() => {
+	const MODEL_RESOLVER = `${PI}/dist/core/model-resolver.js`;
+	const n = apply(MODEL_RESOLVER, [
+		[
+			'"No models available. Check your installation or add models to models.json."',
+			'"没有可用模型。请检查安装或向 models.json 添加模型。"',
+		],
+	]);
+	return `model-resolver 消息 (${n} 项)`;
 });
 
 // ---- [4] 资源配置选择器 ----
@@ -1893,8 +1925,10 @@ console.log(
 
 console.log("开始翻译...\n");
 
+let skipped = 0;
 for (let i = 0; i < sections.length; i++) {
 	const label = sections[i]();
+	if (label.includes("跳过")) skipped++;
 	console.log(
 		`  [${String(i + 1).padStart(2, " ")}/${String(sections.length).padStart(2, " ")}] ${label}`,
 	);
@@ -1911,15 +1945,36 @@ if (DRY_RUN) {
 
 console.log("\n翻译完成！");
 
+// ---- 未匹配条目警告（原文与当前 pi 版本不匹配） ----
+if (missingAll.length > 0) {
+	console.log("\n⚠ 未匹配条目（原文在当前版本中不存在，可能已删除/移位/已被翻译，见 SKILL.md 排查流程）：");
+	for (const m of missingAll) {
+		console.log(`  · ${m.file}: ${m.count} 条，例如: ${m.samples.join(" | ")}`);
+	}
+}
+
 // ---- 翻译覆盖率统计 ----
 console.log("\n── 翻译覆盖率 ──");
+const untranslatedAll = [];
 for (const f of FIRST_NAMES) {
 	const c = coverage(f);
 	if (c.total > 0 || c.translated > 0) {
 		console.log(
 			`  ${c.name.padEnd(32, " ")} ${String(c.translated).padStart(3, " ")}/${String(c.total).padStart(3, " ")}  (${c.pct})`,
 		);
+		if (c.untranslated.length > 0)
+			untranslatedAll.push({ name: c.name, items: c.untranslated });
 	}
+}
+if (untranslatedAll.length > 0) {
+	console.log("\n仍为英文的条目（pi update 后新增，需补充翻译）：");
+	for (const { name, items } of untranslatedAll)
+		for (const item of items.slice(0, 3))
+			console.log(`  · ${name}: ${item.slice(0, 100)}`);
+}
+
+if (skipped > 0) {
+	console.log(`\n（${skipped} 节跳过：对应扩展未安装，安装后重跑脚本即可自动翻译）`);
 }
 
 console.log("\n重启 pi 后生效。如需恢复，从 .bak. 文件还原。");

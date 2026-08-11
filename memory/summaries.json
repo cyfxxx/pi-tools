@@ -2,29 +2,6 @@
   "version": 1,
   "summaries": [
     {
-      "id": "c508fc50-d1c9-4dd7-88e0-bc4b9e8cd659",
-      "sessionId": "019fd25d-85d9-73f1-bcaa-607db0301ed1",
-      "ts": "2026-08-05T15:04:03.723Z",
-      "title": "pi-tmux 扩展全功能测试通过",
-      "decisions": [
-        "系统未装 tmux，按 pi-tmux 错误提示用 apt 安装 tmux 3.4",
-        "确认长任务跑完后需显式 tmux_stop 释放资源，不自动退出"
-      ],
-      "facts": [
-        "pi-tmux 扩展 8 项功能（run/status/read/wait/send/Ctrl+C/until_exit/stop）全部测试通过，无需修复",
-        "tmux 3.4 已通过 apt 安装到 Ubuntu 24.04，无需额外配置",
-        "日志落盘 ~/.pi/logs/tmux/<会话名>.log，与部署约定一致"
-      ],
-      "prefs": [
-        "用户用极简指令触发测试任务，期望助手自主完成全流程后一次性汇报结果"
-      ],
-      "lessons": [
-        "命令执行完后 tmux 会话不会自动退出（回到 shell 提示符），until_exit 等待会超时，这是 tmux 正常行为",
-        "tmux_send 交互输入与 Ctrl+C 中断均正常，日志出现 ^C 即中断生效"
-      ],
-      "fullText": "会话测试了 pi-tmux 扩展全套功能。系统原未安装 tmux，按扩展错误提示用 apt 安装 tmux 3.4（Ubuntu 24.04）后开始测试。逐项验证了 tmux_run（后台启动+日志落盘 ~/.pi/logs/tmux/）、tmux_status、tmux_read（尾部日志实时可见）、tmux_wait（pattern 关键字命中）、tmux_send（交互输入 Alice/42 被脚本接收回显）、tmux_send Ctrl+C（中断 60s 循环，日志出现 ^C）、tmux_wait until_exit（命令结束后会话保持存活导致超时，符合 tmux 默认行为）、tmux_stop（清理 3 个会话并删日志无残留）。结论：8 项功能全部正常，无需修复。经验：tmux 命令跑完不自动退出会话，长任务需显式 tmux_stop 释放资源；pi 退出时自动清理会话。用户以极简指令触发，期望自主完成测试后一次性汇报。"
-    },
-    {
       "id": "8ac01aee-0017-4fbc-ac03-aea2525bf1f7",
       "sessionId": "019fd273-5c06-7e0b-b8e7-6a08e2e641ed",
       "ts": "2026-08-05T15:25:30.420Z",
@@ -1135,6 +1112,19 @@
         "转码失败可能是 moov 延迟写入，重试可兜底"
       ],
       "fullText": "本轮会话（约 2026-08-10）围绕 pi-voice 录音稳定性与 plan-mode 缺陷修复。pi-voice 系列：pkill 不释放 Termux:API 服务侧 MediaRecorder 占用，清理序列改 -q→pkill→等 1.5s（2bd55f2）；-l 超时/进程被杀不写 moov atom 致转码失败，进程退出后补发 -q（a734f5a）；转码失败重试 3 次、清理等待加长（49fe11a）；服务连续录音不稳定提前退出，实际时长<上限 50% 提示异常（e1d4320）；超时转写进输入框靠 withStatus 刷新 lastCtx（59e71d1）；bench 路径补 -q 收尾（ffabd2a）。whisper 中文默认繁体，whisper-server.py 加 OpenCC t2s 转简体（898f040）。plan-mode 白名单写死 9 个内置工具不含扩展工具，退出计划模式后 admin_restart 等本会话内失效，修复 restoreAllTools 恢复全量（5f825b5），重启验证生效。watchdog maxIdleMinutes 30→120 防误重启。admin_restart 修复后不再需 wrapper 手动重启流程。"
+    },
+    {
+      "id": "1b0df496-6c9f-42ff-b69b-c1139d6c0da5",
+      "sessionId": "019fefc4-8cc7-7b87-8516-3cac08324055",
+      "ts": "2026-08-11T08:04:48.523Z",
+      "title": "极简回复确认会话",
+      "decisions": [],
+      "facts": [],
+      "prefs": [
+        "用户要求助手只回复 OK 两字，进一步印证其偏好极简、不啰嗦的回复风格"
+      ],
+      "lessons": [],
+      "fullText": "本会话内容极简：用户要求助手回复 OK 两字即可，助手按要求仅回复 OK。会话无实质任务内容，无代码变更、无决策、无踩坑。唯一值得注意的信号是用户再次表现出对极简回复的偏好（与既有记忆'用户偏好极简指令'一致），无需新增记忆条目。"
     }
   ]
 }
