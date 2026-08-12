@@ -28,18 +28,25 @@ fi
 
 echo "[3/8] whisper 转写服务"
 TMPWAV=$(mktemp --suffix=.wav)
-# 触发条件：piper TTS（生成测试音频）+ whisper 服务（转写）都就绪；
+# 触发条件：TTS 合成器（piper 优先更准，espeak-ng 兜底）+ whisper 服务（转写）都就绪；
 # 未配置语音（无 agent/pi-voice.json）时 rebuild 不会装 whisper venv，此处跳过属预期
+TTS_BIN=""
 if command -v piper >/dev/null 2>&1 && [ -f /opt/pi-tts/models/zh_CN-huayan-medium.onnx ]; then
   echo "你好，这是语音转写功能测试。" | piper -m /opt/pi-tts/models/zh_CN-huayan-medium.onnx -f "$TMPWAV" >/dev/null 2>&1
+  TTS_BIN="piper"
+elif command -v espeak-ng >/dev/null 2>&1; then
+  espeak-ng -v cmn "你好，这是语音转写功能测试。" -w "$TMPWAV" >/dev/null 2>&1
+  TTS_BIN="espeak-ng"
+else
+  skip "语音链路未配置（无 TTS 合成器；需要时 rebuild --voice）"
+fi
+if [ -n "$TTS_BIN" ]; then
   RESP=$(curl -s --max-time 90 --data-binary @"$TMPWAV" "http://127.0.0.1:18766/transcribe?lang=zh" 2>/dev/null)
   if echo "$RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); t=d.get('text',''); sys.exit(0 if len(t)>0 else 1)" 2>/dev/null; then
-    ok "whisper 转写成功"
+    ok "whisper 转写成功（$TTS_BIN 合成）"
   else
     fail "whisper 转写失败（服务: $PI_HOME/scripts/pi-whisper.sh start）"
   fi
-else
-  skip "语音链路未配置（piper/whisper 未装；需要时 rebuild --voice）"
 fi
 rm -f "$TMPWAV"
 

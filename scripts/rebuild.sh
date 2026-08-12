@@ -495,8 +495,21 @@ phase2_binaries() {
 }
 
 # ---- Phase 2-C2: CloakBrowser Chromium（pi-browser 扩展依赖） ----
-# 直连失败时：① GH_PROXY 镜像 GitHub Releases（CLOAKBROWSER_DOWNLOAD_URL 支持自定义源，
-# 校验和也从镜像拉取，失败则跳过校验——与官方逻辑一致）；② 仍失败给出手动 TLS 绕过命令。
+# 可靠性判定：info 的 `Installed:` 字段（文件缺失时 info 仍打印 Binary 路径，grep 路径会假阳性）；
+# ldd 仅对存在的文件执行（不存在时 ldd 报 "No such file" 而非 "not found"，grep -c 得 0 会误判齐备）。
+# 返回：0=就绪 / 1=未安装 / 2=已装但缺共享库；CHROME_BIN_PATH 输出二进制路径。
+CHROME_BIN_PATH=""
+chrome_ready() {
+  local ext="$1" installed="" bin="" miss
+  CHROME_BIN_PATH=""
+  installed=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -E '^Installed:' | awk '{print $2}' | tr -d '\r')
+  [ "$installed" = "true" ] || return 1
+  bin=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1)
+  [ -n "$bin" ] && [ -f "$bin" ] || return 1
+  CHROME_BIN_PATH="$bin"
+  miss=$(ldd "$bin" 2>/dev/null | grep -c "not found")
+  [ "$miss" = "0" ] && return 0 || return 2
+}
 phase2_browser() {
   title "Phase 2-C2" "CloakBrowser Chromium"
 
@@ -507,34 +520,38 @@ phase2_browser() {
   fi
 
   # 已装且共享库齐备 → 幂等跳过
-  local chrome=""
-  chrome=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1)
-  if [ -n "$chrome" ] && [ -f "$chrome" ]; then
-    local miss=$(ldd "$chrome" 2>/dev/null | grep -c "not found")
-    if [ "$miss" = "0" ]; then
-      ok "Chromium 已就绪（$chrome）"
-      return 0
-    fi
-    warn "Chromium 缺 $miss 个共享库（rebuild 已补装运行库仍缺，手动: apt-get install -y libnss3 libnspr4 libasound2t64 libatk1.0-0t64 libcups2t64 libgbm1）"
+  chrome_ready "$ext"
+  local rc=$?
+  if [ "$rc" = "0" ]; then
+    ok "Chromium 已就绪（$CHROME_BIN_PATH）"
+    return 0
+  fi
+  if [ "$rc" = "2" ]; then
+    warn "Chromium 已装但缺共享库（手动: apt-get install -y libnss3 libnspr4 libasound2t64 libatk1.0-0t64 libcups2t64 libgbm1）"
     return 0
   fi
 
+  # 安装：直连 → 直连+绕 TLS → GH_PROXY 镜像兜底（实测直连绕 TLS 1.8MB/s，ghproxy 仅 0.49MB/s）
   info "安装 Chromium（cloakbrowser install，约 200MB）..."
-  if (cd "$ext" && timeout 600 npx cloakbrowser install >/dev/null 2>&1); then
+  if (cd "$ext" && timeout 600 npx cloakbrowser install >/dev/null 2>&1) && chrome_ready "$ext"; then
     ok "Chromium 安装完成"
     return 0
   fi
-
+  # 沙箱/代理拦截证书链（UNABLE_TO_VERIFY_LEAF_SIGNATURE）时绕过 TLS 校验，仅限不可信网络环境
+  if (cd "$ext" && NODE_TLS_REJECT_UNAUTHORIZED=0 timeout 600 npx cloakbrowser install >/dev/null 2>&1) && chrome_ready "$ext"; then
+    ok "Chromium 安装完成（TLS 绕过）"
+    return 0
+  fi
   if [ -n "${GH_PROXY:-}" ]; then
     info "直连失败，改用 GitHub 镜像重试（GH_PROXY）..."
-    if (cd "$ext" && CLOAKBROWSER_DOWNLOAD_URL="${GH_PROXY}https://github.com/CloakHQ/cloakbrowser/releases/download" timeout 600 npx cloakbrowser install >/dev/null 2>&1); then
+    if (cd "$ext" && CLOAKBROWSER_DOWNLOAD_URL="${GH_PROXY}https://github.com/CloakHQ/cloakbrowser/releases/download" timeout 600 npx cloakbrowser install >/dev/null 2>&1) && chrome_ready "$ext"; then
       ok "Chromium 安装完成（镜像源）"
       return 0
     fi
   fi
 
   warn "Chromium 安装失败——浏览器功能不可用"
-  info "不可信网络可手动绕过 TLS 校验: cd $ext && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install"
+  info "手动安装（不可信网络）: cd $ext && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install"
 }
 
 # ---- Phase 2-D: 扩展类型链接（tsconfig paths 同步到实际 pi 安装根） ----
@@ -591,6 +608,35 @@ phase2_wrapper() {
   fi
 }
 
+# ---- Phase 2-F2: tmux 配置同步（仓库 tmux/tmux.conf → ~/.tmux.conf） ----
+# git 同步边界只覆盖 ~/.pi/，~/.tmux.conf 在主目录需手动安装（README「git 模式边界」表）。
+# 本阶段自动补上：diff 幂等 → cp 同步 → server 运行中时 source-file 热加载（不 kill-server，
+# 避免杀掉用户 tmux 会话；extended-keys/状态栏立即生效，status-loop flock 幂等重复 source 安全）。
+phase2_tmux() {
+  title "Phase 2-F2" "tmux 配置同步"
+  local src="$PI_HOME/tmux/tmux.conf"
+  local dst="$HOME/.tmux.conf"
+  if [ ! -f "$src" ]; then
+    warn "仓库 tmux/tmux.conf 缺失，跳过"
+    return 0
+  fi
+  if [ -f "$dst" ] && diff -q "$src" "$dst" >/dev/null 2>&1; then
+    ok "~/.tmux.conf 与仓库一致"
+    return 0
+  fi
+  cp "$src" "$dst" && ok "~/.tmux.conf 已同步（仓库版本）" || { warn "cp 失败"; return 1; }
+  # 热加载：仅当 tmux server 在运行时 source-file（list-sessions 无 server 不会拉起新 server）
+  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
+    if tmux source-file "$dst" >/dev/null 2>&1; then
+      ok "tmux 配置已热加载（source-file，server 未重启，会话保留）"
+    else
+      warn "tmux source-file 失败（配置语法错误？手动: tmux source-file ~/.tmux.conf）"
+    fi
+  else
+    info "tmux server 未运行，配置将在下次启动时自动读取"
+  fi
+}
+
 # ---- Phase 2-F: 语音服务（pi-voice 后端，条件触发） ----
 # 触发条件：agent/pi-voice.json 存在（本机配置过语音）或 --voice 强制；--no-voice 强制跳过。
 # 子项按平台/能力分支：termux 提示 termux-api；linux 装 espeak-ng/paplay；
@@ -610,6 +656,19 @@ phase2_voice() {
   if [ "$want" = "0" ]; then
     info "未检测到语音配置（agent/pi-voice.json 不存在），跳过 whisper/语音依赖（需要时: rebuild --voice）"
     return 0
+  fi
+
+  # 无配置时生成最小配置（不写 whisperDevice：服务端 auto 探测——缺 CUDA 库自动 CPU，
+  # 后续安装 nvidia-cublas/cudnn 后重启服务自动 GPU，零配置切换）
+  if [ ! -f "$voice_cfg" ]; then
+    cat > "$voice_cfg" <<EOF
+{
+  "language": "zh",
+  "whisperModel": "$WHISPER_MODEL",
+  "whisperEndpoint": "http://127.0.0.1:18766"
+}
+EOF
+    ok "已生成最小 pi-voice.json（whisperDevice 未写死，服务端 auto：缺 CUDA 库→CPU，装库重启后自动 GPU）"
   fi
 
   # 平台探测（termux / wsl / 其他 linux）
@@ -764,20 +823,21 @@ verify() {
   if [ -f "$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json" ]; then
     CB_VER=$(node -e "console.log(require('$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json').version)" 2>/dev/null)
     ok "CloakBrowser v$CB_VER"
-    # 检测 Chromium 是否已安装且共享库齐备（缺库时启动 exit 127）
-    if command -v npx &>/dev/null \
-       && CHROME_BIN=$(cd "$PI_HOME/agent/extensions/pi-browser" 2>/dev/null && npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1) \
-       && [ -n "$CHROME_BIN" ]; then
-      local miss=$(ldd "$CHROME_BIN" 2>/dev/null | grep -c "not found")
-      if [ "$miss" = "0" ]; then
-        ok "Chromium 已安装且共享库齐备（$CHROME_BIN）"
-      else
-        warn "Chromium 已安装但缺 $miss 个共享库（启动将失败）"
+    # 检测 Chromium 是否已安装且共享库齐备（chrome_ready：Installed 字段 + 文件存在 + ldd，无假阳性）
+    if command -v npx &>/dev/null; then
+      chrome_ready "$PI_HOME/agent/extensions/pi-browser"
+      local crc=$?
+      if [ "$crc" = "0" ]; then
+        ok "Chromium 已安装且共享库齐备（$CHROME_BIN_PATH）"
+      elif [ "$crc" = "2" ]; then
+        warn "Chromium 已安装但缺共享库（启动将失败）"
         info "修复: apt-get install -y libnss3 libnspr4 libasound2t64 libatk1.0-0t64 libcups2t64 libgbm1（旧发行版去掉 t64 后缀）"
+      else
+        warn "Chromium 未安装，浏览器功能不可用"
+        info "运行: cd $PI_HOME/agent/extensions/pi-browser && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install 安装"
       fi
     else
-      warn "Chromium 未安装，浏览器功能不可用"
-      info "运行: cd $PI_HOME/agent/extensions/pi-browser && npx cloakbrowser install 安装"
+      warn "npx 不可用，无法检测 Chromium"
     fi
   else
     warn "CloakBrowser npm 包未安装，浏览器功能不可用"
@@ -907,6 +967,7 @@ phase2_browser
 # 类型链接需要 pi 已安装；wrapper/whisper 均为幂等
 phase2_types
 phase2_wrapper
+phase2_tmux
 phase2_voice
 
 # TUI 核心补丁（幂等：已打补丁输出跳过；pi update 后必须重跑，否则
