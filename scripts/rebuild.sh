@@ -637,6 +637,20 @@ phase2_tmux() {
   fi
 }
 
+# ---- Phase 2-F3: pi-link 互连公钥安装（keys/authorized_keys → 本机 authorized_keys） ----
+# 多设备免密互连：仓库 keys/authorized_keys 收集所有设备公钥（git 同步），
+# 每台设备重建时自动安装；pi-link-keys.sh install 幂等（Termux 双位置）。
+phase2_link_keys() {
+  title "Phase 2-F3" "pi-link 互连公钥安装"
+  if [ ! -f "$PI_HOME/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/keys/authorized_keys" ]; then
+    warn "pi-link-keys.sh 或 keys/authorized_keys 缺失，跳过"
+    return 0
+  fi
+  bash "$PI_HOME/scripts/pi-link-keys.sh" install >/dev/null 2>&1 \
+    && ok "互连公钥已安装（仓库 keys/authorized_keys → 本机 authorized_keys）" \
+    || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/scripts/pi-link-keys.sh install）"
+}
+
 # ---- Phase 2-F: 语音服务（pi-voice 后端，条件触发） ----
 # 触发条件：agent/pi-voice.json 存在（本机配置过语音）或 --voice 强制；--no-voice 强制跳过。
 # 子项按平台/能力分支：termux 提示 termux-api；linux 装 espeak-ng/paplay；
@@ -968,6 +982,7 @@ phase2_browser
 phase2_types
 phase2_wrapper
 phase2_tmux
+phase2_link_keys
 phase2_voice
 
 # TUI 核心补丁（幂等：已打补丁输出跳过；pi update 后必须重跑，否则

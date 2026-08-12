@@ -64,7 +64,7 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 ## 目标设备准备（一次性）
 
 1. 安装并启动 sshd（Termux: `pkg install openssh` + `sshd`；其他系统自备）
-2. 把设备 A 的公钥加入目标设备 `authorized_keys`
+2. **公钥授权（推荐：仓库合集）**：所有设备公钥集中存放在仓库 `keys/authorized_keys`（git 同步），每台设备跑一次 `bash scripts/pi-link-keys.sh install` 即获得全部设备授权（幂等；Termux 自动写 proot 与 Termux 双位置）；新设备加入 = 把其公钥追加进合集（`pi-link-keys.sh add <公钥>`）→ 提交推送 → 其他设备 pull + install。rebuild.sh Phase 2-F3 已自动集成
 3. 确认 `pi` 命令在 ssh 非交互 shell 的 PATH 中（Termux 建议在 `~/.bashrc`/`~/.profile` 导出，或用绝对路径）
 
 ### 加固（可选，推荐）
