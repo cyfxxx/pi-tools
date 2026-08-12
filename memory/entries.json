@@ -3800,10 +3800,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 15,
+      "recurrence": 17,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-12T02:00:50.263Z",
-      "accessedAt": "2026-08-12T02:00:50.263Z",
+      "updatedAt": "2026-08-12T04:26:25.722Z",
+      "accessedAt": "2026-08-12T04:26:25.722Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -6907,7 +6907,8 @@
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "b7ee57e2-44c8-4540-8f3f-1bfd1dbffd6a",
@@ -6929,7 +6930,8 @@
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "23a7e860-0f47-4f07-b249-d1b8b6e755e7",
@@ -6952,7 +6954,8 @@
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "8e4689f9-4c69-4af1-9717-25f32ba2b09e",
@@ -6973,7 +6976,8 @@
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "3d36db32-f5e7-4839-b873-a4aace1c8d7f",
@@ -6995,7 +6999,8 @@
       "observedAt": "2026-08-12T04:22:22.547Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "15b034ab-e850-4f0f-97c4-5b18291a99b8",
@@ -7016,7 +7021,8 @@
       "observedAt": "2026-08-12T04:22:22.547Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "7d87b7f0-84cd-46c6-abf1-a378e49f0202",
@@ -7038,7 +7044,8 @@
       "observedAt": "2026-08-12T04:22:22.547Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     }
   ]
 }
