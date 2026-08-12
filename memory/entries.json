@@ -202,15 +202,17 @@
       "tags": [
         "用户偏好",
         "协作风格",
-        "交互方式"
+        "交互方式",
+        "user-preference",
+        "workflow"
       ],
-      "confidence": 0.9,
+      "confidence": 0.95,
       "source": "extract",
-      "recurrence": 23,
+      "recurrence": 24,
       "createdAt": "2026-08-02T08:40:02.562Z",
-      "updatedAt": "2026-08-03T13:32:38.669Z",
+      "updatedAt": "2026-08-12T09:42:37.848Z",
       "accessedAt": "2026-08-02T08:40:02.562Z",
-      "observedAt": "2026-08-03T13:32:38.669Z",
+      "observedAt": "2026-08-12T09:42:37.848Z",
       "deleted": false,
       "environments": [
         "termux"
@@ -1934,13 +1936,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-09T14:52:13.231Z",
-      "updatedAt": "2026-08-09T14:52:13.231Z",
+      "updatedAt": "2026-08-12T09:42:38.726Z",
       "accessedAt": "2026-08-09T14:52:13.231Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "31e3b0af-c7e8-4452-b53d-fa0a902a24a5"
     },
     {
       "id": "84e899e0-9af0-4064-85a2-273474c7b92f",
@@ -2971,13 +2974,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T07:05:14.776Z",
-      "updatedAt": "2026-08-10T07:05:14.776Z",
+      "updatedAt": "2026-08-12T09:42:38.895Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "8376fccb-a9f4-4e3e-a022-21b5a949fcc5"
     },
     {
       "id": "1bb0cbd7-5844-4637-9e61-62fcf012e5a7",
@@ -3800,10 +3804,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 23,
+      "recurrence": 19,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-12T05:23:28.335Z",
-      "accessedAt": "2026-08-12T05:23:28.335Z",
+      "updatedAt": "2026-08-12T04:32:10.111Z",
+      "accessedAt": "2026-08-12T04:32:10.111Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -4923,15 +4927,18 @@
         "git",
         "github",
         "凭证",
-        "推送"
+        "推送",
+        "credential",
+        "termux",
+        "environment"
       ],
-      "confidence": 0.9,
+      "confidence": 0.95,
       "source": "extract",
-      "recurrence": 1,
+      "recurrence": 2,
       "createdAt": "2026-08-10T23:19:51.166Z",
-      "updatedAt": "2026-08-10T23:19:51.166Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
       "accessedAt": "2026-08-10T23:19:51.166Z",
-      "observedAt": "2026-08-10T23:19:51.166Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
       "deleted": false,
       "environments": [
         "termux"
@@ -5799,13 +5806,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T04:37:04.510Z",
-      "updatedAt": "2026-08-11T04:37:04.510Z",
+      "updatedAt": "2026-08-12T04:30:08.249Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "a0150a25-a998-4a0e-91c5-b66f37c39b90"
     },
     {
       "id": "245f2693-723d-4f32-86d1-50555d2c38c8",
@@ -7048,48 +7056,321 @@
       "deleted": false
     },
     {
-      "id": "8e20e34a-920d-45c2-b984-303a7f17e57b",
-      "category": "preference",
-      "title": "用户偏好：极简确认式回复",
-      "content": "用户在 pi 环境重建完成等简单确认场景，曾要求助手'只回复两个字: 重建OK'，表明此类场景下用户偏好极短回复而非详细汇报。后续遇到类似确认类请求时，可默认采用极简回复风格。",
+      "id": "a0150a25-a998-4a0e-91c5-b66f37c39b90",
+      "category": "fact",
+      "title": "Termux:API MediaRecorder 连续录音不稳定",
+      "content": "Termux:API 的 MediaRecorder 服务在 Android 端连续录音时表现不稳定：第一次录音通常正常跑满设定上限，之后进程常提前退出（1.5-1.9 秒），偶发空输出 0 字节文件；手动 termux-microphone-record -q 清理后可恢复。此问题在 pi-voice 连续多次录音场景下复现。",
       "tags": [
-        "回复风格",
-        "偏好",
-        "简洁"
+        "pi-voice",
+        "termux",
+        "bug",
+        "media-recorder"
       ],
-      "confidence": 0.5,
+      "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T05:03:31.584Z",
-      "updatedAt": "2026-08-12T05:03:31.584Z",
-      "accessedAt": "2026-08-12T05:03:31.584Z",
-      "observedAt": "2026-08-12T05:03:31.584Z",
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "deleted": false
     },
     {
-      "id": "4292f0cf-6cc2-43f6-9d1d-3eb96178e390",
-      "category": "habit",
-      "title": "用户偏好极简确认回复",
-      "content": "用户多次发出'只回复两个字: XXOK'类指令（已观察到'重建OK'与'直启OK'两次，2026年），要求助手在启动/重建等确认类场景只回复指定短词，不做任何额外解释。后续遇到同类确认指令应严格按用户指定文本极简回复。",
+      "id": "cca24916-984c-47ea-80cb-46766742bc90",
+      "category": "procedure",
+      "title": "pi-voice 录音清理序列",
+      "content": "startRecording 的清理序列应为：先执行 termux-microphone-record -q（优雅停止服务侧录音并释放麦克风），再 pkill 杀 CLI 进程兜底，最后等待 1.5 秒让服务侧充分释放。仅 pkill 不释放服务侧 MediaRecorder 占用，会导致新实例报 \"Recording already in progress!\"。",
       "tags": [
-        "回复风格",
-        "确认指令",
-        "用户习惯"
+        "pi-voice",
+        "termux",
+        "cleanup",
+        "procedure"
       ],
-      "confidence": 0.8,
+      "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T05:03:44.913Z",
-      "updatedAt": "2026-08-12T05:03:44.913Z",
-      "accessedAt": "2026-08-12T05:03:44.913Z",
-      "observedAt": "2026-08-12T05:03:44.913Z",
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "deleted": false
+    },
+    {
+      "id": "415941d4-9c02-4c61-a8f2-fbdf9b924d62",
+      "category": "procedure",
+      "title": "pi-voice 超时/异常终止后补 -q 写 moov",
+      "content": "Termux:API 的 termux-microphone-record 在 -l 超时自动退出或进程被杀（SIGPIPE）时不写 moov atom，导致 m4a 文件损坏、ffmpeg 转码报 \"moov atom not found\"。修复方案：录音进程 exit 回调中，在 waitForFileStable 前补发一次 termux-microphone-record -q，强制服务收尾写 moov。正常 -q 停止路径重复无害。",
+      "tags": [
+        "pi-voice",
+        "termux",
+        "moov",
+        "ffmpeg",
+        "procedure"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
+      "environments": [
+        "termux"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "d46403d3-11dc-4972-b6bc-51c1403462ee",
+      "category": "fact",
+      "title": "plan-mode 退出后扩展工具失效缺陷",
+      "content": "plan-mode 扩展在退出计划模式（/plan exit 或执行模式完成）时，setActiveTools 被硬编码为 9 个内置工具（read/bash/edit/write/todo/web_search/fetch_url/subagent/plan_enter），导致所有扩展工具（admin_restart、memory_*、ctx_*、tmux_*、schedule_task 等）在本次会话内永久失效，需重启恢复。修复方案：替换为 restoreAllTools() 恢复全部注册工具。",
+      "tags": [
+        "plan-mode",
+        "tools",
+        "bug",
+        "extension"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
+      "environments": [
+        "termux"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "a8013dec-29a7-484a-8e6d-624d3b957bb9",
+      "category": "procedure",
+      "title": "pi-voice 超时自动转写交付到输入框",
+      "content": "pi-voice 的 onAutoComplete（超时/自动转写路径）原无 UI 上下文 ctx，导致转写结果只暂存提示而不进入输入框，且录音状态条残留。修复：在 input/message_end 事件缓存最近 ctx，超时转写成功时统一调用 setStatus(undefined) 清状态条，并通过 pasteToEditor 将文本注入输入框；无 ctx 时回退原暂存行为。",
+      "tags": [
+        "pi-voice",
+        "ui",
+        "input",
+        "pasteToEditor",
+        "procedure"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
+      "environments": [
+        "termux"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "13d9a160-0169-4193-a03d-3320d01209ab",
+      "category": "preference",
+      "title": "pi-autopilot maxIdleMinutes 默认 30 偏激进",
+      "content": "pi-autopilot 的 watchdog 看门狗默认 maxIdleMinutes=30（无键盘活动 30 分钟即判定挂死自动重启）。该设计面向无人值守自主运行，但对交互式使用过于激进，用户离开半小时即被重启。已改为 120 分钟（2 小时），配置写入 ~/.pi/agent/autopilot-config.json。",
+      "tags": [
+        "pi-autopilot",
+        "watchdog",
+        "config",
+        "preference"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
+      "environments": [
+        "termux"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "ab84534c-fef4-4e47-adb1-487cce3ce3be",
+      "category": "procedure",
+      "title": "proot 环境 pi 重启流程",
+      "content": "proot 环境无 init/systemd 自动拉起 pi 进程，重启不能简单 kill。正确流程：先向 ~/.pi/agent/.pi-admin-state.json 写入 { action: \"restart\" }，再杀掉 pi 子进程（非 wrapper 父进程），wrapper 循环检测到子进程退出后读取 state，执行 --continue 恢复最近会话。顺序错误会导致 wrapper 读到 action=none 后直接退出、pi 不再回来。",
+      "tags": [
+        "pi",
+        "restart",
+        "wrapper",
+        "proot",
+        "procedure"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "accessedAt": "2026-08-12T04:30:08.118Z",
+      "observedAt": "2026-08-12T04:30:08.118Z",
+      "environments": [
+        "termux"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "60d49aca-1e3f-4278-afb0-eb772280654e",
+      "category": "procedure",
+      "title": "pi-memory多环境标签体系规则",
+      "content": "pi-memory环境标签体系：all（通用）/ termux / wsl2 / linux / macos / windows。detectEnvironment按平台探测。isEnvVisible过滤：buildInjectionBlock只注入all+当前环境条目。memory_store默认打当前环境标签，storeEntry更新时environments取并集。memory_search/memory_recall按当前环境过滤（缺省）。",
+      "tags": [
+        "pi-memory",
+        "environment",
+        "multi-device"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.848Z",
+      "updatedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "observedAt": "2026-08-12T09:42:37.848Z",
+      "environments": [
+        "termux"
+      ]
+    },
+    {
+      "id": "dddb7964-eadb-43ce-906c-df57f463f695",
+      "category": "procedure",
+      "title": "运行时数据隔离约定",
+      "content": "多环境同步约定：notes.json与summaries.json（会话级、环境特定）移出git避免多机互盖；entries.json（长期记忆，已带环境标签）保留入库共享。entries.json冲突时以最新push为准，执行git checkout --theirs，本地丢弃的记忆由pi-memory自动重新提取。",
+      "tags": [
+        "pi-memory",
+        "git",
+        "multi-device",
+        "data-isolation"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.848Z",
+      "updatedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "observedAt": "2026-08-12T09:42:37.848Z",
+      "environments": [
+        "termux"
+      ]
+    },
+    {
+      "id": "9588e5c8-c660-469b-9032-083be991f358",
+      "category": "reference",
+      "title": "本地归档目录与轮转策略",
+      "content": "Termux环境本地归档默认输出到/storage/emulated/0/我的文件/pi-backup/。其他环境为~/pi-backups/。create默认保留5份归档，超出自动删除最旧。归档含全部git追踪文件、gitignored配置（settings.json/trust.json等）、memory运行时数据。不含auth.json（除非--with-auth）。",
+      "tags": [
+        "pi-backup",
+        "backup",
+        "termux",
+        "retention"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.848Z",
+      "updatedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "observedAt": "2026-08-12T09:42:37.848Z",
+      "environments": [
+        "termux"
+      ]
+    },
+    {
+      "id": "e4f27b1a-e8d3-40f7-98bd-fa5717f30018",
+      "category": "procedure",
+      "title": "review.sh审查排除清单",
+      "content": "pi-code-review的review.sh全量扫描需排除：node_modules、.git、logs、memory、searxng/venv、searxng/repo。未排除时searxng venv（5449文件）+repo（2096文件）会导致扫描超时（>600秒）；排除后实际代码约199文件，约38秒完成。",
+      "tags": [
+        "pi-code-review",
+        "review",
+        "performance",
+        "searxng"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.848Z",
+      "updatedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "observedAt": "2026-08-12T09:42:37.848Z",
+      "environments": [
+        "termux"
+      ]
+    },
+    {
+      "id": "31e3b0af-c7e8-4452-b53d-fa0a902a24a5",
+      "category": "fact",
+      "title": "pi-voice测试在Termux的硬编码路径坑",
+      "content": "pi-voice的core-linux.test.ts在Termux环境必然失败：测试硬编码stage路径为/tmp/pi-voice/tts-stage.wav，但Termux环境defaultTmpDir()因/storage/emulated/0存在而优先返回共享存储路径。修复：测试显式指定tmpDir参数，与环境解耦。",
+      "tags": [
+        "pi-voice",
+        "testing",
+        "termux",
+        "pitfall"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.849Z",
+      "updatedAt": "2026-08-12T09:42:37.849Z",
+      "accessedAt": "2026-08-12T09:42:37.849Z",
+      "observedAt": "2026-08-12T09:42:37.849Z",
+      "environments": [
+        "termux"
+      ]
+    },
+    {
+      "id": "1b51e074-1d40-4dc7-b241-0440bb7eedea",
+      "category": "procedure",
+      "title": "GitHub推送故障排查顺序",
+      "content": "GitHub推送失败时排查顺序：1）先用curl -H 'Authorization: token xxx' https://api.github.com验证token有效性，若返回Bad credentials则token已失效；2）token有效再排查网络，github.com直连污染时走v2ray 10808代理；3）推送成功后恢复无凭证remote URL。",
+      "tags": [
+        "git",
+        "github",
+        "troubleshooting",
+        "proxy"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.850Z",
+      "updatedAt": "2026-08-12T09:42:37.850Z",
+      "accessedAt": "2026-08-12T09:42:37.850Z",
+      "observedAt": "2026-08-12T09:42:37.850Z",
+      "environments": [
+        "termux"
+      ]
+    },
+    {
+      "id": "8376fccb-a9f4-4e3e-a022-21b5a949fcc5",
+      "category": "fact",
+      "title": "plan-mode状态条残留根因",
+      "content": "plan-mode状态条显示📋 c/total，任务全部完成后残留根因：最后任务通常由todo工具调用标记完成，这发生在消息事件之后，消息事件不会再触发executionMode=false。updateStatus原条件executionMode&&total>0不检查完成度（total含已完成任务）。修复：updateStatus自身防御，counts.completed>=total时直接清除。",
+      "tags": [
+        "plan-mode",
+        "ui-bug",
+        "todo",
+        "status-bar"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T09:42:37.850Z",
+      "updatedAt": "2026-08-12T09:42:37.850Z",
+      "accessedAt": "2026-08-12T09:42:37.850Z",
+      "observedAt": "2026-08-12T09:42:37.850Z",
+      "environments": [
+        "termux"
+      ]
     }
   ]
 }
