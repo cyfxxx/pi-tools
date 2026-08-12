@@ -136,5 +136,8 @@ export function parsePlanFile(content: string): { tasks: Task[]; nextId: number 
   // 格式校验：至少 1 条可解析任务，且可解析行过半（防手改污染）
   const nonEmpty = lines.filter((l) => l.trim() !== "").length;
   if (parsed === 0 || parsed < nonEmpty / 2) return null;
-  return { tasks, nextId: maxId + 1 };
+  // nextId 优先取注释（保留删除任务后的游标），否则 maxId+1 推断
+  const nextIdMatch = content.match(/<!-- nextId: (\d+) -->/);
+  const nextId = nextIdMatch ? parseInt(nextIdMatch[1], 10) : maxId + 1;
+  return { tasks, nextId };
 }
