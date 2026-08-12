@@ -116,14 +116,16 @@ pi-backup rebuild --yes          # 静默自动重建
 
 **rebuild.sh 特性：**
 
-- **幂等** — 已存在项跳过，只重建缺失内容
-- **国内镜像加速** — 自动检测并切换 apt/npm/pip/GitHub 镜像
+- **幂等** — 已存在项跳过，只重建缺失内容（npm 按 package.json 逐包探测缺失，非仅目录非空；venv 要求 python+pip 齐备）
+- **国内镜像加速** — 自动检测并切换 apt/npm/pip/GitHub 镜像（探测 baidu.com，成功后 GitHub 走 ghproxy.net 前缀）
 - **Node.js 自动升级** — 检测到 <20 时自动安装 22.x
-- **并发下载** — fd/rg、SearXNG 等多组件同时下载
+- **并行执行** — npm 依赖（≤3 并发滚动窗口）、venv、SearXNG repo 三路并行；SearXNG 依赖与 npm 重叠执行（npm 是耗时大头）
+- **浏览器自动安装** — pi-browser 扩展存在时自动安装 CloakBrowser Chromium；直连失败自动回退 GH_PROXY 镜像源（CLOAKBROWSER_DOWNLOAD_URL），仍失败给出手动 TLS 绕过命令；Chromium 运行库按 .so 缺失自动补装（libasound2t64 等，t64/经典包名双回退）
 - **自动补全配置** — 自动生成 `searxng/settings.yml`、`agent/npm/package.json`（如缺失）；SearXNG 就绪后自动把 `pi-web-search` 指向本地实例（127.0.0.1:8889）
 - **格式校验** — 重建后自动验证 YAML/JSON 配置文件（模型配置兼容 `models.json`/`models-store.json`）
 - **venv 实际探测** — 安装依赖前用 `python3 -m venv /tmp/.venv-probe` 验证 ensurepip 可用（dpkg 里的 `python3-venv` 可能是空壳），失败自动补装 `python3.12-venv`
 - **TUI 补丁自动定位 dist** — 补丁脚本不再依赖 `which pi`（wrapper 接管后反推会失败），rebuild.sh 自行推导 pi 安装目录并传入
+- **日志与退出码** — `--yes` 模式自动落盘 `logs/rebuild-<ts>.log`，各阶段标注耗时（+Ns）；verify 有异常时退出码非 0（自动化可判定失败，`--no-log` 关闭落盘）
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
 

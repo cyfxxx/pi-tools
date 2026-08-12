@@ -28,6 +28,8 @@ fi
 
 echo "[3/8] whisper 转写服务"
 TMPWAV=$(mktemp --suffix=.wav)
+# 触发条件：piper TTS（生成测试音频）+ whisper 服务（转写）都就绪；
+# 未配置语音（无 agent/pi-voice.json）时 rebuild 不会装 whisper venv，此处跳过属预期
 if command -v piper >/dev/null 2>&1 && [ -f /opt/pi-tts/models/zh_CN-huayan-medium.onnx ]; then
   echo "你好，这是语音转写功能测试。" | piper -m /opt/pi-tts/models/zh_CN-huayan-medium.onnx -f "$TMPWAV" >/dev/null 2>&1
   RESP=$(curl -s --max-time 90 --data-binary @"$TMPWAV" "http://127.0.0.1:18766/transcribe?lang=zh" 2>/dev/null)
@@ -37,7 +39,7 @@ if command -v piper >/dev/null 2>&1 && [ -f /opt/pi-tts/models/zh_CN-huayan-medi
     fail "whisper 转写失败（服务: $PI_HOME/scripts/pi-whisper.sh start）"
   fi
 else
-  skip "piper 未安装，转写测试跳过"
+  skip "语音链路未配置（piper/whisper 未装；需要时 rebuild --voice）"
 fi
 rm -f "$TMPWAV"
 

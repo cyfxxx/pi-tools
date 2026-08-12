@@ -3800,10 +3800,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 17,
+      "recurrence": 23,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-12T04:26:25.722Z",
-      "accessedAt": "2026-08-12T04:26:25.722Z",
+      "updatedAt": "2026-08-12T05:23:28.335Z",
+      "accessedAt": "2026-08-12T05:23:28.335Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -7042,6 +7042,50 @@
       "updatedAt": "2026-08-12T04:22:22.547Z",
       "accessedAt": "2026-08-12T04:22:22.547Z",
       "observedAt": "2026-08-12T04:22:22.547Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "8e20e34a-920d-45c2-b984-303a7f17e57b",
+      "category": "preference",
+      "title": "用户偏好：极简确认式回复",
+      "content": "用户在 pi 环境重建完成等简单确认场景，曾要求助手'只回复两个字: 重建OK'，表明此类场景下用户偏好极短回复而非详细汇报。后续遇到类似确认类请求时，可默认采用极简回复风格。",
+      "tags": [
+        "回复风格",
+        "偏好",
+        "简洁"
+      ],
+      "confidence": 0.5,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T05:03:31.584Z",
+      "updatedAt": "2026-08-12T05:03:31.584Z",
+      "accessedAt": "2026-08-12T05:03:31.584Z",
+      "observedAt": "2026-08-12T05:03:31.584Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "4292f0cf-6cc2-43f6-9d1d-3eb96178e390",
+      "category": "habit",
+      "title": "用户偏好极简确认回复",
+      "content": "用户多次发出'只回复两个字: XXOK'类指令（已观察到'重建OK'与'直启OK'两次，2026年），要求助手在启动/重建等确认类场景只回复指定短词，不做任何额外解释。后续遇到同类确认指令应严格按用户指定文本极简回复。",
+      "tags": [
+        "回复风格",
+        "确认指令",
+        "用户习惯"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T05:03:44.913Z",
+      "updatedAt": "2026-08-12T05:03:44.913Z",
+      "accessedAt": "2026-08-12T05:03:44.913Z",
+      "observedAt": "2026-08-12T05:03:44.913Z",
       "environments": [
         "wsl2"
       ],
