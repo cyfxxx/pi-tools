@@ -125,7 +125,7 @@ describe('retrieval: helpers', () => {
 })
 
 describe('retrieval: M1 多样性增强', () => {
-  it('mmrDiversify keeps top relevant entry and adds diverse ones', async () => {
+  it('mmrDiversify banding: 高分锚定条目保持原序（不被多样性挤掉）', async () => {
     const { mmrDiversify, buildDoc } = await import('../retrieval.ts')
     const mk = (id: string, title: string, content: string): MemoryEntry => ({ id, title, content, tags: [], category: 'fact', confidence: 1, source: 'manual', recurrence: 5, createdAt: new Date().toISOString(), updatedAt: '', accessedAt: '' })
     const a = mk('a', 'tmux 配置', 'tmux 键位配置 set -g prefix')
@@ -136,9 +136,28 @@ describe('retrieval: M1 多样性增强', () => {
       { e: a, score: 1.0 }, { e: b, score: 0.9 }, { e: c, score: 0.8 },
     ]
     const out = mmrDiversify(ranked, 2, 0.7, docs)
-    // a 最高分必选；第二选应优先主题不同的 c（b 与 a 高度相似）
+    // banding：b(0.9) 与 top(1.0) 差距 <15% → 锚定保持原序；
+    // 即使 b 与 a 主题高度相似也不再被 c 挤掉（缓存前缀稳定）
     expect(out[0].e.id).toBe('a')
-    expect(out[1].e.id).toBe('c')
+    expect(out[1].e.id).toBe('b')
+  })
+
+  it('mmrDiversify 尾部 band 内多样性仍生效', async () => {
+    const { mmrDiversify, buildDoc } = await import('../retrieval.ts')
+    const mk = (id: string, title: string, content: string): MemoryEntry => ({ id, title, content, tags: [], category: 'fact', confidence: 1, source: 'manual', recurrence: 5, createdAt: new Date().toISOString(), updatedAt: '', accessedAt: '' })
+    const a = mk('a', 'tmux 配置', 'tmux 键位配置 set -g prefix')
+    const b = mk('b', 'tmux 键位', 'tmux 键位配置 set -g prefix 改键 prefix')
+    const c = mk('c', 'whisper 服务', 'whisper 127.0.0.1:18766 faster-whisper')
+    const d = mk('d', 'whisper GPU', 'whisper 127.0.0.1:18766 faster-whisper cuda')
+    const e = mk('e', 'pip 镜像', 'pip 清华镜像源 index-url 安装')
+    const docs = new Map([['a', buildDoc(a)], ['b', buildDoc(b)], ['c', buildDoc(c)], ['d', buildDoc(d)], ['e', buildDoc(e)]])
+    const ranked = [
+      { e: a, score: 1.0 }, { e: b, score: 0.9 }, { e: c, score: 0.8 },
+      { e: d, score: 0.79 }, { e: e, score: 0.78 },
+    ]
+    const out = mmrDiversify(ranked, 4, 0.7, docs)
+    // 锚定 [a,b]；pool [c,d,e]：MMR 先取 c（0.8 分最高），再取主题不同的 e
+    expect(out.map(x => x.e.id)).toEqual(['a', 'b', 'c', 'e'])
   })
 
   it('roundRobinBySession interleaves sessions', async () => {

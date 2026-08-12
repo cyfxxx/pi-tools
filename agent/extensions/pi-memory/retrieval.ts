@@ -75,14 +75,29 @@ interface Scored { e: MemoryEntry; score: number }
  * 轻量 MMR（Maximal Marginal Relevance）多样性重排：
  * 每轮取 score 最高且与已选条目相似度最低的候选（lambda 高=重相关，低=重多样）。
  * 借鉴 ruflo SmartRetrieval 的 MMR 阶段，防注入块主题冗余。
+ *
+ * Banding（缓存友好限制）：与最高分差距 < bandRatio（默认 15%）的高分条目
+ * 直接按原序锚定（不参与多样性重排）——新条目的加入不会重排高分前缀，
+ * 注入块前部保持稳定（KV 缓存前缀命中）；多样性只作用于分数相近的尾部 band。
  */
-export function mmrDiversify(ranked: Scored[], limit: number, lambda = 0.7, docs: Map<string, DocTokens>): Scored[] {
+export function mmrDiversify(
+  ranked: Scored[],
+  limit: number,
+  lambda = 0.7,
+  docs: Map<string, DocTokens>,
+  bandRatio = 0.15,
+): Scored[] {
   if (ranked.length <= limit) return ranked
-  const chosen: Scored[] = []
-  const pool = [...ranked]
+  const topScore = ranked[0]?.score ?? 0
+  const anchorThreshold = topScore * (1 - bandRatio)
+  // 高分锚定：按原序直接取（缓存稳定）
+  const chosen: Scored[] = ranked.filter(r => r.score >= anchorThreshold)
+  if (chosen.length >= limit) return chosen.slice(0, limit)
+  // 尾部 band：仅对分数相近的候选做 MMR 多样性选择
+  const pool = ranked.filter(r => r.score < anchorThreshold)
   while (chosen.length < limit && pool.length > 0) {
     let bestIdx = 0
-    let bestScore = -Infinity
+    let bestVal = -Infinity
     for (let i = 0; i < pool.length; i++) {
       let maxSim = 0
       for (const c of chosen) {
@@ -90,14 +105,14 @@ export function mmrDiversify(ranked: Scored[], limit: number, lambda = 0.7, docs
         if (sim > maxSim) maxSim = sim
       }
       const v = lambda * pool[i].score - (1 - lambda) * maxSim
-      if (v > bestScore) {
-        bestScore = v
+      if (v > bestVal) {
+        bestVal = v
         bestIdx = i
       }
     }
     chosen.push(pool.splice(bestIdx, 1)[0])
   }
-  return chosen
+  return chosen.slice(0, limit)
 }
 
 /**
