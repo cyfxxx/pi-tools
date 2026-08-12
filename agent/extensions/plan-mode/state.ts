@@ -8,6 +8,8 @@ export interface Task {
   description?: string;
   activeForm?: string;
   status: TaskStatus;
+  /** P2: 已失败尝试清单（append-only，最多 3 条）——注入时附上避免重复失败 */
+  failures?: string[];
 }
 
 export interface TaskState {
@@ -32,7 +34,7 @@ export function isTransitionValid(from: TaskStatus, to: TaskStatus): boolean {
 
 export type Op =
   | { kind: "create"; taskId: number }
-  | { kind: "update"; id: number; fromStatus: TaskStatus; toStatus: TaskStatus }
+  | { kind: "update"; id: number; fromStatus: TaskStatus; toStatus: TaskStatus; failure?: string }
   | { kind: "delete"; id: number; subject: string }
   | { kind: "list"; statusFilter?: TaskStatus; includeDeleted: boolean }
   | { kind: "get"; task: Task }
@@ -55,6 +57,8 @@ export interface TaskMutationParams {
   description?: string;
   activeForm?: string;
   status?: TaskStatus;
+  /** P2: 追加失败记录（append-only，最多保留 3 条） */
+  failure?: string;
   id?: number;
   includeDeleted?: boolean;
 }
@@ -94,7 +98,8 @@ export function applyTaskMutation(
         params.subject !== undefined ||
         params.description !== undefined ||
         params.activeForm !== undefined ||
-        params.status !== undefined;
+        params.status !== undefined ||
+        params.failure !== undefined;
       if (!hasMutation) return errorResult(state, "update requires at least one mutable field");
 
       let newStatus = current.status;
@@ -109,6 +114,10 @@ export function applyTaskMutation(
       if (params.subject !== undefined) updated.subject = params.subject;
       if (params.description !== undefined) updated.description = params.description;
       if (params.activeForm !== undefined) updated.activeForm = params.activeForm;
+      if (params.failure) {
+        const failures = [...(current.failures ?? []), params.failure];
+        updated.failures = failures.slice(-3);
+      }
 
       const newTasks = [...state.tasks];
       newTasks[idx] = updated;
@@ -119,6 +128,7 @@ export function applyTaskMutation(
           id: updated.id,
           fromStatus: current.status,
           toStatus: newStatus,
+          failure: params.failure,
         },
       };
     }

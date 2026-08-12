@@ -82,13 +82,18 @@ export function formatPlanMessageLine(t: Task, maxSubject = 40): string {
 
 export function formatListLine(t: Task): string {
   const form = t.status === "in_progress" && t.activeForm ? ` (${t.activeForm})` : "";
-  return `[${STATUS_LABEL[t.status]}] #${t.id} ${t.subject}${form}`;
+  const failed = t.failures && t.failures.length > 0 ? ` [!${t.failures.length}次失败]` : "";
+  return `[${STATUS_LABEL[t.status]}] #${t.id} ${t.subject}${form}${failed}`;
 }
 
 export function formatGetLines(task: Task): string {
   const lines = [`#${task.id} [${STATUS_LABEL[task.status]}] ${task.subject}`];
   if (task.description) lines.push(`  描述: ${task.description}`);
   if (task.activeForm) lines.push(`  状态: ${task.activeForm}`);
+  if (task.failures && task.failures.length > 0) {
+    lines.push(`  已失败尝试:`);
+    for (const f of task.failures) lines.push(`    - ${f}`);
+  }
   return lines.join("\n");
 }
 

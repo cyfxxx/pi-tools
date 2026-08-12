@@ -44,6 +44,10 @@ export function registerTodoTool(pi: ExtensionAPI): void {
           type: "string",
           description: "进行中状态的标签（如 '正在编写测试'）",
         },
+        failure: {
+          type: "string",
+          description: "追加失败记录（append-only，最多保留 3 条；如 'pip SSL 超时，改用镜像'）",
+        },
         status: {
           type: "string",
           description: "目标状态（update 用）或过滤条件（list 用）",
@@ -88,7 +92,8 @@ function formatContent(op: ReturnType<typeof applyTaskMutation>["op"], state: Re
     }
     case "update": {
       const transition = op.fromStatus !== op.toStatus ? ` (${statusLabel(op.fromStatus)} → ${statusLabel(op.toStatus)})` : "";
-      return `已更新 #${op.id}${transition}`;
+      const withFailure = op.failure ? ` +失败记录` : "";
+      return `已更新 #${op.id}${transition}${withFailure}`;
     }
     case "delete":
       return `已删除 #${op.id}: ${op.subject}`;

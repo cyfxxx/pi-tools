@@ -1,4 +1,4 @@
-export type MemoryCategory = 'fact' | 'preference' | 'habit' | 'procedure' | 'reference'
+export type MemoryCategory = 'fact' | 'preference' | 'habit' | 'procedure' | 'reference' | 'solutions'
 export type MemorySource = 'manual' | 'extract' | 'digest'
 export type MemoryAction = 'ADD' | 'UPDATE' | 'DELETE' | 'NOOP'
 
