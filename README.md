@@ -172,6 +172,9 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 python3 -c "import json; json.load(open('agent/settings.json'))" && echo "settings.json OK"
 python3 -c "import yaml; yaml.safe_load(open('searxng/settings.yml'))" && echo "settings.yml OK"
 
+# 端到端冒烟（SearXNG/whisper 转写/浏览器/tmux/记忆/补丁状态）
+bash scripts/smoke-test.sh
+
 # 核心依赖
 ls agent/bin/fd agent/bin/rg && echo "binaries OK"
 ls agent/extensions/pi-browser/node_modules/ | wc -l

@@ -82,19 +82,31 @@ def get_model():
             from faster_whisper import WhisperModel
 
             device = _detect_device()
-            # GPU 用 float16（吞吐最优）；CPU 用 int8 量化（内存/速度均衡）
-            compute_type = "float16" if device == "cuda" else "int8"
-            print(f"[whisper] loading model {MODEL} device={device} compute={compute_type} ...", flush=True)
-            _model = WhisperModel(
-                MODEL,
-                device=device,
-                compute_type=compute_type,
-                download_root=MODELS_DIR,
-            )
+            try:
+                _model = _load_model(WhisperModel, device)
+            except Exception as e:  # noqa: BLE001
+                if device == "cuda":
+                    # CUDA 库缺失/加载失败（如 libcublas.so.12 not found，仅驱动可见）时降级 CPU，不阻塞服务
+                    print(f"[whisper] CUDA 加载失败 ({e})，降级 CPU 推理", flush=True)
+                    device = "cpu"
+                    _model = _load_model(WhisperModel, device)
+                else:
+                    raise
             print(f"[whisper] model {MODEL} ready on {device}", flush=True)
             return _model
         return _model
-        return _model
+
+
+def _load_model(WhisperModel, device):
+    """按设备加载模型；GPU 用 float16（吞吐最优），CPU 用 int8 量化（内存/速度均衡）。"""
+    compute_type = "float16" if device == "cuda" else "int8"
+    print(f"[whisper] loading model {MODEL} device={device} compute={compute_type} ...", flush=True)
+    return WhisperModel(
+        MODEL,
+        device=device,
+        compute_type=compute_type,
+        download_root=MODELS_DIR,
+    )
 
 
 class Handler(BaseHTTPRequestHandler):
