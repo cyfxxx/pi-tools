@@ -68,8 +68,7 @@ agent/models-store.json
 # pi-scheduler 运行时数据
 agent/scheduled-tasks.json
 
-# pi-autopilot 运行时数据
-agent/.pi-autopilot-config.json
+# pi-autopilot 运行时数据（config.json 入库共享，见 AGENTS.md 多环境约定）
 agent/.pi-autopilot-telemetry.json
 agent/.pi-autopilot-lastgood.json
 agent/.pi-autopilot-crash.json

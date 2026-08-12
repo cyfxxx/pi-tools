@@ -7577,6 +7577,29 @@
       "accessedAt": "2026-08-12T15:07:26.849Z",
       "environments": [
         "all"
+      ],
+      "observedAt": "2026-08-12T15:07:26.849Z",
+      "deleted": false
+    },
+    {
+      "id": "f570c98e-f0e7-4379-9758-ba7d1a6568fe",
+      "category": "fact",
+      "title": "pi-autopilot-config.json 已入库共享，独立设置时改本地不推送",
+      "content": "agent/.pi-autopilot-config.json 已从 .gitignore 排除区移出（2026-08-12），随 git 同步跨环境共享（内容为 enabled/maxIdleMinutes 等策略，无密钥）。telemetry/lastgood/crash 仍排除。约定见 AGENTS.md「多环境使用约定」：某环境需要独立配置值时本地直接改文件不推送即可，明确是共享变更才改后推送；改前先确认意图，避免 push 覆盖其他环境的值。",
+      "tags": [
+        "pi-autopilot",
+        "git",
+        "多环境",
+        "配置"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T15:14:10.530Z",
+      "updatedAt": "2026-08-12T15:14:10.530Z",
+      "accessedAt": "2026-08-12T15:14:10.530Z",
+      "environments": [
+        "all"
       ]
     }
   ]
