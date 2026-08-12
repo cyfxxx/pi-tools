@@ -48,6 +48,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **plan-mode**（修订语义/缓存特性/bash 白名单/subagent 开放/工具切换）：`extensions/plan-mode/README.md`
 - **pi-autopilot**（定时调度/看门狗/failover/预算）：`extensions/pi-autopilot/README.md`
 - **pi-tmux**（工具用法/环境缺失/access not allowed 故障）：`extensions/pi-tmux/README.md`
+- **pi-link**（多设备互联：ssh 通道 + 远程 pi RPC，设备清单 `pi-link.json`、安全边界、加固 forced command）：`extensions/pi-link/README.md`
 - **pi-memory / pi-web-search / pi-browser / subagent**：各自 README
 - **pi-voice**（Termux 语音：入口 Ctrl+Alt+R 与 `/voice`，录音/转写/TTS/听写，配置 `pi-voice.json`、故障排查）：`extensions/pi-voice/README.md`
 - **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 只读工具集 + 独立日志）
