@@ -21,6 +21,20 @@ export async function clearPending(id: string): Promise<void> {
   await markPendingInjected(id, false)
 }
 
+/** 清除所有任务的 pendingInject 标记（主会话空闲=注入任务已完成）。 */
+export async function clearAllPending(): Promise<void> {
+  const store = await readTasks()
+  let changed = false
+  for (const task of store.tasks) {
+    if (task.pendingInject) {
+      task.pendingInject = false
+      task.updatedAt = new Date().toISOString()
+      changed = true
+    }
+  }
+  if (changed) await writeTasks(store)
+}
+
 // 收集待恢复注入的任务
 export async function collectPendingTasks(): Promise<Task[]> {
   const store = await readTasks()

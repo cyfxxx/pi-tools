@@ -47,3 +47,16 @@ describe('pendingInject marking', () => {
     expect(await wasAbnormalShutdown()).toBe(true)
   })
 })
+
+  it('clearAllPending clears all pending marks in one pass', async () => {
+    const { addTask } = await import('../storage')
+    const { markPendingInjected, clearAllPending, collectPendingTasks } = await import('../queue')
+    const t1 = await addTask({ name: '任务A', type: 'interval', schedule: '5m', prompt: 'A' })
+    const t2 = await addTask({ name: '任务B', type: 'interval', schedule: '5m', prompt: 'B' })
+    await markPendingInjected(t1.id)
+    await markPendingInjected(t2.id)
+    expect(await collectPendingTasks()).toHaveLength(2)
+
+    await clearAllPending()
+    expect(await collectPendingTasks()).toHaveLength(0)
+  })
