@@ -105,16 +105,37 @@ preflight() {
     warn "Node.js 不可用，后续步骤可能失败"
   fi
 
-  # 基础系统包
+  # 基础系统包（libnss3/libnspr4 为 Chromium 运行所需；安装前先 update，避免缓存过期找不到包）
   local pkgs=""
   command -v git        &>/dev/null || pkgs="$pkgs git"
   command -v fdfind     &>/dev/null || pkgs="$pkgs fd-find"
   command -v rg         &>/dev/null || pkgs="$pkgs ripgrep"
   dpkg -l python3-venv &>/dev/null 2>&1 || pkgs="$pkgs python3-venv"
+  dpkg -l libnss3      &>/dev/null 2>&1 || pkgs="$pkgs libnss3"
+  dpkg -l libnspr4     &>/dev/null 2>&1 || pkgs="$pkgs libnspr4"
   if [ -n "$pkgs" ]; then
+    info "apt-get update（确保包索引最新）..."
+    apt-get update -qq 2>&1 | tail -1 || warn "apt-get update 失败（网络问题？继续尝试安装）"
     info "安装系统依赖:$pkgs"
     apt-get install -y $pkgs 2>&1 | tail -1 || warn "部分系统依赖安装失败，跳过"
   fi
+
+  # python3 venv 可用性实际探测（dpkg 显示已装 ≠ ensurepip 可用，Debian/Ubuntu 存在空壳）
+  VENV_PROBE=/tmp/.venv-probe
+  rm -rf "$VENV_PROBE"
+  VENV_OK=0
+  if python3 -m venv "$VENV_PROBE" >/dev/null 2>&1 && [ -x "$VENV_PROBE/bin/python" ]; then
+    VENV_OK=1; rm -rf "$VENV_PROBE"
+  else
+    rm -rf "$VENV_PROBE"
+    info "python3 venv 不可用（ensurepip 缺失），安装 python3.12-venv/python3-venv ..."
+    apt-get update -qq 2>&1 | tail -1 || true
+    apt-get install -y python3.12-venv python3-venv 2>&1 | tail -1 || warn "venv 包安装失败"
+    if python3 -m venv "$VENV_PROBE" >/dev/null 2>&1 && [ -x "$VENV_PROBE/bin/python" ]; then
+      VENV_OK=1; rm -rf "$VENV_PROBE"
+    fi
+  fi
+  [ "$VENV_OK" = "1" ] && ok "python3 venv 可用" || warn "python3 venv 仍不可用（SearXNG 将无法重建）"
   # 验证关键工具
   command -v git &>/dev/null && ok "git 已就绪" || warn "git 未安装"
   command -v fdfind &>/dev/null && ok "fd-find 已就绪" || warn "fd-find 未安装"
@@ -133,6 +154,27 @@ phase1_config() {
     warn "searxng 配置生成脚本缺失，跳过 settings.yml"
   else
     ok "searxng/settings.yml 已存在"
+  fi
+
+  # pi-web-search 指向本地 SearXNG（幂等：仅在未配置 searxng_url 时写入）
+  if [ -f "$PI_HOME/searxng/settings.yml" ] && [ -f "$PI_HOME/agent/settings.json" ]; then
+    python3 - "$PI_HOME/agent/settings.json" <<'PY' | tail -1
+import json, sys
+p = sys.argv[1]
+try:
+    d = json.load(open(p))
+except Exception:
+    raise SystemExit(0)
+ws = dict(d.get('pi-web-search') or {})
+if 'searxng_url' not in ws:
+    ws['searxng_url'] = 'http://127.0.0.1:8889'
+    ws.setdefault('search_timeout', 10000)
+    d['pi-web-search'] = ws
+    json.dump(d, open(p, 'w'), indent=2, ensure_ascii=False)
+    print('pi-web-search → 已指向本地 SearXNG (127.0.0.1:8889)')
+else:
+    print('pi-web-search → 已存在配置，跳过')
+PY
   fi
 
   # agent/npm/package.json
@@ -172,7 +214,7 @@ EOF
   for d in "$PI_HOME/agent/extensions"/*/; do
     [ -d "$d" ] || continue
     name="$(basename "$d")"
-    case "$name" in tests|node_modules) continue ;; esac
+    case "$name" in tests|node_modules|types) continue ;; esac
     EXT_DIRS="$EXT_DIRS $name"
     [ -f "$d/index.ts" ] || missing="$missing $name"
   done
@@ -220,10 +262,14 @@ phase2_python_venv() {
 
   if [ -f "$PI_HOME/searxng/settings.yml" ]; then
     if [ ! -f "$PI_HOME/searxng/venv/bin/python" ]; then
-      dpkg -l python3-venv &>/dev/null 2>&1 || apt-get install -y python3-venv -qq 2>&1 | tail -1
+      # preflight 已探测 venv 可用性（VENV_OK）；此处兑底再试一次安装
+      if [ "${VENV_OK:-0}" != "1" ]; then
+        apt-get install -y python3.12-venv python3-venv -qq 2>&1 | tail -1
+      fi
       info "创建 SearXNG venv..."
       (cd "$PI_HOME/searxng" && python3 -m venv --copies venv) || {
-        warn "venv 创建失败"; return 1
+        warn "venv 创建失败——SearXNG 将不可用。修复: apt-get install python3.12-venv 后重跑 rebuild"
+        return 1
       }
       # 先装 pyyaml 用于配置校验
       "$PI_HOME/searxng/venv/bin/pip" install -q pyyaml 2>&1 | tail -1
@@ -295,6 +341,25 @@ detect_arch() {
   esac
 }
 
+# 定位 pi 安装根（优先 current，否则取最高版本目录）；输出绝对路径，找不到输出空
+find_pi_root() {
+  local pi_node_dir="$HOME/.local/share/pi-node"
+  local root=""
+  if [ -d "$pi_node_dir/current" ]; then
+    root="$(readlink -f "$pi_node_dir/current" 2>/dev/null || echo "$pi_node_dir/current")"
+  fi
+  if [ -z "$root" ] || [ ! -d "$root/lib/node_modules/@earendil-works" ]; then
+    for d in "$pi_node_dir"/*/; do
+      [ -d "$d/lib/node_modules/@earendil-works" ] && root="${d%/}" && break
+    done
+  fi
+  if [ -z "$root" ]; then
+    echo ""
+    return 1
+  fi
+  (cd "$root" && pwd -P 2>/dev/null || echo "$root")
+}
+
 # ---- Phase 2-C: 二进制下载（并发） ----
 phase2_binaries() {
   title "Phase 2-C" "二进制下载（并发）"
@@ -339,23 +404,13 @@ phase2_types() {
   local tsconfig="$PI_HOME/agent/extensions/tsconfig.json"
   [ -f "$tsconfig" ] || { warn "extensions/tsconfig.json 缺失"; return 1; }
 
-  # 定位 pi 安装根：优先 current，否则取最高版本目录
-  local pi_node_dir="$HOME/.local/share/pi-node"
-  local root=""
-  if [ -d "$pi_node_dir/current" ]; then
-    root="$(readlink -f "$pi_node_dir/current" 2>/dev/null || echo "$pi_node_dir/current")"
-  fi
-  if [ -z "$root" ] || [ ! -d "$root/lib/node_modules/@earendil-works" ]; then
-    for d in "$pi_node_dir"/*/; do
-      [ -d "$d/lib/node_modules/@earendil-works" ] && root="${d%/}" && break
-    done
-  fi
+  # 定位 pi 安装根（复用 find_pi_root；wrapper 已接管 pi 命令，which pi 反推不可靠）
+  local root="$(find_pi_root)"
   if [ -z "$root" ]; then
-    warn "未找到 pi 安装目录（$pi_node_dir/*），跳过 tsconfig 链接同步"
+    warn "未找到 pi 安装目录（$HOME/.local/share/pi-node/*），跳过 tsconfig 链接同步"
     info "安装 pi（npm install -g @earendil-works/pi-coding-agent）后重跑 rebuild 即可补齐"
     return 0
   fi
-  root="$(cd "$root" && pwd -P 2>/dev/null || echo "$root")"
 
   if grep -qF "$root/lib/node_modules" "$tsconfig"; then
     ok "tsconfig paths 已指向 $root"
@@ -453,10 +508,14 @@ phase2_voice() {
 
   # 3. GPU 推理（linux；CUDA 库可选，约 500MB）
   if [ "$is_termux" = "0" ] && [ "$NO_GPU" = "0" ] && command -v nvidia-smi >/dev/null 2>&1; then
-    if "$venv/bin/python" -c 'import ctranslate2; exit(0 if ctranslate2.get_cuda_device_count() > 0 else 1)' >/dev/null 2>&1; then
-      ok "检测到 GPU：whisper 将自动 cuda/float16 推理（可 /voice model small 提升准确率）"
+    # CUDA 可用需同时满足：ctranslate2 报 GPU 可见 + nvidia-cublas/cudnn pip 库已安装
+    # （仅驱动可见时推理会报 libcublas.so.12 not found，whisper-server 会降级 CPU）
+    NV_LIB="$(ls -d "$venv"/lib/python*/site-packages/nvidia 2>/dev/null | head -1)"
+    if "$venv/bin/python" -c 'import ctranslate2; exit(0 if ctranslate2.get_cuda_device_count() > 0 else 1)' >/dev/null 2>&1 \
+       && [ -n "$NV_LIB" ] && [ -d "$NV_LIB/cublas/lib" ] && [ -d "$NV_LIB/cudnn/lib" ]; then
+      ok "检测到 GPU：CUDA 库齐备，whisper 将自动 cuda/float16 推理（可 /voice model small 提升准确率）"
     else
-      warn "检测到 NVIDIA GPU，但 CUDA 库未安装（whisper 仍可用 CPU 推理）"
+      warn "检测到 NVIDIA GPU，但 CUDA 库缺失（whisper 将回退 CPU 推理）"
       info "可选安装（约 500MB，--no-gpu 跳过）: $venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12"
     fi
   fi
@@ -521,6 +580,10 @@ verify() {
   [ -d "$PI_HOME/searxng/repo/.git" ] && ok "SearXNG repo: $(cd "$PI_HOME/searxng/repo" && git rev-parse --short HEAD 2>/dev/null)" || warn "SearXNG repo not found"
 
   # config 校验（用 venv 的 python 确保 yaml 可用）
+  # 模型配置文件名随 pi 版本变化：<0.84 models.json，≥0.84 models-store.json，按存在性校验
+  local mfile=""
+  [ -f "$PI_HOME/agent/models.json" ] && mfile="$PI_HOME/agent/models.json"
+  [ -f "$PI_HOME/agent/models-store.json" ] && mfile="$PI_HOME/agent/models-store.json"
   if [ -f "$PI_HOME/searxng/venv/bin/python" ]; then
     "$PI_HOME/searxng/venv/bin/python" -c "import yaml; yaml.safe_load(open('$PI_HOME/searxng/settings.yml'))" 2>/dev/null \
       && ok "settings.yml: valid YAML" \
@@ -528,16 +591,20 @@ verify() {
     "$PI_HOME/searxng/venv/bin/python" -c "import json; json.load(open('$PI_HOME/agent/settings.json'))" 2>/dev/null \
       && ok "settings.json: valid JSON" \
       || warn "settings.json: JSON 校验失败"
-    "$PI_HOME/searxng/venv/bin/python" -c "import json; json.load(open('$PI_HOME/agent/models.json'))" 2>/dev/null \
-      && ok "models.json: valid JSON" \
-      || warn "models.json: JSON 校验失败"
+    if [ -n "$mfile" ]; then
+      "$PI_HOME/searxng/venv/bin/python" -c "import json; json.load(open('$mfile'))" 2>/dev/null \
+        && ok "models config: valid JSON ($(basename "$mfile"))" \
+        || warn "models config: JSON 校验失败 ($mfile)"
+    fi
   else
     python3 -c "import json; json.load(open('$PI_HOME/agent/settings.json'))" 2>/dev/null \
       && ok "settings.json: valid JSON" \
       || warn "settings.json: JSON 校验失败"
-    python3 -c "import json; json.load(open('$PI_HOME/agent/models.json'))" 2>/dev/null \
-      && ok "models.json: valid JSON" \
-      || warn "models.json: JSON 校验失败"
+    if [ -n "$mfile" ]; then
+      python3 -c "import json; json.load(open('$mfile'))" 2>/dev/null \
+        && ok "models config: valid JSON ($(basename "$mfile"))" \
+        || warn "models config: JSON 校验失败 ($mfile)"
+    fi
   fi
 
   # Pi CLI 可用性
@@ -558,12 +625,20 @@ verify() {
   if [ -f "$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json" ]; then
     CB_VER=$(node -e "console.log(require('$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json').version)" 2>/dev/null)
     ok "CloakBrowser v$CB_VER"
-    # 检测 Chromium 是否已安装
-    if command -v npx &>/dev/null && npx cloakbrowser list 2>/dev/null | grep -q chromium; then
-      ok "Chromium 已安装（可通过 CloakBrowser 启动）"
+    # 检测 Chromium 是否已安装且共享库齐备（缺库时启动 exit 127）
+    if command -v npx &>/dev/null \
+       && CHROME_BIN=$(cd "$PI_HOME/agent/extensions/pi-browser" 2>/dev/null && npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1) \
+       && [ -n "$CHROME_BIN" ]; then
+      local miss=$(ldd "$CHROME_BIN" 2>/dev/null | grep -c "not found")
+      if [ "$miss" = "0" ]; then
+        ok "Chromium 已安装且共享库齐备（$CHROME_BIN）"
+      else
+        warn "Chromium 已安装但缺 $miss 个共享库（启动将失败）"
+        info "修复: apt-get install -y libnss3 libnspr4"
+      fi
     else
       warn "Chromium 未安装，浏览器功能不可用"
-      info "运行: cd $PI_HOME && npx cloakbrowser install 安装"
+      info "运行: cd $PI_HOME/agent/extensions/pi-browser && npx cloakbrowser install 安装"
     fi
   else
     warn "CloakBrowser npm 包未安装，浏览器功能不可用"
@@ -581,7 +656,7 @@ verify() {
   for d in "$PI_HOME/agent/extensions"/*/; do
     [ -d "$d" ] || continue
     name="$(basename "$d")"
-    case "$name" in tests|node_modules) continue ;; esac
+    case "$name" in tests|node_modules|types) continue ;; esac
     if [ -f "$d/package.json" ]; then
       dep_count=$(python3 -c "import json; print(len(json.load(open('$d/package.json')).get('dependencies',{})))" 2>/dev/null || echo "?")
     else
@@ -602,7 +677,7 @@ verify() {
   python3 -c "
 import os
 ext_dir = '$PI_HOME/agent/extensions'
-names = sorted(d for d in os.listdir(ext_dir) if os.path.isdir(os.path.join(ext_dir, d)) and d not in ('tests','node_modules'))
+names = sorted(d for d in os.listdir(ext_dir) if os.path.isdir(os.path.join(ext_dir, d)) and d not in ('tests','node_modules','types'))
 missing = [n for n in names if not os.path.isfile(os.path.join(ext_dir, n, 'index.ts'))]
 print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
 " 2>/dev/null | while IFS= read -r line; do
@@ -620,26 +695,31 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
     info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
   fi
 
-# Provider 配置检查
-  if [ ! -f "$PI_HOME/agent/settings.json" ] || [ ! -f "$PI_HOME/agent/models.json" ]; then
-    warn "settings.json / models.json 缺失——恢复到新设备后必须手动提供"
+# Provider 配置检查（模型配置文件名随 pi 版本变化，双文件兼容）
+  local mfile=""
+  [ -f "$PI_HOME/agent/models.json" ] && mfile="$PI_HOME/agent/models.json"
+  [ -f "$PI_HOME/agent/models-store.json" ] && mfile="$PI_HOME/agent/models-store.json"
+  if [ ! -f "$PI_HOME/agent/settings.json" ] || [ -z "$mfile" ]; then
+    warn "settings.json / models 配置缺失——恢复到新设备后必须手动提供"
     info "从原机安全传输: scp user@orig:~/.pi/agent/{settings.json,models.json,auth.json} $PI_HOME/agent/"
     info "或原机打包: pi-backup create --with-auth 后 pi-backup restore 恢复"
     info "未提供时 pi 无可用模型，无法启动对话"
-  elif [ -f "$PI_HOME/agent/settings.json" ] && [ -f "$PI_HOME/agent/models.json" ]; then
+  elif [ -f "$PI_HOME/agent/settings.json" ] && [ -n "$mfile" ]; then
     DEFAULT_PROVIDER=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultProvider',''))" 2>/dev/null)
     DEFAULT_MODEL=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultModel',''))" 2>/dev/null)
     PROVIDER_EXISTS=$(python3 -c "
-import json; d=json.load(open('$PI_HOME/agent/models.json'))
-providers=d.get('providers',{})
+import json; d=json.load(open('$mfile'))
+providers=d.get('providers',{}) or d  # models-store.json 顶层即 provider 映射
 print('yes' if '$DEFAULT_PROVIDER' in providers else 'no')" 2>/dev/null)
     if [ "$PROVIDER_EXISTS" = "yes" ]; then
-      ok "默认 provider '$DEFAULT_PROVIDER' 在 models.json 中已定义"
-      # 检测后端是否可达
+      ok "默认 provider '$DEFAULT_PROVIDER' 在 models 配置中已定义"
+      # 检测后端是否可达（baseUrl 在 models-store.json 中为模型级字段）
       BASE_URL=$(python3 -c "
-import json; d=json.load(open('$PI_HOME/agent/models.json'))
-p=d['providers']['$DEFAULT_PROVIDER']
-print(p.get('baseUrl',''))" 2>/dev/null)
+import json; d=json.load(open('$mfile'))
+providers=d.get('providers',{}) or d
+p=providers.get('$DEFAULT_PROVIDER',{})
+m=p.get('models') or []
+print((m[0].get('baseUrl','') if m else '') or p.get('baseUrl',''))" 2>/dev/null)
       if [ -n "$BASE_URL" ]; then
         if timeout 3 curl -s "$BASE_URL/models" >/dev/null 2>&1; then
           ok "Provider 后端可达 ($BASE_URL)"
@@ -692,26 +772,38 @@ phase2_voice
 # patch-footer-live-context 缺失导致 footer 无实时 token，patch-voice-enter
 # 缺失导致 pi-voice 的 Key.enter 注册吞掉全部回车（输入提交失效））
 title "Phase 3" "TUI 核心补丁"
+# wrapper 已接管 pi 命令（Phase 2-E），补丁脚本的 which pi 反推会拿到 wrapper 路径导致失败；
+# 显式推导 dist 目录并导出 PI_DIST 传给补丁脚本（幂等：已打补丁输出跳过）
+PI_ROOT="$(find_pi_root)"
+PI_DIST=""
+if [ -n "$PI_ROOT" ] && [ -d "$PI_ROOT/lib/node_modules/@earendil-works/pi-coding-agent/dist" ]; then
+  PI_DIST="$PI_ROOT/lib/node_modules/@earendil-works/pi-coding-agent/dist"
+  export PI_DIST
+fi
+if [ -z "$PI_DIST" ]; then
+  warn "未找到 pi dist 目录，跳过全部 TUI 补丁（安装 pi 后重跑 rebuild 即可补齐）"
+else
 if [ -f "$PI_HOME/scripts/patch-footer-live-context.mjs" ]; then
-  node "$PI_HOME/scripts/patch-footer-live-context.mjs" >/dev/null 2>&1 \
+  node "$PI_HOME/scripts/patch-footer-live-context.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "footer 实时上下文 token 补丁" \
     || warn "footer 补丁未应用（pi 版本可能已改动），需人工核对"
 else
   warn "patch-footer-live-context.mjs 缺失，跳过"
 fi
 if [ -f "$PI_HOME/scripts/patch-voice-enter.mjs" ]; then
-  node "$PI_HOME/scripts/patch-voice-enter.mjs" >/dev/null 2>&1 \
+  node "$PI_HOME/scripts/patch-voice-enter.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "回车条件拦截补丁（pi-voice 听写）" \
     || warn "回车补丁未应用（pi 版本可能已改动）：未打补丁时回车键会被 pi-voice 吞掉"
 else
   warn "patch-voice-enter.mjs 缺失，跳过"
 fi
 if [ -f "$PI_HOME/scripts/patch-plan-tools.mjs" ]; then
-  node "$PI_HOME/scripts/patch-plan-tools.mjs" >/dev/null 2>&1 \
+  node "$PI_HOME/scripts/patch-plan-tools.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "工具 schema 恢复补丁（plan-mode 模型侧切换）" \
     || warn "工具 schema 补丁未应用（pi 版本可能已改动）：恢复会话模型无法调用新注册工具（plan_enter/plan_exit），可移除补丁改用用户侧快捷键切换（方案 2）"
 else
   warn "patch-plan-tools.mjs 缺失，跳过"
+fi
 fi
 
 # Scheduler 离线调度安装（可选）
