@@ -1,4 +1,4 @@
-import type { SearchConfig, SearchResponse } from './types'
+import type { SearchConfig, SearchResponse, SearchResult } from './types'
 
 async function fetchWithRetry(
   url: string,
@@ -83,7 +83,29 @@ function formatResponse(data: SearchResponse, query: string, maxResults: number 
   const lines: string[] = []
   lines.push(`搜索: "${query}"`, '')
 
-  const results = data.results ?? []
+  const rawResults = data.results ?? []
+  // W1: 多引擎结果按 URL 去重（同一链接多引擎命中时合并 engine 标签），
+  // 避免同一结果在不同引擎下重复输出
+  const seen = new Map<string, SearchResult>()
+  const results: SearchResult[] = []
+  for (const r of rawResults) {
+    const key = r.url || r.title
+    if (!key) {
+      results.push(r)
+      continue
+    }
+    const existing = seen.get(key)
+    if (existing) {
+      if (r.engine && existing.engine && !existing.engine.includes(r.engine)) {
+        existing.engine = `${existing.engine},${r.engine}`
+      } else if (r.engine && !existing.engine) {
+        existing.engine = r.engine
+      }
+      continue
+    }
+    seen.set(key, r)
+    results.push(r)
+  }
   const answers = data.answers ?? []
   const suggestions = data.suggestions ?? []
   const corrections = data.corrections ?? []
