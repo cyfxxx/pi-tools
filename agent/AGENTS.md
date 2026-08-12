@@ -15,6 +15,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 多环境使用约定
 
 - 本仓库在 Termux/Android、WSL2、Linux 等环境间同步使用（GitHub）。**配置层（settings.json/models.json/auth.json）每环境独立**，不跨机覆盖（首次 clone 后按本机配置）
+- **例外：`.pi-autopilot-config.json` 入库共享**（看门狗阈值/策略默认值，无密钥）。多环境 pull 后共享同一配置；某环境需要独立值时：本地直接改文件即可（不入库不推送），或改后推送覆盖其他环境（明确是共享变更时）——改前先确认意图
 - **记忆带环境标签**（pi-memory `environments` 字段）：`all` 通用 / `termux` / `wsl2` / `linux` / `macos` / `windows`；注入与检索自动按当前环境过滤。判定原则：知识本身与环境相关才打标；只是"在该环境发现"的通用知识标 all
 - **运行时数据隔离**：notes.json / summaries.json / checkpoints / sessions / logs 不入库（多机 pull/push 会互相覆盖）；entries.json（长期记忆）入库共享，冲突时以最新 push 为准（`git checkout --theirs`）
 - 环境识别/差异表/切换流程：见 `docs/ENVIRONMENTS.md`
