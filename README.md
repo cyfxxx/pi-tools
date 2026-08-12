@@ -27,6 +27,7 @@
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-tmux/           tmux 会话管理（后台任务/长任务）
 │   │   ├── pi-voice/          语音交流（Termux：录音转写 + TTS 朗读）
+│   │   ├── pi-link/           多设备互联（ssh 通道 + 远程 pi RPC，link_send/link_status）
 │   │   └── pi-context/        token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
