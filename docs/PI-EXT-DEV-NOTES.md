@@ -37,6 +37,8 @@ pi（earendil-works/pi-coding-agent）扩展开发实测经验汇总（2026-08�
 
 - system prompt 注入禁止时间戳与精确数值；压力提示按档位固定文案（<75% 不注入 / ≥75% / ≥90% 固定文案）
 - token 估算统一用 `lib/context-budget.ts` 的 `estimateTokens`；共享库在 `agent/lib/`（usage-diag.ts、auto-compact.ts、context-budget.ts 等）
+- **排序类注入加 banding**（pi-memory M1 先例）：候选按分数排序时，高分前缀（与 top 差 <15%）锚定原序不参与重排——数据增量（新条目）不触发整体顺序变化，KV 缓存前缀保持稳定；多样性/重排只作用于分数相近的尾部 band
+- **停止模型生成用 `ctx.abort()`**（plan-mode 先例）：工具执行中需要"结束当前生成、交还输入权"时调用 `ctx.abort()`（等价用户按 Esc 的生成中止信号）；不要在返回文本里依赖模型自觉停止——模型读到"请停止"仍可能继续输出
 
 ## 测试与验证
 
