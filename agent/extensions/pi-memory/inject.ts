@@ -1,6 +1,6 @@
 import type { MemoryEntry, SummaryEntry } from './types.ts'
 import { activeEntries } from './storage.ts'
-import { qualityScore } from './retrieval.ts'
+import { qualityScore, mmrDiversify, roundRobinBySession, buildDoc } from './retrieval.ts'
 import { estimateTokens } from '../../lib/context-budget.ts'
 import { detectEnvironment, isEnvVisible, type RuntimeEnv } from './env.ts'
 
@@ -44,10 +44,14 @@ export function buildInjectionBlock(
   // L1 高价值条目（仅对候选子集排序：预算/条数上限远小于条目总数）
   if (live.length > 0) {
     const maxRank = Math.min(live.length, 32)
-    const ranked = [...live]
-      .sort((a, b) => qualityScore(b) - qualityScore(a))
+    const scored = [...live]
+      .map(e => ({ e, score: qualityScore(e) }))
+      .sort((a, b) => b.score - a.score)
       .slice(0, maxRank)
-    for (const e of ranked) {
+    // M1: MMR 主题多样性 + 跨会话轮转（防注入块冗余/单会话垄断）
+    const docMap = new Map(scored.map(x => [x.e.id, buildDoc(x.e)]))
+    const ranked = roundRobinBySession(mmrDiversify(scored, maxRank, 0.7, docMap), maxRank)
+    for (const { e } of ranked) {
       const item = `- [${e.category}] ${e.title}: ${e.content.slice(0, 200)}`
       const cost = estimateTokens(item + '\n')
       if (used + cost > budgetTokens && injectedEntries > 0) break

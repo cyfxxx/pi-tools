@@ -13,7 +13,7 @@ interface DocTokens {
   all: Set<string>
 }
 
-function buildDoc(e: MemoryEntry): DocTokens {
+export function buildDoc(e: MemoryEntry): DocTokens {
   const title = tokenize(e.title)
   const tags = e.tags.flatMap(t => tokenize(t))
   const content = tokenize(e.content)
@@ -52,13 +52,82 @@ export function bm25Score(
   return score
 }
 
-// 质量分：置信度 + 时效 + 引用频率（归一化 0-1）
+// 质量分：置信度 + 时效（指数衰减，半衰期约 62 天）+ 引用频率（归一化 0-1）
 export function qualityScore(e: MemoryEntry): number {
   const now = Date.now()
   const daysOld = (now - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-  const recency = Math.max(0, 1 - daysOld / 180)
+  const recency = Math.exp(-daysOld / 90)
   const recurrence = Math.min(e.recurrence / 10, 1)
   return e.confidence * 0.5 + recency * 0.25 + recurrence * 0.25
+}
+
+/** 条目间主题相似度（token Jaccard，轻量）——MMR 多样性用。 */
+function tokenJaccard(a: DocTokens, b: DocTokens): number {
+  const inter = new Set<string>()
+  for (const t of a.all) if (b.all.has(t)) inter.add(t)
+  const union = a.all.size + b.all.size - inter.size
+  return union === 0 ? 0 : inter.size / union
+}
+
+interface Scored { e: MemoryEntry; score: number }
+
+/**
+ * 轻量 MMR（Maximal Marginal Relevance）多样性重排：
+ * 每轮取 score 最高且与已选条目相似度最低的候选（lambda 高=重相关，低=重多样）。
+ * 借鉴 ruflo SmartRetrieval 的 MMR 阶段，防注入块主题冗余。
+ */
+export function mmrDiversify(ranked: Scored[], limit: number, lambda = 0.7, docs: Map<string, DocTokens>): Scored[] {
+  if (ranked.length <= limit) return ranked
+  const chosen: Scored[] = []
+  const pool = [...ranked]
+  while (chosen.length < limit && pool.length > 0) {
+    let bestIdx = 0
+    let bestScore = -Infinity
+    for (let i = 0; i < pool.length; i++) {
+      let maxSim = 0
+      for (const c of chosen) {
+        const sim = tokenJaccard(docs.get(pool[i].e.id)!, docs.get(c.e.id)!)
+        if (sim > maxSim) maxSim = sim
+      }
+      const v = lambda * pool[i].score - (1 - lambda) * maxSim
+      if (v > bestScore) {
+        bestScore = v
+        bestIdx = i
+      }
+    }
+    chosen.push(pool.splice(bestIdx, 1)[0])
+  }
+  return chosen
+}
+
+/**
+ * 跨会话 round-robin：按 sessionId 分组轮转交错，防单会话垄断注入/检索结果。
+ * （ruflo SmartRetrieval 的 session round-robin 阶段）
+ */
+export function roundRobinBySession(ranked: Scored[], limit: number): Scored[] {
+  const groups = new Map<string, Scored[]>()
+  const order: string[] = []
+  for (const item of ranked) {
+    const key = item.e.lastSessionId ?? '__none__'
+    if (!groups.has(key)) {
+      groups.set(key, [])
+      order.push(key)
+    }
+    groups.get(key)!.push(item)
+  }
+  const out: Scored[] = []
+  let idx = 0
+  let guard = 0
+  while (out.length < limit && guard < ranked.length * 2) {
+    guard++
+    const key = order[idx % order.length]
+    const group = groups.get(key)!
+    const item = group.shift()
+    if (item) out.push(item)
+    idx++
+    if (order.every(k => (groups.get(k)!.length === 0))) break
+  }
+  return out.slice(0, limit)
 }
 
 export interface SearchOptions {
@@ -95,11 +164,10 @@ export function searchEntries(
   const queryTokens = query ? tokenize(query) : []
 
   if (queryTokens.length === 0) {
-    return live
+    const ranked = live
       .map(e => ({ e, score: qualityScore(e) }))
       .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .map(x => x.e)
+    return roundRobinBySession(ranked, limit).map(x => x.e)
   }
 
   const docs = live.map(e => buildDoc(e))
@@ -116,14 +184,17 @@ export function searchEntries(
     df.set(q, count)
   }
 
-  return live
+  const ranked = live
     .map((e, i) => ({
       e,
       score: 0.7 * bm25Score(queryTokens, docs[i], df, n, avgLen) + 0.3 * qualityScore(e),
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map(x => x.e)
+
+  // MMR 主题多样性（需先建 id→DocTokens 映射）+ 跨会话轮转
+  const docMap = new Map(live.map((e, i) => [e.id, docs[i]]))
+  const diversified = mmrDiversify(ranked, limit, 0.7, docMap)
+  return roundRobinBySession(diversified, limit).map(x => x.e)
 }
 
 // 提取/消解用：找与候选最相似的条目（内容 Jaccard + 词法）

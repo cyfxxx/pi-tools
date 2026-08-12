@@ -234,6 +234,7 @@ export function storeEntry(
     e.recurrence += 1
     e.updatedAt = entry.updatedAt
     e.accessedAt = entry.accessedAt
+    if (entry.lastSessionId) e.lastSessionId = entry.lastSessionId
     saveEntries(entries)
     return { entries, action: 'updated' }
   }
@@ -254,6 +255,7 @@ export function storeEntry(
     e.recurrence += 1
     e.updatedAt = entry.updatedAt
     e.accessedAt = entry.accessedAt
+    if (entry.lastSessionId) e.lastSessionId = entry.lastSessionId
     saveEntries(entries)
     return { entries, action: 'merged' }
   }
