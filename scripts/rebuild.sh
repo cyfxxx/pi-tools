@@ -120,6 +120,30 @@ preflight() {
     apt-get install -y $pkgs 2>&1 | tail -1 || warn "部分系统依赖安装失败，跳过"
   fi
 
+  # Chromium 运行库（按 .so 探测缺失，Ubuntu 24.04+ 用 t64 包名，旧版回退经典名）
+  # 缺库时 CloakBrowser 启动 exit 127 / chrome 崩溃，smoke-test 浏览器项失败
+  local chrome_libs=(
+    "libasound.so.2:libasound2t64:libasound2"
+    "libatk-1.0.so.0:libatk1.0-0t64:libatk1.0-0"
+    "libcups.so.2:libcups2t64:libcups2"
+    "libgbm.so.1:libgbm1:"
+  )
+  local chrome_missing=""
+  for entry in "${chrome_libs[@]}"; do
+    local so="${entry%%:*}" rest="${entry#*:}"
+    ldconfig -p 2>/dev/null | grep -q "$so" && continue
+    local p1="${rest%%:*}" p2="${rest#*:}"
+    if [ -z "$p2" ]; then
+      chrome_missing="$chrome_missing $p1"
+    else
+      # 优先 t64 包名，失败回退经典名（apt 索引已在上面 update）
+      if ! apt-get install -y "$p1" -qq >/dev/null 2>&1; then
+        apt-get install -y "$p2" -qq >/dev/null 2>&1 || chrome_missing="$chrome_missing $p1($p2)"
+      fi
+    fi
+  done
+  [ -z "$chrome_missing" ] || warn "Chromium 库安装失败:$chrome_missing（浏览器可能无法启动）"
+
   # python3 venv 可用性实际探测（dpkg 显示已装 ≠ ensurepip 可用，Debian/Ubuntu 存在空壳）
   VENV_PROBE=/tmp/.venv-probe
   rm -rf "$VENV_PROBE"
@@ -634,7 +658,7 @@ verify() {
         ok "Chromium 已安装且共享库齐备（$CHROME_BIN）"
       else
         warn "Chromium 已安装但缺 $miss 个共享库（启动将失败）"
-        info "修复: apt-get install -y libnss3 libnspr4"
+        info "修复: apt-get install -y libnss3 libnspr4 libasound2t64 libatk1.0-0t64 libcups2t64 libgbm1（旧发行版去掉 t64 后缀）"
       fi
     else
       warn "Chromium 未安装，浏览器功能不可用"

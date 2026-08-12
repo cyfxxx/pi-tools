@@ -33,7 +33,7 @@ import type { ExtensionAPI, ExtensionContext, ExtensionCommandContext } from '@e
 import { Key } from '@earendil-works/pi-tui'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { loadConfig, persistConfig, type VoiceConfig } from './config'
 import { platformOf } from './core'
@@ -98,11 +98,7 @@ const ENTER_PATCH_MARKER = 'Patch (patch-voice-enter.mjs)'
  */
 function enterPatchApplied(): boolean {
   try {
-    const known =
-      '/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist'
-    const dist = existsSync(join(known, 'modes', 'interactive', 'interactive-mode.js'))
-      ? known
-      : detectDistFromPath(process.env.PI_DIST)
+    const dist = detectDistFromPath(process.env.PI_DIST)
     const target = join(dist, 'modes', 'interactive', 'interactive-mode.js')
     if (!existsSync(target)) return false
     return readFileSync(target, 'utf-8').includes(ENTER_PATCH_MARKER)
@@ -113,6 +109,16 @@ function enterPatchApplied(): boolean {
 
 function detectDistFromPath(explicit?: string): string {
   if (explicit && existsSync(join(explicit, 'modes', 'interactive', 'interactive-mode.js'))) return explicit
+  // 兜底：扫描本机 pi-node 安装目录（避免硬编码路径跨机失效）
+  try {
+    const piNodeDir = join(homedir(), '.local', 'share', 'pi-node')
+    for (const d of readdirSync(piNodeDir)) {
+      const cand = join(piNodeDir, d, 'lib', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist')
+      if (existsSync(join(cand, 'modes', 'interactive', 'interactive-mode.js'))) return cand
+    }
+  } catch {
+    // fall through
+  }
   try {
     const bin = execFileSync('which', ['pi'], { encoding: 'utf-8' }).trim()
     if (bin) {
