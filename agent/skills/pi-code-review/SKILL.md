@@ -2,7 +2,7 @@
 name: pi-code-review
 description: 代码审查技能。先运行确定性检查脚本（git 卫生/密钥扫描/语法/可疑模式），再按检查清单逐项人工核对，最后按 HIGH/MEDIUM/LOW 分级报告。用户说"审查""评审""review""检查代码""看下这个改动""PR 审查"时触发。
 version: v1.2
-参考基线: alibaba/open-code-review v1.9.1（2026-08-11）
+参考基线: alibaba/open-code-review v1.9.2（2026-08-12 核对：引擎功能更新，无新审查维度）
 ---
 
 # pi-code-review 代码审查
