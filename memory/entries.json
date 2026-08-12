@@ -4352,13 +4352,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.357Z",
+      "updatedAt": "2026-08-12T16:03:30.912Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "93135490-ff7f-4432-8a3f-35fe4e33e06b"
     },
     {
       "id": "ecc7d002-a747-4618-8245-bc66ef106821",
@@ -7598,185 +7599,338 @@
       "deleted": false
     },
     {
-      "id": "8e3e7dca-7323-4431-9d70-d5d41059ac71",
+      "id": "7c7dcf3c-bd1c-43fb-8541-4f872b0ab1c4",
       "category": "solutions",
-      "title": "WSL2 容器入站连接：Tailscale serve 转发方案",
-      "content": "本机为 WSL2 镜像网络（.wslconfig networkingMode=mirrored），Tailscale 跑在 Windows 宿主机：容器 eth1 的 tailnet IP 100.117.170.110 仅出站可达，入站流量由 Windows tailscaled 接收，远程会看到\"sshd 未监听\"。解法：Windows PowerShell 执行 tailscale serve --bg --tcp 22 tcp://127.0.0.1:22，tailscale IP:22 转发至 Windows localhost:22，镜像网络直通容器 sshd。撤销用 tailscale serve reset。serve 配置存于 tailscaled 状态，重启自动恢复。容器侧无法观测 serve 状态（hairpin 自测不可靠）。",
+      "title": "pi 重启机制：proot 下 wrapper 自动拉起可行",
+      "content": "2026-08-10 实证：proot 环境重启 pi 无需人工干预——写入 ~/.pi/.pi-admin-state.json（action=restart + reason），再 SIGTERM 当前 pi 进程，wrapper 循环检测到 state 后 1 秒内自动以 --continue 拉起新进程恢复会话。此结论推翻旧记忆'proot 无自动拉起'。重启后新进程工具注册完整，plan_exit 缺失问题随之消失。",
       "tags": [
-        "pi-link",
-        "tailscale",
-        "wsl2",
-        "ssh"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "f4b267be-9d09-4f4d-9b02-1faaa293f991",
-      "category": "procedure",
-      "title": "restart_hang 正常重启判定流程",
-      "content": "收到 restart_hang 看门狗通知（会话无活动超时自动重启）时，按清单快速检查 4 项：1) SearXNG :8889 应 HTTP 200（首测可能瞬时失败需复测）；2) whisper :18766 应 {\"ok\":true}；3) tmux 会话应保留；4) crontab pi-cron 应在。全部正常即告知\"正常空闲重启，环境健康\"并继续原任务，不排查看门狗逻辑；有异常才排查。挂死判定：maxIdleMinutes（默认 30 分钟）超时即判挂死，用户离开无输入就会触发，属设计行为而非故障。",
-      "tags": [
-        "pi-autopilot",
-        "看门狗",
-        "restart_hang"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "e6c10b33-99e6-4c4d-afde-a1c9e35401d1",
-      "category": "fact",
-      "title": "autopilot 配置与运行时文件入库约定",
-      "content": "~/.pi/agent/.pi-autopilot-config.json 已移出 .gitignore 入库共享（2026-08 起，maxIdleMinutes=60 生效），多环境 pull 共享同一策略；某环境需独立值时本地改不推送，明确是共享变更才推送。telemetry/lastgood/crash 三个文件保持每环境独立（git 排除）：crash.json=崩溃计数（wrapper 写入，供 wasAbnormalShutdown 判断恢复 pending 任务）；lastgood.json=最近正常模型快照（连续崩溃回滚用，5 分钟内一次）；telemetry.json=任务执行遥测（/auto stats 统计源，上限 1000 条）。跨环境同步会污染恢复/回滚/统计逻辑。",
-      "tags": [
-        "pi-autopilot",
-        "gitignore",
-        "多环境"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "ecc0a9f5-096f-4f4c-9b4c-8a76e3b65da7",
-      "category": "solutions",
-      "title": "沙箱 TLS 证书问题：curl -k 注入绕过",
-      "content": "本沙箱/本机网络存在 TLS 证书链问题，curl 直连 GitHub 等报 SSL certificate problem（exit 60），此前 git clone 也同源。解法：临时写入 ~/.curlrc 内容为 -k 实现全局绕过（脚本内部 curl 不带 -k 也能生效），执行完删除；单条命令可用 curl -fsSLk。opencode 1.18.16 即用此法安装成功（GitHub 直连，183MB 二进制装到 ~/.opencode/bin，.bashrc 已加 PATH）。",
-      "tags": [
-        "curl",
-        "tls",
-        "opencode",
-        "沙箱"
+        "pi",
+        "重启",
+        "wrapper",
+        "proot"
       ],
       "confidence": 0.9,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
+      "createdAt": "2026-08-12T16:03:30.223Z",
+      "updatedAt": "2026-08-12T16:03:30.223Z",
+      "accessedAt": "2026-08-12T16:03:30.223Z",
+      "observedAt": "2026-08-12T16:03:30.223Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
     },
     {
-      "id": "6da19650-b2f7-4abe-8f21-c1dd300918db",
+      "id": "11b49a61-a0e6-4e48-95a4-53385cd764c7",
+      "category": "solutions",
+      "title": "extensions/node_modules symlink 断裂修复",
+      "content": "pi update 后包结构变化导致 extensions/node_modules 下 @earendil-works/pi-coding-agent symlink 指向 /root/.local/share/pi-node/current/ 失效（实际安装目录为 node-v22.23.1-linux-arm64），typebox 为空目录，症状是 extensions.test.ts 18 个用例模块解析失败。修复：检查 6 个子包 symlink 后重建指向真实目录的链接。下次 pi update 后遇模块解析失败优先查此。",
+      "tags": [
+        "pi",
+        "symlink",
+        "node_modules",
+        "故障修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
+    },
+    {
+      "id": "bfcb9d09-31d5-46e9-ab79-e5d9b0e24b10",
       "category": "fact",
-      "title": "pi-link 公钥集中管理与 test-all.sh 硬编码",
-      "content": "pi-link 扩展（多设备互联）公钥集中管理：仓库 keys/authorized_keys 存所有设备公钥合集，scripts/pi-link-keys.sh 提供 install/export/add 子命令，rebuild.sh Phase 2-F3 重建时自动安装；新设备公钥 add 入库推送后各端 pull+install 即获授权。注意 test-all.sh 的 vitest 套件列表是硬编码的，新增扩展需手动补入（pi-link 曾因此遗漏，14 用例未覆盖），其他环境只改统计数字不补列表。",
+      "title": "extensions.test.ts 正确运行方式与超时",
+      "content": "extensions.test.ts（23 用例）必须在 pi-web-search 目录下运行（vitest mock alias 生效，subagent 用例走 mock）；顶层跑会因加载真实 @earendil-works/pi-coding-agent 包需 12s 超过 5000ms 超时导致 2 用例失败。2026-08-10 已将注册面测试纳入 scripts/test-all.sh（现共 13 项），修正了过时注释。",
       "tags": [
-        "pi-link",
-        "test-all",
-        "公钥",
-        "ssh"
+        "pi",
+        "测试",
+        "extensions.test.ts",
+        "vitest"
       ],
       "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
     },
     {
-      "id": "d1b766ae-c96c-407a-add6-a265746d013e",
-      "category": "solutions",
-      "title": "whisper CUDA 升级路径与 auto 探测",
-      "content": "本机 whisper 服务（/opt/pi-whisper，端口 18766）默认 auto 探测设备：缺 CUDA 库时 _cuda_runtime_available()=False 回落 cpu+int8。GPU 升级零配置：/opt/pi-whisper/venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12，然后 bash ~/.pi/scripts/pi-whisper.sh restart，auto 探测到库可加载即自动 cuda+float16（dlopen 搜 LD_LIBRARY_PATH；get_model 后 _probe_cuda 空转 0.2s 强制初始化，失败走降级分支）。装库后无需改配置，强制 CPU 才需显式写 whisperDevice: cpu。",
+      "id": "0baf0eaa-62b3-4f41-8f1c-5f9d4c85fd36",
+      "category": "fact",
+      "title": "settings.json extensions 裸路径条目无效",
+      "content": "pi 0.83+ 的 package-manager.js isEnabledByOverrides 只识别 !（排除）/+/（强制）前缀，裸路径条目（如 extensions/pi-voice/index.ts）不参与任何判断，enabled 保持 true，是 0.83 前的无效残留。9 个扩展实际全部靠 ~/.pi/agent/extensions/ 目录自动发现加载。2026-08-10 已将 settings.json 中 7 个残留条目清理为 [] 并重启验证工具面完整。该文件 git ignore，清理属本地配置。",
       "tags": [
-        "whisper",
-        "cuda",
-        "gpu"
+        "pi",
+        "settings.json",
+        "扩展注册"
       ],
       "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
     },
     {
-      "id": "1da73023-53c4-4a1c-b037-5b6170493b22",
+      "id": "1c00a9d0-a161-4580-bd7c-e571c411fab4",
+      "category": "fact",
+      "title": "subagent 覆盖方向：both 模式项目级优先",
+      "content": "subagent 扩展 agents.ts 的 discoverAgents 在 both 模式下先 set 用户级再 set 项目级，Map 后者覆盖前者，故项目级 agents 覆盖用户级同名 agent，与内核资源加载方向一致属合理设计（原 README 写'用户级优先'是错的，已修正）。getAgentDir 支持 PI_CODING_AGENT_DIR 环境变量覆盖，可用于隔离测试。tests/test.mjs 已补 3 用例固化（37/37 过）。",
+      "tags": [
+        "subagent",
+        "agents",
+        "覆盖顺序",
+        "pi"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
+    },
+    {
+      "id": "93135490-ff7f-4432-8a3f-35fe4e33e06b",
       "category": "solutions",
-      "title": "GitHub push 凭证：PAT 落盘 git-credentials",
-      "content": "沙箱无 GitHub 认证时 push 被拦：需 git config --global credential.helper store 后 push https://<PAT>@github.com/cyfxxx/pi-tools.git。注意 URL 内嵌 token 推送不会触发 credential helper 落盘，须手动写 ~/.git-credentials（权限 600，格式 https://<PAT>@github.com）才免密；remote 保持无 token 干净 URL，token 不进入 git 配置。push 遇 GitHub 瞬时 502 直接重试；non-fast-forward 时 fetch 后 rebase 再推。PAT 在会话明文出现后建议用完撤销。",
+      "title": "plan_exit 工具缺失的退出兜底",
+      "content": "--continue 恢复的会话中，会话启动后新注册的工具（如 plan_exit）会 not found 不可调用，与 AGENTS.md 记录的同类型问题一致。兜底：用户按 Ctrl+Alt+P 或输入 /plan 在 TUI 底部选择器手动退出计划模式，之后恢复执行权限。pi 重启（新进程）后工具注册完整，问题消失。另注意：用户确认退出计划模式后模型可能停止输出一次，属已知现象。",
+      "tags": [
+        "plan-mode",
+        "plan_exit",
+        "故障处理"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
+    },
+    {
+      "id": "7dc2ef26-d5fe-435e-9f71-d99dddfb58c1",
+      "category": "fact",
+      "title": "扩展命令整合结果与守门规则",
+      "content": "2026-08-10 完成扩展命令整合：/voice <start|stop|cancel|tts|doctor|model|bench|help>（修复 help 误触发录音）、/auto <status|policy|failover|pause|resume|restart|help> + /schedule、/plan <enter|exit|clear|resume|view|todos|help>（无参数保留 toggle）。旧命令名 /tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart 全部移除不保留别名。conflict-check.mjs 新增守门：命令白名单+每扩展≤2命令+必须 help，新命令未同步清单直接报错。",
+      "tags": [
+        "pi",
+        "命令整合",
+        "conflict-check",
+        "扩展规范"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
+    },
+    {
+      "id": "ff3ae7b5-c3fa-46a6-a03e-bee00f3db00a",
+      "category": "fact",
+      "title": "pi-bg.sh 后台任务脚本四件套隔离",
+      "content": "~/.pi/scripts/pi-bg.sh（+ README-pi-bg.md）用于长任务并发：前台交互期间在 tmux detached 会话跑后台 pi。子命令：start（一次性，pi -p）、rpc（长驻 JSON-RPC，支持 prompt/steer/status/log/stop）。隔离四件套：--no-session（零会话污染）+ --no-extensions（不触发 voice tmp 清理/autopilot/memory 写入）+ 默认只读工具集 + 独立日志。实测后台任务零会话写入、零 memory 写入，前台不被打断。",
+      "tags": [
+        "pi",
+        "pi-bg.sh",
+        "后台任务",
+        "tmux"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "observedAt": "2026-08-12T16:03:30.224Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
+      "deleted": false
+    },
+    {
+      "id": "10139173-9e47-44aa-af5f-686839e51f3c",
+      "category": "fact",
+      "title": "git push 直连 GitHub 失败需代理",
+      "content": "2026 年环境中 git push 直连 GitHub 失败（表现为集成测试失败），需改用代理方式推送。注意：可能仅为当时网络状况，非永久配置。",
       "tags": [
         "git",
         "github",
-        "凭证",
-        "pi-backup"
+        "proxy",
+        "网络"
       ],
-      "confidence": 0.95,
+      "confidence": 0.5,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
+      "createdAt": "2026-08-12T16:05:12.568Z",
+      "updatedAt": "2026-08-12T16:05:12.568Z",
+      "accessedAt": "2026-08-12T16:05:12.568Z",
+      "observedAt": "2026-08-12T16:05:12.568Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5f8-6700-72f8-a938-3d1d973edd9e",
+      "deleted": false
     },
     {
-      "id": "865ecc40-be49-41d0-ad4c-183ceb81ddc0",
+      "id": "690a0d4d-8029-406b-9c3e-0968bee7bfdd",
       "category": "fact",
-      "title": "本机 sshd 与 pi-link 互联状态",
-      "content": "本机（WSL2 容器）已装 openssh-server 并 enable：监听 0.0.0.0:22，PermitRootLogin without-password（root 仅密钥认证），authorized_keys 含仓库合集 2 条公钥（root@localhost 另一环境 + pi-link@MYPC 本机）。Windows 宿主机私钥不在授权列表（连接提示密码）。远程 pi 设备经 Tailscale 连 100.117.170.110:22（tailnet mypc.tail913a3.ts.net，IPv6 fd7a:115c:a1e0::8437:aa6e），pi-link 配置 host=100.117.170.110、user=root。密码认证仍为 yes 但容器无密码用户，可顺手设 PasswordAuthentication no 加固。",
+      "title": "RPC load_session 跨进程会话恢复验证通过",
+      "content": "2026-08-12 用 /tmp/rpc-verify2.py 验证 pi 的 RPC load_session 能力：会话 1（/tmp/rpc-sessions/*.jsonl）prompt 回复 42，会话 2 load_session 恢复会话 1 后追问上一轮数字，得到正确答案 42，确认上下文可跨进程完整恢复。",
       "tags": [
-        "sshd",
-        "pi-link",
-        "tailscale",
-        "wsl2"
+        "rpc",
+        "load_session",
+        "会话恢复",
+        "pi-link"
       ],
-      "confidence": 0.95,
+      "confidence": 0.9,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
+      "createdAt": "2026-08-12T16:07:17.996Z",
+      "updatedAt": "2026-08-12T16:07:17.996Z",
+      "accessedAt": "2026-08-12T16:07:17.996Z",
+      "observedAt": "2026-08-12T16:07:17.996Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff621-2c77-7731-9a54-db99bfbd3926",
+      "deleted": false
+    },
+    {
+      "id": "416ea5e2-9fb9-46b3-8c61-3a8370e2d3c8",
+      "category": "fact",
+      "title": "pi-link localhost 自连故障状态",
+      "content": "2026-08-12 测试 pi-link 本地自连：device=localhost（root@127.0.0.1:8022）报 Host key verification failed，link_send 返回'远程会话未在超时内结束'，未收到回复。链路实际 1 秒内完成连接，说明 SSH 连接成功，故障定位在 known_hosts host key（缺记录或 key 不匹配）及远程 pi 会话启动/结束环节。当时未修复，待后续处理。",
+      "tags": [
+        "pi-link",
+        "ssh",
+        "localhost",
+        "故障"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:07:58.096Z",
+      "updatedAt": "2026-08-12T16:07:58.288Z",
+      "accessedAt": "2026-08-12T16:07:58.096Z",
+      "observedAt": "2026-08-12T16:07:58.096Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff637-0035-72f8-a342-487675ca51a1",
+      "supersededBy": "9a0c44b5-e432-454e-8d1a-229ed734e9b9",
+      "deleted": true
+    },
+    {
+      "id": "9a0c44b5-e432-454e-8d1a-229ed734e9b9",
+      "category": "procedure",
+      "title": "link_send 故障排查流程",
+      "content": "link_send 失败排查：先 link_status 预检。报 Host key verification failed 时用 ssh-keyscan -p <port> <host>（本例 127.0.0.1:8022）验证并添加 host key 到 known_hosts。报'远程会话未在超时内结束'说明 SSH 链路已通，故障在远程 pi 会话未正常启动/结束，需检查 sshd 服务与 pi-link 的 forced command 配置。注意 link_status 显示不可达不代表链路完全不通，实际调用仍可能连接成功。",
+      "tags": [
+        "pi-link",
+        "ssh",
+        "故障排查"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:07:58.096Z",
+      "updatedAt": "2026-08-12T16:07:58.096Z",
+      "accessedAt": "2026-08-12T16:07:58.096Z",
+      "observedAt": "2026-08-12T16:07:58.096Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff637-0035-72f8-a342-487675ca51a1",
+      "deleted": false
+    },
+    {
+      "id": "38e4c344-e9c1-4699-b2d9-a1d88b1ca7aa",
+      "category": "fact",
+      "title": "pi-link localhost 自连测试失败模式",
+      "content": "2026-08-12 用户用 link_send(device=localhost, message='回复两个字：工具好') 测试 pi-link 本地自连：链路约1秒建立，但 21 秒后超时报错'远程会话未在超时内结束'，0 轮工具交互/0 次工具调用，表明远端 pi 会话未在超时窗口内完成处理。同日 link_status 预检另显示 localhost（root@127.0.0.1:8022）Host key verification failed。可能原因：localhost 未注册进 pi-link.json，或远端会话启动/处理超时。",
+      "tags": [
+        "pi-link",
+        "link_send",
+        "故障诊断",
+        "localhost"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:08:31.873Z",
+      "updatedAt": "2026-08-12T16:08:31.873Z",
+      "accessedAt": "2026-08-12T16:08:31.873Z",
+      "observedAt": "2026-08-12T16:08:31.873Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff639-fbec-776a-9b72-451c983c716f",
+      "deleted": false
+    },
+    {
+      "id": "8ba87e77-60bd-4b43-8375-038ed881fe98",
+      "category": "reference",
+      "title": "link_send 错误语义：连接成功≠处理成功",
+      "content": "pi-link 的 link_send 返回'远程会话未在超时内结束'（约21秒）时，表示 SSH 连接已建立但远端 pi 会话未在超时窗口内完成处理并回复——这是处理超时而非连接失败。诊断应先 link_status 确认设备清单与连通性（区分 Host key verification failed 等连接层错误），再排查远端会话启动/处理问题。",
+      "tags": [
+        "pi-link",
+        "link_send",
+        "错误语义",
+        "诊断流程"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T16:08:31.873Z",
+      "updatedAt": "2026-08-12T16:08:31.873Z",
+      "accessedAt": "2026-08-12T16:08:31.873Z",
+      "observedAt": "2026-08-12T16:08:31.873Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff639-fbec-776a-9b72-451c983c716f",
+      "deleted": false
     }
   ]
 }
