@@ -34,14 +34,34 @@ LANGUAGE = os.environ.get("PI_WHISPER_LANGUAGE") or None  # 服务级默认语�
 DEVICE = (os.environ.get("PI_WHISPER_DEVICE") or "auto").lower()
 
 
+def _cuda_runtime_available():
+    """实测 CUDA 运行时库可加载（libcublas + libcudnn，dlopen 自动搜索 LD_LIBRARY_PATH）。
+    nvidia-smi / get_cuda_device_count 只证明驱动/设备可见；缺 pip CUDA 库（libcublas.so.12 等）
+    时推理必然失败，auto 探测必须在此处拦截。"""
+    import ctypes
+
+    def any_of(names):
+        for n in names:
+            try:
+                ctypes.CDLL(n)
+                return True
+            except OSError:
+                continue
+        return False
+
+    return any_of(["libcublas.so.13", "libcublas.so.12"]) and any_of(["libcudnn.so.9", "libcudnn.so.8"])
+
+
 def _detect_device():
-    """auto 探测：nvidia-smi 存在且 ctranslate2 报 CUDA 可用 → cuda，否则 cpu。"""
+    """auto 探测：nvidia-smi 可用 + CUDA 运行时库可加载 → cuda，否则 cpu。"""
     if DEVICE != "auto":
         return DEVICE
     try:
         import subprocess
 
         subprocess.run(["nvidia-smi"], capture_output=True, timeout=5, check=True)
+        if not _cuda_runtime_available():
+            return "cpu"
         import ctranslate2
 
         return "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
@@ -75,6 +95,15 @@ _model = None
 _model_lock = threading.Lock()
 
 
+def _probe_cuda(model):
+    """cuda 懒加载坑：WhisperModel 构造不加载 CUDA 运行时（首次转写才 dlopen libcublas），
+    构造成功 ≠ CUDA 可用。空转 0.2s 静音强制初始化，失败抛错走 get_model 的降级分支。"""
+    import numpy as np
+
+    segs = model.transcribe(np.zeros(3200, dtype=np.float32), language="zh")
+    list(segs)
+
+
 def get_model():
     global _model
     with _model_lock:
@@ -84,6 +113,8 @@ def get_model():
             device = _detect_device()
             try:
                 _model = _load_model(WhisperModel, device)
+                if device == "cuda":
+                    _probe_cuda(_model)
             except Exception as e:  # noqa: BLE001
                 if device == "cuda":
                     # CUDA 库缺失/加载失败（如 libcublas.so.12 not found，仅驱动可见）时降级 CPU，不阻塞服务

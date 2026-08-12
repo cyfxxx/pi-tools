@@ -3804,10 +3804,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 19,
+      "recurrence": 25,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-12T04:32:10.111Z",
-      "accessedAt": "2026-08-12T04:32:10.111Z",
+      "updatedAt": "2026-08-12T12:36:55.930Z",
+      "accessedAt": "2026-08-12T12:36:55.930Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -6189,13 +6189,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T13:54:24.746Z",
-      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-12T12:06:42.964Z",
       "accessedAt": "2026-08-11T13:54:24.746Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "36473d52-5173-4182-86d9-3f9d9825e1bd"
     },
     {
       "id": "635528fb-bcb1-4195-9dd1-b7fa068df6c5",
@@ -6933,13 +6934,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T04:22:22.546Z",
-      "updatedAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T12:06:42.928Z",
       "accessedAt": "2026-08-12T04:22:22.546Z",
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "e733ee7d-7734-48dc-b0bb-238e45f7e57b"
     },
     {
       "id": "23a7e860-0f47-4f07-b249-d1b8b6e755e7",
@@ -7238,7 +7240,8 @@
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "dddb7964-eadb-43ce-906c-df57f463f695",
@@ -7260,7 +7263,8 @@
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "9588e5c8-c660-469b-9032-083be991f358",
@@ -7282,7 +7286,8 @@
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "e4f27b1a-e8d3-40f7-98bd-fa5717f30018",
@@ -7304,7 +7309,8 @@
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "31e3b0af-c7e8-4452-b53d-fa0a902a24a5",
@@ -7326,7 +7332,8 @@
       "observedAt": "2026-08-12T09:42:37.849Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "1b51e074-1d40-4dc7-b241-0440bb7eedea",
@@ -7348,7 +7355,8 @@
       "observedAt": "2026-08-12T09:42:37.850Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "8376fccb-a9f4-4e3e-a022-21b5a949fcc5",
@@ -7370,7 +7378,187 @@
       "observedAt": "2026-08-12T09:42:37.850Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "deleted": false
+    },
+    {
+      "id": "79151994-d680-4b93-b23a-017e81a337e2",
+      "category": "procedure",
+      "title": "pi-tools 完整重建流程",
+      "content": "用户环境（WSL2 Linux，国内网络）重建 pi 配置：克隆 GitHub cyfxxx/pi-tools 到 /tmp，~/.pi 已存在时保留 agent/settings.json、models-store.json、auth.json、sessions/（git 排除项），仓库含 .git 直接并入，再运行 scripts/rebuild.sh --yes。注意沙箱 CA 证书缺失时需先执行 git config --global http.sslVerify false（README 条目）。重建含 npm 依赖（国内镜像加速）、Python venv、SearXNG repo、fd/rg 二进制、Chromium、3 个 TUI 补丁、wrapper 接管 pi、crontab pi-cron。",
+      "tags": [
+        "pi-tools",
+        "rebuild",
+        "部署"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "13b48f10-a077-4838-a20a-c680419ea70e",
+      "category": "fact",
+      "title": "国内网络 Chromium 下载方案",
+      "content": "本环境（国内网络）安装 CloakBrowser Chromium：ghproxy 镜像仅 488KB/s 过慢，改用 NODE_TLS_REJECT_UNAUTHORIZED=0 直连 cloakbrowser.dev 可达 1.8MB/s（快约 4 倍）。具体为在扩展目录用扩展自带 cloakbrowser v0.3.32 CLI 加 TLS 绕过重装。注意 CloakBrowser 下载失败会清空 /root/.cloakbrowser 目录（需重装而非依赖旧产物）。",
+      "tags": [
+        "chromium",
+        "cloakbrowser",
+        "网络",
+        "国内镜像"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "e733ee7d-7734-48dc-b0bb-238e45f7e57b",
+      "category": "fact",
+      "title": "pi-voice 语音栈部署细节",
+      "content": "WSL2 Linux 环境语音栈：whisper venv 在 /opt/pi-whisper/venv（faster-whisper + opencc 繁转简），base 模型经 hf-mirror 下载，whisper 常驻服务 127.0.0.1:18766（/health 返回 {\"ok\":true}）；TTS 用 piper 神经中文（zh_CN-huayan-medium.onnx 61MB）+ espeak-ng 兜底 + paplay 播放。扩展检测到 NVIDIA GPU 但系统缺 CUDA 运行库，在 agent/pi-voice.json 配置 whisperDevice: \"cpu\" 修复 libcublas.so.12 not found 报错（base 模型 CPU int8 够用）。",
+      "tags": [
+        "pi-voice",
+        "whisper",
+        "TTS",
+        "语音"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "36473d52-5173-4182-86d9-3f9d9825e1bd",
+      "category": "fact",
+      "title": "tmux 配置不在 git 同步边界内",
+      "content": "pi-tools 仓库 git 同步只覆盖 ~/.pi/ 目录，~/.tmux.conf 位于用户主目录（~/.pi 之外），git 无法推送/拉取，需手动安装：cp ~/.pi/tmux/tmux.conf ~/.tmux.conf 然后 tmux kill-server 重启生效（会终止现存 tmux 会话）。配置含 set -g extended-keys always 及状态栏脚本 status-loop.sh 挂载；install-wrapper.sh 同样不负责写 ~/.bash_aliases。不装则语音快捷键 Ctrl+Alt+R 在 tmux 内无法透传。",
+      "tags": [
+        "tmux",
+        "pi-tools",
+        "git同步",
+        "配置边界"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "d943f40e-e212-40db-bd13-a931c4986f29",
+      "category": "fact",
+      "title": "pi-tools 重建后全量验证结果",
+      "content": "2026-07-15 pi-tools 重建+语音补齐后验证全绿：smoke-test.sh 8 通过/1 预期跳过（tmux 状态循环，headless 无 tmux 会话）；test-all.sh 全量回归通过（8 套 vitest + subagent 34 用例 + tsc + extensions 23 用例 + 冲突检查 8 项）；端到端 pi -p 对话正常，wrapper 生命周期正常。9 个扩展（pi-web-search/pi-autopilot/pi-browser/plan-mode/pi-memory/subagent/pi-tmux/pi-voice/pi-context）功能验证正常。SearXNG 运行于 127.0.0.1:8889。",
+      "tags": [
+        "pi-tools",
+        "回归测试",
+        "验证"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "ffb5e51f-7127-4e9f-8409-445d83b3c9f6",
+      "category": "fact",
+      "title": "环境：WSL2 带 GPU 缺 CUDA 库",
+      "content": "本机为 WSL2 Linux 环境（语音平台判定非 termux → linux，麦克风用 parec），nvidia-smi 可用、检测到 NVIDIA GPU，但系统缺 CUDA 运行库（libcublas.so.12 缺失），faster-whisper GPU 模式不可用，需显式配置 CPU 设备。Node v22.23.2，pi 版本 0.84.1，Python 3.12.3。",
+      "tags": [
+        "环境",
+        "WSL2",
+        "GPU",
+        "CUDA"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "0f48d27c-91ba-417f-bb56-245f04691c5f",
+      "category": "fact",
+      "title": "nohup 下 tee 进程替换会丢输出",
+      "content": "rebuild.sh 在 nohup 后台执行时，控制台只捕获部分输出（tee 进程替换在 nohup 下的行为问题），日志缺中间阶段。排查重建结果应以落盘日志（~/.pi/logs 等）为权威依据，直接检查各产物状态（npm 套件、venv、二进制、补丁）而非仅看控制台捕获。",
+      "tags": [
+        "nohup",
+        "日志",
+        "排查"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "c3612b25-8f11-41d3-9757-f9ac987be7cf",
+      "category": "habit",
+      "title": "用户偏好：先解释原因再执行",
+      "content": "用户在长任务中断或异常时会先问\"出什么问题了\"，要求先得到原因解释再继续操作；确认执行时习惯用极简回复（如\"执行\"）。涉及会终止现有会话的操作（如 tmux kill-server）需先说明影响并征求同意。",
+      "tags": [
+        "用户偏好",
+        "沟通方式"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T12:06:42.819Z",
+      "updatedAt": "2026-08-12T12:06:42.819Z",
+      "accessedAt": "2026-08-12T12:06:42.819Z",
+      "observedAt": "2026-08-12T12:06:42.819Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
     }
   ]
 }
