@@ -91,3 +91,50 @@ export function formatGetLines(task: Task): string {
   if (task.activeForm) lines.push(`  状态: ${task.activeForm}`);
   return lines.join("\n");
 }
+
+/** P1: 任务状态渲染为 plan.md 文本（磁盘持久化，git 版本化）。 */
+export function renderPlanFile(tasks: readonly Task[], nextId: number): string {
+  const lines = [
+    "# 计划（plan-mode 自动同步，勿手改——下一次状态变化会覆盖）",
+    "",
+  ];
+  for (const t of tasks) {
+    if (t.status === "deleted") continue;
+    const check =
+      t.status === "completed" ? "x" : t.status === "in_progress" ? "~" : t.status === "blocked" ? "b" : " ";
+    const form = t.status === "in_progress" && t.activeForm ? ` (${t.activeForm})` : "";
+    lines.push(`- [${check}] ${t.id}. ${t.subject}${form}`);
+  }
+  lines.push("");
+  lines.push(`<!-- nextId: ${nextId} -->`);
+  return lines.join("\n");
+}
+
+/** P1: 从 plan.md 文本解析任务状态；格式不符返回 null（防手改污染）。 */
+export function parsePlanFile(content: string): { tasks: Task[]; nextId: number } | null {
+  const tasks: Task[] = [];
+  const lines = content.split("\n");
+  let maxId = 0;
+  let parsed = 0;
+  for (const line of lines) {
+    const m = line.match(/^- \[([ x~b])\] (\d+)\. (.+)$/);
+    if (!m) continue;
+    parsed++;
+    const id = parseInt(m[2], 10);
+    maxId = Math.max(maxId, id);
+    const status =
+      m[1] === "x" ? "completed" : m[1] === "~" ? "in_progress" : m[1] === "b" ? "blocked" : "pending";
+    let subject = m[3];
+    let activeForm: string | undefined;
+    const fm = subject.match(/^(.+?)\s*\((.*)\)$/);
+    if (fm && status === "in_progress") {
+      subject = fm[1];
+      activeForm = fm[2];
+    }
+    tasks.push({ id, subject, status, activeForm } as Task);
+  }
+  // 格式校验：至少 1 条可解析任务，且可解析行过半（防手改污染）
+  const nonEmpty = lines.filter((l) => l.trim() !== "").length;
+  if (parsed === 0 || parsed < nonEmpty / 2) return null;
+  return { tasks, nextId: maxId + 1 };
+}

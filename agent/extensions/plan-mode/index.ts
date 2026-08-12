@@ -1,4 +1,4 @@
-import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { readFileSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -18,10 +18,10 @@ import {
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
 import { loadNotes, clearCompactionFlag } from "../../lib/note-store.ts";
 
-import { type Task } from "./state.ts";
+import { type Task, type TaskState } from "./state.ts";
 import { getState, replaceState, resetState } from "./store.ts";
 import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
-import { formatPlanMessageLine } from "./view.ts";
+import { formatPlanMessageLine, parsePlanFile, renderPlanFile } from "./view.ts";
 import { registerTodoTool, runTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
@@ -245,6 +245,40 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       planDir,
       qaMessages,
     });
+
+    // P1: 执行模式下 todo 变化实时同步到计划文件（git 版本化）——
+    // /clear 后 sessionTree 丢失也能从磁盘恢复；失败静默（目录非 git 仓库时跳过 commit）
+    if (executionMode && planDir) {
+      syncPlanToFile(state, planDir).catch(() => { /* 落盘失败不阻塞主流程 */ });
+    }
+  }
+
+  /** P1: 从 PLANS_DIR 最新 plan.md 解析任务状态（磁盘恢复兜底）。 */
+  async function restoreStateFromFile(): Promise<(TaskState & { planDirName: string }) | null> {
+    try {
+      const dirs = (await readdir(PLANS_DIR, { withFileTypes: true }))
+        .filter((d) => d.isDirectory() && d.name.startsWith("plan-"))
+        .map((d) => ({ name: d.name, ts: d.name.replace("plan-", "") }))
+        .sort((a, b) => b.ts.localeCompare(a.ts));
+      for (const d of dirs) {
+        const file = join(PLANS_DIR, d.name, "plan.md");
+        const content = await readFile(file, "utf-8").catch(() => null);
+        if (!content) continue;
+        const restored = parsePlanFile(content);
+        if (!restored || restored.tasks.length === 0) continue;
+        return { ...restored, planDirName: d.name };
+      }
+    } catch { /* 无可用计划文件 */ }
+    return null;
+  }
+
+  /** P1: 任务状态渲染为 plan.md 并提交（借鉴 pwf 3-file 的磁盘持久化）。 */
+  async function syncPlanToFile(state: TaskState, dir: string): Promise<void> {
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, "plan.md"), renderPlanFile(state.tasks, state.nextId));
+    try {
+      await runGit(pi, dir, "git add plan.md && git commit -m 'sync: todo 状态更新'");
+    } catch { /* 非 git 仓库时静默 */ }
   }
 
   registerTodoTool(pi);
@@ -1036,6 +1070,18 @@ ${todoList}
           tasks: planModeEntry.data.tasks,
           nextId: planModeEntry.data.nextId ?? 1,
         });
+      }
+    }
+
+    // P1: /clear 或会话切换导致 sessionTree 无 plan-mode 数据时，
+    // 从最新计划文件恢复任务列表（磁盘持久化兜底）
+    if (!planModeEntry?.data?.tasks) {
+      const restored = await restoreStateFromFile();
+      if (restored) {
+        replaceState(restored);
+        planDir = join(PLANS_DIR, restored.planDirName);
+        planModeEnabled = false;
+        executionMode = true;
       }
     }
 
