@@ -8,9 +8,17 @@
 set -uo pipefail
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
+# PI_HOME 必须存在（仓库/配置未就绪时后续相对路径全部失效）
+if [ ! -d "$PI_HOME" ]; then
+  echo "rebuild.sh: PI_HOME 不存在: $PI_HOME" >&2
+  echo "请先克隆仓库: git clone https://github.com/cyfxxx/pi-tools.git $PI_HOME" >&2
+  exit 1
+fi
+
 # ---- 参数解析 ----
 # --yes 非交互 | --voice/--no-voice 语音重建开关 | --whisper-model=<名> 模型档位 | --no-gpu/--no-piper 抑制可选子项
-YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0
+# --no-log 关闭自动日志（默认 --yes 模式落盘 logs/rebuild-<ts>.log，带时间戳可追溯）
+YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes) YES=1 ;;
@@ -20,17 +28,26 @@ while [ $# -gt 0 ]; do
     --whisper-model) shift; [ $# -gt 0 ] && WHISPER_MODEL="$1" ;;
     --no-gpu) NO_GPU=1 ;;
     --no-piper) NO_PIPER=1 ;;
+    --no-log) NO_LOG=1 ;;
     *) warn "未知参数: $1（忽略）" ;;
   esac
   shift
 done
+
+# --yes 模式自动落盘日志（进程替换 tee：脚本退出即 EOF，无丢行）
+if [ "$YES" = "1" ] && [ "$NO_LOG" = "0" ]; then
+  LOG_FILE="$PI_HOME/logs/rebuild-$(date +%Y%m%d-%H%M%S).log"
+  mkdir -p "$(dirname "$LOG_FILE")"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+  echo "重建日志: $LOG_FILE"
+fi
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
 fail() { echo -e "  ${RED}✗${NC} $1"; }
 warn() { echo -e "  ${YELLOW}⚠${NC} $1"; }
 info() { echo -e "  ${CYAN}→${NC} $1"; }
-title(){ echo -e "\n${CYAN}[$1]${NC} $2"; }
+title(){ echo -e "\n${CYAN}[$1]${NC} $2（+${SECONDS}s）"; }
 run()  { if [ "$YES" = "1" ]; then "$@" 2>&1; else "$@" 2>&1 | tail -3; fi; }
 
 # ---- 网络检测 ----
@@ -162,9 +179,20 @@ preflight() {
   [ "$VENV_OK" = "1" ] && ok "python3 venv 可用" || warn "python3 venv 仍不可用（SearXNG 将无法重建）"
   # 验证关键工具
   command -v git &>/dev/null && ok "git 已就绪" || warn "git 未安装"
+  command -v curl &>/dev/null && ok "curl 已就绪" || warn "curl 未安装（网络探测/下载将失败）"
   command -v fdfind &>/dev/null && ok "fd-find 已就绪" || warn "fd-find 未安装"
   command -v rg &>/dev/null && ok "ripgrep 已就绪" || warn "ripgrep 未安装"
   dpkg -l python3-venv &>/dev/null 2>&1 && ok "python3-venv 已就绪" || warn "python3-venv 未安装"
+
+  # 磁盘空间（README 要求 >=2GB：SearXNG venv+repo+依赖 ~150MB，npm ~330MB，Chromium ~200MB）
+  local avail_kb=$(df -k "$PI_HOME" 2>/dev/null | awk 'NR==2 {print $4}')
+  if [ -n "$avail_kb" ]; then
+    if [ "$avail_kb" -lt 2097152 ]; then
+      warn "磁盘可用 $(($avail_kb / 1024)) MB < 2GB——重建可能中途失败，建议先清理空间"
+    else
+      ok "磁盘空间 $(($avail_kb / 1024 / 1024)) GB 可用"
+    fi
+  fi
 }
 
 # ---- Phase 1: 配置补全 ----
@@ -250,17 +278,64 @@ EOF
 }
 
 # ---- Phase 2-A: npm 依赖 ----
+# 幂等判定：node_modules 目录非空 ≠ 依赖齐备（中断/失败的 install 会残留部分包）。
+# 按 package.json 的 dependencies+devDependencies 逐包探测缺失，缺则装。
+# 并发：≤3 个 npm install 同时跑（滚动窗口，避免 npm 缓存争抢/registry 压力）。
+npm_missing_deps() {
+  python3 - "$1" <<'PY'
+import json, os, sys
+pkg_dir = sys.argv[1]
+try:
+    d = json.load(open(os.path.join(pkg_dir, 'package.json')))
+except Exception:
+    print('PKGERR')
+    raise SystemExit(0)
+deps = {**d.get('dependencies', {}), **d.get('devDependencies', {})}
+nm = os.path.join(pkg_dir, 'node_modules')
+print(' '.join(k for k in deps if not os.path.isdir(os.path.join(nm, k))))
+PY
+}
+
 phase2_npm() {
-  title "Phase 2-A" "npm 依赖"
+  title "Phase 2-A" "npm 依赖（并发 ≤3）"
+
+  local MAX_JOBS=3
+  local -a pids=()
+  local n=0
+  local installed_count=0
+
+  npm_install_bg() {
+    local d="$1"
+    info "安装依赖: ${d#$PI_HOME/}"
+    (cd "$d" && npm install --no-fund --no-audit >/dev/null 2>&1)
+    if [ $? -eq 0 ]; then
+      echo "  ✓ npm install 完成: ${d#$PI_HOME/}"
+    else
+      echo "  ✗ npm install 失败: ${d#$PI_HOME/}"
+    fi
+  }
+
+  enqueue_install() {
+    local d="$1"
+    npm_install_bg "$d" &
+    pids+=("$!")
+    n=$((n + 1))
+    installed_count=$((installed_count + 1))
+    # 滚动窗口：满 MAX_JOBS 时等最早一个完成再继续
+    if [ "$n" -ge "$MAX_JOBS" ]; then
+      wait "${pids[0]}" 2>/dev/null || true
+      pids=("${pids[@]:1}")
+      n=$((n - 1))
+    fi
+  }
 
   if [ -f "$PI_HOME/agent/npm/package.json" ]; then
-    if [ ! -d "$PI_HOME/agent/npm/node_modules" ] || [ -z "$(ls -A "$PI_HOME/agent/npm/node_modules" 2>/dev/null)" ]; then
-      info "安装 agent/npm 依赖..."
-      (cd "$PI_HOME/agent/npm" && npm install --no-fund --no-audit 2>&1 | tail -1)
-      local count=$(ls "$PI_HOME/agent/npm/node_modules" 2>/dev/null | wc -l)
-      ok "agent/npm/node_modules/ ($count packages)"
+    local missing
+    missing=$(npm_missing_deps "$PI_HOME/agent/npm")
+    if [ -n "$missing" ] && [ "$missing" != "PKGERR" ]; then
+      enqueue_install "$PI_HOME/agent/npm"
     else
-      ok "agent/npm/node_modules/ 已存在"
+      ok "agent/npm/node_modules/ 依赖齐备"
     fi
   fi
 
@@ -268,16 +343,29 @@ phase2_npm() {
     [ -d "$ext" ] || continue
     local name=$(basename "$ext")
     if [ -f "$ext/package.json" ]; then
-      if [ ! -d "$ext/node_modules" ] || [ -z "$(ls -A "$ext/node_modules" 2>/dev/null)" ]; then
-        info "安装扩展 $name 依赖..."
-        (cd "$ext" && npm install --no-fund --no-audit 2>&1 | tail -1)
-        local count=$(ls "$ext/node_modules" 2>/dev/null | wc -l)
-        ok "extensions/$name/node_modules/ ($count packages)"
+      local missing
+      missing=$(npm_missing_deps "${ext%/}")
+      if [ -n "$missing" ] && [ "$missing" != "PKGERR" ]; then
+        enqueue_install "${ext%/}"
       else
-        ok "extensions/$name/node_modules/ 已存在"
+        ok "extensions/$name/node_modules/ 依赖齐备"
       fi
     fi
   done
+
+  # 收尾：等剩余并发任务
+  for pid in "${pids[@]}"; do
+    wait "$pid" 2>/dev/null || true
+  done
+
+  if [ "$installed_count" -gt 0 ]; then
+    info "本次安装 $installed_count 个依赖集（其余幂等跳过）"
+    # 安装后统一报告各目录包数
+    [ -d "$PI_HOME/agent/npm/node_modules" ] && ok "agent/npm: $(ls "$PI_HOME/agent/npm/node_modules" 2>/dev/null | wc -l) packages"
+    for ext in "$PI_HOME/agent/extensions"/*/; do
+      [ -d "$ext/node_modules" ] && ok "extensions/$(basename "$ext"): $(ls "$ext/node_modules" 2>/dev/null | wc -l) packages"
+    done
+  fi
 }
 
 # ---- Phase 2-B: Python 环境 (venv) ----
@@ -285,7 +373,8 @@ phase2_python_venv() {
   title "Phase 2-B" "Python venv"
 
   if [ -f "$PI_HOME/searxng/settings.yml" ]; then
-    if [ ! -f "$PI_HOME/searxng/venv/bin/python" ]; then
+    # 幂等判定：python 与 pip 都必须存在（中断的 venv 创建可能只有 python 没有 pip）
+    if [ ! -x "$PI_HOME/searxng/venv/bin/python" ] || [ ! -x "$PI_HOME/searxng/venv/bin/pip" ]; then
       # preflight 已探测 venv 可用性（VENV_OK）；此处兑底再试一次安装
       if [ "${VENV_OK:-0}" != "1" ]; then
         apt-get install -y python3.12-venv python3-venv -qq 2>&1 | tail -1
@@ -384,42 +473,68 @@ find_pi_root() {
   (cd "$root" && pwd -P 2>/dev/null || echo "$root")
 }
 
-# ---- Phase 2-C: 二进制下载（并发） ----
+# ---- Phase 2-C: 二进制（fd/rg via apt） ----
 phase2_binaries() {
-  title "Phase 2-C" "二进制下载（并发）"
-
-  download_bin() {
-    local name="$1" dest="$2" url="$3" ver_cmd="$4"
-    if [ ! -f "$dest" ]; then
-      local final_url="${GH_PROXY:-}$url"
-      mkdir -p "$(dirname "$dest")"
-      info "下载 $name..."
-      curl -sL "$final_url" -o "/tmp/$name.download" && mv "/tmp/$name.download" "$dest" && chmod +x "$dest"
-      if [ -n "$ver_cmd" ]; then
-        local ver=$(eval "$ver_cmd" 2>/dev/null | head -1)
-        ok "$dest ($ver)"
-      else
-        ok "$dest (downloaded)"
-      fi
-    else
-      local ver=$(eval "$ver_cmd" 2>/dev/null | head -1)
-      ok "$dest ($ver)"
-    fi
-  }
+  title "Phase 2-C" "fd/rg 二进制"
 
   # fd / rg (via apt)
-  if ! command -v fdfind &>/dev/null; then
-    apt-get install -y fd-find -qq 2>&1 | tail -1
-  fi
-  if ! command -v rg &>/dev/null; then
-    apt-get install -y ripgrep -qq 2>&1 | tail -1
-  fi
-  ln -sf "$(command -v fdfind)" "$PI_HOME/agent/bin/fd" 2>/dev/null || true
-  ln -sf "$(command -v rg)" "$PI_HOME/agent/bin/rg" 2>/dev/null || true
+  local fd_src rg_src
+  fd_src="$(command -v fdfind 2>/dev/null)"; rg_src="$(command -v rg 2>/dev/null)"
+  [ -x "$fd_src" ] || apt-get install -y fd-find -qq 2>&1 | tail -1
+  [ -x "$rg_src" ] || apt-get install -y ripgrep -qq 2>&1 | tail -1
+  # 解真实路径：PATH 前缀可能已含 agent/bin（本仓库约定），command -v 会命中旧链接自身，
+  # 直接 ln -sf 会生成自引用链接（第二次重建即坏）。readlink -f 解不出时回退标准路径。
+  fd_src="$(readlink -f "$fd_src" 2>/dev/null || echo "$fd_src")"
+  rg_src="$(readlink -f "$rg_src" 2>/dev/null || echo "$rg_src")"
+  case "$fd_src" in "$PI_HOME/agent/bin/"*) fd_src="/usr/bin/fdfind" ;; esac
+  case "$rg_src" in "$PI_HOME/agent/bin/"*) rg_src="/usr/bin/rg" ;; esac
+  ln -sf "$fd_src" "$PI_HOME/agent/bin/fd" 2>/dev/null || true
+  ln -sf "$rg_src" "$PI_HOME/agent/bin/rg" 2>/dev/null || true
   ok "agent/bin/fd ($($PI_HOME/agent/bin/fd --version 2>/dev/null | head -1))"
   ok "agent/bin/rg ($($PI_HOME/agent/bin/rg --version 2>/dev/null | head -1))"
+}
 
-  true  # placeholder for future infra download
+# ---- Phase 2-C2: CloakBrowser Chromium（pi-browser 扩展依赖） ----
+# 直连失败时：① GH_PROXY 镜像 GitHub Releases（CLOAKBROWSER_DOWNLOAD_URL 支持自定义源，
+# 校验和也从镜像拉取，失败则跳过校验——与官方逻辑一致）；② 仍失败给出手动 TLS 绕过命令。
+phase2_browser() {
+  title "Phase 2-C2" "CloakBrowser Chromium"
+
+  local ext="$PI_HOME/agent/extensions/pi-browser"
+  if [ ! -d "$ext/node_modules/cloakbrowser" ]; then
+    info "pi-browser 扩展未安装，跳过"
+    return 0
+  fi
+
+  # 已装且共享库齐备 → 幂等跳过
+  local chrome=""
+  chrome=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1)
+  if [ -n "$chrome" ] && [ -f "$chrome" ]; then
+    local miss=$(ldd "$chrome" 2>/dev/null | grep -c "not found")
+    if [ "$miss" = "0" ]; then
+      ok "Chromium 已就绪（$chrome）"
+      return 0
+    fi
+    warn "Chromium 缺 $miss 个共享库（rebuild 已补装运行库仍缺，手动: apt-get install -y libnss3 libnspr4 libasound2t64 libatk1.0-0t64 libcups2t64 libgbm1）"
+    return 0
+  fi
+
+  info "安装 Chromium（cloakbrowser install，约 200MB）..."
+  if (cd "$ext" && timeout 600 npx cloakbrowser install >/dev/null 2>&1); then
+    ok "Chromium 安装完成"
+    return 0
+  fi
+
+  if [ -n "${GH_PROXY:-}" ]; then
+    info "直连失败，改用 GitHub 镜像重试（GH_PROXY）..."
+    if (cd "$ext" && CLOAKBROWSER_DOWNLOAD_URL="${GH_PROXY}https://github.com/CloakHQ/cloakbrowser/releases/download" timeout 600 npx cloakbrowser install >/dev/null 2>&1); then
+      ok "Chromium 安装完成（镜像源）"
+      return 0
+    fi
+  fi
+
+  warn "Chromium 安装失败——浏览器功能不可用"
+  info "不可信网络可手动绕过 TLS 校验: cd $ext && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install"
 }
 
 # ---- Phase 2-D: 扩展类型链接（tsconfig paths 同步到实际 pi 安装根） ----
@@ -719,7 +834,17 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
     info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
   fi
 
-# Provider 配置检查（模型配置文件名随 pi 版本变化，双文件兼容）
+  # SearXNG 服务可达性（smoke-test 第 1 项依赖；rebuild 不代启动，给出命令）
+  if [ -f "$PI_HOME/searxng/settings.yml" ] && [ -x "$PI_HOME/searxng/venv/bin/python" ]; then
+    if curl -s --max-time 5 http://127.0.0.1:8889/ >/dev/null 2>&1; then
+      ok "SearXNG 服务运行中 (127.0.0.1:8889)"
+    else
+      warn "SearXNG 服务未运行（smoke-test 需先启动）"
+      info "启动: $PI_HOME/searxng/start.sh"
+    fi
+  fi
+
+  # Provider 配置检查（模型配置文件名随 pi 版本变化，双文件兼容）
   local mfile=""
   [ -f "$PI_HOME/agent/models.json" ] && mfile="$PI_HOME/agent/models.json"
   [ -f "$PI_HOME/agent/models-store.json" ] && mfile="$PI_HOME/agent/models-store.json"
@@ -730,30 +855,20 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
     info "未提供时 pi 无可用模型，无法启动对话"
   elif [ -f "$PI_HOME/agent/settings.json" ] && [ -n "$mfile" ]; then
     DEFAULT_PROVIDER=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultProvider',''))" 2>/dev/null)
-    DEFAULT_MODEL=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultModel',''))" 2>/dev/null)
-    PROVIDER_EXISTS=$(python3 -c "
-import json; d=json.load(open('$mfile'))
-providers=d.get('providers',{}) or d  # models-store.json 顶层即 provider 映射
-print('yes' if '$DEFAULT_PROVIDER' in providers else 'no')" 2>/dev/null)
-    if [ "$PROVIDER_EXISTS" = "yes" ]; then
-      ok "默认 provider '$DEFAULT_PROVIDER' 在 models 配置中已定义"
-      # 检测后端是否可达（baseUrl 在 models-store.json 中为模型级字段）
-      BASE_URL=$(python3 -c "
-import json; d=json.load(open('$mfile'))
-providers=d.get('providers',{}) or d
-p=providers.get('$DEFAULT_PROVIDER',{})
-m=p.get('models') or []
-print((m[0].get('baseUrl','') if m else '') or p.get('baseUrl',''))" 2>/dev/null)
-      if [ -n "$BASE_URL" ]; then
-        if timeout 3 curl -s "$BASE_URL/models" >/dev/null 2>&1; then
-          ok "Provider 后端可达 ($BASE_URL)"
-        else
-          warn "Provider 后端不可达 ($BASE_URL)"
-          info "如需使用远程 API，请创建 $PI_HOME/agent/auth.json"
+    if [ -n "$DEFAULT_PROVIDER" ] && command -v pi &>/dev/null; then
+      # 用 pi 自身模型目录判定：内置 provider（如 opencode-go）不在 models-store.json 中，
+      # 旧逻辑按 models 配置查找会对内置 provider 误报"未定义"
+      if timeout 30 pi --list-models "$DEFAULT_PROVIDER" 2>/dev/null | grep -qE "^\s*$DEFAULT_PROVIDER\s"; then
+        ok "默认 provider '$DEFAULT_PROVIDER' 已就绪（pi 目录可解析）"
+        if [ ! -f "$PI_HOME/agent/auth.json" ]; then
+          warn "agent/auth.json 缺失——需要 API 凭据的 provider 将无法对话"
+          info "原机打包恢复: pi-backup create --with-auth → 新机 pi-backup restore"
         fi
+      else
+        warn "默认 provider '$DEFAULT_PROVIDER' 未在模型目录中定义"
       fi
     else
-      warn "默认 provider '$DEFAULT_PROVIDER' 未在 models.json 中定义"
+      warn "pi CLI 不可用，跳过 provider 检查"
     fi
   fi
 
@@ -762,6 +877,7 @@ print((m[0].get('baseUrl','') if m else '') or p.get('baseUrl',''))" 2>/dev/null
   else
     echo -e "\n${GREEN}✓ 全部完成${NC}"
   fi
+  return $errors
 }
 
 # ============================================================
@@ -773,19 +889,20 @@ set_mirrors
 preflight
 phase1_config
 
-# Phase 2-A (npm), 2-B (venv), 2-B2 (repo) 可并行执行
+# Phase 2-A (npm), 2-B (venv), 2-B2 (repo) 并行执行
+# SearXNG 依赖只需 venv+repo，与 npm 安装（耗时大头）重叠跑，省 ~1-2min
 phase2_npm &
 PID_NPM=$!
 phase2_python_venv &
 PID_VENV=$!
 phase2_repo &
 PID_REPO=$!
-wait $PID_NPM $PID_VENV $PID_REPO 2>/dev/null || true
-
-# 之后安装 SearXNG 完整依赖（需要 venv + repo 都已就绪）
+wait $PID_VENV $PID_REPO 2>/dev/null || true
 phase2_searxng_deps
+wait $PID_NPM 2>/dev/null || true
 
 phase2_binaries
+phase2_browser
 
 # 类型链接需要 pi 已安装；wrapper/whisper 均为幂等
 phase2_types
@@ -843,6 +960,7 @@ if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
 fi
 
 verify
+VERR=$?
 
 echo -e "\n${GREEN}重建完成。${NC}"
 echo ""
@@ -856,3 +974,10 @@ echo "  wrapper 自愈:    $PI_HOME/scripts/install-wrapper.sh --ensure"
 echo "  循环任务:        /loop 5m <prompt>"
 echo "  定时任务:        /schedule cron \"0 9 * * 1-5\" <prompt>"
 echo "  提醒:            /remind +30m <prompt>"
+
+# 退出码反映 verify 结果：有异常时非 0（自动化/CI 可判定失败，勿吞错）
+if [ "$VERR" -gt 0 ]; then
+  echo -e "${YELLOW}重建结束：$VERR 项异常，见上方 ⚠ 行（修复后重跑 rebuild 幂等补齐）。${NC}" >&2
+  exit 1
+fi
+exit 0
