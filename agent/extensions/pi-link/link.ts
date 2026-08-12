@@ -65,11 +65,11 @@ export function buildRemoteCommand(d: DeviceConfig, opts: SendOptions): string {
   parts.push('--session-dir', sdir)
   const args = parts.join(' ')
   // 远程启动路径：优先 node + 真实 cli.js（绕过 pi-wrapper 的启动开销，
-  // 避免 RPC 就绪前就把超时窗口耗尽；wrapper 慢主要是 Termux 的
-  // ensure_tmux/ensure_cron 探测）。pi-original 由 wrapper 安装时创建，
-  // readlink -f 解析出真实 cli.js 后交给 node 执行。
-  const launch = `JS=$(readlink -f "$(command -v pi-original 2>/dev/null || command -v pi 2>/dev/null)" 2>/dev/null); ` +
-    `[ -f "$JS" ] && exec "$(command -v node)" "$JS" ${args}; ` +
+  // 避免 RPC 就绪前就把超时窗口耗尽）。非交互 ssh 会话 PATH 常缺 pi/node，
+  // 用 command -v 探测 + 常见绝对路径兑底（pi-node 安装布局）。
+  const launch = `JS=$(readlink -f "$(command -v pi-original 2>/dev/null || command -v pi 2>/dev/null || echo "$HOME/.local/share/pi-node/current/bin/pi-original")" 2>/dev/null); ` +
+    `NODE_BIN="$(command -v node 2>/dev/null || echo "$HOME/.local/share/pi-node/current/bin/node")"; ` +
+    `[ -f "$JS" ] && [ -f "$NODE_BIN" ] && exec "$NODE_BIN" "$JS" ${args}; ` +
     `exec pi ${args}`
   let cmd = launch
   const cwd = opts.cwd ?? d.cwd
