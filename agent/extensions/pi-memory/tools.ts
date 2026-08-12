@@ -108,7 +108,7 @@ async function execLanguageAsync(
   }
 }
 
-const CATEGORIES: MemoryCategory[] = ['fact', 'preference', 'habit', 'procedure', 'reference']
+const CATEGORIES: MemoryCategory[] = ['fact', 'preference', 'habit', 'procedure', 'reference', 'solutions']
 
 export function registerTools(pi: ExtensionAPI): void {
   // ── memory_store ──

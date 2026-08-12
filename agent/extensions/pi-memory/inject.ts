@@ -46,7 +46,8 @@ export function buildInjectionBlock(
     const maxRank = Math.min(live.length, 32)
     const scored = [...live]
       .map(e => ({ e, score: qualityScore(e) }))
-      .sort((a, b) => b.score - a.score)
+      // M2: solutions（成功解决方案）加权 1.15——新任务注入优先参考同类成功案例
+      .sort((a, b) => (b.e.category === 'solutions' ? b.score * 1.15 : b.score) - (a.e.category === 'solutions' ? a.score * 1.15 : a.score))
       .slice(0, maxRank)
     // M1: MMR 主题多样性 + 跨会话轮转（防注入块冗余/单会话垄断）
     const docMap = new Map(scored.map(x => [x.e.id, buildDoc(x.e)]))
