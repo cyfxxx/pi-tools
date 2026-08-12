@@ -338,3 +338,26 @@ describe('plan-mode extension', () => {
     }
   })
 })
+
+// ─── pi-link ────────────────────────────────────────────────
+describe('pi-link extension', () => {
+  it('registers link_send/link_status tools and /link command', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-link/index')).default
+    await main(pi as any)
+    const tools = pi.registerTool.mock.calls.map((c: any[]) => c[0].name)
+    expect(tools).toContain('link_send')
+    expect(tools).toContain('link_status')
+    const cmds = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
+    expect(cmds).toEqual(['link'])
+  })
+
+  it('link_send execute does not throw on empty config', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-link/index')).default
+    await main(pi as any)
+    const tool = pi.registerTool.mock.calls.find((c: any[]) => c[0].name === 'link_send')
+    const r = await tool[0].execute('id', { device: '', message: '' }, undefined, undefined, {} as any)
+    expect(r.isError).toBe(true)
+  })
+})
