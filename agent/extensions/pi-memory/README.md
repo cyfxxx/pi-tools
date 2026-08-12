@@ -111,6 +111,8 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 ## 四、工具
 
 ### memory_store / memory_search / memory_stats / memory_forget
+
+环境标签体系（v3，2026-08）：`environment` 参数可选 `all`（缺省，通用）/`termux`/`wsl2`/`linux`/`macos`/`windows`——环境专属知识显式打标；注入与检索自动按当前环境过滤（`isEnvVisible`：all + 当前环境可见）。自动提取的条目默认打当前环境标签。检测：`PI_MEMORY_ENV` 覆盖 > `/storage/emulated/0` → termux > `/proc/version` microsoft → wsl2 > `process.platform` darwin → macos / win32 → windows > linux。
 跨会话知识库四件套（详见 SKILL.md）。存储自动去重：标题相同→更新，内容相似(>0.7)→合并。
 
 ### memory_recall（新增）
@@ -128,7 +130,7 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 
 | 命令 | 功能 |
 |------|------|
-| `/memory search <q> [--category=] [--limit=N]` | 搜索记忆 |
+| `/memory search <q> [--category=] [--limit=N] [--env=]` | 搜索记忆（`--env=termux/wsl2/linux/macos/windows` 按环境过滤，非法值提示） |
 | `/memory stats` | 统计（条目/大小/摘要/被取代/冷数据） |
 | `/memory summary [N]` | 查看会话摘要时间线 |
 | `/memory prune` | 清理低价值记忆（需确认） |
@@ -157,6 +159,18 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 - 最近 2 条会话摘要衔接（compaction 后上下文连续）
 - 预算默认 ~500 token（`PI_MEMORY_INJECT_TOKENS` 可调），超出截断
 - 无条目时不注入（零开销）
+
+### 检索排序增强（M1，2026-08）
+
+候选排序不是纯分数降序，三层增强（借鉴 ruflo SmartRetrieval，轻量版）：
+
+1. **时效指数衰减**：`recency = exp(-daysOld/90)`（半衰期约 62 天），久远记忆缓慢衰减而非 180 天线性归零
+2. **MMR 主题多样性（带 banding）**：与最高分差距 <15% 的高分条目**锚定原序**（不参与重排——记忆库增量不破坏缓存前缀）；仅对分数相近的尾部 band 做 MMR 选择（`λ·score − (1−λ)·maxSim`，λ=0.7），防注入块主题冗余
+3. **跨会话 round-robin**：按 `lastSessionId` 分组轮转交错，防单会话条目垄断 top 位置（v4 字段，自动提取时打会话标签，手动存储缺省无）
+
+### solutions 类别（M2，2026-08）
+
+`MemoryCategory` 新增 **`solutions`**（成功的解决方案/修复模式）：提取提示词会独立归类本会话成功解决的故障（原因+解决步骤）；注入排序加权 ×1.15 优先展示——新任务开始时优先参考同类成功案例。
 
 ---
 
