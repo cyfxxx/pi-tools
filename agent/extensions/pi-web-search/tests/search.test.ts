@@ -54,6 +54,37 @@ describe('search', () => {
       expect(result).toContain('Content 1')
     })
 
+    it('dedupes identical URLs across engines and merges engine tags', async () => {
+      const mockData = {
+        number_of_results: 2,
+        results: [
+          { title: 'Same Page', url: 'https://example.com/same', content: 'A', engine: 'google' },
+          { title: 'Same Page', url: 'https://example.com/same', content: 'A', engine: 'bing' },
+          { title: 'Unique', url: 'https://example.com/u', engine: 'duckduckgo' },
+        ],
+        answers: [],
+        corrections: [],
+        suggestions: [],
+        unresponsive_engines: [],
+        infoboxes: [],
+      }
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockData),
+      }) as any
+
+      const { searchWeb } = await import('../search/impl')
+      const config = { searxng_url: 'https://searx.be', timeout: 5000 }
+      const result = await searchWeb(config, 'dup', undefined, undefined)
+
+      // 同一 URL 只出现一次
+      expect(result.match(/https:\/\/example.com\/same/g)).toHaveLength(1)
+      // engine 标签合并
+      expect(result).toContain('[google,bing]')
+      // 另一条结果保留
+      expect(result).toContain('https://example.com/u')
+    })
+
     it('should handle empty results', async () => {
       const { searchWeb } = await import('../search/impl')
 
