@@ -36,6 +36,11 @@ export function decide(
     return { type: 'fail', note: `逻辑错误: ${info.stderr.slice(0, 200)}` }
   }
 
+  // A1: 鉴权/配置错误（401/403/unauthorized）：重试无意义（烧额度），直接失败
+  if (/401|403|unauthorized|invalid api key|authentication/i.test(info.stderr)) {
+    return { type: 'fail', note: `鉴权错误（不重试，请检查 provider 凭证）: ${info.stderr.slice(0, 150)}` }
+  }
+
   if (errClass === 'timeout') {
     // 超时：若还有重试额度则重试；重试次数足够时考虑切更快模型
     if (task.failCount < (task.retries || 0)) {

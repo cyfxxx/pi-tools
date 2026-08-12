@@ -29,6 +29,8 @@ export interface Task {
   retries: number
   failCount: number
   pendingInject: boolean
+  /** A2: 崩溃恢复重注入累计次数（≥3 转 dead-letter 暂停，需人工介入） */
+  recoveryCount?: number
   createdAt: string
   updatedAt: string
 }
@@ -95,7 +97,8 @@ export const TASKS_FILE = 'scheduled-tasks.json'
 export const LOCK_FILE = 'scheduler.lock'
 export const LOG_DIR = 'logs/scheduler'
 export const DEFAULT_MAX_RUN_TIME = 300
-export const DEFAULT_RETRY_DELAY_MS = 60000
+export const RETRY_BASE_DELAY_MS = 30000  // A1: 重试退避基数（30s）
+export const RETRY_MAX_DELAY_MS = 300000  // A1: 重试退避上限（5min）
 export const HISTORY_LIMIT = 10
 export const CONFIG_FILE = '.pi-autopilot-config.json'
 export const TELEMETRY_FILE = '.pi-autopilot-telemetry.json'

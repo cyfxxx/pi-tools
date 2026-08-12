@@ -4,7 +4,7 @@ import { join, dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { Task, TaskStore, SchedulerSettings, ExecHistoryEntry } from './types.ts'
-import { STORE_VERSION, DEFAULT_MAX_RUN_TIME, DEFAULT_RETRY_DELAY_MS, HISTORY_LIMIT, TASKS_FILE } from './types.ts'
+import { STORE_VERSION, DEFAULT_MAX_RUN_TIME, RETRY_BASE_DELAY_MS, RETRY_MAX_DELAY_MS, HISTORY_LIMIT, TASKS_FILE } from './types.ts'
 
 let lockPid: string | null = null
 
@@ -171,6 +171,19 @@ export function addMs(date: string, ms: number): string {
   return new Date(new Date(date).getTime() + ms).toISOString()
 }
 
+/**
+ * A1: 指数退避 + 抖动重试延迟（golem RetryUtils 的轻量移植）。
+ * delay = min(max, base * 2^(failCount-1)) ± jitter(±50%)，下限 base/2。
+ * 连续瞬时故障（provider_down/超时/5xx）用递增延迟避免自撞；抖动防共振。
+ */
+export function retryDelayMs(failCount: number): number {
+  const base = RETRY_BASE_DELAY_MS
+  const max = RETRY_MAX_DELAY_MS
+  const exp = Math.min(max, base * Math.pow(2, Math.max(0, failCount - 1)))
+  const jitter = exp * 0.5 * (Math.random() * 2 - 1)
+  return Math.max(base / 2, Math.round(exp + jitter))
+}
+
 export function isDue(task: Task): boolean {
   if (!task.enabled || !task.nextRun) return false
   return new Date(task.nextRun).getTime() <= Date.now()
@@ -256,6 +269,7 @@ export function createTask(params: {
     retries: Math.max(0, params.retries ?? 0),
     failCount: 0,
     pendingInject: false,
+    recoveryCount: 0,
     createdAt: isoNow(),
     updatedAt: isoNow(),
   }
@@ -282,7 +296,7 @@ export async function addTask(params: Parameters<typeof createTask>[0]): Promise
 
 export async function updateTask(
   idOrName: string,
-  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries'>>
+  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries' | 'recoveryCount'>>
 ): Promise<Task | null> {
   const store = await readTasks()
   const task = store.tasks.find(t => t.id === idOrName || t.name === idOrName)
@@ -365,8 +379,9 @@ export async function updateTaskAfterRun(
   } else {
     task.failCount++
     if (task.retries > 0 && task.failCount <= task.retries) {
-      // 失败重试：延迟固定间隔后再次触发
-      task.nextRun = addMs(isoNow(), DEFAULT_RETRY_DELAY_MS)
+      // 失败重试：指数退避 + 抖动（A1，借鉴 golem RetryUtils）——
+      // 连续瞬时故障（provider_down/超时）用递增延迟避免自撞，抖动防共振
+      task.nextRun = addMs(isoNow(), retryDelayMs(task.failCount))
     } else {
       task.runCount++
       task.nextRun = computeNextRun(task)

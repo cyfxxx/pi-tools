@@ -7,6 +7,9 @@ import { CRASH_FILE } from './types.ts'
 
 const AGENT_DIR = getAgentDir()
 
+// A2: 崩溃恢复重注入次数上限（借鉴 swarmclaw orphan-recovery）
+export const MAX_RECOVERY_ATTEMPTS = 3
+
 // 标记任务已注入（会话中断时用于恢复）
 export async function markPendingInjected(id: string, pending: boolean = true): Promise<void> {
   const store = await readTasks()

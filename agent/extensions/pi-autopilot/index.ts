@@ -2,11 +2,11 @@ import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { SessionScheduler } from './scheduler.ts'
 import { registerCommands } from './commands.ts'
 import { registerTools } from './tools.ts'
-import { acquireSessionLock, releaseSessionLock, renderPrompt, readTasks } from './storage.ts'
+import { acquireSessionLock, releaseSessionLock, renderPrompt, readTasks, updateTask, sendWebhook } from './storage.ts'
 import { collectOfflineExecutions, formatSummary, markRead } from './notifications.ts'
 import { consumeRestartLog } from './state.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
-import { collectPendingTasks, clearPending, clearAllPending, wasAbnormalShutdown } from './queue.ts'
+import { collectPendingTasks, clearPending, clearAllPending, wasAbnormalShutdown, MAX_RECOVERY_ATTEMPTS } from './queue.ts'
 import { touchActivity } from './watchdog.ts'
 
 export default function piAutopilotExtension(pi: ExtensionAPI): void {
@@ -51,13 +51,27 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
         const pending = await collectPendingTasks()
         if (abnormal && pending.length > 0 && !requeued) {
           requeued = true
+          const deadLettered: string[] = []
           for (const task of pending) {
             try {
-              await pi.sendUserMessage?.(`[Scheduler] ${task.name}（上次会话中断，重新注入）: ${renderPrompt(task.prompt)}`)
+              // A2: 恢复次数上限（3 次）——连续崩溃后同一任务反复重注入会无限循环，
+              // 超限转 dead-letter：暂停任务 + webhook 告警，需人工介入
+              const recovery = (task.recoveryCount ?? 0) + 1
+              if (recovery > MAX_RECOVERY_ATTEMPTS) {
+                await updateTask(task.id, { enabled: false, recoveryCount: recovery })
+                await sendWebhook(task, 'suspended', `恢复重试超限（${recovery} 次），任务已暂停，需人工介入`)
+                deadLettered.push(task.name)
+                continue
+              }
+              await updateTask(task.id, { recoveryCount: recovery })
+              await pi.sendUserMessage?.(`[Scheduler] ${task.name}（上次会话中断，第 ${recovery} 次恢复注入）: ${renderPrompt(task.prompt)}`)
               await clearPending(task.id)
             } catch { /* ignore */ }
           }
-          sections.push(`已重新注入 ${pending.length} 个中断时未完成的任务（可能重复执行）`)
+          sections.push(`已重新注入 ${pending.length - deadLettered.length} 个中断时未完成的任务（可能重复执行）`)
+          if (deadLettered.length > 0) {
+            sections.push(`已暂停 ${deadLettered.length} 个恢复超限任务（dead-letter）: ${deadLettered.join('、')}，需人工确认后 /schedule enable 恢复`)
+          }
         }
       }
 
