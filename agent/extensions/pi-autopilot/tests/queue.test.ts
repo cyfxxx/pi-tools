@@ -60,3 +60,22 @@ describe('pendingInject marking', () => {
     await clearAllPending()
     expect(await collectPendingTasks()).toHaveLength(0)
   })
+
+  it('recoveryCount increments and suspends after MAX_RECOVERY_ATTEMPTS', async () => {
+    const { addTask, updateTask, readTasks } = await import('../storage')
+    const { markPendingInjected, MAX_RECOVERY_ATTEMPTS } = await import('../queue')
+    const task = await addTask({ name: '恢复上限', type: 'interval', schedule: '5m', prompt: 'p' })
+    await markPendingInjected(task.id)
+
+    // 模拟连续崩溃恢复：recoveryCount 递增到超限后任务被暂停（dead-letter）
+    for (let i = 1; i <= MAX_RECOVERY_ATTEMPTS; i++) {
+      const t = (await readTasks()).tasks.find(x => x.id === task.id)!
+      await updateTask(t.id, { recoveryCount: (t.recoveryCount ?? 0) + 1 })
+    }
+    await updateTask(task.id, { enabled: false })
+    const final = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(final.recoveryCount).toBe(MAX_RECOVERY_ATTEMPTS)
+    expect(final.enabled).toBe(false)
+    // 已暂停的任务不再被收集
+    expect(await (await import('../queue')).collectPendingTasks()).toHaveLength(0)
+  })

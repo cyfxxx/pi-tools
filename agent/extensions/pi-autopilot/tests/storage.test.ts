@@ -301,9 +301,10 @@ describe('updateTaskAfterRun v2 behavior', () => {
     let t = (await readTasks()).tasks.find(x => x.id === task.id)!
     expect(t.failCount).toBe(1)
     expect(t.runCount).toBe(0)
+    // A1 指数退避：failCount=1 → 30s ± 50% 抖动（[15s, 45s]）
     const gap = new Date(t.nextRun!).getTime() - Date.now()
-    expect(gap).toBeGreaterThan(50000)
-    expect(gap).toBeLessThan(70000)
+    expect(gap).toBeGreaterThan(14000)
+    expect(gap).toBeLessThan(46000)
     await updateTaskAfterRun(task.id, 'failed', 'boom2')
     t = (await readTasks()).tasks.find(x => x.id === task.id)!
     expect(t.failCount).toBe(2)
@@ -311,6 +312,7 @@ describe('updateTaskAfterRun v2 behavior', () => {
     t = (await readTasks()).tasks.find(x => x.id === task.id)!
     expect(t.failCount).toBe(3)
     expect(t.runCount).toBe(1)
+    // 重试耗尽：回到正常调度（interval 5m = 300s > 280s 下限保持）
     const nextGap = new Date(t.nextRun!).getTime() - Date.now()
     expect(nextGap).toBeGreaterThan(280000)
   })
