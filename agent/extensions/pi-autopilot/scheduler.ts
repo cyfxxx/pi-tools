@@ -52,7 +52,9 @@ export class SessionScheduler {
       }
 
       const tasks = await listTasks()
-      const due = tasks.filter(t => isDue(t) && !this.firing.has(t.id))
+      // pendingInject=true 表示任务已注入主会话仍可能执行中（fireViaMessage 非阻塞），
+      // 过滤掉防 interval 长任务重叠触发（agent_settled 时统一清除）
+      const due = tasks.filter(t => isDue(t) && !this.firing.has(t.id) && !t.pendingInject)
       for (const task of due) {
         if (this.firing.has(task.id)) continue
         await this.fireTask(task)
