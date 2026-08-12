@@ -6862,6 +6862,183 @@
       ],
       "observedAt": "2026-08-12T01:47:33.915Z",
       "deleted": false
+    },
+    {
+      "id": "197aa158-0f9a-4c4f-8174-1a254dc4298b",
+      "category": "fact",
+      "title": "pi-voice Linux 平台适配架构",
+      "content": "pi-voice 扩展已实现平台抽象层 platform.ts（termux/linux 双 spec，新增设备只需加 spec）。Linux 录音用 parec→RDPSource 16k wav 直出、无需 ffmpeg；TTS 用 espeak-ng+paplay。配置在 pi-voice.json：platform（auto 探测/termux/linux）、ttsEngine（auto/espeak-ng/piper）、linuxPiperModel、whisperDevice。测试 105/105（platform.test.ts + core-linux.test.ts 新增 28 例）。",
+      "tags": [
+        "pi-voice",
+        "平台适配",
+        "WSL2",
+        "语音"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T04:22:22.645Z",
+      "accessedAt": "2026-08-12T04:22:22.546Z",
+      "observedAt": "2026-08-12T04:22:22.546Z",
+      "environments": [
+        "wsl2"
+      ],
+      "supersededBy": "b7ee57e2-44c8-4540-8f3f-1bfd1dbffd6a",
+      "deleted": true
+    },
+    {
+      "id": "9c93b08a-87a2-40f5-b59a-9b7fd4672560",
+      "category": "fact",
+      "title": "whisper 繁体输出根因与 opencc 依赖",
+      "content": "faster-whisper 中文默认输出繁体，whisper-server.py 用 OpenCC t2s 转简体，但设计为 opencc 缺失时静默跳过（曾导致繁体问题重演）。修复：venv 必须装 opencc-python-reimplemented，pi-whisper.sh 启动时检测 opencc 缺失并显式警告，rebuild.sh 6a 已补装 opencc。验证：\"現在是繁體測試\"→\"现在是繁体测试\"。",
+      "tags": [
+        "whisper",
+        "opencc",
+        "繁体",
+        "pi-voice"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T04:22:22.546Z",
+      "accessedAt": "2026-08-12T04:22:22.546Z",
+      "observedAt": "2026-08-12T04:22:22.546Z",
+      "environments": [
+        "wsl2"
+      ]
+    },
+    {
+      "id": "b7ee57e2-44c8-4540-8f3f-1bfd1dbffd6a",
+      "category": "fact",
+      "title": "piper TTS 接入细节",
+      "content": "piper 装在 /opt/pi-tts/venv，模型 zh_CN-huayan-medium.onnx（63MB，hf-mirror 下载）。ttsEngine:auto 用 which 探测自动选 piper，espeak-ng 兜底。注意：vitest/子进程 PATH 不含 venv，需 symlink 到系统 PATH 才能被探测到。espeak-ng 中文是 cmn-latn 拼音式合成（机械），piper 是自然神经中文。",
+      "tags": [
+        "piper",
+        "TTS",
+        "pi-voice",
+        "WSL2"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T04:22:22.546Z",
+      "accessedAt": "2026-08-12T04:22:22.546Z",
+      "observedAt": "2026-08-12T04:22:22.546Z",
+      "environments": [
+        "wsl2"
+      ]
+    },
+    {
+      "id": "23a7e860-0f47-4f07-b249-d1b8b6e755e7",
+      "category": "fact",
+      "title": "whisper GPU 推理配置与坑",
+      "content": "本机 WSL2 + RTX 3070 Laptop 8G（nvidia-smi 610.43.02）。whisper-server.py 支持 PI_WHISPER_DEVICE=auto/cpu/cuda，cuda 时 compute_type=float16。两个坑：cuBLAS 库在 venv site-packages 下，pi-whisper.sh 需自动加 LD_LIBRARY_PATH；依赖 nvidia-cublas-cu12 12.9 + nvidia-cudnn-cu12 9.24。base 模型 GPU 收益不明显（6 秒音频 CPU 0.84s vs GPU 0.87s），medium/large-v3 才有显著加速（8G 显存够 float16 跑 large-v3）。",
+      "tags": [
+        "GPU",
+        "whisper",
+        "CUDA",
+        "WSL2",
+        "RTX3070"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T04:22:22.546Z",
+      "accessedAt": "2026-08-12T04:22:22.546Z",
+      "observedAt": "2026-08-12T04:22:22.546Z",
+      "environments": [
+        "wsl2"
+      ]
+    },
+    {
+      "id": "8e4689f9-4c69-4af1-9717-25f32ba2b09e",
+      "category": "fact",
+      "title": "STT 模型自动切换结论：不做",
+      "content": "whisper 模型档位按设备自动切换经评估不做（低性价比）：自动切大模型会触发自动下载（base 74M→medium 769M）且内存探测易误判（共享内存 WSL）导致 OOM 崩服务；换设备手配一条 /voice model small 成本极低。替代方案已落地：/voice doctor 检测到 GPU 时提示\"可 /voice model small 提升准确率\"。",
+      "tags": [
+        "whisper",
+        "模型选择",
+        "决策"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T04:22:22.546Z",
+      "accessedAt": "2026-08-12T04:22:22.546Z",
+      "observedAt": "2026-08-12T04:22:22.546Z",
+      "environments": [
+        "wsl2"
+      ]
+    },
+    {
+      "id": "3d36db32-f5e7-4839-b873-a4aace1c8d7f",
+      "category": "fact",
+      "title": "rebuild.sh 语音条件触发重建规则",
+      "content": "rebuild.sh 的 phase2_voice 以 agent/pi-voice.json 存在为条件：存在才重建 whisper venv+opencc+模型及 TTS 工具，不存在则跳过并提示\"需要时 rebuild --voice\"。覆盖开关：--voice/--no-voice 强制装/跳过；--whisper-model=<档位> 默认 base；linux 自动装 espeak-ng+paplay，termux 提示手动 pkg install termux-api；GPU（nvidia-smi+ctranslate2 双重确认）与 piper 为可选提示，--no-gpu/--no-piper 跳过。",
+      "tags": [
+        "rebuild.sh",
+        "条件触发",
+        "pi-voice",
+        "语音依赖"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.546Z",
+      "updatedAt": "2026-08-12T04:22:22.547Z",
+      "accessedAt": "2026-08-12T04:22:22.547Z",
+      "observedAt": "2026-08-12T04:22:22.547Z",
+      "environments": [
+        "wsl2"
+      ]
+    },
+    {
+      "id": "15b034ab-e850-4f0f-97c4-5b18291a99b8",
+      "category": "preference",
+      "title": "用户要求：先回答方案，确认后再执行",
+      "content": "用户明确要求重大改造必须先回答问题/给方案、同意后再执行（曾因助手先执行 CUDA 依赖安装被纠正）。2026 年会话中用户以\"2和3，先回答我的问题，同意后在执行\"纠正过一次。涉及安装依赖、架构改造、新功能接入等行动前必须先陈述方案与代价，等确认。",
+      "tags": [
+        "用户偏好",
+        "执行约定",
+        "工作流"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.547Z",
+      "updatedAt": "2026-08-12T04:22:22.547Z",
+      "accessedAt": "2026-08-12T04:22:22.547Z",
+      "observedAt": "2026-08-12T04:22:22.547Z",
+      "environments": [
+        "wsl2"
+      ]
+    },
+    {
+      "id": "7d87b7f0-84cd-46c6-abf1-a378e49f0202",
+      "category": "fact",
+      "title": "WSL2 麦克风测试教训",
+      "content": "WSL2 下用 parec 录音经常接近全静音（有声帧占比 0.2%-1.1%，如 8 秒录音仅 55ms 有声），对照实验（不经扩展直接 parec 录 15 秒）确认是麦克风源/通道问题而非扩展链路问题。Windows 侧麦克风设备正常；WSLg 音频桥偶发无声，会话久了可能再次卡死，可重启 WSL 音频或确认 Windows 侧权限弹窗。",
+      "tags": [
+        "WSL2",
+        "麦克风",
+        "parec",
+        "录音"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T04:22:22.547Z",
+      "updatedAt": "2026-08-12T04:22:22.547Z",
+      "accessedAt": "2026-08-12T04:22:22.547Z",
+      "observedAt": "2026-08-12T04:22:22.547Z",
+      "environments": [
+        "wsl2"
+      ]
     }
   ]
 }
