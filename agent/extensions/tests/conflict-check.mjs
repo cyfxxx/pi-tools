@@ -125,6 +125,7 @@ async function main() {
       'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
       'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
       'tmux_run', 'tmux_status', 'tmux_read', 'tmux_send', 'tmux_stop', 'tmux_wait',
+      'link_send', 'link_status',
     ]
     const actual = Object.keys(toolMap).sort()
     assertEqual(actual.length, expected.length, 'tool count')
@@ -147,7 +148,7 @@ async function main() {
     }
     // 命令整合规范（2026-09）：每扩展 ≤2 命令，具体功能用子命令参数指定，description 标注 help 用法；
     // 新增命令必须同步更新此清单（防 / 菜单噪音回归）
-    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice']
+    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link']
     const actual = Object.keys(cmdMap).sort()
     const missing = expected.filter((c) => !cmdMap[c])
     const extra = actual.filter((c) => !expected.includes(c))

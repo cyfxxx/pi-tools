@@ -56,7 +56,7 @@ if missing:
     print('missing:', ', '.join(missing))
     raise SystemExit(1)
 " >/dev/null 2>&1
-report $? "9 个扩展目录 index.ts 齐备"
+report $? "10 个扩展目录 index.ts 齐备"
 
 if [ "$FAILED" -gt 0 ]; then
   printf '\n\033[0;31m✗ 回归失败（%s 项）\033[0m\n' "$FAILED"

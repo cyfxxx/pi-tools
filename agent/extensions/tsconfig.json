@@ -43,6 +43,7 @@
     "pi-browser/**/*.ts",
     "pi-web-search/**/*.ts",
     "pi-tmux/**/*.ts",
-    "pi-voice/**/*.ts"
+    "pi-voice/**/*.ts",
+    "pi-link/**/*.ts"
   ]
 }

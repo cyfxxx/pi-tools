@@ -97,3 +97,4 @@ memory/checkpoints/
 
 # pi-backup 配置变更基线（gitignored 配置的 sha256 快照，不入库）
 .backup-baseline/
+pi-link.json
