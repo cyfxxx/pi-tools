@@ -302,8 +302,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       const choice = await ctx.ui.select("模型请求退出计划模式（恢复编辑权限）？", ["确认退出", "取消（继续计划模式）"]);
       if (choice !== "确认退出") {
         ctx.ui.notify("已取消退出计划模式，保持只读。");
+        // 用户选择继续计划模式：中止当前生成，交还输入权——模型不再继续输出，等待用户输入
+        ctx.abort();
         return {
-          content: [{ type: "text" as const, text: "用户取消了退出请求，继续保持计划模式（只读）。" }],
+          content: [{ type: "text" as const, text: "用户取消了退出请求，继续保持计划模式（只读）。等待用户输入。" }],
           details: null,
         };
       }
