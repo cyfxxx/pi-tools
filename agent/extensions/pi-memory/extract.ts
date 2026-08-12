@@ -480,6 +480,8 @@ async function doExtract(
     observedAt: new Date().toISOString(),
     // 自动提取的条目默认打当前环境标签（会话内操作的环境相关）
     environments: [detectEnvironment()],
+    // v4: 会话归属（跨会话轮转分组）
+    lastSessionId: sessionId === 'unknown' ? undefined : sessionId,
   }))
   const { applied, skipped } = await mergeCandidates(entries, candidates)
 

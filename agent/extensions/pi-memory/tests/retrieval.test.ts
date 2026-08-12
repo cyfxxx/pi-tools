@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import type { MemoryEntry } from '../types.ts'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { MemoryEntry } from '../types.ts'
 
 let dir: string
 const ORIG_ENV = { ...process.env }
@@ -121,5 +121,32 @@ describe('retrieval: helpers', () => {
     const stale = makeEntry({ createdAt: old, accessedAt: old, recurrence: 1 })
     const fresh = makeEntry({ recurrence: 8 })
     expect(qualityScore(fresh)).toBeGreaterThan(qualityScore(stale))
+  })
+})
+
+describe('retrieval: M1 多样性增强', () => {
+  it('mmrDiversify keeps top relevant entry and adds diverse ones', async () => {
+    const { mmrDiversify, buildDoc } = await import('../retrieval.ts')
+    const mk = (id: string, title: string, content: string): MemoryEntry => ({ id, title, content, tags: [], category: 'fact', confidence: 1, source: 'manual', recurrence: 5, createdAt: new Date().toISOString(), updatedAt: '', accessedAt: '' })
+    const a = mk('a', 'tmux 配置', 'tmux 键位配置 set -g prefix')
+    const b = mk('b', 'tmux 键位', 'tmux 键位配置 set -g prefix 改键 prefix')
+    const c = mk('c', 'whisper 服务', 'whisper 127.0.0.1:18766 faster-whisper')
+    const docs = new Map([['a', buildDoc(a)], ['b', buildDoc(b)], ['c', buildDoc(c)]])
+    const ranked = [
+      { e: a, score: 1.0 }, { e: b, score: 0.9 }, { e: c, score: 0.8 },
+    ]
+    const out = mmrDiversify(ranked, 2, 0.7, docs)
+    // a 最高分必选；第二选应优先主题不同的 c（b 与 a 高度相似）
+    expect(out[0].e.id).toBe('a')
+    expect(out[1].e.id).toBe('c')
+  })
+
+  it('roundRobinBySession interleaves sessions', async () => {
+    const { roundRobinBySession } = await import('../retrieval.ts')
+    const mk = (id: string, sessionId: string) => ({ e: { id, title: id, content: id, tags: [], category: 'fact' as const, confidence: 1, source: 'manual' as const, recurrence: 1, createdAt: '', updatedAt: '', accessedAt: '', lastSessionId: sessionId }, score: 1 })
+    const ranked = [mk('s1a', 'S1'), mk('s1b', 'S1'), mk('s2a', 'S2'), mk('s3a', 'S3')]
+    const out = roundRobinBySession(ranked, 4)
+    // 轮转：S1→S2→S3→S1
+    expect(out.map(x => x.e.lastSessionId)).toEqual(['S1', 'S2', 'S3', 'S1'])
   })
 })

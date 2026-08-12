@@ -22,6 +22,8 @@ export interface MemoryEntry {
   deleted?: boolean
   /** v3: 适用运行环境（缺省 = all 通用）。termux/wsl2/linux/macos/windows；注入与检索按当前环境过滤 */
   environments?: string[]
+  /** v4: 最近一次写入/提取该条目的会话（跨会话 round-robin 分组用） */
+  lastSessionId?: string
 }
 
 export interface SummaryEntry {
