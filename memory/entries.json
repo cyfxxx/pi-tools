@@ -882,13 +882,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-05T14:40:28.496Z",
-      "updatedAt": "2026-08-05T14:40:28.496Z",
+      "updatedAt": "2026-08-12T00:30:04.815Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "5a456404-7bbe-4184-adc8-3340a31dcbae"
     },
     {
       "id": "10c166ab-ff11-4abf-9d00-4d98ce8ed5aa",
@@ -948,13 +949,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-05T15:04:03.663Z",
-      "updatedAt": "2026-08-05T15:04:03.663Z",
+      "updatedAt": "2026-08-12T00:39:50.500Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "9086729c-0284-4f17-894d-8cd7ca023597"
     },
     {
       "id": "8de6cde3-d222-464b-9a18-fc42de2f537c",
@@ -3798,10 +3800,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 11,
+      "recurrence": 15,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-11T15:09:26.696Z",
-      "accessedAt": "2026-08-11T15:09:26.696Z",
+      "updatedAt": "2026-08-12T02:00:50.263Z",
+      "accessedAt": "2026-08-12T02:00:50.263Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -5501,13 +5503,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T02:54:32.645Z",
-      "updatedAt": "2026-08-11T02:54:32.645Z",
+      "updatedAt": "2026-08-12T00:40:23.778Z",
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "93752be8-d7af-43e6-84a2-05eb2d5924b7"
     },
     {
       "id": "152b2e9e-2fa5-4e8a-83ac-cb866fe4bacb",
@@ -6253,6 +6256,611 @@
       "environments": [
         "wsl2"
       ],
+      "deleted": false
+    },
+    {
+      "id": "945b8ee1-c645-412d-bd01-3c115ba4c937",
+      "category": "fact",
+      "title": "SearXNG 实际监听 8889 端口",
+      "content": "本机自托管 SearXNG 服务实际运行在 8889 端口，而非工具配置常见的 8888。web_search 请求失败排查时发现端口配置不匹配会导致 TCP 可连但服务无响应，需核对 pi-web-search 工具与 searxng/settings.yml 的端口配置。",
+      "tags": [
+        "searxng",
+        "web-search",
+        "端口"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:04.734Z",
+      "updatedAt": "2026-08-12T00:33:43.510Z",
+      "accessedAt": "2026-08-12T00:30:04.734Z",
+      "observedAt": "2026-08-12T00:30:04.734Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": true,
+      "supersededBy": "7fce32a4-43e5-4230-867d-ef9e0edb5497"
+    },
+    {
+      "id": "5a456404-7bbe-4184-adc8-3340a31dcbae",
+      "category": "fact",
+      "title": "网络环境：百度可达 Google 不通",
+      "content": "当前机器网络环境分域：百度等国内站点可访问，Google 等境外站点连接超时。Google 引擎请求超时会阻塞 SearXNG worker 导致服务整体挂死，配置 web_search 引擎时应避免 Google 或为其设置较短超时，网络受限时优先使用 baidu/bing 等国内引擎。",
+      "tags": [
+        "网络",
+        "searxng",
+        "google"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:04.734Z",
+      "updatedAt": "2026-08-12T00:30:53.513Z",
+      "accessedAt": "2026-08-12T00:30:04.734Z",
+      "observedAt": "2026-08-12T00:30:04.734Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": true,
+      "supersededBy": "8da06112-3fb3-4fe1-9240-584764aa8842"
+    },
+    {
+      "id": "53d863d6-edba-4336-960c-3848b0282214",
+      "category": "procedure",
+      "title": "SearXNG 挂死排查与恢复流程",
+      "content": "SearXNG 挂死特征：TCP 端口可连但 HTTP 无响应，2 个 worker 被引擎超时堆叠阻塞。排查顺序：1) 确认服务是否运行及监听端口（ss/lsof 对比配置）；2) 测 TCP 连通性；3) 查日志看引擎超时堆叠；4) 用 scripts 下启停脚本重启服务恢复。复发模式：首次成功请求后随即无响应，符合境外引擎超时阻塞 worker 特征，需从引擎配置移除不可达引擎。",
+      "tags": [
+        "searxng",
+        "排查",
+        "故障恢复"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:04.734Z",
+      "updatedAt": "2026-08-12T00:30:04.734Z",
+      "accessedAt": "2026-08-12T00:30:04.734Z",
+      "observedAt": "2026-08-12T00:30:04.734Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "d4d846d9-fad7-4741-8001-af3e19d15ee7",
+      "category": "procedure",
+      "title": "web_search 故障回退排查链",
+      "content": "web_search 工具失败时的回退链：1) 换引擎组合重试（如 google 换 baidu/bing/sogou）；2) 用 web_fetch 直接搜索；3) 直连搜索引擎 HTML 版（如 DuckDuckGo）；4) 检查自托管 SearXNG 服务状态（端口、worker、日志）。网络分域（国内通/境外不通）时优先用国内引擎可避免服务挂死。",
+      "tags": [
+        "web-search",
+        "回退",
+        "searxng"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:04.734Z",
+      "updatedAt": "2026-08-12T00:30:04.734Z",
+      "accessedAt": "2026-08-12T00:30:04.734Z",
+      "observedAt": "2026-08-12T00:30:04.734Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "8da06112-3fb3-4fe1-9240-584764aa8842",
+      "category": "fact",
+      "title": "环境外网不可用：google SSL 错误",
+      "content": "该机器环境访问境外网络受限：web_search（本地 SearXNG）与 web_fetch 均 fetch failed，外网 google.com 连接报 SSL 错误。搜索类工具在此环境下不可用，需优先考虑启动本地 SearXNG 或改用可访问的网络途径。",
+      "tags": [
+        "网络",
+        "web_search",
+        "故障排查"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:53.465Z",
+      "updatedAt": "2026-08-12T00:30:53.465Z",
+      "accessedAt": "2026-08-12T00:30:53.465Z",
+      "observedAt": "2026-08-12T00:30:53.465Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "f8321865-c94b-43d0-a713-2c9fab7be5f2",
+      "category": "fact",
+      "title": "SearXNG 配置于 localhost:8888",
+      "content": "本机 SearXNG 服务配置监听 localhost:8888，未运行时 web_search 报 fetch failed。可用 scripts/searxng 相关脚本启动服务后再搜索。注意历史会话曾发现服务实际监听 8889，需核对工具配置端口与实际监听端口是否一致。",
+      "tags": [
+        "searxng",
+        "web_search",
+        "环境配置"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:53.465Z",
+      "updatedAt": "2026-08-12T00:30:53.573Z",
+      "accessedAt": "2026-08-12T00:30:53.465Z",
+      "observedAt": "2026-08-12T00:30:53.465Z",
+      "environments": [
+        "wsl2"
+      ],
+      "supersededBy": "816c5a08-9386-471c-8c39-38018d9cab43",
+      "deleted": true
+    },
+    {
+      "id": "816c5a08-9386-471c-8c39-38018d9cab43",
+      "category": "fact",
+      "title": "搜索失败先诊断再兜底",
+      "content": "web_search/web_fetch 失败时不要编造结果，应依次检查：本地 SearXNG 服务是否运行（端口连通性）、外网连通性（SSL 错误常见于受限网络）、服务端口与实际监听是否一致；兜底方案为 scripts/searxng 启动服务或用 fetch_url 直连已知 URL。",
+      "tags": [
+        "web_search",
+        "故障排查",
+        "流程"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:30:53.465Z",
+      "updatedAt": "2026-08-12T00:30:53.465Z",
+      "accessedAt": "2026-08-12T00:30:53.465Z",
+      "observedAt": "2026-08-12T00:30:53.465Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "7fce32a4-43e5-4230-867d-ef9e0edb5497",
+      "category": "fact",
+      "title": "SearXNG 服务挂死是反复出现的已知问题",
+      "content": "本环境（/root/.pi 自托管 SearXNG，端口 8888）服务挂死问题反复出现，与历史会话记录一致。表现为 web_search 工具超时无响应。诊断时先检查服务是否存活（ps/端口探测），必要时重启 searxng 服务或重建 venv/repo（searxng/settings.yml 含密钥，git 忽略）。",
+      "tags": [
+        "searxng",
+        "web_search",
+        "故障排查",
+        "环境"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:33:43.458Z",
+      "updatedAt": "2026-08-12T00:33:43.458Z",
+      "accessedAt": "2026-08-12T00:33:43.458Z",
+      "observedAt": "2026-08-12T00:33:43.458Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "494cf20b-db7c-477b-b69b-36e805d2331e",
+      "category": "procedure",
+      "title": "web_search 故障排查多级降级链路",
+      "content": "web_search 超时/失败时的排查顺序：1) 检查本地 SearXNG 服务（localhost:8888）是否存活，挂死则重启；2) 用 web_fetch（HTTP GET 搜索引擎，不依赖 SearXNG）兜底；3) 仍被拦截则用 browser_navigate 隐身浏览器访问；4) 若网络层整体拦截（SSL 错误/外网连接失败），如实报告网络不可用原因，不要编造搜索结果。",
+      "tags": [
+        "web_search",
+        "故障排查",
+        "procedure",
+        "searxng"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:33:43.458Z",
+      "updatedAt": "2026-08-12T00:33:43.458Z",
+      "accessedAt": "2026-08-12T00:33:43.458Z",
+      "observedAt": "2026-08-12T00:33:43.458Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "c89a210d-6c47-440e-af6f-c55cb3e7aa91",
+      "category": "fact",
+      "title": "本环境外网访问被网络层拦截",
+      "content": "当前环境（/root/.pi）外网连接失败：google.com 等直接抓取出现 SSL 错误，搜索引擎请求被网络层拦截，web_fetch 与隐身浏览器均无法取得结果。该状态下应优先修复网络与本地 SearXNG 服务，而非反复重试搜索工具。",
+      "tags": [
+        "网络",
+        "环境",
+        "web_search"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:33:43.458Z",
+      "updatedAt": "2026-08-12T00:33:43.458Z",
+      "accessedAt": "2026-08-12T00:33:43.458Z",
+      "observedAt": "2026-08-12T00:33:43.458Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "28f8c34e-f86a-43f4-a0fc-87124ca607e0",
+      "category": "fact",
+      "title": "SearXNG 服务在 8889 端口运行正常",
+      "content": "本地自托管 SearXNG 搜索服务监听 8889 端口，服务本身健康。web_search 工具调用超时（10 秒）时，可用 curl 直接调用 SearXNG 搜索接口验证：接口聚合多引擎（bing/360search/yandex 等）响应约 15-20 秒，超出 web_search 工具 10 秒超时阈值，导致工具报超时，但服务并未挂死。此发现区别于此前记录的'SearXNG 挂死'场景，超时应先区分服务故障与工具超时。",
+      "tags": [
+        "searxng",
+        "web_search",
+        "超时排查",
+        "环境"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:34:36.665Z",
+      "updatedAt": "2026-08-12T00:34:36.786Z",
+      "accessedAt": "2026-08-12T00:34:36.665Z",
+      "observedAt": "2026-08-12T00:34:36.665Z",
+      "environments": [
+        "wsl2"
+      ],
+      "supersededBy": "62ec1043-a334-44ef-a1fe-088ea9909808",
+      "deleted": true
+    },
+    {
+      "id": "1f3527a7-89fe-4caf-ba6e-342d5f4f433a",
+      "category": "fact",
+      "title": "pi coding agent 官网为 pi.dev",
+      "content": "web_search 搜索 'pi coding agent' 的第一条结果为 Pi Coding Agent 官网 https://pi.dev/，标语 'Pi is a minimal agent harness. Adapt Pi to your workflows'。引擎来源为 bing/360search/yandex 聚合。",
+      "tags": [
+        "pi",
+        "官网",
+        "搜索"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:34:36.665Z",
+      "updatedAt": "2026-08-12T00:34:36.665Z",
+      "accessedAt": "2026-08-12T00:34:36.665Z",
+      "observedAt": "2026-08-12T00:34:36.665Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "62ec1043-a334-44ef-a1fe-088ea9909808",
+      "category": "procedure",
+      "title": "web_search 超时排查流程：先验服务再分根因",
+      "content": "web_search 工具报超时时，排查顺序：1) 检查 SearXNG 服务状态（8889 端口，curl http://localhost:8889 或 ss 检查监听）；2) 服务正常则直接 curl SearXNG 搜索接口（如 /search?q=xxx&format=json）验证，能成功即说明是工具超时偏短而非服务故障；3) 服务无响应才是真正的 SearXNG 挂死，需重启服务。避免把工具超时误判为服务故障。",
+      "tags": [
+        "searxng",
+        "web_search",
+        "故障排查",
+        "procedure"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:34:36.665Z",
+      "updatedAt": "2026-08-12T00:34:36.665Z",
+      "accessedAt": "2026-08-12T00:34:36.665Z",
+      "observedAt": "2026-08-12T00:34:36.665Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "f5525747-9761-41b7-82a1-30b90d58eb4a",
+      "category": "fact",
+      "title": "测试记忆-重建验证专用标记",
+      "content": "memory-test-20260812 重建验证专用标记：用于验证重建/恢复流程后记忆库是否正常工作。若本条目可被检索到，说明记忆库已成功恢复。",
+      "tags": [
+        "测试",
+        "重建验证",
+        "标记"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:35:09.428Z",
+      "updatedAt": "2026-08-12T00:35:09.428Z",
+      "accessedAt": "2026-08-12T00:35:09.428Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-12T00:35:09.428Z",
+      "deleted": false
+    },
+    {
+      "id": "2171199d-eb24-4593-a740-42bc9898d442",
+      "category": "fact",
+      "title": "ctx_note 与 memory_recall 数据不互通",
+      "content": "pi 环境存在两套独立笔记系统：ctx_note 存会话内笔记（notes.json），作用域仅当前会话、跨压缩存活，需用 ctx_note 读 key 或 ctx_list 列出检索；memory_recall/memory_store 存持久记忆库（entries.json），跨会话共享、语义检索。用 ctx_note 保存的内容无法被 memory_recall 检索到，反之亦然。",
+      "tags": [
+        "pi",
+        "ctx_note",
+        "memory_recall",
+        "笔记系统"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:35:18.326Z",
+      "updatedAt": "2026-08-12T00:35:18.326Z",
+      "accessedAt": "2026-08-12T00:35:18.326Z",
+      "observedAt": "2026-08-12T00:35:18.326Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "4cfbe1e7-6849-45c6-9712-8a4c54d08754",
+      "category": "fact",
+      "title": "pi-memory 检索机制细节",
+      "content": "pi-memory 扩展的 memory_recall/memory_search 检索是实时读取 entries.json，无持久索引；tokenize 为 bigram 分词；检索经过 activeEntries 过滤（排除未激活条目）。排查检索问题时先确认这些机制。",
+      "tags": [
+        "pi-memory",
+        "检索",
+        "机制"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:38:50.461Z",
+      "updatedAt": "2026-08-12T00:38:50.461Z",
+      "accessedAt": "2026-08-12T00:38:50.461Z",
+      "observedAt": "2026-08-12T00:38:50.461Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "f4bfe459-145e-4b22-a6c3-346ca98b0a35",
+      "category": "fact",
+      "title": "测试条目 memory-test-20260812 检索不到",
+      "content": "2026-08-12 用户用 memory_store 保存测试条目（标记 memory-test-20260812，内容为'重建验证'专用标记），随后 memory_recall 语义检索'重建验证'未命中。排查中手动复现评分该条目排名第 1，但实际函数搜索不到，疑似运行时加载的模块非当前源码。排查未完成，结论未定，后续会话可继续验证。",
+      "tags": [
+        "pi-memory",
+        "bug",
+        "调试"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:38:50.462Z",
+      "updatedAt": "2026-08-12T00:38:50.462Z",
+      "accessedAt": "2026-08-12T00:38:50.462Z",
+      "observedAt": "2026-08-12T00:38:50.462Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "860c7bed-4291-41c0-944e-0fa737fe1524",
+      "category": "fact",
+      "title": "read 工具读取文件可能被截断",
+      "content": "排查 bug 时 read 工具读取长文件有输出上限，retrieval.ts 曾被截断 288 字节，导致基于不完整源码排查方向偏差。发现'函数行为与源码不符'时，先确认读到的源码是否完整（用 wc/offset 续读），再怀疑模块加载问题。",
+      "tags": [
+        "pi-memory",
+        "调试",
+        "read工具"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:38:50.462Z",
+      "updatedAt": "2026-08-12T00:38:50.462Z",
+      "accessedAt": "2026-08-12T00:38:50.462Z",
+      "observedAt": "2026-08-12T00:38:50.462Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "32cda2ba-a9b3-48e8-bd75-56b439da152d",
+      "category": "procedure",
+      "title": "内存检索异常排查流程",
+      "content": "排查 memory_recall 搜不到已存储条目的流程：1) 确认检索为实时读取无索引；2) 检查 tokenize 分词（bigram）能否匹配；3) 检查 activeEntries 过滤是否包含新条目；4) 手动复现 searchEntries 评分流程打印分数；5) 若函数行为与源码不符，确认源码完整后写逐字符相同的副本函数做对照实验，区分数据问题与模块加载问题（如旧版本代码被加载）。",
+      "tags": [
+        "pi-memory",
+        "排查",
+        "流程"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:38:50.462Z",
+      "updatedAt": "2026-08-12T00:38:50.462Z",
+      "accessedAt": "2026-08-12T00:38:50.462Z",
+      "observedAt": "2026-08-12T00:38:50.462Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "686f50b0-75d6-4520-b5ae-1aee782a6f68",
+      "category": "fact",
+      "title": "memory-test-20260812 测试条目内容确认",
+      "content": "pi-memory 重建验证测试条目 memory-test-20260812（2026-08-12 由用户通过 memory_store 创建）实际内容为'重建验证专用标记：用于验证重建/恢复流'。已确认该条目可被 memory_recall 以精确关键词'重建验证专用标记'检索命中，条目存在于持久记忆库 entries.json 中。可作为后续排查 pi-memory 存储/检索功能是否正常的验证基准条目。",
+      "tags": [
+        "pi-memory",
+        "测试条目",
+        "检索验证"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:39:18.086Z",
+      "updatedAt": "2026-08-12T00:39:18.178Z",
+      "accessedAt": "2026-08-12T00:39:18.086Z",
+      "observedAt": "2026-08-12T00:39:18.086Z",
+      "environments": [
+        "wsl2"
+      ],
+      "supersededBy": "06ec96d5-1ace-4df9-a467-073509e62875",
+      "deleted": true
+    },
+    {
+      "id": "06ec96d5-1ace-4df9-a467-073509e62875",
+      "category": "fact",
+      "title": "memory_recall 检索行为：精确关键词可命中",
+      "content": "pi-memory 的 memory_recall 检索为词法匹配（bigram 分词 + BM25），非语义检索。2026-08-12 实测：用精确关键词'重建验证专用标记'可命中 memory-test-20260812 条目，而短查询'重建验证'曾检索失败。排查记忆功能异常时，应先用与条目内容一致的精确关键词测试，短词漏检不代表数据丢失。",
+      "tags": [
+        "pi-memory",
+        "memory_recall",
+        "检索机制"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:39:18.086Z",
+      "updatedAt": "2026-08-12T00:39:18.210Z",
+      "accessedAt": "2026-08-12T00:39:18.086Z",
+      "observedAt": "2026-08-12T00:39:18.086Z",
+      "environments": [
+        "wsl2"
+      ],
+      "supersededBy": "d18cc337-9a88-453c-af05-fc0dddce66d1",
+      "deleted": true
+    },
+    {
+      "id": "d18cc337-9a88-453c-af05-fc0dddce66d1",
+      "category": "procedure",
+      "title": "pi-memory 重建后功能验证流程",
+      "content": "验证 pi-memory 重建/恢复是否正常的方法：先用 memory_store 保存一个含唯一标记的测试条目（如 memory-test-20260812，内容带'重建验证专用标记'），再用 memory_recall 以精确关键词（与条目内容一致的词）检索验证。注意：检索是词法匹配，短查询或部分匹配可能漏检，须用精确关键词，勿将失败误判为存储异常。",
+      "tags": [
+        "pi-memory",
+        "验证流程",
+        "测试方法"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:39:18.086Z",
+      "updatedAt": "2026-08-12T00:39:18.086Z",
+      "accessedAt": "2026-08-12T00:39:18.086Z",
+      "observedAt": "2026-08-12T00:39:18.086Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "9086729c-0284-4f17-894d-8cd7ca023597",
+      "category": "fact",
+      "title": "tmux 后台任务链验证可用",
+      "content": "2026-08-12 在本机（/root/.pi 环境）实测 tmux_run→tmux_wait→tmux_read 全链路正常：tmux_run 启动的会话自动加 pi- 前缀（如 pi-tmux-test），tmux_wait 可等待会话退出，tmux_read 从日志读取输出。日志落盘于 /root/.pi/logs/tmux/<会话名>.log。",
+      "tags": [
+        "tmux",
+        "工具验证",
+        "后台任务"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:39:50.457Z",
+      "updatedAt": "2026-08-12T00:39:50.457Z",
+      "accessedAt": "2026-08-12T00:39:50.457Z",
+      "observedAt": "2026-08-12T00:39:50.457Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "93752be8-d7af-43e6-84a2-05eb2d5924b7",
+      "category": "fact",
+      "title": "autopilot 环境配置：deepseek-v4-flash 无 failover",
+      "content": "2026-08-12 检查 /root/.pi 环境 autopilot 状态：运行模式 print，默认模型 opencode-go/deepseek-v4-flash，自主运行开启无全局暂停，但 failover 链未配置（主模型故障时无备用模型），定时任务 0 个。该配置为当时快照，后续可能变化，如需了解最新状态应重新调用 autopilot_status。",
+      "tags": [
+        "autopilot",
+        "配置",
+        "deepseek-v4-flash",
+        "failover"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:40:23.733Z",
+      "updatedAt": "2026-08-12T00:40:23.733Z",
+      "accessedAt": "2026-08-12T00:40:23.733Z",
+      "observedAt": "2026-08-12T00:40:23.733Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "eb91dd70-bd35-4691-aa15-80c405278f39",
+      "category": "fact",
+      "title": "plan_exit 需用户确认才真正退出",
+      "content": "pi plan-mode 扩展中调用 plan_exit 后会弹出退出确认选择器，必须由用户手动确认才真正退出计划模式；若用户取消确认，则保持只读状态，退出不生效。",
+      "tags": [
+        "plan-mode",
+        "plan_exit"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:40:46.287Z",
+      "updatedAt": "2026-08-12T00:40:46.287Z",
+      "accessedAt": "2026-08-12T00:40:46.287Z",
+      "observedAt": "2026-08-12T00:40:46.287Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "3ac532df-48ef-4cfd-a36f-279d120da90c",
+      "category": "fact",
+      "title": "plan_enter 只读工具集清单",
+      "content": "plan_enter 进入计划模式后，可用工具缩减为 read、bash、grep、glob、todo、web_search、fetch_url、subagent、plan_exit；edit/write 等写工具被禁用，会话处于只读状态。",
+      "tags": [
+        "plan-mode",
+        "plan_enter",
+        "只读"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:40:46.287Z",
+      "updatedAt": "2026-08-12T00:40:46.287Z",
+      "accessedAt": "2026-08-12T00:40:46.287Z",
+      "observedAt": "2026-08-12T00:40:46.287Z",
+      "environments": [
+        "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "d8258fef-c0dc-4417-8837-fb8cbcaa70e2",
+      "category": "fact",
+      "title": "tmux #() 超时限制与状态栏可靠方案",
+      "content": "tmux 3.4 状态栏 #() 命令有极短执行超时（实测 <50ms，慢命令/脚本会被杀且输出丢弃，状态栏空白）；且 #() 输出中的 ANSI ESC 序列会被剥离（残留垃圾文本），只支持 tmux 格式指令 #[fg=...]。可靠做法：状态文件模式——常驻循环（flock 幂等）每 N 秒生成含 #[fg=] 指令的文本文件，状态栏用 #(cat 文件) 读取（cat 瞬时命令安全）。已实现于 ~/.pi/tmux/tmux-status.sh + status-loop.sh。",
+      "tags": [
+        "tmux",
+        "status-bar",
+        "坑"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T01:47:33.915Z",
+      "updatedAt": "2026-08-12T01:47:33.915Z",
+      "accessedAt": "2026-08-12T01:47:33.915Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-12T01:47:33.915Z",
       "deleted": false
     }
   ]

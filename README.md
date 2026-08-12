@@ -120,8 +120,10 @@ pi-backup rebuild --yes          # 静默自动重建
 - **国内镜像加速** — 自动检测并切换 apt/npm/pip/GitHub 镜像
 - **Node.js 自动升级** — 检测到 <20 时自动安装 22.x
 - **并发下载** — fd/rg、SearXNG 等多组件同时下载
-- **自动补全配置** — 自动生成 `searxng/settings.yml`、`agent/npm/package.json`（如缺失）
-- **格式校验** — 重建后自动验证 YAML/JSON 配置文件
+- **自动补全配置** — 自动生成 `searxng/settings.yml`、`agent/npm/package.json`（如缺失）；SearXNG 就绪后自动把 `pi-web-search` 指向本地实例（127.0.0.1:8889）
+- **格式校验** — 重建后自动验证 YAML/JSON 配置文件（模型配置兼容 `models.json`/`models-store.json`）
+- **venv 实际探测** — 安装依赖前用 `python3 -m venv /tmp/.venv-probe` 验证 ensurepip 可用（dpkg 里的 `python3-venv` 可能是空壳），失败自动补装 `python3.12-venv`
+- **TUI 补丁自动定位 dist** — 补丁脚本不再依赖 `which pi`（wrapper 接管后反推会失败），rebuild.sh 自行推导 pi 安装目录并传入
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
 
@@ -134,12 +136,22 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 ```
 
 > **`~/.pi/` 已存在时**：`git clone` 到非空目录会失败；不要直接 `rm -rf ~/.pi`（会删掉本地会话/配置/凭据且无法恢复）。建议先 `mv ~/.pi ~/.pi.bak` 再克隆，确认无误后删除备份。
+>
+> **恢复本地配置**：clone 后按上方「git 模式边界」表恢复缺失文件。推荐用 pi-backup（原机 `pi-backup create --with-auth` → 新机 `pi-backup restore`），比手动 `cp` 可复现且有体检。
 
 > **git clone 报证书验证失败（CAfile: none）**：部分网络环境（企业代理/沙箱/镜像）拦截 TLS，系统 CA 无法验证 GitHub 证书链。此时：
 > ```bash
 > git config --global http.sslVerify false   # 或单次: git -c http.sslVerify=false clone ...
 > ```
 > 也可先 `apt-get install -y ca-certificates && update-ca-certificates` 尝试修复系统证书。
+
+> **git push 首次配置凭证**：新环境无 git 凭证时 push 报 `could not read Username`。配置方式：
+> ```bash
+> git config --global credential.helper store
+> git push https://<PAT>@github.com/cyfxxx/pi-tools.git HEAD   # 首次带 token 推送，凭据落盘 ~/.git-credentials
+> # 之后 git push 直接可用；注意 remote 不要留 token（AGENTS.md 约定），用 https://github.com/... 即可
+> ```
+> PAT 泄露后立即在 GitHub 撤销并更换。
 
 > **wrapper 与 PI_DIST**：`install-wrapper.sh` 接管 `pi` 命令后，扩展（pi-voice）与补丁脚本（patch-*.mjs）通过 `PI_DIST` 环境变量定位 pi dist 目录（wrapper 已自动导出，`echo $PI_DIST` 验证）。直启 `pi-original` 时需手动导出，否则 pi 启动报 `Extension runtime not initialized`（见常见问题）。
 
@@ -161,7 +173,7 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 | `agent/settings.json` + `models.json`（pi ≥0.84 为 `models-store.json`） | pi 无模型配置，无法启动对话 | 原机 `scp` 拷贝，或原机 `pi-backup create --with-auth` 后新机 `pi-backup restore` |
 | `agent/auth.json` | 无 API 凭据 | 同上（`--with-auth` 归档） |
 | `agent/pi-voice.json` | 语音扩展/whisper token 不一致 | 原机拷贝（语音功能不使用可跳过） |
-| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | 手动拷贝（git 模式不含 `~/.pi` 外文件） |
+| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | `cp ~/.pi/tmux/tmux.conf ~/.tmux.conf`（仓库已带配置，含状态栏脚本） |
 | 会话历史（`agent/sessions/`） | 新机无原机会话 | 原机 `pi-backup create --include-sessions` 归档恢复；git 模式**永不**含会话 |
 | 运行时日志（`logs/`） | 无法跨机排查问题 | 不入库，原机直接查看 |
 
@@ -435,8 +447,9 @@ bash scripts/test-all.sh
 
 **解决：**
 - 重新生成配置：`cd searxng && bash generate-config.sh --force`（自动重启运行中的 SearXNG）
-- 默认仅启用 baidu、bing、sogou、360search、bilibili、yandex、stackoverflow、github，其余引擎 `disabled: true`
-- 如需启用其他引擎，编辑 `searxng/settings.yml`，将对应引擎的 `disabled` 改为 `false`
+- 环境自适应引擎白名单：`bash generate-config.sh --force --probe`（逐个探测引擎连通性，可达启用/不可达禁用，避免不可达引擎每次搜索白等超时）
+- 默认分组（无 --probe）：启用 baidu、bing、sogou、360search、bilibili、yandex、stackoverflow、github，其余引擎 `disabled: true`
+- 如需手动启用其他引擎，编辑 `searxng/settings.yml`，将对应引擎的 `disabled` 改为 `false`
 
 ### Venv 创建后缺少 pip
 
