@@ -7573,6 +7573,27 @@
       ],
       "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
+    },
+    {
+      "id": "1cf0c52e-df4f-4a21-8b7a-5d46f3529a84",
+      "category": "procedure",
+      "title": "推送流程: SSH over 443 通道（免代理免 PAT）",
+      "content": "pi-tools 仓库推送已从 PAT+v2ray 代理切换为 SSH over 443：remote 为 ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git（ssh.github.com:443 可直连，github.com:443 被 GFW 封锁、api.github.com 可直连）。认证用 ~/.ssh/id_ed25519（已加到 GitHub 账号，用户 cyfxxx）。推送/拉取直接 git push/fetch 即可，不再需要代理和 PAT。密钥文件：proot 内 /root/.ssh/ 与 Termux home /data/data/com.termux/files/home/.ssh/ 为同一密钥对（md5 一致）；ssh 客户端读 Termux home 的 .ssh。",
+      "tags": [
+        "git",
+        "github",
+        "ssh",
+        "推送"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T15:34:15.673Z",
+      "updatedAt": "2026-08-12T15:34:15.673Z",
+      "accessedAt": "2026-08-12T15:34:15.673Z",
+      "environments": [
+        "termux"
+      ]
     }
   ]
 }
