@@ -729,13 +729,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-04T02:09:14.119Z",
-      "updatedAt": "2026-08-04T02:09:14.119Z",
+      "updatedAt": "2026-08-12T14:50:07.583Z",
       "accessedAt": "2026-08-04T02:09:14.119Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "de2e2b9b-b8b6-4793-abb8-60db344f963d"
     },
     {
       "id": "e9740b9f-fc7f-44d2-89ad-11ef94db2051",
@@ -3222,13 +3223,14 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-10T07:20:15.460Z",
-      "updatedAt": "2026-08-10T07:20:15.460Z",
+      "updatedAt": "2026-08-12T14:50:07.285Z",
       "accessedAt": "2026-08-10T07:20:15.460Z",
       "observedAt": "2026-08-10T07:20:15.460Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5"
     },
     {
       "id": "27a1dd18-f103-4ef1-a100-1b3db6efc3e7",
@@ -3806,8 +3808,8 @@
       "source": "manual",
       "recurrence": 27,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-12T12:54:50.127Z",
-      "accessedAt": "2026-08-12T12:54:50.127Z",
+      "updatedAt": "2026-08-12T14:47:31.176Z",
+      "accessedAt": "2026-08-12T14:47:31.176Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -6189,14 +6191,13 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T13:54:24.746Z",
-      "updatedAt": "2026-08-12T13:00:32.156Z",
+      "updatedAt": "2026-08-11T13:54:24.746Z",
       "accessedAt": "2026-08-11T13:54:24.746Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": true,
-      "supersededBy": "5d303636-f9a1-437c-a67b-2baeef7e15d1"
+      "deleted": false
     },
     {
       "id": "635528fb-bcb1-4195-9dd1-b7fa068df6c5",
@@ -6754,13 +6755,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:39:18.086Z",
-      "updatedAt": "2026-08-12T00:39:18.086Z",
+      "updatedAt": "2026-08-12T14:50:07.684Z",
       "accessedAt": "2026-08-12T00:39:18.086Z",
       "observedAt": "2026-08-12T00:39:18.086Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "7730006f-2d12-402e-ad88-aa4a4e9ae4ae"
     },
     {
       "id": "9086729c-0284-4f17-894d-8cd7ca023597",
@@ -6934,14 +6936,13 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T04:22:22.546Z",
-      "updatedAt": "2026-08-12T13:00:32.041Z",
+      "updatedAt": "2026-08-12T04:22:22.546Z",
       "accessedAt": "2026-08-12T04:22:22.546Z",
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": true,
-      "supersededBy": "389dd9e4-f704-4116-a28a-e99cd754dca2"
+      "deleted": false
     },
     {
       "id": "23a7e860-0f47-4f07-b249-d1b8b6e755e7",
@@ -7382,225 +7383,196 @@
       "deleted": false
     },
     {
-      "id": "e77690da-cc01-47be-baa1-86c072236e2e",
-      "category": "fact",
-      "title": "沙箱 TLS 证书链缺失需绕过",
-      "content": "此开发沙箱（WSL2）TLS 证书链不完整：git clone 需执行 `git config --global http.sslVerify false`，curl 需 -k 或临时写 ~/.curlrc 注入绕过。rebuild.sh 依赖该配置才能装 npm 依赖、克隆 SearXNG；安装 opencode 等 GitHub 下载同样受影响。仅本沙箱适用，勿在正常环境沿用。",
+      "id": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5",
+      "category": "solutions",
+      "title": "install-wrapper.sh readlink 解析 bug 修复",
+      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。",
       "tags": [
-        "tls",
-        "沙箱",
-        "网络"
+        "install-wrapper.sh",
+        "symlink",
+        "wrapper",
+        "pi update"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
     },
     {
-      "id": "389dd9e4-f704-4116-a28a-e99cd754dca2",
+      "id": "047d9ce4-be1a-497d-b4e3-97caf742466d",
       "category": "fact",
-      "title": "pi-voice 语音栈部署明细",
-      "content": "语音栈部署：/opt/pi-whisper/venv（faster-whisper + opencc 繁转简）、whisper base 模型（hf-mirror 下载）、常驻服务 127.0.0.1:18766（/health 返回 ok）、TTS 用 piper 中文模型 zh_CN-huayan-medium.onnx 61MB + espeak-ng 兜底 + paplay 播放。配置在 agent/pi-voice.json（zh/base 模型）。本机 NVIDIA GPU 可见但缺 CUDA 库，whisper 以 CPU int8 运行。",
+      "title": "GitHub PAT 泄露且 pi-tools 仓库公开",
+      "content": "2025-08 发现 GitHub PAT（ghp_PNN2l...，已脱敏为 ghp_***）明文存在于 memory/extract-sessions/（313 个对话 jsonl）和 pending-extracts/，实测仍有效（API 返回 200）。pi-tools 仓库是公开的（技术内容对所有人可见）。无本地 git 凭据、无 SSH key，推送只能靠该 PAT。需用户到 GitHub Settings 撤销并重新生成；新 token 到手后推送未提交的改动。",
       "tags": [
-        "pi-voice",
-        "whisper",
-        "tts"
+        "github",
+        "PAT",
+        "security",
+        "pi-tools"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
     },
     {
-      "id": "978658ed-ad2f-4e82-a1ba-6bbda1fd6d24",
+      "id": "1fcb0e12-49d5-40d0-88e7-cc7423f5049b",
       "category": "fact",
-      "title": "CloakBrowser Chromium 安装要点",
-      "content": "沙箱内 CloakBrowser Chromium 安装：ghproxy 镜像慢（约 0.49MB/s）且失败率高；cloakbrowser.dev 直连 + NODE_TLS_REJECT_UNAUTHORIZED=0 快约 4 倍（1.8MB/s）且成功。rebuild.sh Phase 2-C2 重试顺序已改为直连→直连+绕 TLS→GH_PROXY 兜底。安装判定必须看 cloakbrowser info 的 Installed: true/false 字段，文件存在性与 ldd 均不可靠。",
+      "title": "pi-memory 扩展架构关键参数",
+      "content": "pi-memory 挂接 session_start/before_agent_start/session_before_compact/session_shutdown 四事件。存储：notes.json（键值+ttl）、entries.json（长期记忆，900KB 警告，按 confidence<0.3 且 30 天未访问 或 recurrence<2 且 60 天未访问自动裁剪）、summaries.json（上限 50 条）、checkpoints/（保留 5 个）。提取用 spi spawn pi -p 子进程（PI_MEMORY_EXTRACT=1 防递归，.extract-lock 互斥，60s 超时），输入最近 200 条消息 16000 字符，输出≤8 条+1 摘要。合并为 Mem0 式纯规则（标题精确/ Jaccard 0.9 跳过/0.7 合并/冲突 superseded）。检索 BM25（title×3/tags×2）+质量分混合，注入≤6 条+2 摘要约 500 token，缓存友好。",
       "tags": [
-        "cloakbrowser",
-        "chromium",
-        "rebuild"
+        "pi-memory",
+        "架构",
+        "memory",
+        "扩展"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:32.095Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "supersededBy": "ac7a9337-9a82-4a40-9ebc-b5752be44a57",
-      "deleted": true
-    },
-    {
-      "id": "ac7a9337-9a82-4a40-9ebc-b5752be44a57",
-      "category": "fact",
-      "title": "CloakBrowser 与 ldd 双重假阳性判定",
-      "content": "排查 Chromium『装好又消失』发现两个假阳性：1) `npx cloakbrowser info` 在二进制文件缺失时仍打印 Binary 路径，必须看 Installed: true/false 字段；2) ldd 对不存在的文件报 'No such file or directory'（无 'not found' 字样），`grep -c 'not found'` 得 0 会误判共享库齐备。正确做法：先 [ -f ] 确认文件存在，再对存在文件执行 ldd。",
-      "tags": [
-        "cloakbrowser",
-        "ldd",
-        "调试"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
-      "environments": [
-        "wsl2"
-      ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
     },
     {
-      "id": "528142fa-5008-4691-8324-69e5c9f1b1bc",
-      "category": "fact",
-      "title": "faster-whisper 懒加载致 CUDA 降级失效",
-      "content": "whisper-server.py 原 get_model() 的 try/except CPU 降级永不触发：faster-whisper/ctranslate2 是懒加载，构造 WhisperModel(device='cuda') 只加载权重不加载 CUDA 库，首次转写才报 libcublas.so.12 not found。已修复：_cuda_runtime_available() 用 ctypes dlopen 实测 libcublas+libcudnn 可加载；cuda 构造后跑 0.2s 静音转写空转验证，失败走降级分支。auto 探测不可只看 nvidia-smi 或 get_cuda_device_count()。",
+      "id": "5d622b7c-6b71-43c5-ab18-300cbb735840",
+      "category": "solutions",
+      "title": "pi-memory 存储层密钥脱敏加固",
+      "content": "因 PAT 明文进记忆条目导致 GitHub 推送被 secret scanning 拦截，在 storage.ts 增加 scrubSecrets() 写时净化：saveEntries/appendSummary/saveNotes 三条落盘路径统一过滤。规则：GitHub token（ghp_/gho_/ghu_/ghs_/ghr_/github_pat_）、API key（sk- 含 sk-proj- 中缀）、AWS AKIA、JWT（eyJ 三段）、Bearer 头 → 替换为 [REDACTED:xxx] 占位符，幂等，不误伤 UUID。新增 6 个测试。注意测试样本必须用合成 token（[REDACTED:github-token]），真实 PAT 会触发推送拦截。",
       "tags": [
-        "whisper",
-        "cuda",
-        "懒加载"
+        "pi-memory",
+        "脱敏",
+        "secret-scanning",
+        "storage"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
     },
     {
-      "id": "5d303636-f9a1-437c-a67b-2baeef7e15d1",
+      "id": "de2e2b9b-b8b6-4793-abb8-60db344f963d",
       "category": "fact",
-      "title": "tmux 配置同步机制（rebuild Phase 2-F2）",
-      "content": "git 同步边界只覆盖 ~/.pi/ 目录，~/.tmux.conf 在主目录外需手动 cp 安装（README『git 模式边界』表）。rebuild.sh 已新增 Phase 2-F2：diff 幂等→不一致则 cp 同步→tmux server 运行中时 `tmux source-file` 热加载，不 kill-server（kill-server 会杀掉承载当前 shell 的会话）。tmux server 级选项（如 extended-keys）可 source-file 热更新立即生效；status-loop.sh 自带 flock 幂等保护，重复 source 安全。",
+      "title": "subagent 并行策略与上限",
+      "content": "subagent 扩展按 isLocalProvider() 判断并行度：本地模型（ollama/localhost/127.0.0.1/lmstudio/vllm/koboldcpp）串行 concurrency=1（避免 GPU 内存争用）；云端模型批量并行 concurrency=4（原 MAX_CONCURRENCY=1 放开）。工具 schema 上限 MAX_PARALLEL_TASKS=8。4 并发时每 subagent 是独立 pi 进程（内存 200-500MB），超过 4 会受 API 限速与输出汇总成本制约，8 任务分两批最优。",
       "tags": [
-        "tmux",
-        "rebuild.sh",
-        "配置同步"
+        "subagent",
+        "并行",
+        "并发",
+        "扩展"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
     },
     {
-      "id": "36da68fa-62d1-4b5e-852f-cdb416e2865c",
+      "id": "7730006f-2d12-402e-ad88-aa4a4e9ae4ae",
+      "category": "fact",
+      "title": "pi-memory 提取提示词与矛盾检测改进",
+      "content": "pi-memory 三项改进（commit 48e7747）：①提取提示词吸收 Mem0/Graphiti 实践：相对时间解析为 YYYY-MM-DD、保留专有名词精确数字、附带事实提取、负面清单（不提取一次性指令/中间状态）、禁止指代词；②merge.ts 新增 detectContradiction：14 组对立词双向匹配（喜欢↔不喜欢/讨厌、启用↔关闭/禁用、支持↔反对、需要↔不需要、能↔不能/无法、正常↔异常/故障 等）+主体重叠验证（去词后公共 token≥2），判定矛盾时 superseded 取代而非合并；③title 15→20 字、content 100→150 字放宽。测试 63 全过。",
+      "tags": [
+        "pi-memory",
+        "merge",
+        "提取",
+        "矛盾检测"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
+      "deleted": false
+    },
+    {
+      "id": "7a0e1943-a19c-418f-807e-60bb4a6fd785",
       "category": "procedure",
-      "title": "whisper GPU 升级路径（零配置）",
-      "content": "装好 CUDA 库后 whisper 自动切 GPU：先 `/opt/pi-whisper/venv/bin/pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`，再 `bash ~/.pi/scripts/pi-whisper.sh restart`，auto 探测到库可加载后自动用 cuda + float16，用 /voice bench 验证 RTF 提升。pi-voice.json 不写 whisperDevice 字段（服务端回落 auto）；仅想强制 CPU 时才显式写 whisperDevice: cpu。",
+      "title": "GitHub secret scanning 拦截处理流程",
+      "content": "推送被 GitHub 推送保护拒绝（push declined due to repository rule violations）时：①先查最近 commit 是否引入真实密钥——commit 集合中任何中间 commit 含密钥都会被拦；②重写历史：git reset --soft 到干净基线，删除含密钥文件中的敏感内容（测试样本、记忆条目等），重新 add+commit 合并为单一干净 commit；③复查 diff 确认 0 处真实密钥后再 push。经验：脱敏测试样本、记忆条目、extract-sessions 都会触发拦截，凡是入库内容必须合成 token。",
       "tags": [
-        "whisper",
-        "GPU",
-        "cuda"
+        "github",
+        "secret-scanning",
+        "git",
+        "历史重写"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
     },
     {
-      "id": "fa82df9c-1b73-42e6-bdea-45b3c2ade619",
+      "id": "4f2ff459-1b93-41cd-a2e8-5fb22322f8c5",
       "category": "fact",
-      "title": "pi-tools 仓库推送与免密凭证",
-      "content": "pi-tools（GitHub cyfxxx/pi-tools）本会话推送 6ee88d4（rebuild.sh tmux 同步/Chromium 判定/whisper-server.py 优化等 5 文件），随后拉取远程 f433c72（10 个提交：pi-memory MMR banding、plan-mode todo 同步、pi-autopilot 重试退避等）。用户 PAT 已写入 ~/.git-credentials（权限 600），此后 git push 免密；remote 保持无 token 的干净 URL。注意：URL 内嵌 token 推送不会触发 credential helper 落盘，需手动补写凭证文件。",
+      "title": "记忆清理结果与 reverse-skill 判定",
+      "content": "2025-08 全面清理 pi-memory：entries 198→143 条（删 54 条：reverse-skill 相关 16 条——用户曾分析但未加入当前项目且后续用不到、重复条目 10 条、空条目 1 条、过时 4 条、plan-mode 会话冗余 24 条）、summaries 50→44 条（删 6 条 reverse 会话摘要）、notes 删 1 条过时项。保留条目全部为当前项目（pi 扩展开发、环境维护、协作偏好）有效知识。清理结果已推送（10ed442）。reverse-skill 属用户弃用项目，不应再注入。",
       "tags": [
-        "git",
-        "pi-tools",
-        "凭证"
+        "pi-memory",
+        "清理",
+        "reverse-skill",
+        "记忆维护"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-12T13:00:31.984Z",
-      "updatedAt": "2026-08-12T13:00:31.984Z",
-      "accessedAt": "2026-08-12T13:00:31.984Z",
-      "observedAt": "2026-08-12T13:00:31.984Z",
+      "createdAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
+      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
-    },
-    {
-      "id": "15e01aa0-4cf5-4a32-8541-72778763cc07",
-      "category": "fact",
-      "title": "restart_hang 是正常空闲重启（maxIdleMinutes=60），恢复后按清单检查 4 项服务",
-      "content": "本环境已配置 maxIdleMinutes=60（配置文件 ~/.pi/agent/.pi-autopilot-config.json，2026-08-12 写入）。收到 \"操作: restart_hang | 原因: 会话挂死（XX 分钟无活动）\" 通知时：这是空闲超 60 分钟的【正常重启行为】，非故障，不要排查看门狗逻辑。恢复后快速检查 4 项服务确认健康即可继续任务：① curl http://127.0.0.1:8889/search?q=t（SearXNG 应 200）② curl http://127.0.0.1:18766/health（whisper 应 {\"ok\":true}）③ tmux ls（用户会话应保留）④ crontab -l | grep pi-cron。全正常则直接说明\"正常空闲重启，环境健康\"并继续原任务；若有异常再排查。历史教训：默认 30 分钟对交互使用过激，已调 60（用户 2026-08-12 决定）。",
-      "tags": [
-        "pi-autopilot",
-        "watchdog",
-        "restart_hang",
-        "重启"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T15:07:26.849Z",
-      "updatedAt": "2026-08-12T15:07:26.849Z",
-      "accessedAt": "2026-08-12T15:07:26.849Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-12T15:07:26.849Z",
-      "deleted": false
-    },
-    {
-      "id": "f570c98e-f0e7-4379-9758-ba7d1a6568fe",
-      "category": "fact",
-      "title": "pi-autopilot-config.json 已入库共享，独立设置时改本地不推送",
-      "content": "agent/.pi-autopilot-config.json 已从 .gitignore 排除区移出（2026-08-12），随 git 同步跨环境共享（内容为 enabled/maxIdleMinutes 等策略，无密钥）。telemetry/lastgood/crash 仍排除。约定见 AGENTS.md「多环境使用约定」：某环境需要独立配置值时本地直接改文件不推送即可，明确是共享变更才改后推送；改前先确认意图，避免 push 覆盖其他环境的值。",
-      "tags": [
-        "pi-autopilot",
-        "git",
-        "多环境",
-        "配置"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T15:14:10.530Z",
-      "updatedAt": "2026-08-12T15:14:10.530Z",
-      "accessedAt": "2026-08-12T15:14:10.530Z",
-      "environments": [
-        "all"
-      ]
     }
   ]
 }
