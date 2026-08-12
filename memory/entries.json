@@ -7400,7 +7400,8 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "389dd9e4-f704-4116-a28a-e99cd754dca2",
@@ -7421,7 +7422,8 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "978658ed-ad2f-4e82-a1ba-6bbda1fd6d24",
@@ -7465,7 +7467,8 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "528142fa-5008-4691-8324-69e5c9f1b1bc",
@@ -7486,7 +7489,8 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "5d303636-f9a1-437c-a67b-2baeef7e15d1",
@@ -7507,7 +7511,8 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "36da68fa-62d1-4b5e-852f-cdb416e2865c",
@@ -7528,7 +7533,8 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "deleted": false
     },
     {
       "id": "fa82df9c-1b73-42e6-bdea-45b3c2ade619",
@@ -7549,6 +7555,28 @@
       "observedAt": "2026-08-12T13:00:31.984Z",
       "environments": [
         "wsl2"
+      ],
+      "deleted": false
+    },
+    {
+      "id": "15e01aa0-4cf5-4a32-8541-72778763cc07",
+      "category": "fact",
+      "title": "restart_hang 是正常空闲重启（maxIdleMinutes=60），恢复后按清单检查 4 项服务",
+      "content": "本环境已配置 maxIdleMinutes=60（配置文件 ~/.pi/agent/.pi-autopilot-config.json，2026-08-12 写入）。收到 \"操作: restart_hang | 原因: 会话挂死（XX 分钟无活动）\" 通知时：这是空闲超 60 分钟的【正常重启行为】，非故障，不要排查看门狗逻辑。恢复后快速检查 4 项服务确认健康即可继续任务：① curl http://127.0.0.1:8889/search?q=t（SearXNG 应 200）② curl http://127.0.0.1:18766/health（whisper 应 {\"ok\":true}）③ tmux ls（用户会话应保留）④ crontab -l | grep pi-cron。全正常则直接说明\"正常空闲重启，环境健康\"并继续原任务；若有异常再排查。历史教训：默认 30 分钟对交互使用过激，已调 60（用户 2026-08-12 决定）。",
+      "tags": [
+        "pi-autopilot",
+        "watchdog",
+        "restart_hang",
+        "重启"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T15:07:26.849Z",
+      "updatedAt": "2026-08-12T15:07:26.849Z",
+      "accessedAt": "2026-08-12T15:07:26.849Z",
+      "environments": [
+        "all"
       ]
     }
   ]
