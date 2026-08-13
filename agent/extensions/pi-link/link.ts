@@ -449,15 +449,47 @@ export async function attachToRemote(device: DeviceConfig, text: string, tmuxSes
   if (state?.status === 'busy' && !force) {
     return { ok: false, detail: `远程正在执行任务（${state.currentTask ?? '未知'}），已拒绝介入。加 --force 强制打断。` }
   }
+  const s = JSON.stringify(sess)
+
+  // 输入框检查：抓屏判断远程输入框是否为空（避免覆盖正在输入的内容）。
+  // pi TUI 布局：底部状态栏（含模型名/•/token），其上为输入框（空时显示 ~ 或空白）。
+  const barRe = /deepseek|claude|gpt|o[0-9]|gemini|qwen|kimi|•|\d+k\/|%\)/i
+  const probeInput = async (): Promise<boolean> => {
+    const p = await remoteExec(device, `tmux capture-pane -p -t ${s} 2>/dev/null | tail -3`, 10000)
+    if (p.code !== 0) return false // 无法判断视为空
+    const lines = p.out
+      .split('\n')
+      .map((l) => l.replace(/\u001b\[[0-9;]*m/g, '').trimEnd())
+      .filter((l) => l.trim().length > 0 && !barRe.test(l.trim()))
+    // 剩余行 strip 后为 ~ 或空 → 输入框空
+    return lines.some((l) => { const t = l.trim(); return t !== '' && t !== '~' })
+  }
+
+  const hasContent = await probeInput()
+  if (hasContent) {
+    // 有内容（有人在输入）——轮询等清空（最长 60s），清空后只粘贴不回车，由用户回车
+    let waited = 0
+    let clear = false
+    while (waited < 60000) {
+      await new Promise((r) => setTimeout(r, 2000))
+      waited += 2000
+      if (!(await probeInput())) { clear = true; break }
+    }
+    if (!clear) {
+      return { ok: false, detail: '远程输入框持续有内容（可能正在输入），未发送。可稍后再试或 --force。' }
+    }
+  }
+
   // tmux send-keys 不支持从 stdin 读；用 load-buffer + paste-buffer（等价粘贴）。
   // 文本经 base64 传递避免引号/特殊字符转义问题；单行消息（多行会多段粘贴）。
   const b64 = Buffer.from(text, 'utf-8').toString('base64')
-  const s = JSON.stringify(sess)
+  // 空输入框 → 粘贴 + 回车直接发送；等待过清空的 → 只粘贴，由远程用户回车确认
+  const enter = hasContent ? '' : 'sleep 0.5 && tmux send-keys -t ' + s + ' Enter 2>&1 && '
   const cmd = `printf %s ${b64} | base64 -d > /tmp/pi-link-msg.txt 2>/dev/null && ` +
     `tmux load-buffer -b pi-link /tmp/pi-link-msg.txt 2>&1 && ` +
     `tmux paste-buffer -b pi-link -t ${s} 2>&1 && ` +
-    `tmux send-keys -t ${s} Enter 2>&1 && rm -f /tmp/pi-link-msg.txt`
+    enter + `rm -f /tmp/pi-link-msg.txt`
   const r = await remoteExec(device, cmd, 15000)
-  if (r.code !== 0) return { ok: false, detail: r.err.trim().slice(0, 200) || `tmux send-keys 失败（exit ${r.code}）` }
-  return { ok: true, detail: `已发送到远程 ${sess} 输入框` }
+  if (r.code !== 0) return { ok: false, detail: r.err.trim().slice(0, 200) || `tmux 操作失败（exit ${r.code}）` }
+  return { ok: true, detail: hasContent ? `已粘贴到远程 ${sess} 输入框（输入框曾被占用，请远程用户回车发送）` : `已发送到远程 ${sess} 输入框并回车` }
 }

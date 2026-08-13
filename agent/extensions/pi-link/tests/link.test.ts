@@ -243,6 +243,44 @@ describe('pi-link: sendToDevice', () => {
     expect(stdinWrites.join('')).not.toContain('[远程执行任务]')
   })
 
+  it('attachToRemote: 输入框空时粘贴+回车；有内容时等清空只粘贴', async () => {
+    const calls: string[] = []
+    spawnMock.mockImplementation((...args: unknown[]) => {
+      const argv = (args[1] ?? []) as string[]
+      const cmd = String(argv[argv.length - 1] ?? '')
+      calls.push(cmd)
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const stdin = new PassThrough()
+      const proc = {
+        stdin, stdout, stderr,
+        kill: vi.fn(),
+        on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+      }
+      const exitCbs: Array<(c: number) => void> = []
+      setImmediate(() => {
+        // 状态文件：idle + tmuxSession
+        if (cmd.includes('pi-link-state.json')) {
+          stdout.emit('data', JSON.stringify({ device: 'r', status: 'idle', tmuxSession: '0' }) + '\n')
+        } else if (cmd.includes('capture-pane')) {
+          // 空输入框：只有状态栏（无内容行）
+          stdout.emit('data', '\n~\ndeeepseek-v4-flash • max\n')
+        } else {
+          stdout.emit('data', '\n')
+        }
+        setImmediate(() => { for (const cb of exitCbs) cb(0) })
+      })
+      return proc
+    })
+    const { attachToRemote } = await import('../link.ts')
+    const r = await attachToRemote(DEV, 'hi')
+    expect(r.ok).toBe(true)
+    expect(r.detail).toContain('并回车')
+    const last = calls[calls.length - 1]
+    expect(last).toContain('send-keys')
+    expect(last).toContain('Enter')
+  })
+
   it('attachToRemote: busy 时拒绝，force 强制', async () => {
     // 独立 mock：每次 ssh 调用返回可控的 stdout + 触发 exit
     spawnMock.mockImplementation((...args: unknown[]) => {
