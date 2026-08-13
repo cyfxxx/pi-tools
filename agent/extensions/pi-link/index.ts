@@ -227,7 +227,8 @@ export default function (pi: ExtensionAPI): void {
       }
       if (sub === 'watch') {
         const device = parts[1]
-        const lines = parts.includes('--lines') ? parseInt(parts[parts.indexOf('--lines') + 1] ?? '30', 10) || 30 : 30
+        const rawLines = parts.includes('--lines') ? parseInt(parts[parts.indexOf('--lines') + 1] ?? '30', 10) : 30
+        const lines = Number.isNaN(rawLines) || rawLines < 1 ? 30 : Math.min(rawLines, 200)
         if (!device) {
           ctx.ui.notify('用法: /link watch <设备> [--lines N]', 'warning')
           return

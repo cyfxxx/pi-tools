@@ -103,6 +103,3 @@ export function describeDevice(name: string, d: DeviceConfig): string {
   return `${name} → ${d.user}@${d.host}:${d.port ?? 22}`
 }
 
-export function sessionDirOf(d: DeviceConfig): string {
-  return d.sessionDir ?? DEFAULT_SESSION_DIR
-}

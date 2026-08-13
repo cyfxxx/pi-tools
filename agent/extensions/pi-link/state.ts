@@ -45,11 +45,3 @@ export function parseState(raw: string): DeviceState | null {
   }
 }
 
-export function readLocalState(file = stateFilePath()): DeviceState | null {
-  try {
-    if (!existsSync(file)) return null
-    return parseState(readFileSync(file, 'utf-8'))
-  } catch {
-    return null
-  }
-}

@@ -19,10 +19,14 @@ export interface AgentCard {
 }
 
 /** 探测本机 Tailscale IP（供 export-card 默认值；无 Tailscale 返回 undefined） */
+/** 仅取 IPv4 地址（部分 tailscale 版本 -4 仍输出 IPv6 ULA，sshd 多不监听 v6） */
+const ipv4Of = (raw: string): string | undefined =>
+  raw.split(/\s+/).find((x) => /^\d{1,3}(\.\d{1,3}){3}$/.test(x))
+
 export function detectTailscaleIP(): string | undefined {
   try {
     const out = execSync('tailscale ip -4 2>/dev/null', { timeout: 3000 }).toString().trim()
-    return out.split('\n')[0] || undefined
+    return ipv4Of(out)
   } catch {
     return undefined
   }
@@ -35,7 +39,7 @@ export function buildCard(cfg: LinkConfig): AgentCard {
   if (!host) {
     try {
       const out = execSync("hostname -I 2>/dev/null", { timeout: 3000 }).toString().trim()
-      host = out.split(/\s+/)[0] || undefined
+      host = ipv4Of(out)
     } catch {
       host = undefined
     }
