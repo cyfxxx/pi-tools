@@ -414,29 +414,6 @@
       ]
     },
     {
-      "id": "3b9736cb-af89-4376-8738-bdc0dd8e5910",
-      "category": "procedure",
-      "title": "GitHub 一次性 token 推送流程",
-      "content": "推送到 github.com/cyfxxx/pi-tools.git：1) 前置检查 git 状态、remote、auth.json 是否被追踪；2) commit；3) 检查 remote URL 是否含 token（含则 set-url 恢复无凭证 URL）；4) 用一次性内联 URL `https://TOKEN@github.com/...` push，不写入 remote 配置；5) 验证 remote 未污染；6) 内联推送后 origin/master 跟踪引用不更新，需 git fetch 修正。",
-      "tags": [
-        "git",
-        "github",
-        "推送",
-        "pi-backup"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-03T13:33:21.832Z",
-      "updatedAt": "2026-08-03T13:33:21.832Z",
-      "accessedAt": "2026-08-03T13:33:21.832Z",
-      "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "a2cdcd62-e7c4-4d74-97e0-69f918616d09",
       "category": "fact",
       "title": "用户 PAT 已泄露需撤销",
@@ -1678,29 +1655,6 @@
       ]
     },
     {
-      "id": "ece8b578-507f-430f-baf4-6fd2bc6683eb",
-      "category": "fact",
-      "title": "pi-voice tmpDir 显式配置",
-      "content": "在 pi-voice.json 中显式固化 tmpDir=/storage/emulated/0/pi-voice/ 兜底共享存储路径。录音→ffmpeg 转码→whisper 转写全链路实测打通；whisper 静音环境返回空文本属正常，非故障。",
-      "tags": [
-        "pi-voice",
-        "配置",
-        "tmpDir"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-09T12:45:36.011Z",
-      "updatedAt": "2026-08-09T14:52:13.279Z",
-      "accessedAt": "2026-08-09T12:45:36.011Z",
-      "observedAt": "2026-08-09T12:45:36.011Z",
-      "deleted": true,
-      "supersededBy": "34bb9fc2-5e9b-4912-9bb9-a3fcadc51031",
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "34bb9fc2-5e9b-4912-9bb9-a3fcadc51031",
       "category": "fact",
       "title": "Termux:API 沙箱无法写 proot /tmp",
@@ -1745,29 +1699,6 @@
       "deleted": false,
       "environments": [
         "termux"
-      ]
-    },
-    {
-      "id": "6850a497-e68a-4a47-93fc-c0520104717a",
-      "category": "fact",
-      "title": "GitHub 推送需走 v2ray 10808",
-      "content": "github.com 直连被 DNS fake-IP（198.18.x.x 透明代理）污染超时，api.github.com 正常。本机 v2ray 代理端口 10808 可用。推送用 `git -c http.proxy=http://127.0.0.1:10808 push` 临时参数，不写入 git config；remote URL 保持无凭证。",
-      "tags": [
-        "git",
-        "网络",
-        "代理",
-        "github"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-09T17:10:45.300Z",
-      "updatedAt": "2026-08-09T17:10:45.300Z",
-      "accessedAt": "2026-08-09T17:10:45.300Z",
-      "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false,
-      "environments": [
-        "all"
       ]
     },
     {
@@ -1837,29 +1768,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "3dcbcce1-2d13-4020-9a1a-ae748f864681",
-      "category": "fact",
-      "title": "tmux 孤儿 socket 与 ensure_tmux",
-      "content": "proot 下 tmux server 被 kill 后 socket 文件残留（内核不清理），后续所有 tmux 命令报 access not allowed 且 exit 0。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状清理重建，pi 在 tmux 内时跳过防误杀）。定位方法：kill server + 清理 /tmp/tmux-* 后重建。",
-      "tags": [
-        "tmux",
-        "proot",
-        "socket",
-        "故障"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-09T17:10:45.300Z",
-      "updatedAt": "2026-08-09T17:10:45.300Z",
-      "accessedAt": "2026-08-09T17:10:45.300Z",
-      "observedAt": "2026-08-09T17:10:45.300Z",
-      "deleted": false,
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -1954,28 +1862,6 @@
       ]
     },
     {
-      "id": "611a7a0b-2957-4fd0-be02-3bcd4b5596df",
-      "category": "procedure",
-      "title": "git 推送经 v2ray 代理",
-      "content": "github.com 直连被墙（DNS 被 fake-IP 198.18.x.x 污染，透明代理特征）；本机 v2ray 代理 127.0.0.1:10808 可用。推送用 `git -c http.proxy=http://127.0.0.1:10808 push` 临时参数，不写入 git config；远程 https://github.com/cyfxxx/pi-tools.git 保持无凭证 URL（token 经命令行临时提供）。",
-      "tags": [
-        "git",
-        "proxy",
-        "网络"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T01:05:58.946Z",
-      "updatedAt": "2026-08-10T01:05:58.946Z",
-      "accessedAt": "2026-08-10T01:05:58.946Z",
-      "observedAt": "2026-08-10T01:05:58.946Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "732ee391-40e2-4bd8-a5c2-5fa549877d47",
       "category": "fact",
       "title": "proot kill -0 陷阱",
@@ -2023,7 +1909,7 @@
       "id": "f5dd85ba-2ec7-4179-94f7-235d28933220",
       "category": "fact",
       "title": "tmux 孤儿 socket 根因",
-      "content": "proot 下 tmux server 被 kill 后 socket 文件残留（内核不清理）→ 所有 tmux 命令报 access not allowed 且 exit 0。修复：kill server + rm -rf /tmp/tmux-* 重建。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状自动清理，pi 在 tmux 内时跳过防误杀）。",
+      "content": "proot 下 tmux server 被 kill 后 socket 文件残留（内核不清理）→ 所有 tmux 命令报 access not allowed 且 exit 0。修复：kill server + rm -rf /tmp/tmux-* 重建。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状自动清理，pi 在 tmux 内时跳过防误杀）。\nproot 下 tmux server 被 kill 后 socket 文件残留（内核不清理），后续所有 tmux 命令报 access not allowed 且 exit 0。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状清理重建，pi 在 tmux 内时跳过防误杀）。定位方法：kill server + 清理 /tmp/tmux-* 后重建。",
       "tags": [
         "tmux",
         "proot",
@@ -2052,28 +1938,6 @@
         "误报"
       ],
       "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T01:05:58.947Z",
-      "updatedAt": "2026-08-10T01:05:58.947Z",
-      "accessedAt": "2026-08-10T01:05:58.947Z",
-      "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "b978cc6e-fd9e-4308-99b7-dc6f085b6f1a",
-      "category": "fact",
-      "title": "restart_hang 看门狗模式",
-      "content": "连续 6 次 restart_hang（31-50 分钟无活动），由 pi-autopilot 看门狗正常触发（maxIdleMinutes=30），锁修复后看门狗持续运行、触发稳定可靠。重启频繁主因是用户离开超 30 分钟；可 /auto:policy set maxIdleMinutes 60 调大阈值，不影响稳定性。",
-      "tags": [
-        "pi-autopilot",
-        "看门狗",
-        "restart_hang"
-      ],
-      "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T01:05:58.947Z",
@@ -2379,28 +2243,6 @@
       ]
     },
     {
-      "id": "e666f503-2166-4135-a7d2-7e9b6957966d",
-      "category": "fact",
-      "title": "plan_exit 工具缺失与计划模式退出后停止输出",
-      "content": "2026-08-10 计划模式出现两个异常现象（待排查）：1) 本会话 plan_exit 工具 not found（AGENTS.md 记录 patch-plan-tools.mjs 应处理 --continue 恢复会话后新注册工具不可调用的问题，但本会话仍复现，补丁可能未覆盖此场景或未生效，需核查 dist 补丁状态）；2) 用户手动确认退出计划模式（/plan 确认选择器）后，模型停止输出并再次要求退出——疑似 plan-mode 退出确认流程与模型输出交互 bug。当前影响：用户只能靠 Ctrl+Alt+P 或 /plan 手动切换，模型侧 plan_enter/plan_exit 不可用。",
-      "tags": [
-        "plan-mode",
-        "bug",
-        "plan_exit"
-      ],
-      "confidence": 0.8,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T05:47:03.339Z",
-      "updatedAt": "2026-08-10T05:47:03.339Z",
-      "accessedAt": "2026-08-10T05:47:03.339Z",
-      "observedAt": "2026-08-10T05:47:03.339Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "338c5ba2-9b62-4b00-bb60-10046a3f34c5",
       "category": "procedure",
       "title": "pi 重启流程（wrapper 循环 + state 文件）",
@@ -2443,29 +2285,6 @@
       "deleted": false,
       "environments": [
         "termux"
-      ]
-    },
-    {
-      "id": "56d80807-b6e1-41f8-9718-b0da94ee1ceb",
-      "category": "fact",
-      "title": "patch-plan-tools 保留待验证",
-      "content": "用户决策：保留内核补丁 patch-plan-tools.mjs（刷新恢复会话工具 schema）+ AGENTS.md 文档说明；若后续确认不需要模型侧主动切换（用户 Ctrl+Alt+P 已完整），移除补丁回退方案 2 即可。当前结论：模型侧 plan_enter 仅新会话可用，日常使用不受影响。",
-      "tags": [
-        "plan-mode",
-        "补丁",
-        "决策",
-        "patch-plan-tools"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T05:59:08.973Z",
-      "updatedAt": "2026-08-10T05:59:08.973Z",
-      "accessedAt": "2026-08-10T05:59:08.973Z",
-      "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": false,
-      "environments": [
-        "all"
       ]
     },
     {
@@ -2604,14 +2423,13 @@
       ]
     },
     {
-      "id": "c68d8e73-8f60-470c-a90e-ca0d7e29c542",
-      "category": "fact",
-      "title": "extensions.test.ts 运行教训",
-      "content": "extensions.test.ts 全量跑报模块解析失败（找不到 @earendil-works/pi-coding-agent/typebox）是环境依赖缺失而非代码改动问题；单个用例单独跑可通过。test-all.sh 回归不含 extensions.test.ts，需单独验证。另注意该文件断言需随命令面/工具数变化同步（如 plan_enter/plan_exit 使工具数 41→43）。",
+      "id": "29f25d6f-dadc-4408-8638-be0727c72381",
+      "category": "preference",
+      "title": "方案须确认后执行",
+      "content": "用户对重要方案（如长任务并发架构选型）要求先调研给出完整方案、等确认后才动手执行；但常规任务指令极简，期望助手自主完成调研-修改-验证-汇报全流程，不打断询问。执行重启类操作前需先确认机制可行性。",
       "tags": [
-        "测试",
-        "extensions.test.ts",
-        "lesson"
+        "preference",
+        "工作方式"
       ],
       "confidence": 0.9,
       "source": "extract",
@@ -2626,55 +2444,10 @@
       ]
     },
     {
-      "id": "29f25d6f-dadc-4408-8638-be0727c72381",
-      "category": "preference",
-      "title": "方案须确认后执行",
-      "content": "用户对重要方案（如长任务并发架构选型）要求先调研给出完整方案、等确认后才动手执行；但常规任务指令极简，期望助手自主完成调研-修改-验证-汇报全流程，不打断询问。执行重启类操作前需先确认机制可行性。",
-      "tags": [
-        "preference",
-        "工作方式"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T05:59:57.197Z",
-      "updatedAt": "2026-08-13T14:46:46.623Z",
-      "accessedAt": "2026-08-10T05:59:57.197Z",
-      "observedAt": "2026-08-10T05:59:57.197Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "e1049c44-98d0-4c6b-8482-931bb9d6fd1e"
-    },
-    {
-      "id": "16b52750-2839-43af-9449-447b68ccb3f6",
-      "category": "procedure",
-      "title": "extensions.test.ts 正确跑法与 symlink 修复",
-      "content": "extensions.test.ts 跑法（2026-08-10 实测）：必须 `cd /root/.pi/agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`（vitest 用 pi-web-search/vitest.config.ts 的 alias 把 @earendil-works/pi-coding-agent 等指向 tests/__mocks__/）；在 extensions/ 顶层跑会走真实包解析——subagent 用例因真实包加载 12s 超时（5000ms）失败。另：extensions/node_modules/@earendil-works/ 下的 symlink 指向 pi 安装目录（pi update 后可能失效，报 'Cannot find package'；2026-08-10 曾修复：pi-coding-agent 指向 current/lib/node_modules/@earendil-works/pi-coding-agent、typebox 指向 pi-coding-agent/node_modules/typebox）。test-all.sh 自 2026-08-10 起已纳入 extensions.test.ts（10 套测试）。",
-      "tags": [
-        "extensions.test.ts",
-        "vitest",
-        "symlink",
-        "测试"
-      ],
-      "confidence": 0.9,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T06:36:51.133Z",
-      "updatedAt": "2026-08-10T06:36:51.133Z",
-      "accessedAt": "2026-08-10T06:36:51.133Z",
-      "observedAt": "2026-08-10T06:36:51.133Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "b04a21b0-d4d0-4477-aed8-70d594524ab2",
       "category": "fact",
       "title": "admin_restart 修复：进程退出兜底",
-      "content": "admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），wrapper 检测不到退出码导致不重启、新代码永不加载。已修复：调用后 process.exit(0) 1500ms 兜底（提交 1e6d75f）。验证重启是否生效须对比 PID，proot 下进程时间不可靠。",
+      "content": "admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），wrapper 检测不到退出码导致不重启、新代码永不加载。已修复：调用后 process.exit(0) 1500ms 兜底（提交 1e6d75f）。验证重启是否生效须对比 PID，proot 下进程时间不可靠。\npi 扩展的 admin_restart 用 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），wrapper 检测不到退出码就不重启，新代码永不加载。已修复：加 process.exit(0) 1500ms 兜底（提交 1e6d75f）。排查\"新代码不生效\"时应先对比 PID 是否真的变化。\npi 的 admin_restart 调用 ctx.shutdown() 在 TUI 环境下不退出进程（实测 PID 始终不变），wrapper 检测不到退出码导致不重启、新代码永不生效。已修复：加 process.exit(0) 1500ms 兜底（提交 1e6d75f）。验证重启是否生效须对比 PID，proot 环境进程时间不可靠。\npi 扩展的 admin_restart 调 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），导致新代码从未加载、改动看似无效。排查方法：对比重启前后进程 PID，或加文件日志（写 /tmp）验证代码路径。修复方案：补退出兜底，使进程真正退出后由 wrapper restart 请求触发 --continue 重启（加载新代码）。\npi 扩展 admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），wrapper 检测不到退出码导致不重启、新代码永不加载。修复（提交 1e6d75f）：加 process.exit(0) 1500ms 兜底。判断是否真正重启需对比 PID，proot 下进程时间不可靠。",
       "tags": [
         "pi",
         "admin_restart",
@@ -2848,30 +2621,6 @@
       ]
     },
     {
-      "id": "981145be-8abb-4883-bb0c-f853baf2c964",
-      "category": "fact",
-      "title": "plan-mode 模型侧切换工具",
-      "content": "plan_enter（执行模式可见，进入无需确认）/plan_exit（计划模式可见，退出经 ctx.ui.select 弹确认选择器，用户确认才生效）已实现，参考 opencode plan_enter/exit 权限模型。--print 新进程实测成功。tool_call 拦截现覆盖 bash/subagent/edit/write（edit/write 为 0116a06 补的硬拒绝，不依赖工具列表移除）。",
-      "tags": [
-        "plan-mode",
-        "plan_enter",
-        "plan_exit",
-        "扩展"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T07:05:14.776Z",
-      "updatedAt": "2026-08-10T07:20:00.497Z",
-      "accessedAt": "2026-08-10T07:05:14.776Z",
-      "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": true,
-      "supersededBy": "2476e709-c42d-4ad7-b131-4e00d1ef0787",
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "1bb0cbd7-5844-4637-9e61-62fcf012e5a7",
       "category": "fact",
       "title": "模型无效工具调用循环的止损",
@@ -2913,29 +2662,6 @@
       "updatedAt": "2026-08-10T07:28:42.015Z",
       "accessedAt": "2026-08-10T07:28:42.015Z",
       "observedAt": "2026-08-10T07:28:42.015Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "b210a48d-d16a-475b-9696-a63c97c9b765",
-      "category": "fact",
-      "title": "admin_restart TUI 不退出进程",
-      "content": "pi 扩展的 admin_restart 用 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），wrapper 检测不到退出码就不重启，新代码永不加载。已修复：加 process.exit(0) 1500ms 兜底（提交 1e6d75f）。排查\"新代码不生效\"时应先对比 PID 是否真的变化。",
-      "tags": [
-        "pi",
-        "admin_restart",
-        "重启",
-        "排障"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T08:58:42.550Z",
-      "updatedAt": "2026-08-10T08:58:42.550Z",
-      "accessedAt": "2026-08-10T08:58:42.550Z",
-      "observedAt": "2026-08-10T08:58:42.550Z",
       "deleted": false,
       "environments": [
         "all"
@@ -3074,73 +2800,6 @@
       ]
     },
     {
-      "id": "ddb56bf7-879a-4f5b-8918-6a906ace5bb2",
-      "category": "fact",
-      "title": "extensions.test.ts 跑法",
-      "content": "extensions.test.ts（23 用例）必须 cd 到 agent/extensions/pi-web-search 下运行使 mock alias 生效；顶层跑会因真实包加载 12s 超时（subagent 用例 5000ms 上限）。test-all.sh 已纳入该项，现共 13 项回归。",
-      "tags": [
-        "测试",
-        "extensions.test.ts",
-        "回归"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T08:59:37.714Z",
-      "updatedAt": "2026-08-10T08:59:37.714Z",
-      "accessedAt": "2026-08-10T08:59:37.714Z",
-      "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "8cc9bf5b-b861-4dbf-a4bb-389c10dfc2c9",
-      "category": "fact",
-      "title": "plan_enter/plan_exit 模型侧切换工具",
-      "content": "pi 扩展已实现模型侧计划模式切换工具（提交 99a8770，参考 opencode 权限设计）：plan_enter 仅执行模式可见、进入免确认；plan_exit 仅计划模式可见、退出必须弹 ctx.ui.select 确认选择器（'确认退出/取消'）由用户手动确认，任何情况不绕过。提示词已同步注明需用户确认。",
-      "tags": [
-        "plan-mode",
-        "扩展",
-        "工具"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T09:48:09.454Z",
-      "updatedAt": "2026-08-10T09:48:09.454Z",
-      "accessedAt": "2026-08-10T09:48:09.454Z",
-      "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "d88e5662-050b-4e8a-b62d-4785b2339b75",
-      "category": "fact",
-      "title": "pi 内核恢复会话工具 schema 缺陷与补丁",
-      "content": "pi 内核缺陷：--continue 恢复会话的工具 schema 来自持久化旧快照，新注册的扩展工具（如 plan_enter）不可见；--print 新进程正常。扩展层 setActiveTools/session_start/agent_start 均更新了 state.tools 但 schema 不随其更新。已写内核补丁 patch-plan-tools.mjs（在 prepareNextTurnWithContext 刷新工具 schema）并注册到 rebuild.sh（提交 63d0dc6），文档说明：后续不需要可回退方案 2（接受现状，用户快捷键切换）。",
-      "tags": [
-        "pi内核",
-        "补丁",
-        "工具schema",
-        "plan-mode"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T09:48:09.454Z",
-      "updatedAt": "2026-08-10T09:48:09.454Z",
-      "accessedAt": "2026-08-10T09:48:09.454Z",
-      "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "82d4c1ef-9c02-483a-aa7f-407a9463c757",
       "category": "fact",
       "title": "todo 状态提醒降频优化",
@@ -3188,7 +2847,7 @@
       "id": "460eab89-1cea-4ee8-8974-8b22218fc70b",
       "category": "fact",
       "title": "plan-mode 模型侧切换工具面",
-      "content": "plan_enter 仅执行模式可见（进入无需确认），plan_exit 仅计划模式可见（退出必须用户确认，execute 内 ctx.ui.select 阻塞弹\"确认退出/取消\"选择器）。--print 新进程实测均正常；用户侧切换仍为 /plan 与 Ctrl+Alt+P。",
+      "content": "plan_enter 仅执行模式可见（进入无需确认），plan_exit 仅计划模式可见（退出必须用户确认，execute 内 ctx.ui.select 阻塞弹\"确认退出/取消\"选择器）。--print 新进程实测均正常；用户侧切换仍为 /plan 与 Ctrl+Alt+P。\nplan_enter（执行模式可见，进入无需确认）/plan_exit（计划模式可见，退出经 ctx.ui.select 弹确认选择器，用户确认才生效）已实现，参考 opencode plan_enter/exit 权限模型。--print 新进程实测成功。tool_call 拦截现覆盖 bash/subagent/edit/write（edit/write 为 0116a06 补的硬拒绝，不依赖工具列表移除）。",
       "tags": [
         "plan-mode",
         "plan_enter",
@@ -3301,33 +2960,10 @@
       ]
     },
     {
-      "id": "474024d4-6a44-4fd1-b737-f4ff4f3cfa22",
-      "category": "fact",
-      "title": "pi 恢复会话工具 schema 固定",
-      "content": "pi 内核 --continue 恢复的会话，模型工具 schema 来自会话创建时的持久化快照，不包含之后新注册的扩展工具（如 plan_enter/plan_exit）；新建会话（pi / --print）则自动包含。表现为：模型反复尝试调用该类工具时输出退化为 bash，会话文件 tool_calls 记录 0 次。扩展层 setActiveTools/session_start/agent_start 均无法改变已存在会话的固定 schema。",
-      "tags": [
-        "pi",
-        "会话恢复",
-        "工具schema",
-        "plan-mode"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:04:10.969Z",
-      "updatedAt": "2026-08-10T10:04:10.970Z",
-      "accessedAt": "2026-08-10T10:04:10.970Z",
-      "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "95406166-e6b6-4097-87c3-bd7e848271bd",
       "category": "fact",
       "title": "patch-plan-tools.mjs 内核补丁",
-      "content": "提交 63d0dc6 新增 patch-plan-tools.mjs（scripts/），作用于 pi dist 的 agent-session.js 的 prepareNextTurnWithContext，用函数式取值刷新恢复会话工具 schema（注意 tools: state.tools.slice() 会在刷新前求值取到旧快照，必须用函数延迟求值）。已注册 rebuild.sh Phase 3，pi update 后重跑 rebuild.sh 自动重打。对已存在会话不生效，仅影响新会话及运行中后续轮次。",
+      "content": "提交 63d0dc6 新增 patch-plan-tools.mjs（scripts/），作用于 pi dist 的 agent-session.js 的 prepareNextTurnWithContext，用函数式取值刷新恢复会话工具 schema（注意 tools: state.tools.slice() 会在刷新前求值取到旧快照，必须用函数延迟求值）。已注册 rebuild.sh Phase 3，pi update 后重跑 rebuild.sh 自动重打。对已存在会话不生效，仅影响新会话及运行中后续轮次。\n用户决策：保留内核补丁 patch-plan-tools.mjs（刷新恢复会话工具 schema）+ AGENTS.md 文档说明；若后续确认不需要模型侧主动切换（用户 Ctrl+Alt+P 已完整），移除补丁回退方案 2 即可。当前结论：模型侧 plan_enter 仅新会话可用，日常使用不受影响。\nplan-mode 内核补丁：在 agent-session.js 的 prepareNextTurnWithContext 中用 _refreshToolRegistry 刷新恢复会话工具 schema，已注册 rebuild.sh Phase 3（63d0dc6）。实测未生效：--continue 恢复会话模型仍无法调用 plan_enter，仅新进程可用；用户侧切换（Ctrl+Alt+P//plan）完全正常。后续不需要可回退。",
       "tags": [
         "pi",
         "内核补丁",
@@ -3432,53 +3068,6 @@
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
       "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "8a552ac9-e373-45da-88f0-9ce830fb7b7f",
-      "category": "fact",
-      "title": "pi 内核恢复会话工具 schema 缺陷",
-      "content": "pi 内核 --continue 恢复会话时，模型函数调用 schema 来自持久化旧快照，新注册的扩展工具不进入 schema（state.tools 含但 schema 不含）。模型只能调用 schema 内工具，症状是调用持续退化为 bash；决定性证据是会话 jsonl 中该工具 tool_calls 记录为 0。已写内核补丁：在 agent-session.js prepareNextTurnWithContext 中用 _refreshToolRegistry 刷新（patch-agent-session-tools.mjs，已注册 rebuild.sh）。",
-      "tags": [
-        "pi内核",
-        "会话恢复",
-        "工具schema",
-        "补丁"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T08:58:42.550Z",
-      "updatedAt": "2026-08-10T10:04:11.113Z",
-      "accessedAt": "2026-08-10T08:58:42.550Z",
-      "observedAt": "2026-08-10T08:58:42.550Z",
-      "deleted": true,
-      "supersededBy": "474024d4-6a44-4fd1-b737-f4ff4f3cfa22",
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "bc157245-3a41-4275-89d5-0903ee3cf976",
-      "category": "fact",
-      "title": "patch-plan-tools.mjs 补丁状态",
-      "content": "plan-mode 内核补丁：在 agent-session.js 的 prepareNextTurnWithContext 中用 _refreshToolRegistry 刷新恢复会话工具 schema，已注册 rebuild.sh Phase 3（63d0dc6）。实测未生效：--continue 恢复会话模型仍无法调用 plan_enter，仅新进程可用；用户侧切换（Ctrl+Alt+P//plan）完全正常。后续不需要可回退。",
-      "tags": [
-        "plan-mode",
-        "内核补丁",
-        "rebuild"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T07:20:00.317Z",
-      "updatedAt": "2026-08-10T10:04:11.156Z",
-      "accessedAt": "2026-08-10T07:20:00.317Z",
-      "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": true,
-      "supersededBy": "95406166-e6b6-4097-87c3-bd7e848271bd",
       "environments": [
         "all"
       ]
@@ -3823,52 +3412,6 @@
       ]
     },
     {
-      "id": "bc925ab9-808c-431f-868d-aeba9d2c6036",
-      "category": "fact",
-      "title": "extensions.test.ts 运行要求与 symlink 断裂修复",
-      "content": "注册面测试 extensions.test.ts（23 用例）必须在 pi-web-search 目录下运行（mock alias 生效）；顶层跑会因真实包加载 12s 超时导致 subagent 用例失败。2026-08-10 曾遇 18 用例失败：extensions/node_modules 下 @earendil-works/pi-coding-agent symlink 指向 /root/.local/share/pi-node/current/，但 pi update 后实际安装目录变为 node-v22.23.1-linux-arm64，current 失效。修复：重建 symlink 指向真实目录。test-all.sh 已纳入该测试。",
-      "tags": [
-        "pi",
-        "测试",
-        "symlink",
-        "extensions.test.ts"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.357Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
-      "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "7492e886-6645-43d0-b53b-69bb0104588c",
-      "category": "fact",
-      "title": "settings.json extensions 数组只认前缀条目",
-      "content": "pi 0.83 的 extensions 数组仅支持 !（排除）/ +（强制包含）/ -（强制排除）三种前缀条目，裸路径条目（如 extensions/xxx/index.ts）在 package-manager.js isEnabledByOverrides 中不参与任何判断，属 0.83 前无效残留。2026-08-10 已把 settings.json 中 7 个旧格式条目清理为 []，重启验证 9 个扩展均靠目录自动发现正常加载。",
-      "tags": [
-        "pi",
-        "settings.json",
-        "扩展注册",
-        "配置"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.357Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
-      "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "cc271c3a-7a1b-41e2-901c-d0ee31a3a50b",
       "category": "fact",
       "title": "subagent both 模式项目级覆盖用户级",
@@ -4188,7 +3731,7 @@
       "id": "f96ea1bc-a318-42c2-8e0c-7dbdd9262913",
       "category": "fact",
       "title": "termux-microphone-record 错误输出到 stdout",
-      "content": "termux-microphone-record 的错误信息（如 \"Recording already in progress!\"）打印到 stdout 而非 stderr。pi-voice startRecording 原 stdio 配置 ['ignore','ignore','pipe'] 只捕获 stderr，导致失败原因永远看不到（detail 为空）。已改为 ['ignore','pipe','pipe'] 拼接输出。单实例冲突特征：exit code 0 且文件未生成。MediaRecorderService 释放约需 2s，快速连续 stop→start 会冲突。",
+      "content": "termux-microphone-record 的错误信息（如 \"Recording already in progress!\"）打印到 stdout 而非 stderr。pi-voice startRecording 原 stdio 配置 ['ignore','ignore','pipe'] 只捕获 stderr，导致失败原因永远看不到（detail 为空）。已改为 ['ignore','pipe','pipe'] 拼接输出。单实例冲突特征：exit code 0 且文件未生成。MediaRecorderService 释放约需 2s，快速连续 stop→start 会冲突。\ntermux-microphone-record（Termux:API）的错误信息如 'Recording already in progress!' 输出到 stdout 而非 stderr。pi-voice/core.ts 的 startRecording 原 stdio 配置为 ['ignore','ignore','pipe'] 只捕获 stderr，导致录音失败原因永远看不到；已改为捕获 stdout+stderr 并拼接进错误详情。排查 Termux 录音失败时须同时看 stdout。",
       "tags": [
         "pi-voice",
         "termux",
@@ -4257,33 +3800,10 @@
       ]
     },
     {
-      "id": "dbdfef60-22a0-4381-97b1-c3662524a049",
-      "category": "fact",
-      "title": "admin_restart 在 TUI 环境不退出进程 bug 已修复",
-      "content": "pi 的 admin_restart 调用 ctx.shutdown() 在 TUI 环境下不退出进程（实测 PID 始终不变），wrapper 检测不到退出码导致不重启、新代码永不生效。已修复：加 process.exit(0) 1500ms 兜底（提交 1e6d75f）。验证重启是否生效须对比 PID，proot 环境进程时间不可靠。",
-      "tags": [
-        "pi",
-        "admin_restart",
-        "重启",
-        "bug修复"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T23:16:51.279Z",
-      "updatedAt": "2026-08-10T23:16:51.279Z",
-      "accessedAt": "2026-08-10T23:16:51.279Z",
-      "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "b199a75f-d939-4906-8c2f-937de0c3a080",
       "category": "fact",
       "title": "pi 恢复会话工具 schema 缺陷与补丁",
-      "content": "pi 内核中 --continue TUI 恢复会话的工具函数 schema 来自持久化旧快照，不含新注册的扩展工具（如 plan_enter/plan_exit），扩展层 setActiveTools/refreshTools 都无法绕过；而 --print 新进程正常。已写内核补丁 patch-plan-tools.mjs（agent-session.js prepareNextTurn 处检测快照缺注册工具时用 _refreshToolRegistry 刷新）并注册到 rebuild.sh（提交 63d0dc6），补丁已加载但验证受阻，用户选择保留补丁、接受现状（快捷键切换）。",
+      "content": "pi 内核中 --continue TUI 恢复会话的工具函数 schema 来自持久化旧快照，不含新注册的扩展工具（如 plan_enter/plan_exit），扩展层 setActiveTools/refreshTools 都无法绕过；而 --print 新进程正常。已写内核补丁 patch-plan-tools.mjs（agent-session.js prepareNextTurn 处检测快照缺注册工具时用 _refreshToolRegistry 刷新）并注册到 rebuild.sh（提交 63d0dc6），补丁已加载但验证受阻，用户选择保留补丁、接受现状（快捷键切换）。\npi 内核缺陷：--continue 恢复会话的工具 schema 来自持久化旧快照，新注册的扩展工具（如 plan_enter）不可见；--print 新进程正常。扩展层 setActiveTools/session_start/agent_start 均更新了 state.tools 但 schema 不随其更新。已写内核补丁 patch-plan-tools.mjs（在 prepareNextTurnWithContext 刷新工具 schema）并注册到 rebuild.sh（提交 63d0dc6），文档说明：后续不需要可回退方案 2（接受现状，用户快捷键切换）。\npi 内核 --continue 恢复会话时，模型函数调用 schema 来自持久化旧快照，新注册的扩展工具不进入 schema（state.tools 含但 schema 不含）。模型只能调用 schema 内工具，症状是调用持续退化为 bash；决定性证据是会话 jsonl 中该工具 tool_calls 记录为 0。已写内核补丁：在 agent-session.js prepareNextTurnWithContext 中用 _refreshToolRegistry 刷新（patch-agent-session-tools.mjs，已注册 rebuild.sh）。\npi 内核 --continue 恢复的会话，模型工具 schema 来自会话创建时的持久化快照，不包含之后新注册的扩展工具（如 plan_enter/plan_exit）；新建会话（pi / --print）则自动包含。表现为：模型反复尝试调用该类工具时输出退化为 bash，会话文件 tool_calls 记录 0 次。扩展层 setActiveTools/session_start/agent_start 均无法改变已存在会话的固定 schema。",
       "tags": [
         "pi",
         "内核补丁",
@@ -4307,7 +3827,7 @@
       "id": "2a027aae-1fcc-4b92-911f-c824b63b912a",
       "category": "fact",
       "title": "plan_enter/plan_exit 模型侧切换工具设计",
-      "content": "plan-mode 扩展新增模型侧切换工具 plan_enter/plan_exit（参考 opencode 权限设计）：plan_enter 仅执行模式可见，模型可主动进入计划模式（进入无需确认）；plan_exit 仅计划模式可见，退出必须用户手动确认——execute 内部 ctx.ui.select 弹'确认退出/取消'选择器阻塞等待，任何情况不可绕过。计划模式白名单含 read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit 共 9 个工具。",
+      "content": "plan-mode 扩展新增模型侧切换工具 plan_enter/plan_exit（参考 opencode 权限设计）：plan_enter 仅执行模式可见，模型可主动进入计划模式（进入无需确认）；plan_exit 仅计划模式可见，退出必须用户手动确认——execute 内部 ctx.ui.select 弹'确认退出/取消'选择器阻塞等待，任何情况不可绕过。计划模式白名单含 read/bash/grep/glob/todo/web_search/fetch_url/subagent/plan_exit 共 9 个工具。\npi 扩展已实现模型侧计划模式切换工具（提交 99a8770，参考 opencode 权限设计）：plan_enter 仅执行模式可见、进入免确认；plan_exit 仅计划模式可见、退出必须弹 ctx.ui.select 确认选择器（'确认退出/取消'）由用户手动确认，任何情况不绕过。提示词已同步注明需用户确认。",
       "tags": [
         "pi",
         "plan-mode",
@@ -4423,29 +3943,6 @@
       ]
     },
     {
-      "id": "386c20a5-d8d6-470e-b3d9-682c553f4f72",
-      "category": "fact",
-      "title": "termux-microphone-record 错误输出在 stdout",
-      "content": "termux-microphone-record（Termux:API）的错误信息如 'Recording already in progress!' 输出到 stdout 而非 stderr。pi-voice/core.ts 的 startRecording 原 stdio 配置为 ['ignore','ignore','pipe'] 只捕获 stderr，导致录音失败原因永远看不到；已改为捕获 stdout+stderr 并拼接进错误详情。排查 Termux 录音失败时须同时看 stdout。",
-      "tags": [
-        "pi-voice",
-        "termux",
-        "录音",
-        "stdio"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T23:19:51.165Z",
-      "updatedAt": "2026-08-10T23:19:51.165Z",
-      "accessedAt": "2026-08-10T23:19:51.165Z",
-      "observedAt": "2026-08-10T23:19:51.165Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "9f46ab58-b6c1-4f01-87bb-4963b86b34c2",
       "category": "reference",
       "title": "pi 命令多级补全机制",
@@ -4501,29 +3998,6 @@
         "音量检测",
         "转写",
         "ffmpeg"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T23:19:51.166Z",
-      "updatedAt": "2026-08-10T23:19:51.166Z",
-      "accessedAt": "2026-08-10T23:19:51.166Z",
-      "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
-      "id": "53fa67af-4392-4fc0-827c-265f34c0ad34",
-      "category": "fact",
-      "title": "ffmpeg anullsrc 测试需加 -t 时长限制",
-      "content": "测试中用 ffmpeg 的 anullsrc 音源生成静音 wav 时，若不加 `-t 1` 时长限制会无限生成音频，导致 vitest 用例超时挂死（进程需手动 kill）。教训：所有 ffmpeg 测试生成命令必须带 -t 时长参数；另外 dictation 的 finish 内部也调用 waitForFileStable，mock 序列长度要覆盖该调用（曾有第 3 次调用返回 undefined 导致测试失败）。",
-      "tags": [
-        "ffmpeg",
-        "测试",
-        "vitest",
-        "教训"
       ],
       "confidence": 1,
       "source": "extract",
@@ -4610,54 +4084,6 @@
       ]
     },
     {
-      "id": "8087ca60-14e6-4605-8c62-20fa32b53cd5",
-      "category": "fact",
-      "title": "admin_restart 工具当前环境不可用",
-      "content": "当前环境工具集中没有 admin_restart（admin 扩展不可用），pi 扩展代码修改无法热更新，必须重启 pi 进程才能加载新代码。重启操作需用户手动执行或由用户触发（proot 无自动拉起）。验证扩展改动后应提示用户重启，而非尝试工具重启。",
-      "tags": [
-        "pi",
-        "扩展开发",
-        "重启",
-        "环境"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T11:14:54.133Z",
-      "updatedAt": "2026-08-10T23:19:51.654Z",
-      "accessedAt": "2026-08-10T11:14:54.133Z",
-      "observedAt": "2026-08-10T11:14:54.133Z",
-      "deleted": true,
-      "supersededBy": "6c28caa7-731f-46f3-a367-91eaf398b7e7",
-      "environments": [
-        "termux"
-      ]
-    },
-    {
-      "id": "bab42a73-5622-4d1d-82e3-b6b2ca059043",
-      "category": "fact",
-      "title": "ffmpeg anullsrc 测试须加时长限制",
-      "content": "用 ffmpeg anullsrc 生成静音测试音频时，anullsrc 源无时长限制会无限生成导致测试超时挂死。生成命令必须加 -t 限制时长（如 ffmpeg -f lavfi -i anullsrc -t 1 -q:a 9 -acodec pcm_s16le -ar 16000 out.wav）。另注意：dictation 的 finish 内部也会调用 waitForFileStable，mock 序列长度需覆盖全部调用次数。",
-      "tags": [
-        "ffmpeg",
-        "测试",
-        "pi-voice",
-        "踩坑"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T11:14:54.133Z",
-      "updatedAt": "2026-08-10T23:19:51.690Z",
-      "accessedAt": "2026-08-10T11:14:54.133Z",
-      "observedAt": "2026-08-10T11:14:54.133Z",
-      "deleted": true,
-      "supersededBy": "53fa67af-4392-4fc0-827c-265f34c0ad34",
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "eca9fb65-d4d8-4507-839c-19eba9c5a78d",
       "category": "fact",
       "title": "proot 环境 kill -0 判定陷阱",
@@ -4690,29 +4116,6 @@
         "pi-cron",
         "锁竞争",
         "watchdog"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T02:49:34.877Z",
-      "updatedAt": "2026-08-11T02:49:34.877Z",
-      "accessedAt": "2026-08-11T02:49:34.877Z",
-      "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "32ffc6b0-aaef-4776-a76f-ac1bbf82bfea",
-      "category": "fact",
-      "title": "admin_restart 在 TUI 环境不退出进程",
-      "content": "pi 扩展的 admin_restart 调 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），导致新代码从未加载、改动看似无效。排查方法：对比重启前后进程 PID，或加文件日志（写 /tmp）验证代码路径。修复方案：补退出兜底，使进程真正退出后由 wrapper restart 请求触发 --continue 重启（加载新代码）。",
-      "tags": [
-        "admin_restart",
-        "重启",
-        "TUI",
-        "调试"
       ],
       "confidence": 1,
       "source": "extract",
@@ -4774,7 +4177,7 @@
       "id": "2296e2c7-c698-4ad0-910c-5d3f0c79bb35",
       "category": "fact",
       "title": "pi-voice 快捷键变更与 TTS 语义",
-      "content": "pi-voice 扩展已移除 Ctrl+Shift+R 注册，仅保留 Ctrl+Alt+R（软键盘有 CTRL/ALT 键可按键）；相关注释/文案/README/package.json 同步更新（提交 a7f508d）。TTS 语义：createTtsDispatcher 串行队列合并、语音输入自动开 TTS/键盘关闭、手动开关后不自动切换、启动清僵尸 TTS 进程、/tts speak 过滤 JSON（提交 dbe9f5a）。",
+      "content": "pi-voice 扩展已移除 Ctrl+Shift+R 注册，仅保留 Ctrl+Alt+R（软键盘有 CTRL/ALT 键可按键）；相关注释/文案/README/package.json 同步更新（提交 a7f508d）。TTS 语义：createTtsDispatcher 串行队列合并、语音输入自动开 TTS/键盘关闭、手动开关后不自动切换、启动清僵尸 TTS 进程、/tts speak 过滤 JSON（提交 dbe9f5a）。\npi-voice 录音快捷键 Ctrl+Shift+R 已移除（提交 a7f508d），仅保留 Ctrl+Alt+R（软键盘有 CTRL/ALT 可按键）。同步更新 index.ts 注释、录音文案、dictation 提示、README 6 处、package.json。50 用例通过。",
       "tags": [
         "pi-voice",
         "快捷键",
@@ -4835,51 +4238,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "8ceac074-8cf8-4249-b756-fb70d49a1544",
-      "category": "fact",
-      "title": "admin_restart 不重启进程的修复",
-      "content": "pi 扩展 admin_restart 的 ctx.shutdown() 在 TUI 环境不退出进程（PID 不变），wrapper 检测不到退出码导致不重启、新代码永不加载。修复（提交 1e6d75f）：加 process.exit(0) 1500ms 兜底。判断是否真正重启需对比 PID，proot 下进程时间不可靠。",
-      "tags": [
-        "admin_restart",
-        "重启",
-        "bug"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T09:48:09.454Z",
-      "updatedAt": "2026-08-11T02:49:35.247Z",
-      "accessedAt": "2026-08-10T09:48:09.454Z",
-      "observedAt": "2026-08-10T09:48:09.454Z",
-      "deleted": true,
-      "supersededBy": "32ffc6b0-aaef-4776-a76f-ac1bbf82bfea",
-      "environments": [
-        "termux"
-      ]
-    },
-    {
-      "id": "077807bf-052b-4083-8821-cce45e0e73c3",
-      "category": "fact",
-      "title": "pi-voice 快捷键变更",
-      "content": "pi-voice 录音快捷键 Ctrl+Shift+R 已移除（提交 a7f508d），仅保留 Ctrl+Alt+R（软键盘有 CTRL/ALT 可按键）。同步更新 index.ts 注释、录音文案、dictation 提示、README 6 处、package.json。50 用例通过。",
-      "tags": [
-        "pi-voice",
-        "快捷键"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T02:58:04.175Z",
-      "updatedAt": "2026-08-11T02:49:35.408Z",
-      "accessedAt": "2026-08-10T02:58:04.175Z",
-      "observedAt": "2026-08-10T02:58:04.175Z",
-      "deleted": true,
-      "supersededBy": "2296e2c7-c698-4ad0-910c-5d3f0c79bb35",
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -4976,30 +4334,6 @@
       ]
     },
     {
-      "id": "6c28caa7-731f-46f3-a367-91eaf398b7e7",
-      "category": "fact",
-      "title": "admin_restart 不可用时的重启机制",
-      "content": "当前环境 admin_restart 工具不可用（admin 扩展未加载），扩展代码修改后无法热更新，需重启 pi：写 restart state → 杀 pi 进程 → pi-wrapper.sh 自动 --continue 拉起恢复会话。重启后新扩展代码才生效。此前 admin_restart 在 TUI 环境下也曾有 ctx.shutdown() 不退出进程（PID 不变）的坑，改代码后务必确认新代码已加载。",
-      "tags": [
-        "pi",
-        "重启",
-        "admin",
-        "wrapper"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T23:19:51.166Z",
-      "updatedAt": "2026-08-11T02:53:35.754Z",
-      "accessedAt": "2026-08-10T23:19:51.166Z",
-      "observedAt": "2026-08-10T23:19:51.166Z",
-      "deleted": true,
-      "supersededBy": "e4bb1c0e-04ef-4c67-824d-ec0e6fd1715d",
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "05317838-945b-4bb0-8461-4fb57f80059f",
       "category": "fact",
       "title": "slash 命令不受工具过滤影响",
@@ -5009,29 +4343,6 @@
         "命令",
         "工具过滤",
         "setActiveTools"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T02:54:32.645Z",
-      "updatedAt": "2026-08-11T02:54:32.645Z",
-      "accessedAt": "2026-08-11T02:54:32.645Z",
-      "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "152b2e9e-2fa5-4e8a-83ac-cb866fe4bacb",
-      "category": "procedure",
-      "title": "~/.pi git 推送临时凭证流程",
-      "content": "环境无持久 GitHub 凭证（无 credential helper、.git-credentials、SSH、gh），推送需用户每次提供 PAT：git remote set-url origin 带 token 的 URL → push → 立即恢复无凭证 URL；token 不写入 git config/credentials/memory 任何持久文件。本地提交先就绪（git add/commit），凭证到位即可推送。",
-      "tags": [
-        "git",
-        "github",
-        "推送",
-        "凭证"
       ],
       "confidence": 0.95,
       "source": "extract",
@@ -5073,7 +4384,7 @@
       "id": "a596b6cb-5bde-440e-ac8d-3f65bf12fd5f",
       "category": "fact",
       "title": "Termux:API 录音 moov atom 缺失根因",
-      "content": "Termux:API 的 MediaRecorder 在 -l 超时自动退出或进程被杀（SIGPIPE）时不写 moov atom，ffmpeg 转码报 'moov atom not found' 文件损坏；-q 明确停止则输出 'Recording finished' 且 0.3s 内写好 moov 可正常转码。修复：pi-voice dictation.ts 在录音进程 exit 回调补发一次 -q 强制服务收尾（提交 a734f5a）。",
+      "content": "Termux:API 的 MediaRecorder 在 -l 超时自动退出或进程被杀（SIGPIPE）时不写 moov atom，ffmpeg 转码报 'moov atom not found' 文件损坏；-q 明确停止则输出 'Recording finished' 且 0.3s 内写好 moov 可正常转码。修复：pi-voice dictation.ts 在录音进程 exit 回调补发一次 -q 强制服务收尾（提交 a734f5a）。\nTermux:API 的 MediaRecorder 在 -l 超时自动退出或进程被杀时不写 moov atom，m4a 文件损坏，ffmpeg 转码报 'moov atom not found'；仅 -q 明确停止才正常收尾（输出 'Recording finished'）。修复：pi-voice 在录音进程退出后补发一次 -q 强制服务收尾再转码（提交 a734f5a）。",
       "tags": [
         "pi-voice",
         "termux",
@@ -5183,29 +4494,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "1152baca-07e7-4c9f-adc9-5acfecc68b14",
-      "category": "fact",
-      "title": "pi-voice 录音清理序列修复",
-      "content": "pi-voice core.ts startRecording 清理序列：先 termux-microphone-record -q 优雅停止服务侧录音，再 pkill 兜底杀 CLI，最后等 0.5s 让 MediaRecorder 释放。根因：pkill 只杀 CLI 进程，Termux:API 服务侧 MediaRecorder 仍占麦克风，新实例立即报 'Recording already in progress!' 秒退（exit 0+无文件）。提交 2bd55f2。stdio 需配 ['ignore','pipe','pipe']，错误信息打在 stdout。",
-      "tags": [
-        "pi-voice",
-        "Termux",
-        "录音",
-        "修复"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-11T03:32:17.685Z",
-      "accessedAt": "2026-08-11T03:32:17.685Z",
-      "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false,
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -5326,7 +4614,7 @@
       "id": "baba6bbf-6663-436f-8603-47328b163ea2",
       "category": "fact",
       "title": "ffmpeg anullsrc 需加时长限制",
-      "content": "测试中用 ffmpeg -f lavfi -i anullsrc 生成静音测试音频时，anullsrc 源无 duration 限制会无限生成音频导致 vitest 超时挂死，必须加 -t 1（或 -t N）限制时长。另注意：Termux:API MediaRecorder 退出后仍会补写文件尾部，模拟/断言前需等待文件大小稳定（扩展内置 waitForFileStable 最长 15s）。",
+      "content": "测试中用 ffmpeg -f lavfi -i anullsrc 生成静音测试音频时，anullsrc 源无 duration 限制会无限生成音频导致 vitest 超时挂死，必须加 -t 1（或 -t N）限制时长。另注意：Termux:API MediaRecorder 退出后仍会补写文件尾部，模拟/断言前需等待文件大小稳定（扩展内置 waitForFileStable 最长 15s）。\n测试中用 ffmpeg 的 anullsrc 音源生成静音 wav 时，若不加 `-t 1` 时长限制会无限生成音频，导致 vitest 用例超时挂死（进程需手动 kill）。教训：所有 ffmpeg 测试生成命令必须带 -t 时长参数；另外 dictation 的 finish 内部也调用 waitForFileStable，mock 序列长度要覆盖该调用（曾有第 3 次调用返回 undefined 导致测试失败）。\n用 ffmpeg anullsrc 生成静音测试音频时，anullsrc 源无时长限制会无限生成导致测试超时挂死。生成命令必须加 -t 限制时长（如 ffmpeg -f lavfi -i anullsrc -t 1 -q:a 9 -acodec pcm_s16le -ar 16000 out.wav）。另注意：dictation 的 finish 内部也会调用 waitForFileStable，mock 序列长度需覆盖全部调用次数。\n测试生成静音音频时，anullsrc 源（ffmpeg -f lavfi -i anullsrc）若无 duration 限制会无限生成音频流导致测试进程卡死（vitest 超时）。生成测试音频必须加 -t 1 之类时长限制。该缺陷在 pi-voice 测试中实际发生并修复。",
       "tags": [
         "ffmpeg",
         "测试",
@@ -5391,29 +4679,6 @@
       ]
     },
     {
-      "id": "f69d2c09-c8cb-4781-90c7-5e96ce57d773",
-      "category": "fact",
-      "title": "ffmpeg anullsrc 测试陷阱",
-      "content": "测试生成静音音频时，anullsrc 源（ffmpeg -f lavfi -i anullsrc）若无 duration 限制会无限生成音频流导致测试进程卡死（vitest 超时）。生成测试音频必须加 -t 1 之类时长限制。该缺陷在 pi-voice 测试中实际发生并修复。",
-      "tags": [
-        "ffmpeg",
-        "测试",
-        "坑"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T02:53:35.449Z",
-      "updatedAt": "2026-08-11T03:32:18.079Z",
-      "accessedAt": "2026-08-11T02:53:35.449Z",
-      "observedAt": "2026-08-11T02:53:35.449Z",
-      "deleted": true,
-      "supersededBy": "baba6bbf-6663-436f-8603-47328b163ea2",
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "1e736712-d6d1-4a98-99e9-3b5ec9600537",
       "category": "preference",
       "title": "用户偏好: 先回答/给方案，同意后才动手改",
@@ -5433,28 +4698,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "36cb9b7f-6e4e-4336-b782-3328b9eddcd4",
-      "category": "fact",
-      "title": "Termux:API 录音 moov atom 行为",
-      "content": "Termux:API 的 MediaRecorder 在 -l 超时自动退出或进程被杀时不写 moov atom，m4a 文件损坏，ffmpeg 转码报 'moov atom not found'；仅 -q 明确停止才正常收尾（输出 'Recording finished'）。修复：pi-voice 在录音进程退出后补发一次 -q 强制服务收尾再转码（提交 a734f5a）。",
-      "tags": [
-        "pi-voice",
-        "termux",
-        "ffmpeg"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T04:37:04.510Z",
-      "updatedAt": "2026-08-11T04:37:04.510Z",
-      "accessedAt": "2026-08-11T04:37:04.510Z",
-      "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false,
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -5680,28 +4923,6 @@
       ]
     },
     {
-      "id": "4defc232-20b9-4053-acc6-1489540b5fab",
-      "category": "fact",
-      "title": "GitHub 推送记录: pi-voice 修复批次已推送",
-      "content": "2026-08-11 推送 pi-tools 仓库 16 个提交（ffabd2a..dcb333d，pi-voice 全套修复+README+memory 备份+检查点清理），一次性 PAT 内联 URL 推送后 remote 保持无凭证，git fetch 修正 origin/master。检查点 memory/checkpoints/ 已不入库（时效性快照）。",
-      "tags": [
-        "github",
-        "push",
-        "pi-tools"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T05:55:10.220Z",
-      "updatedAt": "2026-08-11T05:55:10.220Z",
-      "accessedAt": "2026-08-11T05:55:10.220Z",
-      "observedAt": "2026-08-11T05:55:10.220Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "85ad158d-66cc-4ecd-a1c7-4c8380c4c77a",
       "category": "procedure",
       "title": "黑盒系统开发流程检查清单（5 阶段）",
@@ -5745,26 +4966,6 @@
         "termux"
       ],
       "observedAt": "2026-08-11T06:33:54.084Z",
-      "deleted": false
-    },
-    {
-      "id": "46e71c75-0b1f-4591-91ff-3d71868c6400",
-      "category": "fact",
-      "title": "推送经验: PAT 失效验证 + v2ray 代理推送",
-      "content": "2026-08-11 第二次推送（5 提交 558dd70..9c6eab7）：首个 PAT 失效（Bad credentials，被撤销/过期），用户提供新 PAT 后经 v2ray 代理（http://127.0.0.1:10808，github.com 直连被 DNS 污染）推送成功。经验：PAT 可能中途失效，推送失败报 'could not read Password' 时先用 curl -H \"Authorization: token\" api.github.com/user 验证 token 有效性，再判断是网络还是凭据问题。",
-      "tags": [
-        "github",
-        "push",
-        "token",
-        "v2ray"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T10:12:45.677Z",
-      "updatedAt": "2026-08-11T10:12:45.677Z",
-      "accessedAt": "2026-08-11T10:12:45.677Z",
-      "observedAt": "2026-08-11T10:12:45.677Z",
       "deleted": false
     },
     {
@@ -6627,14 +5828,13 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-12T01:47:33.915Z",
-      "updatedAt": "2026-08-13T12:17:11.887Z",
+      "updatedAt": "2026-08-12T01:47:33.915Z",
       "accessedAt": "2026-08-12T01:47:33.915Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-12T01:47:33.915Z",
-      "deleted": true,
-      "supersededBy": "17d89598-a204-4eff-a7b6-a1d925eaaeca"
+      "deleted": false
     },
     {
       "id": "9c93b08a-87a2-40f5-b59a-9b7fd4672560",
@@ -6821,32 +6021,6 @@
       "deleted": true
     },
     {
-      "id": "8a221b5e-b47a-46a0-bb9c-114e206bf50b",
-      "category": "fact",
-      "title": "当前环境无 GitHub 凭证",
-      "content": "~/.pi 仓库（origin/master）推送时环境无任何 GitHub 凭证：无 git-credentials、无 credential helper、无 SSH 密钥、无 gh CLI、auth.json/settings.json 无 github token。用户需临时提供 PAT，流程：git remote set-url origin 带 token → push → 立即恢复无凭证 URL，token 不落盘、用完即弃。提交 0749c74（命令面统一+录音修复+文档）与 2bd55f2（录音清理修复）已推送。",
-      "tags": [
-        "git",
-        "github",
-        "凭证",
-        "推送",
-        "credential",
-        "termux",
-        "environment"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 2,
-      "createdAt": "2026-08-10T23:19:51.166Z",
-      "updatedAt": "2026-08-12T04:30:08.118Z",
-      "accessedAt": "2026-08-10T23:19:51.166Z",
-      "observedAt": "2026-08-12T04:30:08.118Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "a0150a25-a998-4a0e-91c5-b66f37c39b90",
       "category": "fact",
       "title": "Termux:API MediaRecorder 连续录音不稳定",
@@ -6873,7 +6047,7 @@
       "id": "cca24916-984c-47ea-80cb-46766742bc90",
       "category": "procedure",
       "title": "pi-voice 录音清理序列",
-      "content": "startRecording 的清理序列应为：先执行 termux-microphone-record -q（优雅停止服务侧录音并释放麦克风），再 pkill 杀 CLI 进程兜底，最后等待 1.5 秒让服务侧充分释放。仅 pkill 不释放服务侧 MediaRecorder 占用，会导致新实例报 \"Recording already in progress!\"。",
+      "content": "startRecording 的清理序列应为：先执行 termux-microphone-record -q（优雅停止服务侧录音并释放麦克风），再 pkill 杀 CLI 进程兜底，最后等待 1.5 秒让服务侧充分释放。仅 pkill 不释放服务侧 MediaRecorder 占用，会导致新实例报 \"Recording already in progress!\"。\npi-voice core.ts startRecording 清理序列：先 termux-microphone-record -q 优雅停止服务侧录音，再 pkill 兜底杀 CLI，最后等 0.5s 让 MediaRecorder 释放。根因：pkill 只杀 CLI 进程，Termux:API 服务侧 MediaRecorder 仍占麦克风，新实例立即报 'Recording already in progress!' 秒退（exit 0+无文件）。提交 2bd55f2。stdio 需配 ['ignore','pipe','pipe']，错误信息打在 stdout。",
       "tags": [
         "pi-voice",
         "termux",
@@ -7171,29 +6345,6 @@
       "deleted": false
     },
     {
-      "id": "1b51e074-1d40-4dc7-b241-0440bb7eedea",
-      "category": "procedure",
-      "title": "GitHub推送故障排查顺序",
-      "content": "GitHub推送失败时排查顺序：1）先用curl -H 'Authorization: token xxx' https://api.github.com验证token有效性，若返回Bad credentials则token已失效；2）token有效再排查网络，github.com直连污染时走v2ray 10808代理；3）推送成功后恢复无凭证remote URL。",
-      "tags": [
-        "git",
-        "github",
-        "troubleshooting",
-        "proxy"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T09:42:37.850Z",
-      "updatedAt": "2026-08-12T09:42:37.850Z",
-      "accessedAt": "2026-08-12T09:42:37.850Z",
-      "observedAt": "2026-08-12T09:42:37.850Z",
-      "environments": [
-        "termux"
-      ],
-      "deleted": false
-    },
-    {
       "id": "8376fccb-a9f4-4e3e-a022-21b5a949fcc5",
       "category": "fact",
       "title": "plan-mode状态条残留根因",
@@ -7220,7 +6371,7 @@
       "id": "906abeb2-9a99-441e-b68c-8cdd353c8a9e",
       "category": "fact",
       "title": "pi-voice tmpDir 固化共享存储",
-      "content": "pi-voice.json 已显式固化 tmpDir=/storage/emulated/0/pi-voice/ 兜底；defaultTmpDir 实现已优先共享存储路径（Termux:API 无法写 proot 容器路径）。",
+      "content": "pi-voice.json 已显式固化 tmpDir=/storage/emulated/0/pi-voice/ 兜底；defaultTmpDir 实现已优先共享存储路径（Termux:API 无法写 proot 容器路径）。\n在 pi-voice.json 中显式固化 tmpDir=/storage/emulated/0/pi-voice/ 兜底共享存储路径。录音→ffmpeg 转码→whisper 转写全链路实测打通；whisper 静音环境返回空文本属正常，非故障。",
       "tags": [
         "pi-voice",
         "配置",
@@ -7267,7 +6418,7 @@
       "id": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5",
       "category": "solutions",
       "title": "install-wrapper.sh readlink 解析 bug 修复",
-      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。",
+      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。\n/root/.pi/scripts/install-wrapper.sh 曾有一个 bug：list_pi_bins() 用 readlink -f 输出路径，把 npm 全局安装的 bin/pi symlink 解析成真实文件（dist/cli.js），install_one() 对其 readlink 返回空，报\"不是 symlink，无法备份（可能已被覆盖）\"并 exit 1。2025-08-10 已修复：改为输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key（sort -u -t'|' -k2 | cut -d'|' -f1）。同时修了 echo /usr/local/bin/pi /usr/bin/pi 一行两路径的问题。pi update 后 npm 会把 Termux 的 usr/bin/pi 覆盖回官方 symlink，属预期行为，自愈（install-wrapper.sh --ensure，由 pi-cron.sh/tmux 启动触发）会自动重建 wrapper 并保留 pi-original 备份。若再出现\"不是 symlink，无法备份\"报错，说明该脚本被改回或存在新的解析问题。",
       "tags": [
         "install-wrapper.sh",
         "symlink",
@@ -7456,31 +6607,6 @@
       "deleted": false
     },
     {
-      "id": "af349dd7-204b-4ecf-a5a4-c79e1d671607",
-      "category": "fact",
-      "title": "install-wrapper.sh 自愈 bug 修复: readlink -f 解析导致备份失败",
-      "content": "/root/.pi/scripts/install-wrapper.sh 曾有一个 bug：list_pi_bins() 用 readlink -f 输出路径，把 npm 全局安装的 bin/pi symlink 解析成真实文件（dist/cli.js），install_one() 对其 readlink 返回空，报\"不是 symlink，无法备份（可能已被覆盖）\"并 exit 1。2025-08-10 已修复：改为输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key（sort -u -t'|' -k2 | cut -d'|' -f1）。同时修了 echo /usr/local/bin/pi /usr/bin/pi 一行两路径的问题。pi update 后 npm 会把 Termux 的 usr/bin/pi 覆盖回官方 symlink，属预期行为，自愈（install-wrapper.sh --ensure，由 pi-cron.sh/tmux 启动触发）会自动重建 wrapper 并保留 pi-original 备份。若再出现\"不是 symlink，无法备份\"报错，说明该脚本被改回或存在新的解析问题。",
-      "tags": [
-        "pi-wrapper",
-        "install-wrapper.sh",
-        "termux",
-        "自愈",
-        "bug修复"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T07:20:15.460Z",
-      "updatedAt": "2026-08-12T14:50:07.285Z",
-      "accessedAt": "2026-08-10T07:20:15.460Z",
-      "observedAt": "2026-08-10T07:20:15.460Z",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5"
-    },
-    {
       "id": "c07b9834-ecd1-4c53-9c3a-7196105267ce",
       "category": "fact",
       "title": "subagent 并发限制参数",
@@ -7601,7 +6727,7 @@
       "id": "bfcb9d09-31d5-46e9-ab79-e5d9b0e24b10",
       "category": "fact",
       "title": "extensions.test.ts 正确运行方式与超时",
-      "content": "extensions.test.ts（23 用例）必须在 pi-web-search 目录下运行（vitest mock alias 生效，subagent 用例走 mock）；顶层跑会因加载真实 @earendil-works/pi-coding-agent 包需 12s 超过 5000ms 超时导致 2 用例失败。2026-08-10 已将注册面测试纳入 scripts/test-all.sh（现共 13 项），修正了过时注释。",
+      "content": "extensions.test.ts（23 用例）必须在 pi-web-search 目录下运行（vitest mock alias 生效，subagent 用例走 mock）；顶层跑会因加载真实 @earendil-works/pi-coding-agent 包需 12s 超过 5000ms 超时导致 2 用例失败。2026-08-10 已将注册面测试纳入 scripts/test-all.sh（现共 13 项），修正了过时注释。\nextensions.test.ts 全量跑报模块解析失败（找不到 @earendil-works/pi-coding-agent/typebox）是环境依赖缺失而非代码改动问题；单个用例单独跑可通过。test-all.sh 回归不含 extensions.test.ts，需单独验证。另注意该文件断言需随命令面/工具数变化同步（如 plan_enter/plan_exit 使工具数 41→43）。\nextensions.test.ts 跑法（2026-08-10 实测）：必须 `cd /root/.pi/agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`（vitest 用 pi-web-search/vitest.config.ts 的 alias 把 @earendil-works/pi-coding-agent 等指向 tests/__mocks__/）；在 extensions/ 顶层跑会走真实包解析——subagent 用例因真实包加载 12s 超时（5000ms）失败。另：extensions/node_modules/@earendil-works/ 下的 symlink 指向 pi 安装目录（pi update 后可能失效，报 'Cannot find package'；2026-08-10 曾修复：pi-coding-agent 指向 current/lib/node_modules/@earendil-works/pi-coding-agent、typebox 指向 pi-coding-agent/node_modules/typebox）。test-all.sh 自 2026-08-10 起已纳入 extensions.test.ts（10 套测试）。\nextensions.test.ts（23 用例）必须 cd 到 agent/extensions/pi-web-search 下运行使 mock alias 生效；顶层跑会因真实包加载 12s 超时（subagent 用例 5000ms 上限）。test-all.sh 已纳入该项，现共 13 项回归。\n注册面测试 extensions.test.ts（23 用例）必须在 pi-web-search 目录下运行（mock alias 生效）；顶层跑会因真实包加载 12s 超时导致 subagent 用例失败。2026-08-10 曾遇 18 用例失败：extensions/node_modules 下 @earendil-works/pi-coding-agent symlink 指向 /root/.local/share/pi-node/current/，但 pi update 后实际安装目录变为 node-v22.23.1-linux-arm64，current 失效。修复：重建 symlink 指向真实目录。test-all.sh 已纳入该测试。",
       "tags": [
         "pi",
         "测试",
@@ -7625,7 +6751,7 @@
       "id": "0baf0eaa-62b3-4f41-8f1c-5f9d4c85fd36",
       "category": "fact",
       "title": "settings.json extensions 裸路径条目无效",
-      "content": "pi 0.83+ 的 package-manager.js isEnabledByOverrides 只识别 !（排除）/+/（强制）前缀，裸路径条目（如 extensions/pi-voice/index.ts）不参与任何判断，enabled 保持 true，是 0.83 前的无效残留。9 个扩展实际全部靠 ~/.pi/agent/extensions/ 目录自动发现加载。2026-08-10 已将 settings.json 中 7 个残留条目清理为 [] 并重启验证工具面完整。该文件 git ignore，清理属本地配置。",
+      "content": "pi 0.83+ 的 package-manager.js isEnabledByOverrides 只识别 !（排除）/+/（强制）前缀，裸路径条目（如 extensions/pi-voice/index.ts）不参与任何判断，enabled 保持 true，是 0.83 前的无效残留。9 个扩展实际全部靠 ~/.pi/agent/extensions/ 目录自动发现加载。2026-08-10 已将 settings.json 中 7 个残留条目清理为 [] 并重启验证工具面完整。该文件 git ignore，清理属本地配置。\npi 0.83 的 extensions 数组仅支持 !（排除）/ +（强制包含）/ -（强制排除）三种前缀条目，裸路径条目（如 extensions/xxx/index.ts）在 package-manager.js isEnabledByOverrides 中不参与任何判断，属 0.83 前无效残留。2026-08-10 已把 settings.json 中 7 个旧格式条目清理为 []，重启验证 9 个扩展均靠目录自动发现正常加载。",
       "tags": [
         "pi",
         "settings.json",
@@ -7672,7 +6798,7 @@
       "id": "93135490-ff7f-4432-8a3f-35fe4e33e06b",
       "category": "solutions",
       "title": "plan_exit 工具缺失的退出兜底",
-      "content": "--continue 恢复的会话中，会话启动后新注册的工具（如 plan_exit）会 not found 不可调用，与 AGENTS.md 记录的同类型问题一致。兜底：用户按 Ctrl+Alt+P 或输入 /plan 在 TUI 底部选择器手动退出计划模式，之后恢复执行权限。pi 重启（新进程）后工具注册完整，问题消失。另注意：用户确认退出计划模式后模型可能停止输出一次，属已知现象。",
+      "content": "--continue 恢复的会话中，会话启动后新注册的工具（如 plan_exit）会 not found 不可调用，与 AGENTS.md 记录的同类型问题一致。兜底：用户按 Ctrl+Alt+P 或输入 /plan 在 TUI 底部选择器手动退出计划模式，之后恢复执行权限。pi 重启（新进程）后工具注册完整，问题消失。另注意：用户确认退出计划模式后模型可能停止输出一次，属已知现象。\n2026-08-10 计划模式出现两个异常现象（待排查）：1) 本会话 plan_exit 工具 not found（AGENTS.md 记录 patch-plan-tools.mjs 应处理 --continue 恢复会话后新注册工具不可调用的问题，但本会话仍复现，补丁可能未覆盖此场景或未生效，需核查 dist 补丁状态）；2) 用户手动确认退出计划模式（/plan 确认选择器）后，模型停止输出并再次要求退出——疑似 plan-mode 退出确认流程与模型输出交互 bug。当前影响：用户只能靠 Ctrl+Alt+P 或 /plan 手动切换，模型侧 plan_enter/plan_exit 不可用。",
       "tags": [
         "plan-mode",
         "plan_exit",
@@ -7835,31 +6961,6 @@
       "deleted": false
     },
     {
-      "id": "416ea5e2-9fb9-46b3-8c61-3a8370e2d3c8",
-      "category": "fact",
-      "title": "pi-link localhost 自连故障状态",
-      "content": "2026-08-12 测试 pi-link 本地自连：device=localhost（root@127.0.0.1:8022）报 Host key verification failed，link_send 返回'远程会话未在超时内结束'，未收到回复。链路实际 1 秒内完成连接，说明 SSH 连接成功，故障定位在 known_hosts host key（缺记录或 key 不匹配）及远程 pi 会话启动/结束环节。当时未修复，待后续处理。",
-      "tags": [
-        "pi-link",
-        "ssh",
-        "localhost",
-        "故障"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:07:58.096Z",
-      "updatedAt": "2026-08-12T16:07:58.288Z",
-      "accessedAt": "2026-08-12T16:07:58.096Z",
-      "observedAt": "2026-08-12T16:07:58.096Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019ff637-0035-72f8-a342-487675ca51a1",
-      "supersededBy": "9a0c44b5-e432-454e-8d1a-229ed734e9b9",
-      "deleted": true
-    },
-    {
       "id": "8ba87e77-60bd-4b43-8375-038ed881fe98",
       "category": "reference",
       "title": "link_send 错误语义：连接成功≠处理成功",
@@ -7931,30 +7032,6 @@
       "deleted": false
     },
     {
-      "id": "1da73023-53c4-4a1c-b037-5b6170493b22",
-      "category": "solutions",
-      "title": "GitHub push 凭证：PAT 落盘 git-credentials",
-      "content": "沙箱无 GitHub 认证时 push 被拦：需 git config --global credential.helper store 后 push https://<PAT>@github.com/cyfxxx/pi-tools.git。注意 URL 内嵌 token 推送不会触发 credential helper 落盘，须手动写 ~/.git-credentials（权限 600，格式 https://<PAT>@github.com）才免密；remote 保持无 token 干净 URL，token 不进入 git 配置。push 遇 GitHub 瞬时 502 直接重试；non-fast-forward 时 fetch 后 rebase 再推。PAT 在会话明文出现后建议用完撤销。",
-      "tags": [
-        "git",
-        "github",
-        "凭证",
-        "pi-backup"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-12T16:08:32.735Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
       "id": "25606d72-436c-4873-bc13-558cf88df30d",
       "category": "solutions",
       "title": "WSL2 容器入站：Tailscale serve 转发",
@@ -7983,36 +7060,12 @@
       "id": "030fa28c-ba52-4be2-9da8-1b3b54f31a6b",
       "category": "fact",
       "title": "restart_hang 看门狗阈值与配置",
-      "content": "pi-autopilot 看门狗 restart_hang 触发条件：maxIdleMinutes（默认 30 分钟）内无 session_start/用户输入/任务执行即判挂死重启。配置持久化于 ~/.pi/agent/.pi-autopilot-config.json，文件不存在时 readAutopilotConfig 按 {默认, ...配置} 合并回落默认值——记忆声称的 120 因文件不存在从未生效。2026-11 本环境已设为 maxIdleMinutes=60 并入库共享（git 排除区移除，无密钥；各环境可本地改不推送）。",
+      "content": "pi-autopilot 看门狗 restart_hang 触发条件：maxIdleMinutes（默认 30 分钟）内无 session_start/用户输入/任务执行即判挂死重启。配置持久化于 ~/.pi/agent/.pi-autopilot-config.json，文件不存在时 readAutopilotConfig 按 {默认, ...配置} 合并回落默认值——记忆声称的 120 因文件不存在从未生效。2026-11 本环境已设为 maxIdleMinutes=60 并入库共享（git 排除区移除，无密钥；各环境可本地改不推送）。\n连续 6 次 restart_hang（31-50 分钟无活动），由 pi-autopilot 看门狗正常触发（maxIdleMinutes=30），锁修复后看门狗持续运行、触发稳定可靠。重启频繁主因是用户离开超 30 分钟；可 /auto:policy set maxIdleMinutes 60 调大阈值，不影响稳定性。",
       "tags": [
         "autopilot",
         "看门狗",
         "配置",
         "restart_hang"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T00:06:13.074Z",
-      "updatedAt": "2026-08-13T00:06:13.074Z",
-      "accessedAt": "2026-08-13T00:06:13.074Z",
-      "observedAt": "2026-08-13T00:06:13.074Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "eec1d636-6f1f-4df8-a5ce-41385e8549bb",
-      "category": "fact",
-      "title": "pi-link 公钥集中管理机制",
-      "content": "pi-tools 仓库实现 pi-link 公钥集中管理：keys/authorized_keys 存仓库内公钥合集，scripts/pi-link-keys.sh 支持 install/export/add/help，rebuild.sh Phase 2-F3 重建时自动 install 到本机 ~/.ssh/authorized_keys。新设备流程：生成 ed25519 密钥 → pi-link-keys.sh add 入库推送 → 各环境 pull + install 即两两免密。另有 8c559f0 修复：pi-link-entry.sh 用绝对路径兜底，解决非交互 ssh 会话找不到 pi 的问题。",
-      "tags": [
-        "pi-link",
-        "ssh",
-        "公钥",
-        "多设备"
       ],
       "confidence": 1,
       "source": "extract",
@@ -8128,7 +7181,7 @@
       "id": "6da19650-b2f7-4abe-8f21-c1dd300918db",
       "category": "fact",
       "title": "pi-link 公钥集中管理与 test-all.sh 硬编码",
-      "content": "pi-link 扩展（多设备互联）公钥集中管理：仓库 keys/authorized_keys 存所有设备公钥合集，scripts/pi-link-keys.sh 提供 install/export/add 子命令，rebuild.sh Phase 2-F3 重建时自动安装；新设备公钥 add 入库推送后各端 pull+install 即获授权。注意 test-all.sh 的 vitest 套件列表是硬编码的，新增扩展需手动补入（pi-link 曾因此遗漏，14 用例未覆盖），其他环境只改统计数字不补列表。",
+      "content": "pi-link 扩展（多设备互联）公钥集中管理：仓库 keys/authorized_keys 存所有设备公钥合集，scripts/pi-link-keys.sh 提供 install/export/add 子命令，rebuild.sh Phase 2-F3 重建时自动安装；新设备公钥 add 入库推送后各端 pull+install 即获授权。注意 test-all.sh 的 vitest 套件列表是硬编码的，新增扩展需手动补入（pi-link 曾因此遗漏，14 用例未覆盖），其他环境只改统计数字不补列表。\npi-tools 仓库实现 pi-link 公钥集中管理：keys/authorized_keys 存仓库内公钥合集，scripts/pi-link-keys.sh 支持 install/export/add/help，rebuild.sh Phase 2-F3 重建时自动 install 到本机 ~/.ssh/authorized_keys。新设备流程：生成 ed25519 密钥 → pi-link-keys.sh add 入库推送 → 各环境 pull + install 即两两免密。另有 8c559f0 修复：pi-link-entry.sh 用绝对路径兜底，解决非交互 ssh 会话找不到 pi 的问题。",
       "tags": [
         "pi-link",
         "test-all",
@@ -8202,7 +7255,7 @@
       "id": "38e4c344-e9c1-4699-b2d9-a1d88b1ca7aa",
       "category": "fact",
       "title": "pi-link localhost 自连测试失败模式",
-      "content": "2026-08-12 用户用 link_send(device=localhost, message='回复两个字：工具好') 测试 pi-link 本地自连：链路约1秒建立，但 21 秒后超时报错'远程会话未在超时内结束'，0 轮工具交互/0 次工具调用，表明远端 pi 会话未在超时窗口内完成处理。同日 link_status 预检另显示 localhost（root@127.0.0.1:8022）Host key verification failed。可能原因：localhost 未注册进 pi-link.json，或远端会话启动/处理超时。",
+      "content": "2026-08-12 用户用 link_send(device=localhost, message='回复两个字：工具好') 测试 pi-link 本地自连：链路约1秒建立，但 21 秒后超时报错'远程会话未在超时内结束'，0 轮工具交互/0 次工具调用，表明远端 pi 会话未在超时窗口内完成处理。同日 link_status 预检另显示 localhost（root@127.0.0.1:8022）Host key verification failed。可能原因：localhost 未注册进 pi-link.json，或远端会话启动/处理超时。\n2026-08-12 测试 pi-link 本地自连：device=localhost（root@127.0.0.1:8022）报 Host key verification failed，link_send 返回'远程会话未在超时内结束'，未收到回复。链路实际 1 秒内完成连接，说明 SSH 连接成功，故障定位在 known_hosts host key（缺记录或 key 不匹配）及远程 pi 会话启动/结束环节。当时未修复，待后续处理。",
       "tags": [
         "pi-link",
         "link_send",
@@ -8721,29 +7774,6 @@
       "supersededBy": "012cba2a-ca44-4dc7-82dc-4b0c1fc7efa8"
     },
     {
-      "id": "b28abe25-5cf0-4618-aec6-04e8a6e06e2f",
-      "category": "solutions",
-      "title": "plan-mode todoHash 粒度导致注入不触发（已修复 ee41127）",
-      "content": "plan-mode 执行模式\"状态更新不刷新\"根因：todoHash() 只区分 completed（1/0），pending→in_progress→blocked 及 activeForm/failures 变化不参与 hash，before_agent_start 的注入检测（currentHash !== knownTodoHash）被跳过——首个任务开始、任务阻塞时列表永远不刷新。修复（ee41127）：hash 纳入完整状态值（pending=1..deleted=5）+ activeForm 逐字符 + failures 长度；注入列表改为 plan.md 同格式（- [~] 进行中 / - [b] 阻塞）并附 activeForm。overlay 是实时重绘不受影响；todo 工具本身同步返回不慢，慢感来自注入不触发。",
-      "tags": [
-        "plan-mode",
-        "todo",
-        "bug",
-        "hash"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T04:18:14.536Z",
-      "updatedAt": "2026-08-13T04:18:14.536Z",
-      "accessedAt": "2026-08-13T04:18:14.536Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-13T04:18:14.536Z",
-      "deleted": false
-    },
-    {
       "id": "6a69d7d4-d3f4-43f4-b4bf-c4461051b169",
       "category": "solutions",
       "title": "WSL2镜像网络tailscaled占用22端口修复",
@@ -8845,7 +7875,7 @@
       "id": "55208979-2a81-46f0-80d7-d767f157de62",
       "category": "procedure",
       "title": "SearXNG/whisper接入systemd自启",
-      "content": "systemd/pi-searxng.service与pi-whisper.service模板（%PI_HOME%占位、Restart=always、After=network-online.target）；pi-whisper.sh加run子命令；rebuild.sh Phase 2-G平台检测（无/run/systemd/system自动跳过，Termux/proot/容器不装）；commit e8ffaa2。两服务常驻约460MB（whisper 262MB+SearXNG 199MB），空闲CPU≈0，kill -9后6秒内自动拉起。",
+      "content": "systemd/pi-searxng.service与pi-whisper.service模板（%PI_HOME%占位、Restart=always、After=network-online.target）；pi-whisper.sh加run子命令；rebuild.sh Phase 2-G平台检测（无/run/systemd/system自动跳过，Termux/proot/容器不装）；commit e8ffaa2。两服务常驻约460MB（whisper 262MB+SearXNG 199MB），空闲CPU≈0，kill -9后6秒内自动拉起。\nWSL重启后SearXNG/whisper不会自动拉起，已接入systemd：systemd/pi-searxng.service与pi-whisper.service模板（%PI_HOME%占位，Restart=always），rebuild.sh新增Phase 2-G平台检测（无/run/systemd/system自动跳过，Termux不装）；pi-whisper.sh新增run子命令（读pi-voice.json的token/模型/设备+CUDA库路径，exec前台）。踩坑：systemd无HOME变量致set -u脚本退出，unit需Environment=HOME=/root。kill -9实测6秒自动拉起，本机已验证。",
       "tags": [
         "systemd",
         "自启",
@@ -8906,14 +7936,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T04:28:28.982Z",
-      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T16:02:03.370Z",
       "accessedAt": "2026-08-13T04:28:28.982Z",
       "observedAt": "2026-08-13T04:28:28.982Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "285840ed-a387-49fc-9671-173231632bfd"
     },
     {
       "id": "2d2b57ab-e014-42fd-985c-15ca00143ae3",
@@ -8938,31 +7969,6 @@
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false
-    },
-    {
-      "id": "e231a87a-fa31-4b46-afe5-4622c70ede7d",
-      "category": "solutions",
-      "title": "SearXNG/whisper接入systemd自启",
-      "content": "WSL重启后SearXNG/whisper不会自动拉起，已接入systemd：systemd/pi-searxng.service与pi-whisper.service模板（%PI_HOME%占位，Restart=always），rebuild.sh新增Phase 2-G平台检测（无/run/systemd/system自动跳过，Termux不装）；pi-whisper.sh新增run子命令（读pi-voice.json的token/模型/设备+CUDA库路径，exec前台）。踩坑：systemd无HOME变量致set -u脚本退出，unit需Environment=HOME=/root。kill -9实测6秒自动拉起，本机已验证。",
-      "tags": [
-        "systemd",
-        "searxng",
-        "whisper",
-        "rebuild"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T04:01:11.358Z",
-      "updatedAt": "2026-08-13T04:28:29.116Z",
-      "accessedAt": "2026-08-13T04:01:11.358Z",
-      "observedAt": "2026-08-13T04:01:11.358Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "d1f74466-35bf-494f-8c31-b697d63ddab9"
     },
     {
       "id": "012cba2a-ca44-4dc7-82dc-4b0c1fc7efa8",
@@ -9024,30 +8030,6 @@
         "ssh",
         "PATH",
         "远程执行"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T04:55:15.527Z",
-      "updatedAt": "2026-08-13T04:55:15.527Z",
-      "accessedAt": "2026-08-13T04:55:15.527Z",
-      "observedAt": "2026-08-13T04:55:15.527Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": false
-    },
-    {
-      "id": "2c1c41f7-c1a7-4b27-8a99-3b41b7e9402b",
-      "category": "fact",
-      "title": "三设备互联拓扑与公钥状态",
-      "content": "pi-tools 多设备免密互联现状（本会话确认）：本机 Termux Tailscale 地址 100.114.171.18；远程设备 Linux 100.117.170.110，主机名 MYPC，用户 root，sshd 端口 22；第三台为 Windows（公钥 cyf@MYPC，公钥合集共 3 条已双向安装）。pi-link.json 设备清单含 remote 与 localhost 回环设备。远程设备 pi 装在 ~/.local/share/pi-node/current/bin/ 下。",
-      "tags": [
-        "pi-link",
-        "tailscale",
-        "设备",
-        "网络拓扑"
       ],
       "confidence": 1,
       "source": "extract",
@@ -9245,15 +8227,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T12:17:11.725Z",
+      "updatedAt": "2026-08-13T07:07:53.438Z",
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "49260c34-a3c8-46f7-b5f1-9905559a8b95"
+      "deleted": false
     },
     {
       "id": "2031e8b8-7760-4761-a047-922268215f4c",
@@ -9294,15 +8275,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T12:17:11.809Z",
+      "updatedAt": "2026-08-13T07:07:53.438Z",
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "2d861c94-47fc-4407-95da-eaf9e772b393"
+      "deleted": false
     },
     {
       "id": "7f0f5ef9-d907-409b-97c1-043430393906",
@@ -9333,7 +8313,7 @@
       "id": "4868641a-eb39-498e-8d44-ab8f9dcfb1e0",
       "category": "solutions",
       "title": "plan-mode todoHash 注入粒度修复",
-      "content": "plan-mode 的 todoHash() 原只把 completed(1/0) 编入 hash，pending→in_progress→blocked 与 activeForm/failures 变化不触发 before_agent_start 注入（resume 后 knownTodoHash=0，首个任务变 in_progress hash 仍=0，症状为任务状态长期不刷新）。修复（ee41127）：完整状态值 pending=1..deleted=5 + activeForm 逐字符 + failures 长度参与 hash；注入列表带状态标记 `- [~] 1. 标题 (正在...)`。",
+      "content": "plan-mode 的 todoHash() 原只把 completed(1/0) 编入 hash，pending→in_progress→blocked 与 activeForm/failures 变化不触发 before_agent_start 注入（resume 后 knownTodoHash=0，首个任务变 in_progress hash 仍=0，症状为任务状态长期不刷新）。修复（ee41127）：完整状态值 pending=1..deleted=5 + activeForm 逐字符 + failures 长度参与 hash；注入列表带状态标记 `- [~] 1. 标题 (正在...)`。\nplan-mode 执行模式\"状态更新不刷新\"根因：todoHash() 只区分 completed（1/0），pending→in_progress→blocked 及 activeForm/failures 变化不参与 hash，before_agent_start 的注入检测（currentHash !== knownTodoHash）被跳过——首个任务开始、任务阻塞时列表永远不刷新。修复（ee41127）：hash 纳入完整状态值（pending=1..deleted=5）+ activeForm 逐字符 + failures 长度；注入列表改为 plan.md 同格式（- [~] 进行中 / - [b] 阻塞）并附 activeForm。overlay 是实时重绘不受影响；todo 工具本身同步返回不慢，慢感来自注入不触发。",
       "tags": [
         "plan-mode",
         "todo",
@@ -9386,10 +8366,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 67,
+      "recurrence": 61,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-13T15:17:02.516Z",
-      "accessedAt": "2026-08-13T15:17:02.516Z",
+      "updatedAt": "2026-08-13T12:41:30.654Z",
+      "accessedAt": "2026-08-13T12:41:30.654Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -9420,34 +8400,10 @@
       "supersededBy": "6b20e9c0-d236-464a-a63c-f211331d29da"
     },
     {
-      "id": "6b20e9c0-d236-464a-a63c-f211331d29da",
-      "category": "fact",
-      "title": "pi-link 设备拓扑（4 台，termux-ubuntu 命名）",
-      "content": "pi-link 4 台设备：termux-ubuntu（本机，Termux 容器中的 Ubuntu PRoot 环境，root@100.114.171.18:8022）、mypc-wsl（root@100.117.170.110:22，tmux 会话 0、LD_PRELOAD 提示）、termux-phone（另一台设备的 Termux 原始环境非 proot，u0_a999@100.74.15.15:8022，Tailscale）、win-host（Windows 宿主，连接信息待补充，登录 shell 需 git-bash/WSL）。前三台实测双向 attach 与 link_send 互通。termux-phone 建议配 selfName（默认 hostname 是 localhost）。",
-      "tags": [
-        "pi-link",
-        "设备拓扑",
-        "termux-phone"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T14:46:46.456Z",
-      "accessedAt": "2026-08-13T12:17:18.122Z",
-      "observedAt": "2026-08-13T12:17:18.122Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": true,
-      "supersededBy": "4d90ead6-6911-422c-8a7e-3dc781e32c76"
-    },
-    {
       "id": "8d761c32-30aa-4fb9-b5f3-d14d414ab904",
       "category": "solutions",
       "title": "Termux 原始环境 /tmp 不可写，用 $HOME 临时文件",
-      "content": "pi-link attach 中间文件原用 /tmp/pi-link-msg.txt，在 Termux 原始环境（非 proot）重定向失败（No such file or directory）断掉整条 base64 命令链导致\"远程命令异常退出\"。修复：改用 $HOME/.pi-link-msg.tmp，PRoot 与 Termux 原始环境均可用。提交 4142fec。",
+      "content": "pi-link attach 中间文件原用 /tmp/pi-link-msg.txt，在 Termux 原始环境（非 proot）重定向失败（No such file or directory）断掉整条 base64 命令链导致\"远程命令异常退出\"。修复：改用 $HOME/.pi-link-msg.tmp，PRoot 与 Termux 原始环境均可用。提交 4142fec。\npi-link attach 在 Termux 原始环境失败：中间文件写 /tmp 报 'No such file or directory'（Termux /tmp 不可写），重定向失败断掉整条命令链。修复：attach 中间文件改 $HOME/.pi-link-msg.tmp（commit 4142fec），PRoot 与 Termux 原始环境均可用。教训：跨环境脚本勿依赖 /tmp 可写。",
       "tags": [
         "pi-link",
         "termux",
@@ -9483,20 +8439,21 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T16:02:02.996Z",
       "accessedAt": "2026-08-13T12:17:18.122Z",
       "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "c969a464-e6f1-4ad8-a11c-47a8a97f8ca8"
     },
     {
       "id": "7ce4ee7c-9cd1-4376-81e0-7f584c6453db",
       "category": "solutions",
       "title": "tsconfig paths 根治：每设备 tsconfig.local.json",
-      "content": "pi-tools 仓库跨多环境共享，原共享 tsconfig.json 含本机 paths 导致互相覆盖。根治方案（提交 6d96b64）：共享 tsconfig.json 的 paths 清空为 {}，每设备 tsconfig.local.json 由 rebuild.sh Phase 2-D 自动生成（extends 共享配置 + 本机 pi 安装根路径，如 /root/.local/share/pi-node/node-v22.23.2-linux-x64），已被 .gitignore 排除不入库。环境相关路径不再入库。",
+      "content": "pi-tools 多设备共享 tsconfig.json 曾含环境 paths 被误提交互相覆盖。根治方案（6d96b64）：共享 tsconfig.json 不再含 paths（\"paths\": {}），每设备 tsconfig.local.json 由 rebuild Phase 2-D 生成（extends 共享配置 + 本机 pi 安装根 paths），gitignored 不提交；test-all.sh 自动优先 tsconfig.local.json。本机手动生成方式：按 Phase 2-D 逻辑创建。",
       "tags": [
         "pi-tools",
         "tsconfig",
@@ -9505,11 +8462,11 @@
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 2,
+      "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
       "accessedAt": "2026-08-13T12:17:18.122Z",
-      "observedAt": "2026-08-13T14:46:46.278Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
       ],
@@ -9531,14 +8488,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T16:02:03.190Z",
       "accessedAt": "2026-08-13T12:17:18.122Z",
       "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "78682d7a-aab0-426f-a7c6-41a4fa0dfa98"
     },
     {
       "id": "d384b56e-4de2-4bcd-b1e5-d9ee7ef49abd",
@@ -9613,1162 +8571,168 @@
       "deleted": false
     },
     {
-      "id": "87f0aa40-8804-47e6-95f9-3b4cef43213b",
+      "id": "e6da85b8-16e1-4f0d-ace8-9669e6535227",
       "category": "fact",
-      "title": "pi-link 局域网地址与 altHosts 配置（192.168.124.x）",
-      "content": "pi-link 局域网地址（同一 Wi-Fi 192.168.124.0/24，DHCP 可能变动）：termux-ubuntu=192.168.124.2:8022（本机）、mypc-wsl=192.168.124.3:8022（注意 WSL sshd 局域网监听 8022 非 22）、termux-phone=192.168.124.4:8022。本机 pi-link.json 已配 altHosts：remote/termux-phone 主地址=局域网、altHosts=Tailscale 兜底（18a39ea failover）。实测：Termux 上 ssh 握手本身 ~0.8s（局域网 807ms vs Tailscale 869ms，差异小——握手开销主导），局域网优势主要是不依赖 Tailscale 可用性。",
-      "tags": [
-        "pi-link",
-        "局域网",
-        "altHosts"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:55:16.058Z",
-      "updatedAt": "2026-08-13T12:55:16.058Z",
-      "accessedAt": "2026-08-13T12:55:16.058Z",
-      "environments": [
-        "termux"
-      ],
-      "observedAt": "2026-08-13T12:55:16.058Z",
-      "deleted": false
-    },
-    {
-      "id": "9caa61b7-5b80-46df-9634-505c8c038ebc",
-      "category": "solutions",
-      "title": "pi-link attach 并发竞态修复（串行化+唯一 buffer）",
-      "content": "三设备并发测试发现 attach 竞态：并发 attach 同一设备时消息拼接/重复（对方收到 X 两次、Y 丢失）。根因：①attach 无进程内互斥（sendToDevice 有 in-flight 锁，attach 没有）②tmux buffer 固定名 pi-link 被并发 load-buffer 互相覆盖。修复（74e5c0b）：withAttachLock 链式串行（同设备 attach 排队）+ buffer 名时间戳+随机唯一化。串行后第二个 attach 探测到对方 busy 会被 busy 防护拒绝（不注入不拼接）。跨设备竞态（两台不同主机同时 attach 同一目标）仍无法进程内解决——由唯一 buffer 名+原子探测粘贴最小化，已知限制。",
-      "tags": [
-        "pi-link",
-        "并发",
-        "attach",
-        "竞态"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T13:05:14.185Z",
-      "updatedAt": "2026-08-13T13:05:14.185Z",
-      "accessedAt": "2026-08-13T13:05:14.185Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-13T13:05:14.185Z",
-      "deleted": false
-    },
-    {
-      "id": "b6c60114-0536-49fd-95b5-3a5d82f40d2d",
-      "category": "procedure",
-      "title": "tmux_run 会话永不退出：tmux_wait 应用 pattern 而非 until_exit",
-      "content": "pi-tmux 扩展的 tmux_run 机制（core.ts）：创建 detached 会话时不带 command 参数，命令通过 send-keys 注入到会话内的交互 bash 执行。因此命令执行完后交互 shell 不退出（无 exit 指令）→ 会话永远存活（日志尾部会出现 shell 提示符，如 root@MYPC:~/.pi#，属正常）。\n\n推论与正确用法：\n1. tmux_wait(until_exit=true) 对 tmux_run 创建的任务永远超时——等待超时 ≠ 任务超时，任务可能早已完成（如 rebuild 43s 完成但会话挂着）。判断任务是否完成应看日志是否有完成标记（如\"重建完成\"）。\n2. 等任务完成用 tmux_wait(pattern=\"完成标记\", until_exit=false)；会话清理用 tmux_stop（remove_log 可选）。\n3. until_exit=true 仅适用于命令自带 exit 的会话。\n4. tmux_status 可查会话存活；tmux_read 读日志尾部确认任务输出。\n\n2026-08-13 实测：rebuild_check/rebuild_opt 两次 tmux_wait 600s/330s 超时，实际 rebuild 均已快速完成，日志含\"重建完成\"标记。",
-      "tags": [
-        "pi-tmux",
-        "tmux",
-        "tmux_run",
-        "tmux_wait",
-        "经验"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:02:18.283Z",
-      "updatedAt": "2026-08-13T14:02:18.283Z",
-      "accessedAt": "2026-08-13T14:02:18.283Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-13T14:02:18.283Z",
-      "deleted": false
-    },
-    {
-      "id": "acc4f33d-ec1a-495d-959b-85aea24744e4",
-      "category": "solutions",
-      "title": "tmux_wait 等完成应用 pattern 而非 until_exit",
-      "content": "pi-tmux 的 tmux_run 通过 send-keys 注入命令到交互 bash（new-session 不执行命令），命令执行完后 shell 不退出，会话永久存活。因此 tmux_wait(until_exit=true) 对此类任务必然超时，且超时≠任务失败（任务可能早已完成，日志尾部出现 shell 提示符属正常）。正确用法：tmux_wait(pattern=\"完成标记\") 等日志关键输出；任务结束后 tmux_stop 清理会话。",
-      "tags": [
-        "tmux",
-        "pi-tmux",
-        "长任务",
-        "rebuild"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.277Z",
-      "updatedAt": "2026-08-13T14:46:46.499Z",
-      "accessedAt": "2026-08-13T14:46:46.277Z",
-      "observedAt": "2026-08-13T14:46:46.277Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "supersededBy": "55b95082-0c88-405d-8856-3ea99011b590",
-      "deleted": true
-    },
-    {
-      "id": "847b5453-3382-46e7-97dd-0812a99dd51b",
-      "category": "solutions",
-      "title": "cloakbrowser 需 playwright-core>=1.53.0",
-      "content": "pi-browser 依赖 cloakbrowser@0.3.31，其要求 playwright-core>=1.53.0。原 package.json 写 ^1.52.0 导致装出的 1.52.0 长期处于 invalid 状态（npm ls 报错但运行不受影响，隐藏多年）。2026-08 精确版本锁定时改为 1.53.0 后 invalid 消除。教训：浮动版本(^)跨机漂移且不暴露 invalid 依赖，精确锁定可让此类隐藏缺陷显式暴露。",
-      "tags": [
-        "pi-browser",
-        "cloakbrowser",
-        "playwright-core",
-        "npm",
-        "版本锁定"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.277Z",
-      "updatedAt": "2026-08-13T15:55:03.467Z",
-      "accessedAt": "2026-08-13T14:46:46.277Z",
-      "observedAt": "2026-08-13T14:46:46.277Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "eefcbca3-3e72-4a93-a4f2-9444d0d48d2a"
-    },
-    {
-      "id": "4d90ead6-6911-422c-8a7e-3dc781e32c76",
-      "category": "fact",
-      "title": "pi-link 三设备局域网信息表",
-      "content": "pi-link 设备连接信息（2026-08 确认）：termux-ubuntu=root@192.168.124.2:8022（tailscale 备用 100.114.171.18:8022）；本机 mypc-wsl=root@192.168.124.3:8022（tailscale 经宿主 Windows serve 转发 100.117.170.110:8022）；termux-phone=u0_a999@192.168.124.4:8022（tailscale 备用 100.74.15.15:8022，局域网由该设备自填）；win-host 待补充。pi-link.json 配 altHosts 实现局域网优先、tailscale 兜底 failover。",
+      "title": "pi-link 四台设备拓扑与地址",
+      "content": "pi-link 网络共 4 台设备：termux-ubuntu（本机，Termux 容器中 PRoot Ubuntu，Tailscale 100.114.171.18:8022，局域网 192.168.124.2:8022）、mypc-wsl（100.117.170.110:22，局域网 192.168.124.3:8022）、termux-phone（Termux 原始环境，u0_a999@100.74.15.15:8022，局域网 192.168.124.4:8022）、win-host（Windows 宿主，连接信息待补充）。前三台 link_send 与双向 attach 均实测通过，同一 Wi-Fi 网段 192.168.124.0/24。",
       "tags": [
         "pi-link",
         "设备拓扑",
-        "局域网",
-        "tailscale"
+        "多设备",
+        "网络"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.278Z",
-      "updatedAt": "2026-08-13T14:46:46.278Z",
-      "accessedAt": "2026-08-13T14:46:46.278Z",
-      "observedAt": "2026-08-13T14:46:46.278Z",
+      "createdAt": "2026-08-13T16:02:02.698Z",
+      "updatedAt": "2026-08-13T16:02:02.698Z",
+      "accessedAt": "2026-08-13T16:02:02.698Z",
+      "observedAt": "2026-08-13T16:02:02.698Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
     },
     {
-      "id": "55b95082-0c88-405d-8856-3ea99011b590",
-      "category": "fact",
-      "title": "bash 5.2.21 的 wait -n 不输出完成 pid",
-      "content": "bash 5.2.21 中 wait -n 在命令替换里返回空值，不输出完成 pid（手册表述为 \"may print\"，实际版本不打印），因此无法用其精确移除已完成的后台 job。rebuild.sh 的并行窗口保留 wait \"${pids[0]}\" 原实现并加注释说明（行为正确优先，避免无用代码层）。",
-      "tags": [
-        "bash",
-        "wait -n",
-        "rebuild.sh"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.278Z",
-      "updatedAt": "2026-08-13T14:46:46.278Z",
-      "accessedAt": "2026-08-13T14:46:46.278Z",
-      "observedAt": "2026-08-13T14:46:46.278Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "74646580-b35b-4ab8-a71a-33eb67eb9f95",
+      "id": "e2978352-3341-406b-9aa6-0e152b5dddc3",
       "category": "solutions",
-      "title": "rebuild.sh 可靠性优化清单（14 项）",
-      "content": "pi-tools rebuild.sh 于 2026-08 实施两批优化（提交 1e4fa0a、2a4af0b、46f416e）：A1 SIGPIPE 防御（trap '' PIPE + tee 用 stdbuf -oL）；A2 上次日志无\"重建完成\"标记时提示幂等续跑；A3 npm/cloakbrowser 失败重跑捕获尾部 10 行；A4 安装前清理 _download_*.tar.gz/*.part 残留；B1 warn 函数块前置到参数解析前；B2 删 run() 死代码；B3 chrome_ready 合并为一次 npx cloakbrowser info；C2 git clone 加 timeout 300 + 失败后 GIT_SSL_NO_VERIFY=1 重试；C3 镜像测速缓存 logs/.mirror-cache TTL 1h（已补 gitignore）；C4 _TITLE_TS 增量耗时显示；C5 扩展 package.json 去 ^ 精确锁定；C6 不采纳（输出交错收益低）；D1 无 systemd 时 verify 自动 start.sh 拉起 SearXNG；D2 verify 加敏感文件 git 追踪检查；D3 不采纳（wait -n 实测不可行）。",
+      "title": "PRoot 环境 tmux attach 兼容回退",
+      "content": "termux-phone（Termux 原始环境）attach 到 termux-ubuntu（PRoot）失败：Termux sshd 的 LD_PRELOAD（libtermux-exec）破坏 proot 内 Ubuntu tmux 动态加载（'required file not found'），探测裸 tmux 失败。修复（commit 0d61927）：回退显式解释器 `LD_PRELOAD= /lib/ld-linux-aarch64.so.1 /usr/bin/tmux`，LD_PRELOAD 赋值放函数体内避免词首赋值陷阱。",
       "tags": [
-        "rebuild.sh",
-        "可靠性",
-        "优化",
+        "pi-link",
+        "PRoot",
+        "LD_PRELOAD",
+        "tmux",
+        "Termux"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T16:02:02.698Z",
+      "updatedAt": "2026-08-13T16:02:02.698Z",
+      "accessedAt": "2026-08-13T16:02:02.698Z",
+      "observedAt": "2026-08-13T16:02:02.698Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "78682d7a-aab0-426f-a7c6-41a4fa0dfa98",
+      "category": "solutions",
+      "title": "并发 attach 竞态修复方案",
+      "content": "并发 attach 同一设备出现消息拼接/丢失（X 两次、Y 丢失）。根因：attach 无进程内互斥（sendToDevice 有 in-flight 锁而 attach 没有）+ tmux 固定 buffer 名 pi-link 被并发 load-buffer 互相覆盖。修复（commit 74e5c0b）：withAttachLock 链式串行排队 + buffer 名加时间戳随机唯一化。跨设备竞态无法用进程内锁解决，由唯一 buffer 名+原子探测粘贴最小化。",
+      "tags": [
+        "pi-link",
+        "attach",
+        "并发",
+        "竞态"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T16:02:02.699Z",
+      "updatedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "observedAt": "2026-08-13T16:02:02.699Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "3d3dab2c-e66e-4049-8558-67ef9f6fe00e",
+      "category": "fact",
+      "title": "tsconfig.local.json 每环境独立机制",
+      "content": "pi 仓库 tsconfig paths 根治（commit 6d96b64）：共享 tsconfig.json 不再含 paths（\"paths\": {}），每设备由 rebuild.sh Phase 2-D 生成 tsconfig.local.json（extends 共享配置 + 本机 pi 安装根 paths），文件 gitignored 不提交。test-all.sh 自动优先 tsconfig.local.json。教训：环境路径勿随仓库提交，否则每环境互相覆盖。",
+      "tags": [
+        "tsconfig",
+        "多环境",
+        "rebuild",
         "pi-tools"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.278Z",
-      "updatedAt": "2026-08-13T14:46:46.577Z",
-      "accessedAt": "2026-08-13T14:46:46.278Z",
-      "observedAt": "2026-08-13T14:46:46.278Z",
+      "createdAt": "2026-08-13T16:02:02.699Z",
+      "updatedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "supersededBy": "28b8485f-dc23-48fa-810c-e1225860125d",
-      "deleted": true
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
     },
     {
-      "id": "28b8485f-dc23-48fa-810c-e1225860125d",
-      "category": "solutions",
-      "title": "searxng clone 失败 tarball 兜底方案",
-      "content": "查证 searxng/repo 的 .git 仅用于两处：克隆存在性判断（[ ! -d .git ]）和 verify 显示 HEAD，无任何 git pull 增量更新机制（start.sh 零 git 操作）。因此 C1 tarball 兜底无副作用：全源 git clone 失败后 → curl tarball（用测速选出的 GH_PROXY）→ 解压 → git init + 基线提交（保持后续 .git 判断/verify rev-parse 一致）→ requirements.txt 校验。命令链已在隔离 /tmp 实测通过。",
+      "id": "285840ed-a387-49fc-9671-173231632bfd",
+      "category": "fact",
+      "title": "altHosts failover 配置约定",
+      "content": "pi-link.json 支持 altHosts 多地址 failover（commit 18a39ea）：主地址用局域网 IP（快），altHosts 填 Tailscale IP（兜底），Tailscale 挂了局域网仍通。实测局域网 ssh 握手约 800ms 与 Tailscale 869ms 差异小——Termux ssh 握手开销主导延迟，局域网收益在可用性而非速度。failover 三场景：兜底/主优先/全挂报错。",
       "tags": [
-        "searxng",
-        "tarball",
-        "rebuild.sh",
-        "网络兜底"
+        "pi-link",
+        "altHosts",
+        "failover",
+        "局域网",
+        "Tailscale"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.278Z",
-      "updatedAt": "2026-08-13T14:46:46.278Z",
-      "accessedAt": "2026-08-13T14:46:46.278Z",
-      "observedAt": "2026-08-13T14:46:46.278Z",
+      "createdAt": "2026-08-13T16:02:02.699Z",
+      "updatedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
     },
     {
-      "id": "e1049c44-98d0-4c6b-8482-931bb9d6fd1e",
-      "category": "preference",
-      "title": "优化建议先逐条验证再分批执行",
-      "content": "用户收到模型优化建议时，要求先逐条对照实际代码验证真伪（本会话 16 条建议全部经代码核实、无虚假论断），给出采纳/部分采纳/不采纳分级结论，确认后才动手。实施按批次：低风险高收益批直接改+全量回归，需确认批先调研前提条件（如 searxng 是否依赖 .git）再执行。用户认可标注\"别动的设计\"（幂等探测/多源轮换/verify 退出码）。",
-      "tags": [
-        "工作方式",
-        "代码审查",
-        "优化流程"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:46:46.278Z",
-      "updatedAt": "2026-08-13T15:55:03.681Z",
-      "accessedAt": "2026-08-13T14:46:46.278Z",
-      "observedAt": "2026-08-13T14:46:46.278Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "ff2f057f-6216-453c-9ebb-11fe9d3b5c54"
-    },
-    {
-      "id": "70e9c5dd-dd40-4324-bd31-fb5bc9b13795",
-      "category": "solutions",
-      "title": "entries.json 合并：区分远端清理与本地新增",
-      "content": "~/.pi 多设备共享 entries.json，pull 被拒时：先查远端提交是否含大量删除+等价新增（多为去重清理），合并以远端为基底，只补回本地真正新增条目，勿盲目补回被远端删除的条目；覆盖条目仅 updatedAt 不同且内容相同则无丢失。本会话据此把误补的 10 条修正为 1 条，推送 f079212。",
+      "id": "2f490d03-93bb-4384-92f7-c7fa05d1940b",
+      "category": "fact",
+      "title": "entries.json 长期记忆入库约定",
+      "content": "pi-memory 的 entries.json 是长期记忆，应入库共享：本地增量 commit+push；冲突时 `git checkout --theirs` 保留远程版（远程可能是更全合集），本地丢失条目由 pi-memory 自动重提取补回。共享文件（keys/authorized_keys 等）注释必须中性，不写'本机/当前设备'视角表述。",
       "tags": [
         "pi-memory",
-        "git",
         "entries.json",
-        "merge"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.238Z",
-      "updatedAt": "2026-08-13T14:47:32.238Z",
-      "accessedAt": "2026-08-13T14:47:32.238Z",
-      "observedAt": "2026-08-13T14:47:32.238Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "facbad8f-4129-43b3-8087-81697f4201e1",
-      "category": "fact",
-      "title": "pi-autopilot 预算拦截自锁循环（HIGH）",
-      "content": "scheduler.ts:74-82：任务预算不通过时直接 return，不推进 nextRun，tick 每 30s 重复触发，每次追加 failed 遥测+webhook，todayRuns 越拦越满锁到次日零点，单任务一天约 2880 条虚假失败。修复方向：拦截分支同样调用 updateTaskAfterRun 推进 nextRun。2026 全项目审查人工验证属实。",
-      "tags": [
-        "pi-autopilot",
-        "scheduler",
-        "bug",
-        "审查发现"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.238Z",
-      "updatedAt": "2026-08-13T14:47:32.367Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "supersededBy": "15bec303-ce9f-4cd9-aa4e-4281faf753d7",
-      "deleted": true
-    },
-    {
-      "id": "15bec303-ce9f-4cd9-aa4e-4281faf753d7",
-      "category": "fact",
-      "title": "pi-memory 批量删除不落盘（HIGH）",
-      "content": "tools.ts:347-363：memory_forget 的 category+olderThan 批量分支只改内存数组（entries.length=0; push(kept)），未调 saveEntries，重启后删除条目全部复活；单条删除 deleteEntry 内部有 saveEntries 正常。修复方向：批量分支补 saveEntries 或复用 deleteEntry。2026 全项目审查确认属实。",
-      "tags": [
-        "pi-memory",
-        "bug",
-        "审查发现",
-        "持久化"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T14:47:32.401Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "supersededBy": "ae6d3bce-2be7-4378-bdb8-a16206410b74",
-      "deleted": true
-    },
-    {
-      "id": "ae6d3bce-2be7-4378-bdb8-a16206410b74",
-      "category": "fact",
-      "title": "pi-link 并发守卫泄漏（HIGH）",
-      "content": "link.ts:143,275：markSendStart 与 done() 的 markSendEnd 之间无 try/finally，spawn 抛错（如非法 host）即永久残留 inflight 标记，该设备此后永远返回'已有进行中的调用'直到重启 pi。修复方向：函数体包 try/finally。2026 全项目审查确认属实。",
-      "tags": [
-        "pi-link",
-        "bug",
-        "审查发现"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T14:47:32.449Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "supersededBy": "5977bcce-cabb-4a18-bd02-e35fe043f07d",
-      "deleted": true
-    },
-    {
-      "id": "5977bcce-cabb-4a18-bd02-e35fe043f07d",
-      "category": "fact",
-      "title": "pi-voice 录音文件秒级命名竞态（HIGH）",
-      "content": "core.ts:19-30 + dictation.ts:262-275：nowStamp() 仅秒级精度，stopInternal 置空 currentFile 后、finish() 置 busy 前约 3s stopRecording 等待窗口内再按快捷键启动，同秒复用同一文件路径，旧流程转写新录音并在 finally 删除正在录制的文件。修复方向：文件名加毫秒/随机后缀 + gen 守卫。",
-      "tags": [
-        "pi-voice",
-        "bug",
-        "竞态",
-        "审查发现"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T15:55:58.419Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": true,
-      "supersededBy": "89da58c9-c302-4fda-9190-488ad064e074"
-    },
-    {
-      "id": "7db897ee-1115-4a2c-b5e7-b1f3cf2fbc7e",
-      "category": "fact",
-      "title": "全项目审查基线验证结论",
-      "content": "/root/.pi 全仓库审查基线全绿：220 文件语法检查全过，test-all.sh 全量回归 exit 0（9 vitest + subagent 34 用例 + tsc + 注册面 23 + conflict-check + 自动发现）；唯一密钥命中 agent/auth.json 已被 .gitignore 第 13 行忽略未入库；可疑模式均合理。审查结果 4 HIGH / 22 MEDIUM / 若干 LOW，全程只读。",
-      "tags": [
-        "审查",
-        "回归测试",
-        "基线",
-        "pi 仓库"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T14:47:32.239Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "bed1a656-87f3-4db8-a1b6-4b43c274b592",
-      "category": "solutions",
-      "title": "审查工具两处误报与漏检",
-      "content": "review.sh --selfcheck 检查的是 cwd 而非技能所在仓库，非仓库目录运行误报'未安装 git 仓库'（/root 下实测）；rebuild.sh:954 verify 循环用 glob */node_modules，无 node_modules 的扩展（subagent/tests/types）漏检——subagent 报告对 rebuild.sh 的'误报'结论实际是漏检，方向反了。",
-      "tags": [
-        "pi-code-review",
-        "rebuild.sh",
-        "误报",
-        "漏检"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T14:47:32.239Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "c80db365-78ca-4aba-9652-8acf5ce510aa",
-      "category": "fact",
-      "title": "plan-mode 跨项目污染与工具集消失（MEDIUM）",
-      "content": "plan-mode/index.ts:1114-1119：新会话从全局 ~/.pi/plans/ 恢复任意项目最新计划并强制 executionMode=true，restoreStateFromFile 无项目隔离，跨项目污染+工具受限；index.ts:461,1036：/plan resume 与执行路径用写死的 9 个内置工具重建工具集，本会话内扩展工具（memory/ctx/tmux 等）全部消失。2026 全项目审查确认属实。",
-      "tags": [
-        "plan-mode",
-        "bug",
-        "审查发现",
-        "MEDIUM"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T14:47:32.239Z",
-      "accessedAt": "2026-08-13T14:47:32.239Z",
-      "observedAt": "2026-08-13T14:47:32.239Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "578ebea7-a0bd-4fc6-9ba5-ee8954137099",
-      "category": "solutions",
-      "title": "审查建议 33 条核实结论",
-      "content": "外部审查模型对 ~/.pi 仓库提 33 条建议，逐条核实：0 捏造、约 20 条准确、12 条部分属实、2 处行号错、1 处位置错（review.sh 在 agent/skills/pi-code-review/ 不在 scripts/）、漏 3 处（applyMem0Action environments 合并、tmux duplicate 时命令静默丢弃、修复点无测试覆盖）。HIGH #2 link 并发守卫机制描述错误：spawn('ssh') 对 ENOENT 发 error 事件而非同步抛错，link.ts:177 已处理，应降 MEDIUM。plan-mode 9 工具写死是注释自认的故意设计，当 bug 报有失公允。",
-      "tags": [
-        "审查",
-        "验证方法论",
-        "pi-扩展"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
-    },
-    {
-      "id": "712023f7-74d8-4741-af3e-aa5603574b3e",
-      "category": "solutions",
-      "title": "autopilot 预算拦截自锁修复",
-      "content": "pi-autopilot scheduler.ts:74-82 预算拦截分支 sendWebhook+appendRun(failed) 后裸 return，isDue 只看 nextRun<=now，导致每 30s 重复触发、每天约 2880 条虚假 failed 遥测+webhook，todayRuns 越拦越满锁到次日。修复：拦截分支改用 computeNextRun 推进 nextRun 并 writeTasks 落盘，过期/once 任务推迟 1 小时重试（预算恢复自动补跑），不记 failed（避免消耗 retries>0 任务的重试次数）。比审查建议的 updateTaskAfterRun 更优，附 scheduler.test.ts 3 用例回归。",
-      "tags": [
-        "pi-autopilot",
-        "scheduler",
-        "修复"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
-    },
-    {
-      "id": "3cbba6d7-e8fc-40d4-8f56-d7a93c3b6f60",
-      "category": "solutions",
-      "title": "pi-memory 批量删除不落盘修复",
-      "content": "memory_forget 的 category+olderThan 批量分支只改内存数组（entries.length=0; push kept）未调 saveEntries，tools.ts 全文无 saveEntries import（单条路径靠 deleteEntry 内部落盘）。后果比审查描述的'重启后复活'更严重：loadEntries 每次工具调用都从磁盘重读，同会话下一次调用即复活。修复：批量分支补 saveEntries(entries)。对比 storage.ts:332 的 pruneEntries 有 saveEntries，属明显漏写。新测试 tools.test.ts 断言删除后直接读磁盘文件确认落盘。",
-      "tags": [
-        "pi-memory",
-        "storage",
-        "修复"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
-    },
-    {
-      "id": "fad330f7-472c-4efc-a5e2-f276a3d7dda6",
-      "category": "solutions",
-      "title": "pi-voice 录音文件同秒竞态修复",
-      "content": "pi-voice core.ts nowStamp() 秒级精度（注释却称'唯一前缀'自相矛盾）；stopInternal 置空 currentFile 后 await stopRecording（termux -q 约 3s 往返），finish() 才置 busy=true，窗口内 start() 的 busy/currentFile 双守卫全放行；同秒再次启动复用文件路径，且 finish() finally 无条件 deleteAudioPair 会删掉正在录制的新文件。修复：文件名加 6 位随机后缀（pi-voice-<秒级戳>-<6位随机>.wav）。测试断言只查 .wav 后缀，加后缀安全。",
-      "tags": [
-        "pi-voice",
-        "竞态",
-        "修复"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:58:46.142Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": true,
-      "supersededBy": "a68ad902-3692-4d3b-bfc1-816eaf7ad05e"
-    },
-    {
-      "id": "abdca6f8-4400-4225-94ec-7b10958963cd",
-      "category": "solutions",
-      "title": "subagent {previous} 注入损坏修复",
-      "content": "subagent/index.ts:628 用 String.replace(/\\{previous\\}/g, previousOutput) 注入上一步输出，输出含 $&/$'/$` 时被当作替换模式静默数据损坏。修复：改为函数替换 () => previousOutput，并提取导出 applyPreviousPlaceholder() 供测试；test.mjs 新增 4 用例覆盖 $&/$'/$`/$$$ 场景。此前修复 3 处（link 崩溃路径 truncated、memory 批量删除落盘、voice 同秒竞态）均无测试覆盖，本次一并补齐。",
-      "tags": [
-        "subagent",
-        "注入",
-        "修复"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:58:46.180Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": true,
-      "supersededBy": "74c56649-e142-4be0-bf89-172408658366"
-    },
-    {
-      "id": "6331ef97-8eab-4de3-a5a3-12d590371e0d",
-      "category": "procedure",
-      "title": "vitest basic reporter 失效与 tsc 配置",
-      "content": "新版本 vitest 不再内建 --reporter=basic，加该参数导致 5 个扩展 vitest 启动报错（输出被截断看不到原因），与代码无关，去掉参数即可；test-all.sh 不用该参数不受影响。全量 tsc 类型检查须用 tsconfig.local.json（rebuild.sh 生成的每环境配置）：cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit。tsconfig.json 的 paths 空映射是仓库既有状态，报 @earendil-works/pi-coding-agent 解析错误与改动无关，勿误判。",
-      "tags": [
-        "vitest",
-        "tsc",
-        "测试基建"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
-    },
-    {
-      "id": "66363d67-9d54-4299-aea4-08c34cf9d9d4",
-      "category": "fact",
-      "title": "pi 扩展修复后测试基线",
-      "content": "2026 年全面修复+补测试后的回归基线：pi-autopilot 94 / pi-link 55 / pi-voice 106 / pi-tmux 10 / pi-memory 73 / subagent 45 / 注册面 25 / conflict-check 8 / tsc 0 错误。共改 16 文件（8 修复+5 测试+3 文档），推送为 7281538（fix：20 文件 +361/-27）+ 315ec50（entries.json 记忆增量 +377/-12），范围 f079212..315ec50。改动含 pi-voice nowStamp 注释、subagent CHANGELOG v6、pi-autopilot README 预算语义三处文档。",
-      "tags": [
-        "测试基线",
         "git",
-        "pi-扩展"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
-    },
-    {
-      "id": "941d8ec0-5c84-4ef2-abb8-d0780533706c",
-      "category": "procedure",
-      "title": "代码改动与 entries.json 分提交惯例",
-      "content": "~/.pi 仓库推送惯例：代码改动与 entries.json 会话记忆自动增量（本会话 +377/-12）分两个独立提交推送，与 f079212/d4b5b11 历史一致；entries.json 路径从仓库根算（memory/entries.json）。remote 为 SSH URL（ssh://git@ssh.github.com:443/...），无 token 风险，无需 git remote set-url 恢复。git committer 自动配置为 root@MYPC.localdomain 是本机既有状态（此前提交同样如此），勿当问题改动 git config。",
-      "tags": [
-        "git",
-        "提交惯例",
-        "仓库约定"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:58:46.307Z",
-      "accessedAt": "2026-08-13T15:30:02.832Z",
-      "observedAt": "2026-08-13T15:30:02.832Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": true,
-      "supersededBy": "6ceb9c5a-9581-4c0f-9790-e744ad914196"
-    },
-    {
-      "id": "29a39641-54ab-4631-ac0c-0e68bc07f6bf",
-      "category": "procedure",
-      "title": "tmux_run 会话永不退出的正确等待方式",
-      "content": "pi-tmux 的 tmux_run 用 send-keys 把命令注入交互 bash，命令执行完后 shell 不退出，会话永久存活（日志尾部出现 shell 提示符属正常）。因此 tmux_wait until_exit=true 对该类任务必然超时——超时不代表任务卡住，应改用 tmux_wait(pattern='完成标记') 等日志关键字，任务完成后用 tmux_stop 清理。用户明确要求记录此经验。",
-      "tags": [
-        "tmux",
-        "pi-tmux",
-        "工具用法"
+        "多环境"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
+      "createdAt": "2026-08-13T16:02:02.699Z",
+      "updatedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
     },
     {
-      "id": "07316af1-579e-45c2-b67f-626eee95e0db",
-      "category": "fact",
-      "title": "rebuild.sh 第一批 11 项可靠性优化",
-      "content": "~/.pi/scripts/rebuild.sh 按外部审查建议实施第一批（提交 1e4fa0a）：trap '' PIPE + tee 用 stdbuf -oL 防 SIGPIPE 死亡；上次日志无'重建完成'标记时提示幂等续跑；npm/cloakbrowser 失败重跑捕获尾部 10 行；安装前清理 _download_*.tar.gz 残留；warn() 函数前置到参数解析前；删除死代码 run()；chrome_ready 合并为一次 npx cloakbrowser info；git clone 加 timeout 300 且失败后 GIT_SSL_NO_VERIFY=1 重试；镜像测速缓存 logs/.mirror-cache TTL 1h；阶段耗时改增量显示；verify 加敏感文件追踪自检。",
-      "tags": [
-        "rebuild.sh",
-        "可靠性",
-        "脚本优化"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "eefcbca3-3e72-4a93-a4f2-9444d0d48d2a",
+      "id": "15e60342-6cea-4377-8287-a0cdaa8c4802",
       "category": "solutions",
-      "title": "cloakbrowser 需 playwright-core>=1.53.0 的隐藏 bug",
-      "content": "pi-browser 依赖 cloakbrowser@0.3.31，其要求 playwright-core >=1.53.0；此前 package.json 锁 ^1.52.0 装出的 1.52.0 在 npm ls 中一直是 invalid 状态（隐藏依赖缺陷，长期未被发现）。锁定精确版本 1.53.0 后 invalid 消除。改依赖版本后应跑 npm ls 检查 invalid 标记，可暴露此类潜伏问题。",
+      "title": "rebuild 进度报告与无 tmux 回退",
+      "content": "pi-backup 技能 rebuild 章节新增进度报告约定：统一后台执行（有 tmux 用 tmux_run，无 tmux 用 `nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &` 记 PID），每 60s 报告进度（耗时/已完成 Phase/当前项/计数），附单项耗时预估表（npm 1-5 分钟、pip 5-15 分钟、whisper 2-10 分钟等）。卡死判定：日志 5 分钟无输出→ps 确认+下载文件大小增长区分慢与卡。",
       "tags": [
-        "pi-browser",
-        "playwright-core",
-        "依赖版本"
+        "pi-backup",
+        "rebuild",
+        "进度报告",
+        "nohup",
+        "tmux"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
+      "createdAt": "2026-08-13T16:02:02.699Z",
+      "updatedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "5b09df76-2455-4737-9a14-a4473e94b8cb",
-      "category": "fact",
-      "title": "版本锁定策略：lock 不入库、package.json 锁精确版本",
-      "content": "~/.pi 仓库 .gitignore 排除 package-lock.json 是刻意设计：多平台（linux-x64/termux-aarch64）共享同一 lock 会因 optionalDependencies 平台字段引发跨机 npm ci 冲突。消除跨机依赖漂移的正确方式是 package.json 去掉 ^ 锁精确版本：已对 pi-browser、pi-web-search、pi-autopilot 三个扩展实施。",
-      "tags": [
-        "依赖管理",
-        "多平台",
-        "项目约定"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "4ce726b9-023d-478e-b7ac-f011e592089f",
-      "category": "fact",
-      "title": "pi-link 三设备拓扑与 altHosts failover",
-      "content": "pi-link 多设备配置：termux-ubuntu=tailscale 100.114.171.18:8022 + 局域网 192.168.124.2:8022；termux-phone=tailscale 100.74.15.15:8022 + 局域网 192.168.124.4:8022；本机 mypc-wsl=tailscale 100.117.170.110:22（宿主转发）+ 局域网 192.168.124.3:8022（sshd 实为 8022 非模板默认 22）。pi-link.json 配 altHosts 实现局域网优先、Tailscale 兜底、全挂报错。",
-      "tags": [
-        "pi-link",
-        "多设备",
-        "网络拓扑"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "606cece4-abd7-4fd6-8326-60f677bbe1cd",
-      "category": "fact",
-      "title": "tsconfig paths 多设备根治机制",
-      "content": "~/.pi 仓库共享 tsconfig.json 不再含 paths（环境相关路径入库会跨机互相覆盖），由 rebuild.sh Phase 2-D 每设备生成 tsconfig.local.json（extends 共享配置 + 本机 paths 指向本机 pi 安装根），该文件被 .gitignore 排除。pull 含 tsconfig 改动的提交后需重新跑 Phase 2-D 或 rebuild.sh，再用 scripts/test-all.sh 验证 tsc。",
-      "tags": [
-        "tsconfig",
-        "多环境",
-        "rebuild.sh"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "ab976393-ae20-4462-bc47-1d5f5460c8d3",
-      "category": "solutions",
-      "title": "searxng git clone 失败 tarball 兜底（已实施）",
-      "content": "rebuild.sh 的 SearXNG 获取已加兜底：全源 git clone 失败后自动 curl tarball（用测速选出的 GH_PROXY 镜像）→ 解压 → git init + 基线提交（保持 .git 存在性判断与 verify HEAD 显示一致）→ 校验 requirements.txt。前提查证：searxng/repo 无任何 git pull 增量更新机制（start.sh 零 git 操作），tarball 兜底无副作用。",
-      "tags": [
-        "searxng",
-        "tarball",
-        "rebuild.sh"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "ff2f057f-6216-453c-9ebb-11fe9d3b5c54",
-      "category": "preference",
-      "title": "外部优化建议先逐条核实再分批实施",
-      "content": "用户接受外部模型/审查工具对 ~/.pi 仓库的优化建议时，要求先逐条代码验证（正确性/冲突/可行性/优先级），标注不可动的既有设计，分两批实施（低风险高收益优先、需确认项第二批），每批执行前需用户确认。参照案例：16 条 rebuild.sh 建议验证 14 条属实、2 条部分属实、1 条不采纳。",
-      "tags": [
-        "工作方式",
-        "代码审查",
-        "用户偏好"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:03.324Z",
-      "updatedAt": "2026-08-13T15:55:03.324Z",
-      "accessedAt": "2026-08-13T15:55:03.324Z",
-      "observedAt": "2026-08-13T15:55:03.324Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "98605c02-ec99-4d7b-a799-78c0ecb8fae4",
-      "category": "procedure",
-      "title": "pi-full-audit 技能五步审计流程",
-      "content": "~/.pi/agent/skills/pi-full-audit/SKILL.md（触发词：全面检查/深度审计/体检/audit）。五步流程：review.sh --all 确定性检查 → test-all.sh 全量回归（tmux 后台跑）→ subagent 4 组并行深度审查（只读+六维度+精简输出约束）→ 人工抽查验证（HIGH 全验 MEDIUM 抽验）→ 分级报告（基线验证表+HIGH 标注已验证+设计权衡降级注明原因）。与 pi-code-review 分工：后者审 diff/改动，前者全量扫描。",
-      "tags": [
-        "技能",
-        "审计",
-        "审查流程"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "89da58c9-c302-4fda-9190-488ad064e074",
-      "category": "fact",
-      "title": "~/.pi 审查 4 个 HIGH bug 清单",
-      "content": "全项目审查发现 4 HIGH 均未修：pi-autopilot scheduler.ts:74-82 预算拦截不推进 nextRun 致 30s 重复触发自锁（单任务一天 ~2880 条虚假失败）；pi-link link.ts:143/275 并发守卫 markSendStart 与 done 间无 try/finally，spawn 抛错永久残留 inflight；pi-memory tools.ts:347-363 批量删除（category+olderThan）不调 saveEntries 重启后条目复活（单条删除正常）；pi-voice 录音文件名秒级命名+stopInternal/finish 间 ~3s 竞态窗口，可删除正在录制的文件。",
-      "tags": [
-        "bug",
-        "审查",
-        "pi-autopilot",
-        "pi-link",
-        "pi-memory",
-        "pi-voice"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "b7ed60dc-cb57-4792-995d-a47be80f590c",
-      "category": "fact",
-      "title": "Node v22 子进程超时无 ETIMEDOUT",
-      "content": "Node v22 实测：子进程超时被杀死时 err.code=null、err.signal='SIGTERM'，ETIMEDOUT 分支永不命中。pi-voice core.ts:47、pi-tmux core.ts:44 因此超时被误报为 code 1 且丢失 stderr。判断子进程超时应以实测 err.signal 为准，勿依赖 ETIMEDOUT。",
-      "tags": [
-        "node",
-        "子进程",
-        "超时",
-        "踩坑"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "316f97fc-5512-44d5-abfa-0cc2cc446fb3",
-      "category": "solutions",
-      "title": "entries.json 合并判断远端清理迹象",
-      "content": "多设备共享 entries.json，pull 被拒时判断远端是否做过记忆清理：远端提交相对 HEAD 呈净删除+大量软删除条目即清理迹象（本次 d4b5b11 删 10 旧增 10 新），此时以远端为基底只补回本地真正新增条目；同 id 覆盖条目仅 updatedAt 不同且内容相同则无丢失。首次合并误补回 10 条被清理旧条目，修正后推送 f079212。",
-      "tags": [
-        "git",
-        "entries.json",
-        "多设备合并",
-        "pi-memory"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "b8881c6f-25b7-46d4-9ac6-ff3a0fd9e5ed",
-      "category": "solutions",
-      "title": "subagent 审查委派精简输出防截断",
-      "content": "全项目审查委派 subagent 时报告易超 8000 字符被截断（本次截断 2 次）。对策：prompt 明确只读+六维度（文件:行号+问题+严重级+验证方式）+输出上限（LOW 最多 5 条、全文 3000 字内），按扩展集群分组并行。验证铁律：HIGH 全验、MEDIUM 抽验——本次靠验证纠正 1 项方向性误报（rebuild.sh verify glob 被说成恒报错，实测是漏检）。",
-      "tags": [
-        "subagent",
-        "审查",
-        "报告截断",
-        "委派模板"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "ce155dbd-381d-4bed-bdb6-5fe9cbaee74b",
-      "category": "fact",
-      "title": "全项目审计误报判别清单",
-      "content": "审计误报判别：1) git ignored 的密钥文件（agent/auth.json 被 .gitignore 第 13 行忽略）是磁盘运行配置非泄露；2) bash glob 只要有一处匹配就不保留字面量，rebuild.sh verify 的 */node_modules 对无 node_modules 的扩展是漏检而非误报；3) review.sh --selfcheck 检查的是 cwd 而非技能所在仓库，非仓库目录运行误报'未安装 git 仓库'。",
-      "tags": [
-        "审计",
-        "误报判别",
-        "密钥扫描",
-        "glob"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "ea82d3a3-6c86-4db7-8a2f-23612f7a616e",
-      "category": "preference",
-      "title": "用户习惯：大任务后沉淀为技能",
-      "content": "用户完成大型检查/审查后倾向把实战经验固化为新技能（本次创建 pi-full-audit），任务收尾时可主动建议沉淀。技能文件属 ~/.pi 入库共享内容，新建后需询问用户是否提交推送到远端同步其他设备。",
-      "tags": [
-        "用户习惯",
-        "技能",
-        "知识沉淀"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:55:58.327Z",
-      "updatedAt": "2026-08-13T15:55:58.327Z",
-      "accessedAt": "2026-08-13T15:55:58.327Z",
-      "observedAt": "2026-08-13T15:55:58.327Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
-    },
-    {
-      "id": "47f6b9d7-d6c7-423e-a399-99ad4f2c150b",
-      "category": "solutions",
-      "title": "plan-mode overlay 清错键与状态条滞后修复",
-      "content": "plan-mode 两处缺陷：1) updateStatus 隐藏分支清理的 widget 键是 \"plan-todos-simple\"（合并 rpiv-todo 遗留，源自 commit 20c4fff），TodoOverlay 实际注册 \"plan-todos\"，导致 overlay 永远清不掉；修复改为 todoOverlay?.hide()（overlay.ts 新增 hide() 注销 widget 但保留 uiCtx 供重建）。2) tool_execution_end handler 只调 todoOverlay.update() 不调 updateStatus，状态条（📋 n/m）滞后一轮刷新，补 updateStatus(ctx)。",
-      "tags": [
-        "plan-mode",
-        "overlay",
-        "bugfix"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "5ba4bd09-3949-44da-b11c-4df40df51e8d",
-      "category": "solutions",
-      "title": "plan-mode 磁盘恢复跨项目污染三重防护",
-      "content": "restoreStateFromFile 会从全局 ~/.pi/plans/ 恢复任意项目最近计划并强制 executionMode（新会话工具集被限制为 NORMAL_MODE_TOOLS），修复加三重防护：1) MAX_RESTORE_AGE_MS 7 天时限（解析目录名 plan-<毫秒> 时间戳）；2) 只恢复含未完成任务（非 completed/deleted）的计划；3) 不再强制执行模式、planDir 置 null 防 syncPlanToFile 把当前 todo 写进其他项目目录并 git commit。行为变为：恢复任务状态而非执行上下文，执行模式须 /plan resume 显式进入。",
-      "tags": [
-        "plan-mode",
-        "restore",
-        "跨项目污染",
-        "bugfix"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "a68ad902-3692-4d3b-bfc1-816eaf7ad05e",
-      "category": "solutions",
-      "title": "审查 8 处缺陷修复要点汇总",
-      "content": "关键修复：memory tools.ts 批量删除补 saveEntries(entries) 落盘（原只改内存数组，下次 loadEntries 从磁盘重读即复活）；link.ts 假成功条件 !settled && !exited 改 !settled（exited 变量在 proc.on('error')/('exit') 两处都有引用）；voice core.ts 文件名加 6 位随机后缀 pi-voice-<秒级戳>-<随机>.ext；autopilot 预算拦截改 computeNextRun 推 nextRun+writeTasks 落盘、过期/once 推 1 小时后重试、不记 failed 遥测（优于 updateTaskAfterRun：不消耗 retries 不污染 todayRuns）；Node v22 超时判定用 err.killed===true || err.signal==='SIGTERM'。",
-      "tags": [
-        "bugfix",
-        "审查修复",
-        "pi-memory",
-        "pi-link",
-        "pi-voice",
-        "pi-autopilot"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "74c56649-e142-4be0-bf89-172408658366",
-      "category": "solutions",
-      "title": "subagent {previous} 替换损坏修复",
-      "content": "subagent 链式任务 {previous} 占位符用字符串 replace 时，$&/$'/$` 会被解析为匹配文本导致输出损坏（实测复现）。修复：提取导出 applyPreviousPlaceholder() 函数，改用 () => previousOutput 函数替换，原样输出。补 4 个测试覆盖 $&/$'/$`/$$$ 场景——修复前字符串替换断言必失败。",
-      "tags": [
-        "subagent",
-        "placeholder",
-        "bugfix"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "95868e88-0430-4323-aefc-2e8eeb8a82c2",
-      "category": "procedure",
-      "title": "pi-full-audit v1.1 复核子代理方法论",
-      "content": "用户明确方法论：初次全面检查后的优化方案必然有缺陷，检查结果必须交复核子代理逐条核实（独立上下文防污染主会话、防模型过度自信），再由主会话终审定案，最后执行修复。技能内置：按模块分组委派复核、核实 prompt 模板（结论+代码摘录+行号核对+测试覆盖+同类遗漏排查）、运行时行为以实测为准不信审查者机制描述、修复方案细化给更优替代（如 updateTaskAfterRun 会消耗重试 vs 仅推 nextRun）、每修复点至少一个能捕获旧行为的回归测试。实战数据：33 条建议 0 捏造、12 部分属实、2 行号错、3 遗漏、1 条 HIGH 机制错误被纠正。",
-      "tags": [
-        "pi-full-audit",
-        "方法论",
-        "复核子代理",
-        "代码审查"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "e861f4b0-9d18-40e0-9d28-bf52e96db81b",
-      "category": "fact",
-      "title": "Node v22 超时语义与 vitest 变化",
-      "content": "实测 Node v22：进程超时杀死时 err.code=null、err.signal='SIGTERM'（ETIMEDOUT 分支为死代码，按 err.killed===true || err.signal==='SIGTERM' 判 124 可靠）。新版本 vitest 不再内建 --reporter=basic reporter，使用会启动报错（与代码无关，test-all.sh 不用该参数不受影响）。仓库 tsc 须用 tsconfig.local.json（rebuild 生成的每环境配置），默认 tsconfig 的 paths 空映射是既有状态，报模块解析错误与改动无关。",
-      "tags": [
-        "node",
-        "vitest",
-        "tsc",
-        "环境事实"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "6ceb9c5a-9581-4c0f-9790-e744ad914196",
-      "category": "procedure",
-      "title": "~/.pi 仓库提交维护惯例",
-      "content": "提交惯例：代码改动与 entries.json 记忆增量（每次会话自动提取写入，行数可能很大如 +538）分提交推送；remote 为 SSH URL（ssh://git@ssh.github.com:443/...）无 token 风险，无需 set-url 恢复；committer 自动配置 root@MYPC.localdomain 是本机既有状态。维护要点：扩展修复后 AGENTS.md 中测试用例数会过时需同步（本次 pi-memory 53→73、pi-autopilot 89→94、plan-mode 51→59、pi-voice 76→106）；.gitignore 须补 memory/.extract-lock（pi-memory 提取锁文件，未忽略会污染 git status）；pi-full-audit 目录此前从未入库，4ecc334 首次提交。",
-      "tags": [
-        "git",
-        "提交惯例",
-        "AGENTS.md",
-        "仓库维护"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
-    },
-    {
-      "id": "85a61175-980a-4b4a-bb5f-d11188c17874",
-      "category": "preference",
-      "title": "用户修复闭环工作流偏好",
-      "content": "用户重视文档同步：修复完成后会主动追问\"有没有相关的文档需要更新\"，要求 README/CHANGELOG/AGENTS.md 与实际行为一致（有 CHANGELOG 惯例的扩展须加条目，如 plan-mode 2.7.0、subagent v6）。认可的工作流：执行修复→补回归测试（每修复点至少一个能捕获旧行为的用例）→同步文档→按惯例分离提交推送。修复建议从 HIGH 四条起步，每修一条跑对应扩展测试套件。",
-      "tags": [
-        "用户偏好",
-        "工作流",
-        "文档同步",
-        "测试"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T15:58:45.981Z",
-      "updatedAt": "2026-08-13T15:58:45.981Z",
-      "accessedAt": "2026-08-13T15:58:45.981Z",
-      "observedAt": "2026-08-13T15:58:45.981Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
     }
   ]
 }
