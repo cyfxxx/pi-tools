@@ -1,0 +1,23 @@
+[Unit]
+Description=pi SearXNG metasearch engine (granian)
+Documentation=https://github.com/cyfxxx/pi-tools
+# 等待网络就绪（WSL 重启时网卡初始化晚，避免 bind 失败）
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%PI_HOME%/searxng
+Environment=SEARXNG_SETTINGS_PATH=%PI_HOME%/searxng/settings.yml
+Environment=SEARXNG_DEBUG=0
+Environment=PYTHONPATH=%PI_HOME%/searxng/repo
+# 与 searxng/start.sh 参数一致（wsgi 接口、127.0.0.1:8889、2 worker、4 阻塞线程）
+ExecStart=%PI_HOME%/searxng/venv/bin/granian searx.webapp:app --interface wsgi --host 127.0.0.1 --port 8889 --workers 2 --blocking-threads 4
+Restart=always
+RestartSec=3
+# 日志走 journald（journalctl -u pi-searxng）
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
