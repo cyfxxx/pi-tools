@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
-import type { DeviceConfig } from './config'
+import type { DeviceConfig } from './config.ts'
+import { parseState } from './state.ts'
 
 /**
  * pi-link 核心：经 SSH 通道连接远程设备的 `pi --mode rpc`，JSONL 协议收发。
@@ -306,10 +307,9 @@ export function remoteExec(device: DeviceConfig, cmd: string, timeoutMs = 15000)
 }
 
 /** 读取远程状态文件（不存在→null） */
-export async function readRemoteState(device: DeviceConfig): Promise<{ state: ReturnType<typeof import('./state').parseState> | null; detail?: string }> {
+export async function readRemoteState(device: DeviceConfig): Promise<{ state: ReturnType<typeof parseState> | null; detail?: string }> {
   const r = await remoteExec(device, 'cat ~/.pi/pi-link-state.json 2>/dev/null')
   if (r.code !== 0 || !r.out.trim()) return { state: null, detail: r.err.trim().slice(0, 200) || undefined }
-  const { parseState } = await import('./state')
   const state = parseState(r.out.trim())
   return { state, detail: state ? undefined : '远程状态文件格式无效' }
 }
@@ -353,11 +353,16 @@ export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ o
   return { ok: true, text: rows.join('\n') || '(会话为空)' }
 }
 
-/** 介入：向远程 pi 的 tmux 会话发送文本（冲突防护由上层校验状态） */
-export async function attachToRemote(device: DeviceConfig, text: string, tmuxSession?: string): Promise<{ ok: boolean; detail: string }> {
-  const sess = tmuxSession ?? (await readRemoteState(device)).state?.tmuxSession
+/** 介入：向远程 pi 的 tmux 会话发送文本（busy 时拒绝，--force 强制） */
+export async function attachToRemote(device: DeviceConfig, text: string, tmuxSession?: string, force = false): Promise<{ ok: boolean; detail: string }> {
+  const { state } = await readRemoteState(device)
+  const sess = tmuxSession ?? state?.tmuxSession
   if (!sess) {
     return { ok: false, detail: '无法确定远程 pi 的 tmux 会话（状态文件无 tmuxSession，且远程未运行 pi-link 扩展）' }
+  }
+  // 冲突防护：远程 agent 运行中（busy）时拒绝介入，防打断任务
+  if (state?.status === 'busy' && !force) {
+    return { ok: false, detail: `远程正在执行任务（${state.currentTask ?? '未知'}），已拒绝介入。加 --force 强制打断。` }
   }
   // tmux send-keys 不支持从 stdin 读；用 load-buffer + paste-buffer（等价粘贴）。
   // 文本经 base64 传递避免引号/特殊字符转义问题；单行消息（多行会多段粘贴）。

@@ -189,6 +189,41 @@ describe('pi-link: sendToDevice', () => {
     expect(stdinWrites.join('')).not.toContain('[远程执行任务]')
   })
 
+  it('attachToRemote: busy 时拒绝，force 强制', async () => {
+    // 独立 mock：每次 ssh 调用返回可控的 stdout + 触发 exit
+    spawnMock.mockImplementation((...args: unknown[]) => {
+      const argv = (args[1] ?? []) as string[]
+      const cmd = String(argv[argv.length - 1] ?? '')
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const stdin = new PassThrough()
+      const proc = {
+        stdin, stdout, stderr,
+        kill: vi.fn(),
+        on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+      }
+      const exitCbs: Array<(c: number) => void> = []
+      if (cmd.includes('pi-link-state.json')) {
+        setImmediate(() => {
+          stdout.emit('data', JSON.stringify({ device: 'r', status: 'busy', currentTask: '编译', tmuxSession: '0' }) + '\n')
+          setImmediate(() => { for (const cb of exitCbs) cb(0) })
+        })
+      } else {
+        setImmediate(() => {
+          stdout.emit('data', '\n')
+          setImmediate(() => { for (const cb of exitCbs) cb(0) })
+        })
+      }
+      return proc
+    })
+    const { attachToRemote } = await import('../link.ts')
+    const r1 = await attachToRemote(DEV, 'hi')
+    expect(r1.ok).toBe(false)
+    expect(r1.detail).toContain('正在执行任务')
+    const r2 = await attachToRemote(DEV, 'hi', '0', true)
+    expect(r2.ok).toBe(true)
+  })
+
   it('无文本回复时报错并附 stderr', async () => {
     const proc = fakeProc([{ type: 'agent_settled' }], { reply: '' })
     spawnMock.mockImplementation(() => {
