@@ -105,9 +105,11 @@ export class TodoOverlay {
     const visible = this.selectVisible(tasks);
     if (visible.length === 0) return [];
 
-    const overlayState = { tasks: visible, nextId: tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1 };
-    const counts = selectTodoCounts(overlayState);
-    const hasActive = selectHasActive(overlayState);
+    // 计数基于全量任务（含折叠的 completed/deleted 不计），进度感准确：
+    // 完成 2/10 显示 (2/10) 而非按可见列表算 (0/8)
+    const allState = { tasks, nextId: tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1 };
+    const counts = selectTodoCounts(allState);
+    const hasActive = selectHasActive({ tasks: visible, nextId: 0 });
 
     const headingColor = hasActive ? "accent" : "dim";
     const headingIcon = hasActive ? "●" : "○";
@@ -125,7 +127,7 @@ export class TodoOverlay {
     }
 
     const lines: string[] = [heading];
-    const layout = selectOverlayLayout(overlayState, MAX_WIDGET_LINES - 1);
+    const layout = selectOverlayLayout({ tasks: visible, nextId: 0 }, MAX_WIDGET_LINES - 1);
     for (const task of layout.visible) {
       lines.push(this.formatCheckboxLine(task, theme));
     }
