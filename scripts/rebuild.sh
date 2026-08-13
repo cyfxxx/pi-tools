@@ -503,7 +503,23 @@ phase2_repo() {
     if [ "$ok" = "1" ]; then
       ok "searxng/repo/ (HEAD at $(cd "$PI_HOME/searxng/repo" && git rev-parse --short HEAD 2>/dev/null))"
     else
-      warn "SearXNG repo 克隆失败（已尝试:$tried）"
+      # C1：clone 全失败 → tarball 兜底（与测速资源一致，无 git 增量更新依赖故安全）
+      local tb_url="${GH_PROXY:-}https://github.com/searxng/searxng/archive/refs/heads/master.tar.gz"
+      info "git clone 失败，改用 tarball: $tb_url"
+      rm -rf "$PI_HOME/searxng/repo"; mkdir -p "$PI_HOME/searxng/repo"
+      if timeout 300 curl -fsSL "$tb_url" | tar xz -C "$PI_HOME/searxng/repo" --strip-components=1 2>/dev/null \
+         && [ -f "$PI_HOME/searxng/repo/requirements.txt" ]; then
+        # git init + 基线提交：保持 .git 存在性判断与 verify 的 rev-parse 一致
+        (cd "$PI_HOME/searxng/repo" && git init -q && git add -A >/dev/null 2>&1 \
+          && git -c user.email=rebuild@local -c user.name=rebuild commit -qm tarball 2>/dev/null) || true
+        ok "searxng/repo/（tarball 方式，requirements.txt 校验通过）"
+        ok=1
+      else
+        warn "tarball 下载失败（$tb_url）"
+      fi
+    fi
+    if [ "$ok" != "1" ]; then
+      warn "SearXNG repo 获取失败（已尝试: $tried + tarball）"
       return 1
     fi
   else
@@ -1094,13 +1110,21 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
     info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
   fi
 
-  # SearXNG 服务可达性（smoke-test 第 1 项依赖；rebuild 不代启动，给出命令）
+  # SearXNG 服务可达性（smoke-test 第 1 项依赖）
   if [ -f "$PI_HOME/searxng/settings.yml" ] && [ -x "$PI_HOME/searxng/venv/bin/python" ]; then
     if curl -s --max-time 5 http://127.0.0.1:8889/ >/dev/null 2>&1; then
       ok "SearXNG 服务运行中 (127.0.0.1:8889)"
+    elif [ -d /run/systemd/system ]; then
+      warn "SearXNG 服务未运行——启动: systemctl start pi-searxng 或 $PI_HOME/searxng/start.sh"
     else
-      warn "SearXNG 服务未运行（smoke-test 需先启动）"
-      info "启动: $PI_HOME/searxng/start.sh"
+      # D1：无 systemd 环境（Termux/proot/容器）自动拉起，避免 rebuild 后服务不可用
+      info "无 systemd，自动启动 SearXNG（start.sh，uvicorn 回退由其处理）..."
+      if bash "$PI_HOME/searxng/start.sh" >/dev/null 2>&1 && sleep 3 \
+         && curl -s --max-time 5 http://127.0.0.1:8889/ >/dev/null 2>&1; then
+        ok "SearXNG 已自动启动 (127.0.0.1:8889)"
+      else
+        warn "SearXNG 自动启动失败——手动: $PI_HOME/searxng/start.sh"
+      fi
     fi
   fi
 
