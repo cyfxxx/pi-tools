@@ -35,8 +35,11 @@ else
 fi
 
 cyn "== 根 typecheck (tsc) =="
-(cd "$EXTS" && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit >/dev/null 2>&1)
-report $? "tsc -p tsconfig.json"
+# 优先 tsconfig.local.json（每环境 paths，rebuild Phase 2-D 生成）；缺失时回退共享配置
+TSCONFIG="tsconfig.local.json"
+[ -f "$EXTS/$TSCONFIG" ] || TSCONFIG="tsconfig.json"
+(cd "$EXTS" && ./pi-web-search/node_modules/.bin/tsc -p "$TSCONFIG" --noEmit >/dev/null 2>&1)
+report $? "tsc -p $TSCONFIG"
 
 cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
 (cd "$EXTS/pi-web-search" && ./node_modules/.bin/vitest run tests/extensions.test.ts >/dev/null 2>&1)
