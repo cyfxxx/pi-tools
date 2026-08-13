@@ -241,8 +241,11 @@ GitHub 同步完成
 
 **执行方式与进度报告（重要——防止长时间无反馈误判卡死）：**
 
-1. 重建用 `tmux_run` 后台执行（输出落盘 `~/.pi/logs/tmux/<会话>.log`），不要前台 bash 直跑；结束后 `tmux_wait` 等退出。单条短命令（如 `mkdir`）可前台执行，但 npm/pip/git clone/模型下载必须后台。
-2. **进度报告节奏：每 60 秒检查一次日志（`tmux_read`），主动向用户输出一行进度**（用户没问也报告）：
+1. 后台执行二选一（**先探测 `command -v tmux`**；重建场景可能恰好没有 tmux——它是 Phase 3 的重建项）：
+   - **有 tmux**：`tmux_run` 后台执行，输出落盘 `~/.pi/logs/tmux/<会话>.log`，轮询用 `tmux_read`。
+   - **无 tmux**：用 `nohup` 后台执行并重定向日志：`mkdir -p ~/.pi/logs && nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &`；轮询用 `tail -n 30 ~/.pi/logs/rebuild.log`（bash 直跑，不依赖 tmux）。记录 PID（`echo $!`）供卡死判定时 `kill -0` 探活。
+   - 单条短命令（如 `mkdir`）可前台执行，但 npm/pip/git clone/模型下载必须后台。
+2. **进度报告节奏：每 60 秒检查一次日志（tmux 用 `tmux_read`、无 tmux 用 `tail`），主动向用户输出一行进度**（用户没问也报告）：
    - 格式：`[重建进度 +3m12s] Phase 1/2 完成 ✓；当前：Phase 2-B searxng venv pip install（预估 5-15 分钟）；已完成 6/13 项`
    - 内容：已耗时、已完成 Phase（grep 日志 `[Phase` / `✓`）、当前进行项（日志最后活动行）、完成项计数（含跳过项）。
 3. 单项耗时预估（超预估不必惊慌，按节奏报告即可；预估含中国网络减速）：
@@ -255,7 +258,7 @@ GitHub 同步完成
    | git clone（ghproxy 镜像） | 1-5 分钟 |
    | apt install | 1-3 分钟 |
 
-4. **卡死判定**：日志 5 分钟无新增输出 → 主动报告「疑似卡住（X 分钟无新输出），正在检查」；用 `ps aux | grep -E "rebuild|npm|pip"` 确认进程存活、检查下载文件大小是否增长（`ls -l` / `du`），区分「慢」与「卡」；确认卡死才中止（`tmux_stop`），否则继续等待并报告「仍在运行（正常）」。
+4. **卡死判定**：日志 5 分钟无新增输出 → 主动报告「疑似卡住（X 分钟无新输出），正在检查」；用 `ps aux | grep -E "rebuild|npm|pip"`（无 tmux 时也可 `kill -0 <PID>`）确认进程存活、检查下载文件大小是否增长（`ls -l` / `du`），区分「慢」与「卡」；确认卡死才中止（有 tmux 用 `tmux_stop`，无 tmux 用 `kill <PID>`），否则继续等待并报告「仍在运行（正常）」。
 5. 完成后汇总报告：总耗时 + 各 Phase ✓/跳过 + 验证结果（格式见下方示例输出）。
 
 **前置检查（在重建前执行一次）：**
