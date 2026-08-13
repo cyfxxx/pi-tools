@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PassThrough } from 'node:stream'
-import { extractReply, buildRemoteCommand, sendToDevice, wrapTaskMessage } from '../link'
+import { extractReply, buildRemoteCommand, sendToDevice, wrapTaskMessage, resetSendGuards } from '../link'
 import type { DeviceConfig } from '../config'
 
 // vi.mock 顶部提升注册：模块加载即生效（doMock 无法覆盖静态 import 的预加载）
@@ -35,6 +35,59 @@ describe('pi-link: extractReply', () => {
     expect(r.text).toBe('plain')
   })
 })
+
+describe('pi-link: 并发与去重（T2-4）', () => {
+  it('同设备并发调用被拒', async () => {
+    const { checkConcurrentAndDedup, markSendStart, markSendEnd } = await import('../link.ts')
+    const key = 'a@b:22'
+    expect(checkConcurrentAndDedup(key, 'm1').ok).toBe(true)
+    markSendStart(key, 'm1')
+    const r = checkConcurrentAndDedup(key, 'm2')
+    expect(r.ok).toBe(false)
+    expect(r.detail).toContain('已有进行中')
+    markSendEnd(key)
+    expect(checkConcurrentAndDedup(key, 'm2').ok).toBe(true)
+  })
+
+  it('窗口内相同消息去重；不同消息放行', async () => {
+    const { checkConcurrentAndDedup, markSendStart, markSendEnd } = await import('../link.ts')
+    const key = 'a@b:22'
+    markSendStart(key, '重复消息')
+    markSendEnd(key) // 发送完成：in-flight 清除，hash 记录保留
+    const r1 = checkConcurrentAndDedup(key, '重复消息')
+    expect(r1.ok).toBe(false)
+    expect(r1.detail).toContain('去重')
+    expect(checkConcurrentAndDedup(key, '另一个消息').ok).toBe(true)
+  })
+
+  it('窗口过期后同消息放行', async () => {
+    vi.useFakeTimers()
+    try {
+      const { checkConcurrentAndDedup, markSendStart, markSendEnd } = await import('../link.ts')
+      const key = 'a@b:22'
+      markSendStart(key, 'x')
+      markSendEnd(key)
+      vi.advanceTimersByTime(5 * 60 * 1000 + 1000)
+      expect(checkConcurrentAndDedup(key, 'x').ok).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('sendToDevice 直接返回拒绝（不 spawn）', async () => {
+    spawnMock.mockImplementation(() => { throw new Error('不应 spawn') })
+    const { sendToDevice } = await import('../link.ts')
+    const key = 'testuser@100.64.0.1:2222'
+    markSendStartFor(key, '')
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('已有进行中')
+  })
+})
+
+// 辅助：直接置 in-flight（sendToDevice 内部函数不可直接调用时用）
+import { markSendStart as markSendStartFor } from '../link.ts'
+// markSendStart 的 message 仅用于去重记录，测试置空即可
 
 describe('pi-link: buildRemoteCommand', () => {
   it('默认 --no-extensions + 默认 session dir + LD_PRELOAD 清除', () => {
@@ -81,6 +134,7 @@ describe('pi-link: wrapTaskMessage (T1-3)', () => {
 describe('pi-link: sendToDevice', () => {
   let sshMock: { spawn: ReturnType<typeof vi.fn> }
   beforeEach(() => {
+    resetSendGuards()
     sshMock = { spawn: vi.fn() }
     vi.doMock('node:child_process', () => ({ spawn: sshMock.spawn, exec: vi.fn(), execSync: vi.fn() }))
   })

@@ -82,6 +82,23 @@ export function getDevice(cfg: LinkConfig, name: string): DeviceConfig | undefin
   return cfg.devices[name]
 }
 
+/** 写入/更新设备（保存回 pi-link.json；T2-5 卡片导入用） */
+export function saveDevice(path: string, name: string, d: DeviceConfig): { ok: boolean; detail: string } {
+  const nameOk = /^[a-zA-Z0-9_-]+$/.test(name)
+  if (!nameOk) return { ok: false, detail: `设备名 "${name}" 非法（仅字母数字-下划线）` }
+  const cfg = loadConfig(path)
+  const existed = name in cfg.devices
+  cfg.devices[name] = { ...d }
+  try {
+    const { mkdirSync, writeFileSync } = require('node:fs') as typeof import('node:fs')
+    mkdirSync(path.slice(0, path.lastIndexOf('/')), { recursive: true })
+    writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n', 'utf-8')
+  } catch (e) {
+    return { ok: false, detail: `写入失败: ${(e as Error).message}` }
+  }
+  return { ok: true, detail: existed ? `已更新设备 "${name}"` : `已添加设备 "${name}"` }
+}
+
 export function describeDevice(name: string, d: DeviceConfig): string {
   return `${name} → ${d.user}@${d.host}:${d.port ?? 22}`
 }
