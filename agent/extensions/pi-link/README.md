@@ -92,8 +92,24 @@ cd agent/extensions/pi-link && ./node_modules/.bin/vitest run
 
 用例：extractReply 文本提取（排除 thinking/toolCall）、buildRemoteCommand 参数组装（--no-extensions/cwd/sessionDir）、sendToDevice 全流程（mock ssh 子进程：完成判定/交互请求错误/无回复错误）、index 注册面（工具 + /link 命令整合 + 参数错误）。
 
-## 演进方向（未实现）
+## 演进方向（分档，待需求出现再评估）
 
-- **常驻会话**：daemon 化（每设备 linkd），HTTP/WS 接口 + A2A Agent Card 发现（`/.well-known/agent-card.json`）、mDNS 局域网发现、双向推送（B 主动发消息给 A）
-- **会话连续性**：`load_session` 复用上次会话（已验证协议可用，需要"设备→会话文件"映射管理）
-- **流式回传**：工具调用过程实时可见
+### T2（中等成本，架构小幅演进）
+
+- **活跃设备/身份机制**：动态"当前指挥者"——每设备监听用户交互刷新活跃时间戳，指令携带发起者身份与活跃性，远程按发起方活跃度接受/拒绝/询问（防止无人值守设备乱指挥）；定时任务发起标记为无人值守，默认拒绝跨设备调用
+- **远程会话观察与介入（watch/attach）**：`/link watch`（ssh tail 远程会话文件 / tmux capture-pane 观察模型间沟通）+ `/link attach`（ssh + 远程 tmux send-keys，等价在远程终端输入）；冲突防护用远程状态文件（idle/busy + 当前任务），busy 时默认拒绝可 --force
+- **B→A 主动推送**：远程完成后主动通知（ssh 反向隧道或常驻 WS）
+- **任务队列/去重**：多任务排队、同消息去重
+- **设备发现**：Agent Card 格式（`/.well-known/agent-card.json` 风格 JSON）+ mDNS/DNS-SD
+
+### T3（架构演进，暂缓）
+
+- **A2A 协议落地**：JSON-RPC over HTTP + Agent Card 发现 + task 生命周期，与外部 agent 生态互通（当前全是 pi，无互通需求；若出现非 pi 设备再评估）
+- **受限模式**：远程白名单工具集（当前远程是全能力 RPC）
+- **relay 中心**：跨网（非 Tailscale）场景 + 手机移动端接入（remote_pi 模式）
+
+### 已实现（T1）
+
+- **会话连续性**：load_session 复用上次会话（同一设备多次调用上下文连续；>1MB 自动开新会话；`sessionPolicy: fresh` 可关闭）
+- **流式回传**：远程工具执行进度实时转发（onUpdate）
+- **指令模板**：消息自动加远程执行指令前缀，消除措辞歧义

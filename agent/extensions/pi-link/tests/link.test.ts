@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PassThrough } from 'node:stream'
-import { extractReply, buildRemoteCommand, sendToDevice } from '../link'
+import { extractReply, buildRemoteCommand, sendToDevice, wrapTaskMessage } from '../link'
 import type { DeviceConfig } from '../config'
 
 // vi.mock 顶部提升注册：模块加载即生效（doMock 无法覆盖静态 import 的预加载）
@@ -45,6 +45,14 @@ describe('pi-link: buildRemoteCommand', () => {
     expect(cmd).toContain('readlink -f')
     expect(cmd).toContain('command -v pi-original')
   })
+
+  it('会话连续性：continue 策略含上次会话探测，fresh 策略无', () => {
+    const cont = buildRemoteCommand(DEV, {})
+    expect(cont).toContain('PI_LINK_LAST_SESSION')
+    expect(cont).toContain('ls -t "~/.pi/agent/sessions/pi-link"/*.jsonl')
+    const fresh = buildRemoteCommand(DEV, { sessionPolicy: 'fresh' })
+    expect(fresh).not.toContain('PI_LINK_LAST_SESSION')
+  })
   it('extensions 开启时省略 --no-extensions', () => {
     expect(buildRemoteCommand(DEV, { extensions: true })).toContain('pi --mode rpc')
     expect(buildRemoteCommand(DEV, { extensions: true })).not.toContain('--no-extensions')
@@ -57,6 +65,19 @@ describe('pi-link: buildRemoteCommand', () => {
   })
 })
 
+describe('pi-link: wrapTaskMessage (T1-3)', () => {
+  it('注入远程执行指令前缀', () => {
+    const w = wrapTaskMessage('查看当前目录文件')
+    expect(w).toContain('[远程执行任务]')
+    expect(w).toContain('不要询问"回复给谁')
+    expect(w).toContain('查看当前目录文件')
+  })
+  it('带发起设备名', () => {
+    const w = wrapTaskMessage('执行', 'laptop')
+    expect(w).toContain('发起设备: laptop')
+  })
+})
+
 describe('pi-link: sendToDevice', () => {
   let sshMock: { spawn: ReturnType<typeof vi.fn> }
   beforeEach(() => {
@@ -64,7 +85,10 @@ describe('pi-link: sendToDevice', () => {
     vi.doMock('node:child_process', () => ({ spawn: sshMock.spawn, exec: vi.fn(), execSync: vi.fn() }))
   })
 
+  const stdinWrites: string[] = []
   function fakeProc(lines: Array<Record<string, unknown>>, { reply = 'ok', exitCode = 0 } = {}) {
+    const writes: string[] = []
+    stdinWrites.length = 0
     const stdout = new PassThrough()
     const stderr = new PassThrough()
     const stdin = new PassThrough()
@@ -75,7 +99,9 @@ describe('pi-link: sendToDevice', () => {
       on: (ev: string, cb: (code: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
     }
     // 模拟 stdin 写入后事件流；事件发完后再触发 exit（保证 readline 先收完事件）
-    stdin.on('data', () => {
+    stdin.on('data', (chunk: Buffer) => {
+      writes.push(chunk.toString())
+      stdinWrites.push(chunk.toString())
       const seq = [
         { type: 'agent_start' },
         { type: 'turn_start' },
@@ -119,6 +145,38 @@ describe('pi-link: sendToDevice', () => {
     const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
     expect(r.ok).toBe(false)
     expect(r.error).toContain('用户交互')
+  })
+
+  it('会话连续性：握手行后发 load_session + prompt', async () => {
+    const proc = fakeProc([{ type: 'agent_settled' }])
+    spawnMock.mockImplementation(() => {
+      // 模拟远程 shell 先输出握手行，再进入 RPC 事件流
+      setImmediate(() => proc.stdout.emit('data', 'PI_LINK_LAST_SESSION=/root/.pi/agent/sessions/pi-link/x.jsonl\n'))
+      return proc
+    })
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+    expect(r.ok).toBe(true)
+    expect(r.resumed).toBe(true)
+    const all = stdinWrites.join('')
+    expect(all).toContain('"type":"load_session"')
+    expect(all).toContain('/root/.pi/agent/sessions/pi-link/x.jsonl')
+    expect(all).toContain('"type":"prompt"')
+    expect(all).toContain('[远程执行任务]')
+  })
+
+  it('无握手行时直接发 prompt（fresh/首次）', async () => {
+    spawnMock.mockImplementation(() => fakeProc([{ type: 'agent_settled' }]))
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+    expect(r.ok).toBe(true)
+    expect(r.resumed).toBe(false)
+    const all = stdinWrites.join('')
+    expect(all).not.toContain('load_session')
+  })
+
+  it('wrapTask=false 时不注入指令模板', async () => {
+    spawnMock.mockImplementation(() => fakeProc([{ type: 'agent_settled' }]))
+    await sendToDevice(DEV, 'hi', { timeoutSec: 30, wrapTask: false })
+    expect(stdinWrites.join('')).not.toContain('[远程执行任务]')
   })
 
   it('无文本回复时报错并附 stderr', async () => {

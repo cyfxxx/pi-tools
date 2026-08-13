@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { loadConfig, getDevice, describeDevice, type DeviceConfig, type LinkConfig } from './config'
-import { sendToDevice, probeDevice } from './link'
+import { sendToDevice, probeDevice, type SendOptions } from './link'
 
 /**
  * pi-link — 多设备 pi 互联扩展
@@ -42,7 +42,7 @@ export default function (pi: ExtensionAPI): void {
       },
       required: ['device', 'message'],
     },
-    async execute(_id, params) {
+    async execute(_id, params, _signal, onUpdate) {
       const name = String((params as Record<string, unknown>).device ?? '')
       const message = String((params as Record<string, unknown>).message ?? '')
       if (!name) return err('缺少 device 参数。用法: link_send <device> <message>（/link help 查看全部）')
@@ -52,8 +52,27 @@ export default function (pi: ExtensionAPI): void {
       const t = (params as Record<string, unknown>).timeoutSec
       // 下限保护：远程 RPC 启动 + LLM 会话通常需 60s+，防止模型传过小值导致必失败
       const opts = typeof t === 'number' && t > 0 ? { timeoutSec: Math.max(60, t) } : {}
+      // 流式回传（T1-2）：远程工具执行进度实时转发
+      const sendOpts: SendOptions = { ...opts, fromName: name }
+      sendOpts.onEvent = (ev) => {
+        let line: string | undefined
+        if (ev.type === 'tool_execution_start') {
+          const m = (ev as Record<string, unknown>).toolName ?? (ev as Record<string, unknown>).name
+          line = `→ 远程正在执行: ${String(m ?? '工具')}`
+        } else if (ev.type === 'tool_execution_update') {
+          const u = (ev as Record<string, unknown>).partialResult
+          if (typeof u === 'string' && u) line = u.slice(0, 200)
+        } else if (ev.type === 'turn_end') {
+          line = '→ 远程一轮工具交互完成'
+        } else if (ev.type === 'agent_settled') {
+          line = '→ 远程任务完成'
+        }
+        if (line && onUpdate) {
+          onUpdate({ content: [{ type: 'text', text: line }], details: null })
+        }
+      }
       try {
-        const r = await sendToDevice(dev, message, opts)
+        const r = await sendToDevice(dev, message, sendOpts)
         return ok(fmtResult(r), { device: name, ...r })
       } catch (e) {
         return err(`link_send 失败: ${(e as Error).message}`)
