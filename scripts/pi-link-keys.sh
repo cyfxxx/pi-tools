@@ -47,10 +47,14 @@ install_keys() {
     [ -f "$target" ] || touch "$target"
     chmod 600 "$target" 2>/dev/null
 
-    # 现有行（含注释）作为基准
+    # 现有行作为基准——按密钥体（前两字段，不含尾部 comment）去重：
+    # comment 变体（如 root@localhost vs termux@100.x.x.x）不应导致重复授权
     local -A seen=()
     while IFS= read -r line; do
-      [ -n "$line" ] && seen["$line"]=1
+      [ -n "$line" ] || continue
+      case "$line" in \#*) continue ;; esac
+      set -- $line
+      [ $# -ge 2 ] && seen["$1 $2"]=1
     done < "$target"
 
     total=0; added=0
@@ -58,8 +62,11 @@ install_keys() {
       [ -z "$line" ] && continue
       case "$line" in \#*) continue ;; esac
       total=$((total+1))
-      if [ -z "${seen["$line"]+x}" ]; then
+      set -- $line
+      body="$1 $2"
+      if [ -z "${seen["$body"]+x}" ]; then
         printf '%s\n' "$line" >> "$target"
+        seen["$body"]=1
         added=$((added+1))
       fi
     done < "$KEYS_FILE"
