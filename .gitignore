@@ -104,3 +104,4 @@ pi-link-state.json
 pi-link-outbox.json
 # rebuild 运行日志
 logs/*.out
+tmux/tmux-status.txt
