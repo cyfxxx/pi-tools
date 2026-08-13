@@ -57,6 +57,7 @@ ctx-lite/
 # 排除项：原始对话提取/临时提取（含对话全文，可能含敏感内容如 PAT 明文）
 memory/extract-sessions/
 memory/pending-extracts/
+memory/.extract-lock
 # 多环境隔离（P1）：notes/summaries 为会话级/环境特定数据，不入库（避免多机 pull/push 互相覆盖）
 # entries.json（长期记忆）仍入库共享，冲突时以最新 push 为准
 memory/notes.json
