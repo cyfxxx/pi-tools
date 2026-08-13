@@ -1,0 +1,21 @@
+[Unit]
+Description=pi whisper transcription server (faster-whisper)
+Documentation=https://github.com/cyfxxx/pi-tools
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# systemd 不继承用户环境（无 HOME），pi-whisper.sh 的 set -u 需要
+Environment=HOME=/root
+# run 子命令：读取 agent/pi-voice.json 的 token/模型/设备配置 + CUDA 库路径，前台 exec
+ExecStart=%PI_HOME%/scripts/pi-whisper.sh run
+Restart=always
+RestartSec=3
+# 模型加载慢，给足启动时间
+TimeoutStartSec=300
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

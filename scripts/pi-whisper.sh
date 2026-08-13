@@ -116,10 +116,28 @@ status() {
   return 1
 }
 
+run() {
+  # 前台运行（systemd Type=simple 专用）：读取与 start 相同的配置并 exec，不后台化
+  local token model device nv_lib
+  token="$(read_token)"
+  model="$(read_model)"
+  device="$(read_device)"
+  local -a envs=()
+  [ -n "$token" ] && envs+=(PI_WHISPER_TOKEN="$token")
+  [ -n "$model" ] && envs+=(PI_WHISPER_MODEL="$model")
+  [ -n "$device" ] && envs+=(PI_WHISPER_DEVICE="$device")
+  nv_lib="$VENV/lib/python3.12/site-packages/nvidia"
+  if [ -d "$nv_lib/cublas/lib" ] || [ -d "$nv_lib/cudnn/lib" ]; then
+    envs+=(LD_LIBRARY_PATH="$nv_lib/cublas/lib:$nv_lib/cudnn/lib:${LD_LIBRARY_PATH:-}")
+  fi
+  exec env "${envs[@]}" "$VENV/bin/python" "$SERVER"
+}
+
 case "${1:-}" in
   start) start ;;
   stop) stop ;;
   restart) stop; start ;;
   status) status ;;
-  *) echo "用法: $0 {start|stop|restart|status}"; exit 1 ;;
+  run) run ;;
+  *) echo "用法: $0 {start|stop|restart|status|run}"; exit 1 ;;
 esac

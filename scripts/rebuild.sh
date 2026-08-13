@@ -651,6 +651,47 @@ phase2_link_keys() {
     || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/scripts/pi-link-keys.sh install）"
 }
 
+# ---- Phase 2-G: systemd 服务注册（SearXNG + whisper 常驻自启） ----
+# 仅真实 systemd 环境生效（Termux/proot/容器内无 systemctl 时自动跳过）。
+# unit 模板在 systemd/ 目录（%PI_HOME% 占位），安装时替换为本机路径；
+# 只 enable（开机自启）+ 未运行时 start；旧手动进程占用端口时先停掉再拉起。
+phase2_systemd() {
+  title "Phase 2-G" "systemd 服务注册（SearXNG + whisper 自启）"
+  if ! command -v systemctl >/dev/null 2>&1 || [ ! -d /run/systemd/system ]; then
+    info "无 systemd（Termux/proot/容器），跳过常驻服务自启"
+    return 0
+  fi
+  local sd_dir="$PI_HOME/systemd" sys_dir="/etc/systemd/system" installed=0
+  for unit in pi-searxng.service pi-whisper.service; do
+    if [ ! -f "$sd_dir/$unit" ]; then
+      warn "模板缺失: $sd_dir/$unit，跳过"
+      continue
+    fi
+    sed "s|%PI_HOME%|$PI_HOME|g" "$sd_dir/$unit" > "$sys_dir/$unit"
+    chmod 644 "$sys_dir/$unit"
+    ok "已安装 $unit"
+    installed=1
+  done
+  [ "$installed" = "1" ] || return 0
+  systemctl daemon-reload
+  # 停旧手动进程（start.sh/pi-whisper.sh 的 nohup 实例），避免端口冲突
+  local searx_pid="$PI_HOME/searxng/searxng.pid"
+  if [ -f "$searx_pid" ] && kill -0 "$(cat "$searx_pid")" 2>/dev/null; then
+    kill "$(cat "$searx_pid")" 2>/dev/null && warn "已停止手动 SearXNG 进程（由 systemd 接管）"
+  fi
+  if [ -f "$PI_HOME/logs/whisper/server.pid" ] && kill -0 "$(cat "$PI_HOME/logs/whisper/server.pid")" 2>/dev/null; then
+    "$PI_HOME/scripts/pi-whisper.sh" stop >/dev/null 2>&1 && warn "已停止手动 whisper 进程（由 systemd 接管）"
+  fi
+  local rc=0
+  systemctl enable pi-searxng.service >/dev/null 2>&1 || rc=1
+  systemctl enable pi-whisper.service >/dev/null 2>&1 || rc=1
+  systemctl start pi-searxng.service >/dev/null 2>&1 || { warn "pi-searxng 启动失败（journalctl -u pi-searxng 查看）"; rc=1; }
+  systemctl start pi-whisper.service >/dev/null 2>&1 || { warn "pi-whisper 启动失败（journalctl -u pi-whisper 查看）"; rc=1; }
+  if [ "$rc" = "0" ]; then
+    ok "SearXNG + whisper 已注册 systemd 自启（journalctl -u pi-searxng / -u pi-whisper 查看日志）"
+  fi
+}
+
 # ---- Phase 2-F: 语音服务（pi-voice 后端，条件触发） ----
 # 触发条件：agent/pi-voice.json 存在（本机配置过语音）或 --voice 强制；--no-voice 强制跳过。
 # 子项按平台/能力分支：termux 提示 termux-api；linux 装 espeak-ng/paplay；
@@ -983,6 +1024,7 @@ phase2_types
 phase2_wrapper
 phase2_tmux
 phase2_link_keys
+phase2_systemd
 phase2_voice
 
 # TUI 核心补丁（幂等：已打补丁输出跳过；pi update 后必须重跑，否则
