@@ -1701,30 +1701,6 @@
       ]
     },
     {
-      "id": "34bb9fc2-5e9b-4912-9bb9-a3fcadc51031",
-      "category": "fact",
-      "title": "Termux:API 沙箱无法写 proot /tmp",
-      "content": "在 Termux proot 环境跑 pi，Termux:API app 打开 proot 的 /tmp 路径报 open failed: ENOENT（Android app 沙箱隔离）；/storage/emulated/0 和 /data/data/com.termux/files/home 均可写。录音临时目录须用共享存储。",
-      "tags": [
-        "termux",
-        "proot",
-        "pi-voice",
-        "录音"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-09T14:52:13.231Z",
-      "updatedAt": "2026-08-09T14:52:13.424Z",
-      "accessedAt": "2026-08-09T14:52:13.231Z",
-      "observedAt": "2026-08-09T14:52:13.231Z",
-      "supersededBy": "906abeb2-9a99-441e-b68c-8cdd353c8a9e",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "84e899e0-9af0-4064-85a2-273474c7b92f",
       "category": "fact",
       "title": "pi 调度锁竞争根因与修复（proot kill -0 陷阱）",
@@ -1976,28 +1952,6 @@
       ]
     },
     {
-      "id": "732ee391-40e2-4bd8-a5c2-5fa549877d47",
-      "category": "fact",
-      "title": "proot kill -0 陷阱",
-      "content": "proot 环境（Termux）下 kill -0 对某些 PID（如 PID 1）报 Operation not permitted，即使进程存活也判定失败，误判活跃锁为死锁。进程存活判定应检查 /proc/<pid> 目录存在性（pi-autopilot 的 stat 方案）。pi-cron.sh 锁判定已改此方案。",
-      "tags": [
-        "proot",
-        "进程判定",
-        "锁"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T01:05:58.947Z",
-      "updatedAt": "2026-08-10T01:05:58.947Z",
-      "accessedAt": "2026-08-10T01:05:58.947Z",
-      "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
       "id": "965f0ebc-689e-4d90-9902-8a15670d2987",
       "category": "fact",
       "title": "pi-cron 锁竞争根因",
@@ -2017,28 +1971,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "f5dd85ba-2ec7-4179-94f7-235d28933220",
-      "category": "fact",
-      "title": "tmux 孤儿 socket 根因",
-      "content": "proot 下 tmux server 被 kill 后 socket 文件残留（内核不清理）→ 所有 tmux 命令报 access not allowed 且 exit 0。修复：kill server + rm -rf /tmp/tmux-* 重建。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状自动清理，pi 在 tmux 内时跳过防误杀）。",
-      "tags": [
-        "tmux",
-        "proot",
-        "自愈"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T01:05:58.947Z",
-      "updatedAt": "2026-08-10T01:05:58.947Z",
-      "accessedAt": "2026-08-10T01:05:58.947Z",
-      "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false,
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -3799,29 +3731,6 @@
       ]
     },
     {
-      "id": "e42dc92d-7678-4ee9-9915-e3fbd1a8ac08",
-      "category": "fact",
-      "title": "pi-bg.sh 后台任务工具已交付",
-      "content": "2026-08-10 交付 ~/.pi/scripts/pi-bg.sh（含 README-pi-bg.md），用于前台长任务期间跑真并行后台任务。子命令：start（一次性 -p）/rpc（长驻 --mode rpc，prompt/steer 可注入）/status/log/stop。隔离四件套：--no-session + --no-extensions + 默认只读工具集 + 独立日志，实测后台任务零会话写入、零 memory 写入。前台串行仍为默认（Enter 排队 steer、Esc 中止）。",
-      "tags": [
-        "pi",
-        "pi-bg",
-        "后台任务",
-        "tmux"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.357Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
-      "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "bc925ab9-808c-431f-868d-aeba9d2c6036",
       "category": "fact",
       "title": "extensions.test.ts 运行要求与 symlink 断裂修复",
@@ -3975,30 +3884,6 @@
       "observedAt": "2026-08-10T08:59:37.714Z",
       "deleted": true,
       "supersededBy": "cc271c3a-7a1b-41e2-901c-d0ee31a3a50b",
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "759dfd37-f2f9-4e6e-8dfb-0130ed39127e",
-      "category": "fact",
-      "title": "扩展命令整合结果与守门机制",
-      "content": "2026-08-10 完成扩展命令整合：/voice <start|stop|cancel|tts|doctor|model|bench|help>、/auto <status|policy|failover|pause|resume|restart|help>、/plan <enter|exit|clear|resume|view|todos|help>（无参数保留 toggle）。旧命令名 /tts、/planclear、/planview、/todos、/auto:*、/admin:restart 已移除。conflict-check.mjs 新增守门：命令白名单 + 每扩展 ≤2 命令 + 必须 help 子命令，新命令未同步清单直接报错。修复了 /voice help 误触发录音问题。",
-      "tags": [
-        "pi",
-        "扩展",
-        "命令整合",
-        "conflict-check"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.740Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
-      "observedAt": "2026-08-10T10:16:05.357Z",
-      "supersededBy": "42306440-c6ef-48fb-8528-9477a34bfa77",
-      "deleted": true,
       "environments": [
         "all"
       ]
@@ -5162,29 +5047,6 @@
       ]
     },
     {
-      "id": "a5eec7bb-f070-42e2-802f-3a43f9573ec4",
-      "category": "fact",
-      "title": "pi 多级子命令补全机制",
-      "content": "pi 扩展的 getArgumentCompletions(argumentPrefix) 接收完整参数前缀文本（含空格与多级，autocomplete.js 将光标前完整参数原样传入），返回项整体替换该前缀，因此任意层级子命令补全原生可行：在回调内解析 prefix（如 'tts ' 开头返回 on/off/status）分发即可。旧实现忽略 prefix 参数只能做一级补全。",
-      "tags": [
-        "pi",
-        "扩展开发",
-        "补全",
-        "pi-voice"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-11T03:32:17.685Z",
-      "accessedAt": "2026-08-11T03:32:17.685Z",
-      "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "1152baca-07e7-4c9f-adc9-5acfecc68b14",
       "category": "fact",
       "title": "pi-voice 录音清理序列修复",
@@ -5432,28 +5294,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "36cb9b7f-6e4e-4336-b782-3328b9eddcd4",
-      "category": "fact",
-      "title": "Termux:API 录音 moov atom 行为",
-      "content": "Termux:API 的 MediaRecorder 在 -l 超时自动退出或进程被杀时不写 moov atom，m4a 文件损坏，ffmpeg 转码报 'moov atom not found'；仅 -q 明确停止才正常收尾（输出 'Recording finished'）。修复：pi-voice 在录音进程退出后补发一次 -q 强制服务收尾再转码（提交 a734f5a）。",
-      "tags": [
-        "pi-voice",
-        "termux",
-        "ffmpeg"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T04:37:04.510Z",
-      "updatedAt": "2026-08-11T04:37:04.510Z",
-      "accessedAt": "2026-08-11T04:37:04.510Z",
-      "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false,
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -7215,29 +7055,6 @@
       "deleted": false
     },
     {
-      "id": "906abeb2-9a99-441e-b68c-8cdd353c8a9e",
-      "category": "fact",
-      "title": "pi-voice tmpDir 固化共享存储",
-      "content": "pi-voice.json 已显式固化 tmpDir=/storage/emulated/0/pi-voice/ 兜底；defaultTmpDir 实现已优先共享存储路径（Termux:API 无法写 proot 容器路径）。",
-      "tags": [
-        "pi-voice",
-        "配置",
-        "termux"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-09T14:52:13.231Z",
-      "updatedAt": "2026-08-12T09:42:38.726Z",
-      "accessedAt": "2026-08-09T14:52:13.231Z",
-      "observedAt": "2026-08-09T14:52:13.231Z",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "31e3b0af-c7e8-4452-b53d-fa0a902a24a5"
-    },
-    {
       "id": "bbcbbce3-d7c4-4d23-85d9-12afa552fa31",
       "category": "fact",
       "title": "todo 提醒：agent_end 校验",
@@ -7260,30 +7077,6 @@
         "all"
       ],
       "supersededBy": "8376fccb-a9f4-4e3e-a022-21b5a949fcc5"
-    },
-    {
-      "id": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5",
-      "category": "solutions",
-      "title": "install-wrapper.sh readlink 解析 bug 修复",
-      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。",
-      "tags": [
-        "install-wrapper.sh",
-        "symlink",
-        "wrapper",
-        "pi update"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-12T14:50:07.175Z",
-      "accessedAt": "2026-08-12T14:50:07.175Z",
-      "observedAt": "2026-08-12T14:50:07.175Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
-      "deleted": false
     },
     {
       "id": "047d9ce4-be1a-497d-b4e3-97caf742466d",
@@ -7643,30 +7436,6 @@
       "deleted": false
     },
     {
-      "id": "1c00a9d0-a161-4580-bd7c-e571c411fab4",
-      "category": "fact",
-      "title": "subagent 覆盖方向：both 模式项目级优先",
-      "content": "subagent 扩展 agents.ts 的 discoverAgents 在 both 模式下先 set 用户级再 set 项目级，Map 后者覆盖前者，故项目级 agents 覆盖用户级同名 agent，与内核资源加载方向一致属合理设计（原 README 写'用户级优先'是错的，已修正）。getAgentDir 支持 PI_CODING_AGENT_DIR 环境变量覆盖，可用于隔离测试。tests/test.mjs 已补 3 用例固化（37/37 过）。",
-      "tags": [
-        "subagent",
-        "agents",
-        "覆盖顺序",
-        "pi"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:03:30.224Z",
-      "updatedAt": "2026-08-12T16:03:30.224Z",
-      "accessedAt": "2026-08-12T16:03:30.224Z",
-      "observedAt": "2026-08-12T16:03:30.224Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": false
-    },
-    {
       "id": "93135490-ff7f-4432-8a3f-35fe4e33e06b",
       "category": "solutions",
       "title": "plan_exit 工具缺失的退出兜底",
@@ -7987,30 +7756,6 @@
         "看门狗",
         "配置",
         "restart_hang"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T00:06:13.074Z",
-      "updatedAt": "2026-08-13T00:06:13.074Z",
-      "accessedAt": "2026-08-13T00:06:13.074Z",
-      "observedAt": "2026-08-13T00:06:13.074Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "3f796926-dc9e-4992-97e2-febc9493ec18",
-      "category": "procedure",
-      "title": "restart_hang 通知处理流程",
-      "content": "收到 restart_hang 重启通知后按清单检查 4 项服务：1) SearXNG :8889 应 HTTP 200（重启恢复期可能瞬时失败，需复测）；2) whisper :18766 应返回 {\"ok\":true}；3) tmux 会话应保留；4) crontab 中 pi-cron 应在。全部正常则直接告知'正常空闲重启，环境健康'并继续原任务，不排查看门狗；有异常才排查。该流程已存长期记忆自动注入，避免重复排查。",
-      "tags": [
-        "autopilot",
-        "看门狗",
-        "重启",
-        "检查清单"
       ],
       "confidence": 1,
       "source": "extract",
@@ -8648,30 +8393,6 @@
       "deleted": false
     },
     {
-      "id": "98e5d571-8add-4365-8404-cbe299f8c070",
-      "category": "solutions",
-      "title": "WSL重启后sshd自愈修复",
-      "content": "WSL2重启后sshd起不来的根因：/run/sshd目录丢失、ssh.socket单元在网卡未就绪时bind失败（IO error）拖垮服务。修复：systemd单元加RuntimeDirectory=sshd自动建目录，禁用ssh.socket（systemctl disable ssh.socket）让service直接监听，重启验证自愈OK。",
-      "tags": [
-        "wsl2",
-        "sshd",
-        "systemd",
-        "自愈"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T04:01:11.358Z",
-      "updatedAt": "2026-08-13T04:01:11.358Z",
-      "accessedAt": "2026-08-13T04:01:11.358Z",
-      "observedAt": "2026-08-13T04:01:11.358Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
       "id": "ec46877d-e706-4b4d-bb67-03e757bca635",
       "category": "solutions",
       "title": "GitHub直连被干扰的绕过通道",
@@ -8710,14 +8431,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T04:01:11.358Z",
-      "updatedAt": "2026-08-13T04:01:11.358Z",
+      "updatedAt": "2026-08-13T04:28:29.175Z",
       "accessedAt": "2026-08-13T04:01:11.358Z",
       "observedAt": "2026-08-13T04:01:11.358Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "4007d8ad-ad06-4783-b9f1-0d432d79b506"
     },
     {
       "id": "e231a87a-fa31-4b46-afe5-4622c70ede7d",
@@ -8734,14 +8456,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T04:01:11.358Z",
-      "updatedAt": "2026-08-13T04:01:11.358Z",
+      "updatedAt": "2026-08-13T04:28:29.116Z",
       "accessedAt": "2026-08-13T04:01:11.358Z",
       "observedAt": "2026-08-13T04:01:11.358Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "d1f74466-35bf-494f-8c31-b697d63ddab9"
     },
     {
       "id": "01890043-0083-4ceb-8aa0-dfe20abaf48a",
@@ -8814,31 +8537,6 @@
       "deleted": false
     },
     {
-      "id": "8e3e7dca-7323-4431-9d70-d5d41059ac71",
-      "category": "solutions",
-      "title": "WSL2 容器入站连接：Tailscale serve 转发方案",
-      "content": "本机为 WSL2 镜像网络（.wslconfig networkingMode=mirrored），Tailscale 跑在 Windows 宿主机：容器 eth1 的 tailnet IP 100.117.170.110 仅出站可达，入站流量由 Windows tailscaled 接收，远程会看到\"sshd 未监听\"。解法：Windows PowerShell 执行 tailscale serve --bg --tcp 22 tcp://127.0.0.1:22，tailscale IP:22 转发至 Windows localhost:22，镜像网络直通容器 sshd。撤销用 tailscale serve reset。serve 配置存于 tailscaled 状态，重启自动恢复。容器侧无法观测 serve 状态（hairpin 自测不可靠）。",
-      "tags": [
-        "pi-link",
-        "tailscale",
-        "wsl2",
-        "ssh"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:08:32.735Z",
-      "updatedAt": "2026-08-13T04:01:11.398Z",
-      "accessedAt": "2026-08-12T16:08:32.735Z",
-      "observedAt": "2026-08-12T16:08:32.735Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "f59ef308-b2ec-43b8-91ff-fb1838d88ef0"
-    },
-    {
       "id": "4deba912-cb27-4fd1-92dd-e00e55897808",
       "category": "fact",
       "title": "pi TUI 无鼠标事件处理",
@@ -8882,7 +8580,9 @@
       "accessedAt": "2026-08-13T04:18:14.536Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-13T04:18:14.536Z",
+      "deleted": false
     },
     {
       "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
@@ -8898,6 +8598,223 @@
       "accessedAt": "2026-08-13T04:19:15.120Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
+      "environments": [
+        "all"
+      ]
+    },
+    {
+      "id": "6a69d7d4-d3f4-43f4-b4bf-c4461051b169",
+      "category": "solutions",
+      "title": "WSL2镜像网络tailscaled占用22端口修复",
+      "content": "WSL2镜像网络下Windows tailscaled监听100.117.170.110:22导致容器内22端口整体被占（bind任何地址均失败，容器内看不到监听进程），WSL重启后出现。解法：容器sshd改Port 8022，Windows管理员执行`tailscale serve reset` + `tailscale serve --bg --tcp 22 tcp://127.0.0.1:8022`，远程入口100.117.170.110:22不变。局域网直连改192.168.124.3:8022。",
+      "tags": [
+        "wsl2",
+        "tailscale",
+        "sshd",
+        "端口冲突",
+        "镜像网络"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "ff4ee670-5602-4690-92a8-e41d29020009",
+      "category": "solutions",
+      "title": "WSL重启后sshd不自愈修复",
+      "content": "WSL重启后sshd起不来：/run/sshd目录丢失+ssh.socket在网卡未就绪时bind失败（IO error）拖垮服务。解法：禁用ssh.socket（systemctl disable ssh.socket）让service直接监听，unit加RuntimeDirectory=sshd自动重建目录，监听改8022避免与Windows侧22冲突，实测重启后自愈OK。",
+      "tags": [
+        "wsl2",
+        "sshd",
+        "systemd",
+        "自愈"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "c7a9208e-f46c-4117-a8db-825daca041f9",
+      "category": "solutions",
+      "title": "GitHub网络干扰绕过方案",
+      "content": "2026-08-13 GitHub连接异常：DNS污染github.com解析为127.0.0.1（Windows侧DNS），/etc/hosts写20.205.243.166 github.com绕过（阿里DNS查询的真实IP）；HTTPS直连TLS持续被重置时，拉取走gh-proxy.com镜像，推送走SSH over 443（git push ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git，需先在GitHub网页添加本机公钥），origin已切换为SSH通道。",
+      "tags": [
+        "github",
+        "dns污染",
+        "gh-proxy",
+        "ssh-443",
+        "网络"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "d1f74466-35bf-494f-8c31-b697d63ddab9",
+      "category": "solutions",
+      "title": "systemd跑pi-whisper.sh需显式HOME",
+      "content": "pi-whisper.sh带set -u，systemd环境无HOME变量导致脚本退出，服务陷入失败重启循环（端口占用但进程反复拉起）。解法：unit文件加Environment=HOME=/root；同时pi-whisper.sh新增run子命令（读pi-voice.json的token/模型/设备+CUDA库路径，exec前台）供systemd使用。",
+      "tags": [
+        "systemd",
+        "whisper",
+        "环境变量",
+        "踩坑"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "55208979-2a81-46f0-80d7-d767f157de62",
+      "category": "procedure",
+      "title": "SearXNG/whisper接入systemd自启",
+      "content": "systemd/pi-searxng.service与pi-whisper.service模板（%PI_HOME%占位、Restart=always、After=network-online.target）；pi-whisper.sh加run子命令；rebuild.sh Phase 2-G平台检测（无/run/systemd/system自动跳过，Termux/proot/容器不装）；commit e8ffaa2。两服务常驻约460MB（whisper 262MB+SearXNG 199MB），空闲CPU≈0，kill -9后6秒内自动拉起。",
+      "tags": [
+        "systemd",
+        "自启",
+        "searxng",
+        "whisper",
+        "rebuild"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "4007d8ad-ad06-4783-b9f1-0d432d79b506",
+      "category": "fact",
+      "title": "tmux3.4右键菜单真相与中文化",
+      "content": "pi TUI里右键弹出的小菜单不是pi功能，是tmux 3.4默认绑定MouseDown3Pane→display-menu，内含Kill（kill-pane直接杀进程导致pi退出）、Split、Swap等项。禁用用`unbind -T root MouseDown3Pane`。2026-08-13已中文化6条绑定（bcce788：右键/Alt+右键×pane/status/会话名），功能不变。",
+      "tags": [
+        "tmux",
+        "右键菜单",
+        "display-menu",
+        "中文化"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "94a57aec-bedd-42e1-b97c-aae5bc585d5e",
+      "category": "fact",
+      "title": "WSL2环境配置与多设备互连体系",
+      "content": "用户环境：WSL2镜像网络容器，15G内存，Windows侧用户cyf@MYPC；tailscale tailnet IP 100.117.170.110（Windows tailscaled接管22入站），局域网192.168.124.3；容器sshd监听8022。公钥合集keys/authorized_keys含3条（远程设备/本机/Windows），任意设备pull+pi-link-keys.sh install即两两免密，pi-link可用/link send跨设备调派。",
+      "tags": [
+        "wsl2",
+        "环境",
+        "tailscale",
+        "pi-link",
+        "多设备"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "2d2b57ab-e014-42fd-985c-15ca00143ae3",
+      "category": "preference",
+      "title": "界面中文化与手机按需启动偏好",
+      "content": "用户偏好：定制/翻译界面时功能保持完全不变，仅文字中文化（如tmux右键菜单）；关心手机端（Termux/Android）资源消耗，倾向按需启动（whisper tiny模型+用完即停）而非常驻，本机WSL可用systemd自启，手机端不受影响（Termux无systemd，rebuild自动跳过）。",
+      "tags": [
+        "偏好",
+        "中文化",
+        "termux",
+        "资源消耗"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:28:28.982Z",
+      "updatedAt": "2026-08-13T04:28:28.982Z",
+      "accessedAt": "2026-08-13T04:28:28.982Z",
+      "observedAt": "2026-08-13T04:28:28.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "405b927d-6706-4dd7-a4ad-80af795c3ddf",
+      "category": "fact",
+      "title": "pi-link 设备拓扑：termux=100.114.171.18:8022 root",
+      "content": "pi-link 设备拓扑：termux 手机（Android/Termux）= tailnet IP 100.114.171.18（短时间不变），SSH 端口 8022，用户 root，免密认证已通（本机 id_ed25519）。Windows 宿主 = cyf@MYPC（tailscaled 在 Windows，容器内无 tailscale CLI）。本机 WSL = mypc-wsl。公钥标签：termux@100.114.171.18 / mypc-wsl / win-host，集合在仓库 keys/authorized_keys。pi-link.json（gitignored）在 ~/.pi/pi-link.json，扩展启动时读一次，修改后需重启 pi 生效。",
+      "tags": [
+        "pi-link",
+        "termux",
+        "设备",
+        "拓扑"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T04:48:22.921Z",
+      "updatedAt": "2026-08-13T04:48:22.921Z",
+      "accessedAt": "2026-08-13T04:48:22.921Z",
       "environments": [
         "all"
       ]
