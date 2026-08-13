@@ -6613,6 +6613,28 @@
       "deleted": false
     },
     {
+      "id": "d8258fef-c0dc-4417-8837-fb8cbcaa70e2",
+      "category": "fact",
+      "title": "tmux #() 超时限制与状态栏可靠方案",
+      "content": "tmux 3.4 状态栏 #() 命令有极短执行超时（实测 <50ms，慢命令/脚本会被杀且输出丢弃，状态栏空白）；且 #() 输出中的 ANSI ESC 序列会被剥离（残留垃圾文本），只支持 tmux 格式指令 #[fg=...]。可靠做法：状态文件模式——常驻循环（flock 幂等）每 N 秒生成含 #[fg=] 指令的文本文件，状态栏用 #(cat 文件) 读取（cat 瞬时命令安全）。已实现于 ~/.pi/tmux/tmux-status.sh + status-loop.sh。",
+      "tags": [
+        "tmux",
+        "status-bar",
+        "坑"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T01:47:33.915Z",
+      "updatedAt": "2026-08-12T01:47:33.915Z",
+      "accessedAt": "2026-08-12T01:47:33.915Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-12T01:47:33.915Z",
+      "deleted": false
+    },
+    {
       "id": "9c93b08a-87a2-40f5-b59a-9b7fd4672560",
       "category": "fact",
       "title": "whisper 繁体输出根因与 opencc 依赖",
@@ -8966,29 +8988,6 @@
       "supersededBy": "4007d8ad-ad06-4783-b9f1-0d432d79b506"
     },
     {
-      "id": "405b927d-6706-4dd7-a4ad-80af795c3ddf",
-      "category": "fact",
-      "title": "pi-link 设备拓扑：termux=100.114.171.18:8022 root",
-      "content": "pi-link 设备拓扑：termux 手机（Android/Termux）= tailnet IP 100.114.171.18（短时间不变），SSH 端口 8022，用户 root，免密认证已通（本机 id_ed25519）。Windows 宿主 = cyf@MYPC（tailscaled 在 Windows，容器内无 tailscale CLI）。本机 WSL = mypc-wsl。公钥标签：termux@100.114.171.18 / mypc-wsl / win-host，集合在仓库 keys/authorized_keys。pi-link.json（gitignored）在 ~/.pi/pi-link.json，扩展启动时读一次，修改后需重启 pi 生效。",
-      "tags": [
-        "pi-link",
-        "termux",
-        "设备",
-        "拓扑"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T04:48:22.921Z",
-      "updatedAt": "2026-08-13T04:48:22.921Z",
-      "accessedAt": "2026-08-13T04:48:22.921Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-13T04:48:22.921Z",
-      "deleted": false
-    },
-    {
       "id": "5540dc80-a702-4b9c-909c-fcf6258869af",
       "category": "solutions",
       "title": "GitHub DNS 污染下 SSH over 443 推送通道",
@@ -9230,6 +9229,30 @@
       "deleted": false
     },
     {
+      "id": "d43cab2d-ce36-4de7-9b21-c4dd79a70c35",
+      "category": "fact",
+      "title": "pi-link 通道架构：send 与 attach 区别",
+      "content": "pi-link 的 link_send 是后台 RPC：临时拉起独立 pi 实例（加载扩展→处理→退出）执行并回传结果，不会出现在目标设备 TUI 主会话（用户易误以为未生效）。link attach 才能打进主会话：读远程 pi-link-state.json 取 tmuxSession → ssh + tmux load-buffer/paste-buffer 粘贴进远程 pi 输入框，硬依赖远程 tmux 会话与状态文件（由常驻交互式 pi 维护）。pi-link.json 在扩展启动时读一次，新增设备配置需重启 pi 生效。",
+      "tags": [
+        "pi-link",
+        "attach",
+        "架构",
+        "RPC"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T07:07:53.438Z",
+      "updatedAt": "2026-08-13T07:07:53.438Z",
+      "accessedAt": "2026-08-13T07:07:53.438Z",
+      "observedAt": "2026-08-13T07:07:53.438Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
       "id": "2031e8b8-7760-4761-a047-922268215f4c",
       "category": "procedure",
       "title": "记忆库去重清理流程",
@@ -9254,17 +9277,17 @@
       "deleted": false
     },
     {
-      "id": "a91c7441-136f-4e17-b1d0-b0e64c376dd7",
+      "id": "fdcf417c-5eb6-438a-814e-6575e6f0b690",
       "category": "fact",
-      "title": "pi-link 设备拓扑：termux=100.114.171.18:8022",
-      "content": "本机 WSL（mypc-wsl）与 termux 的 pi-link 连接配置：termux 设备 Tailscale IP=100.114.171.18（短时间不变，可写入记忆），SSH 端口 8022，用户 root，已写入 ~/.pi/pi-link.json（gitignored，本机独立）。3 条公钥加设备标签（termux@100.114.171.18 / mypc-wsl / win-host）推送 f5e8904。link_send 端到端双向打通（tailnet 延迟约 2s，回复 29-34s）。",
+      "title": "三层记忆机制分工",
+      "content": "pi 记忆分三层：短期 ctx notes（需显式 ctx_note 工具写入，会话内跨压缩保留中间状态，不自动写入，空笔记≠故障）；摘要 summaries.json（自动生成，压缩后上下文衔接）；长期 entries.json（自动提取+手动 memory_store，跨会话沉淀）。长任务多步操作建议主动用 ctx_note 存里程碑（如已完成 2/4 步）防意外压缩失忆；代码修复等进度由 git 提交本身承载记录职责。",
       "tags": [
-        "pi-link",
-        "termux",
-        "tailscale",
-        "ssh"
+        "memory",
+        "ctx-notes",
+        "机制",
+        "摘要"
       ],
-      "confidence": 1,
+      "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T07:07:53.438Z",
@@ -9352,6 +9375,24 @@
       "deleted": false
     },
     {
+      "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 63,
+      "createdAt": "2026-08-10T10:02:42.622Z",
+      "updatedAt": "2026-08-13T13:04:17.610Z",
+      "accessedAt": "2026-08-13T13:04:17.610Z",
+      "observedAt": "2026-08-10T10:02:42.622Z",
+      "deleted": false,
+      "environments": [
+        "all"
+      ]
+    },
+    {
       "id": "bfa563bc-d9c0-4bb0-88f6-98d5437dc984",
       "category": "fact",
       "title": "pi-link 设备拓扑（4 台设备，termux-phone 命名）",
@@ -9365,279 +9406,251 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-13T11:03:40.433Z",
-      "updatedAt": "2026-08-13T11:03:40.433Z",
+      "updatedAt": "2026-08-13T12:17:18.253Z",
       "accessedAt": "2026-08-13T11:03:40.433Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-13T11:03:40.433Z",
+      "deleted": true,
+      "supersededBy": "6b20e9c0-d236-464a-a63c-f211331d29da"
+    },
+    {
+      "id": "6b20e9c0-d236-464a-a63c-f211331d29da",
+      "category": "fact",
+      "title": "pi-link 设备拓扑（4 台，termux-ubuntu 命名）",
+      "content": "pi-link 4 台设备：termux-ubuntu（本机，Termux 容器中的 Ubuntu PRoot 环境，root@100.114.171.18:8022）、mypc-wsl（root@100.117.170.110:22，tmux 会话 0、LD_PRELOAD 提示）、termux-phone（另一台设备的 Termux 原始环境非 proot，u0_a999@100.74.15.15:8022，Tailscale）、win-host（Windows 宿主，连接信息待补充，登录 shell 需 git-bash/WSL）。前三台实测双向 attach 与 link_send 互通。termux-phone 建议配 selfName（默认 hostname 是 localhost）。",
+      "tags": [
+        "pi-link",
+        "设备拓扑",
+        "termux-phone"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
       "deleted": false
     },
     {
-      "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 59,
-      "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-13T12:04:52.930Z",
-      "accessedAt": "2026-08-13T12:04:52.930Z",
-      "observedAt": "2026-08-10T10:02:42.622Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "ed549a29-52fd-46b5-aa04-e754745ed688",
-      "category": "fact",
-      "title": "pi-link 三设备拓扑与连接信息",
-      "content": "本机 mypc-wsl；termux-ubuntu=root@100.114.171.18:8022（已接入 pi-link.json）；termux-phone=u0_a999@100.74.15.15:8022（端口开放、公钥已授权，但尚未加入 pi-link.json）；win-host 为 Windows tailscale 宿主机。pi-link.json 为 gitignored 本机独立配置，改动后旧版需重启 pi 生效，新版 import-card 机制免重启。",
+      "id": "8d761c32-30aa-4fb9-b5f3-d14d414ab904",
+      "category": "solutions",
+      "title": "Termux 原始环境 /tmp 不可写，用 $HOME 临时文件",
+      "content": "pi-link attach 中间文件原用 /tmp/pi-link-msg.txt，在 Termux 原始环境（非 proot）重定向失败（No such file or directory）断掉整条 base64 命令链导致\"远程命令异常退出\"。修复：改用 $HOME/.pi-link-msg.tmp，PRoot 与 Termux 原始环境均可用。提交 4142fec。",
       "tags": [
         "pi-link",
         "termux",
-        "设备互联"
+        "tmp",
+        "attach"
       ],
-      "confidence": 0.95,
+      "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.453Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "49260c34-a3c8-46f7-b5f1-9905559a8b95",
-      "category": "reference",
-      "title": "link_send 与 attach 通道机制区别",
-      "content": "link_send 是后台 RPC：远程临时拉起独立 pi 实例执行任务、结果回传，不会出现在远程主会话 TUI 窗口（用户常误以为'没变化'）。link attach 通过 ssh + tmux load-buffer/paste-buffer 将消息粘贴进远程主会话 pi 输入框，硬依赖远程 tmux 会话和 pi-link 新版扩展生成的 pi-link-state.json（含 tmuxSession 字段），两者缺失时 attach 必然失败。",
-      "tags": [
-        "pi-link",
-        "attach",
-        "通道机制"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "e35950f3-e533-4bdb-8231-be3d101e97ca",
-      "category": "reference",
-      "title": "attach 注入三种场景行为约定",
-      "content": "pi-link attach 输入框判定：输入框为空→自动粘贴+回车直发；输入框有内容→只粘贴不回车，等接收方手动回车发送；探测与粘贴合并为原子命令，整体替换输入框内容、不与既有输入拼接。对应提交 7defc26（空/占用场景）、33095d0（排除分隔线）、50d1f3d（原子命令）、4933c09（光标定位判定）。",
-      "tags": [
-        "pi-link",
-        "attach",
-        "测试"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "2d861c94-47fc-4407-95da-eaf9e772b393",
-      "category": "fact",
-      "title": "短期记忆 ctx notes 机制澄清",
-      "content": "ctx notes（会话内笔记）必须显式调用 ctx_note 工具写入，不会自动填充；为空不是故障。三层记忆分工：短期=显式 ctx_note（会话内中间状态）、摘要=自动 summaries.json（压缩衔接）、长期=自动提取+手动 memory_store（跨会话）。长任务进行中建议主动用 ctx_note 存里程碑防压缩失忆，但 git 提交等可追溯记录可替代。",
-      "tags": [
-        "记忆机制",
-        "ctx-notes"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "2c97b487-90f3-4e5a-814a-9befa6190729",
-      "category": "procedure",
-      "title": "长期记忆去重清理流程",
-      "content": "对 entries.json 做标题相似聚类+内容相似度双重确认后批量删除：重复组保留最新/最全 1 条删其余；删除前备份（本次 397→384 删 13 条，备份 /tmp/entries-backup-1304.json）；标题相似但内容不同的同主题组（如 ffmpeg anullsrc ×4、恢复会话 schema ×4）保守跳过不合并，避免丢信息；语义被取代的旧条目（如 settings.json extensions 旧表述）可单独确认删除。",
-      "tags": [
-        "pi-memory",
-        "清理",
-        "去重"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "17d89598-a204-4eff-a7b6-a1d925eaaeca",
-      "category": "solutions",
-      "title": "tmux 状态栏 status-loop 直写修复",
-      "content": "Termux tmux 3.7b 中 #() 命令替换失效导致状态栏不刷新。修复：status-loop.sh 每 3 秒用 set-option 直写状态栏，flock 幂等防多实例+锁文件入库（提交 7196aa3/769de8b）。注意：旧版无 flock 代码启动的进程不会被新锁拦截，pull 后需 pkill -f status-loop.sh 或重启 tmux 保证单实例。",
-      "tags": [
-        "tmux",
-        "status-loop",
         "termux"
       ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "supersededBy": "bc5b8682-9c48-4deb-b6e3-3a6d503f642c",
+      "deleted": true
     },
     {
-      "id": "4728fc10-1d4e-4fcf-9342-e8a6089dd22f",
+      "id": "bc5b8682-9c48-4deb-b6e3-3a6d503f642c",
       "category": "solutions",
-      "title": "tsconfig paths 环境隔离根治方案",
-      "content": "共享 tsconfig.json 的 paths 清空为 {}，避免环境相关路径入库互相覆盖；rebuild.sh Phase 2-D 为每设备生成 gitignored 的 tsconfig.local.json（extends 共享配置+本机 paths 指向本地 pi 安装根 /root/.local/share/pi-node/...）。验证命令：tsc -p tsconfig.local.json。提交 6d96b64，解决多环境 tsc 路径冲突根因。",
+      "title": "PRoot attach LD_PRELOAD 兼容回退（显式解释器）",
+      "content": "Termux sshd 的 LD_PRELOAD（libtermux-exec）破坏 proot 内 Ubuntu tmux 动态加载（required file not found）。修复（0d61927）：探测裸 tmux 失败后回退显式解释器 `LD_PRELOAD= /lib/ld-linux-aarch64.so.1 /usr/bin/tmux`，赋值放函数体内避免词首赋值陷阱（Bash 词首 VAR=x 在带引号命令前不生效）。termux-phone（Termux 原始环境）→ termux-ubuntu（PRoot）attach 实测成功。",
       "tags": [
+        "pi-link",
+        "PRoot",
+        "LD_PRELOAD",
+        "tmux"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
+    },
+    {
+      "id": "7ce4ee7c-9cd1-4376-81e0-7f584c6453db",
+      "category": "solutions",
+      "title": "tsconfig paths 根治：每设备 tsconfig.local.json",
+      "content": "pi-tools 多设备共享 tsconfig.json 曾含环境 paths 被误提交互相覆盖。根治方案（6d96b64）：共享 tsconfig.json 不再含 paths（\"paths\": {}），每设备 tsconfig.local.json 由 rebuild Phase 2-D 生成（extends 共享配置 + 本机 pi 安装根 paths），gitignored 不提交；test-all.sh 自动优先 tsconfig.local.json。本机手动生成方式：按 Phase 2-D 逻辑创建。",
+      "tags": [
+        "pi-tools",
         "tsconfig",
-        "rebuild",
-        "多环境"
+        "多环境",
+        "rebuild"
       ],
-      "confidence": 0.95,
+      "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
     },
     {
-      "id": "5c92cf9c-4609-4617-bbde-b48f48127b5b",
-      "category": "fact",
-      "title": "Termux 平台适配与镜像测速机制",
-      "content": "提交 c6fca9a 为 Termux 平台适配（16 文件）：rebuild.sh 以 [ -d /data/data/com.termux ] 条件隔离 Termux 分支（包名映射、GitHub 镜像测速选优、venv /tmp 回退）；新增 termux-prereq.sh、patch-playwright-core.mjs；pi-wrapper.sh Termux 条件导出浏览器路径+headless；tmux.conf extended-keys-format 有 if-shell 3.7+ 版本保护（本机 tmux 3.4 自动跳过）。镜像测速选优（直连/gh-proxy 候选、空速度不误选）对直连不稳的 WSL 环境同样有利。",
-      "tags": [
-        "rebuild",
-        "termux",
-        "镜像"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:11.634Z",
-      "updatedAt": "2026-08-13T12:17:11.634Z",
-      "accessedAt": "2026-08-13T12:17:11.634Z",
-      "observedAt": "2026-08-13T12:17:11.634Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
-    },
-    {
-      "id": "d43cab2d-ce36-4de7-9b21-c4dd79a70c35",
-      "category": "fact",
-      "title": "pi-link 通道架构：send 与 attach 区别",
-      "content": "pi-link 的 link_send 是后台 RPC：临时拉起独立 pi 实例（加载扩展→处理→退出）执行并回传结果，不会出现在目标设备 TUI 主会话（用户易误以为未生效）。link attach 才能打进主会话：读远程 pi-link-state.json 取 tmuxSession → ssh + tmux load-buffer/paste-buffer 粘贴进远程 pi 输入框，硬依赖远程 tmux 会话与状态文件（由常驻交互式 pi 维护）。pi-link.json 在扩展启动时读一次，新增设备配置需重启 pi 生效。",
+      "id": "a921a0de-3cb7-43d0-b019-723f001af181",
+      "category": "solutions",
+      "title": "attach 身份前缀与光标行判定（防拼接）",
+      "content": "pi-link attachToRemote 发送消息自动加 `[来自 <selfName>]` 前缀（已含则不重复，selfName 未配置用 hostname），提交 f2fbf0d。消息拼接修复（4933c09）：pi TUI 输入内容显示在消息区尾部非底部固定行，tail -3 抓不到；改用 tmux #{cursor_y} 定位光标行（光标始终在输入末尾），光标行非空且非 `~` 判定有内容→等待清空 60s 超时拒绝发送，探测与粘贴在同一条原子命令内完成。",
       "tags": [
         "pi-link",
         "attach",
-        "架构",
-        "RPC"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T12:17:11.725Z",
-      "accessedAt": "2026-08-13T07:07:53.438Z",
-      "observedAt": "2026-08-13T07:07:53.438Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "49260c34-a3c8-46f7-b5f1-9905559a8b95"
-    },
-    {
-      "id": "fdcf417c-5eb6-438a-814e-6575e6f0b690",
-      "category": "fact",
-      "title": "三层记忆机制分工",
-      "content": "pi 记忆分三层：短期 ctx notes（需显式 ctx_note 工具写入，会话内跨压缩保留中间状态，不自动写入，空笔记≠故障）；摘要 summaries.json（自动生成，压缩后上下文衔接）；长期 entries.json（自动提取+手动 memory_store，跨会话沉淀）。长任务多步操作建议主动用 ctx_note 存里程碑（如已完成 2/4 步）防意外压缩失忆；代码修复等进度由 git 提交本身承载记录职责。",
-      "tags": [
-        "memory",
-        "ctx-notes",
-        "机制",
-        "摘要"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T12:17:11.809Z",
-      "accessedAt": "2026-08-13T07:07:53.438Z",
-      "observedAt": "2026-08-13T07:07:53.438Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "2d861c94-47fc-4407-95da-eaf9e772b393"
-    },
-    {
-      "id": "d8258fef-c0dc-4417-8837-fb8cbcaa70e2",
-      "category": "fact",
-      "title": "tmux #() 超时限制与状态栏可靠方案",
-      "content": "tmux 3.4 状态栏 #() 命令有极短执行超时（实测 <50ms，慢命令/脚本会被杀且输出丢弃，状态栏空白）；且 #() 输出中的 ANSI ESC 序列会被剥离（残留垃圾文本），只支持 tmux 格式指令 #[fg=...]。可靠做法：状态文件模式——常驻循环（flock 幂等）每 N 秒生成含 #[fg=] 指令的文本文件，状态栏用 #(cat 文件) 读取（cat 瞬时命令安全）。已实现于 ~/.pi/tmux/tmux-status.sh + status-loop.sh。",
-      "tags": [
         "tmux",
-        "status-bar",
-        "坑"
+        "身份前缀"
       ],
-      "confidence": 0.7,
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
+    },
+    {
+      "id": "d384b56e-4de2-4bcd-b1e5-d9ee7ef49abd",
+      "category": "solutions",
+      "title": "authorized_keys 须按密钥体去重，文件按设备分组",
+      "content": "pi-tools keys/authorized_keys 共享文件按设备分组格式（顶部用途+维护规则，每设备一组含连接信息与说明，尾部提醒块），commit 355b545。install 去重 bug：按整行（含尾部 comment）去重会因旧安装的 comment 变体（root@localhost/pi-link@MYPC）导致重复授权（7 条含 3 条重复）；修复为按密钥体（前两字段）去重。",
+      "tags": [
+        "pi-tools",
+        "authorized_keys",
+        "去重",
+        "install"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
+    },
+    {
+      "id": "f71045e4-9c58-400a-8c70-dd0341d975d7",
+      "category": "solutions",
+      "title": "spawn('ssh') 必须监听 error 事件",
+      "content": "pi-link link.ts 三处 spawn('ssh') 原无 error 事件监听：ssh 缺失时未捕获异常直接崩溃宿主 pi 进程 + inflight 锁泄漏 + promise 永久挂起（/link status 卡死）。修复（9f70412）：全部补 error 监听（含 stdin error 吞掉），并新增单元测试验证错误时锁正确释放。审查 HIGH 级问题，后续新增 ssh 调用须遵守。",
+      "tags": [
+        "pi-link",
+        "spawn",
+        "error处理",
+        "代码审查"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
+    },
+    {
+      "id": "5b92890d-657b-4519-afe1-a40a79162da1",
+      "category": "preference",
+      "title": "共享文件禁止\"本机\"相对视角注释",
+      "content": "用户要求：跨设备共享文件（如 keys/authorized_keys、README）中不应出现\"本机/当前设备\"这类相对视角表述（每台设备视角不同会歧义），须改为中性描述（如\"执行设备\"）；设备命名要清晰反映环境（termux → termux-ubuntu 标明是 Termux 容器中的 Ubuntu PRoot）。commit 03ffd18。",
+      "tags": [
+        "用户偏好",
+        "共享文件",
+        "命名",
+        "pi-tools"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T12:17:18.122Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
+    },
+    {
+      "id": "87f0aa40-8804-47e6-95f9-3b4cef43213b",
+      "category": "fact",
+      "title": "pi-link 局域网地址与 altHosts 配置（192.168.124.x）",
+      "content": "pi-link 局域网地址（同一 Wi-Fi 192.168.124.0/24，DHCP 可能变动）：termux-ubuntu=192.168.124.2:8022（本机）、mypc-wsl=192.168.124.3:8022（注意 WSL sshd 局域网监听 8022 非 22）、termux-phone=192.168.124.4:8022。本机 pi-link.json 已配 altHosts：remote/termux-phone 主地址=局域网、altHosts=Tailscale 兜底（18a39ea failover）。实测：Termux 上 ssh 握手本身 ~0.8s（局域网 807ms vs Tailscale 869ms，差异小——握手开销主导），局域网优势主要是不依赖 Tailscale 可用性。",
+      "tags": [
+        "pi-link",
+        "局域网",
+        "altHosts"
+      ],
+      "confidence": 1,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-12T01:47:33.915Z",
-      "updatedAt": "2026-08-13T12:17:11.887Z",
-      "accessedAt": "2026-08-12T01:47:33.915Z",
+      "createdAt": "2026-08-13T12:55:16.058Z",
+      "updatedAt": "2026-08-13T12:55:16.058Z",
+      "accessedAt": "2026-08-13T12:55:16.058Z",
+      "environments": [
+        "termux"
+      ],
+      "observedAt": "2026-08-13T12:55:16.058Z",
+      "deleted": false
+    },
+    {
+      "id": "9caa61b7-5b80-46df-9634-505c8c038ebc",
+      "category": "solutions",
+      "title": "pi-link attach 并发竞态修复（串行化+唯一 buffer）",
+      "content": "三设备并发测试发现 attach 竞态：并发 attach 同一设备时消息拼接/重复（对方收到 X 两次、Y 丢失）。根因：①attach 无进程内互斥（sendToDevice 有 in-flight 锁，attach 没有）②tmux buffer 固定名 pi-link 被并发 load-buffer 互相覆盖。修复（74e5c0b）：withAttachLock 链式串行（同设备 attach 排队）+ buffer 名时间戳+随机唯一化。串行后第二个 attach 探测到对方 busy 会被 busy 防护拒绝（不注入不拼接）。跨设备竞态（两台不同主机同时 attach 同一目标）仍无法进程内解决——由唯一 buffer 名+原子探测粘贴最小化，已知限制。",
+      "tags": [
+        "pi-link",
+        "并发",
+        "attach",
+        "竞态"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T13:05:14.185Z",
+      "updatedAt": "2026-08-13T13:05:14.185Z",
+      "accessedAt": "2026-08-13T13:05:14.185Z",
       "environments": [
         "all"
       ],
-      "observedAt": "2026-08-12T01:47:33.915Z",
-      "deleted": true,
-      "supersededBy": "17d89598-a204-4eff-a7b6-a1d925eaaeca"
+      "observedAt": "2026-08-13T13:05:14.185Z",
+      "deleted": false
     }
   ]
 }
