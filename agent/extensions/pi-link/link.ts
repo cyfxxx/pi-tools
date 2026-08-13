@@ -321,9 +321,21 @@ export function remoteExec(device: DeviceConfig, cmd: string, timeoutMs = 15000)
   })
 }
 
+/**
+ * Termux 双 home 问题：pi 扩展（proot 内）homedir()=/root，但 sshd 会话 ~=Termux home
+ * （/data/data/com.termux/files/home）——远程读取必须双路径回退。
+ * rel 以 .pi/ 开头（不带 ~）。
+ */
+const homeCat = (rel: string): string =>
+  `F="$HOME/${rel}"; [ -f "$F" ] || F=/root/${rel}; cat "$F" 2>/dev/null`
+
+/** 会话文件 glob 的双路径回退（--root-- TUI 会话目录） */
+const homeGlob = (rel: string): string =>
+  `(ls -t "$HOME/${rel}" 2>/dev/null || ls -t /root/${rel} 2>/dev/null) | head -1`
+
 /** 读取远程状态文件（不存在→null） */
 export async function readRemoteState(device: DeviceConfig): Promise<{ state: ReturnType<typeof parseState> | null; detail?: string }> {
-  const r = await remoteExec(device, 'cat ~/.pi/pi-link-state.json 2>/dev/null')
+  const r = await remoteExec(device, homeCat('.pi/pi-link-state.json'))
   if (r.code !== 0 || !r.out.trim()) return { state: null, detail: r.err.trim().slice(0, 200) || undefined }
   const state = parseState(r.out.trim())
   return { state, detail: state ? undefined : '远程状态文件格式无效' }
@@ -334,9 +346,10 @@ export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ o
   // 优先状态文件记录的当前会话，否则找 --root-- 最新会话
   const { state } = await readRemoteState(device)
   const sessionFile = state?.currentSessionFile
+  const glob = `(ls -t "$HOME/.pi/agent/sessions/"*/*.jsonl 2>/dev/null || ls -t /root/.pi/agent/sessions/*/*.jsonl 2>/dev/null) | head -1`
   const cmd = sessionFile
-    ? `tail -n ${lines} ${JSON.stringify(sessionFile)} 2>/dev/null || ls -t ~/.pi/agent/sessions/*/*.jsonl 2>/dev/null | head -1 | xargs -I{} tail -n ${lines} {}`
-    : `F=$(ls -t ~/.pi/agent/sessions/*/*.jsonl 2>/dev/null | head -1); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
+    ? `tail -n ${lines} ${JSON.stringify(sessionFile)} 2>/dev/null || F=$(${glob}); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
+    : `F=$(${glob}); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
   const r = await remoteExec(device, cmd, 20000)
   if (r.code !== 0 && !r.out) return { ok: false, text: '', error: r.err.trim().slice(0, 200) || '读取失败' }
   // 会话文件是 JSONL——压缩显示（type + 关键字段）
@@ -412,7 +425,7 @@ export function resetSendGuards(): void {
 
 /** 读取远程信箱（远程 agent 自主完成的回复记录） */
 export async function readRemoteOutbox(device: DeviceConfig): Promise<{ ok: boolean; entries?: OutboxEntry[]; detail?: string }> {
-  const r = await remoteExec(device, 'cat ~/.pi/pi-link-outbox.json 2>/dev/null')
+  const r = await remoteExec(device, homeCat('.pi/pi-link-outbox.json'))
   if (r.code !== 0 || !r.out.trim()) {
     return { ok: false, detail: r.err.trim().slice(0, 200) || '远程信箱为空或不可读（远程需同步代码并重启 pi）' }
   }
