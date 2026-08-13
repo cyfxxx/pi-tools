@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { join } from 'path'
+import { tmpdir } from 'os'
 import { touchActive, isActive, readActive, selfName, ACTIVE_WINDOW_MS, activeFilePath, isUnattendedEnv } from '../active'
 import { parseState } from '../state'
 
-const TMP = '/tmp/pi-link-test-active'
+// os.tmpdir()：Linux=/tmp，Termux=$PREFIX/tmp（无 /tmp 目录）
+const TMP = join(tmpdir(), 'pi-link-test-active')
 
 describe('pi-link: active 活跃机制 (T2-1)', () => {
   beforeEach(() => {

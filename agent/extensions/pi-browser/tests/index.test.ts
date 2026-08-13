@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { join } from 'path'
+import { tmpdir } from 'os'
 
 const registeredTools: Array<{ name: string; execute: Function }> = []
 const lifecycleHandlers: Record<string, Function> = {}
@@ -92,7 +93,9 @@ describe('pi-browser (entry point)', () => {
 
   it('should clean screenshots on session_shutdown', async () => {
     const fs = await import('fs/promises')
-    const testFile = '/tmp/pi-screenshot-test-clean.png'
+    const shotDir = join(tmpdir(), 'pi-browser-screenshots')
+    await fs.mkdir(shotDir, { recursive: true })
+    const testFile = join(shotDir, 'pi-screenshot-test-clean.png')
     await fs.writeFile(testFile, 'test')
 
     const main = (await import('../index')).default
@@ -106,8 +109,10 @@ describe('pi-browser (entry point)', () => {
 
   it('should trim screenshots on session_compact', async () => {
     const fs = await import('fs/promises')
+    const shotDir = join(tmpdir(), 'pi-browser-screenshots')
+    await fs.mkdir(shotDir, { recursive: true })
     for (let i = 0; i < 25; i++) {
-      await fs.writeFile(`/tmp/pi-screenshot-test-compact-${i}.png`, 'test')
+      await fs.writeFile(join(shotDir, `pi-screenshot-test-compact-${i}.png`), 'test')
     }
 
     const main = (await import('../index')).default
@@ -115,10 +120,10 @@ describe('pi-browser (entry point)', () => {
 
     await lifecycleHandlers['session_compact']()
 
-    const files = (await fs.readdir('/tmp'))
+    const files = (await fs.readdir(shotDir))
       .filter(f => f.startsWith('pi-screenshot-test-compact-'))
     expect(files.length).toBeLessThanOrEqual(20)
 
-    await Promise.all(files.map(f => fs.unlink(join('/tmp', f))))
+    await Promise.all(files.map(f => fs.unlink(join(shotDir, f))))
   })
 })

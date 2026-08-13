@@ -62,6 +62,15 @@ if [ -n "$PI_JS" ] && [ -f "$PI_JS" ]; then
   export PI_DIST="$(dirname "$PI_JS")"
 fi
 
+# Termux 重建：cloakbrowser 官方只发布 linux/darwin/win 预编译包，
+# Termux (platform=android) 用本地 Chromium（pkg install x11-repo chromium），
+# playwright-core 已打 android→linux 补丁（见 rebuild 记录）。
+export CLOAKBROWSER_BINARY_PATH="${CLOAKBROWSER_BINARY_PATH:-/data/data/com.termux/files/usr/bin/chromium-browser}"
+
+# Termux 无 X server：浏览器默认 headless（有头需要 termux-x11；
+# 桌面环境（WSLg/原生 X）不受影响，可显式 export PI_WEB_TOOLKIT_HEADLESS=false 覆盖）
+[ -d /data/data/com.termux ] && export PI_WEB_TOOLKIT_HEADLESS="${PI_WEB_TOOLKIT_HEADLESS:-true}"
+
 STATE_FILE="$HOME/.pi/agent/.pi-admin-state.json"
 CRASH_FILE="$HOME/.pi/agent/.pi-autopilot-crash.json"
 LASTGOOD_FILE="$HOME/.pi/agent/.pi-autopilot-lastgood.json"

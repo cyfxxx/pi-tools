@@ -8,11 +8,14 @@ let LOG_DIR = ''
 
 const { __setAgentDir } = await import('./__mocks__/pi-coding-agent')
 
+// 必须在 import '../notifications' 之前设置：storage.ts 顶层 `const AGENT_DIR = getAgentDir()`
+// 在模块收集期求值，beforeAll 里再设置会因时序拿到 mock 默认值（/tmp 路径，Termux 无 /tmp）。
+TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-scheduler-notif-'))
+__setAgentDir(TEST_DIR)
+// logDir() = AGENT_DIR/../logs/scheduler，需与扩展实现一致；先清残留避免跨运行污染
+LOG_DIR = join(TEST_DIR, '..', 'logs', 'scheduler')
+
 beforeAll(async () => {
-  TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-scheduler-notif-'))
-  __setAgentDir(TEST_DIR)
-  // logDir() = AGENT_DIR/../logs/scheduler，需与扩展实现一致；先清残留避免跨运行污染
-  LOG_DIR = join(TEST_DIR, '..', 'logs', 'scheduler')
   await rm(LOG_DIR, { recursive: true, force: true })
   await mkdir(LOG_DIR, { recursive: true })
 })

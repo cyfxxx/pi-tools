@@ -1,5 +1,13 @@
 import type { Browser, Page } from 'playwright-core'
 import type { BrowserConfig, PageInfo } from './types'
+import { mkdir } from 'fs/promises'
+import { join } from 'path'
+import { tmpdir } from 'os'
+
+/** 截图暂存目录（os.tmpdir()：Linux=/tmp，Termux=$PREFIX/tmp；cleanScreenshots 同名清理） */
+export function shotDir(): string {
+  return join(tmpdir(), 'pi-browser-screenshots')
+}
 
 export class BrowserManager {
   private browser: Browser | null = null
@@ -143,7 +151,9 @@ export class BrowserManager {
 
   async screenshot(fullPage: boolean = false): Promise<string> {
     const page = await this.ensurePage()
-    const path = `/tmp/pi-screenshot-${Date.now()}.png`
+    const dir = shotDir()
+    await mkdir(dir, { recursive: true })
+    const path = join(dir, `pi-screenshot-${Date.now()}.png`)
     await page.screenshot({ path, fullPage })
     return path
   }

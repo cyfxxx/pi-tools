@@ -29,13 +29,23 @@ export SEARXNG_SETTINGS_PATH="$DIR/settings.yml"
 export SEARXNG_DEBUG=0
 export PYTHONPATH="$DIR/repo:$PYTHONPATH"
 
-nohup granian searx.webapp:app \
-  --interface wsgi \
-  --host 127.0.0.1 \
-  --port 8889 \
-  --workers 2 \
-  --blocking-threads 4 \
-  > "$DIR/searxng.log" 2>&1 &
+if command -v granian >/dev/null 2>&1; then
+  nohup granian searx.webapp:app \
+    --interface wsgi \
+    --host 127.0.0.1 \
+    --port 8889 \
+    --workers 2 \
+    --blocking-threads 4 \
+    > "$DIR/searxng.log" 2>&1 &
+else
+  # Termux/Android: granian (Rust) 无 wheel 无法源码构建，用 uvicorn WSGI 模式替代
+  nohup uvicorn searx.webapp:app \
+    --interface wsgi \
+    --host 127.0.0.1 \
+    --port 8889 \
+    --workers 2 \
+    > "$DIR/searxng.log" 2>&1 &
+fi
 
 PID=$!
 echo $PID > "$PID_FILE"
