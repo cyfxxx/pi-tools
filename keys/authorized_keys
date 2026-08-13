@@ -12,6 +12,7 @@
 # ----------------------------------------------------------------------------
 # 设备: termux-ubuntu
 # 连接: root@100.114.171.18:8022  (Tailscale；sshd 端口 8022)
+# 局域网: root@192.168.124.2:8022  (Wi-Fi 192.168.124.0/24；局域网常用，可作 altHosts 主地址)
 # 说明: Termux 容器中的 Ubuntu（PRoot），pi-link 开发环境，pi 运行于 tmux。
 #       注意：sshd 会话 ~ = Termux home 而扩展写 /root/.pi ——
 #       双 home 分裂已由 link.ts 双路径回退处理（见 pi-link README）。
@@ -21,6 +22,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeIymNI4AYlm0AQz2iNT/el4uY5I9xQLb5tHCe4/rd/
 # ----------------------------------------------------------------------------
 # 设备: termux-phone
 # 连接: u0_a999@100.74.15.15:8022  (Tailscale；Termux sshd)
+# 局域网: ⚠️ 待补充（该设备请填写自己的 Wi-Fi IP:8022）
 # 说明: 本机 Termux 原始环境（非 proot 容器）——与 termux-ubuntu
 #       （Termux 容器中的 Ubuntu）是两台不同的设备。
 # ----------------------------------------------------------------------------
@@ -29,6 +31,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuYTFPy4QzXKwjY6EWDKTDClmytd55Ut8B3USZhGt08
 # ----------------------------------------------------------------------------
 # 设备: mypc-wsl
 # 连接: root@100.117.170.110:22  (Tailscale；Linux 主机名 MYPC)
+# 局域网: ⚠️ 待补充（该设备请填写自己的局域网 IP:22）
 # 说明: 远程 Linux 环境（WSL 宿主上的 Linux），pi 运行于 tmux 会话 0。
 #       远程执行 pi 前需 unset LD_PRELOAD（link.ts 已内置处理）。
 # ----------------------------------------------------------------------------
@@ -37,6 +40,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH240p4Gu/3Nc+GyDQu9gfAtiBfHEiqHsGJsVJa9xXDu
 # ----------------------------------------------------------------------------
 # 设备: win-host
 # 连接: ⚠️ 待补充（IP/端口/用户名）
+# 局域网: ⚠️ 待补充
 # 说明: Windows 宿主。接入注意：OpenSSH 默认登录 shell 是 cmd，远程 bash
 #       命令会失败 —— 需将登录 shell 配为 git-bash/WSL 后再接入 pi-link。
 # ----------------------------------------------------------------------------
@@ -47,6 +51,8 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/kO1Q2/HOQj5cdBQBXr+y6Psan1Vi67sDaNKZ2LiID
 #
 # 1. 各设备已在对应分组登记公钥；请在各自设备组下核对/补充：
 #    - 连接信息（IP/端口/用户名）是否最新、可连
+#    - 局域网地址（Wi-Fi/内网 IP:端口，局域网常用——配 pi-link altHosts 用：
+#      主地址填局域网 IP（快），altHosts 填 Tailscale IP（兜底））
 #    - 说明（运行环境、pi 运行方式、接入注意）
 #    - 本设备新增的公钥行（pi-link-keys.sh export 输出 → add 追加）
 # 2. 新增设备请在【本提醒块之前】插入自己的设备组（含连接信息 + 公钥），
