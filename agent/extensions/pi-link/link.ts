@@ -118,7 +118,8 @@ export function buildRemoteCommand(d: DeviceConfig, opts: SendOptions): string {
   const cwd = opts.cwd ?? d.cwd
   // Termux sshd 会话带 libtermux-exec LD_PRELOAD，会破坏 proot 内 node 加载——清除
   cmd = `unset LD_PRELOAD 2>/dev/null; ${cmd}`
-  if (cwd) cmd = `cd ${JSON.stringify(cwd)} && ${cmd}`
+  // cwd 支持 ~ 开头（展开为 $HOME，文档示例 "cwd": "~/work"）；其余字符双引号保护
+  if (cwd) cmd = `cd "${cwd.replace(/^~/, '\$HOME')}" && ${cmd}`
   return cmd
 }
 
@@ -154,11 +155,21 @@ export async function sendToDevice(
   let userInteraction = false
   let stderr = ''
   let lastSession: string | undefined
+  let spawnFailed = ''
+  let timedOut = false
 
   proc.stderr.setEncoding('utf-8')
   proc.stderr.on('data', (c: string) => {
     stderr = (stderr + c).slice(-2000)
   })
+  // ssh 二进制缺失/PATH 清理时 spawn 抛 error——未监听会崩溃宿主 pi 进程且 inflight 泄漏
+  proc.on('error', (e: Error) => {
+    spawnFailed = e.message
+    exited = true
+    rl.close()
+  })
+  // 进程退出后写 stdin 会触发 error——吞掉
+  proc.stdin.on('error', () => { /* 已退出 */ })
 
   // 握手完成：收到会话文件行（continue 策略）或 3s 超时
   let handshakeResolve: () => void
@@ -229,8 +240,9 @@ export async function sendToDevice(
   proc.stdin.write(prompt + '\n')
   // Writable 无需显式 flush（数据即时发送）
 
-  // 超时熔断
+  // 超时熔断：先置标志再 kill（timedOut 判定优先于 exited，保证 truncated 分支可达）
   const timer = setTimeout(() => {
+    timedOut = true
     proc.kill('SIGKILL')
   }, timeoutSec * 1000)
 
@@ -252,11 +264,17 @@ export async function sendToDevice(
     return r
   }
 
+  if (spawnFailed) {
+    return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: `ssh 启动失败: ${spawnFailed}（本机 ssh 缺失？）`, resumed })
+  }
   if (userInteraction) {
     return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: '远程 agent 请求用户交互（ask_user/UI），无法自动应答。可在目标设备手动处理该会话。', resumed })
   }
+  if (timedOut) {
+    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: `远程会话未在 ${timeoutSec}s 超时内结束`, truncated: true, resumed })
+  }
   if (!settled && !exited) {
-    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '远程会话未在超时内结束', truncated: true, resumed })
+    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '远程会话未结束且进程已退出（输出不完整）', truncated: true, resumed })
   }
   if (!text) {
     const why = stderr.trim() ? `远程 stderr: ${stderr.trim().slice(0, 300)}` : '远程未返回文本回复'
@@ -279,16 +297,18 @@ export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latenc
     const proc = spawn('ssh', args, { stdio: ['ignore', 'pipe', 'pipe'] })
     let out = ''
     let err = ''
+    let failed = ''
     proc.stdout.setEncoding('utf-8')
     proc.stdout.on('data', (c: string) => { out += c })
     proc.stderr.setEncoding('utf-8')
     proc.stderr.on('data', (c: string) => { err += c })
+    proc.on('error', (e: Error) => { failed = e.message })
     proc.on('exit', (code) => {
       const latencyMs = Date.now() - started
       if (code === 0 && out.trim() === 'pi-link-ok') {
         resolve({ ok: true, latencyMs })
       } else {
-        resolve({ ok: false, latencyMs, detail: (err || out).trim().slice(0, 200) || `exit ${code}` })
+        resolve({ ok: false, latencyMs, detail: failed || (err || out).trim().slice(0, 200) || `exit ${code}` })
       }
     })
     const t = setTimeout(() => { proc.kill('SIGKILL') }, 8000)
@@ -313,6 +333,10 @@ export function remoteExec(device: DeviceConfig, cmd: string, timeoutMs = 15000)
     proc.stdout.on('data', (c: string) => { out += c })
     proc.stderr.setEncoding('utf-8')
     proc.stderr.on('data', (c: string) => { err += c })
+    proc.on('error', (e: Error) => {
+      clearTimeout(t)
+      resolve({ code: null, out, err: err + e.message })
+    })
     proc.on('exit', (code) => {
       clearTimeout(t)
       resolve({ code, out, err })
@@ -432,7 +456,12 @@ export async function readRemoteOutbox(device: DeviceConfig): Promise<{ ok: bool
   try {
     const d = JSON.parse(r.out.trim())
     if (!Array.isArray(d?.entries)) return { ok: false, detail: '远程信箱格式无效' }
-    return { ok: true, entries: d.entries as OutboxEntry[] }
+    // 校验元素结构（坏文件/恶意内容防御：/link inbox 展示前过滤）
+    const entries = (d.entries as unknown[])
+      .filter((e): e is OutboxEntry => !!e && typeof e === 'object'
+        && typeof (e as OutboxEntry).text === 'string' && typeof (e as OutboxEntry).ts === 'number')
+      .slice(-10)
+    return { ok: true, entries }
   } catch {
     return { ok: false, detail: '远程信箱格式无效' }
   }

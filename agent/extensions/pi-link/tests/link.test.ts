@@ -74,6 +74,33 @@ describe('pi-link: 并发与去重（T2-4）', () => {
     }
   })
 
+  it('sendToDevice: ssh spawn error 时返回错误且不挂起', async () => {
+    spawnMock.mockImplementation(() => {
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const stdin = new PassThrough()
+      const proc = {
+        stdin, stdout, stderr,
+        kill: vi.fn(),
+        on: (ev: string, cb: (e?: unknown) => void) => {
+          if (ev === 'error') errorCbs.push(cb)
+          if (ev === 'exit') exitCbs.push(cb)
+        },
+      }
+      const errorCbs: Array<(e?: unknown) => void> = []
+      const exitCbs: Array<(c: number) => void> = []
+      setImmediate(() => { for (const cb of errorCbs) cb(new Error('ssh not found')) })
+      return proc
+    })
+    const { sendToDevice } = await import('../link.ts')
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 5 })
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('ssh 启动失败')
+    // 锁已释放：后续调用不受影响
+    const { checkConcurrentAndDedup } = await import('../link.ts')
+    expect(checkConcurrentAndDedup('testuser@100.64.0.1:2222', 'hi2').ok).toBe(true)
+  })
+
   it('sendToDevice 直接返回拒绝（不 spawn）', async () => {
     spawnMock.mockImplementation(() => { throw new Error('不应 spawn') })
     const { sendToDevice } = await import('../link.ts')
@@ -111,7 +138,8 @@ describe('pi-link: buildRemoteCommand', () => {
     expect(buildRemoteCommand(DEV, { extensions: true })).not.toContain('--no-extensions')
   })
   it('cwd 包装为 cd 前缀', () => {
-    expect(buildRemoteCommand(DEV, { cwd: '~/work' })).toContain('cd "~/work" && unset LD_PRELOAD')
+    // ~ 展开为 $HOME（修复：引号包裹不再阻止展开）
+    expect(buildRemoteCommand(DEV, { cwd: '~/work' })).toContain('cd "$HOME/work" && unset LD_PRELOAD')
   })
   it('自定义 sessionDir', () => {
     expect(buildRemoteCommand(DEV, { sessionDir: '/tmp/x' })).toContain('--session-dir /tmp/x')
