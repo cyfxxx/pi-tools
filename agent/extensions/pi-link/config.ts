@@ -9,18 +9,29 @@ import { join } from 'node:path'
  * {
  *   "devices": {
  *     "phone":  { "host": "100.101.102.103", "user": "u0_a123", "port": 8022, "timeoutSec": 600 },
- *     "laptop": { "host": "100.200.300.400", "user": "myuser", "cwd": "~/work" }
+ *     "laptop": { "host": "100.200.300.400", "user": "myuser", "cwd": "~/work" },
+ *     "dual":   { "host": "192.168.1.5", "port": 8022, "user": "u0_a1",
+ *                 "altHosts": [ { "host": "100.101.102.103", "port": 8022 } ] }
  *   },
  *   "defaultTimeoutSec": 600
  * }
+ * 说明：altHosts 为备用地址（虚拟局域网/其他网段），按序尝试 failover——
+ * 主地址（host/port）优先，全部不可达时用下一备用，直到成功或全部失败。
  */
+export interface DeviceAddr {
+  host: string
+  port?: number
+}
+
 export interface DeviceConfig {
-  /** Tailscale IP 或局域网 IP */
+  /** 主地址（Tailscale IP 或局域网 IP） */
   host: string
   /** SSH 用户名 */
   user: string
-  /** SSH 端口，默认 22 */
+  /** 主地址 SSH 端口，默认 22 */
   port?: number
+  /** 备用地址列表（failover 按序尝试；可选） */
+  altHosts?: DeviceAddr[]
   /** 远程 RPC 会话工作目录（远程 shell 展开，默认远程用户 home） */
   cwd?: string
   /** 单次调用超时（秒），默认 defaultTimeoutSec */
@@ -64,7 +75,12 @@ export function loadConfig(path = configPath()): LinkConfig {
     if (raw.devices) {
       for (const [name, d] of Object.entries(raw.devices)) {
         if (!d || typeof d.host !== 'string' || !d.host) continue
-        cfg.devices[name] = { ...d }
+        const dev = { ...d }
+        // altHosts 结构校验：仅保留 host 为字符串的条目（无效条目丢弃）
+        if (Array.isArray(dev.altHosts)) {
+          dev.altHosts = dev.altHosts.filter(a => a && typeof a.host === 'string' && a.host)
+        }
+        cfg.devices[name] = dev
       }
     }
     if (typeof raw.defaultTimeoutSec === 'number' && raw.defaultTimeoutSec > 0) {
@@ -100,6 +116,20 @@ export function saveDevice(path: string, name: string, d: DeviceConfig): { ok: b
 }
 
 export function describeDevice(name: string, d: DeviceConfig): string {
-  return `${name} → ${d.user}@${d.host}:${d.port ?? 22}`
+  const alts = Array.isArray(d.altHosts) && d.altHosts.length > 0
+    ? ` +${d.altHosts.length}备用`
+    : ''
+  return `${name} → ${d.user}@${d.host}:${d.port ?? 22}${alts}`
+}
+
+/** 设备全部地址（主地址优先 + 备用按序） */
+export function deviceAddresses(d: DeviceConfig): DeviceAddr[] {
+  const addrs: DeviceAddr[] = [{ host: d.host, port: d.port }]
+  if (Array.isArray(d.altHosts)) {
+    for (const a of d.altHosts) {
+      if (a && typeof a.host === 'string' && a.host) addrs.push(a)
+    }
+  }
+  return addrs
 }
 

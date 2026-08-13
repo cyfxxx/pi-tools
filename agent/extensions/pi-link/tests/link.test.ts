@@ -396,3 +396,64 @@ describe('pi-link: sendToDevice', () => {
     expect(r.error).toContain('command not found')
   })
 })
+
+describe('pi-link: 多地址 failover (altHosts)', () => {
+  // probeAddr/remoteExec 用简单 proc（无需事件流）：stdout/stderr/stdin + exit 回调
+  function simpleProc({ exitCode = 255, out = '', err = '' } = {}) {
+    const stdout = new PassThrough()
+    const stderr = new PassThrough()
+    const stdin = new PassThrough()
+    const exitCbs: Array<(c: number) => void> = []
+    const proc: any = {
+      stdin, stdout, stderr,
+      kill: vi.fn(),
+      on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+    }
+    if (out) setImmediate(() => { stdout.emit('data', out) })
+    if (err) setImmediate(() => { stderr.emit('data', err) })
+    setImmediate(() => { for (const cb of exitCbs) cb(exitCode) })
+    return proc
+  }
+
+  it('probeDevice 主地址失败后尝试备用地址', async () => {
+    spawnMock.mockReset()
+    const { probeDevice } = await import('../link')
+    spawnMock.mockImplementationOnce(() => simpleProc({ exitCode: 255, err: 'connect refused' }))
+    spawnMock.mockImplementationOnce(() => simpleProc({ exitCode: 0, out: 'pi-link-ok\n' }))
+    const dev: DeviceConfig = { host: '10.0.0.1', user: 'u', port: 22, altHosts: [{ host: '10.0.0.2', port: 22 }] }
+    const r = await probeDevice(dev)
+    expect(r.ok).toBe(true)
+    // 第一次 spawn 用主地址，第二次用备用（args 为第 2 个参数）
+    const calls = spawnMock.mock.calls.map((c: unknown[]) => c[1] as string[])
+    expect(calls[0]).toContain('u@10.0.0.1')
+    expect(calls[1]).toContain('u@10.0.0.2')
+  })
+
+  it('probeDevice 全部地址失败返回不可达', async () => {
+    spawnMock.mockReset()
+    const { probeDevice } = await import('../link')
+    spawnMock.mockImplementation(() => simpleProc({ exitCode: 255, err: 'refused' }))
+    const dev: DeviceConfig = { host: '10.0.0.1', user: 'u', altHosts: [{ host: '10.0.0.2' }] }
+    const r = await probeDevice(dev)
+    expect(r.ok).toBe(false)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('remoteExec 主地址失败换备用，全部失败返回最后错误', async () => {
+    spawnMock.mockReset()
+    const { remoteExec } = await import('../link')
+    spawnMock.mockImplementation(() => simpleProc({ exitCode: 255, err: 'refused' }))
+    const dev: DeviceConfig = { host: '10.0.0.1', user: 'u', altHosts: [{ host: '10.0.0.2' }] }
+    const r = await remoteExec(dev, 'echo hi', 3000)
+    expect(r.code).not.toBe(0)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('deviceAddresses 主地址优先 + 备用按序', async () => {
+    const { deviceAddresses } = await import('../config')
+    const dev: DeviceConfig = { host: 'a', user: 'u', altHosts: [{ host: 'b' }, { host: 'c', port: 33 }] }
+    const addrs = deviceAddresses(dev)
+    expect(addrs).toEqual([{ host: 'a', port: undefined }, { host: 'b' }, { host: 'c', port: 33 }])
+    expect(deviceAddresses({ host: 'x', user: 'u' })).toEqual([{ host: 'x', port: undefined }])
+  })
+})
