@@ -6626,13 +6626,14 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-12T01:47:33.915Z",
-      "updatedAt": "2026-08-12T01:47:33.915Z",
+      "updatedAt": "2026-08-13T12:17:11.887Z",
       "accessedAt": "2026-08-12T01:47:33.915Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-12T01:47:33.915Z",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "17d89598-a204-4eff-a7b6-a1d925eaaeca"
     },
     {
       "id": "9c93b08a-87a2-40f5-b59a-9b7fd4672560",
@@ -9243,14 +9244,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T07:07:53.438Z",
+      "updatedAt": "2026-08-13T12:17:11.725Z",
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "49260c34-a3c8-46f7-b5f1-9905559a8b95"
     },
     {
       "id": "2031e8b8-7760-4761-a047-922268215f4c",
@@ -9291,14 +9293,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T07:07:53.438Z",
+      "updatedAt": "2026-08-13T12:17:11.809Z",
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "2d861c94-47fc-4407-95da-eaf9e772b393"
     },
     {
       "id": "7f0f5ef9-d907-409b-97c1-043430393906",
@@ -9384,8 +9387,8 @@
       "source": "manual",
       "recurrence": 63,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-13T13:04:17.610Z",
-      "accessedAt": "2026-08-13T13:04:17.610Z",
+      "updatedAt": "2026-08-13T14:08:01.612Z",
+      "accessedAt": "2026-08-13T14:08:01.612Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -9650,6 +9653,30 @@
         "all"
       ],
       "observedAt": "2026-08-13T13:05:14.185Z",
+      "deleted": false
+    },
+    {
+      "id": "b6c60114-0536-49fd-95b5-3a5d82f40d2d",
+      "category": "procedure",
+      "title": "tmux_run 会话永不退出：tmux_wait 应用 pattern 而非 until_exit",
+      "content": "pi-tmux 扩展的 tmux_run 机制（core.ts）：创建 detached 会话时不带 command 参数，命令通过 send-keys 注入到会话内的交互 bash 执行。因此命令执行完后交互 shell 不退出（无 exit 指令）→ 会话永远存活（日志尾部会出现 shell 提示符，如 root@MYPC:~/.pi#，属正常）。\n\n推论与正确用法：\n1. tmux_wait(until_exit=true) 对 tmux_run 创建的任务永远超时——等待超时 ≠ 任务超时，任务可能早已完成（如 rebuild 43s 完成但会话挂着）。判断任务是否完成应看日志是否有完成标记（如\"重建完成\"）。\n2. 等任务完成用 tmux_wait(pattern=\"完成标记\", until_exit=false)；会话清理用 tmux_stop（remove_log 可选）。\n3. until_exit=true 仅适用于命令自带 exit 的会话。\n4. tmux_status 可查会话存活；tmux_read 读日志尾部确认任务输出。\n\n2026-08-13 实测：rebuild_check/rebuild_opt 两次 tmux_wait 600s/330s 超时，实际 rebuild 均已快速完成，日志含\"重建完成\"标记。",
+      "tags": [
+        "pi-tmux",
+        "tmux",
+        "tmux_run",
+        "tmux_wait",
+        "经验"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:02:18.283Z",
+      "updatedAt": "2026-08-13T14:02:18.283Z",
+      "accessedAt": "2026-08-13T14:02:18.283Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-13T14:02:18.283Z",
       "deleted": false
     }
   ]
