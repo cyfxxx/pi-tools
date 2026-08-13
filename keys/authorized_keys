@@ -1,7 +1,8 @@
 # pi-link 多设备互连公钥合集
 # 维护：新增设备时把其公钥追加到本文件（scripts/pi-link-keys.sh add <公钥>），
+# 设备标签: termux=100.114.171.18:8022 / mypc-wsl（本机）/ win-host（Windows 宿主）
 # 提交推送；其他设备 pull 后运行 scripts/pi-link-keys.sh install 即可免密互连。
 # 公钥是公开信息，入库无安全风险（授权集合即此文件内容）。
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeIymNI4AYlm0AQz2iNT/el4uY5I9xQLb5tHCe4/rd/ root@localhost
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH240p4Gu/3Nc+GyDQu9gfAtiBfHEiqHsGJsVJa9xXDu pi-link@MYPC
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/kO1Q2/HOQj5cdBQBXr+y6Psan1Vi67sDaNKZ2LiID cyf@MYPC
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeIymNI4AYlm0AQz2iNT/el4uY5I9xQLb5tHCe4/rd/ termux@100.114.171.18
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH240p4Gu/3Nc+GyDQu9gfAtiBfHEiqHsGJsVJa9xXDu mypc-wsl
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE/kO1Q2/HOQj5cdBQBXr+y6Psan1Vi67sDaNKZ2LiID win-host
