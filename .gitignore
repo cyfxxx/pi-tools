@@ -101,3 +101,4 @@ pi-link.json
 # pi-link 运行时状态（T2 活跃设备/身份机制，每次连接刷新，跨环境无意义）
 pi-link-active.json
 pi-link-state.json
+pi-link-outbox.json
