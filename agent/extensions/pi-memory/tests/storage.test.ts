@@ -152,15 +152,16 @@ describe('storage: applyMem0Action four operations', () => {
 
   it('UPDATE merges into target', async () => {
     const { loadEntries, saveEntries, applyMem0Action } = await import('../storage.ts')
-    const existing = makeEntry({ title: 'target', content: 'old', recurrence: 1 })
+    const existing = makeEntry({ title: 'target', content: 'old', recurrence: 1, environments: ['termux'] })
     saveEntries([existing])
     const entries = loadEntries()
-    const cand = makeEntry({ title: 'target', content: 'newer details' })
+    const cand = makeEntry({ title: 'target', content: 'newer details', environments: ['linux'] })
     const { applied } = applyMem0Action(entries, 'UPDATE', cand, existing.id)
     expect(applied).toBe(true)
     expect(entries[0].content).toBe('newer details')
     expect(entries[0].recurrence).toBe(2)
     expect(entries[0].tags).toContain('test')
+    expect(entries[0].environments).toEqual(expect.arrayContaining(['termux', 'linux']))
   })
 
   it('DELETE soft-deletes target', async () => {

@@ -32,7 +32,7 @@ export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Prom
         resolvePromise({ code: 0, stdout: stdout ?? '', stderr: stderr ?? '' })
         return
       }
-      const code = (err as NodeJS.ErrnoException & { code?: string | number }).code
+      const code = (err as NodeJS.ErrnoException & { code?: string | number; killed?: boolean; signal?: string }).code
       if (typeof code === 'number') {
         resolvePromise({ code, stdout: stdout ?? '', stderr: stderr ?? '' })
         return
@@ -41,7 +41,10 @@ export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Prom
         resolvePromise({ code: 127, stdout: '', stderr: `tmux: command not found (${opts.bin})` })
         return
       }
-      if (err.message.includes('ETIMEDOUT')) {
+      // Node v22 超时杀进程时 err.code=null、signal='SIGTERM'、killed=true，
+      // message 不含 ETIMEDOUT——按 killed/signal 判定超时（否则误报 code 1）
+      const e = err as NodeJS.ErrnoException & { killed?: boolean; signal?: string }
+      if (e.killed === true || e.signal === 'SIGTERM') {
         resolvePromise({ code: 124, stdout: stdout ?? '', stderr: `tmux timeout after ${timeoutMs}ms` })
         return
       }

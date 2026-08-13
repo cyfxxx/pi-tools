@@ -177,7 +177,6 @@ export async function sendToDevice(
   // ssh 二进制缺失/PATH 清理时 spawn 抛 error——未监听会崩溃宿主 pi 进程且 inflight 泄漏
   proc.on('error', (e: Error) => {
     spawnFailed = e.message
-    exited = true
     rl.close()
   })
   // 进程退出后写 stdin 会触发 error——吞掉
@@ -227,10 +226,8 @@ export async function sendToDevice(
     rl.on('close', () => resolve())
   })
 
-  // 进程意外退出也视为结束
-  let exited = false
+  // 进程意外退出也视为结束（rl close 会 resolve settledP）
   proc.on('exit', () => {
-    exited = true
     rl.close()
   })
 
@@ -285,8 +282,8 @@ export async function sendToDevice(
   if (timedOut) {
     return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: `远程会话未在 ${timeoutSec}s 超时内结束`, truncated: true, resumed })
   }
-  if (!settled && !exited) {
-    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '远程会话未结束且进程已退出（输出不完整）', truncated: true, resumed })
+  if (!settled) {
+    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '远程会话结束但未收到完成确认（agent_settled），输出可能不完整', truncated: true, resumed })
   }
   if (!text) {
     const why = stderr.trim() ? `远程 stderr: ${stderr.trim().slice(0, 300)}` : '远程未返回文本回复'

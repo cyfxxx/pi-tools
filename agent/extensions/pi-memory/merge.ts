@@ -1,5 +1,5 @@
 import type { MemoryAction, MemoryEntry } from './types.ts'
-import { activeEntries, tokenize, jaccardSimilarity, saveEntries, applyMem0Action } from './storage.ts'
+import { activeEntries, tokenize, jaccardSimilarity, saveEntries, applyMem0Action, mergeEnvironments } from './storage.ts'
 import { findSimilar } from './retrieval.ts'
 
 export interface MergeDecision {
@@ -153,6 +153,7 @@ export async function mergeCandidates(
         e.recurrence += 1
         e.updatedAt = candidate.updatedAt
         e.observedAt = candidate.observedAt || e.observedAt
+        e.environments = mergeEnvironments(e.environments, candidate.environments)
         applied.push(`UPDATE: ${e.title}`)
       }
       continue

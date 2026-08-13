@@ -64,6 +64,16 @@ describe('linux startRecording', () => {
     expect(r.file.endsWith('.wav')).toBe(true)
   })
 
+  it('文件名含随机后缀：同秒内两次启动路径不冲突（防 stop→start 竞态复用文件）', () => {
+    const { child } = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const r1 = startRecording(linuxCfg, () => {})
+    const r2 = startRecording(linuxCfg, () => {})
+    // 秒级时间戳 + 随机后缀：同一秒内两次启动也必然不同路径
+    expect(r1.file).not.toBe(r2.file)
+    expect(r1.file).toMatch(/pi-voice-\d{8}_\d{6}-[a-z0-9]{6}\.wav$/)
+  })
+
   it('进程退出回调 code 透传', () => {
     const { child } = fakeChild()
     spawnMock.mockReturnValue(child)
