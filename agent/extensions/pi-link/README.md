@@ -140,6 +140,7 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 
 - 远程命令链依赖 **unset LD_PRELOAD**（libtermux-exec 破坏 node）——buildRemoteCommand 已处理，无需手动干预
 - Termux sshd 读取的是 Termux home 的 `~/.ssh`（非 proot `/root/.ssh`）——公钥安装路径在 Termux 环境自动双写（见 pi-link-keys.sh）
+- **双 home 分裂**：pi 扩展（proot 内）homedir()=/root（状态/信箱写 `/root/.pi/`），但 sshd 会话 `~`=Termux home（`/data/data/.../home/`）——远程读取必须双路径回退（`$HOME` 优先，`/root` 兜底），link.ts 已内置（readRemoteState/readRemoteOutbox/watchRemote）
 - Windows 设备：OpenSSH 默认登录 shell 是 cmd，远程 bash 命令会失败——需将登录 shell 配为 git-bash/WSL 后再接入
 
 ## 安全边界
