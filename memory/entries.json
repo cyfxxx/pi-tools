@@ -6802,13 +6802,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:40:23.733Z",
-      "updatedAt": "2026-08-12T00:40:23.733Z",
+      "updatedAt": "2026-08-13T00:07:42.696Z",
       "accessedAt": "2026-08-12T00:40:23.733Z",
       "observedAt": "2026-08-12T00:40:23.733Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "45143371-7007-48c7-864c-a22dda6658bc"
     },
     {
       "id": "eb91dd70-bd35-4691-aa15-80c405278f39",
@@ -7899,14 +7900,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T16:08:31.873Z",
-      "updatedAt": "2026-08-12T16:08:31.873Z",
+      "updatedAt": "2026-08-13T00:06:44.852Z",
       "accessedAt": "2026-08-12T16:08:31.873Z",
       "observedAt": "2026-08-12T16:08:31.873Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019ff639-fbec-776a-9b72-451c983c716f",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "cd226e81-4665-4432-8147-76aec50560dd"
     },
     {
       "id": "8ba87e77-60bd-4b43-8375-038ed881fe98",
@@ -7931,6 +7933,330 @@
       ],
       "lastSessionId": "019ff639-fbec-776a-9b72-451c983c716f",
       "deleted": false
+    },
+    {
+      "id": "cd226e81-4665-4432-8147-76aec50560dd",
+      "category": "fact",
+      "title": "pi-link 支持 localhost 回环自测",
+      "content": "pi-link 扩展的 link_send 工具支持 device=localhost 向本机 pi 发送消息做回环自测，可验证多设备互联链路是否正常。2026-08 实测通过：本机远端模型为 deepseek-v4-flash，一次回环调用约 21 秒、1 轮交互、0 次工具调用，返回内容正常。链路排查时可先用 localhost 回环确认本机服务端可用。",
+      "tags": [
+        "pi-link",
+        "link_send",
+        "回环测试",
+        "多设备互联"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:06:44.437Z",
+      "updatedAt": "2026-08-13T00:07:42.588Z",
+      "accessedAt": "2026-08-13T00:06:44.437Z",
+      "observedAt": "2026-08-13T00:06:44.437Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff671-da22-7a1b-a642-464060d75c5b",
+      "deleted": true,
+      "supersededBy": "3a68e682-182b-4a89-a68b-6a06f8b84e1d"
+    },
+    {
+      "id": "3a68e682-182b-4a89-a68b-6a06f8b84e1d",
+      "category": "fact",
+      "title": "link_send 消息语义：任务指令非聊天转发",
+      "content": "pi-link 的 link_send 工具发送的 message 会被当作任务指令发给远程 pi 执行，而不是聊天消息转发。若需远程 pi 确认收到并回复指定内容，指令须写明'请确认收到此消息，并回复…'，否则远程 pi 无法确定意图，会请求澄清回复对象与通道。",
+      "tags": [
+        "pi-link",
+        "link_send",
+        "跨设备"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:07:42.311Z",
+      "updatedAt": "2026-08-13T00:07:42.311Z",
+      "accessedAt": "2026-08-13T00:07:42.311Z",
+      "observedAt": "2026-08-13T00:07:42.311Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff6b6-0456-79ea-b666-418cccab714f",
+      "deleted": false
+    },
+    {
+      "id": "45143371-7007-48c7-864c-a22dda6658bc",
+      "category": "fact",
+      "title": "remote 设备未配置 pi-link.json",
+      "content": "pi-link 设备 remote（root@100.117.170.110:22，远程模型 deepseek-v4-flash）可达且能接收 link_send 任务，但其 pi 侧无 pi-link.json（未配置设备清单），无法通过 pi-link 通道回传回复。需先在远端设备配置 pi-link.json 或改用 tmux/其他通道回复。",
+      "tags": [
+        "pi-link",
+        "环境",
+        "remote"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:07:42.311Z",
+      "updatedAt": "2026-08-13T00:07:42.845Z",
+      "accessedAt": "2026-08-13T00:07:42.311Z",
+      "observedAt": "2026-08-13T00:07:42.311Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff6b6-0456-79ea-b666-418cccab714f",
+      "supersededBy": "33d70741-e5d4-4eff-b45f-5e8873e7ec6a",
+      "deleted": true
+    },
+    {
+      "id": "33d70741-e5d4-4eff-b45f-5e8873e7ec6a",
+      "category": "fact",
+      "title": "link_send 调用耗时基线约 23 秒",
+      "content": "实测 link_send 到 remote 设备单次完整调用（发送+远程 pi 处理+返回）约 23 秒、3 轮工具交互，远程模型 deepseek-v4-flash；本机回环（device=localhost）约 21 秒、1 轮交互。可作 pi-link 跨设备性能诊断基线，显著超时说明链路异常。",
+      "tags": [
+        "pi-link",
+        "性能",
+        "基线"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:07:42.311Z",
+      "updatedAt": "2026-08-13T00:08:34.833Z",
+      "accessedAt": "2026-08-13T00:07:42.311Z",
+      "observedAt": "2026-08-13T00:07:42.311Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff6b6-0456-79ea-b666-418cccab714f",
+      "deleted": true,
+      "supersededBy": "a7a1edda-ca38-453e-b3bc-37931238fe54"
+    },
+    {
+      "id": "a7a1edda-ca38-453e-b3bc-37931238fe54",
+      "category": "fact",
+      "title": "pi-link 跨设备链路验证通过",
+      "content": "link_send（device=remote）发送消息'这是一次跨设备连接测试。请在回复中直接输出四个字：跨设备通，不要解释'，约 7 秒收到远程回复'跨设备通'。remote 端运行 deepseek-v4-flash 模型。证明 pi-link ssh 通道工作正常，简单明确的指令消息可直达远程 pi 并获得回复。",
+      "tags": [
+        "pi-link",
+        "link_send",
+        "跨设备"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:08:34.767Z",
+      "updatedAt": "2026-08-13T00:09:33.455Z",
+      "accessedAt": "2026-08-13T00:08:34.767Z",
+      "observedAt": "2026-08-13T00:08:34.767Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff6b8-ff97-7822-9d3e-90e4af9006ff",
+      "deleted": true,
+      "supersededBy": "e7d53da1-1df6-4d87-9365-44c68afe9741"
+    },
+    {
+      "id": "00dd1f4d-515a-4654-848a-1d623e205c0e",
+      "category": "solutions",
+      "title": "link_send 消息自包含可绕过未配置失败",
+      "content": "pi-link 跨设备发送失败对照：remote 设备（root@100.117.170.110:22）未配置 pi-link.json 设备清单时，需要澄清的消息（如询问回复对象与通道）会失败；但消息中明确指定回复内容时，远程 pi 可直接执行并回复。结论：跨设备测试/委派时消息应自包含、明确回复格式，可规避 remote 未配置 pi-link.json 导致的失败。",
+      "tags": [
+        "pi-link",
+        "link_send",
+        "故障排查"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:08:34.767Z",
+      "updatedAt": "2026-08-13T00:08:34.767Z",
+      "accessedAt": "2026-08-13T00:08:34.767Z",
+      "observedAt": "2026-08-13T00:08:34.767Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019ff6b8-ff97-7822-9d3e-90e4af9006ff",
+      "deleted": false
+    },
+    {
+      "id": "c789edbd-36ee-40dc-98b9-0c5ab02bc074",
+      "category": "solutions",
+      "title": "pi-link RPC 关 stdin 触发 shutdown",
+      "content": "pi --mode rpc 下 proc.stdin.end() 会触发 RPC shutdown，agent 运行被静默中断（LLM 请求刚发出就退出，exit 0 无错误），曾被误判为网关/undici 网络问题，用 NODE_DEBUG 逐层排查才锁定。修复：保持 stdin 打开直到收到 agent_settled 事件再关闭。相关坑：Termux sshd 会话 LD_PRELOAD 破坏 node，远程命令先 unset LD_PRELOAD。",
+      "tags": [
+        "pi-link",
+        "rpc",
+        "stdin",
+        "shutdown"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.666Z",
+      "updatedAt": "2026-08-13T00:09:32.666Z",
+      "accessedAt": "2026-08-13T00:09:32.666Z",
+      "observedAt": "2026-08-13T00:09:32.666Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "be9c4f74-4d92-410e-bf08-538a19feb927",
+      "category": "solutions",
+      "title": "GitHub 推送走 SSH over 443 绕过阻断",
+      "content": "github.com 被 DNS 污染且 IP 全封锁、v2ray 代理（10808）不可用时，ssh.github.com:443 可直连（GitHub 官方备用通道）。remote 改为 ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git，配好 ~/.ssh/id_ed25519.pub 客户端公钥后免 PAT 免代理，密钥认证一劳永逸。",
+      "tags": [
+        "github",
+        "ssh",
+        "443",
+        "dns污染"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.666Z",
+      "updatedAt": "2026-08-13T00:09:32.666Z",
+      "accessedAt": "2026-08-13T00:09:32.666Z",
+      "observedAt": "2026-08-13T00:09:32.666Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "37d9f049-a955-429d-a812-1581ba6288ac",
+      "category": "solutions",
+      "title": "多设备免密互连：公钥入库方案",
+      "content": "pi-tools 仓库新增 keys/authorized_keys（公钥合集 git 入库，公钥无安全风险）+ scripts/pi-link-keys.sh：install 幂等合并到本机 ~/.ssh/authorized_keys（Termux 自动写 proot+Termux 双位置）、export 输出本机公钥、add 追加新设备公钥。rebuild.sh Phase 2-F3 自动安装。新设备流程：生成公钥→本机 add→push→新设备 pull+install，两端装合集即双向免密。",
+      "tags": [
+        "pi-link",
+        "ssh",
+        "公钥",
+        "免密"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.667Z",
+      "updatedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "observedAt": "2026-08-13T00:09:32.667Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "791f1445-bd40-457a-be8a-4f45c82045d4",
+      "category": "fact",
+      "title": "远程 pi 设备信息（100.117.170.110）",
+      "content": "pi-link 远程设备：Tailscale 地址 100.117.170.110，SSH 端口 22，用户 root，主机名 MYPC，Linux x64（非 Termux），pi 安装于 ~/.local/share/pi-node/current/bin/（非交互 PATH 不含 pi）。pi-link.json 设备别名 remote。本机（Termux）Tailscale 地址 100.114.171.18，pi-link.json 另配 localhost 回环设备用于测试。",
+      "tags": [
+        "pi-link",
+        "设备清单",
+        "tailscale",
+        "远程设备"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.667Z",
+      "updatedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "observedAt": "2026-08-13T00:09:32.667Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "0f39836d-2c9d-416d-92c9-4fbfa366bfed",
+      "category": "solutions",
+      "title": "远程非交互 PATH 缺 pi 的绝对路径兜底",
+      "content": "pi-link buildRemoteCommand 原先只 readlink 解析 pi-original，在远程 Linux 设备上失败：非交互 SSH 会话 PATH 不含 pi/node。修复（提交 8c559f0）：增加绝对路径探测，检测 ~/.local/share/pi-node/current/bin/ 等 node 安装布局，找不到才报错。本机回环与跨设备实测均通过。",
+      "tags": [
+        "pi-link",
+        "path",
+        "远程命令"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.667Z",
+      "updatedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "observedAt": "2026-08-13T00:09:32.667Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "e7d53da1-1df6-4d87-9365-44c68afe9741",
+      "category": "fact",
+      "title": "跨设备 link_send 链路验证通过",
+      "content": "link_send(device=remote) → ssh(22) → 远程 Linux pi RPC → 7 秒返回\"跨设备通\"，链路全通：Tailscale 虚拟局域网 → SSH 密钥（公钥合集双向授权）→ 远程 pi RPC。注意：远程 pi 对\"回复 XX\"措辞敏感会理解成聊天行为，委派任务应直接说目标（\"执行 XX 并输出结果\"）。",
+      "tags": [
+        "pi-link",
+        "跨设备",
+        "验证"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.667Z",
+      "updatedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "observedAt": "2026-08-13T00:09:32.667Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "0d60f895-4982-4a9a-b340-230030a5cb61",
+      "category": "fact",
+      "title": "公钥给错：host key 误当客户端公钥",
+      "content": "配置 GitHub SSH 时误把 ~/.ssh/known_hosts 里的 sshd host key（Hil10tkhnjpr1s 开头）当客户端公钥展示给用户，认证失败。客户端公钥必须来自 ~/.ssh/id_ed25519.pub 并与私钥校验匹配（ssh-keygen -y 对比）。本机正确公钥：ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeIymNI4AYlm0AQz2iNT/el4uY5I9xQLb5tHCe4/rd/ root@localhost。",
+      "tags": [
+        "ssh",
+        "公钥",
+        "github"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.667Z",
+      "updatedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "observedAt": "2026-08-13T00:09:32.667Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
+    },
+    {
+      "id": "43645679-edd8-44bd-b9b9-0837cc5a7e45",
+      "category": "fact",
+      "title": "pi-link 扩展架构与安全模型",
+      "content": "pi-link 扩展（agent/extensions/pi-link/）：link_send/link_status 工具 + /link 命令 + 14 用例。本机 pi → ssh 通道 → 目标设备 pi --mode rpc（官方 JSONL 协议），agent_settled 事件判定完成，extractReply 取最后一个 assistant message_end 的 text blocks。安全三层：SSH 密钥 + 远程默认 --no-extensions（不暴露远程记忆）+ forced command 加固（scripts/pi-link-entry.sh，authorized_keys 加 command= 限制）。设备清单 ~/.pi/pi-link.json（gitignored 每机独立）。",
+      "tags": [
+        "pi-link",
+        "架构",
+        "rpc",
+        "安全"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T00:09:32.667Z",
+      "updatedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "observedAt": "2026-08-13T00:09:32.667Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f"
     }
   ]
 }
