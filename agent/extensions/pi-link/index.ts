@@ -1,8 +1,8 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { loadConfig, getDevice, describeDevice, type DeviceConfig, type LinkConfig } from './config'
-import { sendToDevice, probeDevice, watchRemote, attachToRemote, readRemoteState, type SendOptions } from './link'
-import { touchActive, isActive, readActive, selfName, isUnattendedEnv } from './active'
-import { writeLocalState } from './state-writer'
+import { loadConfig, getDevice, describeDevice, type DeviceConfig, type LinkConfig } from './config.ts'
+import { sendToDevice, probeDevice, watchRemote, attachToRemote, readRemoteState, type SendOptions } from './link.ts'
+import { touchActive, isActive, readActive, selfName, isUnattendedEnv } from './active.ts'
+import { writeLocalState } from './state-writer.ts'
 
 /**
  * pi-link — 多设备 pi 互联扩展
@@ -241,13 +241,8 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify(`未知设备 "${device}"。已配置: ${listDevices(cfg)}`, 'warning')
           return
         }
-        // 冲突防护：远程 busy 时拒绝（--force 打断）
-        const { state } = await readRemoteState(dev)
-        if (state?.status === 'busy' && !force) {
-          ctx.ui.notify(`远程 ${device} 正在执行任务（${state.currentTask ?? '未知'}），已拒绝介入。加 --force 强制打断。`, 'warning')
-          return
-        }
-        const r = await attachToRemote(dev, text, state?.tmuxSession)
+        // 冲突防护：远程 busy 时拒绝（--force 打断）——校验在 attachToRemote 内
+        const r = await attachToRemote(dev, text, undefined, force)
         await output(r.ok ? r.detail : `介入失败: ${r.detail}`)
         return
       }
