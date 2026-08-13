@@ -153,6 +153,11 @@ export async function sendToDevice(
   let handshakeResolve: () => void
   const handshakeP = new Promise<void>((resolve) => { handshakeResolve = resolve })
   const handshakeTimer = setTimeout(() => handshakeResolve(), 3000)
+  // switch_session 完成（response 到达）或 20s 超时
+  let switchResolve: () => void
+  let switchFailed = false
+  const switchP = new Promise<void>((resolve) => { switchResolve = resolve })
+  const switchTimer = setTimeout(() => switchResolve(), 20000)
 
   const rl = createInterface({ input: proc.stdout })
   const settledP = new Promise<void>((resolve) => {
@@ -178,6 +183,11 @@ export async function sendToDevice(
       } else if (ev.type === 'extension_ui_request') {
         // 远程 agent 请求用户交互（ask_user / UI 子协议）——无法自动处理
         userInteraction = true
+      } else if (ev.type === 'response' && (ev as { id?: unknown }).id === 'pi-link-0') {
+        // switch_session 响应：即使失败也继续（回退为新会话），但标记
+        switchFailed = ev.success !== true
+        clearTimeout(switchTimer)
+        switchResolve()
       }
     })
     rl.on('close', () => resolve())
@@ -195,12 +205,14 @@ export async function sendToDevice(
 
   // ⚠ 不能 close/end stdin：RPC 模式将 stdin end 视为客户端断开，
   // 触发 shutdown 中断 agent 运行（曾导致 LLM 请求刚发出就被静默终止）。
-  // 会话连续性：等远程握手行（上次会话文件）到达后再写命令——
-  // 远程 shell 先 echo 握手行再 exec RPC；3s 超时兜底（无会话则直接 prompt）。
+  // 会话连续性：等远程握手行（上次会话文件）到达后发 switch_session，
+  // **必须等其 response 再发 prompt**——switch 的 rebindSession 收尾与
+  // 紧随的 prompt 竞争会导致 prompt 静默卡死（实测复现）。
   await handshakeP
   if (lastSession) {
-    // RPC 命令名是 switch_session（load_session 不存在，曾导致会话连续性静默失效）
     proc.stdin.write(JSON.stringify({ type: 'switch_session', sessionPath: lastSession, id: 'pi-link-0' }) + '\n')
+    await switchP
+    if (switchFailed) lastSession = undefined
   }
   const prompt = JSON.stringify({ type: 'prompt', message: finalMessage, id: 'pi-link-1' })
   proc.stdin.write(prompt + '\n')

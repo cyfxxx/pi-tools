@@ -102,6 +102,12 @@ describe('pi-link: sendToDevice', () => {
     stdin.on('data', (chunk: Buffer) => {
       writes.push(chunk.toString())
       stdinWrites.push(chunk.toString())
+      // switch_session 命令 → 回 response（模拟远程确认）
+      if (chunk.toString().includes('"type":"switch_session"')) {
+        setImmediate(() => {
+          stdout.emit('data', JSON.stringify({ type: 'response', id: 'pi-link-0', command: 'switch_session', success: true }) + '\n')
+        })
+      }
       const seq = [
         { type: 'agent_start' },
         { type: 'turn_start' },
@@ -147,7 +153,7 @@ describe('pi-link: sendToDevice', () => {
     expect(r.error).toContain('用户交互')
   })
 
-  it('会话连续性：握手行后发 load_session + prompt', async () => {
+  it('会话连续性：握手行后发 switch_session（等响应）再发 prompt', async () => {
     const proc = fakeProc([{ type: 'agent_settled' }])
     spawnMock.mockImplementation(() => {
       // 模拟远程 shell 先输出握手行，再进入 RPC 事件流
@@ -162,6 +168,10 @@ describe('pi-link: sendToDevice', () => {
     expect(all).toContain('/root/.pi/agent/sessions/pi-link/x.jsonl')
     expect(all).toContain('"type":"prompt"')
     expect(all).toContain('[远程执行任务]')
+    // switch 响应在 prompt 之前
+    expect(stdinWrites.findIndex((w) => w.includes('switch_session'))).toBeLessThan(
+      stdinWrites.findIndex((w) => w.includes('"type":"prompt"'))
+    )
   })
 
   it('无握手行时直接发 prompt（fresh/首次）', async () => {
