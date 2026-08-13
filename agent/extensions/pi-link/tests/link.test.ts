@@ -312,6 +312,43 @@ describe('pi-link: sendToDevice', () => {
     expect(last).toContain('Enter')
   })
 
+  it('attachToRemote: 消息自动加身份前缀；已有前缀不重复', async () => {
+    let pasted = ''
+    spawnMock.mockImplementation((...args: unknown[]) => {
+      const argv = (args[1] ?? []) as string[]
+      const cmd = String(argv[argv.length - 1] ?? '')
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const stdin = new PassThrough()
+      const proc = {
+        stdin, stdout, stderr,
+        kill: vi.fn(),
+        on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+      }
+      const exitCbs: Array<(c: number) => void> = []
+      setImmediate(() => {
+        if (cmd.includes('pi-link-state.json')) {
+          stdout.emit('data', JSON.stringify({ device: 'r', status: 'idle', tmuxSession: '0' }) + '\n')
+        } else if (cmd.includes('paste-buffer')) {
+          // 原子命令（探测+粘贴）：提取 base64 内容验证前缀，输出空（无 busy 标记）
+          const m = cmd.match(/printf %s ([A-Za-z0-9+/=]+) \| base64 -d/)
+          if (m) pasted = Buffer.from(m[1], 'base64').toString('utf-8')
+          stdout.emit('data', '\n')
+        } else {
+          stdout.emit('data', '\n')
+        }
+        setImmediate(() => { for (const cb of exitCbs) cb(0) })
+      })
+      return proc
+    })
+    const { attachToRemote } = await import('../link.ts')
+    await attachToRemote(DEV, '你好', '0', false, 'termux-ubuntu')
+    expect(pasted).toContain('[来自 termux-ubuntu] 你好')
+    // 已有前缀不重复
+    await attachToRemote(DEV, '[来自 x] 你好', '0', false, 'termux-ubuntu')
+    expect(pasted).toBe('[来自 x] 你好')
+  })
+
   it('attachToRemote: busy 时拒绝，force 强制', async () => {
     // 独立 mock：每次 ssh 调用返回可控的 stdout + 触发 exit
     spawnMock.mockImplementation((...args: unknown[]) => {
