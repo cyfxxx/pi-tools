@@ -19,6 +19,16 @@ fi
 # --yes 非交互 | --voice/--no-voice 语音重建开关 | --whisper-model=<名> 模型档位 | --no-gpu/--no-piper 抑制可选子项
 # --no-log 关闭自动日志（默认 --yes 模式落盘 logs/rebuild-<ts>.log，带时间戳可追溯）
 YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0
+
+# ---- 输出辅助（先于参数解析定义：warn 可能在参数解析中被调用） ----
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
+fail() { echo -e "  ${RED}✗${NC} $1"; }
+warn() { echo -e "  ${YELLOW}⚠${NC} $1"; }
+info() { echo -e "  ${CYAN}→${NC} $1"; }
+# 阶段耗时：增量显示（上次 title 至今），非脚本启动累计
+_TITLE_TS=0
+title(){ local now=$SECONDS; echo -e "\n${CYAN}[$1]${NC} $2（+$((now-_TITLE_TS))s）"; _TITLE_TS=$now; }
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes) YES=1 ;;
@@ -38,17 +48,19 @@ done
 if [ "$YES" = "1" ] && [ "$NO_LOG" = "0" ]; then
   LOG_FILE="$PI_HOME/logs/rebuild-$(date +%Y%m%d-%H%M%S).log"
   mkdir -p "$(dirname "$LOG_FILE")"
-  exec > >(tee -a "$LOG_FILE") 2>&1
+  # SIGPIPE 防御：日志管道读端（tee/外部 tail）被杀时脚本不应随之死亡，
+  # 只丢弃后续写入（A1：管道中断导致 rebuild 被连带杀死的事故根因）
+  trap '' PIPE
+  exec > >(stdbuf -oL tee -a "$LOG_FILE") 2>&1
   echo "重建日志: $LOG_FILE"
-fi
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
-fail() { echo -e "  ${RED}✗${NC} $1"; }
-warn() { echo -e "  ${YELLOW}⚠${NC} $1"; }
-info() { echo -e "  ${CYAN}→${NC} $1"; }
-title(){ echo -e "\n${CYAN}[$1]${NC} $2（+${SECONDS}s）"; }
-run()  { if [ "$YES" = "1" ]; then "$@" 2>&1; else "$@" 2>&1 | tail -3; fi; }
+  # 中断检测：上次重建日志无完成标记时提示幂等续跑（A2）
+  local last_log
+  last_log=$(ls -t "$PI_HOME"/logs/rebuild-*.log 2>/dev/null | head -1)
+  if [ -n "$last_log" ] && [ "$last_log" != "$LOG_FILE" ] && ! grep -q "重建完成" "$last_log" 2>/dev/null; then
+    echo "⚠ 检测到未完成的重建日志: $(basename "$last_log")——本次幂等续跑（已完成的将跳过）"
+  fi
+fi
 
 # ---- 平台检测（Termux/Android 原生 vs Debian/Ubuntu 系）----
 # 包名映射仅影响 Termux；其他平台（proot/WSL/原生 Linux）行为与原先完全一致。
@@ -88,6 +100,13 @@ detect_china_network() {
 }
 
 set_mirrors() {
+  # C3：测速结果缓存（TTL 1h，幂等续跑跳过 ~12s 测速）
+  local CACHE="$PI_HOME/logs/.mirror-cache"
+  if [ -f "$CACHE" ] && [ $(( $(date +%s) - $(stat -c %Y "$CACHE" 2>/dev/null || echo 0) )) -lt 3600 ]; then
+    read -r GH_PROXY CHINA_MIRROR < "$CACHE" 2>/dev/null || true
+    ok "镜像缓存命中（<1h）：GH_PROXY=${GH_PROXY:-直连}"
+    return 0
+  fi
   if [ "$CHINA_MIRROR" = "1" ]; then
     info "检测到国内网络，启用镜像加速"
 
@@ -136,6 +155,7 @@ EOF
     GH_PROXY=""
     ok "网络直连模式"
   fi
+  echo "$GH_PROXY $CHINA_MIRROR" > "$PI_HOME/logs/.mirror-cache" 2>/dev/null || true
 }
 
 # ---- 前置检查 ----
@@ -366,11 +386,13 @@ phase2_npm() {
   npm_install_bg() {
     local d="$1"
     info "安装依赖: ${d#$PI_HOME/}"
-    (cd "$d" && npm install --no-fund --no-audit >/dev/null 2>&1)
-    if [ $? -eq 0 ]; then
+    if (cd "$d" && npm install --no-fund --no-audit >/dev/null 2>&1); then
       echo "  ✓ npm install 完成: ${d#$PI_HOME/}"
     else
       echo "  ✗ npm install 失败: ${d#$PI_HOME/}"
+      # A3：失败重跑一次捕获输出尾部，避免无从排查
+      echo "  └ 诊断输出（尾部 10 行）:"
+      (cd "$d" && npm install --no-fund --no-audit 2>&1 | tail -10 | sed 's/^/    /')
     fi
   }
 
@@ -380,7 +402,9 @@ phase2_npm() {
     pids+=("$!")
     n=$((n + 1))
     installed_count=$((installed_count + 1))
-    # 滚动窗口：满 MAX_JOBS 时等最早一个完成再继续
+    # 滚动窗口：满 MAX_JOBS 时等最早一个完成再继续。
+    # 注：bash 5.2.21 实测 wait -n 不输出完成 pid（手册 "may print"），
+    # 无法精确移除——等最早一个（pids[0]）语义正确且兼容所有 bash ≥4.0。
     if [ "$n" -ge "$MAX_JOBS" ]; then
       wait "${pids[0]}" 2>/dev/null || true
       pids=("${pids[@]:1}")
@@ -468,7 +492,9 @@ phase2_repo() {
       case " $tried " in *" $url "*) continue ;; esac
       tried="$tried $url"
       info "尝试: $url"
-      if git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1; then
+      # C1/C2：克隆加超时防镜像挂起无限卡；失败后 GIT_SSL_NO_VERIFY 兜底一次（沙箱证书损坏场景）
+      if timeout 300 git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1 || \
+         { rm -rf "$PI_HOME/searxng/repo"; timeout 300 env GIT_SSL_NO_VERIFY=1 git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1; }; then
         ok=1
         break
       fi
@@ -610,9 +636,12 @@ chrome_ready() {
     fi
     return 1
   fi
-  installed=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -E '^Installed:' | awk '{print $2}' | tr -d '\r')
+  # B3：单次 npx 调用取两个字段（Installed 状态 + 二进制路径），避免每次 rebuild 白跑 2 次 CLI
+  local out installed bin
+  out=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null)
+  installed=$(echo "$out" | grep -E '^Installed:' | awk '{print $2}' | tr -d '\r')
   [ "$installed" = "true" ] || return 1
-  bin=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1)
+  bin=$(echo "$out" | grep -oE '/[^ ]+chrome$' | head -1)
   [ -n "$bin" ] && [ -f "$bin" ] || return 1
   CHROME_BIN_PATH="$bin"
   miss=$(ldd "$bin" 2>/dev/null | grep -c "not found")
@@ -640,6 +669,8 @@ phase2_browser() {
   fi
 
   # 安装：直连 → 直连+绕 TLS → GH_PROXY 镜像兜底（实测直连绕 TLS 1.8MB/s，ghproxy 仅 0.49MB/s）
+  # A4：清理上次中断残留的半截下载包
+  rm -f "$HOME/.cloakbrowser"/_download_*.tar.gz "$HOME/.cloakbrowser"/*.part 2>/dev/null || true
   info "安装 Chromium（cloakbrowser install，约 200MB）..."
   if (cd "$ext" && timeout 600 npx cloakbrowser install >/dev/null 2>&1) && chrome_ready "$ext"; then
     ok "Chromium 安装完成"
@@ -659,6 +690,9 @@ phase2_browser() {
   fi
 
   warn "Chromium 安装失败——浏览器功能不可用"
+  # A3：失败重跑捕获输出尾部（短超时 120s），便于诊断网络/证书问题
+  warn "诊断输出（尾部 10 行）:"
+  (cd "$ext" && timeout 120 npx cloakbrowser install 2>&1 | tail -10 | sed 's/^/    /') || true
   info "手动安装（不可信网络）: cd $ext && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install"
 }
 
@@ -919,6 +953,15 @@ verify() {
       fi
     }
   done
+
+  # git 卫生（D2）：敏感文件不得被意外追踪（与 pi-backup verify 对齐）
+  if [ -d "$PI_HOME/.git" ]; then
+    if git -C "$PI_HOME" ls-files agent/auth.json agent/settings.json agent/models.json agent/models-store.json 2>/dev/null | grep -q .; then
+      warn "敏感文件被 git 追踪（auth/settings/models）——运行 git rm --cached 排除"; errors=$((errors+1))
+    else
+      ok "git 卫生：敏感文件未被追踪"
+    fi
+  fi
 
   # binaries
   [ -f "$PI_HOME/agent/bin/fd" ] && ok "fd: $($PI_HOME/agent/bin/fd --version 2>/dev/null | head -1)" || { warn "fd not found"; errors=$((errors+1)); }
