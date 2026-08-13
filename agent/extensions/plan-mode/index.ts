@@ -1177,6 +1177,9 @@ ${todoList}
       todoOverlay.setUICtx(ctx.ui);
     }
     todoOverlay?.update();
+    // 状态持久化：普通模式 todo 变更不经过 /plan 命令，不调 persistState 则
+    // 重启丢失任务（appendEntry + 执行模式 plan.md 同步；hash 去重防重复写）
+    persistState();
   });
 
   pi.on("agent_start", async () => {
