@@ -9722,14 +9722,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T14:46:46.277Z",
-      "updatedAt": "2026-08-13T14:46:46.277Z",
+      "updatedAt": "2026-08-13T15:55:03.467Z",
       "accessedAt": "2026-08-13T14:46:46.277Z",
       "observedAt": "2026-08-13T14:46:46.277Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "eefcbca3-3e72-4a93-a4f2-9444d0d48d2a"
     },
     {
       "id": "4d90ead6-6911-422c-8a7e-3dc781e32c76",
@@ -9841,14 +9842,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T14:46:46.278Z",
-      "updatedAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T15:55:03.681Z",
       "accessedAt": "2026-08-13T14:46:46.278Z",
       "observedAt": "2026-08-13T14:46:46.278Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "ff2f057f-6216-453c-9ebb-11fe9d3b5c54"
     },
     {
       "id": "70e9c5dd-dd40-4324-bd31-fb5bc9b13795",
@@ -9963,14 +9965,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T14:47:32.239Z",
-      "updatedAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T15:55:58.419Z",
       "accessedAt": "2026-08-13T14:47:32.239Z",
       "observedAt": "2026-08-13T14:47:32.239Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "89da58c9-c302-4fda-9190-488ad064e074"
     },
     {
       "id": "7db897ee-1115-4a2c-b5e7-b1f3cf2fbc7e",
@@ -10043,6 +10046,535 @@
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false
+    },
+    {
+      "id": "578ebea7-a0bd-4fc6-9ba5-ee8954137099",
+      "category": "solutions",
+      "title": "审查建议 33 条核实结论",
+      "content": "外部审查模型对 ~/.pi 仓库提 33 条建议，逐条核实：0 捏造、约 20 条准确、12 条部分属实、2 处行号错、1 处位置错（review.sh 在 agent/skills/pi-code-review/ 不在 scripts/）、漏 3 处（applyMem0Action environments 合并、tmux duplicate 时命令静默丢弃、修复点无测试覆盖）。HIGH #2 link 并发守卫机制描述错误：spawn('ssh') 对 ENOENT 发 error 事件而非同步抛错，link.ts:177 已处理，应降 MEDIUM。plan-mode 9 工具写死是注释自认的故意设计，当 bug 报有失公允。",
+      "tags": [
+        "审查",
+        "验证方法论",
+        "pi-扩展"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "712023f7-74d8-4741-af3e-aa5603574b3e",
+      "category": "solutions",
+      "title": "autopilot 预算拦截自锁修复",
+      "content": "pi-autopilot scheduler.ts:74-82 预算拦截分支 sendWebhook+appendRun(failed) 后裸 return，isDue 只看 nextRun<=now，导致每 30s 重复触发、每天约 2880 条虚假 failed 遥测+webhook，todayRuns 越拦越满锁到次日。修复：拦截分支改用 computeNextRun 推进 nextRun 并 writeTasks 落盘，过期/once 任务推迟 1 小时重试（预算恢复自动补跑），不记 failed（避免消耗 retries>0 任务的重试次数）。比审查建议的 updateTaskAfterRun 更优，附 scheduler.test.ts 3 用例回归。",
+      "tags": [
+        "pi-autopilot",
+        "scheduler",
+        "修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "3cbba6d7-e8fc-40d4-8f56-d7a93c3b6f60",
+      "category": "solutions",
+      "title": "pi-memory 批量删除不落盘修复",
+      "content": "memory_forget 的 category+olderThan 批量分支只改内存数组（entries.length=0; push kept）未调 saveEntries，tools.ts 全文无 saveEntries import（单条路径靠 deleteEntry 内部落盘）。后果比审查描述的'重启后复活'更严重：loadEntries 每次工具调用都从磁盘重读，同会话下一次调用即复活。修复：批量分支补 saveEntries(entries)。对比 storage.ts:332 的 pruneEntries 有 saveEntries，属明显漏写。新测试 tools.test.ts 断言删除后直接读磁盘文件确认落盘。",
+      "tags": [
+        "pi-memory",
+        "storage",
+        "修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "fad330f7-472c-4efc-a5e2-f276a3d7dda6",
+      "category": "solutions",
+      "title": "pi-voice 录音文件同秒竞态修复",
+      "content": "pi-voice core.ts nowStamp() 秒级精度（注释却称'唯一前缀'自相矛盾）；stopInternal 置空 currentFile 后 await stopRecording（termux -q 约 3s 往返），finish() 才置 busy=true，窗口内 start() 的 busy/currentFile 双守卫全放行；同秒再次启动复用文件路径，且 finish() finally 无条件 deleteAudioPair 会删掉正在录制的新文件。修复：文件名加 6 位随机后缀（pi-voice-<秒级戳>-<6位随机>.wav）。测试断言只查 .wav 后缀，加后缀安全。",
+      "tags": [
+        "pi-voice",
+        "竞态",
+        "修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "abdca6f8-4400-4225-94ec-7b10958963cd",
+      "category": "solutions",
+      "title": "subagent {previous} 注入损坏修复",
+      "content": "subagent/index.ts:628 用 String.replace(/\\{previous\\}/g, previousOutput) 注入上一步输出，输出含 $&/$'/$` 时被当作替换模式静默数据损坏。修复：改为函数替换 () => previousOutput，并提取导出 applyPreviousPlaceholder() 供测试；test.mjs 新增 4 用例覆盖 $&/$'/$`/$$$ 场景。此前修复 3 处（link 崩溃路径 truncated、memory 批量删除落盘、voice 同秒竞态）均无测试覆盖，本次一并补齐。",
+      "tags": [
+        "subagent",
+        "注入",
+        "修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "6331ef97-8eab-4de3-a5a3-12d590371e0d",
+      "category": "procedure",
+      "title": "vitest basic reporter 失效与 tsc 配置",
+      "content": "新版本 vitest 不再内建 --reporter=basic，加该参数导致 5 个扩展 vitest 启动报错（输出被截断看不到原因），与代码无关，去掉参数即可；test-all.sh 不用该参数不受影响。全量 tsc 类型检查须用 tsconfig.local.json（rebuild.sh 生成的每环境配置）：cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit。tsconfig.json 的 paths 空映射是仓库既有状态，报 @earendil-works/pi-coding-agent 解析错误与改动无关，勿误判。",
+      "tags": [
+        "vitest",
+        "tsc",
+        "测试基建"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "66363d67-9d54-4299-aea4-08c34cf9d9d4",
+      "category": "fact",
+      "title": "pi 扩展修复后测试基线",
+      "content": "2026 年全面修复+补测试后的回归基线：pi-autopilot 94 / pi-link 55 / pi-voice 106 / pi-tmux 10 / pi-memory 73 / subagent 45 / 注册面 25 / conflict-check 8 / tsc 0 错误。共改 16 文件（8 修复+5 测试+3 文档），推送为 7281538（fix：20 文件 +361/-27）+ 315ec50（entries.json 记忆增量 +377/-12），范围 f079212..315ec50。改动含 pi-voice nowStamp 注释、subagent CHANGELOG v6、pi-autopilot README 预算语义三处文档。",
+      "tags": [
+        "测试基线",
+        "git",
+        "pi-扩展"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "941d8ec0-5c84-4ef2-abb8-d0780533706c",
+      "category": "procedure",
+      "title": "代码改动与 entries.json 分提交惯例",
+      "content": "~/.pi 仓库推送惯例：代码改动与 entries.json 会话记忆自动增量（本会话 +377/-12）分两个独立提交推送，与 f079212/d4b5b11 历史一致；entries.json 路径从仓库根算（memory/entries.json）。remote 为 SSH URL（ssh://git@ssh.github.com:443/...），无 token 风险，无需 git remote set-url 恢复。git committer 自动配置为 root@MYPC.localdomain 是本机既有状态（此前提交同样如此），勿当问题改动 git config。",
+      "tags": [
+        "git",
+        "提交惯例",
+        "仓库约定"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "accessedAt": "2026-08-13T15:30:02.832Z",
+      "observedAt": "2026-08-13T15:30:02.832Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "29a39641-54ab-4631-ac0c-0e68bc07f6bf",
+      "category": "procedure",
+      "title": "tmux_run 会话永不退出的正确等待方式",
+      "content": "pi-tmux 的 tmux_run 用 send-keys 把命令注入交互 bash，命令执行完后 shell 不退出，会话永久存活（日志尾部出现 shell 提示符属正常）。因此 tmux_wait until_exit=true 对该类任务必然超时——超时不代表任务卡住，应改用 tmux_wait(pattern='完成标记') 等日志关键字，任务完成后用 tmux_stop 清理。用户明确要求记录此经验。",
+      "tags": [
+        "tmux",
+        "pi-tmux",
+        "工具用法"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "07316af1-579e-45c2-b67f-626eee95e0db",
+      "category": "fact",
+      "title": "rebuild.sh 第一批 11 项可靠性优化",
+      "content": "~/.pi/scripts/rebuild.sh 按外部审查建议实施第一批（提交 1e4fa0a）：trap '' PIPE + tee 用 stdbuf -oL 防 SIGPIPE 死亡；上次日志无'重建完成'标记时提示幂等续跑；npm/cloakbrowser 失败重跑捕获尾部 10 行；安装前清理 _download_*.tar.gz 残留；warn() 函数前置到参数解析前；删除死代码 run()；chrome_ready 合并为一次 npx cloakbrowser info；git clone 加 timeout 300 且失败后 GIT_SSL_NO_VERIFY=1 重试；镜像测速缓存 logs/.mirror-cache TTL 1h；阶段耗时改增量显示；verify 加敏感文件追踪自检。",
+      "tags": [
+        "rebuild.sh",
+        "可靠性",
+        "脚本优化"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "eefcbca3-3e72-4a93-a4f2-9444d0d48d2a",
+      "category": "solutions",
+      "title": "cloakbrowser 需 playwright-core>=1.53.0 的隐藏 bug",
+      "content": "pi-browser 依赖 cloakbrowser@0.3.31，其要求 playwright-core >=1.53.0；此前 package.json 锁 ^1.52.0 装出的 1.52.0 在 npm ls 中一直是 invalid 状态（隐藏依赖缺陷，长期未被发现）。锁定精确版本 1.53.0 后 invalid 消除。改依赖版本后应跑 npm ls 检查 invalid 标记，可暴露此类潜伏问题。",
+      "tags": [
+        "pi-browser",
+        "playwright-core",
+        "依赖版本"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "5b09df76-2455-4737-9a14-a4473e94b8cb",
+      "category": "fact",
+      "title": "版本锁定策略：lock 不入库、package.json 锁精确版本",
+      "content": "~/.pi 仓库 .gitignore 排除 package-lock.json 是刻意设计：多平台（linux-x64/termux-aarch64）共享同一 lock 会因 optionalDependencies 平台字段引发跨机 npm ci 冲突。消除跨机依赖漂移的正确方式是 package.json 去掉 ^ 锁精确版本：已对 pi-browser、pi-web-search、pi-autopilot 三个扩展实施。",
+      "tags": [
+        "依赖管理",
+        "多平台",
+        "项目约定"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "4ce726b9-023d-478e-b7ac-f011e592089f",
+      "category": "fact",
+      "title": "pi-link 三设备拓扑与 altHosts failover",
+      "content": "pi-link 多设备配置：termux-ubuntu=tailscale 100.114.171.18:8022 + 局域网 192.168.124.2:8022；termux-phone=tailscale 100.74.15.15:8022 + 局域网 192.168.124.4:8022；本机 mypc-wsl=tailscale 100.117.170.110:22（宿主转发）+ 局域网 192.168.124.3:8022（sshd 实为 8022 非模板默认 22）。pi-link.json 配 altHosts 实现局域网优先、Tailscale 兜底、全挂报错。",
+      "tags": [
+        "pi-link",
+        "多设备",
+        "网络拓扑"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "606cece4-abd7-4fd6-8326-60f677bbe1cd",
+      "category": "fact",
+      "title": "tsconfig paths 多设备根治机制",
+      "content": "~/.pi 仓库共享 tsconfig.json 不再含 paths（环境相关路径入库会跨机互相覆盖），由 rebuild.sh Phase 2-D 每设备生成 tsconfig.local.json（extends 共享配置 + 本机 paths 指向本机 pi 安装根），该文件被 .gitignore 排除。pull 含 tsconfig 改动的提交后需重新跑 Phase 2-D 或 rebuild.sh，再用 scripts/test-all.sh 验证 tsc。",
+      "tags": [
+        "tsconfig",
+        "多环境",
+        "rebuild.sh"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "ab976393-ae20-4462-bc47-1d5f5460c8d3",
+      "category": "solutions",
+      "title": "searxng git clone 失败 tarball 兜底（已实施）",
+      "content": "rebuild.sh 的 SearXNG 获取已加兜底：全源 git clone 失败后自动 curl tarball（用测速选出的 GH_PROXY 镜像）→ 解压 → git init + 基线提交（保持 .git 存在性判断与 verify HEAD 显示一致）→ 校验 requirements.txt。前提查证：searxng/repo 无任何 git pull 增量更新机制（start.sh 零 git 操作），tarball 兜底无副作用。",
+      "tags": [
+        "searxng",
+        "tarball",
+        "rebuild.sh"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "ff2f057f-6216-453c-9ebb-11fe9d3b5c54",
+      "category": "preference",
+      "title": "外部优化建议先逐条核实再分批实施",
+      "content": "用户接受外部模型/审查工具对 ~/.pi 仓库的优化建议时，要求先逐条代码验证（正确性/冲突/可行性/优先级），标注不可动的既有设计，分两批实施（低风险高收益优先、需确认项第二批），每批执行前需用户确认。参照案例：16 条 rebuild.sh 建议验证 14 条属实、2 条部分属实、1 条不采纳。",
+      "tags": [
+        "工作方式",
+        "代码审查",
+        "用户偏好"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:03.324Z",
+      "updatedAt": "2026-08-13T15:55:03.324Z",
+      "accessedAt": "2026-08-13T15:55:03.324Z",
+      "observedAt": "2026-08-13T15:55:03.324Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "98605c02-ec99-4d7b-a799-78c0ecb8fae4",
+      "category": "procedure",
+      "title": "pi-full-audit 技能五步审计流程",
+      "content": "~/.pi/agent/skills/pi-full-audit/SKILL.md（触发词：全面检查/深度审计/体检/audit）。五步流程：review.sh --all 确定性检查 → test-all.sh 全量回归（tmux 后台跑）→ subagent 4 组并行深度审查（只读+六维度+精简输出约束）→ 人工抽查验证（HIGH 全验 MEDIUM 抽验）→ 分级报告（基线验证表+HIGH 标注已验证+设计权衡降级注明原因）。与 pi-code-review 分工：后者审 diff/改动，前者全量扫描。",
+      "tags": [
+        "技能",
+        "审计",
+        "审查流程"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+    },
+    {
+      "id": "89da58c9-c302-4fda-9190-488ad064e074",
+      "category": "fact",
+      "title": "~/.pi 审查 4 个 HIGH bug 清单",
+      "content": "全项目审查发现 4 HIGH 均未修：pi-autopilot scheduler.ts:74-82 预算拦截不推进 nextRun 致 30s 重复触发自锁（单任务一天 ~2880 条虚假失败）；pi-link link.ts:143/275 并发守卫 markSendStart 与 done 间无 try/finally，spawn 抛错永久残留 inflight；pi-memory tools.ts:347-363 批量删除（category+olderThan）不调 saveEntries 重启后条目复活（单条删除正常）；pi-voice 录音文件名秒级命名+stopInternal/finish 间 ~3s 竞态窗口，可删除正在录制的文件。",
+      "tags": [
+        "bug",
+        "审查",
+        "pi-autopilot",
+        "pi-link",
+        "pi-memory",
+        "pi-voice"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+    },
+    {
+      "id": "b7ed60dc-cb57-4792-995d-a47be80f590c",
+      "category": "fact",
+      "title": "Node v22 子进程超时无 ETIMEDOUT",
+      "content": "Node v22 实测：子进程超时被杀死时 err.code=null、err.signal='SIGTERM'，ETIMEDOUT 分支永不命中。pi-voice core.ts:47、pi-tmux core.ts:44 因此超时被误报为 code 1 且丢失 stderr。判断子进程超时应以实测 err.signal 为准，勿依赖 ETIMEDOUT。",
+      "tags": [
+        "node",
+        "子进程",
+        "超时",
+        "踩坑"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+    },
+    {
+      "id": "316f97fc-5512-44d5-abfa-0cc2cc446fb3",
+      "category": "solutions",
+      "title": "entries.json 合并判断远端清理迹象",
+      "content": "多设备共享 entries.json，pull 被拒时判断远端是否做过记忆清理：远端提交相对 HEAD 呈净删除+大量软删除条目即清理迹象（本次 d4b5b11 删 10 旧增 10 新），此时以远端为基底只补回本地真正新增条目；同 id 覆盖条目仅 updatedAt 不同且内容相同则无丢失。首次合并误补回 10 条被清理旧条目，修正后推送 f079212。",
+      "tags": [
+        "git",
+        "entries.json",
+        "多设备合并",
+        "pi-memory"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+    },
+    {
+      "id": "b8881c6f-25b7-46d4-9ac6-ff3a0fd9e5ed",
+      "category": "solutions",
+      "title": "subagent 审查委派精简输出防截断",
+      "content": "全项目审查委派 subagent 时报告易超 8000 字符被截断（本次截断 2 次）。对策：prompt 明确只读+六维度（文件:行号+问题+严重级+验证方式）+输出上限（LOW 最多 5 条、全文 3000 字内），按扩展集群分组并行。验证铁律：HIGH 全验、MEDIUM 抽验——本次靠验证纠正 1 项方向性误报（rebuild.sh verify glob 被说成恒报错，实测是漏检）。",
+      "tags": [
+        "subagent",
+        "审查",
+        "报告截断",
+        "委派模板"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+    },
+    {
+      "id": "ce155dbd-381d-4bed-bdb6-5fe9cbaee74b",
+      "category": "fact",
+      "title": "全项目审计误报判别清单",
+      "content": "审计误报判别：1) git ignored 的密钥文件（agent/auth.json 被 .gitignore 第 13 行忽略）是磁盘运行配置非泄露；2) bash glob 只要有一处匹配就不保留字面量，rebuild.sh verify 的 */node_modules 对无 node_modules 的扩展是漏检而非误报；3) review.sh --selfcheck 检查的是 cwd 而非技能所在仓库，非仓库目录运行误报'未安装 git 仓库'。",
+      "tags": [
+        "审计",
+        "误报判别",
+        "密钥扫描",
+        "glob"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+    },
+    {
+      "id": "ea82d3a3-6c86-4db7-8a2f-23612f7a616e",
+      "category": "preference",
+      "title": "用户习惯：大任务后沉淀为技能",
+      "content": "用户完成大型检查/审查后倾向把实战经验固化为新技能（本次创建 pi-full-audit），任务收尾时可主动建议沉淀。技能文件属 ~/.pi 入库共享内容，新建后需询问用户是否提交推送到远端同步其他设备。",
+      "tags": [
+        "用户习惯",
+        "技能",
+        "知识沉淀"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:55:58.327Z",
+      "updatedAt": "2026-08-13T15:55:58.327Z",
+      "accessedAt": "2026-08-13T15:55:58.327Z",
+      "observedAt": "2026-08-13T15:55:58.327Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
     }
   ]
 }
