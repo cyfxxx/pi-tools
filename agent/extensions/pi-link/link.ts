@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
-import type { DeviceConfig } from './config.ts'
+import type { DeviceConfig, DeviceAddr } from './config.ts'
+import { deviceAddresses } from './config.ts'
 import { parseState } from './state.ts'
 import { selfName } from './active.ts'
 import type { OutboxEntry } from './outbox.ts'
@@ -141,12 +142,22 @@ export async function sendToDevice(
   }
   markSendStart(key, message)
 
+  // 多地址 failover：仅配置了 altHosts 时按序探测选可达地址（单地址零开销，行为与旧版一致）；
+  // 全部不可达时退回主地址（让 ssh 报真实连接错误，避免误报）
+  let target: DeviceAddr = { host: device.host, port: device.port }
+  const addrs = deviceAddresses(device)
+  if (addrs.length > 1) {
+    for (const a of addrs) {
+      const r = await probeAddr(device, a)
+      if (r.ok) { target = a; break }
+    }
+  }
   const sshArgs = [
-    ...(device.port ? ['-p', String(device.port)] : []),
+    ...(target.port ? ['-p', String(target.port)] : []),
     '-o', 'BatchMode=yes',
     '-o', 'ConnectTimeout=10',
     ...(device.sshArgs ?? []),
-    `${device.user}@${device.host}`,
+    `${device.user}@${target.host}`,
     buildRemoteCommand(device, opts),
   ]
 
@@ -286,13 +297,28 @@ export async function sendToDevice(
 
 /** 连通性探测：ssh 远程执行 echo（3 秒超时） */
 export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latencyMs: number; detail?: string }> {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
+    const addrs = deviceAddresses(device)
     const started = Date.now()
+    let last: { detail?: string } = {}
+    for (const addr of addrs) {
+      // 按序探测（主地址优先）；单地址超时 8s，多地址总耗时 = 地址数 × 单地址失败耗时
+      const r = await probeAddr(device, addr)
+      if (r.ok) return resolve({ ok: true, latencyMs: Date.now() - started })
+      last = { detail: r.detail }
+    }
+    resolve({ ok: false, latencyMs: Date.now() - started, detail: last.detail })
+  })
+}
+
+/** 单地址连通性探测（ssh 远程 echo，8s 兜底） */
+function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolean; detail?: string }> {
+  return new Promise((resolve) => {
     const args = [
-      ...(device.port ? ['-p', String(device.port)] : []),
+      ...(addr.port ? ['-p', String(addr.port)] : []),
       '-o', 'BatchMode=yes',
       '-o', 'ConnectTimeout=3',
-      `${device.user}@${device.host}`,
+      `${device.user}@${addr.host}`,
       'echo pi-link-ok',
     ]
     const proc = spawn('ssh', args, { stdio: ['ignore', 'pipe', 'pipe'] })
@@ -305,11 +331,10 @@ export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latenc
     proc.stderr.on('data', (c: string) => { err += c })
     proc.on('error', (e: Error) => { failed = e.message })
     proc.on('exit', (code) => {
-      const latencyMs = Date.now() - started
       if (code === 0 && out.trim() === 'pi-link-ok') {
-        resolve({ ok: true, latencyMs })
+        resolve({ ok: true })
       } else {
-        resolve({ ok: false, latencyMs, detail: failed || (err || out).trim().slice(0, 200) || `exit ${code}` })
+        resolve({ ok: false, detail: failed || (err || out).trim().slice(0, 200) || `exit ${code}` })
       }
     })
     const t = setTimeout(() => { proc.kill('SIGKILL') }, 8000)
@@ -319,12 +344,27 @@ export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latenc
 
 /** 远程状态读取：ssh 执行并收集 stdout */
 export function remoteExec(device: DeviceConfig, cmd: string, timeoutMs = 15000): Promise<{ code: number | null; out: string; err: string }> {
+  return new Promise(async (resolve) => {
+    // 多地址 failover：按序尝试，任一成功即返回；全部失败返回最后结果
+    const addrs = deviceAddresses(device)
+    let last: { code: number | null; out: string; err: string } = { code: null, out: '', err: '无可用地址' }
+    for (const addr of addrs) {
+      const r = await remoteExecAddr(device, addr, cmd, timeoutMs)
+      if (r.code === 0) return resolve(r)
+      last = r
+    }
+    resolve(last)
+  })
+}
+
+/** 单地址远程执行（ssh exec，收集 stdout/stderr） */
+function remoteExecAddr(device: DeviceConfig, addr: DeviceAddr, cmd: string, timeoutMs: number): Promise<{ code: number | null; out: string; err: string }> {
   return new Promise((resolve) => {
     const args = [
-      ...(device.port ? ['-p', String(device.port)] : []),
+      ...(addr.port ? ['-p', String(addr.port)] : []),
       '-o', 'BatchMode=yes',
       '-o', 'ConnectTimeout=5',
-      `${device.user}@${device.host}`,
+      `${device.user}@${addr.host}`,
       cmd,
     ]
     const proc = spawn('ssh', args, { stdio: ['ignore', 'pipe', 'pipe'] })
