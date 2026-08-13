@@ -27,14 +27,32 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 
 | 工具 | 参数 | 说明 |
 |------|------|------|
-| `link_send` | `device`, `message`, `timeoutSec?` | 向目标设备 pi 发消息，等待完成，返回最终回复 |
+| `link_send` | `device`, `message`, `timeoutSec?` | 向目标设备 pi 发消息，等待完成，返回最终回复（含流式进度回传） |
 | `link_status` | — | 设备清单 + 连通性探测（● 可达 / ○ 不可达） |
 
 ## 斜杠命令
 
-`/link send <设备> <消息>` — 发送消息并等待回复
+`/link send <设备> <消息>` — 发送消息并等待回复（无人值守拒绝）
+`/link watch <设备> [--lines N]` — 观察远程 pi 会话尾部（模型间沟通可见）
+`/link attach <设备> [--force] <文本>` — 介入：向远程 pi 输入框发送文本（等价在远程终端打字；远程 busy 时拒绝，--force 强制）
 `/link status` — 设备清单与连通性
 `/link help` — 用法与配置说明
+
+## 活跃设备/身份机制（T2-1）
+
+防止"我不在控制的设备乱指挥"：
+
+- 本机 pi-link 监听用户输入（input 事件）刷新活跃时间戳（`~/.pi/pi-link-active.json`）
+- `link_send` 发送前校验：**无人值守环境**（pi-cron 定时任务设 `PI_UNATTENDED=1`）或**本机 15 分钟无用户交互**时默认拒绝，报错提示
+- `~/.pi/pi-link.json` 设 `"allowUnattended": true` 可放开（指令头仍标注无人值守）
+- 设备身份：`selfName`（默认 hostname）
+
+## 远程状态与冲突防护（T2-2）
+
+- 每台设备 pi-link 维护 `~/.pi/pi-link-state.json`（status idle/busy + currentTask + tmuxSession + currentSessionFile）
+- `/link watch` 读远程状态定位当前会话文件，tail 压缩显示（只读）
+- `/link attach` 先读远程状态：**busy 时拒绝介入**（提示当前任务），`--force` 强制打断；发送走 ssh + 远程 tmux load-buffer/paste-buffer（等价粘贴进输入框）
+- 注意：远程状态文件由远程设备的 pi-link 扩展维护（需远程同步代码后重启 pi）
 
 ## 配置 `~/.pi/pi-link.json`（gitignored，每设备独立）
 
@@ -96,8 +114,9 @@ cd agent/extensions/pi-link && ./node_modules/.bin/vitest run
 
 ### T2（中等成本，架构小幅演进）
 
-- **活跃设备/身份机制**：动态"当前指挥者"——每设备监听用户交互刷新活跃时间戳，指令携带发起者身份与活跃性，远程按发起方活跃度接受/拒绝/询问（防止无人值守设备乱指挥）；定时任务发起标记为无人值守，默认拒绝跨设备调用
-- **远程会话观察与介入（watch/attach）**：`/link watch`（ssh tail 远程会话文件 / tmux capture-pane 观察模型间沟通）+ `/link attach`（ssh + 远程 tmux send-keys，等价在远程终端输入）；冲突防护用远程状态文件（idle/busy + 当前任务），busy 时默认拒绝可 --force
+- ~~**活跃设备/身份机制**~~（已实现：input 刷新活跃 + PI_UNATTENDED 拦截 + allowUnattended 配置）
+- ~~**远程会话观察与介入（watch/attach）**~~（已实现：状态文件冲突防护 + tmux paste-buffer 介入）
+- **B→A 主动推送**：远程完成后主动通知（ssh 反向隧道或常驻 WS）
 - **B→A 主动推送**：远程完成后主动通知（ssh 反向隧道或常驻 WS）
 - **任务队列/去重**：多任务排队、同消息去重
 - **设备发现**：Agent Card 格式（`/.well-known/agent-card.json` 风格 JSON）+ mDNS/DNS-SD

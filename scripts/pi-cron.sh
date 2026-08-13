@@ -412,7 +412,7 @@ print(d['prompt'], end='')
     local out_file="/tmp/pi-cron-out.$$.$RANDOM"
     local EXEC_START
     EXEC_START=$(date +%s%N)
-    timeout "$task_timeout" "$PI_BIN" -p "$task_prompt" > "$out_file" 2>&1
+    PI_UNATTENDED=1 timeout "$task_timeout" "$PI_BIN" -p "$task_prompt" > "$out_file" 2>&1
     EXIT_CODE=$?
     local EXEC_MS
     EXEC_MS=$(( ($(date +%s%N) - EXEC_START) / 1000000 ))

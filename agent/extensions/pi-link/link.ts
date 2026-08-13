@@ -279,3 +279,95 @@ export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latenc
     proc.on('exit', () => clearTimeout(t))
   })
 }
+
+/** 远程状态读取：ssh 执行并收集 stdout */
+export function remoteExec(device: DeviceConfig, cmd: string, timeoutMs = 15000): Promise<{ code: number | null; out: string; err: string }> {
+  return new Promise((resolve) => {
+    const args = [
+      ...(device.port ? ['-p', String(device.port)] : []),
+      '-o', 'BatchMode=yes',
+      '-o', 'ConnectTimeout=5',
+      `${device.user}@${device.host}`,
+      cmd,
+    ]
+    const proc = spawn('ssh', args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    let out = ''
+    let err = ''
+    proc.stdout.setEncoding('utf-8')
+    proc.stdout.on('data', (c: string) => { out += c })
+    proc.stderr.setEncoding('utf-8')
+    proc.stderr.on('data', (c: string) => { err += c })
+    proc.on('exit', (code) => {
+      clearTimeout(t)
+      resolve({ code, out, err })
+    })
+    const t = setTimeout(() => { proc.kill('SIGKILL'); resolve({ code: null, out, err }) }, timeoutMs)
+  })
+}
+
+/** 读取远程状态文件（不存在→null） */
+export async function readRemoteState(device: DeviceConfig): Promise<{ state: ReturnType<typeof import('./state').parseState> | null; detail?: string }> {
+  const r = await remoteExec(device, 'cat ~/.pi/pi-link-state.json 2>/dev/null')
+  if (r.code !== 0 || !r.out.trim()) return { state: null, detail: r.err.trim().slice(0, 200) || undefined }
+  const { parseState } = await import('./state')
+  const state = parseState(r.out.trim())
+  return { state, detail: state ? undefined : '远程状态文件格式无效' }
+}
+
+/** 观察：远程最新会话文件尾部（--root-- TUI 会话目录或状态文件记录的会话） */
+export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ ok: boolean; text: string; error?: string }> {
+  // 优先状态文件记录的当前会话，否则找 --root-- 最新会话
+  const { state } = await readRemoteState(device)
+  const sessionFile = state?.currentSessionFile
+  const cmd = sessionFile
+    ? `tail -n ${lines} ${JSON.stringify(sessionFile)} 2>/dev/null || ls -t ~/.pi/agent/sessions/*/*.jsonl 2>/dev/null | head -1 | xargs -I{} tail -n ${lines} {}`
+    : `F=$(ls -t ~/.pi/agent/sessions/*/*.jsonl 2>/dev/null | head -1); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
+  const r = await remoteExec(device, cmd, 20000)
+  if (r.code !== 0 && !r.out) return { ok: false, text: '', error: r.err.trim().slice(0, 200) || '读取失败' }
+  // 会话文件是 JSONL——压缩显示（type + 关键字段）
+  const rows: string[] = []
+  for (const line of r.out.split('\n')) {
+    const t = line.trim()
+    if (!t) continue
+    try {
+      const ev = JSON.parse(t) as RpcEvent
+      if (ev.type === 'message') {
+        const m = (ev.message ?? {}) as { role?: string; content?: unknown }
+        let body = ''
+        if (Array.isArray(m.content)) {
+          for (const b of m.content as Array<{ type?: string; text?: string; id?: string }>) {
+            if (b.type === 'text' && b.text) body += b.text
+            else if (b.type === 'toolCall') body += `[工具调用 ${String(b.id ?? '')}]`
+          }
+        } else if (typeof m.content === 'string') body = m.content
+        rows.push(`${m.role === 'assistant' ? '🤖' : '👤'} ${body.slice(0, 150)}`)
+      } else if (ev.type === 'turn_start') {
+        rows.push('🔄 新一轮开始')
+      } else if (ev.type === 'agent_settled') {
+        rows.push('✅ 任务完成')
+      }
+    } catch {
+      // 非 JSON 行忽略
+    }
+  }
+  return { ok: true, text: rows.join('\n') || '(会话为空)' }
+}
+
+/** 介入：向远程 pi 的 tmux 会话发送文本（冲突防护由上层校验状态） */
+export async function attachToRemote(device: DeviceConfig, text: string, tmuxSession?: string): Promise<{ ok: boolean; detail: string }> {
+  const sess = tmuxSession ?? (await readRemoteState(device)).state?.tmuxSession
+  if (!sess) {
+    return { ok: false, detail: '无法确定远程 pi 的 tmux 会话（状态文件无 tmuxSession，且远程未运行 pi-link 扩展）' }
+  }
+  // tmux send-keys 不支持从 stdin 读；用 load-buffer + paste-buffer（等价粘贴）。
+  // 文本经 base64 传递避免引号/特殊字符转义问题；单行消息（多行会多段粘贴）。
+  const b64 = Buffer.from(text, 'utf-8').toString('base64')
+  const s = JSON.stringify(sess)
+  const cmd = `printf %s ${b64} | base64 -d > /tmp/pi-link-msg.txt 2>/dev/null && ` +
+    `tmux load-buffer -b pi-link /tmp/pi-link-msg.txt 2>&1 && ` +
+    `tmux paste-buffer -b pi-link -t ${s} 2>&1 && ` +
+    `tmux send-keys -t ${s} Enter 2>&1 && rm -f /tmp/pi-link-msg.txt`
+  const r = await remoteExec(device, cmd, 15000)
+  if (r.code !== 0) return { ok: false, detail: r.err.trim().slice(0, 200) || `tmux send-keys 失败（exit ${r.code}）` }
+  return { ok: true, detail: `已发送到远程 ${sess} 输入框` }
+}

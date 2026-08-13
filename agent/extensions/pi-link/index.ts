@@ -1,6 +1,8 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { loadConfig, getDevice, describeDevice, type DeviceConfig, type LinkConfig } from './config'
-import { sendToDevice, probeDevice, type SendOptions } from './link'
+import { sendToDevice, probeDevice, watchRemote, attachToRemote, readRemoteState, type SendOptions } from './link'
+import { touchActive, isActive, readActive, selfName, isUnattendedEnv } from './active'
+import { writeLocalState } from './state-writer'
 
 /**
  * pi-link — 多设备 pi 互联扩展
@@ -20,6 +22,23 @@ function fmtResult(r: { ok: boolean; reply?: string; turns: number; tools: numbe
 
 export default function (pi: ExtensionAPI): void {
   const cfg = loadConfig()
+  const me = selfName(cfg.selfName)
+
+  // T2-1 活跃机制：用户输入（消息/命令）刷新本机活跃时间戳
+  pi.on('input', async (event: { text?: string }) => {
+    const text = typeof event?.text === 'string' ? event.text : ''
+    touchActive(me, text)
+  })
+
+  // T2-2 远程状态维护：记录本机 agent 运行状态与当前会话（其他设备 attach/watch 用）
+  // 会话文件路径在 session_start 时不可直接取（事件不含 filePath），
+  // 由 turn_start 时探测当前会话目录最新文件兜底（attach/watch 侧同样有兜底）。
+  pi.on('turn_start', async () => {
+    writeLocalState({ device: me, status: 'busy' })
+  })
+  pi.on('agent_settled', async () => {
+    writeLocalState({ device: me, status: 'idle' })
+  })
 
   pi.registerTool({
     name: 'link_send',
@@ -49,6 +68,15 @@ export default function (pi: ExtensionAPI): void {
       if (!message) return err('缺少 message 参数。用法: link_send <device> <message>')
       const dev = getDevice(cfg, name)
       if (!dev) return err(`未知设备 "${name}"。已配置: ${listDevices(cfg)}。请在 ~/.pi/pi-link.json 添加或查看 /link status`)
+      // T2-1 活跃校验：无人值守环境（定时任务）或本机长期无用户交互时默认拒绝
+      const active = readActive()
+      if ((isUnattendedEnv() || !isActive(active)) && !(cfg.allowUnattended ?? false)) {
+        const why = isUnattendedEnv()
+          ? '当前是无人值守执行（定时任务）'
+          : `本机最近用户交互在 ${active ? Math.round((Date.now() - active.lastActiveAt) / 60000) : '未知'} 分钟前`
+        return err(`${why}，跨设备指令已拒绝（防无人值守乱指挥）。` +
+          '可在 ~/.pi/pi-link.json 设 allowUnattended: true 允许，或在本机输入后重试。')
+      }
       const t = (params as Record<string, unknown>).timeoutSec
       // 下限保护：远程 RPC 启动 + LLM 会话通常需 60s+，防止模型传过小值导致必失败
       const opts = typeof t === 'number' && t > 0 ? { timeoutSec: Math.max(60, t) } : {}
@@ -159,8 +187,54 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify(`未知设备 "${device}"。已配置: ${listDevices(cfg)}`, 'warning')
           return
         }
-        const r = await sendToDevice(dev, message)
+        // 命令路径同样做活跃校验
+        const active = readActive()
+        if ((isUnattendedEnv() || !isActive(active)) && !(cfg.allowUnattended ?? false)) {
+          ctx.ui.notify('无人值守环境或本机长时间无交互，跨设备指令已拒绝（allowUnattended 可配置）', 'warning')
+          return
+        }
+        const r = await sendToDevice(dev, message, { fromName: me })
         await output(fmtResult(r))
+        return
+      }
+      if (sub === 'watch') {
+        const device = parts[1]
+        const lines = parts.includes('--lines') ? parseInt(parts[parts.indexOf('--lines') + 1] ?? '30', 10) || 30 : 30
+        if (!device) {
+          ctx.ui.notify('用法: /link watch <设备> [--lines N]', 'warning')
+          return
+        }
+        const dev = getDevice(cfg, device)
+        if (!dev) {
+          ctx.ui.notify(`未知设备 "${device}"。已配置: ${listDevices(cfg)}`, 'warning')
+          return
+        }
+        const r = await watchRemote(dev, lines)
+        await output(r.ok ? `远程 ${device} 会话尾部（${lines} 行）:\n\n${r.text}` : `观察失败: ${r.error}`)
+        return
+      }
+      if (sub === 'attach') {
+        const force = parts.includes('--force')
+        const rest = parts.filter((x) => x !== '--force')
+        const device = rest[1]
+        const text = rest.slice(2).join(' ')
+        if (!device || !text) {
+          ctx.ui.notify('用法: /link attach <设备> [--force] <要输入的文本>', 'warning')
+          return
+        }
+        const dev = getDevice(cfg, device)
+        if (!dev) {
+          ctx.ui.notify(`未知设备 "${device}"。已配置: ${listDevices(cfg)}`, 'warning')
+          return
+        }
+        // 冲突防护：远程 busy 时拒绝（--force 打断）
+        const { state } = await readRemoteState(dev)
+        if (state?.status === 'busy' && !force) {
+          ctx.ui.notify(`远程 ${device} 正在执行任务（${state.currentTask ?? '未知'}），已拒绝介入。加 --force 强制打断。`, 'warning')
+          return
+        }
+        const r = await attachToRemote(dev, text, state?.tmuxSession)
+        await output(r.ok ? r.detail : `介入失败: ${r.detail}`)
         return
       }
       ctx.ui.notify(`未知子命令 "${sub}"。用法见 /link help`, 'warning')
@@ -182,7 +256,9 @@ function helpText(): string {
     'pi-link 多设备互联：让本机 pi 与其他设备（局域网/Tailscale）的 pi 通信',
     '',
     '用法:',
-    '  /link send <设备> <消息>   向目标设备的 pi 发送消息并等待回复',
+    '  /link send <设备> <消息>   向目标设备的 pi 发送消息并等待回复（无人值守拒绝）',
+    '  /link watch <设备> [--lines N]   观察远程 pi 会话尾部（模型间沟通可见）',
+    '  /link attach <设备> [--force] <文本>   介入远程 pi 输入框（busy 拒绝/--force）',
     '  /link status               设备清单与连通性探测',
     '  /link help                 本帮助',
     '',
