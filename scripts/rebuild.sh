@@ -662,43 +662,37 @@ phase2_browser() {
   info "手动安装（不可信网络）: cd $ext && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install"
 }
 
-# ---- Phase 2-D: 扩展类型链接（tsconfig paths 同步到实际 pi 安装根） ----
+# ---- Phase 2-D: 扩展类型链接（tsconfig.local.json 生成，paths 指向本机 pi 安装根） ----
+# tsconfig.json（共享）不含 paths——每环境安装路径不同，入库互相覆盖会导致 tsc 失败。
+# 本阶段生成 gitignored 的 tsconfig.local.json（extends 共享配置 + 本机 paths）。
 phase2_types() {
-  title "Phase 2-D" "扩展类型链接"
-  local tsconfig="$PI_HOME/agent/extensions/tsconfig.json"
-  [ -f "$tsconfig" ] || { warn "extensions/tsconfig.json 缺失"; return 1; }
-
+  title "Phase 2-D" "扩展类型链接（tsconfig.local.json）"
   # 定位 pi 安装根（复用 find_pi_root；wrapper 已接管 pi 命令，which pi 反推不可靠）
   local root="$(find_pi_root)"
   if [ -z "$root" ]; then
-    warn "未找到 pi 安装目录（$HOME/.local/share/pi-node/*），跳过 tsconfig 链接同步"
+    warn "未找到 pi 安装目录（$HOME/.local/share/pi-node/*），跳过 tsconfig.local.json 生成"
     info "安装 pi（npm install -g @earendil-works/pi-coding-agent）后重跑 rebuild 即可补齐"
     return 0
   fi
 
-  if grep -qF "$root/lib/node_modules" "$tsconfig"; then
-    ok "tsconfig paths 已指向 $root"
-    return 0
-  fi
+  local out="$PI_HOME/agent/extensions/tsconfig.local.json"
+  ROOT="$root" python3 - "$out" <<'PY2D' && ok "tsconfig.local.json 已生成（paths → $root）"
+import json, sys, os
+out = sys.argv[1]
+root = os.environ['ROOT']
+paths = {
+    "@earendil-works/pi-coding-agent": [root + "/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"],
+    "@earendil-works/pi-agent-core": [root + "/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-agent-core/dist/index.d.ts"],
+    "@earendil-works/pi-ai": [root + "/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/dist/index.d.ts"],
+    "@earendil-works/pi-tui": [root + "/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.d.ts"],
+    "typebox": [root + "/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/typebox/build/index.d.mts"],
+}
+d = {"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": ".", "paths": paths}}
+json.dump(d, open(out, "w"), indent=2, ensure_ascii=False)
+open(out, "a").write("\n")
+PY2D
 
-  python3 - "$tsconfig" "$root" <<'PY' && ok "tsconfig paths 已重写到 $root"
-import json, sys
-p, root = sys.argv[1], sys.argv[2]
-d = json.load(open(p))
-paths = d.get('compilerOptions', {}).get('paths', {})
-changed = False
-for k, v in paths.items():
-    for i, x in enumerate(v):
-        marker = '/lib/node_modules/'
-        j = x.find(marker)
-        if j > 0 and '.local/share/pi-node/' in x[:j]:
-            v[i] = root + x[j:]
-            changed = True
-if changed:
-    with open(p, 'w') as f:
-        json.dump(d, f, indent=2, ensure_ascii=False)
-        f.write('\n')
-PY
+  return 0
 }
 
 # ---- Phase 2-E: pi-wrapper 自愈 ----

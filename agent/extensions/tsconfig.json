@@ -16,23 +16,7 @@
       "node"
     ],
     "baseUrl": ".",
-    "paths": {
-      "@earendil-works/pi-coding-agent": [
-        "/data/data/com.termux/files/usr/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"
-      ],
-      "@earendil-works/pi-agent-core": [
-        "/data/data/com.termux/files/usr/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-agent-core/dist/index.d.ts"
-      ],
-      "@earendil-works/pi-ai": [
-        "/data/data/com.termux/files/usr/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/dist/index.d.ts"
-      ],
-      "@earendil-works/pi-tui": [
-        "/data/data/com.termux/files/usr/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.d.ts"
-      ],
-      "typebox": [
-        "/data/data/com.termux/files/usr/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/typebox/build/index.d.mts"
-      ]
-    }
+    "paths": {}
   },
   "include": [
     "pi-autopilot/**/*.ts",
