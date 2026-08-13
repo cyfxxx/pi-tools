@@ -31,7 +31,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuYTFPy4QzXKwjY6EWDKTDClmytd55Ut8B3USZhGt08
 # ----------------------------------------------------------------------------
 # 设备: mypc-wsl
 # 连接: root@100.117.170.110:22  (Tailscale；Linux 主机名 MYPC)
-# 局域网: ⚠️ 待补充（该设备请填写自己的局域网 IP:22）
+# 局域网: root@192.168.124.3:8022  (WSL 镜像网络 eth0；局域网常用，可作 altHosts 主地址)
 # 说明: 远程 Linux 环境（WSL 宿主上的 Linux），pi 运行于 tmux 会话 0。
 #       远程执行 pi 前需 unset LD_PRELOAD（link.ts 已内置处理）。
 # ----------------------------------------------------------------------------
