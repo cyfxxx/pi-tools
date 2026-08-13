@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import {
-  listTasks, isDue, updateTaskAfterRun, readTasks, renderPrompt, sendWebhook, updateTask,
+  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun,
 } from './storage.ts'
 import type { Task } from './types.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
@@ -74,11 +74,19 @@ export class SessionScheduler {
         const b = await checkBudget(config.budget, model)
         if (!b.allowed) {
           await sendWebhook(task, 'skipped', `预算限制: ${b.reason}`)
-          await appendRun({
-            ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
-            model, provider, result: 'failed', durationMs: 0, outputLen: 0, estCost: 0,
-            errClass: 'unknown',
-          })
+          // 预算拦截不是任务失败：推进 nextRun 防止每 tick 重复触发（否则每 30s
+          // 追加一条 failed 遥测，todayRuns 越拦越满，锁到次日零点）；不记 failed。
+          const store = await readTasks()
+          const t = store.tasks.find(x => x.id === task.id)
+          if (t) {
+            let next = computeNextRun(t)
+            if (!next || new Date(next).getTime() <= Date.now()) {
+              // once/过期调度：推到 1 小时后重试（预算恢复后自动补跑）
+              next = new Date(Date.now() + 3600 * 1000).toISOString()
+            }
+            t.nextRun = next
+            await writeTasks(store)
+          }
           return
         }
       }

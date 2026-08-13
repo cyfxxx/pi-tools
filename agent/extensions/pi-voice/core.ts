@@ -15,7 +15,7 @@ export interface CommandResult {
   stderr: string
 }
 
-/** 生成唯一的文件名前缀（非时间戳，避免缓存/断言歧义；给文件名加时间戳安全）。 */
+/** 秒级时间戳（YYYYMMDD_HHMMSS），用于文件名排序/区分。同一秒内多次调用会碰撞，调用方须追加随机后缀保证唯一。 */
 export function nowStamp(): string {
   const d = new Date()
   const p = (n: number, l = 2) => String(n).padStart(l, '0')
@@ -35,7 +35,7 @@ export function runCommand(
         resolvePromise({ code: 0, stdout: stdout ?? '', stderr: stderr ?? '' })
         return
       }
-      const e = err as NodeJS.ErrnoException & { code?: string | number }
+      const e = err as NodeJS.ErrnoException & { code?: string | number; killed?: boolean; signal?: string }
       if (typeof e.code === 'number') {
         resolvePromise({ code: e.code, stdout: stdout ?? '', stderr: stderr ?? '' })
         return
@@ -44,7 +44,9 @@ export function runCommand(
         resolvePromise({ code: 127, stdout: '', stderr: `${bin}: command not found` })
         return
       }
-      if (e.message.includes('ETIMEDOUT')) {
+      // Node v22 超时杀进程时 err.code=null、signal='SIGTERM'、killed=true，
+      // message 不含 ETIMEDOUT——按 killed/signal 判定超时（否则误报 code 1）
+      if (e.killed === true || e.signal === 'SIGTERM') {
         resolvePromise({ code: 124, stdout: stdout ?? '', stderr: `timeout after ${timeoutMs}ms` })
         return
       }
@@ -107,7 +109,7 @@ export function startRecording(
     }
   }
   mkdirSync(cfg.tmpDir, { recursive: true })
-  const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}.${spec.recorder.ext}`)
+  const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}-${Math.random().toString(36).slice(2, 8)}.${spec.recorder.ext}`)
   // 时长控制由调用方（dictation）在 Node 侧 setTimeout 到点发停止实现：
   // termux 的 MediaRecorder.setMaxDuration 基于媒体时间戳计时而非墙钟，实际停止
   // 时间与设定值偏差大（实测经常提前一半以上停止），不可依赖；-l 0 = 服务端不限时。

@@ -53,6 +53,22 @@ describe('merge: decideMerge four actions', () => {
     expect(decision.targetId).toBe(existing.id)
   })
 
+  it('UPDATE 合并 environments 并集（跨环境提取不丢标签）', async () => {
+    const { mergeCandidates } = await import('../merge.ts')
+    const existing = makeEntry({ title: 'cross env', environments: ['termux'] })
+    const candidate = makeEntry({ title: 'cross env', environments: ['linux'] })
+    const entries = [existing]
+    const { applied } = await mergeCandidates(entries, [candidate])
+    expect(applied[0]).toContain('UPDATE')
+    expect(entries[0].environments).toEqual(expect.arrayContaining(['termux', 'linux']))
+    // 单环境候选 + 旧条目无 environments（视为 all）→ 并集含 all
+    const e2 = makeEntry({ title: 'legacy' })
+    const c2 = makeEntry({ title: 'legacy', environments: ['linux'] })
+    const entries2 = [e2]
+    await mergeCandidates(entries2, [c2])
+    expect(entries2[0].environments).toEqual(expect.arrayContaining(['all', 'linux']))
+  })
+
   it('UPDATE on high content similarity (Jaccard > 0.7)', async () => {
     const { decideMerge } = await import('../merge.ts')
     const existing = makeEntry({ title: 'a', content: 'the quick brown fox jumps over the lazy dog' })

@@ -77,7 +77,9 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): void {
       const opts = maybe
       try {
         const { name, logPath, started } = await startSession(opts, String(params.name), String(params.command), params.cwd as string | undefined)
-        registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
+        // 仅新启动的会话登记注册表；已存在同名会话（started=false）不登记，
+        // 避免 pi 退出时 session_shutdown 误杀用户手动创建的会话
+        if (started) registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
         const note = started ? '已启动' : '已存在同名会话（沿用）'
         return ok(`tmux 会话 ${name} ${note}\n命令: ${params.command}\n日志: ${logPath}\n\n查看: tmux_read(name=${name})\n交互: tmux_send(name=${name})\n等待: tmux_wait(name=${name})`)
       } catch (e) {

@@ -265,6 +265,17 @@ describe('pi-link: sendToDevice', () => {
     expect(all).not.toContain('switch_session')
   })
 
+  it('远程中途崩溃（未收到 agent_settled）但有部分回复时返回 truncated 而非假成功', async () => {
+    // fakeProc 事件流不含 agent_settled：stdout end + exit 后 settled 仍为 false
+    spawnMock.mockImplementation(() => fakeProc([], { reply: '部分回复' }))
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+    expect(r.ok).toBe(false)
+    expect(r.truncated).toBe(true)
+    expect(r.error).toContain('未收到完成确认')
+    // 部分回复带回，不静默丢弃
+    expect(r.reply).toBe('部分回复')
+  })
+
   it('wrapTask=false 时不注入指令模板', async () => {
     spawnMock.mockImplementation(() => fakeProc([{ type: 'agent_settled' }]))
     await sendToDevice(DEV, 'hi', { timeoutSec: 30, wrapTask: false })

@@ -203,6 +203,14 @@ export function getResultOutput(result: SingleResult): string {
 	return getFinalOutput(result.messages) || "(no output)";
 }
 
+/**
+ * 链式任务占位符替换。必须用函数替换（String.replace 字符串替换会把
+ * previousOutput 中的 $&/$'/$` 当作替换模式导致静默数据损坏）。
+ */
+export function applyPreviousPlaceholder(task: string, previousOutput: string): string {
+	return task.replace(/\{previous\}/g, () => previousOutput);
+}
+
 export function truncateParallelOutput(output: string): string {
 	const result = truncateHead(output, { maxBytes: PER_TASK_OUTPUT_CAP });
 	if (!result.truncated) return output;
@@ -625,7 +633,7 @@ export default function (pi: ExtensionAPI) {
 
 				for (let i = 0; i < params.chain.length; i++) {
 					const step = params.chain[i];
-					const taskWithContext = step.task.replace(/\{previous\}/g, previousOutput);
+					const taskWithContext = applyPreviousPlaceholder(step.task, previousOutput);
 
 					// Create update callback that includes all previous results
 					const chainUpdate: OnUpdateCallback | undefined = onUpdate

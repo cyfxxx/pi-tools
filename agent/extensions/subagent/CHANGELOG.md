@@ -1,5 +1,10 @@
 # Changelog — subagent
 
+## [v6]
+
+### Fixed
+- **链式任务 `{previous}` 替换损坏**：`String.replace` 字符串替换会把上一步输出中的 `$&`、`$'`、美元符+反引号组合解析为替换模式（`$&` 导致占位符被重新插入，`$'` 插入匹配点后的原文）——改为函数替换（`() => previousOutput`）输出原样保留；提取 `applyPreviousPlaceholder()` 导出并补 4 个纯函数测试
+
 ## [v4]
 
 ### Fixed

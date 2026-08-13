@@ -5,7 +5,7 @@ import assert from "node:assert";
 
 const mod = await import(new URL("../index.ts", import.meta.url).href);
 
-const { formatTokens, formatUsageStats, isFailedResult, getFinalOutput, getResultOutput, truncateParallelOutput, mapWithConcurrencyLimit, isLocalProvider } = mod;
+const { formatTokens, formatUsageStats, isFailedResult, getFinalOutput, getResultOutput, truncateParallelOutput, mapWithConcurrencyLimit, isLocalProvider, applyPreviousPlaceholder } = mod;
 
 let passed = 0;
 let failed = 0;
@@ -94,6 +94,26 @@ test("getResultOutput 失败无 errorMessage -> stderr", () =>
 	assert.strictEqual(getResultOutput({ ...okResult, exitCode: 1, stderr: "trace" }), "trace"));
 test("getResultOutput 失败全空 -> (no output)", () =>
 	assert.strictEqual(getResultOutput({ ...okResult, exitCode: 1 }), "(no output)"));
+
+// ---------- applyPreviousPlaceholder (4) ----------
+test("applyPreviousPlaceholder 普通替换", () => {
+	assert.strictEqual(applyPreviousPlaceholder("A {previous} B", "out"), "A out B");
+});
+
+test("applyPreviousPlaceholder 多占位符全部替换", () => {
+	assert.strictEqual(applyPreviousPlaceholder("{previous} + {previous}", "x"), "x + x");
+});
+
+test("applyPreviousPlaceholder 输出含 $& 不被当替换模式", () => {
+	// String.replace 字符串替换会把 $& 解析为"匹配文本"——函数替换不受影响
+	assert.strictEqual(applyPreviousPlaceholder("A {previous} B", "$&"), "A $& B");
+});
+
+test("applyPreviousPlaceholder 输出含 $` / $' 不被当替换模式", () => {
+	assert.strictEqual(applyPreviousPlaceholder("X {previous} Y", "$`"), "X $` Y");
+	assert.strictEqual(applyPreviousPlaceholder("X {previous} Y", "$'"), "X $' Y");
+	assert.strictEqual(applyPreviousPlaceholder("X {previous} Y", "$$$"), "X $$$ Y");
+});
 
 // ---------- truncateParallelOutput (4) ----------
 test("truncateParallelOutput 小文本 -> 不截断", () => {

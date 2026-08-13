@@ -19,6 +19,7 @@ import {
   loadEntries,
   storeEntry,
   deleteEntry,
+  saveEntries,
   getStats,
   getTotalSize,
   getNotesSize,
@@ -357,6 +358,8 @@ export function registerTools(pi: ExtensionAPI): void {
         const removed = before - kept.length
         entries.length = 0
         entries.push(...kept)
+        // 批量删除同样落盘（loadEntries 每次从磁盘重读，不落盘则下次调用即复活）
+        saveEntries(entries)
         return {
           content: [
             { type: 'text', text: `已删除 ${removed} 条 ${category} 类别记忆（${olderThan} 之前）` },

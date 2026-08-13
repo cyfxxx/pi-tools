@@ -195,7 +195,8 @@ export function registerTools(pi: ExtensionAPI): void {
       const key = params.key as string | undefined
       if (key) {
         const val = settings[key]
-        const safeVal = isSensitiveKey(key) && typeof val === 'string' ? '***' : val
+        // 与无参路径一致：递归掩蔽嵌套敏感字段（key=providers 时内层 apiKey 不泄漏）
+        const safeVal = isSensitiveKey(key) && typeof val === 'string' ? '***' : maskSensitive(val)
         return { content: [{ type: 'text', text: `${key}: ${typeof safeVal === 'string' ? safeVal : JSON.stringify(safeVal, null, 2)}` }], details: null }
       }
       const safe = maskSensitive(settings)

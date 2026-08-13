@@ -290,6 +290,8 @@ export function applyMem0Action(
       e.updatedAt = candidate.updatedAt
       e.accessedAt = candidate.accessedAt
       if (candidate.observedAt) e.observedAt = candidate.observedAt
+      // 与手动路径（storeEntry）一致：合并环境并集，跨环境提取不丢标签
+      e.environments = mergeEnvironments(e.environments, candidate.environments)
       saveEntries(entries)
       return { entries, applied: true }
     }
