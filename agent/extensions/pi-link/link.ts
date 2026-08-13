@@ -12,7 +12,7 @@ import type { OutboxEntry } from './outbox.ts'
  * 完成判定：`agent_settled` 事件（agent 完全静默：无重试/压缩/排队后续）
  * 回复提取：最后一个 role=assistant 的 message_end，content 中 type=text 的 block 拼接
  * 会话连续性（T1-1）：远程命令先输出上次会话文件（PI_LINK_LAST_SESSION=…），
- *   本机解析后发 load_session 复用（同一设备多次调用上下文连续）；
+ *   本机解析后发 switch_session 复用（同一设备多次调用上下文连续）；
  *   会话文件超过 1MB 自动开新会话（防无限增长）。
  * 流式回传（T1-2）：onEvent 回调把远程事件实时转发给上层（工具进度可见）。
  * 指令模板（T1-3）：消息加远程执行指令前缀，避免措辞歧义。

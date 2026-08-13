@@ -76,4 +76,5 @@ bash scripts/test-all.sh
 
 - remote 含 token 时推送后立即恢复无凭证 URL；token 内联一次性使用不落盘
 - 勿提交 auth.json / settings.json / models.json（已 git ignore）；memory/checkpoints/ 为瞬时快照不入库（entries/notes/summaries 正常备份）
-- 推送可能需要 v2ray 代理：`git -c http.proxy=http://127.0.0.1:10808 push`
+- **推送走 SSH over 443**（免代理免 PAT）：remote = `ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git`，密钥 `~/.ssh/id_ed25519` 已加 GitHub；github.com:443 被封锁、api.github.com 可直连、v2ray 代理会挂——不要改回 HTTPS
+- **pi-link 运行时文件约定**：跨设备共享类状态（活跃时间戳/远程状态/信箱）放 `~/.pi/` 根目录 `pi-link-*.json`，**gitignore + 每设备独立**（pi-link.json 设备清单同样 gitignored）；设备间信息交换走 ssh 文件读取（readRemoteState/readRemoteOutbox），不引入 HTTP daemon

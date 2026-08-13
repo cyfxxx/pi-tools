@@ -218,8 +218,9 @@ GitHub 同步完成
      ```
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
 4. 从 `tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
-5. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
-6. 告知用户重启 pi。
+5. **pi-link 公钥安装**：`bash ~/.pi/scripts/pi-link-keys.sh install`（把 `keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
+6. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
+7. 告知用户重启 pi。
 
 ---
 
@@ -311,6 +312,7 @@ GitHub 同步完成
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
+| 8d | pi-link 互连公钥 | `scripts/pi-link-keys.sh` 与 `keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
 
 **Phase 3 — tmux 环境（跨系统兼容，单独一组）：**
 
@@ -490,6 +492,10 @@ pi-backup verify
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
 | 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
 | 调度脚本 | `scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
+| pi-link 设备清单 | `pi-link.json` | 多设备互联配置（host/user/port，gitignored 每环境独立，归档必须带走） |
+| pi-link 公钥合集 | `keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
+| pi-link 加固入口 | `scripts/pi-link-entry.sh` | ssh forced command 加固入口（每设备需 `install-wrapper` 类机制装到 sshd） |
+| pi-link 密钥脚本 | `scripts/pi-link-keys.sh` | 公钥 install/export/add（新设备接入流程） |
 | 调度安装脚本 | `scripts/install-cron.sh`、`scripts/install-systemd.sh` | crontab / systemd 安装 |
 | 生命周期脚本 | `scripts/pi-wrapper.sh` | 进程外生命周期管理器（自动重启） |
 | 生命周期安装脚本 | `scripts/install-wrapper.sh` | wrapper 安装/卸载 |
@@ -505,6 +511,7 @@ pi-backup verify
 | tmux 部署文档 | `docs/alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
 | tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
 | tmux 会话注册表 | `agent/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
+| pi-link 运行时 | `pi-link-active.json`、`pi-link-state.json`、`pi-link-outbox.json` | 活跃时间戳/远程状态/信箱（每设备运行时数据，与 memory 同类隔离，不随 git 同步） |
 
 > **tmux/Termux 配置收录方式**：外部配置（`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties`）以副本形式收在仓库内 `tmux/` 目录——**git 同步（sync/clone）直接携带**，本地归档也直接收录 `tmux/` 目录（不再单独收集外部路径）；`restore`/`clone` 后写回原路径：
 > ```
