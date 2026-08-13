@@ -24,20 +24,34 @@ export default function (pi: ExtensionAPI): void {
   const cfg = loadConfig()
   const me = selfName(cfg.selfName)
 
+  // 探测本机 tmux 会话名（其他设备 attach 时定位输入框）
+  function detectTmuxSession(): string | undefined {
+    try {
+      if (process.env.TMUX) {
+        const { execSync } = require('node:child_process')
+        const out = execSync('tmux display-message -p "#S" 2>/dev/null', { timeout: 3000 }).toString().trim()
+        if (out) return out
+      }
+    } catch {
+      // 非 tmux 环境
+    }
+    return undefined
+  }
+  const tmuxSession = detectTmuxSession()
+
   // T2-1 活跃机制：用户输入（消息/命令）刷新本机活跃时间戳
   pi.on('input', async (event: { text?: string }) => {
     const text = typeof event?.text === 'string' ? event.text : ''
     touchActive(me, text)
   })
 
-  // T2-2 远程状态维护：记录本机 agent 运行状态与当前会话（其他设备 attach/watch 用）
-  // 会话文件路径在 session_start 时不可直接取（事件不含 filePath），
-  // 由 turn_start 时探测当前会话目录最新文件兜底（attach/watch 侧同样有兜底）。
+  // T2-2 远程状态维护：记录本机 agent 运行状态与 tmux 会话（其他设备 attach/watch 用）
+  writeLocalState({ device: me, status: 'idle', tmuxSession })
   pi.on('turn_start', async () => {
-    writeLocalState({ device: me, status: 'busy' })
+    writeLocalState({ device: me, status: 'busy', tmuxSession })
   })
   pi.on('agent_settled', async () => {
-    writeLocalState({ device: me, status: 'idle' })
+    writeLocalState({ device: me, status: 'idle', tmuxSession })
   })
 
   pi.registerTool({
