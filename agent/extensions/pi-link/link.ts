@@ -199,7 +199,8 @@ export async function sendToDevice(
   // 远程 shell 先 echo 握手行再 exec RPC；3s 超时兜底（无会话则直接 prompt）。
   await handshakeP
   if (lastSession) {
-    proc.stdin.write(JSON.stringify({ type: 'load_session', file: lastSession, id: 'pi-link-0' }) + '\n')
+    // RPC 命令名是 switch_session（load_session 不存在，曾导致会话连续性静默失效）
+    proc.stdin.write(JSON.stringify({ type: 'switch_session', sessionPath: lastSession, id: 'pi-link-0' }) + '\n')
   }
   const prompt = JSON.stringify({ type: 'prompt', message: finalMessage, id: 'pi-link-1' })
   proc.stdin.write(prompt + '\n')
