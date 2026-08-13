@@ -66,6 +66,9 @@ function getUserText(message: AgentMessage): string {
 
 const PLANS_DIR = join(homedir(), ".pi", "plans");
 const MAX_PLANS = 20;
+// 磁盘兜底恢复仅限 7 天内的计划（目录名含创建毫秒时间戳）；过期计划不自动恢复，
+// 防新会话继承很久以前的计划（跨项目/跨周污染）
+const MAX_RESTORE_AGE_MS = 7 * 24 * 3600 * 1000;
 
 async function cleanupOldPlans(): Promise<void> {
   try {
@@ -181,7 +184,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       }
       todoOverlay?.update();
     } else {
-      ctx.ui.setWidget("plan-todos-simple", undefined);
+      // 强制隐藏 overlay widget（含进入计划模式/任务清空时）。
+      // 旧代码清的是遗留键 "plan-todos-simple"，与 TodoOverlay 注册的
+      // "plan-todos" 不一致，导致 widget 残留无法移除。
+      todoOverlay?.hide();
     }
   }
 
@@ -283,11 +289,19 @@ export default function planModeExtension(pi: ExtensionAPI): void {
         .map((d) => ({ name: d.name, ts: d.name.replace("plan-", "") }))
         .sort((a, b) => b.ts.localeCompare(a.ts));
       for (const d of dirs) {
+        // 只恢复近期计划；过期计划跳过（防跨项目/跨周污染）
+        const ts = Number(d.ts);
+        if (!Number.isFinite(ts) || Date.now() - ts > MAX_RESTORE_AGE_MS) continue;
         const file = join(PLANS_DIR, d.name, "plan.md");
         const content = await readFile(file, "utf-8").catch(() => null);
         if (!content) continue;
         const restored = parsePlanFile(content);
         if (!restored || restored.tasks.length === 0) continue;
+        // 只恢复还有未完成任务的计划；全部完成的计划恢复无意义
+        const hasRemaining = restored.tasks.some(
+          (t) => t.status !== "completed" && t.status !== "deleted",
+        );
+        if (!hasRemaining) continue;
         return { ...restored, planDirName: d.name };
       }
     } catch { /* 无可用计划文件 */ }
@@ -1109,14 +1123,17 @@ ${todoList}
     }
 
     // P1: /clear 或会话切换导致 sessionTree 无 plan-mode 数据时，
-    // 从最新计划文件恢复任务列表（磁盘持久化兜底）
+    // 从最新计划文件恢复任务列表（磁盘持久化兜底）。
+    // 只恢复任务状态，不强制进入执行模式（避免新会话工具集受限 + 跨项目计划被接管）：
+    // 任务以普通模式显示，用户 /plan resume 主动继续执行；
+    // planDir 不绑定旧目录（防 syncPlanToFile 污染其他项目的计划文件）。
     if (!planModeEntry?.data?.tasks) {
       const restored = await restoreStateFromFile();
       if (restored) {
         replaceState(restored);
-        planDir = join(PLANS_DIR, restored.planDirName);
         planModeEnabled = false;
-        executionMode = true;
+        executionMode = false;
+        planDir = null;
       }
     }
 
@@ -1177,6 +1194,9 @@ ${todoList}
       todoOverlay.setUICtx(ctx.ui);
     }
     todoOverlay?.update();
+    // 状态条即时刷新：todo 状态变化发生在消息事件之后，若不在此更新，
+    // 📋 n/m 状态条要等下一轮消息事件才刷新（滞后一轮）
+    updateStatus(ctx);
     // 状态持久化：普通模式 todo 变更不经过 /plan 命令，不调 persistState 则
     // 重启丢失任务（appendEntry + 执行模式 plan.md 同步；hash 去重防重复写）
     persistState();

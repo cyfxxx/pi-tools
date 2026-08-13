@@ -59,7 +59,7 @@
 | **追问保护** | Agent 已展示计划后，普通追问（why/what）不会误覆盖计划；只有显式修改请求才产生新版本 |
 | **影响分析** | Agent 在规划前必须分析受影响文件、评估风险 |
 | **Git 版本化** | 每次计划迭代自动保存到 `~/.pi/plans/plan-<timestamp>/plan.md`，带 git 历史 |
-| **计划落盘同步（P1，2026-08）** | 执行模式 todo 状态变化实时写回 `{planDir}/plan.md`（git 版本化，失败静默）；`/clear` 或 sessionTree 无数据时从磁盘恢复（`restoreStateFromFile`，格式校验防手改污染） |
+| **计划落盘同步（P1，2026-08）** | 执行模式 todo 状态变化实时写回 `{planDir}/plan.md`（git 版本化，失败静默）；`/clear` 或 sessionTree 无数据时从磁盘恢复（`restoreStateFromFile`，格式校验防手改污染）——仅恢复 7 天内且含未完成任务的计划，恢复后**不强制进入执行模式**、不绑定旧 `planDir`（防跨项目污染），用户 `/plan resume` 主动继续执行 |
 | **失败记录（P2，2026-08）** | `todo update failure="..."` 追加失败尝试（append-only 最多 3 条）；get 显示详情、list 附 `[!N次失败]` 计数，避免同类错误反复 |
 | **退出取消交还输入（2026-08）** | 用户取消 plan_exit（继续计划模式）时调用 `ctx.abort()` 中止生成——模型不再继续输出，直接等待用户输入 |
 | **Plan Diff** | `/plan view --diff` 通过 git diff 展示当前版本与上一版的差异 |
