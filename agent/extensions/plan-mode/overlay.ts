@@ -72,6 +72,15 @@ export class TodoOverlay {
     this.tui?.requestRender();
   }
 
+  /** 注销 widget（保留 uiCtx 供后续重建）——供 updateStatus 在计划模式/任务清空时强制隐藏。 */
+  hide(): void {
+    if (this.widgetRegistered && this.uiCtx) {
+      this.uiCtx.setWidget(WIDGET_KEY, undefined);
+      this.widgetRegistered = false;
+      this.tui = undefined;
+    }
+  }
+
   dispose(): void {
     if (this.uiCtx) this.uiCtx.setWidget(WIDGET_KEY, undefined);
     this.widgetRegistered = false;

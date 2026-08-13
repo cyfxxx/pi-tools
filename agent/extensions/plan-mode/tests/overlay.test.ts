@@ -40,6 +40,22 @@ describe('TodoOverlay: opencode todos 风格面板', () => {
     expect(ui.setWidget).toHaveBeenLastCalledWith('plan-todos', undefined)
   })
 
+  it('hide() 注销 widget 但保留 uiCtx（updateStatus 强制隐藏路径）', () => {
+    const ui = mockUI()
+    const overlay = new TodoOverlay()
+    overlay.setUICtx(ui as never)
+    replaceState({ tasks: [task({ id: 1, subject: '步骤一' })], nextId: 2 })
+    overlay.update()
+    expect(ui.setWidget).toHaveBeenCalledTimes(1)
+    // hide：移除 widget
+    overlay.hide()
+    expect(ui.setWidget).toHaveBeenLastCalledWith('plan-todos', undefined)
+    // uiCtx 保留：任务还在时 update 可重建 widget（计划模式退出后恢复显示）
+    overlay.update()
+    expect(ui.setWidget).toHaveBeenCalledTimes(3)
+    expect(ui.setWidget.mock.calls[2][0]).toBe('plan-todos')
+  })
+
   it('全部完成时隐藏整个 widget（opencode 行为）', () => {
     const ui = mockUI()
     const overlay = new TodoOverlay()

@@ -1,5 +1,16 @@
 # Changelog — plan-mode
 
+## [2.7.0] - 2026-08-13
+
+### Fixed
+
+- **overlay 残留清不掉（T1）**：`updateStatus` 隐藏分支清的是合并 rpiv-todo 时的遗留键 `plan-todos-simple`，与 TodoOverlay 实际注册的 `plan-todos` 不一致——进入计划模式/任务清空时 widget 永不注销。改为 `todoOverlay.hide()`（新增 hide 方法，注销 widget 保留 uiCtx 供重建）。
+- **状态条更新滞后一轮（T2）**：todo 工具完成走 `tool_execution_end`，但该 handler 只刷新 overlay 不调 `updateStatus`，📋 n/m 状态条要等下一轮消息事件才更新。补 `updateStatus(ctx)` 即时刷新。
+
+### Changed
+
+- **磁盘恢复三重防护（T3）**：`restoreStateFromFile` 跨项目污染治理——仅恢复 7 天内（目录名时间戳过滤）且含未完成任务（全完成计划跳过）的计划；恢复后**不强制进入执行模式**（原强制 `executionMode=true` 导致新会话工具集受限 + 接管他项目计划）、**不绑定旧 planDir**（防 `syncPlanToFile` 写入他项目计划目录）。恢复的任务以普通模式显示，用户 `/plan resume` 主动继续执行。
+
 ## [2.6.0] - 2026-08-02
 
 ### Removed
