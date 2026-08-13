@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { tmpdir } from 'os'
 
 function createMockPage() {
   return {
@@ -140,7 +141,8 @@ describe('BrowserManager', () => {
     await bm.navigate('https://example.com')
 
     const path = await bm.screenshot()
-    expect(path).toMatch(/\/tmp\/pi-screenshot-\d+\.png/)
+    // 截图目录 = tmpdir()/pi-browser-screenshots（兼容 Termux 无 /tmp）
+    expect(path).toMatch(new RegExp(`${tmpdir().replace(/[.\\+*?[^\\]$(){}=!<>|:-]/g, '\\$&')}/pi-browser-screenshots/pi-screenshot-\\d+\\.png`))
   })
 
   it('should support click with coordinates and button type', async () => {

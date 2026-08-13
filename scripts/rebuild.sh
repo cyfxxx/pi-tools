@@ -50,6 +50,36 @@ info() { echo -e "  ${CYAN}→${NC} $1"; }
 title(){ echo -e "\n${CYAN}[$1]${NC} $2（+${SECONDS}s）"; }
 run()  { if [ "$YES" = "1" ]; then "$@" 2>&1; else "$@" 2>&1 | tail -3; fi; }
 
+# ---- 平台检测（Termux/Android 原生 vs Debian/Ubuntu 系）----
+# 包名映射仅影响 Termux；其他平台（proot/WSL/原生 Linux）行为与原先完全一致。
+IS_TERMUX=0
+[ -d /data/data/com.termux ] && IS_TERMUX=1
+
+# Debian/Ubuntu 包名 → 本平台包名（Termux 包名不同；非 Termux 原样透传）
+pkg_map() {
+  [ "$IS_TERMUX" = "1" ] || { echo "$1"; return 0; }
+  case "$1" in
+    fd-find)             echo "fd" ;;
+    python3-venv|python3.12-venv) echo "python-ensurepip-wheels" ;;
+    openssl)             echo "openssl-tool" ;;
+    libnss3)             echo "libnss" ;;
+    libnspr4)            echo "libnspr" ;;
+    libasound2t64|libasound2) echo "libasound" ;;
+    libatk1.0-0t64|libatk1.0-0) echo "atk" ;;
+    libcups2t64|libcups2) echo "libcups" ;;
+    libgbm1)             echo "libgbm" ;;
+    pulseaudio-utils)    echo "pulseaudio" ;;
+    *)                   echo "$1" ;;
+  esac
+}
+
+# 包安装（Termux 走映射后包名，其余平台原样）
+pkg_install() {
+  local pkgs=""
+  for p in "$@"; do pkgs="$pkgs $(pkg_map "$p")"; done
+  apt-get install -y $pkgs -qq 2>&1 | tail -1
+}
+
 # ---- 网络检测 ----
 detect_china_network() {
   # 检测到国内网络时设置镜像变量
@@ -65,9 +95,21 @@ set_mirrors() {
     npm config set registry https://registry.npmmirror.com 2>/dev/null
     ok "npm registry → https://registry.npmmirror.com"
 
-    # GitHub 镜像前缀
-    GH_PROXY="https://ghproxy.net/"
-    ok "GitHub proxy → ghproxy.net"
+    # GitHub 镜像前缀：多候选实测吞吐取最快（直连也算候选；
+    # 固定单镜像可能踩到限速/失效，测速窗口 4s/候选，总耗时约 12s）
+    local best="" best_speed=0 pfx sp
+    for pfx in "" "https://gh-proxy.com/" "https://ghproxy.net/"; do
+      sp=$(timeout 8 curl -s -o /dev/null --max-time 4 -w "%{speed_download}" \
+        "${pfx}https://github.com/searxng/searxng/archive/refs/heads/master.tar.gz" 2>/dev/null || echo "0")
+      sp="${sp%.*}"
+      [ "${sp:-0}" -gt "$best_speed" ] 2>/dev/null && { best="$pfx"; best_speed=$sp; }
+    done
+    GH_PROXY="$best"
+    if [ -n "$GH_PROXY" ]; then
+      ok "GitHub proxy → $GH_PROXY（${best_speed}B/s）"
+    else
+      ok "GitHub 直连最快（${best_speed}B/s）"
+    fi
 
     # pip
     mkdir -p ~/.pip
@@ -123,9 +165,10 @@ preflight() {
   fi
 
   # 基础系统包（libnss3/libnspr4 为 Chromium 运行所需；安装前先 update，避免缓存过期找不到包）
+  # Termux 包名经 pkg_map 映射；fd 探测兼容 Termux 的 fd 命令
   local pkgs=""
   command -v git        &>/dev/null || pkgs="$pkgs git"
-  command -v fdfind     &>/dev/null || pkgs="$pkgs fd-find"
+  command -v fdfind     &>/dev/null || { command -v fd &>/dev/null || pkgs="$pkgs fd-find"; }
   command -v rg         &>/dev/null || pkgs="$pkgs ripgrep"
   dpkg -l python3-venv &>/dev/null 2>&1 || pkgs="$pkgs python3-venv"
   dpkg -l libnss3      &>/dev/null 2>&1 || pkgs="$pkgs libnss3"
@@ -134,35 +177,41 @@ preflight() {
     info "apt-get update（确保包索引最新）..."
     apt-get update -qq 2>&1 | tail -1 || warn "apt-get update 失败（网络问题？继续尝试安装）"
     info "安装系统依赖:$pkgs"
-    apt-get install -y $pkgs 2>&1 | tail -1 || warn "部分系统依赖安装失败，跳过"
+    pkg_install $pkgs || warn "部分系统依赖安装失败，跳过"
   fi
 
   # Chromium 运行库（按 .so 探测缺失，Ubuntu 24.04+ 用 t64 包名，旧版回退经典名）
   # 缺库时 CloakBrowser 启动 exit 127 / chrome 崩溃，smoke-test 浏览器项失败
-  local chrome_libs=(
-    "libasound.so.2:libasound2t64:libasound2"
-    "libatk-1.0.so.0:libatk1.0-0t64:libatk1.0-0"
-    "libcups.so.2:libcups2t64:libcups2"
-    "libgbm.so.1:libgbm1:"
-  )
+  # Termux：官方 cloakbrowser 无 android 预编译包，用本地 chromium（termux-prereq.sh），无需 glibc 库
   local chrome_missing=""
-  for entry in "${chrome_libs[@]}"; do
-    local so="${entry%%:*}" rest="${entry#*:}"
-    ldconfig -p 2>/dev/null | grep -q "$so" && continue
-    local p1="${rest%%:*}" p2="${rest#*:}"
-    if [ -z "$p2" ]; then
-      chrome_missing="$chrome_missing $p1"
-    else
-      # 优先 t64 包名，失败回退经典名（apt 索引已在上面 update）
-      if ! apt-get install -y "$p1" -qq >/dev/null 2>&1; then
-        apt-get install -y "$p2" -qq >/dev/null 2>&1 || chrome_missing="$chrome_missing $p1($p2)"
+  if [ "$IS_TERMUX" = "0" ]; then
+    local chrome_libs=(
+      "libasound.so.2:libasound2t64:libasound2"
+      "libatk-1.0.so.0:libatk1.0-0t64:libatk1.0-0"
+      "libcups.so.2:libcups2t64:libcups2"
+      "libgbm.so.1:libgbm1:"
+    )
+    for entry in "${chrome_libs[@]}"; do
+      local so="${entry%%:*}" rest="${entry#*:}"
+      ldconfig -p 2>/dev/null | grep -q "$so" && continue
+      local p1="${rest%%:*}" p2="${rest#*:}"
+      if [ -z "$p2" ]; then
+        chrome_missing="$chrome_missing $p1"
+      else
+        # 优先 t64 包名，失败回退经典名（apt 索引已在上面 update）
+        if ! apt-get install -y "$p1" -qq >/dev/null 2>&1; then
+          apt-get install -y "$p2" -qq >/dev/null 2>&1 || chrome_missing="$chrome_missing $p1($p2)"
+        fi
       fi
-    fi
-  done
+    done
+  fi
   [ -z "$chrome_missing" ] || warn "Chromium 库安装失败:$chrome_missing（浏览器可能无法启动）"
 
   # python3 venv 可用性实际探测（dpkg 显示已装 ≠ ensurepip 可用，Debian/Ubuntu 存在空壳）
-  VENV_PROBE=/tmp/.venv-probe
+  # /tmp 只读环境（Termux 无 root）自动回退到 PI_HOME 下探测，避免误报不可用
+  local probe_dir="$PI_HOME/.venv-probe"
+  if mkdir -p /tmp 2>/dev/null; then probe_dir=/tmp/.venv-probe; fi
+  VENV_PROBE="$probe_dir"
   rm -rf "$VENV_PROBE"
   VENV_OK=0
   if python3 -m venv "$VENV_PROBE" >/dev/null 2>&1 && [ -x "$VENV_PROBE/bin/python" ]; then
@@ -171,7 +220,7 @@ preflight() {
     rm -rf "$VENV_PROBE"
     info "python3 venv 不可用（ensurepip 缺失），安装 python3.12-venv/python3-venv ..."
     apt-get update -qq 2>&1 | tail -1 || true
-    apt-get install -y python3.12-venv python3-venv 2>&1 | tail -1 || warn "venv 包安装失败"
+    pkg_install python3.12-venv python3-venv || warn "venv 包安装失败"
     if python3 -m venv "$VENV_PROBE" >/dev/null 2>&1 && [ -x "$VENV_PROBE/bin/python" ]; then
       VENV_OK=1; rm -rf "$VENV_PROBE"
     fi
@@ -180,7 +229,7 @@ preflight() {
   # 验证关键工具
   command -v git &>/dev/null && ok "git 已就绪" || warn "git 未安装"
   command -v curl &>/dev/null && ok "curl 已就绪" || warn "curl 未安装（网络探测/下载将失败）"
-  command -v fdfind &>/dev/null && ok "fd-find 已就绪" || warn "fd-find 未安装"
+  command -v fdfind &>/dev/null && ok "fd-find 已就绪" || { command -v fd &>/dev/null && ok "fd (Termux) 已就绪" || warn "fd 未安装"; }
   command -v rg &>/dev/null && ok "ripgrep 已就绪" || warn "ripgrep 未安装"
   dpkg -l python3-venv &>/dev/null 2>&1 && ok "python3-venv 已就绪" || warn "python3-venv 未安装"
 
@@ -201,7 +250,17 @@ phase1_config() {
 
   # settings.yml
   if [ -f "$PI_HOME/searxng/generate-config.sh" ]; then
-    bash "$PI_HOME/searxng/generate-config.sh" 2>&1 | head -1
+    # 失败时给出可操作诊断（如 Termux 缺 openssl-tool 曾导致 settings.yml 静默缺失）
+    if ! out=$(bash "$PI_HOME/searxng/generate-config.sh" 2>&1); then
+      warn "settings.yml 生成失败: $(echo "$out" | tail -1)"
+      if [ "$IS_TERMUX" = "1" ] && ! command -v openssl >/dev/null 2>&1; then
+        info "修复: pkg install openssl-tool（Termux openssl CLI 独立包）后重跑 rebuild"
+      elif ! command -v openssl >/dev/null 2>&1; then
+        info "修复: apt-get install -y openssl 后重跑 rebuild"
+      fi
+    else
+      echo "$out" | head -1
+    fi
   elif [ ! -f "$PI_HOME/searxng/settings.yml" ]; then
     warn "searxng 配置生成脚本缺失，跳过 settings.yml"
   else
@@ -377,11 +436,11 @@ phase2_python_venv() {
     if [ ! -x "$PI_HOME/searxng/venv/bin/python" ] || [ ! -x "$PI_HOME/searxng/venv/bin/pip" ]; then
       # preflight 已探测 venv 可用性（VENV_OK）；此处兑底再试一次安装
       if [ "${VENV_OK:-0}" != "1" ]; then
-        apt-get install -y python3.12-venv python3-venv -qq 2>&1 | tail -1
+        pkg_install python3.12-venv python3-venv
       fi
       info "创建 SearXNG venv..."
       (cd "$PI_HOME/searxng" && python3 -m venv --copies venv) || {
-        warn "venv 创建失败——SearXNG 将不可用。修复: apt-get install python3.12-venv 后重跑 rebuild"
+        warn "venv 创建失败——SearXNG 将不可用。修复: pkg_install python3.12-venv（Termux: pkg install python-ensurepip-wheels）后重跑 rebuild"
         return 1
       }
       # 先装 pyyaml 用于配置校验
@@ -401,13 +460,26 @@ phase2_repo() {
 
   if [ ! -d "$PI_HOME/searxng/repo/.git" ]; then
     info "克隆 SearXNG repo..."
-    local url="https://github.com/searxng/searxng"
-    [ -n "${GH_PROXY:-}" ] && url="${GH_PROXY}$url"
-    git clone --depth 1 "$url" "$PI_HOME/searxng/repo" 2>&1 | tail -1 || {
-      warn "SearXNG repo 克隆失败"
+    # 多源轮换：主源 GH_PROXY（测速选出）；失败依次换 gh-proxy.com/ghproxy.net/直连
+    # （单源在 GFW 限速/镜像失效时直接失败，换源可显著提高成功率）
+    local tried="" url ok=0
+    for pfx in "${GH_PROXY:-}" "https://gh-proxy.com/" "https://ghproxy.net/" ""; do
+      url="${pfx}https://github.com/searxng/searxng"
+      case " $tried " in *" $url "*) continue ;; esac
+      tried="$tried $url"
+      info "尝试: $url"
+      if git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1; then
+        ok=1
+        break
+      fi
+      rm -rf "$PI_HOME/searxng/repo"
+    done
+    if [ "$ok" = "1" ]; then
+      ok "searxng/repo/ (HEAD at $(cd "$PI_HOME/searxng/repo" && git rev-parse --short HEAD 2>/dev/null))"
+    else
+      warn "SearXNG repo 克隆失败（已尝试:$tried）"
       return 1
-    }
-    ok "searxng/repo/ (HEAD at $(cd "$PI_HOME/searxng/repo" && git rev-parse --short HEAD 2>/dev/null))"
+    fi
   else
     ok "searxng/repo/ 已存在"
   fi
@@ -418,19 +490,30 @@ phase2_searxng_deps() {
   title "Phase 2-B3" "SearXNG 依赖"
 
   if [ -f "$PI_HOME/searxng/venv/bin/python" ] && [ -f "$PI_HOME/searxng/repo/requirements.txt" ]; then
-    # 检查关键模块是否缺失
-    if ! "$PI_HOME/searxng/venv/bin/python" -c "import searx" 2>/dev/null; then
+    # 检查关键模块是否缺失。searx 本体由 start.sh 的 PYTHONPATH=repo 提供，
+    # 判定与复验均带 repo 路径，否则装完依赖仍 import 失败导致每次重装
+    local searx_ok
+    (cd "$PI_HOME/searxng/repo" && PYTHONPATH=. "$PI_HOME/searxng/venv/bin/python" -c "import searx" >/dev/null 2>&1) && searx_ok=1 || searx_ok=0
+    if [ "$searx_ok" = "0" ]; then
       info "从 repo/requirements.txt 安装 SearXNG 依赖..."
       "$PI_HOME/searxng/venv/bin/pip" install -q -r "$PI_HOME/searxng/repo/requirements.txt" 2>&1 | tail -3 || {
         warn "SearXNG 依赖安装失败"
         return 1
       }
+      # 复验：装完确认可导入（幂等判定与依赖完整性一致）
+      (cd "$PI_HOME/searxng/repo" && PYTHONPATH=. "$PI_HOME/searxng/venv/bin/python" -c "import searx" >/dev/null 2>&1) \
+        || warn "依赖安装完成但 import searx 仍失败（Python $( "$PI_HOME/searxng/venv/bin/python" --version 2>&1) 兼容问题？）"
     fi
     # start.sh 使用 granian 启动（在 requirements-server.txt 中），缺失会导致无法启动
+    # Termux/android: granian(Rust) 无 wheel 无法构建，start.sh 已自动回退 uvicorn，此处告警即可
     if ! "$PI_HOME/searxng/venv/bin/python" -c "import granian" 2>/dev/null; then
       info "安装 SearXNG server 依赖（granian）..."
       "$PI_HOME/searxng/venv/bin/pip" install -q -r "$PI_HOME/searxng/repo/requirements-server.txt" 2>&1 | tail -3 || {
-        warn "SearXNG server 依赖安装失败（start.sh 将无法启动）"
+        if [ "$IS_TERMUX" = "1" ]; then
+          warn "granian 安装失败（Termux 无预编译包）——start.sh 将用 uvicorn 回退启动"
+        else
+          warn "SearXNG server 依赖安装失败（start.sh 将无法启动）"
+        fi
         return 1
       }
     fi
@@ -466,6 +549,16 @@ find_pi_root() {
       [ -d "$d/lib/node_modules/@earendil-works" ] && root="${d%/}" && break
     done
   fi
+  # Termux (npm 全局安装)
+  if [ -z "$root" ] && [ -d /data/data/com.termux/files/usr/lib/node_modules/@earendil-works ]; then
+    root=/data/data/com.termux/files/usr
+  fi
+  # 通用兜底：npm 全局安装（任何平台，wrapper 接管后 which pi 不可靠）
+  if [ -z "$root" ] && command -v npm >/dev/null 2>&1; then
+    local npm_root
+    npm_root="$(npm root -g 2>/dev/null || echo '')"
+    [ -n "$npm_root" ] && [ -d "$npm_root/@earendil-works" ] && root="$(dirname "$npm_root")"
+  fi
   if [ -z "$root" ]; then
     echo ""
     return 1
@@ -479,9 +572,12 @@ phase2_binaries() {
 
   # fd / rg (via apt)
   local fd_src rg_src
-  fd_src="$(command -v fdfind 2>/dev/null)"; rg_src="$(command -v rg 2>/dev/null)"
-  [ -x "$fd_src" ] || apt-get install -y fd-find -qq 2>&1 | tail -1
-  [ -x "$rg_src" ] || apt-get install -y ripgrep -qq 2>&1 | tail -1
+  fd_src="$(command -v fdfind 2>/dev/null)"
+  # Termux: fd 命令名无 fdfind 前缀，直接认 fd
+  [ -n "$fd_src" ] || fd_src="$(command -v fd 2>/dev/null)"
+  rg_src="$(command -v rg 2>/dev/null)"
+  [ -x "$fd_src" ] || pkg_install fd-find
+  [ -x "$rg_src" ] || pkg_install ripgrep
   # 解真实路径：PATH 前缀可能已含 agent/bin（本仓库约定），command -v 会命中旧链接自身，
   # 直接 ln -sf 会生成自引用链接（第二次重建即坏）。readlink -f 解不出时回退标准路径。
   fd_src="$(readlink -f "$fd_src" 2>/dev/null || echo "$fd_src")"
@@ -498,10 +594,22 @@ phase2_binaries() {
 # 可靠性判定：info 的 `Installed:` 字段（文件缺失时 info 仍打印 Binary 路径，grep 路径会假阳性）；
 # ldd 仅对存在的文件执行（不存在时 ldd 报 "No such file" 而非 "not found"，grep -c 得 0 会误判齐备）。
 # 返回：0=就绪 / 1=未安装 / 2=已装但缺共享库；CHROME_BIN_PATH 输出二进制路径。
+# Termux/android: 官方无预编译包，本地 Chromium（CLOAKBROWSER_BINARY_PATH 或 ~/.cloakbrowser 符号链接）即就绪。
 CHROME_BIN_PATH=""
 chrome_ready() {
   local ext="$1" installed="" bin="" miss
   CHROME_BIN_PATH=""
+  if [ "$IS_TERMUX" = "1" ]; then
+    # 优先显式环境变量，其次 Termux chromium（Phase 3 自动建缓存符号链接 + playwright 补丁）
+    bin="${CLOAKBROWSER_BINARY_PATH:-}"
+    [ -n "$bin" ] && [ -x "$bin" ] || bin="$(command -v chromium-browser 2>/dev/null)"
+    [ -n "$bin" ] && [ -x "$bin" ] || bin="$(ls "$HOME/.cloakbrowser"/*/chrome 2>/dev/null | head -1)"
+    if [ -n "$bin" ] && [ -x "$bin" ]; then
+      CHROME_BIN_PATH="$bin"
+      return 0
+    fi
+    return 1
+  fi
   installed=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -E '^Installed:' | awk '{print $2}' | tr -d '\r')
   [ "$installed" = "true" ] || return 1
   bin=$(cd "$ext" && timeout 60 npx cloakbrowser info 2>/dev/null | grep -oE '/[^ ]+chrome$' | head -1)
@@ -1063,6 +1171,34 @@ if [ -f "$PI_HOME/scripts/patch-plan-tools.mjs" ]; then
 else
   warn "patch-plan-tools.mjs 缺失，跳过"
 fi
+fi
+
+# Termux 浏览器适配（仅 Termux；其他平台 cloakbrowser 官方预编译包直接可用）
+# 1) playwright-core android→linux 平台补丁（pi-browser npm 重装后自动恢复）
+# 2) 本地 Chromium 符号链接到 cloakbrowser 缓存路径（跳过平台检测与下载）
+if [ "$IS_TERMUX" = "1" ]; then
+  pwext="$PI_HOME/agent/extensions/pi-browser"
+  if [ -d "$pwext/node_modules/cloakbrowser" ]; then
+    if [ -f "$PI_HOME/scripts/patch-playwright-core.mjs" ]; then
+      node "$PI_HOME/scripts/patch-playwright-core.mjs" "$pwext" >/dev/null 2>&1 \
+        && ok "playwright-core android→linux 补丁（Termux 浏览器）" \
+        || warn "playwright-core 补丁未应用（pi-browser 重装后需重跑 rebuild）"
+    fi
+    # 本地 Chromium 符号链接（CLOAKBROWSER_BINARY_PATH 优先；无则用缓存符号链接）
+    if [ -z "${CLOAKBROWSER_BINARY_PATH:-}" ] && command -v chromium-browser >/dev/null 2>&1; then
+      cb_ver="" cb_bin=""
+      # 从 config.js 静态映射提取 linux-arm64 版本号（不 import：android 平台 getPlatformTag 会抛错）
+      cb_ver=$(grep -oE '"linux-arm64"[[:space:]]*:[[:space:]]*"[^"]+"' "$pwext/node_modules/cloakbrowser/dist/config.js" | head -1 | grep -oE '"[^"]+"$' | tr -d '"')
+      cb_bin="$(command -v chromium-browser 2>/dev/null)"
+      if [ -n "$cb_ver" ] && [ -n "$cb_bin" ]; then
+        mkdir -p "$HOME/.cloakbrowser/chromium-$cb_ver"
+        ln -sf "$cb_bin" "$HOME/.cloakbrowser/chromium-$cb_ver/chrome"
+        ok "cloakbrowser → Termux Chromium 符号链接 (v$cb_ver)"
+      else
+        warn "未能建立 chromium 符号链接（version=$cb_ver bin=$cb_bin）"
+      fi
+    fi
+  fi
 fi
 
 # Scheduler 离线调度安装（可选）

@@ -41,6 +41,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **旧扩展名残留**：pi-web-toolkit / pi-router / pi-admin / pi-scheduler 均已融合或更名，新代码禁止引用
 - **补丁生命周期**：`patch-voice-enter.mjs`（回车拦截，缺失时 pi-voice 自动禁用回车听写）/`patch-footer-live-context.mjs`（footer 实时 token）/`patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行三个脚本）
+- **已知噪音（勿误判为 bug）**：pi 启动时可能打印 `Extension shortcut conflict: 'return'/'shift+enter' is built-in shortcut for tui.input.newLine and .../pi-voice/index.ts. Using .../pi-voice/index.ts.`——这是 pi-voice 故意注册回车键（`Key.return` + `Key.shift('enter')`，enter 本身是保留键会被静默丢弃）用于录音中切段转写，与内置 `tui.input.newLine` 冲突属设计行为（restrictOverride=false，扩展生效）。功能安全由 patch-voice-enter.mjs 保证（未录音时 handler 返回 false 放行回车）。扩展 API 无注销接口，无法消除该警告，无需处理
 
 ## 各扩展深度文档（指向）
 

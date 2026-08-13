@@ -51,6 +51,11 @@ fi
 rm -f "$TMPWAV"
 
 echo "[4/8] 浏览器（CloakBrowser）"
+# Termux：本地 Chromium 自动导出（cloakbrowser 官方无 android 预编译包；
+# playwright-core 补丁由 rebuild.sh Phase 3 应用）
+if [ -d /data/data/com.termux ] && [ -z "${CLOAKBROWSER_BINARY_PATH:-}" ] && command -v chromium-browser >/dev/null 2>&1; then
+  export CLOAKBROWSER_BINARY_PATH="$(command -v chromium-browser)"
+fi
 if (cd "$PI_HOME/agent/extensions/pi-browser" && timeout 90 node --input-type=module -e "
 import { launch } from 'cloakbrowser';
 try {
@@ -101,6 +106,8 @@ if [ -d "$HOME/.local/share/pi-node/current" ]; then
   PI_ROOT="$(readlink -f "$HOME/.local/share/pi-node/current" 2>/dev/null || echo "$HOME/.local/share/pi-node/current")"
 fi
 [ -z "$PI_ROOT" ] && PI_ROOT="$(ls -d "$HOME/.local/share/pi-node"/*/ 2>/dev/null | head -1 | sed 's|/$||')"
+# Termux (npm 全局安装)
+[ -z "$PI_ROOT" ] && [ -d /data/data/com.termux/files/usr/lib/node_modules/@earendil-works ] && PI_ROOT=/data/data/com.termux/files/usr
 DIST="$PI_ROOT/lib/node_modules/@earendil-works/pi-coding-agent/dist"
 PATCHED=0
 for entry in "modes/interactive/components/footer.js:Patch (patch-footer-live-context.mjs)" \

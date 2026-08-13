@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { EventEmitter } from 'node:events'
 import type { ChildProcess } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 // mock child_process 全模块（本文件只测 linux 平台分支）
 const spawnMock = vi.hoisted(() => vi.fn())
@@ -22,8 +24,9 @@ const linuxCfg: VoiceConfig = {
   platform: 'linux',
   micBin: 'parec',
   ttsBin: 'espeak-ng',
-  // 显式指定（Termux 环境 defaultTmpDir 返回共享存储路径，与测试断言不符）
-  tmpDir: '/tmp/pi-voice',
+  // 显式指定（Termux 环境 defaultTmpDir 返回共享存储路径，与测试断言不符；
+  // os.tmpdir() 兼容 Termux 无 /tmp 的情况）
+  tmpDir: join(tmpdir(), 'pi-voice'),
 }
 
 /** 构造 fake ChildProcess（EventEmitter + pid/kill） */
@@ -109,8 +112,9 @@ describe('linux queryRecording / convertToWav', () => {
   })
 
   it('convertToWav → 原文件直出（wav 无需转码）', async () => {
-    const r = await convertToWav(linuxCfg, '/tmp/pi-voice/a.wav')
-    expect(r.wav).toBe('/tmp/pi-voice/a.wav')
+    const wavPath = join(tmpdir(), 'pi-voice', 'a.wav')
+    const r = await convertToWav(linuxCfg, wavPath)
+    expect(r.wav).toBe(wavPath)
     expect(r.error).toBe('')
     expect(execFileMock).not.toHaveBeenCalled()
   })
@@ -118,7 +122,7 @@ describe('linux queryRecording / convertToWav', () => {
 
 describe('linux speak 两段式', () => {
   it('espeak-ng 文本文件 → wav → paplay 播放 → 清理暂存', async () => {
-    const stage = '/tmp/pi-voice/tts-stage.wav'
+    const stage = join(linuxCfg.tmpDir, 'tts-stage.wav')
     execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
       if (bin === 'espeak-ng') {
         expect(args[0]).toBe('-f')
@@ -141,7 +145,7 @@ describe('linux speak 两段式', () => {
   })
 
   it('piper 文本文件 → wav → paplay 播放（ttsEngine=piper）', async () => {
-    const stage = '/tmp/pi-voice/tts-stage.wav'
+    const stage = join(linuxCfg.tmpDir, 'tts-stage.wav')
     execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
       if (bin === 'piper') {
         expect(args[0]).toBe('-m')
