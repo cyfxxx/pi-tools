@@ -10130,14 +10130,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:58:46.142Z",
       "accessedAt": "2026-08-13T15:30:02.832Z",
       "observedAt": "2026-08-13T15:30:02.832Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "a68ad902-3692-4d3b-bfc1-816eaf7ad05e"
     },
     {
       "id": "abdca6f8-4400-4225-94ec-7b10958963cd",
@@ -10153,14 +10154,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:58:46.180Z",
       "accessedAt": "2026-08-13T15:30:02.832Z",
       "observedAt": "2026-08-13T15:30:02.832Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "74c56649-e142-4be0-bf89-172408658366"
     },
     {
       "id": "6331ef97-8eab-4de3-a5a3-12d590371e0d",
@@ -10222,14 +10224,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T15:30:02.832Z",
-      "updatedAt": "2026-08-13T15:30:02.832Z",
+      "updatedAt": "2026-08-13T15:58:46.307Z",
       "accessedAt": "2026-08-13T15:30:02.832Z",
       "observedAt": "2026-08-13T15:30:02.832Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "6ceb9c5a-9581-4c0f-9790-e744ad914196"
     },
     {
       "id": "29a39641-54ab-4631-ac0c-0e68bc07f6bf",
@@ -10435,7 +10438,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
     },
     {
       "id": "89da58c9-c302-4fda-9190-488ad064e074",
@@ -10460,7 +10464,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
     },
     {
       "id": "b7ed60dc-cb57-4792-995d-a47be80f590c",
@@ -10483,7 +10488,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
     },
     {
       "id": "316f97fc-5512-44d5-abfa-0cc2cc446fb3",
@@ -10506,7 +10512,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
     },
     {
       "id": "b8881c6f-25b7-46d4-9ac6-ff3a0fd9e5ed",
@@ -10529,7 +10536,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
     },
     {
       "id": "ce155dbd-381d-4bed-bdb6-5fe9cbaee74b",
@@ -10552,7 +10560,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
     },
     {
       "id": "ea82d3a3-6c86-4db7-8a2f-23612f7a616e",
@@ -10574,7 +10583,192 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d"
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "47f6b9d7-d6c7-423e-a399-99ad4f2c150b",
+      "category": "solutions",
+      "title": "plan-mode overlay 清错键与状态条滞后修复",
+      "content": "plan-mode 两处缺陷：1) updateStatus 隐藏分支清理的 widget 键是 \"plan-todos-simple\"（合并 rpiv-todo 遗留，源自 commit 20c4fff），TodoOverlay 实际注册 \"plan-todos\"，导致 overlay 永远清不掉；修复改为 todoOverlay?.hide()（overlay.ts 新增 hide() 注销 widget 但保留 uiCtx 供重建）。2) tool_execution_end handler 只调 todoOverlay.update() 不调 updateStatus，状态条（📋 n/m）滞后一轮刷新，补 updateStatus(ctx)。",
+      "tags": [
+        "plan-mode",
+        "overlay",
+        "bugfix"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "5ba4bd09-3949-44da-b11c-4df40df51e8d",
+      "category": "solutions",
+      "title": "plan-mode 磁盘恢复跨项目污染三重防护",
+      "content": "restoreStateFromFile 会从全局 ~/.pi/plans/ 恢复任意项目最近计划并强制 executionMode（新会话工具集被限制为 NORMAL_MODE_TOOLS），修复加三重防护：1) MAX_RESTORE_AGE_MS 7 天时限（解析目录名 plan-<毫秒> 时间戳）；2) 只恢复含未完成任务（非 completed/deleted）的计划；3) 不再强制执行模式、planDir 置 null 防 syncPlanToFile 把当前 todo 写进其他项目目录并 git commit。行为变为：恢复任务状态而非执行上下文，执行模式须 /plan resume 显式进入。",
+      "tags": [
+        "plan-mode",
+        "restore",
+        "跨项目污染",
+        "bugfix"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "a68ad902-3692-4d3b-bfc1-816eaf7ad05e",
+      "category": "solutions",
+      "title": "审查 8 处缺陷修复要点汇总",
+      "content": "关键修复：memory tools.ts 批量删除补 saveEntries(entries) 落盘（原只改内存数组，下次 loadEntries 从磁盘重读即复活）；link.ts 假成功条件 !settled && !exited 改 !settled（exited 变量在 proc.on('error')/('exit') 两处都有引用）；voice core.ts 文件名加 6 位随机后缀 pi-voice-<秒级戳>-<随机>.ext；autopilot 预算拦截改 computeNextRun 推 nextRun+writeTasks 落盘、过期/once 推 1 小时后重试、不记 failed 遥测（优于 updateTaskAfterRun：不消耗 retries 不污染 todayRuns）；Node v22 超时判定用 err.killed===true || err.signal==='SIGTERM'。",
+      "tags": [
+        "bugfix",
+        "审查修复",
+        "pi-memory",
+        "pi-link",
+        "pi-voice",
+        "pi-autopilot"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "74c56649-e142-4be0-bf89-172408658366",
+      "category": "solutions",
+      "title": "subagent {previous} 替换损坏修复",
+      "content": "subagent 链式任务 {previous} 占位符用字符串 replace 时，$&/$'/$` 会被解析为匹配文本导致输出损坏（实测复现）。修复：提取导出 applyPreviousPlaceholder() 函数，改用 () => previousOutput 函数替换，原样输出。补 4 个测试覆盖 $&/$'/$`/$$$ 场景——修复前字符串替换断言必失败。",
+      "tags": [
+        "subagent",
+        "placeholder",
+        "bugfix"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "95868e88-0430-4323-aefc-2e8eeb8a82c2",
+      "category": "procedure",
+      "title": "pi-full-audit v1.1 复核子代理方法论",
+      "content": "用户明确方法论：初次全面检查后的优化方案必然有缺陷，检查结果必须交复核子代理逐条核实（独立上下文防污染主会话、防模型过度自信），再由主会话终审定案，最后执行修复。技能内置：按模块分组委派复核、核实 prompt 模板（结论+代码摘录+行号核对+测试覆盖+同类遗漏排查）、运行时行为以实测为准不信审查者机制描述、修复方案细化给更优替代（如 updateTaskAfterRun 会消耗重试 vs 仅推 nextRun）、每修复点至少一个能捕获旧行为的回归测试。实战数据：33 条建议 0 捏造、12 部分属实、2 行号错、3 遗漏、1 条 HIGH 机制错误被纠正。",
+      "tags": [
+        "pi-full-audit",
+        "方法论",
+        "复核子代理",
+        "代码审查"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "e861f4b0-9d18-40e0-9d28-bf52e96db81b",
+      "category": "fact",
+      "title": "Node v22 超时语义与 vitest 变化",
+      "content": "实测 Node v22：进程超时杀死时 err.code=null、err.signal='SIGTERM'（ETIMEDOUT 分支为死代码，按 err.killed===true || err.signal==='SIGTERM' 判 124 可靠）。新版本 vitest 不再内建 --reporter=basic reporter，使用会启动报错（与代码无关，test-all.sh 不用该参数不受影响）。仓库 tsc 须用 tsconfig.local.json（rebuild 生成的每环境配置），默认 tsconfig 的 paths 空映射是既有状态，报模块解析错误与改动无关。",
+      "tags": [
+        "node",
+        "vitest",
+        "tsc",
+        "环境事实"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "6ceb9c5a-9581-4c0f-9790-e744ad914196",
+      "category": "procedure",
+      "title": "~/.pi 仓库提交维护惯例",
+      "content": "提交惯例：代码改动与 entries.json 记忆增量（每次会话自动提取写入，行数可能很大如 +538）分提交推送；remote 为 SSH URL（ssh://git@ssh.github.com:443/...）无 token 风险，无需 set-url 恢复；committer 自动配置 root@MYPC.localdomain 是本机既有状态。维护要点：扩展修复后 AGENTS.md 中测试用例数会过时需同步（本次 pi-memory 53→73、pi-autopilot 89→94、plan-mode 51→59、pi-voice 76→106）；.gitignore 须补 memory/.extract-lock（pi-memory 提取锁文件，未忽略会污染 git status）；pi-full-audit 目录此前从未入库，4ecc334 首次提交。",
+      "tags": [
+        "git",
+        "提交惯例",
+        "AGENTS.md",
+        "仓库维护"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
+    },
+    {
+      "id": "85a61175-980a-4b4a-bb5f-d11188c17874",
+      "category": "preference",
+      "title": "用户修复闭环工作流偏好",
+      "content": "用户重视文档同步：修复完成后会主动追问\"有没有相关的文档需要更新\"，要求 README/CHANGELOG/AGENTS.md 与实际行为一致（有 CHANGELOG 惯例的扩展须加条目，如 plan-mode 2.7.0、subagent v6）。认可的工作流：执行修复→补回归测试（每修复点至少一个能捕获旧行为的用例）→同步文档→按惯例分离提交推送。修复建议从 HIGH 四条起步，每修一条跑对应扩展测试套件。",
+      "tags": [
+        "用户偏好",
+        "工作流",
+        "文档同步",
+        "测试"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T15:58:45.981Z",
+      "updatedAt": "2026-08-13T15:58:45.981Z",
+      "accessedAt": "2026-08-13T15:58:45.981Z",
+      "observedAt": "2026-08-13T15:58:45.981Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e"
     }
   ]
 }
