@@ -466,10 +466,11 @@ export async function attachToRemote(device: DeviceConfig, text: string, tmuxSes
       `tmux paste-buffer -b pi-link -t ${s} 2>&1 && ` +
       (enter ? `sleep 0.5 && tmux send-keys -t ${s} Enter 2>&1 && ` : '') +
       `rm -f /tmp/pi-link-msg.txt`
-    const probe = `L=$(tmux capture-pane -p -t ${s} 2>/dev/null | tail -3 | tr -d '\\x1b'); ` +
-      `H=$(printf '%s\n' "$L" | grep -vE '^$|^~$|^[\u2500-\u257F\u2550-\u256C[:space:]]+$' | ` +
-      `grep -vE 'deepseek|claude|gpt|o[0-9]|gemini|qwen|kimi|•|k/|%\)' | wc -l); ` +
-      `if [ "$H" -gt 0 ]; then echo '${busyMark}'; exit 3; fi; ` +
+    const probe = `P=$(tmux display-message -p -t ${s} '#{cursor_y}' 2>/dev/null); ` +
+      `[ -z "$P" ] && P=$(tmux capture-pane -p -t ${s} 2>/dev/null | wc -l); ` +
+      `L=$(tmux capture-pane -p -t ${s} 2>/dev/null | sed -n "$((P+1))p" | tr -d '\x1b' | sed 's/\r$//'); ` +
+      `T=$(printf '%s' "$L" | tr -d '[:space:]'); ` +
+      `if [ -n "$T" ] && [ "$T" != "~" ]; then echo '${busyMark}'; exit 3; fi; ` +
       paste
     const r = await remoteExec(device, probe, 15000)
     if (r.out.includes(busyMark)) return 'busy'
