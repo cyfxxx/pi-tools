@@ -349,6 +349,56 @@ describe('pi-link: sendToDevice', () => {
     expect(pasted).toBe('[来自 x] 你好')
   })
 
+  it('attachToRemote: 并发同设备串行化（不拼接）；buffer 名唯一', async () => {
+    const pasted: string[] = []
+    const bufs: string[] = []
+    let inFlight = 0
+    let maxInFlight = 0
+    spawnMock.mockImplementation((...args: unknown[]) => {
+      const argv = (args[1] ?? []) as string[]
+      const cmd = String(argv[argv.length - 1] ?? '')
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const stdin = new PassThrough()
+      const proc = {
+        stdin, stdout, stderr,
+        kill: vi.fn(),
+        on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+      }
+      const exitCbs: Array<(c: number) => void> = []
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      setImmediate(() => {
+        if (cmd.includes('pi-link-state.json')) {
+          stdout.emit('data', JSON.stringify({ device: 'r', status: 'idle', tmuxSession: '0' }) + '\n')
+        } else if (cmd.includes('paste-buffer')) {
+          const m = cmd.match(/printf %s ([A-Za-z0-9+/=]+) \| base64 -d/)
+          if (m) pasted.push(Buffer.from(m[1], 'base64').toString('utf-8'))
+          const b = cmd.match(/load-buffer -b ([\w-]+)/)
+          if (b) bufs.push(b[1])
+          stdout.emit('data', '\n')
+        } else {
+          stdout.emit('data', '\n')
+        }
+        setImmediate(() => { inFlight--; for (const cb of exitCbs) cb(0) })
+      })
+      return proc
+    })
+    const { attachToRemote } = await import('../link.ts')
+    const results = await Promise.all([
+      attachToRemote(DEV, '甲消息', '0', false, 'termux-ubuntu'),
+      attachToRemote(DEV, '乙消息', '0', false, 'termux-ubuntu'),
+    ])
+    // 串行化：任意时刻只有 1 个 ssh 在途
+    expect(maxInFlight).toBeLessThanOrEqual(1)
+    // 两条消息各自完整独立（无拼接）
+    expect(pasted.filter(x => x.includes('甲消息'))).toHaveLength(1)
+    expect(pasted.filter(x => x.includes('乙消息'))).toHaveLength(1)
+    // buffer 名唯一（互不覆盖）
+    expect(new Set(bufs).size).toBe(bufs.length)
+    expect(results.every(r => r.ok)).toBe(true)
+  })
+
   it('attachToRemote: busy 时拒绝，force 强制', async () => {
     // 独立 mock：每次 ssh 调用返回可控的 stdout + 触发 exit
     spawnMock.mockImplementation((...args: unknown[]) => {
