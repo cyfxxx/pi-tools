@@ -31,6 +31,8 @@ export interface DeviceConfig {
   extensions?: boolean
   /** 附加 ssh 参数 */
   sshArgs?: string[]
+  /** 会话策略：continue=复用上次会话（默认），fresh=每次新会话 */
+  sessionPolicy?: 'continue' | 'fresh'
 }
 
 export interface LinkConfig {
