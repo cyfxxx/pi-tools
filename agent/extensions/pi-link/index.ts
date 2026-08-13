@@ -287,6 +287,8 @@ export default function (pi: ExtensionAPI): void {
           return
         }
         const r = saveDevice(cfgPathOf(), v.card.name, cardToDevice(v.card))
+        // 同步更新内存 cfg（loadConfig 仅启动时读取，不更新则需重启才生效）
+        if (r.ok) cfg.devices[v.card.name] = cardToDevice(v.card)
         await output(r.detail)
         return
       }
