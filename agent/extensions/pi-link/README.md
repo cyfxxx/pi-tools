@@ -35,6 +35,8 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 `/link send <设备> <消息>` — 发送消息并等待回复（无人值守拒绝）
 `/link watch <设备> [--lines N]` — 观察远程 pi 会话尾部（模型间沟通可见）
 `/link attach <设备> [--force] <文本>` — 介入：向远程 pi 输入框发送文本（等价在远程终端打字；远程 busy 时拒绝，--force 强制）
+`/link inbox <设备>` — 读取远程信箱（远程 agent 自主完成的回复记录，环形 10 条）
+`/link export-card` / `/link import-card <JSON>` — 设备卡片交换（含 IP/用户，import 后直接可用）
 `/link status` — 设备清单与连通性
 `/link help` — 用法与配置说明
 
@@ -46,6 +48,24 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 - `link_send` 发送前校验：**无人值守环境**（pi-cron 定时任务设 `PI_UNATTENDED=1`）或**本机 15 分钟无用户交互**时默认拒绝，报错提示
 - `~/.pi/pi-link.json` 设 `"allowUnattended": true` 可放开（指令头仍标注无人值守）
 - 设备身份：`selfName`（默认 hostname）
+
+## 信箱（T2-3）
+
+每台设备 pi-link 在 agent 一轮结束（agent_end）时，把最终回复写入本机信箱
+`~/.pi/pi-link-outbox.json`（环形缓冲 10 条）。其他设备 `/link inbox <设备>`
+可随时查看该设备自主完成的任务结果——B→A 方向的结果留存（无需在线同步等待）。
+
+## 并发保护与去重（T2-4）
+
+- 同设备并发：进程内锁，已有进行中的调用时拒绝新调用（提示等完成）
+- 同设备同消息：5 分钟内相同消息自动去重（防模型重复调用），确需重发请改动内容或稍等
+
+## 设备卡片交换（T2-5）
+
+- `/link export-card`：生成本机卡片（自动探测 Tailscale IP / 内网 IP）
+- 把卡片 JSON 发给其他设备 → `/link import-card <JSON>`：校验并写入 pi-link.json
+- 卡片为 A2A Agent Card 简版（name/skills/host/user/port/pi）——交换式发现，
+  不引入 mDNS/HTTP daemon（ssh 通道零守护是 pi-link 架构优势）
 
 ## 远程状态与冲突防护（T2-2）
 
@@ -116,7 +136,10 @@ cd agent/extensions/pi-link && ./node_modules/.bin/vitest run
 
 - ~~**活跃设备/身份机制**~~（已实现：input 刷新活跃 + PI_UNATTENDED 拦截 + allowUnattended 配置）
 - ~~**远程会话观察与介入（watch/attach）**~~（已实现：状态文件冲突防护 + tmux paste-buffer 介入）
-- **B→A 主动推送**：远程完成后主动通知（ssh 反向隧道或常驻 WS）
+- ~~**信箱（B→A 结果留存）**~~（已实现：agent_end 写入 outbox + /link inbox）
+- ~~**并发保护与去重**~~（已实现：in-flight 锁 + 5 分钟同消息去重）
+- ~~**设备卡片交换**~~（已实现：export-card / import-card）
+- **B→A 主动推送**：远程完成后主动通知本机（当前为信箱+watch 手动拉取）
 - **B→A 主动推送**：远程完成后主动通知（ssh 反向隧道或常驻 WS）
 - **任务队列/去重**：多任务排队、同消息去重
 - **设备发现**：Agent Card 格式（`/.well-known/agent-card.json` 风格 JSON）+ mDNS/DNS-SD

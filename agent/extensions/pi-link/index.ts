@@ -1,8 +1,10 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { loadConfig, getDevice, describeDevice, type DeviceConfig, type LinkConfig } from './config.ts'
-import { sendToDevice, probeDevice, watchRemote, attachToRemote, readRemoteState, type SendOptions } from './link.ts'
+import { loadConfig, getDevice, describeDevice, saveDevice, type DeviceConfig, type LinkConfig } from './config.ts'
+import { sendToDevice, probeDevice, watchRemote, attachToRemote, readRemoteState, readRemoteOutbox, type SendOptions } from './link.ts'
 import { touchActive, isActive, readActive, selfName, isUnattendedEnv } from './active.ts'
 import { writeLocalState } from './state-writer.ts'
+import { appendOutbox, extractFinalReply, OUTBOX_MAX } from './outbox.ts'
+import { buildCard, validateCard, cardToDevice } from './card.ts'
 
 /**
  * pi-link — 多设备 pi 互联扩展
@@ -18,6 +20,12 @@ function fmtResult(r: { ok: boolean; reply?: string; turns: number; tools: numbe
   const head = `[完成] ${r.durationSec}s, ${r.turns} 轮工具交互, ${r.tools} 次工具调用${r.model ? `, 模型 ${r.model}` : ''}`
   if (!r.ok) return `${head}\n错误: ${r.error}`
   return `${head}\n${r.reply}`
+}
+
+import { configPath } from './config.ts'
+
+function cfgPathOf(): string {
+  return process.env.PI_LINK_CONFIG ?? configPath()
 }
 
 export default function (pi: ExtensionAPI): void {
@@ -43,6 +51,12 @@ export default function (pi: ExtensionAPI): void {
   pi.on('input', async (event: { text?: string }) => {
     const text = typeof event?.text === 'string' ? event.text : ''
     touchActive(me, text)
+  })
+
+  // T2-3 信箱：agent 一轮结束的最终回复写入本机信箱（其他设备 /link inbox 可查）
+  pi.on('agent_end', async (e: { messages: unknown[] }) => {
+    const text = extractFinalReply(e?.messages)
+    if (text) appendOutbox(me, text)
   })
 
   // T2-2 远程状态维护：记录本机 agent 运行状态与 tmux 会话（其他设备 attach/watch 用）
@@ -227,6 +241,55 @@ export default function (pi: ExtensionAPI): void {
         await output(r.ok ? `远程 ${device} 会话尾部（${lines} 行）:\n\n${r.text}` : `观察失败: ${r.error}`)
         return
       }
+      if (sub === 'inbox') {
+        const device = parts[1]
+        if (!device) {
+          ctx.ui.notify('用法: /link inbox <设备>', 'warning')
+          return
+        }
+        const dev = getDevice(cfg, device)
+        if (!dev) {
+          ctx.ui.notify(`未知设备 "${device}"。已配置: ${listDevices(cfg)}`, 'warning')
+          return
+        }
+        const r = await readRemoteOutbox(dev)
+        if (!r.ok) {
+          await output(`读取失败: ${r.detail}`)
+          return
+        }
+        const body = r.entries.length === 0
+          ? '（空）'
+          : r.entries.map((en, i) => `[${new Date(en.ts).toLocaleTimeString()}] ${en.text.slice(0, 300)}`).join('\n\n')
+        await output(`远程 ${device} 信箱（${r.entries.length}/${OUTBOX_MAX} 条）：\n${body}`)
+        return
+      }
+      if (sub === 'export-card') {
+        const card = buildCard(cfg)
+        await output('本机设备卡片（复制给其他设备 import-card）：\n' + JSON.stringify(card, null, 2))
+        return
+      }
+      if (sub === 'import-card') {
+        const raw = parts.slice(2).join(' ')
+        if (!raw) {
+          ctx.ui.notify('用法: /link import-card <卡片JSON>（可用 /link export-card 生成）', 'warning')
+          return
+        }
+        let parsed: unknown
+        try {
+          parsed = JSON.parse(raw)
+        } catch {
+          ctx.ui.notify('卡片不是合法 JSON', 'warning')
+          return
+        }
+        const v = validateCard(parsed)
+        if (!v.ok || !v.card) {
+          ctx.ui.notify(`卡片无效: ${v.detail}`, 'warning')
+          return
+        }
+        const r = saveDevice(cfgPathOf(), v.card.name, cardToDevice(v.card))
+        await output(r.detail)
+        return
+      }
       if (sub === 'attach') {
         const force = parts.includes('--force')
         const rest = parts.filter((x) => x !== '--force')
@@ -269,6 +332,9 @@ function helpText(): string {
     '  /link watch <设备> [--lines N]   观察远程 pi 会话尾部（模型间沟通可见）',
     '  /link attach <设备> [--force] <文本>   介入远程 pi 输入框（busy 拒绝/--force）',
     '  /link status               设备清单与连通性探测',
+    '  /link inbox <设备>         读取远程信箱（远程自主完成的回复记录）',
+    '  /link export-card         生成本机设备卡片（含 IP/用户）',
+    '  /link import-card <JSON>  导入设备卡片并写入配置',
     '  /link help                 本帮助',
     '',
     '工具:',
