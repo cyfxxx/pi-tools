@@ -490,11 +490,13 @@ export async function attachToRemote(device: DeviceConfig, text: string, tmuxSes
   // pi TUI 布局：底部状态栏（含模型名/•/token），其上为输入框（空时显示 ~ 或空白）。
   const busyMark = 'PI_LINK_INPUT_BUSY'
   const tryPaste = async (enter: boolean): Promise<'sent' | 'busy' | 'failed'> => {
-    const paste = `printf %s ${b64} | base64 -d > /tmp/pi-link-msg.txt 2>/dev/null && ` +
-      `tmux load-buffer -b pi-link /tmp/pi-link-msg.txt 2>&1 && ` +
+    // 中间文件放 $HOME（Termux 原始环境 /tmp 不可写，proot 环境 /tmp 可用——$HOME 两环境都稳）
+    const tmp = `$HOME/.pi-link-msg.tmp`
+    const paste = `printf %s ${b64} | base64 -d > ${tmp} 2>/dev/null && ` +
+      `tmux load-buffer -b pi-link ${tmp} 2>&1 && ` +
       `tmux paste-buffer -b pi-link -t ${s} 2>&1 && ` +
       (enter ? `sleep 0.5 && tmux send-keys -t ${s} Enter 2>&1 && ` : '') +
-      `rm -f /tmp/pi-link-msg.txt`
+      `rm -f ${tmp}`
     const probe = `P=$(tmux display-message -p -t ${s} '#{cursor_y}' 2>/dev/null); ` +
       `[ -z "$P" ] && P=$(tmux capture-pane -p -t ${s} 2>/dev/null | wc -l); ` +
       `L=$(tmux capture-pane -p -t ${s} 2>/dev/null | sed -n "$((P+1))p" | tr -d '\x1b' | sed 's/\r$//'); ` +
