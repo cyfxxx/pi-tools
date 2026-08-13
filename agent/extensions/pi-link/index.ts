@@ -307,8 +307,9 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify(`未知设备 "${device}"。已配置: ${listDevices(cfg)}`, 'warning')
           return
         }
-        // 冲突防护：远程 busy 时拒绝（--force 打断）——校验在 attachToRemote 内
-        const r = await attachToRemote(dev, text, undefined, force)
+        // 冲突防护：远程 busy 时拒绝（--force 打断）——校验在 attachToRemote 内；
+        // 自动附加本机身份前缀（attachToRemote 内部处理）
+        const r = await attachToRemote(dev, text, undefined, force, me)
         await output(r.ok ? r.detail : `介入失败: ${r.detail}`)
         return
       }

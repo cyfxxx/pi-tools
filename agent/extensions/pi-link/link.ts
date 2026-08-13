@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import type { DeviceConfig } from './config.ts'
 import { parseState } from './state.ts'
+import { selfName } from './active.ts'
 import type { OutboxEntry } from './outbox.ts'
 
 /**
@@ -468,8 +469,16 @@ export async function readRemoteOutbox(device: DeviceConfig): Promise<{ ok: bool
 }
 
 /** 介入：向远程 pi 的 tmux 会话发送文本（busy 时拒绝，--force 强制） */
-export async function attachToRemote(device: DeviceConfig, text: string, tmuxSession?: string, force = false): Promise<{ ok: boolean; detail: string }> {
+/** 介入：向远程 pi 的 tmux 会话发送文本（busy 时拒绝，--force 强制）。
+ * fromName：发送者身份名（默认本机 selfName）——消息自动加身份前缀，
+ * 远程用户看到消息即知来自哪台设备。 */
+export async function attachToRemote(device: DeviceConfig, text: string, tmuxSession?: string, force = false, fromName?: string): Promise<{ ok: boolean; detail: string }> {
   const { state } = await readRemoteState(device)
+  // 身份前缀：默认开启（接收方可辨识发送设备）；已含 [来自 前缀的消息不重复加
+  if (!/^\[来自 .+\]/.test(text)) {
+    const who = fromName || selfName()
+    text = `[来自 ${who}] ${text}`
+  }
   const sess = tmuxSession ?? state?.tmuxSession
   if (!sess) {
     return { ok: false, detail: '无法确定远程 pi 的 tmux 会话（状态文件无 tmuxSession，且远程未运行 pi-link 扩展）' }
