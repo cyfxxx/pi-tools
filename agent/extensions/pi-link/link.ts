@@ -460,7 +460,13 @@ export async function attachToRemote(device: DeviceConfig, text: string, tmuxSes
     const lines = p.out
       .split('\n')
       .map((l) => l.replace(/\u001b\[[0-9;]*m/g, '').trimEnd())
-      .filter((l) => l.trim().length > 0 && !barRe.test(l.trim()))
+      .filter((l) => {
+        const t = l.trim()
+        if (t.length === 0) return false
+        if (/^[\u2500-\u257F\u2550-\u256C\s]+$/.test(t)) return false // 纯制表/装饰行（pi TUI 分隔线）
+        if (barRe.test(t)) return false // 状态栏
+        return true
+      })
     // 剩余行 strip 后为 ~ 或空 → 输入框空
     return lines.some((l) => { const t = l.trim(); return t !== '' && t !== '~' })
   }

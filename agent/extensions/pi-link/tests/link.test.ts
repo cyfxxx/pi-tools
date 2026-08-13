@@ -263,8 +263,8 @@ describe('pi-link: sendToDevice', () => {
         if (cmd.includes('pi-link-state.json')) {
           stdout.emit('data', JSON.stringify({ device: 'r', status: 'idle', tmuxSession: '0' }) + '\n')
         } else if (cmd.includes('capture-pane')) {
-          // 空输入框：只有状态栏（无内容行）
-          stdout.emit('data', '\n~\ndeeepseek-v4-flash • max\n')
+          // 空输入框：分隔线 + ~ + 状态栏（无内容行）
+          stdout.emit('data', '\u2500\u2500\u2500\n\n~\ndeeepseek-v4-flash • max\n')
         } else {
           stdout.emit('data', '\n')
         }
