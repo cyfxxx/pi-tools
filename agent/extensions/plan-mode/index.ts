@@ -171,7 +171,14 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       ctx.ui.setStatus("plan-mode", undefined);
     }
 
-    if (executionMode && total > 0) {
+    // 任务列表 widget：执行模式 + 普通模式（有任务时）都显示，计划模式隐藏
+    // （普通模式显示恢复 rpiv-todo 时代的彩色列表：checkbox + 状态色 +
+    // 进行中高亮 + 完成后折叠；overlay 内部在无任务/全部完成时自我清除）
+    if (total > 0 && !planModeEnabled) {
+      if (ctx.hasUI) {
+        todoOverlay ??= new TodoOverlay();
+        todoOverlay.setUICtx(ctx.ui);
+      }
       todoOverlay?.update();
     } else {
       ctx.ui.setWidget("plan-todos-simple", undefined);
@@ -1162,8 +1169,13 @@ ${todoList}
     todoOverlay = undefined;
   });
 
-  pi.on("tool_execution_end", async (event) => {
+  pi.on("tool_execution_end", async (event, ctx) => {
     if (event.toolName !== "todo" || event.isError) return;
+    // 普通模式直接 todo 创建/更新时确保 overlay 存在（首次创建于 updateStatus）
+    if (ctx.hasUI) {
+      todoOverlay ??= new TodoOverlay();
+      todoOverlay.setUICtx(ctx.ui);
+    }
     todoOverlay?.update();
   });
 
