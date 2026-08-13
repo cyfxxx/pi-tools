@@ -80,7 +80,8 @@ function sanitizeEntry(e: MemoryEntry): MemoryEntry {
     ...e,
     title: scrubSecrets(e.title),
     content: scrubSecrets(e.content),
-    tags: e.tags.map(t => scrubSecrets(t)),
+    // 历史条目可能缺 tags（旧版本数据）——防御，勿直接 .map
+    tags: (e.tags ?? []).map(t => scrubSecrets(t)),
   }
 }
 

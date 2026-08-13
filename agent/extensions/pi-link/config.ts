@@ -38,6 +38,10 @@ export interface DeviceConfig {
 export interface LinkConfig {
   devices: Record<string, DeviceConfig>
   defaultTimeoutSec: number
+  /** 本机身份名（指令头/活跃状态用；默认 hostname） */
+  selfName?: string
+  /** 无人值守（本机无用户交互）时是否允许发送跨设备指令，默认 false */
+  allowUnattended?: boolean
 }
 
 const DEFAULT_SESSION_DIR = '~/.pi/agent/sessions/pi-link'
@@ -66,6 +70,8 @@ export function loadConfig(path = configPath()): LinkConfig {
     if (typeof raw.defaultTimeoutSec === 'number' && raw.defaultTimeoutSec > 0) {
       cfg.defaultTimeoutSec = raw.defaultTimeoutSec
     }
+    if (typeof raw.selfName === 'string' && raw.selfName) cfg.selfName = raw.selfName
+    if (typeof raw.allowUnattended === 'boolean') cfg.allowUnattended = raw.allowUnattended
   } catch {
     // 配置损坏按默认处理
   }
