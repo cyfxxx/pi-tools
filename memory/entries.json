@@ -8988,29 +8988,6 @@
       "supersededBy": "4007d8ad-ad06-4783-b9f1-0d432d79b506"
     },
     {
-      "id": "405b927d-6706-4dd7-a4ad-80af795c3ddf",
-      "category": "fact",
-      "title": "pi-link 设备拓扑：termux=100.114.171.18:8022 root",
-      "content": "pi-link 设备拓扑：termux 手机（Android/Termux）= tailnet IP 100.114.171.18（短时间不变），SSH 端口 8022，用户 root，免密认证已通（本机 id_ed25519）。Windows 宿主 = cyf@MYPC（tailscaled 在 Windows，容器内无 tailscale CLI）。本机 WSL = mypc-wsl。公钥标签：termux@100.114.171.18 / mypc-wsl / win-host，集合在仓库 keys/authorized_keys。pi-link.json（gitignored）在 ~/.pi/pi-link.json，扩展启动时读一次，修改后需重启 pi 生效。",
-      "tags": [
-        "pi-link",
-        "termux",
-        "设备",
-        "拓扑"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T04:48:22.921Z",
-      "updatedAt": "2026-08-13T04:48:22.921Z",
-      "accessedAt": "2026-08-13T04:48:22.921Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-13T04:48:22.921Z",
-      "deleted": false
-    },
-    {
       "id": "5540dc80-a702-4b9c-909c-fcf6258869af",
       "category": "solutions",
       "title": "GitHub DNS 污染下 SSH over 443 推送通道",
@@ -9252,30 +9229,6 @@
       "deleted": false
     },
     {
-      "id": "a91c7441-136f-4e17-b1d0-b0e64c376dd7",
-      "category": "fact",
-      "title": "pi-link 设备拓扑：termux=100.114.171.18:8022",
-      "content": "本机 WSL（mypc-wsl）与 termux 的 pi-link 连接配置：termux 设备 Tailscale IP=100.114.171.18（短时间不变，可写入记忆），SSH 端口 8022，用户 root，已写入 ~/.pi/pi-link.json（gitignored，本机独立）。3 条公钥加设备标签（termux@100.114.171.18 / mypc-wsl / win-host）推送 f5e8904。link_send 端到端双向打通（tailnet 延迟约 2s，回复 29-34s）。",
-      "tags": [
-        "pi-link",
-        "termux",
-        "tailscale",
-        "ssh"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T07:07:53.438Z",
-      "accessedAt": "2026-08-13T07:07:53.438Z",
-      "observedAt": "2026-08-13T07:07:53.438Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
       "id": "d43cab2d-ce36-4de7-9b21-c4dd79a70c35",
       "category": "fact",
       "title": "pi-link 通道架构：send 与 attach 区别",
@@ -9417,7 +9370,9 @@
       "accessedAt": "2026-08-13T09:37:51.589Z",
       "environments": [
         "termux"
-      ]
+      ],
+      "observedAt": "2026-08-13T09:37:51.589Z",
+      "deleted": false
     },
     {
       "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
@@ -9427,15 +9382,37 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 51,
+      "recurrence": 59,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-13T09:48:22.260Z",
-      "accessedAt": "2026-08-13T09:48:22.260Z",
+      "updatedAt": "2026-08-13T12:04:52.930Z",
+      "accessedAt": "2026-08-13T12:04:52.930Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
         "all"
       ]
+    },
+    {
+      "id": "bfa563bc-d9c0-4bb0-88f6-98d5437dc984",
+      "category": "fact",
+      "title": "pi-link 设备拓扑（4 台设备，termux-phone 命名）",
+      "content": "pi-link 多设备网络共 4 台设备（公钥合集 keys/authorized_keys 按设备分组维护，设备名保持中性）：\n1. termux-ubuntu = Termux 容器中的 Ubuntu（PRoot），Tailscale 100.114.171.18:8022，root；pi-link 开发环境（本会话运行设备）\n2. mypc-wsl = 远程 Linux（主机名 MYPC），100.117.170.110:22，root；pi 跑 tmux 会话 0\n3. termux-phone = 另一台设备的 Termux 原始环境（非 proot），u0_a999@100.74.15.15:8022（Tailscale，Termux sshd）\n4. win-host = Windows 宿主，连接信息待补充（接入需 git-bash/WSL 登录 shell）\n注意：termux-phone 不是 termux-ubuntu 的备用 key，是独立设备。",
+      "tags": [
+        "pi-link",
+        "设备拓扑",
+        "多设备"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T11:03:40.433Z",
+      "updatedAt": "2026-08-13T11:03:40.433Z",
+      "accessedAt": "2026-08-13T11:03:40.433Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-13T11:03:40.433Z",
+      "deleted": false
     }
   ]
 }
