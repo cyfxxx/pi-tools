@@ -2638,13 +2638,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T05:59:57.197Z",
-      "updatedAt": "2026-08-10T05:59:57.197Z",
+      "updatedAt": "2026-08-13T14:46:46.623Z",
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "e1049c44-98d0-4c6b-8482-931bb9d6fd1e"
     },
     {
       "id": "16b52750-2839-43af-9449-447b68ccb3f6",
@@ -9385,10 +9386,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 63,
+      "recurrence": 67,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-13T14:08:01.612Z",
-      "accessedAt": "2026-08-13T14:08:01.612Z",
+      "updatedAt": "2026-08-13T15:17:02.516Z",
+      "accessedAt": "2026-08-13T15:17:02.516Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -9432,14 +9433,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T14:46:46.456Z",
       "accessedAt": "2026-08-13T12:17:18.122Z",
       "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "4d90ead6-6911-422c-8a7e-3dc781e32c76"
     },
     {
       "id": "8d761c32-30aa-4fb9-b5f3-d14d414ab904",
@@ -9494,7 +9496,7 @@
       "id": "7ce4ee7c-9cd1-4376-81e0-7f584c6453db",
       "category": "solutions",
       "title": "tsconfig paths 根治：每设备 tsconfig.local.json",
-      "content": "pi-tools 多设备共享 tsconfig.json 曾含环境 paths 被误提交互相覆盖。根治方案（6d96b64）：共享 tsconfig.json 不再含 paths（\"paths\": {}），每设备 tsconfig.local.json 由 rebuild Phase 2-D 生成（extends 共享配置 + 本机 pi 安装根 paths），gitignored 不提交；test-all.sh 自动优先 tsconfig.local.json。本机手动生成方式：按 Phase 2-D 逻辑创建。",
+      "content": "pi-tools 仓库跨多环境共享，原共享 tsconfig.json 含本机 paths 导致互相覆盖。根治方案（提交 6d96b64）：共享 tsconfig.json 的 paths 清空为 {}，每设备 tsconfig.local.json 由 rebuild.sh Phase 2-D 自动生成（extends 共享配置 + 本机 pi 安装根路径，如 /root/.local/share/pi-node/node-v22.23.2-linux-x64），已被 .gitignore 排除不入库。环境相关路径不再入库。",
       "tags": [
         "pi-tools",
         "tsconfig",
@@ -9503,11 +9505,11 @@
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 1,
+      "recurrence": 2,
       "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-13T14:46:46.278Z",
       "accessedAt": "2026-08-13T12:17:18.122Z",
-      "observedAt": "2026-08-13T12:17:18.122Z",
+      "observedAt": "2026-08-13T14:46:46.278Z",
       "environments": [
         "termux"
       ],
@@ -9677,6 +9679,369 @@
         "all"
       ],
       "observedAt": "2026-08-13T14:02:18.283Z",
+      "deleted": false
+    },
+    {
+      "id": "acc4f33d-ec1a-495d-959b-85aea24744e4",
+      "category": "solutions",
+      "title": "tmux_wait 等完成应用 pattern 而非 until_exit",
+      "content": "pi-tmux 的 tmux_run 通过 send-keys 注入命令到交互 bash（new-session 不执行命令），命令执行完后 shell 不退出，会话永久存活。因此 tmux_wait(until_exit=true) 对此类任务必然超时，且超时≠任务失败（任务可能早已完成，日志尾部出现 shell 提示符属正常）。正确用法：tmux_wait(pattern=\"完成标记\") 等日志关键输出；任务结束后 tmux_stop 清理会话。",
+      "tags": [
+        "tmux",
+        "pi-tmux",
+        "长任务",
+        "rebuild"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.277Z",
+      "updatedAt": "2026-08-13T14:46:46.499Z",
+      "accessedAt": "2026-08-13T14:46:46.277Z",
+      "observedAt": "2026-08-13T14:46:46.277Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "supersededBy": "55b95082-0c88-405d-8856-3ea99011b590",
+      "deleted": true
+    },
+    {
+      "id": "847b5453-3382-46e7-97dd-0812a99dd51b",
+      "category": "solutions",
+      "title": "cloakbrowser 需 playwright-core>=1.53.0",
+      "content": "pi-browser 依赖 cloakbrowser@0.3.31，其要求 playwright-core>=1.53.0。原 package.json 写 ^1.52.0 导致装出的 1.52.0 长期处于 invalid 状态（npm ls 报错但运行不受影响，隐藏多年）。2026-08 精确版本锁定时改为 1.53.0 后 invalid 消除。教训：浮动版本(^)跨机漂移且不暴露 invalid 依赖，精确锁定可让此类隐藏缺陷显式暴露。",
+      "tags": [
+        "pi-browser",
+        "cloakbrowser",
+        "playwright-core",
+        "npm",
+        "版本锁定"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.277Z",
+      "updatedAt": "2026-08-13T14:46:46.277Z",
+      "accessedAt": "2026-08-13T14:46:46.277Z",
+      "observedAt": "2026-08-13T14:46:46.277Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "4d90ead6-6911-422c-8a7e-3dc781e32c76",
+      "category": "fact",
+      "title": "pi-link 三设备局域网信息表",
+      "content": "pi-link 设备连接信息（2026-08 确认）：termux-ubuntu=root@192.168.124.2:8022（tailscale 备用 100.114.171.18:8022）；本机 mypc-wsl=root@192.168.124.3:8022（tailscale 经宿主 Windows serve 转发 100.117.170.110:8022）；termux-phone=u0_a999@192.168.124.4:8022（tailscale 备用 100.74.15.15:8022，局域网由该设备自填）；win-host 待补充。pi-link.json 配 altHosts 实现局域网优先、tailscale 兜底 failover。",
+      "tags": [
+        "pi-link",
+        "设备拓扑",
+        "局域网",
+        "tailscale"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T14:46:46.278Z",
+      "accessedAt": "2026-08-13T14:46:46.278Z",
+      "observedAt": "2026-08-13T14:46:46.278Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "55b95082-0c88-405d-8856-3ea99011b590",
+      "category": "fact",
+      "title": "bash 5.2.21 的 wait -n 不输出完成 pid",
+      "content": "bash 5.2.21 中 wait -n 在命令替换里返回空值，不输出完成 pid（手册表述为 \"may print\"，实际版本不打印），因此无法用其精确移除已完成的后台 job。rebuild.sh 的并行窗口保留 wait \"${pids[0]}\" 原实现并加注释说明（行为正确优先，避免无用代码层）。",
+      "tags": [
+        "bash",
+        "wait -n",
+        "rebuild.sh"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T14:46:46.278Z",
+      "accessedAt": "2026-08-13T14:46:46.278Z",
+      "observedAt": "2026-08-13T14:46:46.278Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "74646580-b35b-4ab8-a71a-33eb67eb9f95",
+      "category": "solutions",
+      "title": "rebuild.sh 可靠性优化清单（14 项）",
+      "content": "pi-tools rebuild.sh 于 2026-08 实施两批优化（提交 1e4fa0a、2a4af0b、46f416e）：A1 SIGPIPE 防御（trap '' PIPE + tee 用 stdbuf -oL）；A2 上次日志无\"重建完成\"标记时提示幂等续跑；A3 npm/cloakbrowser 失败重跑捕获尾部 10 行；A4 安装前清理 _download_*.tar.gz/*.part 残留；B1 warn 函数块前置到参数解析前；B2 删 run() 死代码；B3 chrome_ready 合并为一次 npx cloakbrowser info；C2 git clone 加 timeout 300 + 失败后 GIT_SSL_NO_VERIFY=1 重试；C3 镜像测速缓存 logs/.mirror-cache TTL 1h（已补 gitignore）；C4 _TITLE_TS 增量耗时显示；C5 扩展 package.json 去 ^ 精确锁定；C6 不采纳（输出交错收益低）；D1 无 systemd 时 verify 自动 start.sh 拉起 SearXNG；D2 verify 加敏感文件 git 追踪检查；D3 不采纳（wait -n 实测不可行）。",
+      "tags": [
+        "rebuild.sh",
+        "可靠性",
+        "优化",
+        "pi-tools"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T14:46:46.577Z",
+      "accessedAt": "2026-08-13T14:46:46.278Z",
+      "observedAt": "2026-08-13T14:46:46.278Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "supersededBy": "28b8485f-dc23-48fa-810c-e1225860125d",
+      "deleted": true
+    },
+    {
+      "id": "28b8485f-dc23-48fa-810c-e1225860125d",
+      "category": "solutions",
+      "title": "searxng clone 失败 tarball 兜底方案",
+      "content": "查证 searxng/repo 的 .git 仅用于两处：克隆存在性判断（[ ! -d .git ]）和 verify 显示 HEAD，无任何 git pull 增量更新机制（start.sh 零 git 操作）。因此 C1 tarball 兜底无副作用：全源 git clone 失败后 → curl tarball（用测速选出的 GH_PROXY）→ 解压 → git init + 基线提交（保持后续 .git 判断/verify rev-parse 一致）→ requirements.txt 校验。命令链已在隔离 /tmp 实测通过。",
+      "tags": [
+        "searxng",
+        "tarball",
+        "rebuild.sh",
+        "网络兜底"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T14:46:46.278Z",
+      "accessedAt": "2026-08-13T14:46:46.278Z",
+      "observedAt": "2026-08-13T14:46:46.278Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "e1049c44-98d0-4c6b-8482-931bb9d6fd1e",
+      "category": "preference",
+      "title": "优化建议先逐条验证再分批执行",
+      "content": "用户收到模型优化建议时，要求先逐条对照实际代码验证真伪（本会话 16 条建议全部经代码核实、无虚假论断），给出采纳/部分采纳/不采纳分级结论，确认后才动手。实施按批次：低风险高收益批直接改+全量回归，需确认批先调研前提条件（如 searxng 是否依赖 .git）再执行。用户认可标注\"别动的设计\"（幂等探测/多源轮换/verify 退出码）。",
+      "tags": [
+        "工作方式",
+        "代码审查",
+        "优化流程"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:46:46.278Z",
+      "updatedAt": "2026-08-13T14:46:46.278Z",
+      "accessedAt": "2026-08-13T14:46:46.278Z",
+      "observedAt": "2026-08-13T14:46:46.278Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
+    },
+    {
+      "id": "70e9c5dd-dd40-4324-bd31-fb5bc9b13795",
+      "category": "solutions",
+      "title": "entries.json 合并：区分远端清理与本地新增",
+      "content": "~/.pi 多设备共享 entries.json，pull 被拒时：先查远端提交是否含大量删除+等价新增（多为去重清理），合并以远端为基底，只补回本地真正新增条目，勿盲目补回被远端删除的条目；覆盖条目仅 updatedAt 不同且内容相同则无丢失。本会话据此把误补的 10 条修正为 1 条，推送 f079212。",
+      "tags": [
+        "pi-memory",
+        "git",
+        "entries.json",
+        "merge"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.238Z",
+      "updatedAt": "2026-08-13T14:47:32.238Z",
+      "accessedAt": "2026-08-13T14:47:32.238Z",
+      "observedAt": "2026-08-13T14:47:32.238Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "facbad8f-4129-43b3-8087-81697f4201e1",
+      "category": "fact",
+      "title": "pi-autopilot 预算拦截自锁循环（HIGH）",
+      "content": "scheduler.ts:74-82：任务预算不通过时直接 return，不推进 nextRun，tick 每 30s 重复触发，每次追加 failed 遥测+webhook，todayRuns 越拦越满锁到次日零点，单任务一天约 2880 条虚假失败。修复方向：拦截分支同样调用 updateTaskAfterRun 推进 nextRun。2026 全项目审查人工验证属实。",
+      "tags": [
+        "pi-autopilot",
+        "scheduler",
+        "bug",
+        "审查发现"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.238Z",
+      "updatedAt": "2026-08-13T14:47:32.367Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "supersededBy": "15bec303-ce9f-4cd9-aa4e-4281faf753d7",
+      "deleted": true
+    },
+    {
+      "id": "15bec303-ce9f-4cd9-aa4e-4281faf753d7",
+      "category": "fact",
+      "title": "pi-memory 批量删除不落盘（HIGH）",
+      "content": "tools.ts:347-363：memory_forget 的 category+olderThan 批量分支只改内存数组（entries.length=0; push(kept)），未调 saveEntries，重启后删除条目全部复活；单条删除 deleteEntry 内部有 saveEntries 正常。修复方向：批量分支补 saveEntries 或复用 deleteEntry。2026 全项目审查确认属实。",
+      "tags": [
+        "pi-memory",
+        "bug",
+        "审查发现",
+        "持久化"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T14:47:32.401Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "supersededBy": "ae6d3bce-2be7-4378-bdb8-a16206410b74",
+      "deleted": true
+    },
+    {
+      "id": "ae6d3bce-2be7-4378-bdb8-a16206410b74",
+      "category": "fact",
+      "title": "pi-link 并发守卫泄漏（HIGH）",
+      "content": "link.ts:143,275：markSendStart 与 done() 的 markSendEnd 之间无 try/finally，spawn 抛错（如非法 host）即永久残留 inflight 标记，该设备此后永远返回'已有进行中的调用'直到重启 pi。修复方向：函数体包 try/finally。2026 全项目审查确认属实。",
+      "tags": [
+        "pi-link",
+        "bug",
+        "审查发现"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T14:47:32.449Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "supersededBy": "5977bcce-cabb-4a18-bd02-e35fe043f07d",
+      "deleted": true
+    },
+    {
+      "id": "5977bcce-cabb-4a18-bd02-e35fe043f07d",
+      "category": "fact",
+      "title": "pi-voice 录音文件秒级命名竞态（HIGH）",
+      "content": "core.ts:19-30 + dictation.ts:262-275：nowStamp() 仅秒级精度，stopInternal 置空 currentFile 后、finish() 置 busy 前约 3s stopRecording 等待窗口内再按快捷键启动，同秒复用同一文件路径，旧流程转写新录音并在 finally 删除正在录制的文件。修复方向：文件名加毫秒/随机后缀 + gen 守卫。",
+      "tags": [
+        "pi-voice",
+        "bug",
+        "竞态",
+        "审查发现"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T14:47:32.239Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "7db897ee-1115-4a2c-b5e7-b1f3cf2fbc7e",
+      "category": "fact",
+      "title": "全项目审查基线验证结论",
+      "content": "/root/.pi 全仓库审查基线全绿：220 文件语法检查全过，test-all.sh 全量回归 exit 0（9 vitest + subagent 34 用例 + tsc + 注册面 23 + conflict-check + 自动发现）；唯一密钥命中 agent/auth.json 已被 .gitignore 第 13 行忽略未入库；可疑模式均合理。审查结果 4 HIGH / 22 MEDIUM / 若干 LOW，全程只读。",
+      "tags": [
+        "审查",
+        "回归测试",
+        "基线",
+        "pi 仓库"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T14:47:32.239Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "bed1a656-87f3-4db8-a1b6-4b43c274b592",
+      "category": "solutions",
+      "title": "审查工具两处误报与漏检",
+      "content": "review.sh --selfcheck 检查的是 cwd 而非技能所在仓库，非仓库目录运行误报'未安装 git 仓库'（/root 下实测）；rebuild.sh:954 verify 循环用 glob */node_modules，无 node_modules 的扩展（subagent/tests/types）漏检——subagent 报告对 rebuild.sh 的'误报'结论实际是漏检，方向反了。",
+      "tags": [
+        "pi-code-review",
+        "rebuild.sh",
+        "误报",
+        "漏检"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T14:47:32.239Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "c80db365-78ca-4aba-9652-8acf5ce510aa",
+      "category": "fact",
+      "title": "plan-mode 跨项目污染与工具集消失（MEDIUM）",
+      "content": "plan-mode/index.ts:1114-1119：新会话从全局 ~/.pi/plans/ 恢复任意项目最新计划并强制 executionMode=true，restoreStateFromFile 无项目隔离，跨项目污染+工具受限；index.ts:461,1036：/plan resume 与执行路径用写死的 9 个内置工具重建工具集，本会话内扩展工具（memory/ctx/tmux 等）全部消失。2026 全项目审查确认属实。",
+      "tags": [
+        "plan-mode",
+        "bug",
+        "审查发现",
+        "MEDIUM"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-13T14:47:32.239Z",
+      "updatedAt": "2026-08-13T14:47:32.239Z",
+      "accessedAt": "2026-08-13T14:47:32.239Z",
+      "observedAt": "2026-08-13T14:47:32.239Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false
     }
   ]
