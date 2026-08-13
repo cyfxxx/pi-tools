@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import type { DeviceConfig } from './config.ts'
 import { parseState } from './state.ts'
+import type { OutboxEntry } from './outbox.ts'
 
 /**
  * pi-link 核心：经 SSH 通道连接远程设备的 `pi --mode rpc`，JSONL 协议收发。
@@ -27,6 +28,7 @@ export interface LinkResult {
   error?: string
   truncated?: boolean
   resumed?: boolean
+  elapsedMs?: number
 }
 
 interface RpcEvent {
@@ -128,6 +130,14 @@ export async function sendToDevice(
 ): Promise<LinkResult> {
   const started = Date.now()
   const timeoutSec = opts.timeoutSec ?? device.timeoutSec ?? 600
+
+  // T2-4 并发保护与去重（进程内）
+  const key = `${device.user}@${device.host}:${device.port ?? 22}`
+  const guard = checkConcurrentAndDedup(key, message)
+  if (!guard.ok) {
+    return { ok: false, error: guard.detail ?? '发送被拒绝', turns: 0, tools: 0, durationSec: 0, elapsedMs: Date.now() - started }
+  }
+  markSendStart(key, message)
 
   const sshArgs = [
     ...(device.port ? ['-p', String(device.port)] : []),
@@ -237,17 +247,22 @@ export async function sendToDevice(
   const tools = events.filter((e) => e.type === 'tool_execution_end').length
   const resumed = lastSession !== undefined
 
+  const done = (r: LinkResult): LinkResult => {
+    markSendEnd(key)
+    return r
+  }
+
   if (userInteraction) {
-    return { ok: false, reply: undefined, turns, tools, model, durationSec, error: '远程 agent 请求用户交互（ask_user/UI），无法自动应答。可在目标设备手动处理该会话。', resumed }
+    return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: '远程 agent 请求用户交互（ask_user/UI），无法自动应答。可在目标设备手动处理该会话。', resumed })
   }
   if (!settled && !exited) {
-    return { ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '远程会话未在超时内结束', truncated: true, resumed }
+    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '远程会话未在超时内结束', truncated: true, resumed })
   }
   if (!text) {
     const why = stderr.trim() ? `远程 stderr: ${stderr.trim().slice(0, 300)}` : '远程未返回文本回复'
-    return { ok: false, reply: undefined, turns, tools, model, durationSec, error: why, resumed }
+    return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: why, resumed })
   }
-  return { ok: true, reply: text, turns, tools, model, durationSec, resumed }
+  return done({ ok: true, reply: text, turns, tools, model, durationSec, resumed })
 }
 
 /** 连通性探测：ssh 远程执行 echo（3 秒超时） */
@@ -351,6 +366,63 @@ export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ o
     }
   }
   return { ok: true, text: rows.join('\n') || '(会话为空)' }
+}
+
+/** T2-4 并发与去重状态（模块级，进程内有效） */
+const inflight = new Map<string, boolean>()
+const lastSends = new Map<string, { hash: string; ts: number }>()
+export const DEDUP_WINDOW_MS = 5 * 60 * 1000
+
+/** 简单字符串 hash（djb2）——去重比对用，无需加密强度 */
+export function simpleHash(s: string): string {
+  const str = s ?? ''
+  let h = 5381
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
+  return h.toString(36)
+}
+
+/** 并发/去重校验：同设备 in-flight 拒绝；同设备同消息窗口内拒绝 */
+export function checkConcurrentAndDedup(deviceKey: string, message: string): { ok: boolean; detail?: string } {
+  if (inflight.get(deviceKey)) {
+    return { ok: false, detail: '该设备已有进行中的调用，请等它完成后再发' }
+  }
+  const hash = simpleHash(message)
+  const prev = lastSends.get(deviceKey)
+  if (prev && prev.hash === hash && Date.now() - prev.ts < DEDUP_WINDOW_MS) {
+    const mins = Math.round((Date.now() - prev.ts) / 60000)
+    return { ok: false, detail: `与 ${mins} 分钟前发送的完全相同消息，已去重（如确需重发请稍等或改动内容）` }
+  }
+  return { ok: true }
+}
+
+export function markSendStart(deviceKey: string, message: string): void {
+  inflight.set(deviceKey, true)
+  lastSends.set(deviceKey, { hash: simpleHash(message), ts: Date.now() })
+}
+
+export function markSendEnd(deviceKey: string): void {
+  inflight.delete(deviceKey)
+}
+
+/** 测试辅助：清空并发/去重状态 */
+export function resetSendGuards(): void {
+  inflight.clear()
+  lastSends.clear()
+}
+
+/** 读取远程信箱（远程 agent 自主完成的回复记录） */
+export async function readRemoteOutbox(device: DeviceConfig): Promise<{ ok: boolean; entries?: OutboxEntry[]; detail?: string }> {
+  const r = await remoteExec(device, 'cat ~/.pi/pi-link-outbox.json 2>/dev/null')
+  if (r.code !== 0 || !r.out.trim()) {
+    return { ok: false, detail: r.err.trim().slice(0, 200) || '远程信箱为空或不可读（远程需同步代码并重启 pi）' }
+  }
+  try {
+    const d = JSON.parse(r.out.trim())
+    if (!Array.isArray(d?.entries)) return { ok: false, detail: '远程信箱格式无效' }
+    return { ok: true, entries: d.entries as OutboxEntry[] }
+  } catch {
+    return { ok: false, detail: '远程信箱格式无效' }
+  }
 }
 
 /** 介入：向远程 pi 的 tmux 会话发送文本（busy 时拒绝，--force 强制） */
