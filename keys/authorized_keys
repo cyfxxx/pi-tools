@@ -10,14 +10,21 @@
 # ============================================================================
 
 # ----------------------------------------------------------------------------
-# 设备: termux
+# 设备: termux（本机）
 # 连接: root@100.114.171.18:8022  (Tailscale；sshd 端口 8022)
-# 说明: Termux/Android（PRoot），pi-link 主要开发维护环境，pi 运行于 tmux。
-#       注意：sshd 会话 ~ = Termux home，而 pi 扩展写 /root/.pi ——
-#       双 home 分裂已由 link.ts 双路径回退处理（见 pi-link README）。
-# 公钥: 主 key（id_ed25519）+ pi-tools key
+# 说明: 当前设备 = Termux 容器中的 Ubuntu（PRoot），pi-link 主要开发
+#       维护环境，pi 运行于 tmux。注意 sshd 会话 ~ = Termux home 而
+#       扩展写 /root/.pi —— 双 home 分裂已由 link.ts 双路径回退处理。
 # ----------------------------------------------------------------------------
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeIymNI4AYlm0AQz2iNT/el4uY5I9xQLb5tHCe4/rd/ termux@100.114.171.18
+
+# ----------------------------------------------------------------------------
+# 设备: termux-pi-tools（第三台设备）
+# 连接: ⚠️ 待补充（IP/端口/用户名）
+# 说明: 另一台设备的 Termux 原始环境（非 proot 容器）——与当前设备
+#       （Termux 容器中的 Ubuntu）是两台不同的设备，环境不同。
+#       请在下方补充连接信息与本机说明。
+# ----------------------------------------------------------------------------
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuYTFPy4QzXKwjY6EWDKTDClmytd55Ut8B3USZhGt08 termux-pi-tools
 
 # ----------------------------------------------------------------------------
