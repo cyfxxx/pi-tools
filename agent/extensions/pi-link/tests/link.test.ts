@@ -158,7 +158,7 @@ describe('pi-link: sendToDevice', () => {
     expect(r.ok).toBe(true)
     expect(r.resumed).toBe(true)
     const all = stdinWrites.join('')
-    expect(all).toContain('"type":"load_session"')
+    expect(all).toContain('"type":"switch_session"')
     expect(all).toContain('/root/.pi/agent/sessions/pi-link/x.jsonl')
     expect(all).toContain('"type":"prompt"')
     expect(all).toContain('[远程执行任务]')
@@ -170,7 +170,7 @@ describe('pi-link: sendToDevice', () => {
     expect(r.ok).toBe(true)
     expect(r.resumed).toBe(false)
     const all = stdinWrites.join('')
-    expect(all).not.toContain('load_session')
+    expect(all).not.toContain('switch_session')
   })
 
   it('wrapTask=false 时不注入指令模板', async () => {
