@@ -19,12 +19,12 @@
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJeIymNI4AYlm0AQz2iNT/el4uY5I9xQLb5tHCe4/rd/ termux-ubuntu@100.114.171.18
 
 # ----------------------------------------------------------------------------
-# 设备: termux-pi-tools
-# 连接: ⚠️ 待补充（IP/端口/用户名）
-# 说明: 另一台设备的 Termux 原始环境（非 proot 容器）——与 termux-ubuntu
-#       （Termux 容器中的 Ubuntu）是两台不同的设备。请补充连接信息。
+# 设备: termux-phone
+# 连接: u0_a999@100.74.15.15:8022  (Tailscale；Termux sshd)
+# 说明: 本机 Termux 原始环境（非 proot 容器）——与 termux-ubuntu
+#       （Termux 容器中的 Ubuntu）是两台不同的设备。
 # ----------------------------------------------------------------------------
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuYTFPy4QzXKwjY6EWDKTDClmytd55Ut8B3USZhGt08 termux-pi-tools
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAuYTFPy4QzXKwjY6EWDKTDClmytd55Ut8B3USZhGt08 termux-phone@100.74.15.15
 
 # ----------------------------------------------------------------------------
 # 设备: mypc-wsl
