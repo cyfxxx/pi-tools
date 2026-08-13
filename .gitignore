@@ -98,3 +98,6 @@ memory/checkpoints/
 # pi-backup 配置变更基线（gitignored 配置的 sha256 快照，不入库）
 .backup-baseline/
 pi-link.json
+# pi-link 运行时状态（T2 活跃设备/身份机制，每次连接刷新，跨环境无意义）
+pi-link-active.json
+pi-link-state.json
