@@ -501,14 +501,23 @@ export async function attachToRemote(device: DeviceConfig, text: string, tmuxSes
   const tryPaste = async (enter: boolean): Promise<'sent' | 'busy' | 'failed'> => {
     // 中间文件放 $HOME（Termux 原始环境 /tmp 不可写，proot 环境 /tmp 可用——$HOME 两环境都稳）
     const tmp = `$HOME/.pi-link-msg.tmp`
-    const paste = `printf %s ${b64} | base64 -d > ${tmp} 2>/dev/null && ` +
-      `tmux load-buffer -b pi-link ${tmp} 2>&1 && ` +
-      `tmux paste-buffer -b pi-link -t ${s} 2>&1 && ` +
-      (enter ? `sleep 0.5 && tmux send-keys -t ${s} Enter 2>&1 && ` : '') +
+    // PRoot 兼容：Termux sshd 会话的 LD_PRELOAD(libtermux-exec) 会破坏 proot 内 Ubuntu tmux 的
+    // 动态加载（"required file not found"）；探测裸 tmux，失败回退显式解释器+清 LD_PRELOAD。
+    // 注意：LD_PRELOAD= 赋值必须写在函数体内（变量展开的词首不触发赋值，实测 "command not found"）
+    const tmuxProbe = `TMUX_FB=0; tmux_cmd() { if [ "$TMUX_FB" = 1 ]; then LD_PRELOAD= /lib/ld-linux-aarch64.so.1 /usr/bin/tmux "\$@"; else tmux "\$@"; fi; }; ` +
+      `if ! tmux ls >/dev/null 2>&1; then ` +
+      `if LD_PRELOAD= /lib/ld-linux-aarch64.so.1 /usr/bin/tmux ls >/dev/null 2>&1; then TMUX_FB=1; else TMUX_FB=2; fi; fi; ` +
+      `[ "$TMUX_FB" != 2 ] || exit 4; `
+    const paste = `${tmuxProbe}` +
+      `printf %s ${b64} | base64 -d > ${tmp} 2>/dev/null && ` +
+      `tmux_cmd load-buffer -b pi-link ${tmp} 2>&1 && ` +
+      `tmux_cmd paste-buffer -b pi-link -t ${s} 2>&1 && ` +
+      (enter ? `sleep 0.5 && tmux_cmd send-keys -t ${s} Enter 2>&1 && ` : '') +
       `rm -f ${tmp}`
-    const probe = `P=$(tmux display-message -p -t ${s} '#{cursor_y}' 2>/dev/null); ` +
-      `[ -z "$P" ] && P=$(tmux capture-pane -p -t ${s} 2>/dev/null | wc -l); ` +
-      `L=$(tmux capture-pane -p -t ${s} 2>/dev/null | sed -n "$((P+1))p" | tr -d '\x1b' | sed 's/\r$//'); ` +
+    const probe = `${tmuxProbe}` +
+      `P=$(tmux_cmd display-message -p -t ${s} '#{cursor_y}' 2>/dev/null); ` +
+      `[ -z "$P" ] && P=$(tmux_cmd capture-pane -p -t ${s} 2>/dev/null | wc -l); ` +
+      `L=$(tmux_cmd capture-pane -p -t ${s} 2>/dev/null | sed -n "$((P+1))p" | tr -d '\x1b' | sed 's/\r$//'); ` +
       `T=$(printf '%s' "$L" | tr -d '[:space:]'); ` +
       `if [ -n "$T" ] && [ "$T" != "~" ]; then echo '${busyMark}'; exit 3; fi; ` +
       paste
