@@ -117,13 +117,28 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 
   function todoHash(): number {
     const state = getState();
+    const statusVal: Record<string, number> = {
+      pending: 1,
+      in_progress: 2,
+      blocked: 3,
+      completed: 4,
+      deleted: 5,
+    };
     let h = 0;
     for (const t of state.tasks) {
       h = ((h << 5) - h + t.id) | 0;
       for (let i = 0; i < t.subject.length; i++) {
         h = ((h << 5) - h + t.subject.charCodeAt(i)) | 0;
       }
-      h = ((h << 5) - h + (t.status === "completed" ? 1 : 0)) | 0;
+      // 完整状态参与 hash：仅区分 completed 会导致 pending→in_progress/
+      // blocked 变化不触发注入（首个任务开始时列表不刷新）
+      h = ((h << 5) - h + (statusVal[t.status] ?? 0)) | 0;
+      if (t.activeForm) {
+        for (let i = 0; i < t.activeForm.length; i++) {
+          h = ((h << 5) - h + t.activeForm.charCodeAt(i)) | 0;
+        }
+      }
+      h = ((h << 5) - h + (t.failures?.length ?? 0)) | 0;
     }
     return h;
   }
@@ -699,7 +714,20 @@ Plan:
         const preamble = pressureTag ? `${pressureTag}\n` : "";
         const remaining = visible.filter((t) => t.status !== "completed");
         const counts = selectTodoCounts(state);
-        const todoList = remaining.map((t) => `${t.id}. ${t.subject}`).join("\n");
+        // 状态标记与 plan.md 同格式（- [~] = 进行中），in_progress 附 activeForm
+        const statusMark: Record<string, string> = {
+          pending: " ",
+          in_progress: "~",
+          blocked: "b",
+          completed: "x",
+        };
+        const todoList = remaining
+          .map((t) => {
+            const form =
+              t.status === "in_progress" && t.activeForm ? ` (${t.activeForm})` : "";
+            return `- [${statusMark[t.status] ?? " "}] ${t.id}. ${t.subject}${form}`;
+          })
+          .join("\n");
         return {
           message: {
             customType: "plan-execution-context",
