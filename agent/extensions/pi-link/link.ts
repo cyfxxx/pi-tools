@@ -449,6 +449,20 @@ export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ o
 /** T2-4 并发与去重状态（模块级，进程内有效） */
 const inflight = new Map<string, boolean>()
 const lastSends = new Map<string, { hash: string; ts: number }>()
+// 进程内 attach 互斥：同设备并发 attach 串行化（链式排队）——防输入框拼接/消息重复注入。
+// 跨设备竞态无法用进程内锁解决（不同主机），由唯一 buffer 名 + 原子探测粘贴最小化。
+const attachLocks = new Map<string, Promise<unknown>>()
+async function withAttachLock<T>(deviceKey: string, fn: () => Promise<T>): Promise<T> {
+  const prev = attachLocks.get(deviceKey) ?? Promise.resolve()
+  const run = prev.then(fn, fn)
+  run.catch(() => {}) // 防未处理 rejection
+  attachLocks.set(deviceKey, run)
+  try {
+    return await run
+  } finally {
+    if (attachLocks.get(deviceKey) === run) attachLocks.delete(deviceKey)
+  }
+}
 export const DEDUP_WINDOW_MS = 5 * 60 * 1000
 
 /** 简单字符串 hash（djb2）——去重比对用，无需加密强度 */
@@ -513,6 +527,11 @@ export async function readRemoteOutbox(device: DeviceConfig): Promise<{ ok: bool
  * fromName：发送者身份名（默认本机 selfName）——消息自动加身份前缀，
  * 远程用户看到消息即知来自哪台设备。 */
 export async function attachToRemote(device: DeviceConfig, text: string, tmuxSession?: string, force = false, fromName?: string): Promise<{ ok: boolean; detail: string }> {
+  const dk = `${device.user}@${device.host}:${device.port ?? 22}`
+  return withAttachLock(dk, () => attachToRemoteInner(device, text, tmuxSession, force, fromName))
+}
+
+async function attachToRemoteInner(device: DeviceConfig, text: string, tmuxSession?: string, force = false, fromName?: string): Promise<{ ok: boolean; detail: string }> {
   const { state } = await readRemoteState(device)
   // 身份前缀：默认开启（接收方可辨识发送设备）；已含 [来自 前缀的消息不重复加
   if (!/^\[来自 .+\]/.test(text)) {
@@ -548,10 +567,12 @@ export async function attachToRemote(device: DeviceConfig, text: string, tmuxSes
       `if ! tmux ls >/dev/null 2>&1; then ` +
       `if LD_PRELOAD= /lib/ld-linux-aarch64.so.1 /usr/bin/tmux ls >/dev/null 2>&1; then TMUX_FB=1; else TMUX_FB=2; fi; fi; ` +
       `[ "$TMUX_FB" != 2 ] || exit 4; `
+    // buffer 名唯一（时间戳+随机）：并发/跨设备 attach 不互相覆盖 tmux buffer
+    const buf = 'pi-link-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
     const paste = `${tmuxProbe}` +
       `printf %s ${b64} | base64 -d > ${tmp} 2>/dev/null && ` +
-      `tmux_cmd load-buffer -b pi-link ${tmp} 2>&1 && ` +
-      `tmux_cmd paste-buffer -b pi-link -t ${s} 2>&1 && ` +
+      `tmux_cmd load-buffer -b ${buf} ${tmp} 2>&1 && ` +
+      `tmux_cmd paste-buffer -b ${buf} -t ${s} 2>&1 && ` +
       (enter ? `sleep 0.5 && tmux_cmd send-keys -t ${s} Enter 2>&1 && ` : '') +
       `rm -f ${tmp}`
     const probe = `${tmuxProbe}` +
