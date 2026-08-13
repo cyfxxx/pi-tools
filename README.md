@@ -148,13 +148,7 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 > ```
 > 也可先 `apt-get install -y ca-certificates && update-ca-certificates` 尝试修复系统证书。
 
-> **git push 首次配置凭证**：新环境无 git 凭证时 push 报 `could not read Username`。配置方式：
-> ```bash
-> git config --global credential.helper store
-> git push https://<PAT>@github.com/cyfxxx/pi-tools.git HEAD   # 首次带 token 推送，凭据落盘 ~/.git-credentials
-> # 之后 git push 直接可用；注意 remote 不要留 token（AGENTS.md 约定），用 https://github.com/... 即可
-> ```
-> PAT 泄露后立即在 GitHub 撤销并更换。
+> **git push 凭证（SSH over 443）**：本仓库 remote 已切换为 `ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git`——SSH key（`~/.ssh/id_ed25519`）认证，**免 PAT 免代理**（github.com:443 被 GFW 封锁，v2ray 代理会挂）。新环境：生成密钥 → GitHub Settings → SSH keys 添加 → `git remote set-url origin ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git`。不要改回 HTTPS 或带 token 的 URL。
 
 > **wrapper 与 PI_DIST**：`install-wrapper.sh` 接管 `pi` 命令后，扩展（pi-voice）与补丁脚本（patch-*.mjs）通过 `PI_DIST` 环境变量定位 pi dist 目录（wrapper 已自动导出，`echo $PI_DIST` 验证）。直启 `pi-original` 时需手动导出，否则 pi 启动报 `Extension runtime not initialized`（见常见问题）。
 

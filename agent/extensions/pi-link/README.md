@@ -21,7 +21,7 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 
 - **零新增服务**：SSH 即通道，目标设备无需跑任何守护进程（只需 sshd + pi）
 - **结构化**：官方 RPC 事件流，`agent_settled` 判定完成，非文本解析
-- **多轮会话**：`--session-dir` 持久化，目标设备可用 `pi -c`/`/resume` 查看历史（A 的每次调用是独立会话，上下文不跨调用延续——需要连续对话请在 message 中附上下文或后续版本支持 load_session）
+- **多轮会话**：`--session-dir` 持久化，目标设备可用 `pi -c`/`/resume` 查看历史；同一设备多次调用默认复用上次会话（switch_session，见 T1 会话连续性），上下文连续
 
 ## 工具
 
@@ -115,6 +115,33 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 
 （入口脚本校验后以固定参数 exec `pi --mode rpc --no-extensions --session-dir ~/.pi/agent/sessions/pi-link`，A 无法执行其他命令）
 
+## 设备接入 / 升级流程
+
+### 新设备接入（双向）
+
+1. **安装公钥合集**（仓库已入库所有设备公钥）：
+   ```bash
+   bash ~/.pi/scripts/pi-link-keys.sh install   # 把 keys/authorized_keys 合并进本机 ~/.ssh/authorized_keys
+   ```
+2. **注册本机公钥**（供其他设备免密连入）：`bash ~/.pi/scripts/pi-link-keys.sh export` 输出本机公钥 → 在其设备 `add` 后 push，其他设备 pull + install
+3. **交换设备卡片**：本机 `/link export-card` 生成卡片 → 对方设备 `/link import-card <JSON>` 写入 pi-link.json（或直接手动编辑 `~/.pi/pi-link.json`，格式见 config.ts）
+4. **验证**：`/link status` 应显示对方可达；`/link send <设备> 测试` 往返一次
+
+> pi-link.json（设备清单）、pi-link-active.json/state.json/outbox.json（运行时状态）均 **gitignored、每环境独立**——多设备 git 同步不会互相覆盖；换机/重装后设备清单需重新配置（或用 `pi-backup create` 归档带走）。
+
+### 升级已部署设备
+
+1. 本机：`git push`（或远程自己 pull）
+2. 远程：`cd ~/.pi && git pull --rebase origin master`（entries.json 冲突时 `git checkout --theirs memory/entries.json` 保留远程）
+3. 远程重启 pi（退出重进或 `/admin:restart`）——扩展代码在启动时加载，**不重启不生效**（状态文件/信箱/watch/attach 均依赖新版扩展）
+4. 验证：远程 `~/.pi/pi-link-state.json` 出现且含 `tmuxSession` 字段即加载成功
+
+### Termux 设备特别说明
+
+- 远程命令链依赖 **unset LD_PRELOAD**（libtermux-exec 破坏 node）——buildRemoteCommand 已处理，无需手动干预
+- Termux sshd 读取的是 Termux home 的 `~/.ssh`（非 proot `/root/.ssh`）——公钥安装路径在 Termux 环境自动双写（见 pi-link-keys.sh）
+- Windows 设备：OpenSSH 默认登录 shell 是 cmd，远程 bash 命令会失败——需将登录 shell 配为 git-bash/WSL 后再接入
+
 ## 安全边界
 
 - **传输**：SSH 密钥认证；建议仅在 Tailscale 私有网络（或受信局域网）内使用，勿暴露公网
@@ -132,17 +159,12 @@ cd agent/extensions/pi-link && ./node_modules/.bin/vitest run
 
 ## 演进方向（分档，待需求出现再评估）
 
-### T2（中等成本，架构小幅演进）
+### T2 已全部实现（活跃/身份、watch/attach、信箱、并发去重、设备卡片）
 
-- ~~**活跃设备/身份机制**~~（已实现：input 刷新活跃 + PI_UNATTENDED 拦截 + allowUnattended 配置）
-- ~~**远程会话观察与介入（watch/attach）**~~（已实现：状态文件冲突防护 + tmux paste-buffer 介入）
-- ~~**信箱（B→A 结果留存）**~~（已实现：agent_end 写入 outbox + /link inbox）
-- ~~**并发保护与去重**~~（已实现：in-flight 锁 + 5 分钟同消息去重）
-- ~~**设备卡片交换**~~（已实现：export-card / import-card）
-- **B→A 主动推送**：远程完成后主动通知本机（当前为信箱+watch 手动拉取）
-- **B→A 主动推送**：远程完成后主动通知（ssh 反向隧道或常驻 WS）
-- **任务队列/去重**：多任务排队、同消息去重
-- **设备发现**：Agent Card 格式（`/.well-known/agent-card.json` 风格 JSON）+ mDNS/DNS-SD
+剩余未做项：
+- **B→A 主动推送**：远程完成后主动通知本机（当前为信箱+watch 手动拉取；需 ssh 反向隧道或常驻连接）
+- **任务队列**：多任务排队（当前为并发拒绝 + 5 分钟去重）
+- **设备自动发现**：mDNS/DNS-SD 广播（当前为卡片交换式）
 
 ### T3（架构演进，暂缓）
 
@@ -152,6 +174,6 @@ cd agent/extensions/pi-link && ./node_modules/.bin/vitest run
 
 ### 已实现（T1）
 
-- **会话连续性**：load_session 复用上次会话（同一设备多次调用上下文连续；>1MB 自动开新会话；`sessionPolicy: fresh` 可关闭）
+- **会话连续性**：switch_session 复用上次会话（同一设备多次调用上下文连续；>1MB 自动开新会话；`sessionPolicy: fresh` 可关闭）
 - **流式回传**：远程工具执行进度实时转发（onUpdate）
 - **指令模板**：消息自动加远程执行指令前缀，消除措辞歧义

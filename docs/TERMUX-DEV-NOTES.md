@@ -36,8 +36,14 @@
 
 ## 网络
 
-- **github.com 直连可能被 DNS fake-IP 污染**（198.18.x.x 超时），api.github.com 正常；推送可用 `git -c http.proxy=http://127.0.0.1:10808 push`（v2ray 10808），不写入 git config
-- **GitHub 无持久凭证**：本机无 credential helper / SSH key / gh CLI；推送需用户临时提供 PAT，内联 URL 一次性使用，完成后恢复无凭证 remote，token 不落盘
+- **git 推送/拉取走 SSH over 443（免代理免 PAT）**：remote = `ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git`，认证用 `~/.ssh/id_ed25519`（已加 GitHub，公钥 `JeIymNI4AYlm0AQz2iNT/el4uY5...`）；github.com:443 被 GFW 封锁（全 IP 段）、api.github.com 可直连、v2ray 代理会挂——**不要改回 HTTPS 或开代理**
+- **git push 被拒（non-fast-forward）时**：先 `git pull --rebase origin master`；`memory/entries.json` 冲突统一 `git checkout --theirs memory/entries.json`（保留远程，本地自动重提取）
+
+## sshd 与 pi-link（多设备互联）
+
+- **Termux sshd 会话的 LD_PRELOAD（libtermux-exec）会破坏 node**：远程执行 pi 前必须 `unset LD_PRELOAD`（pi-link 的 buildRemoteCommand 已内置处理）
+- **ssh 客户端读取 Termux home 的 .ssh**（`/data/data/com.termux/files/home/.ssh`），非 proot `/root/.ssh`——公钥安装需双写（`scripts/pi-link-keys.sh install` 自动处理）
+- sshd host key 是 known_hosts 里的（`Hil10tkhnjpr1s...`），与客户端公钥（`ssh-keygen -y -f ~/.ssh/id_ed25519`）是两回事——加 GitHub/设备授权时用**客户端公钥**
 
 ## whisper（本地转写）
 
