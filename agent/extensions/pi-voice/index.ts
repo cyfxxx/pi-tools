@@ -222,32 +222,42 @@ export default function (pi: ExtensionAPI): void {
     // 多级补全：pi 传入完整参数前缀（含多级与空格），按第一级子命令分发
     getArgumentCompletions: (prefix) => {
       const first = (prefix.trim().split(/\s+/)[0] ?? '').toLowerCase()
+      // 前缀过滤（与 /link 同款）：不匹配返回空数组 → 补全弹窗关闭 →
+      // 回车正常提交命令。2026-08-15 用户报告：原实现无过滤，输入
+      // '/voice tts speak 你好' 时弹窗永不关闭，回车被劫持成接受选中项
+      // （变 'tts on'）
+      const pick = (items: { value: string; label: string; description: string }[]) => {
+        const t = prefix.trim()
+        // 完整匹配也排除（'/voice tts on' 回车应直接提交而非停在弹窗）
+        return items.filter((i) => i.value.startsWith(t) && i.value !== t)
+      }
       // 注意：参数补全的 value 是整体替换参数前缀（pi 的 applyCompletion 用
       // beforePrefix + item.value），必须含完整参数（'tts on'），否则会变
-      // 成 '/voice on' 之类的错命令
+      // 成 '/voice on' 之类的错命令；speak 是自由文本命令不入补全列表
       if (first === 'tts') {
-        return [
+        return pick([
           { value: 'tts on', label: 'tts on', description: '开启自动朗读' },
           { value: 'tts off', label: 'tts off', description: '关闭自动朗读' },
           { value: 'tts status', label: 'tts status', description: '查看朗读/转写状态' },
-          { value: 'tts speak [文本]', label: 'tts speak [文本]', description: '手动朗读（缺省朗读最近回复）' },
-        ]
+        ])
       }
       if (first === 'model') {
-        return Object.entries(WHISPER_MODELS).map(([name, desc]) => ({
-          value: `model ${name}`,
-          label: `model ${name}`,
-          description: desc,
-        }))
+        return pick(
+          Object.entries(WHISPER_MODELS).map(([name, desc]) => ({
+            value: `model ${name}`,
+            label: `model ${name}`,
+            description: desc,
+          })),
+        )
       }
       if (first === 'device') {
-        return [
+        return pick([
           { value: 'device cpu', label: 'device cpu', description: 'CPU 推理（GPU 被占用时稳定）' },
           { value: 'device gpu', label: 'device gpu', description: 'NVIDIA GPU 推理' },
           { value: 'device auto', label: 'device auto', description: '自动检测（默认）' },
-        ]
+        ])
       }
-      return [
+      return pick([
         { value: 'start', label: 'start', description: '开始录音' },
         { value: 'stop', label: 'stop', description: '停止录音并转写' },
         { value: 'cancel', label: 'cancel', description: '取消录音并丢弃音频' },
@@ -257,7 +267,7 @@ export default function (pi: ExtensionAPI): void {
         { value: 'device', label: 'device', description: '查看/切换推理设备' },
         { value: 'bench', label: 'bench', description: '转写速度基准' },
         { value: 'help', label: 'help', description: '显示用法' },
-      ]
+      ])
     },
     handler: async (args, ctx) => {
       // 补丁缺失提示（加载期不 reply 的延迟输出）：/voice 命令或快捷键进入语音时提示一次
