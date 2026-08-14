@@ -67,7 +67,69 @@ if (-not (Test-Path "$Root\.pi\agent")) {
   Write-Host '  B. 直接运行 start.bat——pi 首次启动自动生成骨架，之后再手动加扩展'
 }
 
-# ---- 4. 启动脚本检查（独立文件 start.bat/start.ps1 随包提供） ----
+# ---- 4. 工具组件（ffmpeg/PortableGit 下载；ca-bundle/tmux shim 随仓库 portable/ 提供） ----
+$Mirror = 'https://gh-proxy.net/'
+$Tools = "$Root\tools"
+New-Item -ItemType Directory -Force -Path $Tools | Out-Null
+Write-Host '== 工具组件 ==' -ForegroundColor Cyan
+
+# ca-bundle + tmux shim（随本目录/仓库 portable/ 提供，直接拷入）
+foreach ($src in @("$PSScriptRoot\ca-bundle.crt", "$PSScriptRoot\tools\tmux\tmux.cmd")) {
+  if (Test-Path $src) {
+    $rel = $src.Substring($PSScriptRoot.Length).TrimStart('\')
+    $dst = Join-Path $Tools $rel
+    New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
+    Copy-Item $src $dst -Force
+    Write-Host "  ✓ $rel"
+  }
+}
+
+# ffmpeg（Windows 构建；GitHub 被墙时走 gh-proxy 镜像，双源 fallback）
+if (-not (Test-Path "$Tools\ffmpeg\bin\ffmpeg.exe")) {
+  Write-Host '下载 ffmpeg（约 85MB）...' -ForegroundColor Yellow
+  $ffzip = "$Tools\ffmpeg.zip"
+  $urls = @(
+    "${Mirror}https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+    'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip'
+  )
+  $ok = $false
+  foreach ($u in $urls) {
+    try { Invoke-WebRequest -Uri $u -OutFile $ffzip -TimeoutSec 300; $ok = $true; break }
+    catch { Write-Host '  该源下载失败，尝试下一个...' -ForegroundColor Yellow }
+  }
+  if (-not $ok) { Write-Host 'ffmpeg 下载失败（检查网络后重跑本脚本）' -ForegroundColor Red; exit 1 }
+  tar -xf $ffzip -C $Tools
+  Remove-Item $ffzip -Force
+  # 解压目录带版本名（ffmpeg-master-latest-win64-gpl/），bin/ 移为固定 tools/ffmpeg
+  if (Test-Path "$Tools\ffmpeg-master-latest-win64-gpl\bin") {
+    Remove-Item "$Tools\ffmpeg" -Recurse -Force -ErrorAction SilentlyContinue
+    Move-Item "$Tools\ffmpeg-master-latest-win64-gpl\bin" "$Tools\ffmpeg"
+    Remove-Item "$Tools\ffmpeg-master-latest-win64-gpl" -Recurse -Force -ErrorAction SilentlyContinue
+  }
+  Write-Host "  ffmpeg 就绪: $(& "$Tools\ffmpeg\bin\ffmpeg.exe" -version 2>$null | Select-Object -First 1)"
+} else { Write-Host '  ffmpeg 已存在，跳过' }
+
+# PortableGit（git 命令；Windows 自带 tar 支持解压 7z）
+if (-not (Test-Path "$Tools\PortableGit\cmd\git.exe")) {
+  Write-Host '下载 PortableGit（约 57MB）...' -ForegroundColor Yellow
+  $pg = "$Tools\PortableGit.7z"
+  $urls = @(
+    "${Mirror}https://github.com/git-for-windows/git/releases/download/v2.55.0.4/PortableGit-2.55.0.4-64-bit.7z",
+    'https://github.com/git-for-windows/git/releases/download/v2.55.0.4/PortableGit-2.55.0.4-64-bit.7z'
+  )
+  $ok = $false
+  foreach ($u in $urls) {
+    try { Invoke-WebRequest -Uri $u -OutFile $pg -TimeoutSec 300; $ok = $true; break }
+    catch { Write-Host '  该源下载失败，尝试下一个...' -ForegroundColor Yellow }
+  }
+  if (-not $ok) { Write-Host 'PortableGit 下载失败（检查网络后重跑本脚本）' -ForegroundColor Red; exit 1 }
+  New-Item -ItemType Directory -Force -Path "$Tools\PortableGit" | Out-Null
+  tar -xf $pg -C "$Tools\PortableGit"
+  Remove-Item $pg -Force
+  Write-Host "  PortableGit 就绪: $(& "$Tools\PortableGit\cmd\git.exe" --version 2>$null)"
+} else { Write-Host '  PortableGit 已存在，跳过' }
+
+# ---- 5. 启动脚本检查（独立文件 start.bat/start.ps1 随包提供） ----
 foreach ($f in @('start.bat', 'start.ps1', 'verify.ps1')) {
   if (-not (Test-Path "$Root\$f")) {
     Write-Host "警告：缺少 $f（请从原始包补齐）" -ForegroundColor Yellow

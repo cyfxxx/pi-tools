@@ -36,6 +36,19 @@ pi-portable/
 - 之后便携 pi 的新会话写同一目录，`--continue` 持续有效
 - 手动恢复特定会话：`start.bat --session <路径>`（pi 支持直接文件路径参数）
 
+## 工具组件（tools/）
+
+`setup.ps1` 第 4 段自动准备语音/搜索/git 所需的组件：
+
+| 组件 | 来源 | 说明 |
+|---|---|---|
+| `tools/ffmpeg/bin/ffmpeg.exe` | gh-proxy 镜像下载（BtbN 构建，~85MB，双源 fallback） | pi-voice 录音（dshow）+ 音频处理；start.bat 的 `PI_VOICE_MIC_BIN` 引用 |
+| `tools/PortableGit/` | gh-proxy 镜像下载（git-for-windows v2.55.0.4 .7z，~57MB，Windows tar 解压） | 无系统 git 的机器可用；`tools/PortableGit/cmd/git.exe` |
+| `tools/ca-bundle.crt` | 随仓库入库（216K） | GIT_SSL_CAINFO（GitHub 证书链被墙环境的 git 用） |
+| `tools/tmux/tmux.cmd` | 随仓库入库 | tmux shim → `wsl.exe tmux %*`（pi-tmux 扩展在 Windows 调 WSL 后端） |
+
+> 大文件（ffmpeg/PortableGit）不入库，setup 首次运行下载；小文件（ca-bundle/shim）随 `portable/` 目录直接拷入。
+
 ## 升级 pi
 
 删除 `pi-global/` 后重跑 `setup.ps1`（Node 已存在会跳过，版本不匹配自动重装 LTS）。
