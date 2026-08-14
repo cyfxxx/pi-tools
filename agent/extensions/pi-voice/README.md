@@ -5,10 +5,11 @@
 ## 功能
 
 - **/voice** 开始/停止录音并转写（快捷键 `Ctrl+Alt+R`；软键盘/外接键盘均可，或用 `/voice` 命令）
-- **/voice <start|stop|cancel|tts|doctor|model|bench|help>** 录音/朗读子命令（`/voice help` 查看全部用法）；无参数 = 录音中则停止转写，否则开始录音
+- **/voice <start|stop|cancel|tts|doctor|model|device|bench|help>** 录音/朗读子命令（`/voice help` 查看全部用法）；无参数 = 录音中则停止转写，否则开始录音
 - **听写模式**：录音中按**回车** = 结束当前段并转写（状态条显示「⚙ 转写中…」），文本插入输入框后**不自动续录**（等待确认）；再次按回车：**输入框有内容 = 正常发送**（放行提交），**输入框为空 = 开始下一段录音**（听写循环）。用快捷键/命令停止为正常退出。各段文本追加到输入框，统一修改后发送
 - **录音时长精确控制**：时长由扩展在 Node 侧计时（服务端 `-l 0` 不限时，规避 MediaRecorder 时间戳漂移），到 `maxSeconds` 自动 `-q` 优雅收尾并转写
 - **/voice model** 列出模型；`/voice model <名>` 切换（tiny/base/small/medium/large-v3，重启 whisper 服务生效）
+- **/voice device** 查看推理设备（配置 + 服务端实际）；`/voice device <cpu|gpu|auto>` 切换（GPU 被游戏/渲染占用时切 cpu 保稳定，重启服务生效）
 - **/voice bench** 录 5 秒音频测转写速度，输出实时率 RTF 与换模型建议
 - **/voice tts on|off** 开关自动朗读回复（状态持久化到配置文件，重启仍生效）；**/voice tts speak [文本]** 手动朗读（JSON/纯符号内容会过滤并提示）；**/voice tts status** 查看朗读开关、队列与后端状态
 - **TTS 自动朗读语义**：默认关闭（非语音状态不朗读）；语音输入（开始录音/语音直发）后自动开启朗读，键盘输入自动关闭——形成语音对话闭环；手动 `/voice tts on|off` 后不再自动切换。只朗读最终回复（`message_end` 中 `stopReason=stop`），中间轮与 JSON/结构化摘要自动过滤；**串行队列合并策略**：同时只朗读一条，新回复到来时丢弃中间待读内容（中间内容无需朗读），杜绝 TTS 进程堆积。**僵尸进程兜底清理**：扩展启动时自动执行 `pkill -f termux-tts-speak; pkill -f 'termux-api TextToSpeech'`，且启动时清空 tmpDir 全部残留音频（进程重启后必然无进行中录音）

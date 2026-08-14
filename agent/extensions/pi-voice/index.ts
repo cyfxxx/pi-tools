@@ -205,6 +205,8 @@ export default function (pi: ExtensionAPI): void {
     '/voice tts <on|off>       开关自动朗读回复',
     '/voice tts status         查看朗读/转写状态',
     '/voice tts speak [文本]   手动朗读（缺省朗读最近回复）',
+    '/voice model [名称]      查看/切换 whisper 模型',
+    '/voice device [cpu|gpu|auto]  查看/切换推理设备（GPU 被占用时切 cpu）',
     '/voice doctor             诊断录音/转写/朗读依赖',
     '/voice model [名称]       查看/切换 whisper 模型',
     '/voice bench              录 5 秒测转写速度',
@@ -310,6 +312,9 @@ export default function (pi: ExtensionAPI): void {
           break
         case 'model':
           await cmdModel(pi, ctx, config, rest.join(' '))
+          break
+        case 'device':
+          await cmdDevice(pi, ctx, config, rest.join(' '))
           break
         case 'bench':
           await cmdBench(pi, ctx, config)
@@ -588,6 +593,67 @@ async function cmdModel(
   reply(api, ok ? `模型已切换为 ${want}，服务就绪` : `模型切换中（服务加载较慢），可用 /voice doctor 查看状态`)
 }
 
+/** /voice device [cpu|gpu|auto]：查看或切换推理设备（GPU 被游戏/渲染占用时切 CPU 保稳定）。 */
+async function cmdDevice(
+  api: ExtensionAPI,
+  ctx: ExtensionCommandContext,
+  config: VoiceConfig,
+  want: string,
+): Promise<void> {
+  const DEVICE_NAMES: Record<string, string> = { auto: '自动检测', cuda: 'NVIDIA GPU', cpu: 'CPU' }
+  const actual = await whisperDevice(config)
+  if (want === '') {
+    const list = Object.entries(DEVICE_NAMES)
+      .map(([name, note]) => `  ${name}${name === config.whisperDevice ? '（当前）' : ''} — ${note}`)
+      .join('\n')
+    reply(
+      api,
+      `推理设备：${DEVICE_NAMES[config.whisperDevice] ?? config.whisperDevice}（配置）\n服务端实际：${actual ?? '不可达'}\n可用设备：\n${list}\n切换：/voice device <cpu|gpu|auto>`,
+    )
+    return
+  }
+  const target = want === 'gpu' ? 'cuda' : want === 'cpu' ? 'cpu' : want === 'auto' ? 'auto' : null
+  if (!target) {
+    reply(api, `未知设备：${want}。可用：cpu / gpu / auto`)
+    return
+  }
+  if (target === config.whisperDevice) {
+    reply(api, `已在使用 ${want} 推理`)
+    return
+  }
+  if (dictation.isRecording() || dictation.isTranscribing()) {
+    reply(api, '请先停止录音/等待转写完成再切换设备')
+    return
+  }
+  try {
+    persistConfig({ whisperDevice: target as VoiceConfig['whisperDevice'] }, process.env)
+  } catch (e) {
+    reply(api, `配置写入失败：${(e as Error).message}`)
+    return
+  }
+  ctx.ui.setStatus('pi-voice', '⚙ 切换推理设备并重启服务…')
+  reply(api, `正在切换到 ${want}（重启服务）…`)
+  const res = await runCommand('bash', [config.whisperScript, 'restart'], { timeoutMs: 120000 })
+  ctx.ui.setStatus('pi-voice', undefined)
+  if (res.code !== 0) {
+    reply(api, `服务重启命令失败：${res.stderr || res.stdout}`)
+    return
+  }
+  config = loadConfig()
+  // 轮询 health 直到服务端实际设备匹配（auto = 任意已加载设备）
+  const deadline = Date.now() + 120000
+  let ok = false
+  while (Date.now() < deadline) {
+    const d = await whisperDevice(config)
+    if (d && (target === 'auto' || d === target)) {
+      ok = true
+      break
+    }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  reply(api, ok ? `推理设备已切换为 ${want}（服务端 ${ok ? (target === 'auto' ? '已加载' : target) : ''}），服务就绪` : `设备切换中（服务加载较慢），可用 /voice doctor 查看状态`)
+}
+
 /** /voice bench：录 5s 音频测转写速度，输出 RTF 与换模型建议。 */
 async function cmdBench(api: ExtensionAPI, ctx: ExtensionCommandContext, config: VoiceConfig): Promise<void> {
   if (dictation.isRecording() || dictation.isTranscribing()) {
@@ -606,8 +672,21 @@ async function whisperModel(cfg: VoiceConfig): Promise<string | null> {
     const headers: Record<string, string> = {}
     if (cfg.whisperToken) headers['Authorization'] = `Bearer ${cfg.whisperToken}`
     const res = await fetch(`${cfg.whisperEndpoint}/health`, { headers, signal: AbortSignal.timeout(3000) })
-    const data = (await res.json()) as { ok?: boolean; model?: string }
+    const data = (await res.json()) as { ok?: boolean; model?: string; device?: string }
     return data.ok ? (data.model ?? null) : null
+  } catch {
+    return null
+  }
+}
+
+/** 查询服务端实际推理设备（health 返回 device；服务端加载后才有值）。 */
+async function whisperDevice(cfg: VoiceConfig): Promise<string | null> {
+  try {
+    const headers: Record<string, string> = {}
+    if (cfg.whisperToken) headers['Authorization'] = `Bearer ${cfg.whisperToken}`
+    const res = await fetch(`${cfg.whisperEndpoint}/health`, { headers, signal: AbortSignal.timeout(3000) })
+    const data = (await res.json()) as { device?: string }
+    return data.device ?? null
   } catch {
     return null
   }

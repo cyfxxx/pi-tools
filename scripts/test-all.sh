@@ -51,11 +51,16 @@ for ext in $ALL_EXTS; do
 done
 
 cyn "== 根 typecheck (tsc) =="
-# 优先 tsconfig.local.json（每环境 paths，rebuild Phase 2-D 生成）；缺失时回退共享配置
+# 优先 tsconfig.local.json（每环境 paths，rebuild Phase 2-D 生成）；
+# 缺失时（新设备/容器未安装 pi）共享 tsconfig.json 的 paths 为空必然全量报
+# Cannot find module——跳过并警告，不算回归失败（2026-08-14 容器重建测试发现）
 TSCONFIG="tsconfig.local.json"
-[ -f "$EXTS/$TSCONFIG" ] || TSCONFIG="tsconfig.json"
-(cd "$EXTS" && ./pi-web-search/node_modules/.bin/tsc -p "$TSCONFIG" --noEmit >/dev/null 2>&1)
-report $? "tsc -p $TSCONFIG"
+if [ -f "$EXTS/$TSCONFIG" ]; then
+  (cd "$EXTS" && ./pi-web-search/node_modules/.bin/tsc -p "$TSCONFIG" --noEmit >/dev/null 2>&1)
+  report $? "tsc -p $TSCONFIG"
+else
+  cyn "⚠ 未找到 tsconfig.local.json（未安装 pi 或未生成），跳过 tsc 类型检查"
+fi
 
 if [ "$FAST" -eq 1 ] || [ -n "$ONLY" ]; then
   cyn "== --fast/--only：跳过 subagent/注册面/conflict-check/发现完整性 =="
