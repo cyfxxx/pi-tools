@@ -127,4 +127,5 @@ portable/.pi/
 /diag.bat
 /sync.ps1
 /update-portable.ps1
+/update-pi.ps1
 /patch-footer-live-context.mjs
