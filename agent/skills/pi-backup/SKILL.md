@@ -103,7 +103,7 @@ description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数
 3. 运行 `git remote -v` 检查 remote URL 可到达 → 否则报错 `远程仓库不可达`
 4. 运行 `git status --porcelain` 检查是否有变更 → 若无变更则提示 `无变更需要同步`
 5. **gitignored 配置变更检测**（基线对比）：`sha256sum agent/settings.json agent/models.json agent/models-store.json agent/pi-voice.json agent/auth.json searxng/settings.yml 2>/dev/null` 与 `.backup-baseline/ignored.sha256` diff 对比——有变化则警告：`以下配置自上次备份后有修改（不在 git 同步范围，跨机需 pi-backup create --with-auth 或 scp）`，确认是有意修改后运行 `--refresh-baseline` 刷新基线；基线不存在时自动创建
-6. **外部配置副本差异检测**：`~/.tmux.conf` vs `tmux/tmux.conf`（及 `~/.termux/termux.properties` vs `tmux/termux.properties`，存在时）`cmp -s` 对比——不同则警告：`源文件有更新未同步回 tmux/`，提示 `cp` 后重新提交
+6. **外部配置副本差异检测**：`~/.tmux.conf` vs `deploy/tmux/tmux.conf`（及 `~/.termux/termux.properties` vs `deploy/tmux/termux.properties`，存在时）`cmp -s` 对比——不同则警告：`源文件有更新未同步回 deploy/tmux/`，提示 `cp` 后重新提交
 7. 检查 `~/.pi/.gitignore` 存在且包含 `agent/auth.json`、`agent/settings.json`、`agent/models*.json`、`agent/pi-voice.json`、`searxng/settings.yml` 等排除规则 → 缺失则报错：`缺少 .gitignore（rsync/手工拷贝同步时最易丢失，先恢复它再同步，否则密钥会被提交！）`
 8. 检查敏感文件是否被意外追踪：运行 `git ls-files`，检查 `agent/auth.json`、`agent/settings.json`、`agent/models.json`、`agent/models-store.json`、`agent/pi-voice.json`、`agent/trust.json`、`searxng/settings.yml` 是否出现在输出中——任一命中**立即报错中止**并给出移除指引：`git rm --cached <file> && git commit -m "remove secret"`
 
@@ -218,7 +218,7 @@ GitHub 同步完成
      ```
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
 4. 从 `tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
-5. **pi-link 公钥安装**：`bash ~/.pi/scripts/pi-link-keys.sh install`（把 `keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
+5. **pi-link 公钥安装**：`bash ~/.pi/scripts/pi-link-keys.sh install`（把 `deploy/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
 6. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
 7. 告知用户重启 pi。
 
@@ -334,7 +334,7 @@ GitHub 同步完成
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
-| 8d | pi-link 互连公钥 | `scripts/pi-link-keys.sh` 与 `keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
+| 8d | pi-link 互连公钥 | `scripts/pi-link-keys.sh` 与 `deploy/keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
 
 **Phase 3 — tmux 环境（跨系统兼容，单独一组）：**
 
@@ -343,7 +343,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 9 | `tmux` 命令 | `tmux -V` 失败 | 按系统安装：`apt-get install -y tmux`（Debian/Ubuntu）\| `dnf install -y tmux`（Fedora/RHEL）\| `pacman -S tmux`（Arch）\| `zypper install tmux`（openSUSE）\| `brew install tmux`（macOS） |
-| 10 | `~/.tmux.conf` | 文件不存在 | 从仓库 `tmux/tmux.conf` 写回（`cp ~/.pi/tmux/tmux.conf ~/.tmux.conf`）；缺失则提示手动重建（含 WSL2 专属调优，见 `docs/alacritty-tmux-setup.md`） |
+| 10 | `~/.tmux.conf` | 文件不存在 | 从仓库 `deploy/tmux/tmux.conf` 写回（`cp ~/.pi/deploy/tmux/tmux.conf ~/.tmux.conf`）；缺失则提示手动重建（含 WSL2 专属调优，见 `docs/alacritty-tmux-setup.md`） |
 | 11 | tmux 插件（tpm/resurrect/continuum） | 不重建（仓库不包含插件源码） | 仅同步 `~/.tmux.conf`（上项）；插件需手动安装：`git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm && ~/.tmux/plugins/tpm/bin/install_plugins` |
 
 > **跨系统兼容要点**：
@@ -522,9 +522,10 @@ pi-backup verify
 | 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
 | 调度脚本 | `scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
 | pi-link 设备清单 | `pi-link.json` | 多设备互联配置（host/user/port，gitignored 每环境独立，归档必须带走） |
-| pi-link 公钥合集 | `keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
+| pi-link 公钥合集 | `deploy/keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
 | pi-link 加固入口 | `scripts/pi-link-entry.sh` | ssh forced command 加固入口（每设备需 `install-wrapper` 类机制装到 sshd） |
 | pi-link 密钥脚本 | `scripts/pi-link-keys.sh` | 公钥 install/export/add（新设备接入流程） |
+| 部署配置 | `deploy/systemd/` | systemd unit 模板（pi-searxng/pi-whisper，`%PI_HOME%` 占位；rebuild.sh 安装时替换） |
 | 调度安装脚本 | `scripts/install-cron.sh`、`scripts/install-systemd.sh` | crontab / systemd 安装 |
 | 生命周期脚本 | `scripts/pi-wrapper.sh` | 进程外生命周期管理器（自动重启） |
 | 生命周期安装脚本 | `scripts/install-wrapper.sh` | wrapper 安装/卸载 |
@@ -534,9 +535,9 @@ pi-backup verify
 | Whisper 服务脚本 | `scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
 | Whisper 服务源码 | `scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
-| tmux 配置 | `tmux/tmux.conf` | tmux 键位/插件/持久化配置副本（源 `~/.tmux.conf`；git 同步直接携带，WSL2 调优见 docs/alacritty-tmux-setup.md） |
-| Alacritty 配置 | `tmux/alacritty.toml` | 终端渲染配置副本（源 `~/.config/alacritty/alacritty.toml`，存在时收录） |
-| Termux 配置 | `tmux/termux.properties` | Termux 键盘栏 extra-keys 等副本（源 `~/.termux/termux.properties`，存在时收录；语音快捷键依赖） |
+| tmux 配置 | `deploy/tmux/tmux.conf` | tmux 键位/插件/持久化配置副本（源 `~/.tmux.conf`；git 同步直接携带，WSL2 调优见 docs/alacritty-tmux-setup.md） |
+| Alacritty 配置 | `deploy/tmux/alacritty.toml` | 终端渲染配置副本（源 `~/.config/alacritty/alacritty.toml`，存在时收录） |
+| Termux 配置 | `deploy/tmux/termux.properties` | Termux 键盘栏 extra-keys 等副本（源 `~/.termux/termux.properties`，存在时收录；语音快捷键依赖） |
 | tmux 部署文档 | `docs/alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
 | tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
 | tmux 会话注册表 | `agent/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
@@ -544,11 +545,11 @@ pi-backup verify
 
 > **tmux/Termux 配置收录方式**：外部配置（`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties`）以副本形式收在仓库内 `tmux/` 目录——**git 同步（sync/clone）直接携带**，本地归档也直接收录 `tmux/` 目录（不再单独收集外部路径）；`restore`/`clone` 后写回原路径：
 > ```
-> cp ~/.pi/tmux/tmux.conf ~/.tmux.conf            # tmux 配置
-> cp ~/.pi/tmux/termux.properties ~/.termux/      # Termux 键盘栏（Termux 环境）
-> cp ~/.pi/tmux/alacritty.toml ~/.config/alacritty/  # Alacritty（若存在）
+> cp ~/.pi/deploy/tmux/tmux.conf ~/.tmux.conf            # tmux 配置
+> cp ~/.pi/deploy/tmux/termux.properties ~/.termux/      # Termux 键盘栏（Termux 环境）
+> cp ~/.pi/deploy/tmux/alacritty.toml ~/.config/alacritty/  # Alacritty（若存在）
 > ```
-> 均"存在时收录"，缺失自动跳过。外部源文件更新后需手动同步回 `tmux/` 再提交（`cp ~/.tmux.conf ~/.pi/tmux/tmux.conf && git add tmux/ && git commit`）。
+> 均"存在时收录"，缺失自动跳过。外部源文件更新后需手动同步回 `tmux/` 再提交（`cp ~/.tmux.conf ~/.pi/deploy/tmux/tmux.conf && git add deploy/tmux/ && git commit`）。
 
 
 ### 默认排除（`--full` 时额外包含）
