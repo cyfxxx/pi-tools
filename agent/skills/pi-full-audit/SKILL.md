@@ -1,8 +1,8 @@
 ---
 name: pi-full-audit
 description: 全项目深度审计技能。区别于 pi-code-review（diff/改动审查）：对仓库做全量确定性检查 + 基线回归测试 + subagent 并行深度审查 + 复核子代理逐条核实建议 + 主会话终审 + 分级报告。含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。
-version: v1.4
-经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）
+version: v1.5
+经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）
 ---
 
 # pi-full-audit 全项目深度审计
@@ -150,6 +150,8 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
    - 命中率 = cacheRead / (input + cacheRead)，正常 >90%（实测 98%+）；偏低 → system prompt 前缀不稳定（时间戳注入/banding 失效）
    - **统计修正（2026-08-14 实战）**：先排除 run 边界轮——重启/--continue 恢复/新实例后的首轮必然重发（context 重建），不算异常；usage-diag 记录所有 turn_end（含同机其他 pi 实例、昨晚实例），统计全量时先按时间窗口滤出当前会话活跃期
    - **断裂点定位法**：低命中轮的 cacheRead ≈ 断裂点位置。断裂点 ≈ system prompt 尾部 → **systemPrompt 拼入式注入**（如 pi-memory 旧实现）——变化时全部历史重发，应改为消息注入；断裂点在消息末尾 → 注入块变化，成本仅注入本身（≤几 K），正常
+   - **请求级验证法（比 usage 统计更精确，2026-08-14 实测）**：usage 的 in≈40-50K 并不等于消息序列断裂——写临时 debug 扩展监听 `before_provider_request`，对每条消息做完整内容 hash，对比相邻请求：前 N 条 hash 全同 = 无断裂（in 大是 DeepSeek 侧缓存未命中，与消息内容无关）；首个不同消息 = 精确断裂点。测完删除扩展
+   - **缓存断裂三类成因（实测分类）**：A 注入变化（systemPrompt 拼入式注入，已修）；B DeepSeek 侧缓存未命中（100K+ 上下文时偶发 in≈41K 轮，消息序列无断裂，嫌疑 thinking 全文/请求格式，超出扩展可控范围）；C run 边界（重启/恢复首轮）。另有 pi 内部轻量请求（nMsg=4，每 3-5 分钟一次）不影响主请求缓存
    - input 应远小于 cacheRead（每轮只发增量）；input 涨到数千 → 历史膨胀
    - contextTokens 接近预算上限 → 报告压力档位注入（≥75%/≥90% 文案）
    - compacted=true 频率高 → 检查 pi-context 压缩配置
