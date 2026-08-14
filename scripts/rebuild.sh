@@ -760,16 +760,16 @@ phase2_wrapper() {
   fi
 }
 
-# ---- Phase 2-F2: tmux 配置同步（仓库 tmux/tmux.conf → ~/.tmux.conf） ----
+# ---- Phase 2-F2: tmux 配置同步（仓库 deploy/tmux/tmux.conf → ~/.tmux.conf） ----
 # git 同步边界只覆盖 ~/.pi/，~/.tmux.conf 在主目录需手动安装（README「git 模式边界」表）。
 # 本阶段自动补上：diff 幂等 → cp 同步 → server 运行中时 source-file 热加载（不 kill-server，
 # 避免杀掉用户 tmux 会话；extended-keys/状态栏立即生效，status-loop flock 幂等重复 source 安全）。
 phase2_tmux() {
   title "Phase 2-F2" "tmux 配置同步"
-  local src="$PI_HOME/tmux/tmux.conf"
+  local src="$PI_HOME/deploy/tmux/tmux.conf"
   local dst="$HOME/.tmux.conf"
   if [ ! -f "$src" ]; then
-    warn "仓库 tmux/tmux.conf 缺失，跳过"
+    warn "仓库 deploy/tmux/tmux.conf 缺失，跳过"
     return 0
   fi
   if [ -f "$dst" ] && diff -q "$src" "$dst" >/dev/null 2>&1; then
@@ -789,17 +789,17 @@ phase2_tmux() {
   fi
 }
 
-# ---- Phase 2-F3: pi-link 互连公钥安装（keys/authorized_keys → 本机 authorized_keys） ----
-# 多设备免密互连：仓库 keys/authorized_keys 收集所有设备公钥（git 同步），
+# ---- Phase 2-F3: pi-link 互连公钥安装（deploy/keys/authorized_keys → 本机 authorized_keys） ----
+# 多设备免密互连：仓库 deploy/keys/authorized_keys 收集所有设备公钥（git 同步），
 # 每台设备重建时自动安装；pi-link-keys.sh install 幂等（Termux 双位置）。
 phase2_link_keys() {
   title "Phase 2-F3" "pi-link 互连公钥安装"
-  if [ ! -f "$PI_HOME/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/keys/authorized_keys" ]; then
-    warn "pi-link-keys.sh 或 keys/authorized_keys 缺失，跳过"
+  if [ ! -f "$PI_HOME/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/deploy/keys/authorized_keys" ]; then
+    warn "pi-link-keys.sh 或 deploy/keys/authorized_keys 缺失，跳过"
     return 0
   fi
   bash "$PI_HOME/scripts/pi-link-keys.sh" install >/dev/null 2>&1 \
-    && ok "互连公钥已安装（仓库 keys/authorized_keys → 本机 authorized_keys）" \
+    && ok "互连公钥已安装（仓库 deploy/keys/authorized_keys → 本机 authorized_keys）" \
     || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/scripts/pi-link-keys.sh install）"
 }
 
@@ -813,7 +813,7 @@ phase2_systemd() {
     info "无 systemd（Termux/proot/容器），跳过常驻服务自启"
     return 0
   fi
-  local sd_dir="$PI_HOME/systemd" sys_dir="/etc/systemd/system" installed=0
+  local sd_dir="$PI_HOME/deploy/systemd" sys_dir="/etc/systemd/system" installed=0
   for unit in pi-searxng.service pi-whisper.service; do
     if [ ! -f "$sd_dir/$unit" ]; then
       warn "模板缺失: $sd_dir/$unit，跳过"

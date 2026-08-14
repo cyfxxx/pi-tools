@@ -46,6 +46,7 @@
 │   ├── PI-EXT-DEV-NOTES.md    Pi 扩展开发注意事项（隐性契约/踩坑/黑盒流程）
 │   ├── PI-SDK-EXTENSION.md    Pi SDK 扩展开发说明
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
+├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
 ├── memory/                    pi-memory 运行时数据（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
@@ -65,11 +66,12 @@
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
 │   ├── patch-*.mjs            核心补丁（voice-enter 回车拦截 / footer-live-context / plan-tools，rebuild.sh 自动执行）
 │   └── pi-bg.sh               后台任务四件套隔离（见 README-pi-bg.md）
-├── portable/                  便携 pi（Windows 原生）构建脚本
-│   ├── setup.ps1             Windows 一键构建器（Node LTS + pi 本地安装）
-│   ├── start.bat/start.ps1   启动器（固定 workspace cwd + 显式 node + PI_CODING_AGENT_DIR）
-│   ├── verify.ps1            环境验证 / diag.bat 诊断
-│   └── README.md             便携包构建/会话恢复/限制说明
+├── portable/                  便携 pi（Windows 原生）种子：构建脚本 + 模板
+│   ├── bin/                  管理脚本（setup 构建器 / verify 验证 / diag 诊断 / update-pi 升级 / update-portable 扩展同步 / sync git）
+│   ├── start.bat/start.ps1   入口启动器（显式 node + PI_CODING_AGENT_DIR + junction 透明）
+│   ├── ca-bundle.crt         证书包（GitHub 被墙环境的 git 用）
+│   ├── tools/tmux/           tmux shim（wsl.exe tmux %*）
+│   └── README.md             种子/实例布局、构建、会话恢复、升级说明
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
@@ -148,8 +150,8 @@ pi-backup rebuild --yes          # 静默自动重建
 - **USERPROFILE=包根** + **PI_CODING_AGENT_DIR 显式**——pi 的配置/扩展/会话全落包内 `.pi/`
 - **显式 `node.exe` 调 cli.js**——绕开 npm shim 的 node 解析（会落到系统 node，v22.14 无 zstd 导致 deepseek zstd 响应崩溃）
 - **Node 必须 24+**——22.x 的 zlib 无 `createZstdDecompress`
-- **固定 workspace cwd**——pi 会话目录按 cwd 编码（`sessions/--<路径>--/`），固定 cwd 后 `--continue` 稳定恢复；构建时预置 WSL 会话快照
-- **pi-voice 已从便携包移除**——Windows 无 parec/termux 录音依赖；settings 排除受 projectTrusted 限制，物理删除最可靠
+- **固定 cwd=包根**——pi 会话目录按 cwd 编码（`sessions/--<路径>--/`），启动器固定 cwd 后 `--continue` 稳定恢复；构建时预置 WSL 会话快照
+- **pi-voice Windows 原生支持**（71209d3：ffmpeg dshow 录音 + SAPI 朗读）；settings 排除受 projectTrusted 限制
 - **fd/rg Windows exe 预置** `.pi/agent/bin/`（GitHub 下载被墙）
 
 已知限制：searxng/whisper 为 Python 服务不在包内（搜索/语音需目标机另装）；包内 `.pi/` 含密钥自行决定是否携带。
@@ -194,7 +196,7 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 | `agent/settings.json` + `models.json`（pi ≥0.84 为 `models-store.json`） | pi 无模型配置，无法启动对话 | 原机 `scp` 拷贝，或原机 `pi-backup create --with-auth` 后新机 `pi-backup restore` |
 | `agent/auth.json` | 无 API 凭据 | 同上（`--with-auth` 归档） |
 | `agent/pi-voice.json` | 语音扩展/whisper token 不一致 | 原机拷贝（语音功能不使用可跳过） |
-| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | **`rebuild.sh` 已自动同步**（Phase 2-F2：diff 幂等 → cp → server 运行中 source-file 热加载，不重启会话）；手动方式 `cp ~/.pi/tmux/tmux.conf ~/.tmux.conf`（仓库已带配置，含状态栏脚本） |
+| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | **`rebuild.sh` 已自动同步**（Phase 2-F2：diff 幂等 → cp → server 运行中 source-file 热加载，不重启会话）；手动方式 `cp ~/.pi/deploy/tmux/tmux.conf ~/.tmux.conf`（仓库已带配置，含状态栏脚本） |
 | 会话历史（`agent/sessions/`） | 新机无原机会话 | 原机 `pi-backup create --include-sessions` 归档恢复；git 模式**永不**含会话 |
 | 运行时日志（`logs/`） | 无法跨机排查问题 | 不入库，原机直接查看 |
 
