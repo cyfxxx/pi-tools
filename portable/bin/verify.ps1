@@ -1,7 +1,7 @@
 ﻿# 便携 pi 环境验证（Windows）
 # 用法：powershell -ExecutionPolicy Bypass -File verify.ps1
 $ErrorActionPreference = 'Stop'
-$Root = $PSScriptRoot
+$Root = Split-Path $PSScriptRoot
 $ok = 0; $fail = 0
 function Check($name, $cond) {
   if ($cond) { Write-Host "  [OK] $name" -ForegroundColor Green; $script:ok++ }

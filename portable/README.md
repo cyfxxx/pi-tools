@@ -2,63 +2,91 @@
 
 单文件夹便携包：Node + pi + 配置全部在 `pi-portable/` 内，可整体拷到 U 盘/其他机器移动使用，不注册系统、不写系统目录。
 
-## 首次构建（新机器/首次使用）
+## 两个概念：种子 vs 实例
 
-1. 新建空文件夹（如 `pi-portable`），把本目录下脚本（`setup.ps1`/`start.bat`/`start.ps1`/`verify.ps1`/`diag.bat`/`README.md`）放进去
-2. 从现有机器拷贝 `~/.pi` 到包内 `.pi/`（含 `agent/` 扩展与配置、`sessions/` 会话、`memory/` 记忆；`settings.json`/`models.json`/`auth.json` 含密钥，自行决定）
-3. 右键 `setup.ps1` → "使用 PowerShell 运行"（自动：下载 Node LTS → 本地安装 pi → 生成启动器）
-4. 运行 `verify.ps1` 验证环境
+- **种子（本目录 `portable/`）**：仓库里的构建脚本与模板——新设备从这里拷贝
+- **实例**：完整便携包（如 `E:\pi-portable`）——种子 + node/pi-global 等运行时 + 配置数据
 
-## 日常使用
-
-- **启动**：双击 `start.bat`（或 `start.ps1`）——固定 cd 到包内 `workspace/`，USERPROFILE/PI_CODING_AGENT_DIR 重定向——配置/会话/记忆全落包内 `.pi/`
-- **继续会话**：`start.bat --continue`
-
-## 目录结构
+## 实例目录结构
 
 ```
 pi-portable/
-├── node/          Node LTS 便携版（setup 生成）
-├── pi-global/     pi 本体（npm --prefix 本地安装）
-├── workspace/     工作区（固定 cwd，项目文件放这里）
-├── .pi/           配置区（agent/sessions/memory——从现机器拷贝）
-├── setup.ps1      构建器（新机器跑一次）
-├── start.bat      启动器（批处理）
-├── start.ps1      启动器（PowerShell）
-├── verify.ps1     环境验证
-└── diag.bat       诊断（node 版本/zstd/fd/配置检查）
+├── start.bat / start.ps1   入口启动器（根目录，最显眼）
+├── bin/                    管理脚本（setup/verify/diag/sync/update-pi/update-portable/patch）
+├── node/                   Node LTS 便携版（setup 生成）
+├── pi-global/              pi 本体（npm --prefix 本地安装）
+├── tools/                  工具组件（ffmpeg/PortableGit/ca-bundle/tmux shim）
+├── agent/                  配置/会话/扩展唯一真身（仓库工作副本 + 运行时；.pi\agent junction 指向）
+├── memory/                 pi-memory 数据（entries.json 入库共享；.pi\memory junction 指向）
+├── .pi/                    junction 区（agent/memory 链接 + pi-link 运行时）[隐藏]
+├── .ssh/ AppData/ Microsoft/  Windows 运行时（SSH 密钥/程序数据）[隐藏]
+├── docs/ scripts/ searxng/ systemd/ tmux/ keys/  仓库内容（Linux 部署相关，Windows 便携包用不到）
+└── README.md .gitignore .git    pi-tools 仓库
 ```
+
+> **agent/memory 为什么在包根**：pi-tools 仓库工作副本（git 跟踪扩展源码/记忆），同时是运行时真身——经 `.pi\agent`、`.pi\memory` 两个 junction 统一（`start.bat` 的 `PI_CODING_AGENT_DIR=.pi\agent`、`HOME=包根` 透明访问）。junction 创建：`cmd /c mklink /J ".pi\agent" "agent"`（先删旧目录）。
+
+## 首次构建（新机器）
+
+1. 新建空文件夹（如 `pi-portable`），把种子 `portable/` 全部内容拷进去（`bin/`、`start.bat`、`start.ps1`、`ca-bundle.crt`、`tools/`、`README.md`）
+2. 拷贝配置：从现有实例拷 `agent/`（含扩展源码与配置、sessions 会话；`settings.json`/`models.json`/`auth.json` 含密钥，自行决定）与 `memory/`
+3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit → 拷入 ca-bundle/tmux shim）
+4. 运行 `.\bin\verify.ps1` 验证环境
+5. 建 junction：`cmd /c mklink /J ".pi\agent" "agent"` + `cmd /c mklink /J ".pi\memory" "memory"`
+
+## 日常使用
+
+| 命令 | 用途 |
+|---|---|
+| `.\start.bat --continue` | 启动 + 恢复会话（入口） |
+| `.\bin\verify.ps1` | 环境验证（node/pi/扩展/homedir） |
+| `.\bin\diag.bat` | 诊断（node 版本/zstd/fd/rg/pi 入口/配置） |
+| `.\bin\update-pi.ps1` | **升级 pi 本体**（npm 原地升级 pi-global + 重跑补丁 + 验证） |
+| `.\bin\update-portable.ps1` | **同步扩展代码**（拉仓库最新扩展/技能，保留本地配置） |
+| `.\bin\sync.ps1` | 提交推送本地改动到 GitHub（SSH 443） |
+| `.\bin\setup.ps1` | 构建器（新机器跑一次；重跑幂等） |
 
 ## 会话恢复（--continue）
 
-- pi 的会话目录按 cwd 编码：`sessions/--<路径编码>--/`（WSL `/root` → `--root--`；Windows 启动器固定 cwd=包内 `workspace/` → `--E-pi-portable-workspace--`）
-- 构建时把 WSL 当前会话预置到 `workspace` 对应目录——`--continue` 直接恢复
-- 之后便携 pi 的新会话写同一目录，`--continue` 持续有效
+- pi 的会话目录按 cwd 编码：`sessions/--<路径编码>--/`（WSL `/root` → `--root--`；Windows 启动器 cwd=包根 → `--E-pi-portable--`）
+- 构建时把原环境会话快照预置到对应编码目录——`--continue` 直接恢复
 - 手动恢复特定会话：`start.bat --session <路径>`（pi 支持直接文件路径参数）
 
 ## 工具组件（tools/）
 
-`setup.ps1` 第 4 段自动准备语音/搜索/git 所需的组件：
+`bin\setup.ps1` 自动准备语音/git 所需组件：
 
 | 组件 | 来源 | 说明 |
 |---|---|---|
 | `tools/ffmpeg/bin/ffmpeg.exe` | gh-proxy 镜像下载（BtbN 构建，~85MB，双源 fallback） | pi-voice 录音（dshow）+ 音频处理；start.bat 的 `PI_VOICE_MIC_BIN` 引用 |
 | `tools/PortableGit/` | gh-proxy 镜像下载（git-for-windows v2.55.0.4 .7z，~57MB，Windows tar 解压） | 无系统 git 的机器可用；`tools/PortableGit/cmd/git.exe` |
-| `tools/ca-bundle.crt` | 随仓库入库（216K） | GIT_SSL_CAINFO（GitHub 证书链被墙环境的 git 用） |
-| `tools/tmux/tmux.cmd` | 随仓库入库 | tmux shim → `wsl.exe tmux %*`（pi-tmux 扩展在 Windows 调 WSL 后端） |
+| `tools/ca-bundle.crt` | 种子自带（216K，仓库入库） | GIT_SSL_CAINFO（GitHub 证书链被墙环境的 git 用） |
+| `tools/tmux/tmux.cmd` | 种子自带 | tmux shim → `wsl.exe tmux %*`（pi-tmux 扩展在 Windows 调 WSL 后端） |
 
-> 大文件（ffmpeg/PortableGit）不入库，setup 首次运行下载；小文件（ca-bundle/shim）随 `portable/` 目录直接拷入。
+> 大文件（ffmpeg/PortableGit）不入库，setup 首次运行下载；小文件（ca-bundle/shim）随种子拷贝。
 
 ## 升级 pi
 
-删除 `pi-global/` 后重跑 `setup.ps1`（Node 已存在会跳过，版本不匹配自动重装 LTS）。
+```powershell
+powershell -ExecutionPolicy Bypass -File E:\pi-portable\bin\update-pi.ps1
+```
+
+不要用 pi 内置更新命令（走系统 npm 路径解析，便携环境不可靠）。脚本自动：npm 原地升级 pi-global（npmmirror 镜像）→ 重跑补丁（patch-footer-live-context.mjs，传 dist 参数）→ verify；失败提示回退命令。
+
+## 更新扩展代码
+
+```powershell
+powershell -ExecutionPolicy Bypass -File E:\pi-portable\bin\update-portable.ps1
+```
+
+拉仓库最新扩展/技能（robocopy 同步 agent/extensions 等 5 个目录，保留本地 settings/auth），pi-voice 保留（Windows 原生语音 71209d3 起支持）。
 
 ## 已知限制
 
-- **searxng/whisper** 是 Python 服务不在包内——搜索/语音需目标机器另装
-- **pi-voice** 在 Windows 无录音依赖（parec/termux 不存在），构建时已从包内移除该扩展；Linux 环境使用可从 `~/.pi/agent/extensions` 拷回
-- Windows 上 pi 本地扩展的 settings 排除受 projectTrusted（信任项目目录）限制——未信任时不生效，物理删除扩展目录最可靠
+- **searxng/whisper** 是 Python 服务不在包内——搜索/语音需目标机器另装（pi-voice 在 Windows 走 WSL whisper 127.0.0.1）
+- 大文件（node/pi-global/tools/ffmpeg 等）不入库——新设备 setup 自动下载
+- Windows 上 pi 本地扩展的 settings 排除受 projectTrusted 限制——未信任时不生效（物理删除目录最可靠）
 
 ## 备份/迁移
 
-整个 `pi-portable/` 目录拷走即可（含配置与记忆）。密钥文件自行决定是否携带。
+整个 `pi-portable/` 目录拷走即可（含配置与记忆）。密钥文件（settings.json/auth.json/.ssh）自行决定是否携带。

@@ -3,7 +3,7 @@
 # Usage: powershell -ExecutionPolicy Bypass -File update-pi.ps1
 # 注意：不要用 pi 内置更新命令（走系统 npm 路径解析，便携环境不可靠）
 $ErrorActionPreference = 'Stop'
-$Root = $PSScriptRoot
+$Root = Split-Path $PSScriptRoot
 $Pkg = '@earendil-works/pi-coding-agent'
 $PkgDir = "$Root\pi-global\node_modules\$Pkg"
 
@@ -30,15 +30,15 @@ Write-Host "版本: $Old -> $New"
 
 # ---- 3. 重跑补丁（升级 dist 后补丁失效；只跑存在的） ----
 foreach ($patch in @('patch-footer-live-context.mjs', 'patch-voice-enter.mjs', 'patch-plan-tools.mjs')) {
-  $p = Join-Path $Root $patch
+  $p = Join-Path $PSScriptRoot $patch  # patch 与脚本同在 bin/
   if (Test-Path $p) {
     Write-Host "-- 重跑补丁 $patch"
-    & "$Root\node\node.exe" $p
+    & "$Root\node\node.exe" $p "$Root\pi-global\node_modules\@earendil-works\pi-coding-agent\dist"
   }
 }
 
 # ---- 4. 验证 ----
-& "$Root\verify.ps1"
+& "$Root\bin\verify.ps1"
 
 Write-Host ''
 Write-Host '完成！运行 .\start.bat --continue 启动' -ForegroundColor Green

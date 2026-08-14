@@ -1,9 +1,9 @@
-# Portable pi updater (Windows PowerShell)
+﻿# Portable pi updater (Windows PowerShell)
 # Cleanup useless files + pull latest code + sync + verify
 # Usage: powershell -ExecutionPolicy Bypass -File E:\pi-portable\update-portable.ps1
 $ErrorActionPreference = 'Continue'
-$Root = 'E:\pi-portable'
-$Tmp = 'E:\pi-update-tmp'
+$Root = Split-Path $PSScriptRoot
+$Tmp = "$Root\.tmp-update"
 $Agent = "$Root\.pi\agent"
 
 Write-Host '== Portable pi update ==' -ForegroundColor Cyan
@@ -46,7 +46,7 @@ Remove-Item $Tmp -Recurse -Force -ErrorAction SilentlyContinue
 # ---- 6. Verify ----
 Write-Host ''
 Write-Host '== Verify ==' -ForegroundColor Cyan
-& "$Root\diag.bat"
+& "$Root\bin\diag.bat"
 
 Write-Host ''
 Write-Host 'Done. Run .\start.bat --continue (deps auto-installed by pi)' -ForegroundColor Green

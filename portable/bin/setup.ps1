@@ -4,7 +4,7 @@
 # 产物：node/（Node 便携版）+ pi-global/（pi 本地安装）+ .pi/（配置区）+ start.bat/start.ps1
 # 全部文件在 pi-portable 内，可整体拷到 U 盘/其他机器移动使用。
 $ErrorActionPreference = 'Stop'
-$Root = $PSScriptRoot
+$Root = Split-Path $PSScriptRoot
 # 自动取最新 LTS：22.x 的 zlib 无 createZstdDecompress（undici 声明支持 zstd 后
 # deepseek 返回 zstd 响应 → 解压崩溃，2026-08-14 便携包实测），需 24 LTS 及以上
 try {
@@ -74,9 +74,9 @@ New-Item -ItemType Directory -Force -Path $Tools | Out-Null
 Write-Host '== 工具组件 ==' -ForegroundColor Cyan
 
 # ca-bundle + tmux shim（随本目录/仓库 portable/ 提供，直接拷入）
-foreach ($src in @("$PSScriptRoot\ca-bundle.crt", "$PSScriptRoot\tools\tmux\tmux.cmd")) {
+foreach ($src in @("$Root\ca-bundle.crt", "$Root\portable\ca-bundle.crt", "$Root\portable\tools\tmux\tmux.cmd")) {
   if (Test-Path $src) {
-    $rel = $src.Substring($PSScriptRoot.Length).TrimStart('\')
+    if ($src -like '*tmux.cmd') { $rel = 'tmux\tmux.cmd' } else { $rel = 'ca-bundle.crt' }
     $dst = Join-Path $Tools $rel
     New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
     Copy-Item $src $dst -Force
@@ -137,4 +137,4 @@ foreach ($f in @('start.bat', 'start.ps1', 'verify.ps1')) {
 }
 Write-Host ""
 Write-Host '完成！运行 .\start.bat 启动便携 pi' -ForegroundColor Green
-Write-Host '验证环境: .\verify.ps1（检查 Node/pi/扩展）'
+Write-Host '验证环境: .\bin\verify.ps1（检查 Node/pi/扩展）'
