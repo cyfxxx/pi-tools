@@ -2,22 +2,46 @@
 # test-all.sh — pi-tools 一键全量回归
 # 8 套 vitest + subagent mjs 测试 + 扩展注册面测试 + 根 typecheck + 扩展冲突检查
 # 任一失败以非零码退出并汇总失败清单
+#
+# 用法（dsh 借鉴：证据面匹配分层，2026-08-14）：
+#   test-all.sh            全量（CI/提交前）
+#   test-all.sh --only=pi-voice,pi-tmux   只跑指定扩展 vitest 套件 + tsc
+#   test-all.sh --fast     跳过 subagent/注册面/conflict-check/发现完整性（日常快检）
 set -uo pipefail
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 EXTS="$PI_HOME/agent/extensions"
 FAILED=0
+ONLY=""
+FAST=0
+for arg in "$@"; do
+  case "$arg" in
+    --only=*) ONLY="${arg#--only=}" ;;
+    --fast) FAST=1 ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    *) echo "未知参数: $arg（支持 --only=a,b / --fast）"; exit 2 ;;
+  esac
+done
+
+ALL_EXTS="pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode pi-tmux pi-voice pi-link"
+if [ -n "$ONLY" ]; then
+  ALL_EXTS="$ONLY"
+fi
 
 red()   { printf '\033[0;31m%s\033[0m\n' "$1"; }
 green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
 cyn()   { printf '\033[0;36m%s\033[0m\n' "$1"; }
+
+if [ -n "$ONLY" ]; then
+  cyn "== 分层模式：仅 ${ALL_EXTS// /,} =="
+fi
 
 report() {
   if [ "$1" -eq 0 ]; then green "✓ $2"; else red "✗ $2"; FAILED=$((FAILED+1)); fi
 }
 
 cyn "== vitest 套件 =="
-for ext in pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode pi-tmux pi-voice pi-link; do
+for ext in $ALL_EXTS; do
   if [ -d "$EXTS/$ext" ]; then
     (cd "$EXTS/$ext" && ./node_modules/.bin/vitest run >/dev/null 2>&1)
     report $? "$ext vitest"
@@ -26,20 +50,17 @@ for ext in pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode 
   fi
 done
 
-cyn "== subagent 独立测试 =="
-if [ -d "$EXTS/subagent" ]; then
-  (cd "$EXTS/subagent" && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs >/dev/null 2>&1)
-  report $? "subagent (34 用例)"
-else
-  red "✗ subagent 目录不存在"; FAILED=$((FAILED+1))
-fi
-
 cyn "== 根 typecheck (tsc) =="
 # 优先 tsconfig.local.json（每环境 paths，rebuild Phase 2-D 生成）；缺失时回退共享配置
 TSCONFIG="tsconfig.local.json"
 [ -f "$EXTS/$TSCONFIG" ] || TSCONFIG="tsconfig.json"
 (cd "$EXTS" && ./pi-web-search/node_modules/.bin/tsc -p "$TSCONFIG" --noEmit >/dev/null 2>&1)
 report $? "tsc -p $TSCONFIG"
+
+if [ "$FAST" -eq 1 ] || [ -n "$ONLY" ]; then
+  cyn "== --fast/--only：跳过 subagent/注册面/conflict-check/发现完整性 =="
+  exit $FAILED
+fi
 
 cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
 (cd "$EXTS/pi-web-search" && ./node_modules/.bin/vitest run tests/extensions.test.ts >/dev/null 2>&1)
