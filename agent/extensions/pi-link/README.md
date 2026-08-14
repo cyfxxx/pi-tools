@@ -102,7 +102,7 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 ## 目标设备准备（一次性）
 
 1. 安装并启动 sshd（Termux: `pkg install openssh` + `sshd`；其他系统自备）
-2. **公钥授权（推荐：仓库合集）**：所有设备公钥集中存放在仓库 `keys/authorized_keys`（git 同步），每台设备跑一次 `bash scripts/pi-link-keys.sh install` 即获得全部设备授权（幂等；Termux 自动写 proot 与 Termux 双位置）；新设备加入 = 把其公钥追加进合集（`pi-link-keys.sh add <公钥>`）→ 提交推送 → 其他设备 pull + install。rebuild.sh Phase 2-F3 已自动集成
+2. **公钥授权（推荐：仓库合集）**：所有设备公钥集中存放在仓库 `deploy/keys/authorized_keys`（git 同步），每台设备跑一次 `bash scripts/pi-link-keys.sh install` 即获得全部设备授权（幂等；Termux 自动写 proot 与 Termux 双位置）；新设备加入 = 把其公钥追加进合集（`pi-link-keys.sh add <公钥>`）→ 提交推送 → 其他设备 pull + install。rebuild.sh Phase 2-F3 已自动集成
 3. 确认 `pi` 命令在 ssh 非交互 shell 的 PATH 中（Termux 建议在 `~/.bashrc`/`~/.profile` 导出，或用绝对路径）
 
 ### 加固（可选，推荐）
@@ -121,7 +121,7 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 
 1. **安装公钥合集**（仓库已入库所有设备公钥）：
    ```bash
-   bash ~/.pi/scripts/pi-link-keys.sh install   # 把 keys/authorized_keys 合并进本机 ~/.ssh/authorized_keys
+   bash ~/.pi/scripts/pi-link-keys.sh install   # 把 deploy/keys/authorized_keys 合并进本机 ~/.ssh/authorized_keys
    ```
 2. **注册本机公钥**（供其他设备免密连入）：`bash ~/.pi/scripts/pi-link-keys.sh export` 输出本机公钥 → 在其设备 `add` 后 push，其他设备 pull + install
 3. **交换设备卡片**：本机 `/link export-card` 生成卡片 → 对方设备 `/link import-card <JSON>` 写入 pi-link.json（或直接手动编辑 `~/.pi/pi-link.json`，格式见 config.ts）
