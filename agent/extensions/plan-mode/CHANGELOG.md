@@ -1,5 +1,11 @@
 # Changelog — plan-mode
 
+## [2.8.0] - 2026-08-14
+
+### Fixed
+
+- **bash 白名单三绕过（HIGH）**：`isSafeCommand` 可被 `find -delete`、`sed w 文件`、`curl --output=` 绕过（均实测复现）——补 DESTRUCTIVE_PATTERNS 拦截（+11 断言单测）
+
 ## [2.7.0] - 2026-08-13
 
 ### Fixed
