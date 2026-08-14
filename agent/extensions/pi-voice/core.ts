@@ -118,8 +118,13 @@ export function startRecording(
   // stdio: 同时捕获 stdout+stderr（termux-microphone-record 的错误信息如
   // "Recording already in progress!" 打到 stdout；stderr 也可能有内容），
   // 报错时可向用户展示真实原因。
-  const child = spawn(spec.recorder.bin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
-  if (spec.kind === 'linux') activeLinuxRecorder = { child, file }
+  // stdio: 同时捕获 stdout+stderr（termux-microphone-record 的错误信息如
+  // "Recording already in progress!" 打到 stdout；stderr 也可能有内容），
+  // 报错时可向用户展示真实原因。windows：stdin 需 pipe（stopRecording 写 'q' 优雅停止）。
+  const stdio: ['ignore' | 'pipe', 'pipe', 'pipe'] =
+    spec.kind === 'windows' ? ['pipe', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe']
+  const child = spawn(spec.recorder.bin, args, { stdio })
+  if (spec.kind === 'linux' || spec.kind === 'windows') activeLinuxRecorder = { child, file }
   let errBuf = ''
   let outBuf = ''
   child.stdout?.on('data', (d: Buffer) => {
@@ -162,13 +167,37 @@ export async function detectAudioLevel(
   return { maxDb, meanDb: meanStr ? parseFloat(meanStr) : -Infinity }
 }
 
-/** 停止录音（平台相关）。termux：发 -q 优雅停止服务端 MediaRecorder；linux：直接终止录音进程（SIGTERM → 1s 后 SIGKILL）。 */
+/** 停止录音（平台相关）。termux：发 -q 优雅停止服务端 MediaRecorder；linux：直接终止录音进程（SIGTERM → 1s 后 SIGKILL）；windows：写 stdin 'q'（ffmpeg 优雅退出、wav header 完整，2s 超时 SIGKILL 兜底）。 */
 export async function stopRecording(cfg: VoiceConfig): Promise<CommandResult> {
   const spec = platformOf(cfg)
-  if (spec.kind === 'linux') {
+  if (spec.kind === 'linux' || spec.kind === 'windows') {
     const rec = activeLinuxRecorder
     if (!rec || rec.child.exitCode !== null || rec.child.pid === undefined) {
       return { code: 0, stdout: '', stderr: '' }
+    }
+    if (spec.kind === 'windows') {
+      // ffmpeg 优雅退出：stdin 'q'（Windows 无 SIGTERM 优雅语义，
+      // TerminateProcess 会丢 wav 尾部导致 header 不完整）
+      return await new Promise<CommandResult>((resolvePromise) => {
+        const killTimer = setTimeout(() => {
+          try {
+            rec.child.kill('SIGKILL')
+          } catch {
+            // 已退出
+          }
+          resolvePromise({ code: 0, stdout: '', stderr: 'stdin q 超时已强制终止' })
+        }, 2000)
+        rec.child.once('exit', () => {
+          clearTimeout(killTimer)
+          resolvePromise({ code: 0, stdout: '', stderr: '' })
+        })
+        try {
+          rec.child.stdin?.write('q')
+        } catch {
+          clearTimeout(killTimer)
+          resolvePromise({ code: 0, stdout: '', stderr: '' })
+        }
+      })
     }
     return await new Promise<CommandResult>((resolvePromise) => {
       const pid = rec.child.pid as number
@@ -414,7 +443,11 @@ export async function speak(cfg: VoiceConfig, text: string): Promise<CommandResu
   const clean = cleanForSpeech(text, cfg.ttsMaxChars)
   if (!clean) return { code: 0, stdout: '', stderr: '（空文本，跳过朗读）' }
   const spec = platformOf(cfg)
-  if (spec.kind === 'termux') {
+  // 直接朗读路径：termux 平台（termux-tts-speak）或 tts 引擎声明为直接朗读
+  // （windows SAPI 的 tts.kind='termux'——speakArgs 直接调 PowerShell；
+  // 2026-08-14 修复：原判断只看 spec.kind，windows 平台误走两段式 → 空参数
+  // 调 powershell 挂起 60s 超时）
+  if (spec.kind === 'termux' || spec.tts.kind === 'termux') {
     // termux-tts-speak 一次只接受一个参数，文本须作为单个 argv 传入
     return runCommand(spec.tts.bin, spec.tts.speakArgs(clean), { timeoutMs: 60000 })
   }
@@ -609,7 +642,7 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
   }
   // 5. GPU 推理提示：以服务端实际设备为准（nvidia-smi 可用 ≠ whisper 用 cuda；
   // 2026-08-14 实测：驱动可见但缺 cublas/cudnn 库时服务端 auto 探测判 cpu，此处曾误报）
-  if (spec.kind === 'linux') {
+  if (spec.kind === 'linux' || spec.kind === 'windows') {
     if (actualDevice === 'cuda') {
       lines.push('✓ whisper 在 GPU (cuda) 上推理（可 /voice model small 提升准确率）')
     } else {
