@@ -85,3 +85,22 @@ export function buildInjectionBlock(
 export function isInjectionBlock(text: string): boolean {
   return text.includes(INJECT_TAG)
 }
+
+/**
+ * 过滤历史注入消息：同 customType 只保留最新一条（倒序遍历第一条 = 最新）。
+ * 对齐 plan-mode 2.4.0 防注入累积模式——注入改为消息注入后必须过滤，
+ * 否则旧注入消息在恢复时反复进上下文。请求序列每轮结构一致 → 缓存前缀稳定。
+ */
+export function filterInjectedMessages<T extends object>(messages: T[]): T[] {
+  let kept = false
+  const filtered: T[] = []
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if ((m as { customType?: string }).customType === INJECT_TAG) {
+      if (kept) continue // 只保留最新一条
+      kept = true
+    }
+    filtered.unshift(m)
+  }
+  return filtered
+}
