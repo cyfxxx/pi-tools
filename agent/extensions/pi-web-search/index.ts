@@ -49,17 +49,19 @@ export default async function (pi: ExtensionAPI) {
       },
       required: ["url"],
     },
-    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const url = params.url as string
       const maxLength = Math.max(0, Math.min((params.max_length as number) ?? 8000, 200000))
+      const controller = new AbortController()
+      // 用户停止生成也应中断请求（_signal 转发）；两信号任一触发即 abort
+      const onUserAbort = () => controller.abort()
+      signal?.addEventListener?.('abort', onUserAbort)
+      const timeout = setTimeout(() => controller.abort(), 15000)
       try {
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 15000)
         const res = await fetch(url, {
           signal: controller.signal,
           headers: { "User-Agent": "Mozilla/5.0 (compatible; PiBot/1.0)" },
         })
-        clearTimeout(timeout)
         if (!res.ok) {
           return { content: [{ type: "text", text: `HTTP ${res.status}: ${res.statusText}` }], details: {} }
         }
@@ -74,6 +76,9 @@ export default async function (pi: ExtensionAPI) {
         return { content: [{ type: "text", text: result }], details: {} }
       } catch (e) {
         return { content: [{ type: "text", text: `请求失败: ${(e as Error).message}` }], details: {} }
+      } finally {
+        clearTimeout(timeout)  // fetch 抛错也清超时（防定时器空挂）
+        signal?.removeEventListener?.('abort', onUserAbort)
       }
     },
   })
@@ -95,11 +100,16 @@ export default async function (pi: ExtensionAPI) {
     async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
       const query = params.query as string
       const maxResults = (params.max_results as number) ?? 5
-      const text = await searchDirect(query, maxResults)
-      const result = pruneToolOutput(text, "web_fetch")
-      recordOutput("web_fetch", result.length)
-      recordToolUsage("web_fetch", estimateTokens(result))
-      return { content: [{ type: "text", text: result }], details: {} }
+      try {
+        const text = await searchDirect(query, maxResults)
+        const result = pruneToolOutput(text, "web_fetch")
+        recordOutput("web_fetch", result.length)
+        recordToolUsage("web_fetch", estimateTokens(result))
+        return { content: [{ type: "text", text: result }], details: {} }
+      } catch (e) {
+        // 网络/DNS/超时 abort 统一转友好错误（与 fetch_url 一致），不抛未处理拒绝
+        return { content: [{ type: "text", text: `搜索失败: ${(e as Error).message}` }], details: {} }
+      }
     },
   })
 

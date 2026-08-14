@@ -55,7 +55,7 @@ if [ "$YES" = "1" ] && [ "$NO_LOG" = "0" ]; then
   echo "重建日志: $LOG_FILE"
 
   # 中断检测：上次重建日志无完成标记时提示幂等续跑（A2）
-  local last_log
+  # 注意：此处位于函数外，不能用 local（bash 报 "local: can only be used in a function"）
   last_log=$(ls -t "$PI_HOME"/logs/rebuild-*.log 2>/dev/null | head -1)
   if [ -n "$last_log" ] && [ "$last_log" != "$LOG_FILE" ] && ! grep -q "重建完成" "$last_log" 2>/dev/null; then
     echo "⚠ 检测到未完成的重建日志: $(basename "$last_log")——本次幂等续跑（已完成的将跳过）"

@@ -402,6 +402,17 @@ async function runSubprocessAgent(
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
 			});
+			// 整体超时兜底：provider 挂起（请求永不返回）时子进程无限运行、
+			// 用户不中止则常驻孤儿（最多 MAX_CONCURRENCY 个）。30 分钟上限
+			// SIGTERM→SIGKILL 链终止；超时按失败结束（exitCode 124 语义）。
+			const totalTimer = setTimeout(() => {
+				wasAborted = true;
+				proc.kill("SIGTERM");
+				setTimeout(() => {
+					try { if (!proc.killed) proc.kill("SIGKILL") } catch { /* 已退出 */ }
+				}, 5000);
+			}, 30 * 60 * 1000);
+			totalTimer.unref?.();
 			let buffer = "";
 
 			const processLine = (line: string) => {
@@ -449,10 +460,16 @@ async function runSubprocessAgent(
 			});
 
 			proc.stderr.on("data", (data) => {
+				// 有上限累积：挂死/异常任务 stderr 无限增长会撑爆内存（stdout 走 50KB cap，
+				// stderr 此前无任何限制）
 				currentResult.stderr += data.toString();
+				if (currentResult.stderr.length > 50 * 1024) {
+					currentResult.stderr = currentResult.stderr.slice(-50 * 1024);
+				}
 			});
 
 			proc.on("close", (code) => {
+				clearTimeout(totalTimer);
 				if (buffer.trim()) processLine(buffer);
 				resolve(code ?? 0);
 			});
