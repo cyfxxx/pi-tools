@@ -513,6 +513,7 @@ pi-backup verify
 | Prompt 模板 | `agent/prompts/` | pi 全局 prompt templates（`*.md` 注册为 `/name` 斜杠命令） |
 | 用户键位 | `agent/keybindings.json` | pi 用户级键位配置（存在时） |
 | 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup） |
+| 便携包脚本 | `portable/` | Windows 便携 pi 构建脚本（setup.ps1/start.bat/verify.ps1 等，不含 .pi 密钥内容；完整便携包见 memory「便携 pi Windows 构建全套经验」） |
 | npm 配置 | `agent/npm/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
