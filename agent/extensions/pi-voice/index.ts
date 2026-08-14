@@ -89,6 +89,9 @@ const WHISPER_MODELS: Record<string, string> = {
 
 const ENTER_PATCH_MARKER = 'Patch (patch-voice-enter.mjs)'
 
+/** 补丁未检测到（加载期只置标志，不 reply——stub 会炸；首次 /voice 命令时提示）。 */
+let enterPatchMissing = false
+
 /**
  * 探测核心补丁是否已应用（scripts/patch-voice-enter.mjs）。
  * 未打补丁时 onExtensionShortcut 对匹配按键"无条件消费"：
@@ -257,6 +260,11 @@ export default function (pi: ExtensionAPI): void {
       ]
     },
     handler: async (args, ctx) => {
+      // 补丁缺失提示（加载期不 reply 的延迟输出）：首次 /voice 命令时提示一次
+      if (enterPatchMissing) {
+        enterPatchMissing = false
+        reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
+      }
       const [cmd, ...rest] = args.trim().split(/\s+/)
       switch (cmd) {
         case '':
@@ -421,7 +429,10 @@ export default function (pi: ExtensionAPI): void {
       handler: enterTapHandler,
     })
   } else {
-    reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
+    // 加载期不能调 reply/pi.sendMessage（扩展 runtime 未绑定，stub 直接抛错——
+    // Windows 便携环境未打补丁时实测崩溃："Extension runtime not initialized"）。
+    // 只置标志，首次 /voice 命令时提示（信息不丢、不炸）。
+    enterPatchMissing = true
   }
 
   // 输入事件：区分语音/键盘输入来源，控制自动 TTS 与防误操作。

@@ -16,10 +16,10 @@ import { execFileSync } from 'node:child_process' // 仅 defaultPlatformEnv 用
 import type { VoiceConfig } from './config'
 
 /** 配置层平台值：auto = 启动时自动探测 */
-export type PlatformKind = 'auto' | 'termux' | 'linux'
+export type PlatformKind = 'auto' | 'termux' | 'linux' | 'windows'
 
 /** 解析后的实际平台 */
-export type ResolvedPlatform = 'termux' | 'linux'
+export type ResolvedPlatform = 'termux' | 'linux' | 'windows'
 
 export interface RecorderSpec {
   /** 录音命令二进制（linux 平台默认 parec，可被 cfg.micBin 覆盖） */
@@ -98,20 +98,70 @@ export function defaultPlatformEnv(): PlatformEnv {
   }
 }
 
-/** 自动探测实际平台：termux 工具存在 → termux；否则 linux 系（parec/arecord 存在时给 linux spec，缺工具也能用 doctor 给出安装指引）。 */
+/** 自动探测实际平台：windows → windows（ffmpeg dshow）；termux 工具存在 → termux；否则 linux 系（parec/arecord 存在时给 linux spec，缺工具也能用 doctor 给出安装指引）。 */
 export function detectPlatform(env: PlatformEnv = defaultPlatformEnv()): ResolvedPlatform {
+  if (env.platform === 'win32') return 'windows'
   if (env.commandExists('termux-microphone-record')) return 'termux'
   return 'linux'
 }
 
 /**
  * 解析平台 spec。cfg.platform：
- * - 'auto'：探测（termux 工具存在 → termux，否则 linux）
- * - 'termux' / 'linux'：强制指定（无对应工具也返回对应 spec，由 doctor/运行时报错提示安装）
+ * - 'auto'：探测（windows → windows；termux 工具存在 → termux；否则 linux）
+ * - 'termux' / 'linux' / 'windows'：强制指定（无对应工具也返回对应 spec，由 doctor/运行时报错提示安装）
  */
 export function resolvePlatform(cfg: VoiceConfig, env: PlatformEnv = defaultPlatformEnv()): PlatformSpec {
   const kind: ResolvedPlatform = cfg.platform === 'auto' ? detectPlatform(env) : cfg.platform
-  return kind === 'termux' ? termuxSpec() : linuxSpec(cfg, env)
+  if (kind === 'termux') return termuxSpec()
+  if (kind === 'windows') return windowsSpec(cfg)
+  return linuxSpec(cfg, env)
+}
+
+/**
+ * Windows 平台 spec（2026-08-14 新增）：
+ * - 录音：ffmpeg dshow（原生麦克风捕获，wav 直出）；停止 = stopRecording 写 stdin 'q'
+ *   （ffmpeg 优雅退出、wav header 完整——Windows 无 SIGTERM 优雅语义，TerminateProcess 会丢尾部）
+ * - TTS：PowerShell SAPI（System.Speech，中文语音包跟随系统）
+ * - 转写：whisper 服务（127.0.0.1 与 WSL localhost 互通，可复用 WSL 的 whisper）
+ */
+function windowsSpec(cfg: VoiceConfig): PlatformSpec {
+  const micBin = cfg.micBin === 'termux-microphone-record' ? 'ffmpeg' : cfg.micBin
+  return {
+    kind: 'windows',
+    label: 'Windows',
+    recorder: {
+      bin: micBin,
+      ext: 'wav',
+      needsConvert: false,
+      startArgs: (file) => {
+        const args = ['-f', 'dshow', '-i', `audio=${cfg.micDevice}`]
+        if (cfg.maxSeconds > 0) args.push('-t', String(cfg.maxSeconds))
+        args.push('-y', file)
+        return args
+      },
+      stopArgs: () => null,
+      queryArgs: () => null,
+      residuePattern: () => null,
+      micLabel: `ffmpeg (dshow)${cfg.micDevice ? ` [${cfg.micDevice}]` : ''}`,
+      installHint: '安装 ffmpeg（winget install ffmpeg 或 https://www.gyan.dev/ffmpeg/builds/ 下载）',
+      permissionHint: 'Windows 设置 → 隐私和安全性 → 麦克风 → 允许桌面应用访问麦克风',
+    },
+    tts: {
+      bin: 'powershell',
+      label: 'Windows SAPI',
+      kind: 'termux',
+      checkArgs: () => null,
+      speakArgs: (text) => [
+        '-NoProfile', '-Command',
+        `Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak('${text.replace(/'/g, "''")}')`,
+      ],
+      synthesizeArgs: () => [],
+      zombiePatterns: () => [],
+      playArgs: () => null,
+      stageToWav: false,
+    },
+    micProbeArgs: () => null,
+  }
 }
 
 function termuxSpec(): PlatformSpec {

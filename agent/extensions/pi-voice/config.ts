@@ -16,8 +16,10 @@ export interface VoiceConfig {
   whisperToken: string
   /** 平台：auto = 启动时自动探测（termux 工具存在 → termux，否则 linux） */
   platform: PlatformKind
-  /** 录音命令 */
+  /** 录音命令（linux 默认 parec；windows 默认 ffmpeg dshow） */
   micBin: string
+  /** windows dshow 麦克风设备名（ffmpeg -list_devices true -f dshow -i dummy 枚举，如 "麦克风 (Realtek(R) Audio)"） */
+  micDevice: string
   /** ffmpeg 转码命令（termux m4a → wav；linux 直出 wav 不需要） */
   ffmpegBin: string
   /** TTS 朗读命令 */
@@ -75,6 +77,7 @@ export const DEFAULTS: VoiceConfig = {
   whisperToken: '',
   platform: 'auto',
   micBin: 'termux-microphone-record',
+  micDevice: '',
   ffmpegBin: 'ffmpeg',
   ttsBin: 'termux-tts-speak',
   linuxMicDevice: 'RDPSource',
@@ -124,6 +127,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
     whisperToken: env.PI_VOICE_WHISPER_TOKEN || file.whisperToken || DEFAULTS.whisperToken,
     platform: (env.PI_VOICE_PLATFORM ?? file.platform ?? DEFAULTS.platform) as PlatformKind,
     micBin: env.PI_VOICE_MIC_BIN || file.micBin || DEFAULTS.micBin,
+    micDevice: env.PI_VOICE_MIC_DEVICE ?? file.micDevice ?? DEFAULTS.micDevice,
     ffmpegBin: env.PI_VOICE_FFMPEG_BIN || file.ffmpegBin || DEFAULTS.ffmpegBin,
     ttsBin: env.PI_VOICE_TTS_BIN || file.ttsBin || DEFAULTS.ttsBin,
     linuxMicDevice: env.PI_VOICE_LINUX_MIC_DEVICE ?? file.linuxMicDevice ?? DEFAULTS.linuxMicDevice,
