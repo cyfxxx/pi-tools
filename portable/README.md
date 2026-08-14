@@ -30,7 +30,7 @@ pi-portable/
 
 1. 新建空文件夹（如 `pi-portable`），把种子 `portable/` 全部内容拷进去（`bin/`、`start.bat`、`start.ps1`、`ca-bundle.crt`、`tools/`、`README.md`）
 2. 拷贝配置：从现有实例拷 `agent/`（含扩展源码与配置、sessions 会话；`settings.json`/`models.json`/`auth.json` 含密钥，自行决定）与 `memory/`
-3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit → 拷入 ca-bundle/tmux shim）
+3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit/Chrome → 装扩展运行时依赖 → 拷入 ca-bundle/tmux shim）
 4. 运行 `.\bin\verify.ps1` 验证环境
 5. 建 junction：`cmd /c mklink /J ".pi\agent" "agent"` + `cmd /c mklink /J ".pi\memory" "memory"`
 
@@ -61,7 +61,8 @@ pi-portable/
 | `tools/ffmpeg/bin/ffmpeg.exe` | gh-proxy 镜像下载（BtbN 构建，~85MB，双源 fallback） | pi-voice 录音（dshow）+ 音频处理；start.bat 的 `PI_VOICE_MIC_BIN` 引用 |
 | `tools/PortableGit/` | gh-proxy 镜像下载（git-for-windows v2.55.0.4 .7z，~57MB，Windows tar 解压） | 无系统 git 的机器可用；`tools/PortableGit/cmd/git.exe` |
 | `tools/ca-bundle.crt` | 种子自带（216K，仓库入库） | GIT_SSL_CAINFO（GitHub 证书链被墙环境的 git 用） |
-| `tools/tmux/tmux.cmd` | 种子自带 | tmux shim → `wsl.exe tmux %*`（pi-tmux 扩展在 Windows 调 WSL 后端） |
+| `tools/tmux/tmux.cmd` | 种子自带 | tmux shim → `wsl.exe tmux %*`（pi-tmux 扩展在 Windows 调 WSL 后端；start.bat 已加 PATH） |
+| `tools/chrome-win64/` | setup 下载（npmmirror chrome-for-testing 146.0.7680.165，~191MB zip） | pi-browser 用（`CLOAKBROWSER_BINARY_PATH` 指向 chrome.exe——cloakbrowser 官方本地覆盖；cloakbrowser 定制版 GitHub 下载被墙时的替代） |
 
 > 大文件（ffmpeg/PortableGit）不入库，setup 首次运行下载；小文件（ca-bundle/shim）随种子拷贝。
 

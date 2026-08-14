@@ -129,6 +129,21 @@ if (-not (Test-Path "$Tools\PortableGit\cmd\git.exe")) {
   Write-Host "  PortableGit 就绪: $(& "$Tools\PortableGit\cmd\git.exe" --version 2>$null)"
 } else { Write-Host '  PortableGit 已存在，跳过' }
 
+# ---- 4b. 扩展运行时依赖（有 package.json 的扩展 npm install --omit=dev） ----
+$ExtRoot = "$Root\.pi\agent\extensions"
+if (Test-Path $ExtRoot) {
+  Write-Host '-- 扩展依赖' -ForegroundColor Cyan
+  Get-ChildItem $ExtRoot -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'package.json') } | ForEach-Object {
+    $ename = $_.Name
+    $has = Test-Path (Join-Path $_.FullName 'node_modules')
+    if (-not $has) {
+      Write-Host "  安装 $ename 依赖 ..."
+      & "$Root\node\npm.cmd" install --prefix $_.FullName --omit=dev --registry=https://registry.npmmirror.com 2>$null | Out-Null
+      if ($LASTEXITCODE -eq 0) { Write-Host "  ✓ $ename" } else { Write-Host "  ✗ $ename 安装失败（可稍后手动: npm install --prefix $ename）" -ForegroundColor Yellow }
+    } else { Write-Host "  $ename 已就绪，跳过" }
+  }
+} else { Write-Host '-- 扩展目录不存在，跳过依赖安装（.pi/agent 未拷贝时正常）' -ForegroundColor Yellow }
+
 # ---- 5. 启动脚本检查（独立文件 start.bat/start.ps1 随包提供） ----
 foreach ($f in @('start.bat', 'start.ps1', 'verify.ps1')) {
   if (-not (Test-Path "$Root\$f")) {
