@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildInjectionBlock } from '../inject.ts'
+import { buildInjectionBlock, filterInjectedMessages } from '../inject.ts'
 import type { MemoryEntry, SummaryEntry } from '../types.ts'
 
 function makeEntry(overrides: Partial<MemoryEntry> = {}): MemoryEntry {
@@ -131,5 +131,28 @@ describe('buildInjectionBlock 环境过滤', () => {
     const r = buildInjectionBlock([termux, wsl2], [], 1000, 'wsl2')
     expect(r.block).toContain('WSL 知识')
     expect(r.block).not.toContain('Termux 知识')
+  })
+})
+
+describe('filterInjectedMessages: 注入消息去重（防累积）', () => {
+  const inj = (n: number) => ({ customType: 'pi-memory-injection', content: `block-${n}` })
+
+  it('无注入消息时原样返回', () => {
+    const msgs = [{ customType: 'plan-execution-context' }, { customType: undefined }]
+    expect(filterInjectedMessages(msgs)).toEqual(msgs)
+  })
+
+  it('多条历史注入只保留最新一条（倒序第一条 = 最新）', () => {
+    const msgs = [inj(1), { customType: 'user-msg' }, inj(2), inj(3)]
+    const out = filterInjectedMessages(msgs)
+    expect(out).toHaveLength(2)
+    expect(out.filter(m => m.customType === 'pi-memory-injection')).toEqual([inj(3)])
+    // 其余消息顺序不变
+    expect(out.map(m => m.customType)).toEqual(['user-msg', 'pi-memory-injection'])
+  })
+
+  it('单条注入保持不变', () => {
+    const msgs = [inj(1), { customType: 'x' }]
+    expect(filterInjectedMessages(msgs)).toEqual(msgs)
   })
 })

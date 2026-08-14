@@ -1,5 +1,4 @@
-import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent'
-import type { SessionEntry } from '@earendil-works/pi-coding-agent'
+import type { ExtensionAPI, ExtensionContext, SessionEntry } from '@earendil-works/pi-coding-agent'
 import {
   loadEntries,
   loadNotes,
@@ -10,7 +9,7 @@ import {
 } from './storage.ts'
 import { registerTools } from './tools.ts'
 import { registerCommands } from './commands.ts'
-import { buildInjectionBlock } from './inject.ts'
+import { buildInjectionBlock, INJECT_TAG, filterInjectedMessages } from './inject.ts'
 import { extractConversation, extractTextFromEntries, processPendingExtracts, queuePendingExtract } from './extract.ts'
 import { writeCompactionSnapshot } from './snapshot.ts'
 
@@ -52,14 +51,28 @@ export default function (pi: ExtensionAPI): void {
   })
 
   // ── 每轮常驻注入（MemGPT 核心块） ──
-  pi.on('before_agent_start', async (event, _ctx) => {
+  // 缓存友好（2026-08-14 实测）：记忆注入原先拼入 systemPrompt 尾部——记忆库变化
+  // （memory_store/提取/摘要更新）时 system prompt 尾部变化，缓存前缀断裂，
+  // 全部消息历史（~72K）每轮重发。改为消息注入（追加在消息末尾）：变化时
+  // 仅重发注入块本身（≤500 token），历史全命中。context hook 过滤旧注入防累积。
+  pi.on('before_agent_start', async (_event, _ctx) => {
     const entries = loadEntries()
     const summaries = loadSummaries()
     const { block, entries: n, summaries: m } = buildInjectionBlock(entries, summaries)
     if (n === 0 && m === 0) return undefined
     return {
-      systemPrompt: event.systemPrompt + '\n\n' + block,
+      message: {
+        customType: INJECT_TAG,
+        content: block,
+        display: false,
+      },
     }
+  })
+
+  // 过滤历史注入消息：同 customType 只保留最新一条（对齐 plan-mode 模式），
+  // 防止注入消息累积进上下文（2.4.0 同类 bug）；请求序列每轮结构一致，缓存前缀稳定。
+  pi.on('context', async (event) => {
+    return { messages: filterInjectedMessages(event.messages) }
   })
 
   // ── compaction 前: 快照 + 异步提取 ──
