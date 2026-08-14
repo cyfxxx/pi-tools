@@ -5,10 +5,13 @@ set "ROOT=%~dp0"
 set "USERPROFILE=%ROOT%"
 set "HOME=%ROOT%"
 set "NPM_CONFIG_CACHE=%ROOT%.npm"
+set "PATH=%ROOT%node;%ROOT%tools\tmux;%PATH%"
 set "PI_CODING_AGENT_DIR=%ROOT%.pi\agent"
 set "PI_VOICE_MIC_BIN=%ROOT%tools\ffmpeg\bin\ffmpeg.exe"
 set "PI_VOICE_TTS_BIN=powershell"
 set "GIT_SSL_CAINFO=%ROOT%tools\ca-bundle.crt"
+set "CLOAKBROWSER_DOWNLOAD_URL=https://gh-proxy.net/https://github.com/CloakHQ/cloakbrowser/releases/download"
+set "CLOAKBROWSER_BINARY_PATH=%ROOT%tools\chrome-win64\chrome.exe"
 if not exist "%ROOT%node\node.exe" (
   echo node not found - run setup.ps1 first
   exit /b 1
