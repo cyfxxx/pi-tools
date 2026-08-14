@@ -237,6 +237,13 @@ export default function (pi: ExtensionAPI): void {
           description: desc,
         }))
       }
+      if (first === 'device') {
+        return [
+          { value: 'device cpu', label: 'device cpu', description: 'CPU 推理（GPU 被占用时稳定）' },
+          { value: 'device gpu', label: 'device gpu', description: 'NVIDIA GPU 推理' },
+          { value: 'device auto', label: 'device auto', description: '自动检测（默认）' },
+        ]
+      }
       return [
         { value: 'start', label: 'start', description: '开始录音' },
         { value: 'stop', label: 'stop', description: '停止录音并转写' },
@@ -244,6 +251,7 @@ export default function (pi: ExtensionAPI): void {
         { value: 'tts', label: 'tts', description: '朗读：on/off/status/speak' },
         { value: 'doctor', label: 'doctor', description: '诊断依赖' },
         { value: 'model', label: 'model', description: '查看/切换 whisper 模型' },
+        { value: 'device', label: 'device', description: '查看/切换推理设备' },
         { value: 'bench', label: 'bench', description: '转写速度基准' },
         { value: 'help', label: 'help', description: '显示用法' },
       ]
