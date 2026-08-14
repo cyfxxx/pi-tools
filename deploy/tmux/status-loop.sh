@@ -2,7 +2,7 @@
 # status-loop.sh — tmux 状态栏数据循环刷新（flock 幂等，可安全重复启动）
 # 每 3 秒生成状态内容并 set-option 写入 status-right（不依赖 tmux #() 替换，
 # Termux tmux 3.7b 的 #() 不执行；run-shell/set-option 正常）。
-# 启动: tmux.conf 中 run-shell '~/.pi/tmux/status-loop.sh >/dev/null 2>&1 &'
+# 启动: tmux.conf 中 run-shell '~/.pi/deploy/tmux/status-loop.sh >/dev/null 2>&1 &'
 # 停止: pkill -f status-loop.sh
 set -u
 

@@ -9,6 +9,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装，dsh 借鉴）、`config.ts`（配置分层合并，默认+overlay 深合并）
 - `agent/agents/`、`agent/skills/` — 子代理模板、技能；`agent/prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 - `scripts/` — rebuild.sh（一键重建+补丁）、pi-wrapper.sh（生命周期）、pi-cron.sh（离线定时）、test-all.sh（回归，支持 --only/--fast 分层）、pi-bench.sh（用量基准：usage/timing/compare）、pi-whisper.sh + whisper-server.py（whisper 服务）、pi-bg.sh（后台任务，见 README-pi-bg.md）、patch-*.mjs（见下方补丁生命周期）
+- `deploy/` — 部署配置：`deploy/systemd/`（unit 模板）、`deploy/tmux/`（tmux.conf 与状态脚本）、`deploy/keys/`（pi-link 公钥合集）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 - `docs/` — 开发与部署文档（Termux 注意事项/Pi 扩展注意事项/SDK/tmux 部署/多环境指南 ENVIRONMENTS.md）
 

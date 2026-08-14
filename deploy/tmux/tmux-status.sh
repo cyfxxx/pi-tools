@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tmux-status.sh — 生成 tmux 状态栏右侧内容
-# 输出: stdout 一行（状态循环 set-option 用）同时写入 ~/.pi/tmux/tmux-status.txt（调试/兼容）。
+# 输出: stdout 一行（状态循环 set-option 用）同时写入 ~/.pi/deploy/tmux/tmux-status.txt（调试/兼容）。
 # 内容: 北京时间 | 1分钟负载（按核数阈值着色）| 内存 used/total (pct，按使用率着色）
 # 颜色: tmux 格式指令 #[fg=...]（渲染时解析）
 # 注意: 不用 tmux #() 命令替换——Termux 的 tmux 3.7b 中 #() 不执行（实测为空），
