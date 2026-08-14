@@ -6,7 +6,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 
 - `agent/settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
 - `agent/extensions/` — 9 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice（能力与配置见各自 README）
-- `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）
+- `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装，dsh 借鉴）、`config.ts`（配置分层合并，默认+overlay 深合并）
 - `agent/agents/`、`agent/skills/` — 子代理模板、技能；`agent/prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 - `scripts/` — rebuild.sh（一键重建+补丁）、pi-wrapper.sh（生命周期）、pi-cron.sh（离线定时）、test-all.sh（回归）、pi-whisper.sh + whisper-server.py（whisper 服务）、pi-bg.sh（后台任务，见 README-pi-bg.md）、patch-*.mjs（见下方补丁生命周期）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
@@ -25,6 +25,8 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 
 ```bash
 bash scripts/test-all.sh          # 一键：10 套测试（8 vitest + subagent + 注册面）+ tsc + conflict-check
+bash scripts/test-all.sh --only=pi-voice,pi-tmux  # 分层快检：只跑指定扩展 + tsc（dsh 证据面匹配借鉴）
+bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check（日常快检）
 ```
 
 单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 76 / pi-autopilot 94 / pi-browser 23 / pi-context 39 / plan-mode 59 / pi-tmux 10 / pi-voice 106 用例）
