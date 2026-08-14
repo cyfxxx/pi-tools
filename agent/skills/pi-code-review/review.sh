@@ -94,7 +94,40 @@ if [ "$MODE" = "diff" ]; then
     exit 0
   fi
   say "== 审查范围: git 变更（HEAD + 未跟踪） =="
-  mapfile -t FILES < <(git status --porcelain | awk '{print $2}' | grep -v '^$')
+  # -z 分隔 + 解析两字段：重命名行（R old -> new）取新路径（$4 在 -z 模式下为第 4 列）、
+  # 未跟踪目录（?? dir/）展开为目录内文件（-f 过滤会整体漏掉）；仅取磁盘上存在的文件
+  mapfile -t FILES < <(git status --porcelain -z | python3 -c '
+import sys, os
+data = sys.stdin.buffer.read().split(b"\0")
+i = 0
+out = []
+while i < len(data):
+    entry = data[i]
+    if not entry:
+        i += 1
+        continue
+    parts = entry.split(b" ", 1)
+    xy = parts[0].decode()
+    rest = parts[1] if len(parts) > 1 else b""
+    if xy.startswith("R"):
+        # R  old -> new（-z 模式下 new 是独立字段）
+        path = rest
+    else:
+        path = rest
+    i += 1
+    if xy.startswith("R"):
+        if i < len(data) and data[i]:
+            path = data[i]
+            i += 1
+    p = path.decode()
+    if os.path.isdir(p) and not xy.startswith("D"):
+        for root, dirs, files in os.walk(p):
+            for f in files:
+                out.append(os.path.join(root, f))
+    elif not xy.startswith("D") and os.path.isfile(p):
+        out.append(p)
+print("\n".join(out))
+' | grep -v '^$')
 else
   [ -n "$SCAN_DIR" ] || { say "请指定目录: --all <dir>"; exit 0; }
   [ -d "$SCAN_DIR" ] || { say "目录不存在: $SCAN_DIR"; exit 0; }

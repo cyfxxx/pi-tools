@@ -111,6 +111,18 @@ function migrateTasks(data: TaskStore): void {
   }
 }
 
+// 任务存储 read-modify-write 互斥队列：tick 的 updateTaskAfterRun 与 /schedule delete/edit
+// 并发时后写者不得用陈旧副本覆盖（否则已删除任务复活、更新丢失）。所有写路径串行化。
+let storeWriteQueue: Promise<unknown> = Promise.resolve()
+export function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = storeWriteQueue.then(fn, fn)
+  storeWriteQueue = run.then(
+    () => undefined,
+    () => undefined,
+  )
+  return run
+}
+
 export async function writeTasks(store: TaskStore): Promise<void> {
   const p = tasksPath()
   const tmp = p + '.tmp.' + process.pid
@@ -284,6 +296,7 @@ export function createTask(params: {
 }
 
 export async function addTask(params: Parameters<typeof createTask>[0]): Promise<Task> {
+  return withStoreLock(async () => {
   const store = await readTasks()
   if (store.tasks.some(t => t.name === params.name)) {
     throw new Error(`已存在同名任务: "${params.name}"，请更换名称`)
@@ -292,12 +305,14 @@ export async function addTask(params: Parameters<typeof createTask>[0]): Promise
   store.tasks.push(task)
   await writeTasks(store)
   return task
+  })
 }
 
 export async function updateTask(
   idOrName: string,
   updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries' | 'recoveryCount'>>
 ): Promise<Task | null> {
+  return withStoreLock(async () => {
   const store = await readTasks()
   const task = store.tasks.find(t => t.id === idOrName || t.name === idOrName)
   if (!task) return null
@@ -321,15 +336,18 @@ export async function updateTask(
   task.updatedAt = isoNow()
   await writeTasks(store)
   return task
+  })
 }
 
 export async function deleteTask(idOrName: string): Promise<boolean> {
+  return withStoreLock(async () => {
   const store = await readTasks()
   const idx = store.tasks.findIndex(t => t.id === idOrName || t.name === idOrName)
   if (idx === -1) return false
   store.tasks.splice(idx, 1)
   await writeTasks(store)
   return true
+  })
 }
 
 export async function listTasks(): Promise<Task[]> {
@@ -347,6 +365,7 @@ export async function updateTaskAfterRun(
   output: string,
   durationMs?: number
 ): Promise<void> {
+  return withStoreLock(async () => {
   const store = await readTasks()
   const idx = store.tasks.findIndex(t => t.id === id)
   if (idx === -1) return
@@ -388,6 +407,7 @@ export async function updateTaskAfterRun(
     }
   }
   await writeTasks(store)
+  })
 }
 
 export async function getSettings(): Promise<SchedulerSettings> {
@@ -396,10 +416,12 @@ export async function getSettings(): Promise<SchedulerSettings> {
 }
 
 export async function setSettings(updates: Partial<SchedulerSettings>): Promise<SchedulerSettings> {
+  return withStoreLock(async () => {
   const store = await readTasks()
   store.settings = { ...store.settings, ...updates }
   await writeTasks(store)
   return store.settings
+  })
 }
 
 export function renderPrompt(prompt: string): string {

@@ -22,18 +22,22 @@ const DESTRUCTIVE_PATTERNS = [
   /\bapt(-get)?\s+(install|remove|purge|update|upgrade)/i,
   /\bbrew\s+(install|uninstall|upgrade)/i,
   /\bgit\s+(add|commit|push|pull|merge|rebase|reset|checkout|branch\s+-[dD]|stash|cherry-pick|revert|tag|init|clone)/i,
+  // find 的破坏性动作：-delete 删除、-exec/-ok 执行、-fprint/-fprintf 写文件
+  /\bfind\b[^\n;|&]*\s(-delete|-exec|-execdir|-ok|-fprint|-fprintf)\b/i,
   /\bsudo\b/i,
   /\bsu\b/i,
   /\bkill\b/i,
   /\bpkill\b/i,
   /\bkillall\b/i,
   /\breboot\b/i,
-  // curl/wget 落盘即破坏（curl -o/-O 写文件、wget 非 -O - 时写文件）
-  /\bcurl\b[^\n;|&]*\s(-o\s|--output\s|-O\s|--remote-name)/i,
+  // curl/wget 落盘即破坏（curl -o/-O/--output=/--output 写文件、wget 非 -O - 时写文件）
+  /\bcurl\b[^\n;|&]*\s(-o\s|-o\S|--output\s|--output=|-O\s|--remote-name)/i,
   /\bwget\b(?!\s+-O\s*-)/i,
   /\bshutdown\b/i,
   /\bsystemctl\s+(start|stop|restart|enable|disable)/i,
   /\bservice\s+\S+\s+(start|stop|restart)/i,
+  // sed w 命令写文件：地址+[0-9,$,/]w file 或独立 w file（GNU sed 仅 -n 只读放行）
+  /\bsed\b[^\n;|&]*([0-9,$/]+w\s|\bw\s)\S/i,
   /\b(vim?|nano|emacs|code|subl)\b/i,
 ];
 

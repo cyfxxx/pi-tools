@@ -4,7 +4,7 @@
  */
 
 import { execFile } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, closeSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, isAbsolute, resolve } from 'node:path'
 
@@ -177,9 +177,24 @@ export interface ReadOutput {
 export async function readOutput(opts: TmuxOpts, name: string, lines = 100, maxChars = 12000): Promise<ReadOutput> {
   const logPath = logPathFor(opts, name)
   if (existsSync(logPath)) {
-    const content = readFileSync(logPath, 'utf-8')
+    // 只读文件末尾（最多 TAIL_BYTES）：长任务日志数十 MB 时避免每轮 O(n) 全量读 + 阻塞事件循环
+    const TAIL_BYTES = 512 * 1024
+    let content: string
+    let size = 0
+    try {
+      const fd = openSync(logPath, 'r')
+      size = statSync(logPath).size
+      const len = Math.min(size, TAIL_BYTES)
+      const buf = Buffer.alloc(len)
+      readSync(fd, buf, 0, len, size - len)
+      closeSync(fd)
+      content = buf.toString('utf-8')
+    } catch {
+      content = readFileSync(logPath, 'utf-8')  // 兜底：文件不可读时回退全量读
+      size = content.length
+    }
     const sliced = content.split('\n').slice(-lines).join('\n')
-    const truncated = content.length > maxChars
+    const truncated = size > maxChars
     return {
       text: truncated ? sliced.slice(-maxChars) : sliced,
       source: 'log',

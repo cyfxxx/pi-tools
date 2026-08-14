@@ -27,7 +27,9 @@ export async function appendRun(entry: TelemetryEntry): Promise<void> {
   runs.push(entry)
   const trimmed = runs.length > TELEMETRY_LIMIT ? runs.slice(-TELEMETRY_LIMIT) : runs
   const p = telemetryPath()
-  const tmp = p + '.tmp'
+  // pid 后缀：与 storage.ts 一致，防并发 appendRun（tick 与命令并发）互踩 tmp 文件
+  // 致 rename ENOENT 把正常执行误记为 failed
+  const tmp = p + '.tmp.' + process.pid
   await mkdir(dirname(p), { recursive: true })
   await writeFile(tmp, JSON.stringify({ runs: trimmed }, null, 2), 'utf-8')
   await (await import('node:fs/promises')).rename(tmp, p)

@@ -141,8 +141,13 @@ export async function sendToDevice(
     return { ok: false, error: guard.detail ?? '发送被拒绝', turns: 0, tools: 0, durationSec: 0, elapsedMs: Date.now() - started }
   }
   markSendStart(key, message)
-
-  // 多地址 failover：仅配置了 altHosts 时按序探测选可达地址（单地址零开销，行为与旧版一致）；
+  // done 在 try 外定义：正常路径与 catch 路径共用（catch 内也要释放 in-flight 锁）
+  const done = (r: LinkResult): LinkResult => {
+    markSendEnd(key)
+    return r
+  }
+  try {
+    // 多地址 failover：仅配置了 altHosts 时按序探测选可达地址（单地址零开销，行为与旧版一致）；
   // 全部不可达时退回主地址（让 ssh 报真实连接错误，避免误报）
   let target: DeviceAddr = { host: device.host, port: device.port }
   const addrs = deviceAddresses(device)
@@ -209,7 +214,12 @@ export async function sendToDevice(
         return
       }
       events.push(ev)
-      opts.onEvent?.(ev)
+      try {
+        opts.onEvent?.(ev)
+      } catch (e) {
+        // onEvent 回调异常（如工具取消）不得逃逸出事件循环炸掉宿主进程，也不得阻断协议流
+        console.error(`[pi-link] onEvent 回调异常: ${e instanceof Error ? e.message : String(e)}`)
+      }
       if (ev.type === 'agent_settled') {
         settled = true
         resolve()
@@ -268,11 +278,6 @@ export async function sendToDevice(
   const tools = events.filter((e) => e.type === 'tool_execution_end').length
   const resumed = lastSession !== undefined
 
-  const done = (r: LinkResult): LinkResult => {
-    markSendEnd(key)
-    return r
-  }
-
   if (spawnFailed) {
     return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: `ssh 启动失败: ${spawnFailed}（本机 ssh 缺失？）`, resumed })
   }
@@ -290,6 +295,15 @@ export async function sendToDevice(
     return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: why, resumed })
   }
   return done({ ok: true, reply: text, turns, tools, model, durationSec, resumed })
+  } catch (e) {
+    // 任一环节异常（探测/握手/解析/onEvent）都必须释放 in-flight 锁并给出可诊断错误
+    return done({
+      ok: false, reply: undefined, turns: 0, tools: 0, durationSec: Math.round((Date.now() - started) / 1000),
+      error: `pi-link 内部异常: ${e instanceof Error ? e.message : String(e)}`, resumed: false,
+    })
+  } finally {
+    markSendEnd(key)  // 幂等：正常路径 done() 已释放；异常路径兜底释放，防 in-flight 锁泄漏
+  }
 }
 
 /** 连通性探测：ssh 远程执行 echo（3 秒超时） */
@@ -326,16 +340,25 @@ function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolea
     proc.stdout.on('data', (c: string) => { out += c })
     proc.stderr.setEncoding('utf-8')
     proc.stderr.on('data', (c: string) => { err += c })
-    proc.on('error', (e: Error) => { failed = e.message })
+    proc.on('error', (e: Error) => {
+      // spawn 失败（ssh 缺失/ENOENT）只发 error 不发 exit，必须在此 resolve 防永久挂起
+      failed = e.message
+      clearTimeout(t)
+      resolve({ ok: false, detail: failed })
+    })
     proc.on('exit', (code) => {
+      clearTimeout(t)
       if (code === 0 && out.trim() === 'pi-link-ok') {
         resolve({ ok: true })
       } else {
         resolve({ ok: false, detail: failed || (err || out).trim().slice(0, 200) || `exit ${code}` })
       }
     })
-    const t = setTimeout(() => { proc.kill('SIGKILL') }, 8000)
-    proc.on('exit', () => clearTimeout(t))
+    const t = setTimeout(() => {
+      proc.kill('SIGKILL')
+      // 兜底：spawn 失败时 kill 无效且不会产生 exit（且 error 可能早于定时器），此处直接 resolve
+      resolve({ ok: false, detail: failed || 'probe timeout' })
+    }, 8000)
   })
 }
 
@@ -555,8 +578,9 @@ async function attachToRemoteInner(device: DeviceConfig, text: string, tmuxSessi
   // pi TUI 布局：底部状态栏（含模型名/•/token），其上为输入框（空时显示 ~ 或空白）。
   const busyMark = 'PI_LINK_INPUT_BUSY'
   const tryPaste = async (enter: boolean): Promise<'sent' | 'busy' | 'failed'> => {
-    // 中间文件放 $HOME（Termux 原始环境 /tmp 不可写，proot 环境 /tmp 可用——$HOME 两环境都稳）
-    const tmp = `$HOME/.pi-link-msg.tmp`
+    // 中间文件放 $HOME（Termux 原始环境 /tmp 不可写，proot 环境 /tmp 可用——$HOME 两环境都稳）；
+    // 文件名带随机后缀：并发/跨设备 attach 的中间文件互不覆盖（与 buffer 名同源策略）
+    const tmp = `$HOME/.pi-link-msg.tmp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
     // PRoot 兼容：Termux sshd 会话的 LD_PRELOAD(libtermux-exec) 会破坏 proot 内 Ubuntu tmux 的
     // 动态加载（"required file not found"）；探测裸 tmux，失败回退显式解释器+清 LD_PRELOAD。
     // 注意：LD_PRELOAD= 赋值必须写在函数体内（变量展开的词首不触发赋值，实测 "command not found"）

@@ -233,7 +233,7 @@ GitHub 同步完成
 | 参数 | 说明 |
 |------|------|
 | `--yes` | 非交互式，自动重建全部项 |
-| `--china` | 启用中国镜像加速（apt/npm/GitHub），默认自动检测 |
+| ~~`--china`~~ | **无此参数**（已由自动检测取代）：rebuild.sh 启动时 `detect_china_network()` 自动启用中国镜像（apt/npm/GitHub），无需也不支持手动指定；传入会忽略并警告 |
 | `--voice` / `--no-voice` | 强制包含/跳过语音依赖重建（默认条件触发：`agent/pi-voice.json` 存在即重建） |
 | `--whisper-model=<名>` | whisper 模型档位（tiny/base/small/medium/large-v3，默认 base） |
 | `--no-gpu` | 跳过 CUDA 库安装提示（GPU 检测仍会输出提示，安装为可选） |
@@ -267,10 +267,10 @@ GitHub 同步完成
 |--------|------|------|
 | Node.js 版本 | `< 20` | 使用 NodeSource 安装 Node.js 22.x |
 | Python venv（ensurepip） | `python3 -m venv /tmp/.venv-probe` 创建失败 | Debian/Ubuntu 按实际版本装 `python3.12-venv`（`dpkg -l python3-venv` 显示已装但可能是空壳）；删掉失败的 `searxng/venv/` 后重跑 rebuild |
-| pip 镜像 | `--china` 或网络不可达 | `pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple` |
-| npm 镜像 | `--china` 或网络不可达 | `npm config set registry https://registry.npmmirror.com` |
-| GitHub 镜像 | `--china` 或网络不可达 | 所有 `github.com` 下载通过 `ghproxy.net` 代理 |
-| apt 镜像 | `--china` 或网络不可达 | 替换 `/etc/apt/sources.list.d/ubuntu.sources` URIs 为清华源 |
+| pip 镜像 | 自动检测到中国网络 | `pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple` |
+| npm 镜像 | 自动检测到中国网络 | `npm config set registry https://registry.npmmirror.com` |
+| GitHub 镜像 | 自动检测到中国网络 | 所有 `github.com` 下载通过 `ghproxy.net` 代理 |
+| apt 镜像 | 自动检测到中国网络 | 替换 `/etc/apt/sources.list.d/ubuntu.sources` URIs 为清华源 |
 
 **重建清单（并发组间顺序执行，组内并行）：**
 
@@ -344,7 +344,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 |---|--------|------|------|
 | 9 | `tmux` 命令 | `tmux -V` 失败 | 按系统安装：`apt-get install -y tmux`（Debian/Ubuntu）\| `dnf install -y tmux`（Fedora/RHEL）\| `pacman -S tmux`（Arch）\| `zypper install tmux`（openSUSE）\| `brew install tmux`（macOS） |
 | 10 | `~/.tmux.conf` | 文件不存在 | 从仓库 `tmux/tmux.conf` 写回（`cp ~/.pi/tmux/tmux.conf ~/.tmux.conf`）；缺失则提示手动重建（含 WSL2 专属调优，见 `docs/alacritty-tmux-setup.md`） |
-| 11 | tmux 插件（tpm/resurrect/continuum） | `~/.tmux/plugins/tpm` 不存在 | `git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm`，然后 `~/.tmux/plugins/tpm/bin/install_plugins`（`~/.tmux.conf` 需含 plugin 配置） |
+| 11 | tmux 插件（tpm/resurrect/continuum） | 不重建（仓库不包含插件源码） | 仅同步 `~/.tmux.conf`（上项）；插件需手动安装：`git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm && ~/.tmux/plugins/tpm/bin/install_plugins` |
 
 > **跨系统兼容要点**：
 > - **WSL2（当前环境）**：Alacritty 渲染需 `GALLIUM_DRIVER=d3d12`、`unset WAYLAND_DISPLAY`（wrapper 在 `/usr/bin/alacritty`）；tmux 用 `apt` 安装。详见 `docs/alacritty-tmux-setup.md`。
@@ -373,7 +373,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | settings.yml | `python3 -c "import yaml; yaml.safe_load(open('$HOME/.pi/searxng/settings.yml'))" 2>/dev/null \|\| echo "YAML 校验失败"` |
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
 | 扩展完整性 | `for d in "$HOME/.pi/agent/extensions"/*/; do [ -d "$d" ] && { case "$(basename "$d")" in tests\|node_modules\|types) continue;; esac; [ -f "$d/index.ts" ] \|\| echo "$(basename "$d") MISSING"; }; done`（动态扫描，新扩展免维护；`types/` 为类型声明目录，非扩展） |
-| 类型链接 | `grep -q "$(readlink -f ~/.local/share/pi-node/current 2>/dev/null \|\| ls -d ~/.local/share/pi-node/*/ 2>/dev/null \| tail -1)" ~/.pi/agent/extensions/tsconfig.json \|\| echo "tsconfig paths 过期"`（`rebuild` Phase 2-D 自动同步） |
+| 类型链接 | `grep -q "$(readlink -f ~/.local/share/pi-node/current 2>/dev/null \|\| ls -d ~/.local/share/pi-node/*/ 2>/dev/null \| tail -1)" ~/.pi/agent/extensions/tsconfig.local.json \|\| echo "tsconfig paths 过期"`（`rebuild` Phase 2-D 自动同步；paths 在本机生成的 `tsconfig.local.json`，共享 `tsconfig.json` 不含 paths） |
 | wrapper 自愈 | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（幂等重装 shim，`pi-original` 保留） |
 | 端到端冒烟测试 | `timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即全部扩展加载成功 + 模型链路可用；失败会指明具体扩展（如 pi-voice 报 `Extension runtime not initialized` 时检查 `PI_DIST`，见注意事项 13） |
 | whisper 服务 | `bash ~/.pi/scripts/pi-whisper.sh status`（输出"运行中"或重启后首用自动加载） |
@@ -595,7 +595,7 @@ pi-backup verify
 10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
 11. **多机 memory 冲突（P1）**：`memory/entries.json` 入库共享（已带环境标签，pi-memory 注入/检索自动过滤）；`notes.json`/`summaries.json` 已 git 忽略（会话级/环境特定，不入库）。多机交替 push/pull 时 entries.json 冲突处理：`git checkout --theirs memory/entries.json` 保留远程 → 本地重要新增从 stash/备份手工合并（pi-memory 会自动重新提取会话，一般无需手工）。详见 `docs/ENVIRONMENTS.md`。
 12. **配置类文件跨机边界**：`settings.json`（主配置）、`models.json`（模型/密钥，pi ≥0.84 为 `models-store.json`）、`pi-voice.json`（whisper 令牌）均不在 git 同步范围内且默认不进归档。跨机迁移三选一：① `pi-backup create --with-auth` 打包 → restore；② scp 直接传；③ 新设备手动重建。`rebuild` 的验证阶段会探测缺失并给出对应指引（注意：旧脚本探测的是 `models.json`，pi ≥0.84 实际使用 `models-store.json`，以 `pi -p` 冒烟测试为准）。
-12. **tsconfig 路径重写**：`rebuild` Phase 2-D 会把 `agent/extensions/tsconfig.json` 的 paths 重写到本机实际 pi 安装根。手动 `pi update` 换版本后再次运行 `rebuild.sh`（或只跑类型链接步骤）即可同步。
+12. **tsconfig 路径重写**：`rebuild` Phase 2-D 生成/重写**本机专属** `agent/extensions/tsconfig.local.json`（extends 共享 `tsconfig.json` + 本机 pi 安装根 paths；共享配置不含 paths，多环境不互相污染）。手动 `pi update` 换版本后再次运行 `rebuild.sh` 即可同步。
 13. **PI_DIST（wrapper 后的 dist 定位）**：wrapper 接管 `pi` 命令后，补丁脚本（patch-*.mjs）与 pi-voice 的 dist 探测会解析到 wrapper 自身而失败——wrapper 已自动导出 `PI_DIST`（由解析出的 cli.js 推导）。直启 `pi-original` / node cli.js 时需手动：`export PI_DIST="$(dirname "$(readlink -f "$(which pi-original)")")"`。缺失时 pi-voice 加载报 `Extension runtime not initialized`，pi 完全无法启动（本次重建实测）。
 14. **端到端冒烟测试**：重建/恢复后必须跑 `timeout 90 pi -p "回复 OK"`——它验证扩展加载（最易出错的一环）与模型链路，比单项检查更能暴露 wrapper/PI_DIST/扩展兼容问题。
 15. **`pi-backup verify`**：同步前先跑体检（git 卫生/密钥泄漏/`.gitignore` 完整性），防止 `rsync` 式同步丢了 `.gitignore` 后把密钥提交进仓库（本次重建曾遇到，靠事后 `git rm --cached` 才救回）。

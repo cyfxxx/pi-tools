@@ -648,11 +648,15 @@ export function benchSuggestion(rtf: number): string {
 
 /** 性能基准：录 5s 音频 → 转写计时 → 返回评估行与 RTF。失败时 rtf 为 null。 */
 export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
-  const benchCfg = { ...cfg, maxSeconds: 5 }
+  // 注意：maxSeconds 仅对 -l 参数生效，termux 启动参数是 -l 0（服务端不限时）、
+  // linux parec 无时长参数——录音进程不会自行退出，必须在 Node 侧定时停止
   const t0 = Date.now()
-  const rec = startRecording(benchCfg, () => {})
+  const rec = startRecording(cfg, () => {})
   const file = rec.file
-  // 等待录音进程自行退出（-l 5 上限），15s 兜底
+  // 录 5s 后主动停止（补 -q 让服务侧收尾写 moov atom）；15s 兜底防 stop 失败挂起
+  const stopTimer = setTimeout(() => {
+    void stopRecording(cfg).catch(() => undefined)
+  }, 5000)
   await new Promise<void>((resolve) => {
     const timer = setInterval(() => {
       if (rec.child.exitCode !== null) {
@@ -665,6 +669,7 @@ export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
       resolve()
     }, 15000)
   })
+  clearTimeout(stopTimer)
   const recordedMs = Math.max(Date.now() - t0, 1)
   // 进程退出 ≠ 收尾：MediaRecorder 在 -l 超时/被杀时不写 moov atom（实测），
   // 必须补 -q 强制服务收尾，再等文件稳定（moov 写入完成）才能转码。

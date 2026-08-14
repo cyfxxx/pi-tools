@@ -155,7 +155,12 @@ export class SessionScheduler {
     const label = `[Scheduler] ${task.name}`
     touchActivity()
     await markPendingInjected(task.id, true)
-    await this.pi.sendUserMessage?.(`${label}: ${renderPrompt(task.prompt)}`)
+    // 注入动作失败（sendUserMessage 不可用/抛错）必须抛错：否则会被记 success 并删除
+    // once 任务（updateTaskAfterRun 的 once 分支 splice），提醒任务从未真正交付就消失
+    if (!this.pi.sendUserMessage) {
+      throw new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败')
+    }
+    await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
     if (task.notifyOnCompletion) {
       await sendWebhook(task, 'success', '')
     }
@@ -169,7 +174,15 @@ export class SessionScheduler {
 
     await new Promise<void>((resolve, reject) => {
       const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), timeout)
+      // 超时：abort 后补 SIGKILL 兜底——子进程忽略 SIGTERM 时 close 永不触发会永久挂起；
+      // 置 timedOut 标志使 close 回调按 exitCode=124 分类（classifyError 的 timeout 分支
+      // 依赖 exitCode===124，abort 产生的 code=null 会被误归为 unknown）
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        controller.abort()
+        try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ }
+      }, timeout)
       const proc = spawn('pi', ['-p', renderPrompt(task.prompt)], {
         stdio: ['ignore', 'pipe', 'pipe'],
         signal: controller.signal,
@@ -187,8 +200,8 @@ export class SessionScheduler {
           }
           resolve()
         } else {
-          const err = new Error(stderr.trim() || `exit ${code}`) as Error & { exitCode?: number; outputLen?: number }
-          err.exitCode = code
+          const err = new Error(stderr.trim() || (timedOut ? `超时（${timeout / 1000}s）` : `exit ${code}`)) as Error & { exitCode?: number; outputLen?: number }
+          err.exitCode = timedOut ? 124 : code
           err.outputLen = stdout.length
           reject(err)
         }

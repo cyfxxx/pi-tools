@@ -490,6 +490,29 @@ describe('pi-link: 多地址 failover (altHosts)', () => {
     expect(calls[1]).toContain('u@10.0.0.2')
   })
 
+  it('probeAddr spawn 失败（ENOENT 只发 error 不发 exit）不挂起', async () => {
+    spawnMock.mockReset()
+    const { probeDevice } = await import('../link')
+    // 模拟 spawn 同步失败：只发 error、永不发 exit（未修复时会永久挂起直至测试超时）
+    spawnMock.mockImplementation(() => {
+      const proc: any = {
+        stdin: new PassThrough(),
+        stdout: new PassThrough(),
+        stderr: new PassThrough(),
+        kill: vi.fn(),
+        on: (ev: string, cb: (c?: unknown) => void) => {
+          if (ev === 'error') setImmediate(() => cb(new Error('spawn ssh ENOENT')))
+        },
+      }
+      return proc
+    })
+    const dev: DeviceConfig = { host: '10.0.0.1', user: 'u', port: 22 }
+    const r = await probeDevice(dev)
+    expect(r.ok).toBe(false)
+    expect(r.detail).toContain('ENOENT')
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+  })
+
   it('probeDevice 全部地址失败返回不可达', async () => {
     spawnMock.mockReset()
     const { probeDevice } = await import('../link')
