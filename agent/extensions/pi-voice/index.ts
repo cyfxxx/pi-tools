@@ -190,6 +190,10 @@ export default function (pi: ExtensionAPI): void {
           pi.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: r.message, display: true })
         }
       },
+      // 文件实际生成（麦克风真在录，启动延迟实测 1-2s）："初始化中"→"录音中"
+      onReady: () => {
+        if (dictation.isRecording()) lastCtx?.ui.setStatus('pi-voice', '🎤 录音中')
+      },
     },
   )
 
@@ -365,7 +369,8 @@ export default function (pi: ExtensionAPI): void {
             awaitingResume = false
             const m = dictation.start()
             if (m.startsWith('🎤')) {
-              ctx.ui.setStatus('pi-voice', '🎤 录音中')
+              // 初始化延迟提示：onReady 回调会切换为录音中
+              ctx.ui.setStatus('pi-voice', '⏳ 启动麦克风中…')
             } else {
               reply(pi, m)
             }
@@ -457,7 +462,9 @@ function withStatus(api: ExtensionAPI, ctx: ExtensionContext, message: string): 
   // 保证超时自动转写（无调用方 ctx）时能清状态条、粘贴进输入框
   lastCtx = ctx
   if (message.startsWith('🎤')) {
-    ctx.ui.setStatus('pi-voice', '🎤 录音中')
+    // 麦克风初始化有延迟（文件生成实测 1-2s）：先提示初始化中，
+    // 文件实际生成后 onReady 回调切换为录音中（避免初始化窗口说话丢开头）
+    ctx.ui.setStatus('pi-voice', '⏳ 启动麦克风中…')
     autoSetTts(true)
   } else {
     ctx.ui.setStatus('pi-voice', undefined)
