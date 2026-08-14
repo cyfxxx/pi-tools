@@ -130,3 +130,6 @@ portable/.pi/
 /update-pi.ps1
 /patch-footer-live-context.mjs
 /bin/
+
+# 便携包运行时（python embeddable 等）
+.local/
