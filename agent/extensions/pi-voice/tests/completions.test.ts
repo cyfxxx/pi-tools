@@ -43,4 +43,33 @@ describe('/voice 参数补全', () => {
     const values = items.map((i) => (i as { value: string }).value)
     expect(values).toContain('device')
   })
+
+  it('tts speak 带自由文本时返回空（回车不被补全劫持，2026-08-15 回归）', async () => {
+    const cmds = await loadVoiceCommands()
+    const voice = cmds['voice']
+    // 输入 'tts speak 你好' 回车应直接提交命令，补全弹窗必须关闭
+    expect(voice.getArgumentCompletions?.('tts speak 你好') ?? []).toEqual([])
+    expect(voice.getArgumentCompletions?.('tts speak 你好呀') ?? []).toEqual([])
+    // 完整子命令同样排除（'tts on' 回车直接执行）
+    expect(voice.getArgumentCompletions?.('tts on') ?? []).toEqual([])
+  })
+
+  it('tts 前缀匹配仍补全（on/off/status，无 speak 字面量项）', async () => {
+    const cmds = await loadVoiceCommands()
+    const voice = cmds['voice']
+    const all = (voice.getArgumentCompletions?.('tts ') ?? []).map((i) => (i as { value: string }).value)
+    expect(all).toEqual(['tts on', 'tts off', 'tts status'])
+    const o = (voice.getArgumentCompletions?.('tts o') ?? []).map((i) => (i as { value: string }).value)
+    expect(o).toEqual(['tts on', 'tts off'])
+    const s = (voice.getArgumentCompletions?.('tts s') ?? []).map((i) => (i as { value: string }).value)
+    expect(s).toEqual(['tts status'])
+  })
+
+  it('model/device 完整匹配回车直接提交（弹窗关闭）', async () => {
+    const cmds = await loadVoiceCommands()
+    const voice = cmds['voice']
+    expect(voice.getArgumentCompletions?.('model small') ?? []).toEqual([])
+    expect(voice.getArgumentCompletions?.('device cpu') ?? []).toEqual([])
+    expect(voice.getArgumentCompletions?.('device gpu') ?? []).toEqual([])
+  })
 })
