@@ -46,6 +46,7 @@
 │   ├── PI-EXT-DEV-NOTES.md    Pi 扩展开发注意事项（隐性契约/踩坑/黑盒流程）
 │   ├── PI-SDK-EXTENSION.md    Pi SDK 扩展开发说明
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
+├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
 ├── memory/                    pi-memory 运行时数据（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
@@ -195,7 +196,7 @@ bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
 | `agent/settings.json` + `models.json`（pi ≥0.84 为 `models-store.json`） | pi 无模型配置，无法启动对话 | 原机 `scp` 拷贝，或原机 `pi-backup create --with-auth` 后新机 `pi-backup restore` |
 | `agent/auth.json` | 无 API 凭据 | 同上（`--with-auth` 归档） |
 | `agent/pi-voice.json` | 语音扩展/whisper token 不一致 | 原机拷贝（语音功能不使用可跳过） |
-| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | **`rebuild.sh` 已自动同步**（Phase 2-F2：diff 幂等 → cp → server 运行中 source-file 热加载，不重启会话）；手动方式 `cp ~/.pi/tmux/tmux.conf ~/.tmux.conf`（仓库已带配置，含状态栏脚本） |
+| `~/.tmux.conf`、`~/.termux/` | tmux 无 `extended-keys`，语音快捷键失效 | **`rebuild.sh` 已自动同步**（Phase 2-F2：diff 幂等 → cp → server 运行中 source-file 热加载，不重启会话）；手动方式 `cp ~/.pi/deploy/tmux/tmux.conf ~/.tmux.conf`（仓库已带配置，含状态栏脚本） |
 | 会话历史（`agent/sessions/`） | 新机无原机会话 | 原机 `pi-backup create --include-sessions` 归档恢复；git 模式**永不**含会话 |
 | 运行时日志（`logs/`） | 无法跨机排查问题 | 不入库，原机直接查看 |
 
