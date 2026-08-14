@@ -88,7 +88,11 @@ const patched = src.replace(
                     // 并返回刷新后的 tools 供本轮注入（模型函数调用 schema 可见新工具）。
                     tools: (() => {
                         const _names = new Set(this.agent.state.tools.map((t) => t.name));
-                        const _all = Array.from(this._toolDefinitions.keys());
+                        // 字段存在性守卫：pi 升级若改名 _toolDefinitions（正则仍可匹配
+                        // 外层 tools: 注入点），此处返回 undefined 会抛 TypeError——
+                        // 改由可空取值兜底，字段缺失时静默跳过刷新（补丁失效但不炸每轮 context）
+                        const _defs = this._toolDefinitions?.keys?.();
+                        const _all = _defs ? Array.from(_defs) : [];
                         if (_all.some((n) => !_names.has(n))) {
                             this._refreshToolRegistry({});
                         }
