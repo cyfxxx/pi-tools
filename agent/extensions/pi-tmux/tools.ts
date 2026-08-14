@@ -235,11 +235,12 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): void {
   pi.registerTool({
     name: 'tmux_wait',
     label: '等待会话完成',
-    description: '轮询等待 tmux 会话结束，或日志中出现指定 pattern，或超时返回。适合阻塞式等长任务结果。',
-    promptSnippet: '等待后台任务完成',
+    description: '轮询等待会话结束/日志出现 pattern/超时返回。阻塞式：等待期间无法处理用户新消息；仅本轮必须拿结果才能继续时才用，否则 tmux_run 后直接结束回合，进度下轮用 tmux_read 查看。',
+    promptSnippet: '等待后台任务完成（阻塞式，慎用）',
     promptGuidelines: [
-      '想等命令跑完拿结果：tmux_wait(name=..., until_exit=true)',
-      '想等日志出现某关键字：tmux_wait(name=..., pattern="...", until_exit=false)',
+      '需拿结果才能继续：tmux_wait(name=..., until_exit=true)',
+      '等日志关键字：tmux_wait(name=..., pattern="...", until_exit=false)',
+      '不需阻塞：tmux_run 后结束回合，下轮 tmux_read 看进度',
     ],
     parameters: {
       type: 'object',
