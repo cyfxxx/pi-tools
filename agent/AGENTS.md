@@ -24,15 +24,15 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 验证命令（全量回归）
 
 ```bash
-bash scripts/test-all.sh          # 一键：10 套测试（8 vitest + subagent + 注册面）+ tsc + conflict-check
+bash scripts/test-all.sh          # 一键：11 套测试（9 vitest + subagent + 注册面）+ tsc + conflict-check
 bash scripts/test-all.sh --only=pi-voice,pi-tmux  # 分层快检：只跑指定扩展 + tsc（dsh 证据面匹配借鉴）
 bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check（日常快检）
 ```
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 72 / pi-memory 76 / pi-autopilot 94 / pi-browser 23 / pi-context 39 / plan-mode 59 / pi-tmux 10 / pi-voice 106 用例）
-注册面：`cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`（23 用例，须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
-subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（37 用例）
-类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit`
+单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`（pi-web-search 75 / pi-memory 76 / pi-autopilot 95 / pi-browser 23 / pi-context 54 / plan-mode 59 / pi-tmux 10 / pi-voice 106 / pi-link 56 用例，2026-08-14 实测，以 test-all.sh 输出为准）
+注册面：`cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`（25 用例，须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
+subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`（45 用例）
+类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit`（必须 local.json——共享 tsconfig.json 的 paths 为空会全量报 Cannot find module；缺失时回退共享配置）
 扩展冲突：`cd agent/extensions && node tests/conflict-check.mjs`（8 项）
 
 ## 关键约定
