@@ -144,6 +144,19 @@ describe('task CRUD (isolated store)', () => {
     await writeTasks(store)
   })
 
+  it('并发 updateTaskAfterRun 与 deleteTask 不复活已删除任务（写互斥）', async () => {
+    const { addTask, deleteTask, updateTaskAfterRun, readTasks } = await import('../storage')
+    const t = await addTask({ name: 'race', type: 'interval', schedule: '5m', prompt: 'p' })
+    // 并发：删除与"完成后更新"同时进行——互斥队列保证后写者基于最新快照，
+    // 已删除任务不得复活
+    await Promise.all([
+      deleteTask('race'),
+      updateTaskAfterRun(t.id, 'success', 'done'),
+    ])
+    const store = await readTasks()
+    expect(store.tasks.find(x => x.id === t.id)).toBeUndefined()
+  })
+
   it('adds a task with computed nextRun', async () => {
     const task = await addTask({ name: 't1', type: 'interval', schedule: '5m', prompt: 'p1' })
     expect(task.name).toBe('t1')

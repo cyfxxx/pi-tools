@@ -359,6 +359,9 @@ export function createDictation(
     clearTimer()
     recordingChild?.kill()
     recordingChild = null
+    // 补 -q 优雅停止服务侧 MediaRecorder：CLI 进程断线后 termux 服务侧仍继续录制
+    // （SocketListener EOF 录制不受影响），麦克风持续被占用、音频继续写入已删文件
+    void deps.stopRecording(cfg).catch(() => undefined)
     if (currentFile !== null) {
       deps.deleteAudioPair(cfg, currentFile)
       currentFile = null

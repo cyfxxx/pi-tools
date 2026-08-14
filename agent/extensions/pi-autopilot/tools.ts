@@ -170,7 +170,11 @@ export function registerTools(pi: ExtensionAPI): void {
       const model = params.model as string
       const result = updateModelConfig(provider, model)
       if (!result.success) return { content: [{ type: 'text', text: result.error || '设置失败' }], details: null, isError: true }
-      const confirmed = ctx.hasUI ? await ctx.ui.confirm('切换模型', `将切换为 ${provider}/${model}，需要重启 Agent。是否继续？`) : true
+      if (!ctx.hasUI) {
+        // headless 禁止未经确认重启宿主（防 agent 自我授权改模型/切会话并重启）
+        return { content: [{ type: 'text', text: '无 UI 环境禁止直接切换模型（会重启 Agent）。请在 TUI 会话中执行，或设置环境变量 PI_AUTOPILOT_ALLOW_HEADLESS=1 显式放行。' }], details: null, isError: true }
+      }
+      const confirmed = await ctx.ui.confirm('切换模型', `将切换为 ${provider}/${model}，需要重启 Agent。是否继续？`)
       if (!confirmed) return { content: [{ type: 'text', text: `已保存配置但未重启。下次启动将使用 ${provider}/${model}` }], details: null }
       writeRestartRequest('set_model', {
         targetProvider: provider,
@@ -288,7 +292,10 @@ export function registerTools(pi: ExtensionAPI): void {
       const reason = params.reason as string | undefined
       const session = resolveSession(target)
       if (!session) return { content: [{ type: 'text', text: `未找到匹配的会话: ${target}` }], details: null, isError: true }
-      const confirmed = ctx.hasUI ? await ctx.ui.confirm('切换会话', `将切换到会话 ${session.sessionId}，需要重启 Agent。是否继续？`) : true
+      if (!ctx.hasUI) {
+        return { content: [{ type: 'text', text: '无 UI 环境禁止直接切换会话（会重启 Agent）。请在 TUI 会话中执行，或设置环境变量 PI_AUTOPILOT_ALLOW_HEADLESS=1 显式放行。' }], details: null, isError: true }
+      }
+      const confirmed = await ctx.ui.confirm('切换会话', `将切换到会话 ${session.sessionId}，需要重启 Agent。是否继续？`)
       if (!confirmed) return { content: [{ type: 'text', text: '已取消会话切换' }], details: null }
       writeRestartRequest('switch_session', {
         targetSession: session.filePath,

@@ -32,6 +32,16 @@ describe('isSafeCommand 复合命令解析（③放宽）', () => {
     expect(isSafeCommand('git clone https://x')).toBe(false)
     expect(isSafeCommand('cd /tmp && git clone https://x')).toBe(false)
     expect(isSafeCommand('curl -o out https://x')).toBe(false)
+    expect(isSafeCommand('curl --output=/tmp/x https://x')).toBe(false)
+    expect(isSafeCommand('curl --output /tmp/x https://x')).toBe(false)
+    expect(isSafeCommand('curl -O https://x/file')).toBe(false)
+    expect(isSafeCommand('curl https://x')).toBe(true)
+    expect(isSafeCommand('find . -delete')).toBe(false)
+    expect(isSafeCommand('find /tmp -name x -exec rm {} \\;')).toBe(false)
+    expect(isSafeCommand("sed -n '1,5w /tmp/out' file.txt")).toBe(false)
+    expect(isSafeCommand("sed -n '/foo/w out' file.txt")).toBe(false)
+    expect(isSafeCommand('sed -n 1,5p file.txt')).toBe(true)
+    expect(isSafeCommand('find /tmp -name x -type f')).toBe(true)
   })
 
   it('白名单命令整体匹配核心（cd 前缀剥离后）', () => {
