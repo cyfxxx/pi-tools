@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [3.1.0] - 2026-08-14
+
+### 修复
+
+- **`web_fetch` 未捕获异常炸进程**：工具回调 try/catch 包裹，异常转为工具错误返回（不逃逸）；清理死代码
+- **`fetch_url` 超时未清理**：接入 `_signal` abort 信号 + finally 清除超时定时器（防请求完成/超时后定时器泄漏）
+
 ## [3.0.0] - 2026-08-01
 
 ### 变更

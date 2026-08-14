@@ -1,5 +1,11 @@
 # Changelog — subagent
 
+## [v7]
+
+### Changed
+- **stderr 输出上限 50KB**：防子代理超量 stderr 撑爆内存/日志
+- **整体 30 分钟超时**：超时后 SIGTERM → 宽限后 SIGKILL，exitCode=124 分类（防挂死子代理永久占用进程）
+
 ## [v6]
 
 ### Fixed
