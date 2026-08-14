@@ -65,6 +65,11 @@
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
 │   ├── patch-*.mjs            核心补丁（voice-enter 回车拦截 / footer-live-context / plan-tools，rebuild.sh 自动执行）
 │   └── pi-bg.sh               后台任务四件套隔离（见 README-pi-bg.md）
+├── portable/                  便携 pi（Windows 原生）构建脚本
+│   ├── setup.ps1             Windows 一键构建器（Node LTS + pi 本地安装）
+│   ├── start.bat/start.ps1   启动器（固定 workspace cwd + 显式 node + PI_CODING_AGENT_DIR）
+│   ├── verify.ps1            环境验证 / diag.bat 诊断
+│   └── README.md             便携包构建/会话恢复/限制说明
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
@@ -129,6 +134,25 @@ pi-backup rebuild --yes          # 静默自动重建
 - **日志与退出码** — `--yes` 模式自动落盘 `logs/rebuild-<ts>.log`，各阶段标注耗时（+Ns）；verify 有异常时退出码非 0（自动化可判定失败，`--no-log` 关闭落盘）
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
+
+### Windows 原生便携安装（pi-portable）
+
+不想在 Windows 主机上安装、又想原生运行 pi（带完整配置与会话）时，使用便携包：
+
+1. 新建空文件夹，放入 `portable/` 下全部脚本；从本机拷贝 `~/.pi` → 包内 `.pi/`（agent 扩展/配置、sessions 会话、memory 记忆）
+2. PowerShell 运行 `setup.ps1`（自动：下载 Node LTS 24+ → npmmirror 镜像装 pi → 生成启动器）
+3. `verify.ps1` 验证环境 → `start.bat --continue` 恢复 WSL 会话
+
+关键机制（详见 `portable/README.md` 与记忆「便携 pi Windows 构建全套经验」）：
+
+- **USERPROFILE=包根** + **PI_CODING_AGENT_DIR 显式**——pi 的配置/扩展/会话全落包内 `.pi/`
+- **显式 `node.exe` 调 cli.js**——绕开 npm shim 的 node 解析（会落到系统 node，v22.14 无 zstd 导致 deepseek zstd 响应崩溃）
+- **Node 必须 24+**——22.x 的 zlib 无 `createZstdDecompress`
+- **固定 workspace cwd**——pi 会话目录按 cwd 编码（`sessions/--<路径>--/`），固定 cwd 后 `--continue` 稳定恢复；构建时预置 WSL 会话快照
+- **pi-voice 已从便携包移除**——Windows 无 parec/termux 录音依赖；settings 排除受 projectTrusted 限制，物理删除最可靠
+- **fd/rg Windows exe 预置** `.pi/agent/bin/`（GitHub 下载被墙）
+
+已知限制：searxng/whisper 为 Python 服务不在包内（搜索/语音需目标机另装）；包内 `.pi/` 含密钥自行决定是否携带。
 
 ### 新设备恢复引导
 
