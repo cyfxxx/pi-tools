@@ -162,7 +162,13 @@ class Handler(BaseHTTPRequestHandler):
             self._send(401, {"error": "unauthorized"})
             return
         if self.path == "/health":
-            self._send(200, {"ok": _model is not None, "model": MODEL})
+            # faster-whisper WhisperModel 无 .device，实际设备在内部 ctranslate2 模型上
+            dev = _model.model.device if _model is not None and getattr(_model, "model", None) is not None else None
+            self._send(200, {
+                "ok": _model is not None,
+                "model": MODEL,
+                "device": dev,
+            })
         else:
             self._send(404, {"error": "not found"})
 

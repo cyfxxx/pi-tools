@@ -592,6 +592,7 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
     lines.push(ff.code === 0 ? '✓ ffmpeg 可用' : '✗ ffmpeg 缺失：请 apt-get install ffmpeg')
   }
   // 3. whisper 服务（带 token，与服务端鉴权一致；否则配置 token 后必误报不可达）
+  let actualDevice: string | null = null
   try {
     const headers: Record<string, string> = {}
     if (cfg.whisperToken) headers['Authorization'] = `Bearer ${cfg.whisperToken}`
@@ -599,17 +600,25 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
     if (!res.ok) {
       lines.push('✗ whisper 服务鉴权失败（401）：token 与 ~/.pi/scripts/pi-whisper.sh 读取的配置不一致')
     } else {
-      const data = (await res.json()) as { ok?: boolean; model?: string }
-      lines.push(data.ok ? `✓ whisper 服务可用（模型 ${data.model ?? ''}）` : '✓ whisper 服务运行中（模型加载中）')
+      const data = (await res.json()) as { ok?: boolean; model?: string; device?: string }
+      actualDevice = data.device ?? null
+      lines.push(data.ok ? `✓ whisper 服务可用（模型 ${data.model ?? ''}${actualDevice ? `，${actualDevice}` : ''}）` : '✓ whisper 服务运行中（模型加载中）')
     }
   } catch {
     lines.push('✗ whisper 服务不可达：请运行 ~/.pi/scripts/pi-whisper.sh start')
   }
-  // 5. GPU 推理提示（有 GPU 时建议换大模型；服务端 device=auto 已自动启用 cuda）
+  // 5. GPU 推理提示：以服务端实际设备为准（nvidia-smi 可用 ≠ whisper 用 cuda；
+  // 2026-08-14 实测：驱动可见但缺 cublas/cudnn 库时服务端 auto 探测判 cpu，此处曾误报）
   if (spec.kind === 'linux') {
-    const hasGpu = await runCommand('nvidia-smi', [], { timeoutMs: 5000 })
-    if (hasGpu.code === 0) {
-      lines.push('✓ 检测到 NVIDIA GPU：whisper 已在 cuda 上推理（可 /voice model small 提升准确率）')
+    if (actualDevice === 'cuda') {
+      lines.push('✓ whisper 在 GPU (cuda) 上推理（可 /voice model small 提升准确率）')
+    } else {
+      const hasGpu = await runCommand('nvidia-smi', [], { timeoutMs: 5000 })
+      if (hasGpu.code === 0) {
+        lines.push('⚠ 检测到 NVIDIA GPU 但 whisper 在 CPU 推理（缺 CUDA 库或 auto 探测判 cpu，/voice device 可查看与切换）')
+      } else {
+        lines.push('ℹ whisper 在 CPU 推理（未检测到 NVIDIA GPU）')
+      }
     }
   }
   // 6. TTS
