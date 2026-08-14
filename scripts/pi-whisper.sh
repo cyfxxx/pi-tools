@@ -35,14 +35,30 @@ read_device() {
   fi
 }
 
+# 孤儿进程兑底：pidfile 之外按进程名匹配所有 whisper-server 实例（同用户），
+# 防 pidfile 丢失/被杀后残留导致 stop 杀不掉、start 端口冲突（2026-08-14 实测：
+# /voice model 切换重启失败，旧进程占端口，新进程 Address already in use 崩溃）
+orphan_pids() {
+  pgrep -f "$SERVER" 2>/dev/null | grep -v "^$$" || true
+}
+
 is_running() {
-  [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+  { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; } || [ -n "$(orphan_pids)" ]
 }
 
 start() {
-  if is_running; then
+  # 正常在跑（pidfile 匹配且进程存活）→ 直接返回；
+  # 孤儿残留（pidfile 丢失/不匹配但进程在）→ 必须清理重启（配置可能已变，
+  # 如 /voice model 切换，2026-08-14 实测 restart 失败根因）
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     echo "whisper 服务已在运行 (pid $(cat "$PIDFILE"))"
     return 0
+  fi
+  # 端口被占但 pidfile 无效（孤儿场景）：自动清理后启动，防新进程
+  # Address already in use 崩溃
+  if [ -n "$(orphan_pids)" ]; then
+    echo "检测到无 pidfile 的残留 whisper 进程，自动清理…"
+    stop
   fi
   if [ ! -x "$VENV/bin/python" ]; then
     echo "错误: 未找到 $VENV/bin/python，请先: python3 -m venv $VENV && $VENV/bin/pip install faster-whisper opencc-python-reimplemented" >&2
@@ -86,12 +102,20 @@ start() {
 }
 
 stop() {
-  if is_running; then
+  local killed=0
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
     kill "$(cat "$PIDFILE")" 2>/dev/null
-    rm -f "$PIDFILE"
+    killed=1
+  fi
+  # 孤儿实例兑底：pidfile 丢失或内容过期时仍能杀掉残留进程
+  for pid in $(orphan_pids); do
+    [ "$pid" = "$(cat "$PIDFILE" 2>/dev/null)" ] && continue
+    kill "$pid" 2>/dev/null && killed=1
+  done
+  rm -f "$PIDFILE"
+  if [ "$killed" -eq 1 ]; then
     echo "whisper 服务已停止"
   else
-    rm -f "$PIDFILE"
     echo "whisper 服务未在运行"
   fi
 }
