@@ -1,13 +1,14 @@
 @echo off
-rem Portable pi launcher
+rem Portable pi launcher (deterministic)
 setlocal
 set "ROOT=%~dp0"
 set "USERPROFILE=%ROOT%"
 set "HOME=%ROOT%"
 set "NPM_CONFIG_CACHE=%ROOT%.npm"
 set "PI_CODING_AGENT_DIR=%ROOT%.pi\agent"
-set "PATH=%ROOT%node;%PATH%"
-cd /d "%ROOT%workspace"
+set "PI_VOICE_MIC_BIN=%ROOT%tools\ffmpeg\bin\ffmpeg.exe"
+set "PI_VOICE_TTS_BIN=powershell"
+set "GIT_SSL_CAINFO=%ROOT%tools\ca-bundle.crt"
 if not exist "%ROOT%node\node.exe" (
   echo node not found - run setup.ps1 first
   exit /b 1
