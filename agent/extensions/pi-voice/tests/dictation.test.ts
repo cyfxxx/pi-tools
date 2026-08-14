@@ -561,3 +561,51 @@ describe('dictation 状态机', () => {
     expect(d.isRecording()).toBe(false)
   })
 })
+
+describe('onReady 就绪回调（麦克风初始化提示）', () => {
+  it('文件生成后触发 onReady（fileExists 由 false→true）', async () => {
+    let exists = false
+    const ready: string[] = []
+    const d = createDictation(
+      cfg,
+      makeDeps({ fileExists: vi.fn(() => exists) }),
+      { ...makeCallbacks(), onReady: () => { ready.push('ready') } },
+    )
+    const m = d.start()
+    expect(m).toContain('🎤')
+    expect(ready).toHaveLength(0) // 文件未生成：不触发
+    exists = true
+    await new Promise((r) => setTimeout(r, 400)) // 轮询间隔 300ms
+    expect(ready).toHaveLength(1)
+    d.cancel()
+  })
+
+  it('文件一直未生成不触发 onReady（假成功检测路径）', async () => {
+    const ready: string[] = []
+    const d = createDictation(
+      cfg,
+      makeDeps({ fileExists: vi.fn(() => false) }),
+      { ...makeCallbacks(), onReady: () => { ready.push('ready') } },
+    )
+    d.start()
+    await new Promise((r) => setTimeout(r, 700))
+    expect(ready).toHaveLength(0)
+    d.cancel()
+  })
+
+  it('停止后不再触发（currentFile 已置 null，轮询退出）', async () => {
+    let exists = true
+    const ready: string[] = []
+    const d = createDictation(
+      cfg,
+      makeDeps({ fileExists: vi.fn(() => exists) }),
+      { ...makeCallbacks(), onReady: () => { ready.push('ready') } },
+    )
+    d.start()
+    await new Promise((r) => setTimeout(r, 400))
+    expect(ready).toHaveLength(1)
+    await d.stop() // 停止后文件即使出现也不再回调
+    await new Promise((r) => setTimeout(r, 400))
+    expect(ready).toHaveLength(1)
+  })
+})

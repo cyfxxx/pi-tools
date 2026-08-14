@@ -53,6 +53,8 @@ export interface StopResult {
 export interface DictationCallbacks {
   /** 录音进程自行退出（超时）触发自动转写完成时调用（无调用方 UI 上下文）。 */
   onAutoComplete(result: StopResult): void
+  /** 录音文件实际生成（麦克风真的开始录，启动延迟实测 1-2s）时调用，供 UI 把“初始化中”切换为“录音中”。 */
+  onReady?(): void
 }
 
 export interface Dictation {
@@ -255,6 +257,27 @@ export function createDictation(
         })
       }, cfg.maxSeconds * 1000)
     }
+    // 就绪提示：文件实际生成（麦克风真在录，启动延迟实测 1-2s）时回调 onReady，
+    // 供 UI 把"初始化中"切换为"录音中"——避免用户在初始化窗口说话丢开头。
+    // 文件一直未出现时由假成功检测（spawnRecorder 8s 定时器）兜底，轮询自然退出
+    //（currentFile 置 null 后轮询内检查退出）。
+    let readyPoll: ReturnType<typeof setInterval> | null = null
+    readyPoll = setInterval(() => {
+      if (currentFile !== r.file) {
+        if (readyPoll) {
+          clearInterval(readyPoll)
+          readyPoll = null
+        }
+        return
+      }
+      if (deps.fileExists(r.file)) {
+        if (readyPoll) {
+          clearInterval(readyPoll)
+          readyPoll = null
+        }
+        cb.onReady?.()
+      }
+    }, 300)
     return '🎤 录音中（再次 Ctrl+Alt+R 停止并转写；时长上限 ' + (cfg.maxSeconds > 0 ? `${cfg.maxSeconds}s` : '不限') + '）'
   }
 
