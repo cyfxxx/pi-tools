@@ -4054,13 +4054,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T02:54:32.645Z",
-      "updatedAt": "2026-08-11T02:54:32.645Z",
+      "updatedAt": "2026-08-14T08:31:01.127Z",
       "accessedAt": "2026-08-11T02:54:32.645Z",
       "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "7e5ba806-2575-497d-a85b-5be5e3251c6c"
     },
     {
       "id": "6f2f535a-ab93-4047-94c5-031a21e24d8c",
@@ -5353,13 +5354,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:39:50.457Z",
-      "updatedAt": "2026-08-12T00:39:50.457Z",
+      "updatedAt": "2026-08-14T04:40:26.329Z",
       "accessedAt": "2026-08-12T00:39:50.457Z",
       "observedAt": "2026-08-12T00:39:50.457Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "9f133b6c-1e94-4513-859c-fe8a877f3d97"
     },
     {
       "id": "73fafec9-c7dd-4792-893c-66d8701c6481",
@@ -8123,20 +8125,21 @@
       "id": "15e60342-6cea-4377-8287-a0cdaa8c4802",
       "category": "solutions",
       "title": "rebuild 进度报告与无 tmux 回退",
-      "content": "pi-backup 技能 rebuild 章节新增进度报告约定：统一后台执行（有 tmux 用 tmux_run，无 tmux 用 `nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &` 记 PID），每 60s 报告进度（耗时/已完成 Phase/当前项/计数），附单项耗时预估表（npm 1-5 分钟、pip 5-15 分钟、whisper 2-10 分钟等）。卡死判定：日志 5 分钟无输出→ps 确认+下载文件大小增长区分慢与卡。",
+      "content": "统一后台执行：有 tmux 用 tmux_run，无 tmux 用 `nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &` 记 PID。每 60s 报告进度（耗时/已完成 Phase/当前项/计数），附单项耗时预估表（npm 1-5 分钟等）。【禁令】tmux_run 启动后必须立即结束回合，禁止连续 tmux_wait 阻塞等待（等待期间无法处理用户消息，等同占用前台）；进度在后续轮次用 tmux_read 轮询。2026-08-14 实战教训：rebuild 任务连续 tmux_wait 阻塞 6 分钟导致用户消息无法响应。",
       "tags": [
         "pi-backup",
         "rebuild",
         "进度报告",
         "nohup",
-        "tmux"
+        "tmux",
+        "background-task"
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 1,
+      "recurrence": 2,
       "createdAt": "2026-08-13T16:02:02.699Z",
-      "updatedAt": "2026-08-13T16:02:02.699Z",
-      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "updatedAt": "2026-08-14T04:59:45.725Z",
+      "accessedAt": "2026-08-14T04:59:45.725Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -8577,14 +8580,16 @@
         "extension",
         "fix"
       ],
-      "confidence": 1.0,
+      "confidence": 1,
       "environments": [
         "all"
       ],
       "createdAt": "2026-08-14T11:04:21.284635Z",
       "updatedAt": "2026-08-14T11:04:21.284635Z",
       "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge"
+      "source": "manual-merge",
+      "observedAt": "2026-08-14T11:04:21.284635Z",
+      "deleted": false
     },
     {
       "id": "mem_planmode_fixhist_20260814",
@@ -8603,7 +8608,9 @@
       "createdAt": "2026-08-14T11:05:04.950439Z",
       "updatedAt": "2026-08-14T11:05:04.950439Z",
       "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge"
+      "source": "manual-merge",
+      "observedAt": "2026-08-14T11:05:04.950439Z",
+      "deleted": false
     },
     {
       "id": "mem_planmode_decisions_20260814",
@@ -8621,7 +8628,9 @@
       "createdAt": "2026-08-14T11:05:04.950439Z",
       "updatedAt": "2026-08-14T11:05:04.950439Z",
       "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge"
+      "source": "manual-merge",
+      "observedAt": "2026-08-14T11:05:04.950439Z",
+      "deleted": false
     },
     {
       "id": "mem_rebuild_merged_20260814",
@@ -8640,7 +8649,9 @@
       "createdAt": "2026-08-14T11:05:18.280887Z",
       "updatedAt": "2026-08-14T11:05:18.280887Z",
       "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge"
+      "source": "manual-merge",
+      "observedAt": "2026-08-14T11:05:18.280887Z",
+      "deleted": false
     },
     {
       "id": "mem_tsconfig_merged_20260814",
@@ -8659,7 +8670,9 @@
       "createdAt": "2026-08-14T11:05:18.280887Z",
       "updatedAt": "2026-08-14T11:05:18.280887Z",
       "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge"
+      "source": "manual-merge",
+      "observedAt": "2026-08-14T11:05:18.280887Z",
+      "deleted": false
     },
     {
       "id": "mem_planexit_confirm_20260814",
@@ -8671,14 +8684,608 @@
         "preference",
         "confirmation"
       ],
-      "confidence": 1.0,
+      "confidence": 1,
       "environments": [
         "all"
       ],
       "createdAt": "2026-08-14T11:08:06.333041Z",
       "updatedAt": "2026-08-14T11:08:06.333041Z",
       "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge"
+      "source": "manual-merge",
+      "observedAt": "2026-08-14T11:08:06.333041Z",
+      "deleted": false
+    },
+    {
+      "id": "0e173073-7b57-40e9-bb1c-8183f5e3b3fb",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 7,
+      "createdAt": "2026-08-14T03:29:32.815Z",
+      "updatedAt": "2026-08-14T05:30:24.935Z",
+      "accessedAt": "2026-08-14T05:30:24.935Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-14T03:29:32.815Z",
+      "deleted": false
+    },
+    {
+      "id": "060a8aac-810b-4b00-8da4-c840cb361957",
+      "category": "fact",
+      "title": "pi 仓库 4 条 HIGH bug 待修复",
+      "content": "2026-08 全项目审计确认 4 条 HIGH 未修复（只读审查，待用户确认）：pi-autopilot/scheduler.ts:74-82 预算拦截不推进 nextRun 致 30s 自锁（单任务日增 ~2880 条虚假失败）；pi-link/link.ts:143,275 markSendStart/done 间无 try/finally 守卫泄漏；pi-memory/tools.ts:347-363 批量删除不调 saveEntries 重启复活；pi-voice/core.ts 录音文件秒级命名竞态。建议修复顺序：预算自锁→守卫泄漏→批量删除→录音竞态。",
+      "tags": [
+        "audit",
+        "high-bugs",
+        "pi-extensions",
+        "待修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "19426f7b-c9fe-44e5-9b91-a300cf742aaa",
+      "category": "procedure",
+      "title": "entries.json 冲突合并约定",
+      "content": "~/.pi 仓库 entries.json 入库共享，多设备 pull 被拒时：先 fetch 对比差异，以远端为基底、只补回本地真正新增条目；远端提交若为去重清理（删旧加新），不可把被删旧条目补回（先确认删除意图）。覆盖前核对内容差异防丢失，合并后推送回 origin/master。",
+      "tags": [
+        "pi-repo",
+        "memory",
+        "git",
+        "merge"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "28ed324a-0d1c-4483-81dc-c99ae60237e0",
+      "category": "fact",
+      "title": "pi-full-audit 技能已创建",
+      "content": "位于 ~/.pi/agent/skills/pi-full-audit/SKILL.md，触发词'全面检查/深度审计/体检/audit'。五步流程：review.sh --all 确定性检查→test-all.sh 基线回归（tmux 后台跑）→subagent 4 组并行深度审查→人工抽查验证→分级报告；含委派 prompt 模板与误报判别清单。创建当时未提交 git，需提交推送同步其他设备。",
+      "tags": [
+        "skill",
+        "audit",
+        "pi-repo"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "fb498aca-f628-4cd6-85a6-ab7804d39659",
+      "category": "solutions",
+      "title": "全项目审计误报判别清单",
+      "content": "审计常见误报判别：①agent/auth.json 等运行密钥若被 .gitignore 忽略则非泄露；②Node v22 子进程超时表现为 err.code=null、signal='SIGTERM'，ETIMEDOUT 分支永不命中，以实测为准；③bash glob 只要有一处匹配就不保留字面量，'恒报错 exit 1'实为漏检（如 rebuild.sh verify 的 */node_modules 跳过无依赖目录）；④review.sh --selfcheck 检查 cwd 而非技能仓库，非仓库目录运行误报'未安装 git 仓库'。",
+      "tags": [
+        "audit",
+        "误报",
+        "验证",
+        "review.sh"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "9ce778fa-fb43-41a0-bad4-cec9cb3ea4b2",
+      "category": "procedure",
+      "title": "subagent 审查委派输出约束",
+      "content": "并行深度审查报告易被截断（本次两次）。委派 prompt 须明确：只读约束、六维度（HIGH/MEDIUM/LOW/死代码/安全/风险）、精简输出（LOW 最多 5 条、全文 3000 字内）。HIGH 结论必须回主会话人工抽查验证：本次纠正 1 项方向性误报（rebuild glob）并精确化 1 项范围（pi-memory 仅批量删除不落盘、单条正常）。",
+      "tags": [
+        "subagent",
+        "audit",
+        "prompt",
+        "委派"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "9f133b6c-1e94-4513-859c-fe8a877f3d97",
+      "category": "fact",
+      "title": "tmux_run 会话永不退出",
+      "content": "tmux_run 启动的后台任务会话默认不会自动退出（除非命令本身结束或手动 kill）。tmux_wait 等待完成时应设 until_exit=false 并配合 pattern 轮询日志关键字，不要用 until_exit=true 阻塞等待；不阻塞场景用 tmux_run 后下轮 tmux_read 看进度。",
+      "tags": [
+        "tmux",
+        "后台任务"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "6889040c-45e6-4e94-b37b-8e2d1471823e",
+      "category": "fact",
+      "title": "pi 仓库审计基线全绿",
+      "content": "2026-08 全项目审计基线：220 个源码文件 JS/Py/Shell/JSON/YAML 语法检查全过；test-all.sh 全量回归 exit 0（9 套 vitest + subagent 34 用例 + tsc + 注册面 23 + conflict-check + 自动发现）；child_process/console.log/rm -rf 可疑模式均为合理使用。审计结论 4 HIGH/22 MEDIUM，问题集中在异常路径（缺 try/finally、不落盘、不推进状态）。",
+      "tags": [
+        "audit",
+        "baseline",
+        "test-all"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "accessedAt": "2026-08-14T04:40:26.077Z",
+      "observedAt": "2026-08-14T04:40:26.077Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
+      "deleted": false
+    },
+    {
+      "id": "04eea702-35df-4288-a15e-89ccc31713e5",
+      "category": "procedure",
+      "title": "便携 pi Windows 构建全套经验",
+      "content": "便携 pi（Windows 原生）构建全套经验（2026-08-14 实测成功）：①USERPROFILE 必须指向包根（pi 的 homedir 链 → .pi/agent），多套一层 .pi 会导致配置全找不到；②start 脚本显式 `node.exe <包>\\pi-global\\node_modules\\@earendil-works\\pi-coding-agent\\dist\\cli.js` 调 pi 入口（绕开 npm shim 的 node 解析——shim 会落到系统 node）；③Node 必须 24+（zstd：deepseek 返回 zstd 压缩响应，22.x 无 zlib.createZstdDecompress 直接崩溃）；④显式设 PI_CODING_AGENT_DIR=<包>\\.pi\\agent（pi 官方环境变量，绕过 homedir 解析最稳）；⑤fd/rg Windows exe 预置 .pi/agent/bin/（GitHub 下载被墙）；⑥settings.extensions 排除受 projectTrusted（信任项目目录）限制——未信任时不生效，物理删除扩展目录最可靠；⑦ps1 需 UTF-8 BOM（PowerShell 5.1 按 GBK 解析中文乱码），bat 用纯 ASCII+CRLF；⑧打包排除 Linux 软链接（Windows tar 解压报错 File exists）；⑨npm --prefix 全局装在 Windows 布局为 pi-global\\pi.cmd（非 node_modules/.bin）；⑩zip 用 zipfile 打包（隐藏目录 .pi 不遗漏）。包结构：node/ + pi-global/ + .pi/（agent/sessions/memory）+ setup.ps1 + start.bat/ps1 + verify.ps1 + diag.bat。",
+      "tags": [
+        "portable",
+        "windows",
+        "pi",
+        "portable-pi",
+        "便携pi",
+        "构建",
+        "node24"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-08-14T07:45:43.664Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T07:45:43.664Z",
+      "environments": [
+        "all",
+        "wsl2"
+      ],
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "deleted": false
+    },
+    {
+      "id": "a733e0e8-cc27-459e-a88e-3c457080ad42",
+      "category": "solutions",
+      "title": "pi 会话跨平台恢复方案",
+      "content": "pi 会话目录按 cwd 编码组织（sessions/--<路径>--/）：WSL /root→--root--，Windows E:\\pi-portable→--E-pi-portable--，cwd 不同则 --continue 找不到会话。解法：启动器固定 cd 到包内 workspace/ 使 cwd 恒定，并把原环境会话快照预置到对应编码目录，--continue 即可跨平台恢复同一会话。",
+      "tags": [
+        "pi",
+        "sessions",
+        "cwd",
+        "会话恢复",
+        "portable"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "bb3f55a0-6ae4-4127-9903-3d9f11f9eb3c",
+      "category": "fact",
+      "title": "PI_CODING_AGENT_DIR 官方变量",
+      "content": "pi 官方环境变量 PI_CODING_AGENT_DIR 可显式指定 agentDir（getAgentDir 优先读它），绕过 USERPROFILE→homedir() 解析链。便携/异常环境用该变量直接指向 .pi\\agent 路径最稳妥，配置/扩展/fd.exe 全部命中。",
+      "tags": [
+        "pi",
+        "环境变量",
+        "agentDir",
+        "portable"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "822f7a20-08b4-4418-b8b3-ded42d6b8c41",
+      "category": "fact",
+      "title": "settings 扩展排除需 projectTrusted",
+      "content": "pi 的 settings.extensions 本地覆盖（- 前缀排除，package-manager.js:1980）只在\"信任项目目录\"（projectTrusted）时应用，未信任环境的排除被静默忽略。可靠做法是物理删除扩展目录（tar 解压不删旧目录，须手动 Remove-Item -Recurse -Force）。",
+      "tags": [
+        "pi",
+        "扩展",
+        "projectTrusted",
+        "settings"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "7e5ba806-2575-497d-a85b-5be5e3251c6c",
+      "category": "fact",
+      "title": "扩展加载期 action 为 stub",
+      "content": "pi 扩展加载时 action 是 throwing stub（如 sendMessage: notInitialized），Runner.bindCore() 后才换真实现；加载期间同步调用 action 会报 \"Extension runtime not initialized. Action methods cannot be called during extension loading.\"。Windows 时序差异更易触发，可用 pi -ne 绕过排查。",
+      "tags": [
+        "pi",
+        "扩展",
+        "stub",
+        "加载机制"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:01.203Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "supersededBy": "a20d423d-7658-4bd9-afd6-ba798c90323b",
+      "deleted": true
+    },
+    {
+      "id": "3f4a690a-3488-491b-b5b5-2334da5b35b3",
+      "category": "solutions",
+      "title": "Node 22 无 zstd 崩溃修复",
+      "content": "pi 在 Node 22 上遇 deepseek zstd 压缩响应崩溃（TypeError: zlib.createZstdDecompress is not a function，undici fetch 内）。解法：用 Node 24 LTS，且 start.bat 显式用便携 node.exe 调 dist/cli.js，绕开 npm shim 对 PATH 的 node 解析（shim 会回退到系统旧 node）。",
+      "tags": [
+        "pi",
+        "node",
+        "zstd",
+        "windows",
+        "崩溃修复"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "a20d423d-7658-4bd9-afd6-ba798c90323b",
+      "category": "fact",
+      "title": "pi-voice 不可移植 Windows",
+      "content": "pi-voice 录音依赖 parec/termux，Windows 上无对应依赖且加载报错（stub action 时序差异，Windows 特有），便携 Windows 包须排除该扩展；WSL/Linux 环境加载正常。settings.json 已含 \"extensions\": [\"-pi-voice\"]。",
+      "tags": [
+        "pi-voice",
+        "windows",
+        "扩展",
+        "portable"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "83b605f1-cb15-46df-a08f-ccacff5fda9e",
+      "category": "procedure",
+      "title": "portable 目录入库与备份清单",
+      "content": "便携 pi 构建脚本（setup.ps1/start.bat/start.ps1/verify.ps1/diag.bat/README.md）已入库 ~/.pi 仓库 portable/ 目录（不含 .pi 密钥内容）。pi-backup 备份清单已加 portable/ 行；.gitignore 加 portable/.pi/ 防完整便携包含密钥被 git add . 误提交，与密钥扫描双保险。pi-full-audit/pi-code-review/rebuild.sh/test-all.sh 均 git 动态扫描无需改。",
+      "tags": [
+        "pi-backup",
+        "portable",
+        "备份",
+        "gitignore",
+        "仓库"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "f0e1c123-a909-4ee5-bc34-215cc8f11a47",
+      "category": "fact",
+      "title": "用户 Windows 环境特征",
+      "content": "用户 Windows 机器（E:\\pi-portable 部署便携 pi）：PATH 含 CUDA v13.2、MinGW、系统 Node、Tailscale、ollama、llama.cpp、uv、dotnet 等；Git 经 /c/... 路径执行。便携 pi 无 searxng/whisper（Python 服务不在包内），Windows 便携环境搜索/语音不可用；便携包 entries.json 与 WSL 记忆库独立演进，需 pi-backup 或手动拷贝同步。",
+      "tags": [
+        "windows",
+        "环境",
+        "pi-portable",
+        "限制"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-14T09:28:18.924Z",
+      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "observedAt": "2026-08-14T08:31:00.967Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": true,
+      "supersededBy": "a8c35c98-420e-4813-bf9d-54da97f85c1e"
+    },
+    {
+      "id": "b2889734-8c18-41d5-b9e0-4574db1b4a91",
+      "category": "solutions",
+      "title": "pi-voice Windows 加载崩溃修复",
+      "content": "pi 在 Windows 便携包加载 pi-voice 报 \"Extension runtime not initialized. Action methods cannot be called during extension loading\"（扩展加载期 action 是 throwing stub，Windows 时序差异触发）。settings.json 的 extensions 排除（\"-pi-voice\"）只在 projectTrusted（信任项目目录）时生效，未信任时被忽略。最可靠解法：物理删除 extensions\\pi-voice 目录；从仓库同步扩展时必须排除 pi-voice，否则复活。Windows 无录音依赖（parec/termux），该扩展本就用不了。",
+      "tags": [
+        "pi-voice",
+        "windows",
+        "扩展",
+        "便携pi"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "966a1c16-e391-47f0-b6c0-1a4fea59b977",
+      "category": "solutions",
+      "title": "pi 会话 cwd 编码跨平台恢复",
+      "content": "pi 会话目录按 cwd 编码组织（sessions/--<路径>--/）：WSL /root→--root--，Windows E:\\pi-portable→--E-pi-portable--（不存在），cwd 不同则 --continue 找不到会话、直接进新会话。解法：启动器固定 cd 到包内 workspace/ 使 cwd 恒定（会话目录 --E-pi-portable-workspace--），并将原环境会话文件预置到该编码目录，--continue 即可跨平台恢复同一会话。",
+      "tags": [
+        "pi",
+        "会话恢复",
+        "cwd",
+        "便携pi"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "a8c35c98-420e-4813-bf9d-54da97f85c1e",
+      "category": "fact",
+      "title": "便携 pi 记忆分叉与功能限制",
+      "content": "Windows 便携 pi 的 entries.json 记忆库与主环境（WSL）独立演进，两边记忆会分叉，同步需用 pi-backup 或手动拷贝。便携包不含 searxng/whisper（Python 服务不在包内），搜索/语音在 Windows 便携环境不可用，其余功能正常。便携 pi 中记忆显示的旧日期条目（如 2025-06-13 记 777）是拷贝的历史记忆快照，属正常。",
+      "tags": [
+        "便携pi",
+        "记忆",
+        "限制"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "333dab09-d055-413b-9c42-03308dd4d59e",
+      "category": "fact",
+      "title": "pi-tools 仓库 portable 目录入库",
+      "content": "pi-tools 仓库新增 portable/ 目录（setup.ps1/start.bat/start.ps1/verify.ps1/diag.bat/README.md，不含 .pi 密钥内容），提交 8d9ad2a；主 README 补 Windows 原生便携安装章节 dde658f；pi-backup 备份清单加 portable/ 行、.gitignore 加 portable/.pi/ 防完整便携包密钥被 git add 误提交（06ef23a）。pi-full-audit/pi-code-review/rebuild.sh/test-all.sh/restore 快照均 git 层面动态，无需改。",
+      "tags": [
+        "pi-tools",
+        "portable",
+        "git",
+        "文档"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "fa5505d6-c8ac-40c0-bce2-e1e1030c3dc3",
+      "category": "solutions",
+      "title": "pi 扩展加载期 action stub 机制",
+      "content": "pi 扩展加载时 action 是 throwing stub（如 sendMessage: notInitialized），Runner.bindCore() 后才换真实现，任何在加载期间同步调用的 action 都会抛 \"Extension runtime not initialized. Action methods cannot be called during extension loading\"。排查思路：先查扩展 default 函数之外顶层 pi.* 调用（含导入副作用）、onError 回调是否同步触发、平台分支（platformOf 对 win32 无分支时回落 linux spec 不抛错）。",
+      "tags": [
+        "pi",
+        "扩展开发",
+        "加载机制"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "6a4bedff-d9bb-4e7d-aee6-a4e7eddb409b",
+      "category": "fact",
+      "title": "用户 Windows 环境信息",
+      "content": "用户 Windows 机器（PowerShell，便携 pi 位于 E:\\pi-portable）：CUDA v13.2、MinGW（D:\\App_X）、Node（D:\\App_X\\Node）、uv、ollama/llama.cpp（E:\\AI_Chat）、Tailscale、Xshell/Xftp、GnuPG、CMake、usbipd-win。PATH 中无 pi，start.bat 每次打印 which 警告属正常无碍。启动便携 pi 用 .\\start.bat --continue。",
+      "tags": [
+        "环境",
+        "windows",
+        "便携pi"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "bd472edf-268a-40a0-bf26-74993cfae2e4",
+      "category": "habit",
+      "title": "用户偏好: 变更后全面检查受影响组件",
+      "content": "用户在仓库变更（如新增 portable/ 目录）后习惯要求全面检查所有受影响组件并更新文档链路（主 README、AGENTS.md、portable/README.md、pi-backup 备份清单、.gitignore），检查结论需逐项列表说明。注意：用户更新 Windows 便携包扩展的方式是整目录拷贝仓库 extensions/，会反复带回 pi-voice 导致崩溃，需提醒用排除 pi-voice 的同步方式。",
+      "tags": [
+        "偏好",
+        "工作流",
+        "文档"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "observedAt": "2026-08-14T09:28:18.758Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "deleted": false
+    },
+    {
+      "id": "13a54f34-2b66-426c-bceb-b65188705b03",
+      "category": "procedure",
+      "title": "便携 pi Windows 最终架构（junction 统一运行时）",
+      "content": "便携 pi（Windows 原生）最终架构（2026-08-14 实测完整落地）：包根 = pi-tools 仓库工作副本（git clone），运行时数据经 junction 统一到包根：`.pi/agent` → junction → 包根 `agent/`（配置/会话/扩展唯一真身），`.pi/memory` → junction → 包根 `memory/`（entries.json 入库共享，notes/summaries/checkpoints gitignored）。start.bat 设 USERPROFILE/HOME=包根 + PI_CODING_AGENT_DIR=.pi\\agent（junction 透明）；会话目录按 cwd 编码（`--E-pi-portable--`），`--continue` 恢复。gitignore 忽略便携包实例运行时（/.pi/ /.ssh/ /AppData/ /Microsoft/ /node/ /pi-global/ /tools/ + 根目录脚本），仓库只跟踪 portable/ 模板。junction 创建需 Windows 侧 `cmd /c mklink /J`（WSL interop 被禁用无法从 WSL 直调 mklink；前提是目标路径不存在，先删旧目录）。setup.ps1 自动下载工具组件：ffmpeg（BtbN win64-gpl ~85MB，gh-proxy 镜像+直连双源 fallback，tar 解压，bin/ 固定 tools/ffmpeg）、PortableGit（v2.55.0.4 .7z ~57MB，Windows tar 解压 7z）；ca-bundle.crt + tmux shim（wsl.exe tmux %*）随仓库入库。pi-voice 71209d3 后 Windows 可用（platform windows spec：ffmpeg dshow 录音 + PowerShell SAPI 朗读 + 加载期 reply 延迟修复），不再需要删除。",
+      "tags": [
+        "portable",
+        "windows",
+        "pi",
+        "junction",
+        "architecture"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T11:04:40.847Z",
+      "updatedAt": "2026-08-14T11:04:40.847Z",
+      "accessedAt": "2026-08-14T11:04:40.847Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }

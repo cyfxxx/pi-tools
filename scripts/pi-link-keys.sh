@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pi-link-keys.sh — 多设备互连公钥管理
 #
-# 思路：所有设备的公钥集中存放在仓库 keys/authorized_keys（git 同步），
+# 思路：所有设备的公钥集中存放在仓库 deploy/keys/authorized_keys（git 同步），
 # 每台设备跑一次 install 即获得全部设备授权，两两免密互连。
 #
 # 用法：
@@ -18,7 +18,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PI_HOME="$(dirname "$SCRIPT_DIR")"          # 仓库根（~/.pi）
-KEYS_FILE="$PI_HOME/keys/authorized_keys"  # 仓库公钥合集
+KEYS_FILE="$PI_HOME/deploy/keys/authorized_keys"  # 仓库公钥合集
 
 # 目标 authorized_keys 位置（数组，逐目标安装）
 TARGETS=()

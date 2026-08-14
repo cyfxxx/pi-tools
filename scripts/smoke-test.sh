@@ -123,10 +123,10 @@ if [ "$PATCHED" = "3" ]; then
 else
   fail "TUI 补丁未全应用（$PATCHED/3，重跑 rebuild.sh Phase 3）"
 fi
-if pgrep -f "status-loop.sh" >/dev/null 2>&1 && [ -f "$PI_HOME/tmux/tmux-status.txt" ] && [ -s "$PI_HOME/tmux/tmux-status.txt" ]; then
+if pgrep -f "status-loop.sh" >/dev/null 2>&1 && [ -f "$PI_HOME/deploy/tmux/tmux-status.txt" ] && [ -s "$PI_HOME/deploy/tmux/tmux-status.txt" ]; then
   ok "tmux 状态循环运行中"
 else
-  skip "tmux 状态循环未运行（tmux 启动后自动拉起；或手动: ~/.pi/tmux/status-loop.sh &）"
+  skip "tmux 状态循环未运行（tmux 启动后自动拉起；或手动: ~/.pi/deploy/tmux/status-loop.sh &）"
 fi
 
 echo
