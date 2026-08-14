@@ -8,6 +8,7 @@ const cfg = {
   whisperToken: '',
   platform: 'termux',
   micBin: 'termux-microphone-record',
+  micDevice: '',
   ffmpegBin: 'ffmpeg',
   ttsBin: 'termux-tts-speak',
   linuxMicDevice: 'RDPSource',
