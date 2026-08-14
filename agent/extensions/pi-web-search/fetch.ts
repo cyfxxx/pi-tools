@@ -6,7 +6,7 @@ export async function searchDirect(query: string, maxResults = 5): Promise<strin
     headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
     signal: controller.signal,
   }).finally(() => clearTimeout(timeout))
-  if (!res) return '搜索失败: 请求超时'
+  // fetch 失败必抛异常（网络/DNS/超时 abort），不会返回 null——此分支为死代码，已移除
   if (!res.ok) return `搜索失败: HTTP ${res.status}`
   const html = await res.text()
   const results: string[] = []
