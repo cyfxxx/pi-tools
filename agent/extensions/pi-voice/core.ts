@@ -617,7 +617,11 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
   } else if (mic.stderr.toLowerCase().includes('permission') || mic.stderr.toLowerCase().includes('record_audio')) {
     lines.push(`✗ 麦克风权限未授予：${spec.recorder.permissionHint}`)
   } else {
-    lines.push(`✓ 麦克风可用（${spec.recorder.micLabel}）`)
+    if (spec.kind === 'windows' && !cfg.micDevice) {
+      lines.push(`✗ 未配置 dshow 麦克风设备（micDevice）。枚举：ffmpeg -list_devices true -f dshow -i dummy；配置：pi-voice.json 加 "micDevice": "麦克风 (Realtek(R) Audio)"`)
+    } else {
+      lines.push(`✓ 麦克风可用（${spec.recorder.micLabel}）`)
+    }
   }
   // 2. ffmpeg（仅 termux 需要；linux 直出 wav）
   if (spec.recorder.needsConvert) {

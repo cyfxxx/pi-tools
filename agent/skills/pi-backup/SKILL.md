@@ -217,7 +217,7 @@ GitHub 同步完成
      # 或从原机打包: pi-backup create --with-auth，新机 pi-backup restore
      ```
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
-4. 从 `tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
+4. 从 `deploy/tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
 5. **pi-link 公钥安装**：`bash ~/.pi/scripts/pi-link-keys.sh install`（把 `deploy/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
 6. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
 7. 告知用户重启 pi。
@@ -544,13 +544,13 @@ pi-backup verify
 | tmux 会话注册表 | `agent/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
 | pi-link 运行时 | `pi-link-active.json`、`pi-link-state.json`、`pi-link-outbox.json` | 活跃时间戳/远程状态/信箱（每设备运行时数据，与 memory 同类隔离，不随 git 同步） |
 
-> **tmux/Termux 配置收录方式**：外部配置（`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties`）以副本形式收在仓库内 `tmux/` 目录——**git 同步（sync/clone）直接携带**，本地归档也直接收录 `tmux/` 目录（不再单独收集外部路径）；`restore`/`clone` 后写回原路径：
+> **tmux/Termux 配置收录方式**：外部配置（`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties`）以副本形式收在仓库内 `deploy/tmux/` 目录——**git 同步（sync/clone）直接携带**，本地归档也直接收录 `deploy/tmux/` 目录（不再单独收集外部路径）；`restore`/`clone` 后写回原路径：
 > ```
 > cp ~/.pi/deploy/tmux/tmux.conf ~/.tmux.conf            # tmux 配置
 > cp ~/.pi/deploy/tmux/termux.properties ~/.termux/      # Termux 键盘栏（Termux 环境）
 > cp ~/.pi/deploy/tmux/alacritty.toml ~/.config/alacritty/  # Alacritty（若存在）
 > ```
-> 均"存在时收录"，缺失自动跳过。外部源文件更新后需手动同步回 `tmux/` 再提交（`cp ~/.tmux.conf ~/.pi/deploy/tmux/tmux.conf && git add deploy/tmux/ && git commit`）。
+> 均"存在时收录"，缺失自动跳过。外部源文件更新后需手动同步回 `deploy/tmux/` 再提交（`cp ~/.tmux.conf ~/.pi/deploy/tmux/tmux.conf && git add deploy/tmux/ && git commit`）。
 
 
 ### 默认排除（`--full` 时额外包含）

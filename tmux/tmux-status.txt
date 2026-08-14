@@ -1,0 +1,1 @@
+#[fg=yellow]22:34#[default] 0.12#[default] 4.3G/7.5G (57%)#[default]

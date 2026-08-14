@@ -260,11 +260,8 @@ export default function (pi: ExtensionAPI): void {
       ]
     },
     handler: async (args, ctx) => {
-      // 补丁缺失提示（加载期不 reply 的延迟输出）：首次 /voice 命令时提示一次
-      if (enterPatchMissing) {
-        enterPatchMissing = false
-        reply(pi, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
-      }
+      // 补丁缺失提示（加载期不 reply 的延迟输出）：/voice 命令或快捷键进入语音时提示一次
+      maybeWarnEnterPatch(pi)
       const [cmd, ...rest] = args.trim().split(/\s+/)
       switch (cmd) {
         case '':
@@ -347,6 +344,8 @@ export default function (pi: ExtensionAPI): void {
   })
 
   const toggleRecording = (ctx: ExtensionContext): void => {
+    // 快捷键路径同样提示补丁缺失（Windows 用户可能全程用快捷键，/voice 命令不触发）
+    maybeWarnEnterPatch(pi)
     if (dictation.isRecording() || dictation.isTranscribing()) {
       awaitingResume = false // 手动停止：不进入听写待续录
       void stopAndDeliver(pi, ctx, false)
@@ -476,6 +475,14 @@ export default function (pi: ExtensionAPI): void {
 }
 
 const OUTPUT_CUSTOM_TYPE = 'cmd-output'
+
+/** 补丁缺失提示（幂等，仅提示一次）：/voice 命令与 Ctrl+Alt+R 快捷键共用 */
+function maybeWarnEnterPatch(api: ExtensionAPI): void {
+  if (enterPatchMissing) {
+    enterPatchMissing = false
+    reply(api, '⚠ 回车快速听写未启用：核心补丁未检测到。请执行：node ~/.pi/scripts/patch-voice-enter.mjs（其他语音功能不受影响）')
+  }
+}
 
 function reply(api: ExtensionAPI, text: string): void {
   api.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: text, display: true })

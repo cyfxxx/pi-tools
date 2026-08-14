@@ -805,7 +805,7 @@ phase2_link_keys() {
 
 # ---- Phase 2-G: systemd 服务注册（SearXNG + whisper 常驻自启） ----
 # 仅真实 systemd 环境生效（Termux/proot/容器内无 systemctl 时自动跳过）。
-# unit 模板在 systemd/ 目录（%PI_HOME% 占位），安装时替换为本机路径；
+# unit 模板在 $PI_HOME/deploy/systemd/ 目录
 # 只 enable（开机自启）+ 未运行时 start；旧手动进程占用端口时先停掉再拉起。
 phase2_systemd() {
   title "Phase 2-G" "systemd 服务注册（SearXNG + whisper 自启）"
