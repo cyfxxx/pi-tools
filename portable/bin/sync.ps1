@@ -1,9 +1,9 @@
-# Portable pi git sync (Windows PowerShell)
+﻿# Portable pi git sync (Windows PowerShell)
 # One-click: commit + push local changes to GitHub (SSH over 443, bypasses TLS block)
 # Usage: powershell -ExecutionPolicy Bypass -File sync.ps1 ["commit message"]
 $ErrorActionPreference = 'Stop'
-$Root = $PSScriptRoot
-$Repo = Join-Path $Root '.pi'
+$Root = Split-Path $PSScriptRoot
+$Repo = $Root  # junction 迁移后仓库在包根
 
 # SSH key + homedir redirect (ssh reads ~/.ssh = package .ssh)
 $env:USERPROFILE = $Root

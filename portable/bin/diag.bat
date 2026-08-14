@@ -1,7 +1,7 @@
-@echo off
+﻿@echo off
 rem Portable pi diagnostics
 setlocal
-set "ROOT=%~dp0"
+set "ROOT=%~dp0.."
 echo ==== Portable pi diagnostics ====
 echo ROOT: %ROOT%
 echo.
