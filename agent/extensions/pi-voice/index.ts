@@ -36,7 +36,7 @@ import { join } from 'node:path'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { loadConfig, persistConfig, type VoiceConfig } from './config'
-import { platformOf } from './core'
+import { platformOf, gpuSwitchBlockReason } from './core'
 import { createDictation } from './dictation'
 import type { Dictation, StopResult } from './dictation'
 import {
@@ -646,6 +646,17 @@ async function cmdDevice(
   if (target === config.whisperDevice) {
     reply(api, `已在使用 ${want} 推理`)
     return
+  }
+  if (target === 'cuda') {
+    // GPU 预检：安卓直接拒绝；linux/windows 需 nvidia-smi 可见（2026-08-15 用户报告：
+    // 安卓切 gpu 空转重启后才发现不可达）
+    const kind = platformOf(config).kind
+    const hasNvidiaSmi = kind === 'termux' ? false : (await runCommand('nvidia-smi', [], { timeoutMs: 5000 })).code === 0
+    const reason = gpuSwitchBlockReason(kind, hasNvidiaSmi)
+    if (reason) {
+      reply(api, reason)
+      return
+    }
   }
   if (dictation.isRecording() || dictation.isTranscribing()) {
     reply(api, '请先停止录音/等待转写完成再切换设备')

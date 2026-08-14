@@ -1232,6 +1232,13 @@ if [ -f "$PI_HOME/scripts/patch-plan-tools.mjs" ]; then
 else
   warn "patch-plan-tools.mjs 缺失，跳过"
 fi
+if [ -f "$PI_HOME/scripts/patch-tab-arg-completion.mjs" ]; then
+  node "$PI_HOME/scripts/patch-tab-arg-completion.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "Tab 参数补全补丁（/voice 等子命令 Tab 可见）" \
+    || warn "Tab 参数补全补丁未应用（pi-tui 版本可能已改动）：斜杠命令有空格时 Tab 仍走文件补全，子命令需手动删空格重打空格触发"
+else
+  warn "patch-tab-arg-completion.mjs 缺失，跳过"
+fi
 fi
 
 # Termux 浏览器适配（仅 Termux；其他平台 cloakbrowser 官方预编译包直接可用）

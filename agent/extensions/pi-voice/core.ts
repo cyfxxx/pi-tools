@@ -59,6 +59,19 @@ export function runCommand(
 let activeLinuxRecorder: { child: ChildProcess; file: string } | null = null
 
 /** 获取平台 spec（每次解析，探测开销毫秒级可忽略）。 */
+/**
+ * GPU 切换预检：返回不可用原因（null = 可切换）。
+ * 安卓（termux）无 NVIDIA GPU；linux/windows 需 nvidia-smi 可用
+ * （nvidia-smi 存在 ≠ CUDA 库齐备，服务端 auto 探测仍可能判 cpu——见 doctor 提示）。
+ */
+export function gpuSwitchBlockReason(kind: PlatformSpec['kind'], hasNvidiaSmi: boolean): string | null {
+  if (kind === 'termux') return '当前环境无 NVIDIA GPU（安卓），仅支持 cpu / auto'
+  if (kind === 'windows' || kind === 'linux') {
+    return hasNvidiaSmi ? null : '未检测到 NVIDIA GPU（nvidia-smi 不可用），gpu 切换不可用。可用：cpu / auto'
+  }
+  return '未知平台，gpu 切换不可用。可用：cpu / auto'
+}
+
 export function platformOf(cfg: VoiceConfig): PlatformSpec {
   return resolvePlatform(cfg)
 }

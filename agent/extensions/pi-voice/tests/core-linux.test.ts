@@ -16,7 +16,7 @@ vi.mock('node:child_process', () => ({
   type: {},
 }))
 
-import { startRecording, stopRecording, convertToWav, speak, queryRecording } from '../core'
+import { startRecording, stopRecording, convertToWav, speak, queryRecording, gpuSwitchBlockReason } from '../core'
 import { DEFAULTS, type VoiceConfig } from '../config'
 
 const linuxCfg: VoiceConfig = {
@@ -184,5 +184,23 @@ describe('linux speak 两段式', () => {
     const r = await speak(linuxCfg, '```\n```')
     expect(r.code).toBe(0)
     expect(r.stderr).toContain('空文本')
+  })
+})
+
+describe('gpuSwitchBlockReason（GPU 切换预检）', () => {
+  it('安卓（termux）拒绝 gpu', () => {
+    expect(gpuSwitchBlockReason('termux', true)).toContain('无 NVIDIA GPU')
+    expect(gpuSwitchBlockReason('termux', false)).toContain('无 NVIDIA GPU')
+  })
+  it('linux/windows 有 nvidia-smi 可切换', () => {
+    expect(gpuSwitchBlockReason('linux', true)).toBeNull()
+    expect(gpuSwitchBlockReason('windows', true)).toBeNull()
+  })
+  it('linux/windows 无 nvidia-smi 拒绝', () => {
+    expect(gpuSwitchBlockReason('linux', false)).toContain('未检测到')
+    expect(gpuSwitchBlockReason('windows', false)).toContain('未检测到')
+  })
+  it('未知平台拒绝', () => {
+    expect(gpuSwitchBlockReason('unknown' as never, true)).toContain('未知平台')
   })
 })
