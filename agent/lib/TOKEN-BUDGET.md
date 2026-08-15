@@ -4,7 +4,7 @@
 
 ## 概览
 
-`lib/context-budget.ts` 是统一预算模块（纯函数，零依赖），被 **plan-mode**、**pi-web-toolkit**、**pi-memory**（含原 ctx-lite）、**subagent** 等扩展共用。
+`lib/context-budget.ts` 是统一预算模块（纯函数，零依赖），被 **plan-mode**、**pi-browser**、**pi-context**、**pi-memory**（含原 ctx-lite）、**subagent** 等扩展共用。跨扩展共享状态（用量日志/预算/输出裁剪累计）经 `globalThis[Symbol.for('pi.context-budget.state')]` 单例——jiti `moduleCache:false` 使各扩展模块实例独立，模块级变量无法共享（实测：plan-mode 读不到其他扩展记录的用量、压力档位恒 low）。状态为会话级（session_start 重置），无需落盘。
 
 `lib/token-budget.ts` 与 `lib/prune.ts` 现为 re-export 兼容层（`export * from './context-budget.ts'`），旧导入路径零改动。
 
@@ -12,7 +12,7 @@
 
 | 函数 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
-| `estimateTokens(text)` | `string` | `number` | 按 CJK≈2 字符/token、数字≈3.5、拉丁≈4 估算 |
+| `estimateTokens(text)` | `string` | `number` | 按 CJK≈2 字符/token、数字≈3.5、拉丁≈4、emoji/非 BMP 字符 1 token/个估算 |
 | `truncateByTokens(text, maxTokens)` | `string, number` | `string` | 按 Token 预算二分逼近截断，追加截断标记 |
 | `compressOutput(text, targetTokens)` | `string, number` | `string` | 55/35/10 分片压缩（头/尾/中间重要行） |
 | `setContextWindow(tokens)` | `number` | `void` | 设置上下文窗口大小（默认 128_000） |
@@ -84,7 +84,7 @@ import { pruneToolOutput, estimateTokens } from "../../lib/context-budget.ts"
 
 ## 测试
 
-测试文件：`extensions/pi-web-search/tests/context-budget.test.ts`（vitest，18 项，覆盖 `estimateTokens`、`truncateByTokens`、`compressOutput`、档位文案固定性、缓存统计）。
+测试文件：`extensions/pi-context/tests/context-budget.test.ts`（vitest，7 项，覆盖 globalThis 单例跨实例互见、usedTotal 会话累计语义、非 BMP 估算、`estimateTokens`、`truncateByTokens`、`compressOutput`、档位文案固定性、缓存统计）；`extensions/pi-web-search/tests/context-budget.test.ts`（旧副本 18 项仍保留）。
 
 ```bash
 cd extensions/pi-web-search && ./node_modules/.bin/vitest run tests/context-budget.test.ts

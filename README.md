@@ -360,11 +360,11 @@ pi-context 作为 token 优化中枢，通过 `before_agent_start` 事件在每�
 | # | Hook | 作用 | 节省量 |
 |---|------|------|--------|
 | R2 | `context` | compaction summary 去重，只留最新一份 | 500-1500 tokens/turn |
-| R3 | `context` | 旧 turn（>2 轮）的 thinking 块剪枝 | 10-50% 旧 assistant 消息 |
+| R3 | `context` | thinking 块按 token 预算剪枝（保留最近 16K token） | 10-50% 旧 assistant 消息 |
 | R4 | `tool_result` | bash/read 输出 >5000 字符时截断 | 50-80% 工具结果 |
 | R6 | 命令 | `/usage-diag` 用量诊断（免 LLM 响应） | 单次完全省掉 |
 
-R3 负责 thinking 剪枝（保留最近 2 轮供推理）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。工具输出统一经 `lib/context-budget.ts` 记账（默认 20K tokens 输出预算 / 5K per-tool），并聚合缓存命中统计（`recordCacheUsage`）。
+R3 负责 thinking 剪枝（token 预算规则：保留最近 16K token 的 thinking，`DEFAULT_KEEP_THINKING_TOKENS = 16000`；早期"保留最近 2 轮"数量规则已废弃——max 推理级别下单轮 reasoning 可达 5-10K，轮数上限不可控）。R4 仅当输出 >5000 字符时生效：bash 用 `truncateTail`（保留末尾结果）、read 用 `truncateHead`（保留开头）。工具输出统一经 `lib/context-budget.ts` 记账（默认 20K tokens 输出预算 / 5K per-tool；跨会话累计经 globalThis 单例共享，pi-memory session_start 调用 `resetOutputBudget` 防跨会话泄漏），并聚合缓存命中统计（`recordCacheUsage`）。
 
 ### 长任务会话拆分
 

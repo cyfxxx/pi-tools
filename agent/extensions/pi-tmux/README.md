@@ -16,7 +16,7 @@ Pi 内建 `bash` 工具是**非交互管道**（无 TTY、带 timeout/abort）�
 
 | 工具 | 功能 |
 |------|------|
-| `tmux_run` | 在 detached tmux 会话执行命令，输出落盘日志 |
+| `tmux_run` | 在 detached tmux 会话执行命令，输出落盘日志；`notify`（布尔，默认 true）任务结束自动触发新回合汇报 |
 | `tmux_status` | 列出所有 tmux 会话（含用户会话），标注附加状态 |
 | `tmux_read` | 读取会话最近输出（日志尾部 N 行，缺失回退 capture-pane） |
 | `tmux_send` | 向会话发送文本/回车/Ctrl 组合键 |
@@ -26,7 +26,8 @@ Pi 内建 `bash` 工具是**非交互管道**（无 TTY、带 timeout/abort）�
 ## 用法示例
 
 ```bash
-# 启动长任务（不阻塞对话）
+# 启动长任务（不阻塞对话）；任务结束自动触发新回合汇报（默认 notify=true，
+# 无需手动查看——主会话被唤醒后用 tmux_read 收尾；notify=false 可关闭）
 tmux_run(name="build", command="npm run build --watch")
 
 # 读进度
@@ -44,6 +45,12 @@ tmux_send(name="build", text="n", enter=true)
 # 收尾
 tmux_stop(name="build", remove_log=true)
 ```
+
+## 完成自动唤醒
+
+`tmux_run` 启动会话后轮询 `tmux has-session`（5s），会话消失即视为完成，经 `pi.sendMessage({customType:'pi-tmux-notify'},{triggerTurn:true})` 注入通知并触发新回合——后台任务结束后主会话自动被唤醒查看结果并收尾，无需用户发消息。
+
+风险防范：同会话只通知一次（去重）；定时器 `unref` + `session_shutdown` 时 `stopAll` 清理；同名重复注册覆盖旧监听器；`hasSession` 探测失败保守判存活（防 tmux 抖动误报完成）；通知失败静默；通知文本无时间戳（缓存友好）；`notify=false` 不注册监听；沿用已有会话（`started=false`，即同名会话已存在）不注册。实现见 `watcher.ts`（依赖注入纯逻辑，测试 `tests/watcher.test.ts`）。
 
 ## 配置
 
