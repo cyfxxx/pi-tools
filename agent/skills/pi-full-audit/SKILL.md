@@ -162,10 +162,10 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
    - **缓存断裂三类成因（实测分类）**：A 注入变化（systemPrompt 拼入式注入，已修）；B DeepSeek 侧缓存未命中（100K+ 上下文时偶发 in≈41K 轮，消息序列无断裂，嫌疑 thinking 全文/请求格式，超出扩展可控范围）；C run 边界（重启/恢复首轮）。另有 pi 内部轻量请求（nMsg=4，每 3-5 分钟一次）不影响主请求缓存
    - input 应远小于 cacheRead（每轮只发增量）；input 涨到数千 → 历史膨胀
    - contextTokens 接近预算上限 → 报告压力档位注入（≥75%/≥90% 文案）
-   - compacted=true 频率高 → 检查 pi-context 压缩配置
+   - 自动压缩触发次数高（usage-diag 中 `type:"auto-compact"` 事件行）→ 检查 pi-context 压缩配置
 3. **会话体积**：会话 jsonl 大小 + 消息数（对比历史会话，异常膨胀提示上下文失控）
 4. **注入块**（适用性检查）：注入内容无时间戳/精确数值（缓存友好）。注意实测（2026-08-14）：注入在请求时生成、**不落盘会话文件**时，`grep -c pi-memory-injection <会话文件>` 只能命中工具参数文本，计数无意义——改用检查项 2 的缓存命中率反证注入稳定性；仅当会话文件中可见注入 customType 标记（落盘环境）时才用 grep 计数（应≈请求轮数）
-   - **内容质量抽查**（2026-08-15 实战发现三类残留）：① 重复摘要（同 sessionId 多条历史摘要均注入）；② 空摘要（"开场问候无实质内容""无可提取"类仍在注入）；③ 硬截断条目（超长内容被切半如"跨""用 readlink "）。抽查 memory/summaries.json 与注入块构建逻辑，确认是否有去重/空摘要过滤/截断策略
+   - **内容质量抽查**（2026-08-15 实战发现三类残留，已修复）：① 重复摘要（同 sessionId 多条历史摘要均注入——根因 appendSummary 无 upsert，已修）；② 空摘要（"开场问候无实质内容""无可提取"类仍在注入——已修 doExtract 质量门 + isSubstantiveSummary 过滤）；③ 硬截断条目（slice(0,200) 切半如"跨""用 readlink "——已修 truncateByTokens 80 token 带标记）。抽查 memory/summaries.json 与注入块构建逻辑，验证修复持续生效（无新增重复/空摘要/残句）
 5. **日志与残留**：`ls -lt logs/` 查错误；`logs/tmux/` 残留日志（测试遗留可清）；`tmux_status` 活动会话
 6. **后台任务**：`crontab -l` 中 pi-cron.sh；watchdog 状态文件（`agent/.pi-autopilot-state.json` 存在 = 触发过）
 7. **真实运行观察（keyless snapshot 替代，2026-08-14 沉淀）**：mock 测试发现不了缓存/注入/状态流问题（本次 72K 重发就是 mock 全绿+真实运行才暴露的）。做法：实际触发一轮关键路径操作并观察行为：
@@ -181,7 +181,7 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 |---|---|---|
 | 缓存命中率 | >90%（实测 98%+） | 偏低 → 注入稳定性问题（排除 run 边界轮后仍低 = 实锤；断裂点 ≈ system prompt 尾部 → systemPrompt 拼入式注入需改消息注入） |
 | 每轮 input | <2K | 涨 → 历史膨胀/缓存失效 |
-| compacted | 偶发 | 频繁 → 压缩配置 |
+| 自动压缩触发 | 偶发 | 频繁 → 压缩配置 |
 | 定时任务/遥测 | 与配置一致 | 任务缺失、遥测失败率高 |
 | failover | 未配置属正常 | 配置了但频繁切换 → 模型不稳定 |
 
@@ -193,7 +193,7 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 1. 提示词注入: ✓/✗ + 依据
 2. 工具调用: ✓/✗（无扩展报错/未处理异常）
 3. 缓存命中: xx%（基准 >90%）
-4. token 消耗: context xxK / 预算 xxK / compacted 次数
+4. token 消耗: context xxK / 预算 xxK / 自动压缩次数（usage-diag auto-compact 事件行）
 5. 自动执行: ✓/✗（任务/遥测/预算/watchdog）
 结论: 正常 / N 项异常（附修复建议）
 ```

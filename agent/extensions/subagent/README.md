@@ -257,7 +257,7 @@ You are a specialized agent. Your system prompt goes here.
 node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs
 ```
 
-34 项测试覆盖：
+63 项测试覆盖：
 
 | 模块 | 测试数 | 覆盖内容 |
 |------|--------|----------|

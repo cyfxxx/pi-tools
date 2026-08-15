@@ -156,7 +156,7 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 > **缓存友好（2026-08-14 实测修正）**：原实现拼入 systemPrompt 尾部——记忆库变化（memory_store/提取/摘要更新）时 system prompt 尾部变化，缓存前缀断裂，**全部消息历史（~72K）每轮重发**。改为消息注入后：注入块位于消息末尾，变化时仅重发注入块本身（≤500 token），历史全命中；`context` hook 过滤旧注入消息（同 customType 只保留最新一条，防累积）。标记行不带时间戳（数据不变时注入块逐字节稳定）。
 
 - 条目按质量分（置信度×0.5 + 时效×0.25 + 引用×0.25）排序，最多 6 条
-- 最近 2 条会话摘要衔接（compaction 后上下文连续）
+- 最近会话摘要衔接：按 `ts` 排序取最新 2 条（非数组插入序——pending 延迟提取可乱序 append）；`isSubstantiveSummary` 过滤空摘要（"无可提取/无实质内容/无需衔接"类不注入）；内容经 `truncateContent`（80 token 上限）截断带 `[truncated]` 标记；`appendSummary` 按 sessionId upsert（同会话只留最新，防重复摘要）
 - 预算默认 ~500 token（`PI_MEMORY_INJECT_TOKENS` 可调），超出截断
 - 无条目时不注入（零开销）
 
@@ -216,10 +216,10 @@ ctx-lite 已合并入 pi-memory：
 ## 九、测试
 
 ```
-cd agent/extensions/pi-memory && npm test   # vitest, 53 用例
+cd agent/extensions/pi-memory && npm test   # vitest, 90 用例
 ```
 
-覆盖：存储迁移/TTL/原子写、四操作消解、冲突取代、BM25 排序、中文 bigram、注入预算截断、提取 JSON 容错解析、幂等限频、全流程 mock runner。
+覆盖：存储迁移/TTL/原子写、四操作消解、冲突取代、BM25 排序、中文 bigram、注入预算截断、摘要 upsert 去重/空摘要过滤/ts 排序/截断标记、提取 JSON 容错解析、幂等限频、全流程 mock runner。
 
 跨扩展验证：`node agent/extensions/tests/conflict-check.mjs`（工具/命令/事件无冲突）。
 
