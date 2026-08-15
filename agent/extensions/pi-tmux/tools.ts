@@ -18,6 +18,7 @@ import {
   tmuxUnsupportedError,
 } from './core'
 import type { TmuxConfig } from './config'
+import { createCompletionWatcher, type CompletionWatcher, NOTIFY_CUSTOM_TYPE } from './watcher'
 
 type ToolText = { type: 'text'; text: string }[]
 type ToolResultObj = { content: ToolText; details: unknown }
@@ -55,7 +56,22 @@ async function requireTmux(cfg: TmuxConfig): Promise<TmuxOpts | { error: ReturnT
   return opts
 }
 
-export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): void {
+export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): CompletionWatcher {
+  // 完成自动唤醒：tmux_run 启动会话后轮询，会话结束即 sendMessage 触发新回合
+  // （风险：探测失败保守判存活防误报；通知失败静默不中断）
+  const watcher = createCompletionWatcher({
+    hasSession: async (name: string) => {
+      const maybe = await requireTmux(cfg)
+      if ('error' in maybe) return true // tmux 探测失败：保守认为存活，避免误报完成
+      return hasSession(maybe, name)
+    },
+    notify: async (text: string) => {
+      await pi.sendMessage(
+        { customType: NOTIFY_CUSTOM_TYPE, content: text, display: true },
+        { triggerTurn: true },
+      )
+    },
+  })
   // ── tmux_run ────────────────────────────────────────────────
   pi.registerTool({
     name: 'tmux_run',
@@ -74,6 +90,7 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): void {
         name: { type: 'string', description: '会话名（仅字母数字下划线中划线，自动加 pi- 前缀）' },
         command: { type: 'string', description: '要执行的 shell 命令' },
         cwd: { type: 'string', description: '工作目录（默认 ~）' },
+        notify: { type: 'boolean', description: '任务结束后自动触发新回合汇报结果（默认 true）' },
       },
       required: ['name', 'command'],
     },
@@ -85,7 +102,11 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): void {
         const { name, logPath, started } = await startSession(opts, String(params.name), String(params.command), params.cwd as string | undefined)
         // 仅新启动的会话登记注册表；已存在同名会话（started=false）不登记，
         // 避免 pi 退出时 session_shutdown 误杀用户手动创建的会话
-        if (started) registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
+        if (started) {
+          registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
+          // 完成自动唤醒（默认开；沿用已有会话不注册，防误报用户会话）
+          watcher.watch(name, logPath, params.notify !== false)
+        }
         const note = started ? '已启动' : '已存在同名会话（沿用）'
         return ok(`tmux 会话 ${name} ${note}\n命令: ${params.command}\n日志: ${logPath}\n\n查看: tmux_read(name=${name})\n交互: tmux_send(name=${name})\n等待: tmux_wait(name=${name})`)
       } catch (e) {
@@ -280,4 +301,6 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): void {
       }
     },
   })
+
+  return watcher
 }
