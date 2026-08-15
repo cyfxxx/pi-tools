@@ -92,6 +92,31 @@ describe('pi-tmux tools resolveName 会话名安全', () => {
 })
 
 // 集成类：真正调用 tmux（若环境无 tmux 则自动跳过）
+// Windows 后端安全：会话名 NAME_RE 校验（路径穿越防护）
+describe('pi-tmux Windows 后端会话名校验', () => {
+  const opts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-test'), prefix: 'pi-' }
+
+  it('winSessionName 拒绝路径穿越名（../../x 等）', async () => {
+    const { runTmux } = await import('../core')
+    // 非法名 → 不进入 pidfile/taskkill（kill-session 报错而非操作文件）
+    for (const name of ['../../x', 'pi-../evil', 'pi-x/y', 'pi-%2e%2e']) {
+      const r = await runTmux(opts, ['kill-session', '-t', name], 5000)
+      expect(r.code).toBe(1)
+      expect(r.stderr).toMatch(/非法/)
+      const h = await runTmux(opts, ['has-session', '-t', name], 5000)
+      expect(h.code).toBe(1)
+    }
+  })
+
+  it('winSessionName 接受正常名（pi- 前缀）', async () => {
+    const { runTmux } = await import('../core')
+    const h = await runTmux(opts, ['has-session', '-t', 'pi-valid'], 5000)
+    expect(h.code).toBe(1) // 会话不存在（非非法名报错）
+    expect(h.stderr).not.toMatch(/非法/)
+  })
+})
+
+
 describe('pi-tmux 真实 tmux 会话（环境具备 tmux 时）', () => {
   const opts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-integration'), prefix: 'pi-' }
   const testSession = 'pi-vitest-integration'
@@ -135,13 +160,17 @@ describe('pi-tmux 真实 tmux 会话（环境具备 tmux 时）', () => {
     // 会话存活
     expect(await hasSession(opts, testSession)).toBe(true)
 
-    // send-keys 交互
-    await sendKeys(opts, testSession, { ctrlKey: 'c' })
-    await new Promise((r) => setTimeout(r, 500))
-    await sendKeys(opts, testSession, { text: 'echo after-ctrl-c', enter: true })
-    await new Promise((r) => setTimeout(r, 800))
-    const out2 = await readOutput(opts, testSession, 100)
-    expect(out2.text).toContain('after-ctrl-c')
+    // send-keys 交互（Windows 原生后端：bash -c 会话无 stdin 交互——仅 Ctrl-C 可用，跳过文本注入）
+    if (process.platform !== 'win32') {
+      await sendKeys(opts, testSession, { ctrlKey: 'c' })
+      await new Promise((r) => setTimeout(r, 500))
+      await sendKeys(opts, testSession, { text: 'echo after-ctrl-c', enter: true })
+      await new Promise((r) => setTimeout(r, 800))
+      const out2 = await readOutput(opts, testSession, 100)
+      expect(out2.text).toContain('after-ctrl-c')
+    } else {
+      await sendKeys(opts, testSession, { ctrlKey: 'c' })
+    }
 
     // wait 超时（会话 sleep 已结束/被打断）
     const w = await waitSession(opts, testSession, undefined, 3000, true)

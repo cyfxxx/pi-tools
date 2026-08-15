@@ -23,6 +23,11 @@ Pi 内建 `bash` 工具是**非交互管道**（无 TTY、带 timeout/abort）�
 | `tmux_stop` | 结束会话，可选删除日志 |
 | `tmux_wait` | 等待会话结束 / 日志出现 pattern / 超时 |
 
+## 会话名约束与安全
+
+- 会话名仅允许字母/数字/`_`/`-`（≤40 字符），非法名（含路径分隔符如 `../`）一律拒绝返回错误——防会话名路径穿越（曾存在 `tmux_stop(name='../../x')` 可 taskkill 任意 PID 的漏洞）
+- Windows 原生后端：`bash -c` 启动的会话无交互 shell，`tmux_send` 文本输入被拦截不积压（Ctrl 组合键仍可中断）；会话可注入任意命令但需自行构造
+
 ## 用法示例
 
 ```bash
@@ -77,6 +82,10 @@ tmux_stop(name="build", remove_log=true)
 | `PI_TMUX_LOG_DIR` | 日志目录 | `~/.pi/logs/tmux` |
 | `PI_TMUX_LINES` | `tmux_read` 默认行数 | `100` |
 | `PI_TMUX_TIMEOUT_SEC` | `tmux_wait` 默认超时 | `120` |
+
+## Windows 便携版（原生后端）
+
+`runTmux` win32 分支：无 tmux——bash -c + `--noprofile` 执行命令 + Node 管道写日志 + pidfile/taskkill 树杀。`tmux_run/read/status/wait/stop` 全可用；限制：bash -c 会话无 stdin 交互（`tmux_send` 仅 Ctrl-C/读取/停止），长驻命令需自写循环（如 `while true; do ...; sleep 5; done`）。扩展启动的 `-V` 探测已伪报版本通过。
 
 ## 环境缺失时的行为
 

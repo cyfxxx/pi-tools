@@ -149,6 +149,7 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 - **远程能力**：A 可驱动 B 的 pi 执行 B 用户权限内的任何命令——默认 `--no-extensions`（不加载 B 的扩展：不暴露 B 的记忆库、不触发 plan-mode 三选一/autopilot 调度/voice 等）；需要远程扩展能力时显式 `"extensions": true`
 - **交互请求**：远程 agent 若调用 ask_user/UI 交互（`extension_ui_request` 事件），调用立即失败返回错误（避免挂起），由 B 侧用户手动处理该会话
 - **上下文**：默认独立会话，A 无法读取 B 的其他会话内容（会话文件在 B 侧本地）
+- **注入防护**：远程可控字段（`tmuxSession`/`sessionFile`）经 shell 单引号转义后才拼入命令（`'`→`'''`），防远程恶意值注入本地 shell
 
 ## 测试
 

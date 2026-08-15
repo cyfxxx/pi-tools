@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { tmpdir } from 'os'
+import { join } from 'node:path'
 
 function createMockPage() {
   return {
@@ -166,7 +167,10 @@ describe('BrowserManager', () => {
 
     const path = await bm.screenshot()
     // 截图目录 = tmpdir()/pi-browser-screenshots（兼容 Termux 无 /tmp）
-    expect(path).toMatch(new RegExp(`${tmpdir().replace(/[.\\+*?[^\\]$(){}=!<>|:-]/g, '\\$&')}/pi-browser-screenshots/pi-screenshot-\\d+\\.png`))
+    // Windows 路径含反斜杠，不能拼进 RegExp 字面量，改用 toContain + 尾部模式
+    const shotsDir = join(tmpdir(), 'pi-browser-screenshots')
+    expect(path).toContain(shotsDir)
+    expect(path).toMatch(/pi-screenshot-\d+\.png$/)
   })
 
   it('should support click with coordinates and button type', async () => {

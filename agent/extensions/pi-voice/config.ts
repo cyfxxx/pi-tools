@@ -105,11 +105,11 @@ function envBool(value: string | undefined, fallback: boolean): boolean {
   return !['0', 'false', 'no', 'off'].includes(value.toLowerCase())
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): VoiceConfig {
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, configPath: string = CONFIG_PATH): VoiceConfig {
   let file: Partial<VoiceConfig> = {}
-  if (existsSync(CONFIG_PATH)) {
+  if (existsSync(configPath)) {
     try {
-      file = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
+      file = JSON.parse(readFileSync(configPath, 'utf-8'))
     } catch {
       // 配置损坏时回退默认值
     }

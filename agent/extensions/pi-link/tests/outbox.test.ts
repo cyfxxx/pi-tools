@@ -11,6 +11,7 @@ vi.mock('node:os', async (importOriginal) => {
 })
 
 import { appendOutbox, readOutbox, extractFinalReply, OUTBOX_MAX, outboxFilePath } from '../outbox.ts'
+import { dirname } from 'node:path'
 
 describe('pi-link: outbox 信箱', () => {
   beforeEach(() => {
@@ -41,7 +42,7 @@ describe('pi-link: outbox 信箱', () => {
 
   it('文件缺失/损坏时 read 返回空数组', () => {
     expect(readOutbox()).toEqual([])
-    mkdirSync(outboxFilePath().replace(/\/[^/]+$/, ''), { recursive: true })
+    mkdirSync(dirname(outboxFilePath()), { recursive: true })
     writeFileSync(outboxFilePath(), 'not-json{{{')
     expect(readOutbox()).toEqual([])
   })

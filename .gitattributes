@@ -1,0 +1,15 @@
+# 统一行尾策略（便携 Windows 环境）
+# - bash/node 脚本：LF（CRLF 会让 bash 解析崩溃，review.sh 曾踩坑）
+# - PowerShell/bat：CRLF（PS 5.1 中文须 UTF-8 BOM + CRLF）
+*.sh text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.js text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf

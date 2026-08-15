@@ -8,6 +8,7 @@ const fakeHome = mkdtempSync(join(tmpdir(), 'pi-voice-home-'))
 beforeEach(() => {
   vi.resetModules()
   vi.stubEnv('HOME', fakeHome)
+  vi.stubEnv('USERPROFILE', fakeHome) // Windows：os.homedir() 优先 USERPROFILE
   const cfgDir = join(fakeHome, '.pi', 'agent')
   mkdirSync(cfgDir, { recursive: true })
   rmSync(join(cfgDir, 'pi-voice.json'), { force: true })

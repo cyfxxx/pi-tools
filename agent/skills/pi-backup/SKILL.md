@@ -218,6 +218,7 @@ GitHub 同步完成
      ```
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
 4. 从 `deploy/tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
+
 5. **pi-link 公钥安装**：`bash ~/.pi/scripts/pi-link-keys.sh install`（把 `deploy/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
 6. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
 7. 告知用户重启 pi。
@@ -513,7 +514,8 @@ pi-backup verify
 | Prompt 模板 | `agent/prompts/` | pi 全局 prompt templates（`*.md` 注册为 `/name` 斜杠命令） |
 | 用户键位 | `agent/keybindings.json` | pi 用户级键位配置（存在时） |
 | 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup） |
-| 便携包脚本 | `portable/` | Windows 便携 pi 构建脚本（setup.ps1/start.bat/verify.ps1 等，不含 .pi 密钥内容；完整便携包见 memory「便携 pi Windows 构建全套经验」） |
+| 便携包脚本 | `portable/` | Windows 便携 pi 种子（bin/ 管理脚本 + start 入口 + ca-bundle + tmux shim，不含 .pi 密钥内容；完整便携包见 memory「便携 pi Windows 最终架构」） |
+
 | npm 配置 | `agent/npm/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
@@ -551,6 +553,7 @@ pi-backup verify
 > cp ~/.pi/deploy/tmux/alacritty.toml ~/.config/alacritty/  # Alacritty（若存在）
 > ```
 > 均"存在时收录"，缺失自动跳过。外部源文件更新后需手动同步回 `deploy/tmux/` 再提交（`cp ~/.tmux.conf ~/.pi/deploy/tmux/tmux.conf && git add deploy/tmux/ && git commit`）。
+
 
 
 ### 默认排除（`--full` 时额外包含）

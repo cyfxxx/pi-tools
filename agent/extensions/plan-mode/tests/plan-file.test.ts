@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderPlanFile, parsePlanFile } from '../view.ts'
+import type { Task } from '../state.ts'
 
 describe('plan-mode: 计划文件持久化（P1）', () => {
   const tasks = [
@@ -35,6 +36,16 @@ describe('plan-mode: 计划文件持久化（P1）', () => {
   it('parsePlanFile 拒绝手改污染（非任务行过半）', () => {
     const garbage = '# 手写计划\n\n- [ ] 9. 唯一任务\n\n这里是一些自由文本\n还有更多说明文字\n甚至更多内容\n'
     expect(parsePlanFile(garbage)).toBeNull()
+  })
+
+  it('parsePlanFile 单任务计划可恢复（3 非空行：标题+任务+nextId）', () => {
+    const tasks: Task[] = [{ id: 1, subject: '唯一任务', status: 'pending' }]
+    const text = renderPlanFile(tasks, 2)
+    const restored = parsePlanFile(text)
+    expect(restored).not.toBeNull()
+    expect(restored!.tasks).toHaveLength(1)
+    expect(restored!.tasks[0]).toMatchObject({ id: 1, status: 'pending' })
+    expect(restored!.nextId).toBe(2)
   })
 
   it('parsePlanFile 拒绝空文件', () => {

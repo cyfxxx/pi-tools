@@ -3,8 +3,8 @@
  * 纯模块，不依赖 @earendil-works/pi-coding-agent，便于 vitest 独立测试。
  */
 
-import { execFile } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, closeSync, statSync } from 'node:fs'
+import { execFile, spawn } from 'node:child_process'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, writeSync, closeSync, statSync, readdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, isAbsolute, resolve } from 'node:path'
 
@@ -26,6 +26,7 @@ export interface TmuxRunResult {
 
 /** 执行 tmux 命令（argv 数组，无 shell 注入）。超时强制结束。 */
 export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Promise<TmuxRunResult> {
+  if (process.platform === 'win32') return runTmuxWindows(opts, args)
   return new Promise((resolvePromise) => {
     const child = execFile(opts.bin, args, { timeout: timeoutMs, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (!err) {
@@ -51,6 +52,246 @@ export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Prom
       resolvePromise({ code: 1, stdout: stdout ?? '', stderr: stderr ?? err.message })
     })
   })
+}
+
+// ============================================================================
+// Windows 原生后端：无 tmux——Node spawn 交互 shell + stdin 管道 + 日志文件 + pid 管理
+// 模拟 tmux CLI 语义（new-session/list-sessions/has-session/send-keys/capture-pane/kill-session）
+// ============================================================================
+
+/** 本进程内会话句柄（stdin 写入需要 child 引用；进程退出自动清理） */
+const winChildren = new Map<string, import('node:child_process').ChildProcess>()
+/** bash -c 启动的会话（无 stdin 交互——send-keys 文本写入静默积压，仅 Ctrl-C/读取/停止可用） */
+const winNonInteractive = new Set<string>()
+
+function winPidPath(opts: TmuxOpts, name: string): string {
+  return join(opts.logDir, `${name}.pid`)
+}
+
+/** 解析 args 中 -flag 的值（tmux 参数风格） */
+function winArgAt(args: string[], flag: string): string | undefined {
+  const i = args.indexOf(flag)
+  return i >= 0 ? args[i + 1] : undefined
+}
+
+/** 会话名：优先 Map → pidfile → 空。NAME_RE 校验（防路径穿越：../../x 等非法名返回空——调用点自然失败，不会进入 pidfile/taskkill/文件读写） */
+function winSessionName(opts: TmuxOpts, args: string[]): string {
+  const n = winArgAt(args, '-t') ?? winArgAt(args, '-s') ?? ''
+  return n && NAME_RE.test(n) ? n : ''
+}
+
+/** 便携包 shell：PortableGit bash（优先）→ 系统 cmd.exe */
+function resolveWindowsShell(): string {
+  const root = process.env.USERPROFILE || homedir()
+  const bash = join(root, 'tools', 'PortableGit', 'usr', 'bin', 'bash.exe').replace(/\\/g, '/')
+  return existsSync(bash) ? bash : 'cmd.exe'
+}
+
+function winPidAlive(pid: number | undefined): boolean {
+  if (!pid || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function winReadPid(opts: TmuxOpts, name: string): number | undefined {
+  const p = winPidPath(opts, name)
+  try {
+    const pid = Number.parseInt(readFileSync(p, 'utf-8').trim(), 10)
+    return Number.isFinite(pid) ? pid : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function winWritePid(opts: TmuxOpts, name: string, pid: number): void {
+  ensureLogDir(opts)
+  try { writeFileSync(winPidPath(opts, name), String(pid), 'utf-8') } catch { /* ignore */ }
+}
+
+function winRemovePid(opts: TmuxOpts, name: string): void {
+  try { rmSync(winPidPath(opts, name)) } catch { /* ignore */ }
+}
+
+/** taskkill 树杀（子进程命令一并终止） */
+function winTaskkill(pid: number): Promise<TmuxRunResult> {
+  return new Promise((resolvePromise) => {
+    execFile('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true }, (err, stdout, stderr) => {
+      if (!err) resolvePromise({ code: 0, stdout: stdout ?? '', stderr: stderr ?? '' })
+      else resolvePromise({ code: 1, stdout: stdout ?? '', stderr: stderr ?? err.message })
+    })
+  })
+}
+
+function winReadLogTail(opts: TmuxOpts, name: string, lines: number): string {
+  const logPath = logPathFor(opts, name)
+  try {
+    if (!existsSync(logPath)) return ''
+    const content = readFileSync(logPath, 'utf-8')
+    return content.split('\n').slice(-lines).join('\n')
+  } catch {
+    return ''
+  }
+}
+
+/** Windows 后端主入口：解析 tmux 命令语义并分发 */
+async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunResult> {
+  const cmd = args[0]
+  if (!cmd) return { code: 1, stdout: '', stderr: 'empty tmux command' }
+
+  // tmux -V：版本检查（扩展启动时探测）——伪报版本以通过探测
+  if (cmd === '-V' || cmd === '--version') {
+    return { code: 0, stdout: 'tmux 3.4 (portable-windows)', stderr: '' }
+  }
+
+  // new-session -d -s NAME -c CWD → spawn 交互 shell + 日志 fd + pid
+  if (cmd === 'new-session') {
+    const name = winArgAt(args, '-s')
+    if (!name) return { code: 1, stdout: '', stderr: 'new-session: missing -s name' }
+    // 已存在且存活 → duplicate（与 tmux 语义一致）
+    if (winChildren.has(name) || winPidAlive(winReadPid(opts, name))) {
+      return { code: 1, stdout: '', stderr: `duplicate session: ${name}` }
+    }
+    const cwd = (winArgAt(args, '-c') || homedir()).replace(/\\/g, '/')
+    // 末尾位置参数 = 启动命令（tmux 语义：new-session -d -s N -c CWD 'command'）
+    // 修复：位置参数可能以 '-' 开头（如 '-v'）——按 args 中 -d/-s/-c 之后的剩余参数取（排除 flag 及其值）
+    let launchCmd = ''
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i]
+      if (['-d', '-s', '-c'].includes(a)) { i++; continue }
+      if (a.startsWith('-')) continue
+      launchCmd = a // 最后一个非 flag 位置参数 = 命令
+    }
+    const shell = resolveWindowsShell()
+    const logPath = logPathFor(opts, name)
+    ensureLogDir(opts)
+    // 日志 fd 由 Node 侧写入（spawn stdio 用 Node 管道——文件 fd 全缓冲导致输出积压不落盘）
+    let logFd: number
+    try {
+      logFd = openSync(logPath, 'a')
+    } catch (e) {
+      return { code: 1, stdout: '', stderr: `open log failed: ${String(e)}` }
+    }
+    let child: import('node:child_process').ChildProcess
+    const isCmd = shell.toLowerCase().endsWith('cmd.exe')
+    // cmd.exe 兜底：bash 风格参数不适用（cmd 静默忽略 → 空提示符）；用 /d /s /c
+    const shellArgs = isCmd
+      ? launchCmd
+        ? ['/d', '/s', '/c', launchCmd]
+        : ['/d', '/k']
+      : launchCmd
+        ? ['--noprofile', '--norc', '-c', launchCmd]
+        : ['--noprofile', '--norc', '-i']
+    if (launchCmd) winNonInteractive.add(name)
+    try {
+      child = spawn(shell, shellArgs, {
+        cwd,
+        detached: true,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      })
+    } catch (e) {
+      closeSync(logFd)
+      return { code: 1, stdout: '', stderr: `spawn shell failed: ${String(e)}` }
+    }
+    child.stdout.on('data', (d) => { try { writeSync(logFd, d) } catch { /* ignore */ } })
+    child.stderr.on('data', (d) => { try { writeSync(logFd, d) } catch { /* ignore */ } })
+    // spawn 异步 error（cwd 不存在/权限）→ 清理 Map/pidfile/日志 fd（exit 事件不触发）
+    child.on('error', (e) => {
+      console.error('[pi-tmux-win] spawn error:', e.message)
+      winChildren.delete(name)
+      winNonInteractive.delete(name)
+      winRemovePid(opts, name)
+      try { closeSync(logFd) } catch { /* ignore */ }
+    })
+    child.unref()
+    winChildren.set(name, child)
+    winWritePid(opts, name, child.pid ?? 0)
+    child.on('exit', () => {
+      winChildren.delete(name)
+      winNonInteractive.delete(name)
+      winRemovePid(opts, name)
+      try { closeSync(logFd) } catch { /* ignore */ }
+    })
+    return { code: 0, stdout: '', stderr: '' }
+  }
+
+  // pipe-pane：日志已由 spawn stdio 重定向，no-op
+  if (cmd === 'pipe-pane') return { code: 0, stdout: '', stderr: '' }
+
+  // send-keys -t NAME [-l TEXT] [Enter] [C-x]
+  if (cmd === 'send-keys') {
+    const name = winSessionName(opts, args)
+    if (!name) return { code: 1, stdout: '', stderr: "send-keys: 非法会话名" }
+    const child = winChildren.get(name)
+    if (!child || child.stdin.destroyed || winNonInteractive.has(name)) {
+      // bash -c 会话（无 stdin 交互——标记拦截，不静默积压）或跨重启：Ctrl-C 可 taskkill，其余不支持
+      if (args.includes('C-c')) {
+        const pid = winReadPid(opts, name)
+        if (pid && winPidAlive(pid)) return winTaskkill(pid)
+      }
+      return { code: 1, stdout: '', stderr: `send-keys: session ${name} 无 stdin 交互（bash -c 启动或已重启）——仅支持 Ctrl-C/读取/停止` }
+    }
+    const li = args.indexOf('-l')
+    if (li >= 0) child.stdin.write(args[li + 1] ?? '')
+    if (args.includes('Enter')) child.stdin.write('\n')
+    if (args.includes('C-c')) {
+      const pid = winReadPid(opts, name)
+      if (pid && winPidAlive(pid)) return winTaskkill(pid)
+    }
+    return { code: 0, stdout: '', stderr: '' }
+  }
+
+  // list-sessions -F ...
+  if (cmd === 'list-sessions') {
+    const names = new Set<string>([...winChildren.keys()])
+    for (const f of readdirSync(opts.logDir, { withFileTypes: true })) {
+      if (f.isFile() && f.name.endsWith('.pid')) {
+        const n = f.name.slice(0, -4)
+        if (winPidAlive(winReadPid(opts, n))) names.add(n)
+      }
+    }
+    const out = [...names].map((n) => `${n}\t0`).join('\n')
+    return { code: 0, stdout: out, stderr: '' }
+  }
+
+  // has-session -t NAME
+  if (cmd === 'has-session') {
+    const name = winSessionName(opts, args)
+    if (!name) return { code: 1, stdout: '', stderr: "can't find session: (非法会话名)" }
+    const alive = winChildren.has(name) || winPidAlive(winReadPid(opts, name))
+    return alive
+      ? { code: 0, stdout: '', stderr: '' }
+      : { code: 1, stdout: '', stderr: `can't find session: ${name}` }
+  }
+
+  // capture-pane -t NAME -p -S -N
+  if (cmd === 'capture-pane') {
+    const name = winSessionName(opts, args)
+    const sIdx = args.indexOf('-S')
+    const lines = Math.abs(sIdx >= 0 ? Number.parseInt(args[sIdx + 1] ?? '100', 10) || 100 : 100)
+    return { code: 0, stdout: winReadLogTail(opts, name, lines), stderr: '' }
+  }
+
+  // kill-session -t NAME
+  if (cmd === 'kill-session') {
+    const name = winSessionName(opts, args)
+    if (!name) return { code: 1, stdout: '', stderr: "can't find session: (非法会话名)" }
+    const child = winChildren.get(name)
+    const pid = winReadPid(opts, name)
+    if (child) {
+      winChildren.delete(name)
+      try { child.kill() } catch { /* ignore */ }
+    }
+    winRemovePid(opts, name)
+    if (pid && winPidAlive(pid)) return winTaskkill(pid)
+    return { code: 0, stdout: '', stderr: '' }
+  }
+
+  return { code: 1, stdout: '', stderr: `tmux 命令 ${cmd} 在 Windows 后端不支持` }
 }
 
 export function defaultOpts(): TmuxOpts {
@@ -146,7 +387,11 @@ export async function startSession(
   const startDir = cwd ? resolve(cwd) : homedir()
 
   // 1. 创建 detached 会话（不依赖 $TMUX，可后台）
-  const newArgs = ['new-session', '-d', '-s', name, '-c', startDir]
+  // Windows 后端：命令作为位置参数传给 new-session（bash -c 执行）
+  const newArgs =
+    process.platform === 'win32'
+      ? ['new-session', '-d', '-s', name, '-c', startDir, command]
+      : ['new-session', '-d', '-s', name, '-c', startDir]
   const create = await runTmux(opts, newArgs, 30000)
   if (create.code !== 0) {
     // 已存在同名会话
@@ -160,9 +405,11 @@ export async function startSession(
   const pipeCmd = `cat >> ${JSON.stringify(logPathFor(opts, name))}`
   await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
 
-  // 3. 注入命令并回车
-  await runTmux(opts, ['send-keys', '-t', name, '-l', command], 10000)
-  await runTmux(opts, ['send-keys', '-t', name, 'Enter'], 10000)
+  // 3. 注入命令并回车（Windows 后端：bash -c 已执行命令——跳过避免 stdin EPIPE）
+  if (process.platform !== 'win32') {
+    await runTmux(opts, ['send-keys', '-t', name, '-l', command], 10000)
+    await runTmux(opts, ['send-keys', '-t', name, 'Enter'], 10000)
+  }
 
   return { name, logPath: logPathFor(opts, name), started: true }
 }

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, rmSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -103,8 +103,12 @@ describe('nowStamp', () => {
 })
 
 describe('loadConfig', () => {
+  const fakeHome = mkdtempSync(join(tmpdir(), 'pi-voice-home-'))
+  // CONFIG_PATH 是模块级常量（import 时求值），stubEnv 无法影响；显式注入
+  // fakeHome 下不存在的配置路径，保证 loadConfig 只依赖 DEFAULTS 与环境变量
+  const fakeCfgPath = join(fakeHome, '.pi', 'agent', 'pi-voice.json')
   it('默认值', () => {
-    const cfg = loadConfig({})
+    const cfg = loadConfig({}, fakeCfgPath)
     expect(cfg.whisperEndpoint).toBe(DEFAULTS.whisperEndpoint)
     expect(cfg.micBin).toBe('termux-microphone-record')
     expect(cfg.ttsEnabled).toBe(false)
@@ -119,7 +123,7 @@ describe('loadConfig', () => {
       PI_VOICE_TTS_ENABLED: '0',
       PI_VOICE_AUTO_SEND: '1',
       PI_VOICE_MAX_SECONDS: '30',
-    } as NodeJS.ProcessEnv)
+    } as NodeJS.ProcessEnv, fakeCfgPath)
     expect(cfg.whisperEndpoint).toBe('http://127.0.0.1:9999')
     expect(cfg.micBin).toBe('my-mic')
     expect(cfg.ttsEnabled).toBe(false)
