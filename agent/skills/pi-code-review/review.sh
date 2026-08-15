@@ -30,7 +30,7 @@ pi-code-review 确定性检查
   --selfcheck   检查技能自身更新（本仓库远程 + 参考项目 alibaba/open-code-review）；距上次检查不足 7 天时跳过远程查询，--force 强制检查
   --help        显示本帮助
 注: 大型目录全量扫描耗时（如 ~/.pi 约 40s），建议用 tmux_run 后台执行避免阻塞轮次
-   （tmux_run name=review command="bash review.sh --all /root/.pi"; tmux_wait name=review until_exit=true）
+   （tmux_run name=review command="bash review.sh --all /root/.pi"；tmux_run 后立即结束回合，进度用 tmux_read 轮询——禁止 tmux_wait 阻塞前台）
 EOF
 }
 

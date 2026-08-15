@@ -32,6 +32,7 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 
 - 状态机在 `dictation.ts`（纯逻辑 + 依赖注入，可单测）；`index.ts` 只做命令注册与 UI 接线
 - **启动健壮性**：正常场景 pgrep 门控跳过清理序列实现快启；spawn 后 8s 启动验证检测"假成功"（服务端响应但未写文件）并自动重试；**就绪提示**：启动录音后状态条先显示「⏳ 启动麦克风中…」，录音文件实际生成（麦克风真在录，延迟实测 1-2s）后自动切换「🎤 录音中」——避免初始化窗口说话丢开头；Termux:API 的 CLI 连接断线（SocketListener EOF 已知问题，录制本身不受影响）时通过 `-i` 查询服务端，仍在录制则无感续录不打断；服务端确已停止才按异常提前结束处理（提示附实际时长）
+- **停止窗口保护（2026-08 审计）**：停止录音（-q 往返 ~3s）期间 new start 会被拒绝（"正在停止上一段录音"）——否则新录音会被全局停止信号误停（Linux 模块级 recorder 同样受影响）
 - 隐私（即用即弃）：录音文件转写完成后立即删除；清空 tmpDir 全部残留音频（启动时与 `session_shutdown` 时）
 - 安全：可配置共享 Bearer token 保护 whisper 服务（见下文"鉴权"）
 
@@ -107,6 +108,10 @@ apt-get install ffmpeg        # PRoot 侧
 | `PI_VOICE_MAX_SECONDS` | `120` | 录音上限秒数（0 = 手动停止） |
 | `PI_VOICE_LANGUAGE` | `zh`（json 已设） | 转写语言（空 = 自动检测）。固定 `zh` 避免 whisper 自动检测误判英文；请求时通过 `?lang=` 传给服务端，改动即时生效 |
 | `PI_VOICE_WHISPER_MODEL` | `base` | 转写模型（tiny/base/small/medium/large-v3；`/voice model` 切换并重启服务） |
+| `PI_VOICE_PLATFORM` | `auto` | 平台强制（auto/termux/linux/windows——自动探测：win32→windows，termux 工具存在→termux，否则 linux） |
+| `PI_VOICE_MIC_DEVICE` / `PI_VOICE_LINUX_MIC_DEVICE` | 空 / `RDPSource` | 录音设备（termux 忽略；Linux 如 `RDPSource`） |
+| `PI_VOICE_TTS_ENGINE` / `PI_VOICE_PIPER_MODEL` | `auto` / 模型路径 | Linux TTS 引擎（auto/piper/sapi/espeak）+ piper 模型 |
+| `PI_VOICE_WHISPER_DEVICE` / `PI_VOICE_WHISPER_SCRIPT` | `auto` / 脚本路径 | whisper 计算设备 + 服务脚本 |
 
 > 注意：环境变量优先于 json；由环境变量定义的字段不会写入 json。
 

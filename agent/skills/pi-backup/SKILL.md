@@ -320,7 +320,7 @@ GitHub 同步完成
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 8a | `agent/extensions/tsconfig.json` paths | paths 指向的 pi 安装根与实际不符（或指向不存在的 `current`） | 自动扫描 `~/.local/share/pi-node/`（优先 `current` 解析，回退最高版本）并把 `/lib/node_modules/` 前缀重写到实际安装根 |
+| 8a | `agent/extensions/tsconfig.local.json` paths | paths 指向的 pi 安装根与实际不符（或指向不存在的 `current`） | 自动扫描 `~/.local/share/pi-node/`（优先 `current` 解析，回退最高版本）并把 `/lib/node_modules/` 前缀重写到实际安装根 |
 
 > **为何需要**：tsconfig paths 硬编码了 pi 官方类型的绝对路径，不同设备/版本的 node 安装根不同，不重写则扩展 `tsc` 类型检查失败。pi 未安装时跳过并警告，装好 pi 后重跑 `rebuild` 即可补齐。
 
@@ -447,7 +447,7 @@ pi-backup verify
   ✓ 敏感文件未被 git 追踪（auth/settings/models/pi-voice/searxng）
   ✓ git remote: origin → https://github.com/cyfxxx/pi-tools.git
   ✓ PI_DIST 可解析
-  ✓ 冒烟测试: pi -p 输出 OK（9 扩展全部加载）
+  ✓ 冒烟测试: pi -p 输出 OK（10 扩展全部加载）
 体检通过
 ```
 
@@ -513,7 +513,7 @@ pi-backup verify
 | 子代理定义 | `agent/agents/` | 子代理模板（scout/worker/reviewer.md） |
 | Prompt 模板 | `agent/prompts/` | pi 全局 prompt templates（`*.md` 注册为 `/name` 斜杠命令） |
 | 用户键位 | `agent/keybindings.json` | pi 用户级键位配置（存在时） |
-| 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup） |
+| 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup、ENVIRONMENTS） |
 | 便携包脚本 | `portable/` | Windows 便携 pi 种子（bin/ 管理脚本 + start 入口 + ca-bundle + tmux shim，不含 .pi 密钥内容；完整便携包见 memory「便携 pi Windows 最终架构」） |
 
 | npm 配置 | `agent/npm/package.json` | npm 包声明 |
@@ -535,6 +535,13 @@ pi-backup verify
 | 生命周期直启脚本 | `scripts/pi-orig.sh` | 绕过 wrapper 直接启动（故障逃生） |
 | 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
 | 回归测试脚本 | `scripts/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
+| 重建回归脚本 | `scripts/docker-rebuild-test.sh` | Docker 干净环境重建回归（clone→rebuild→判定） |
+| 核心补丁 | `scripts/patch-*.mjs`（5 个：voice-enter/footer-live-context/plan-tools/tab-arg-completion/playwright-core） | rebuild.sh Phase 3 自动执行；**漏备份则 restore 后 rebuild 无法打补丁** |
+| 用量基准 | `scripts/pi-bench.sh` | usage/timing/compare 基准工具 |
+| 后台任务脚本 | `scripts/pi-bg.sh` + `scripts/README-pi-bg.md` | 后台任务四件套隔离 + 文档 |
+| 冒烟测试 | `scripts/smoke-test.sh` | rebuild 依赖其第 1 项 |
+| Termux 前置 | `scripts/termux-prereq.sh` | Termux 前置依赖安装（rebuild 依赖） |
+| 多环境文档 | `docs/ENVIRONMENTS.md` | 多环境识别/切换流程/数据隔离表 |
 | Whisper 服务脚本 | `scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
 | Whisper 服务源码 | `scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
