@@ -53,6 +53,18 @@ describe('pi-link: 设备卡片（T2-5）', () => {
     expect(validateCard(null).ok).toBe(false)
   })
 
+  it('validateCard: user/host 注入形态拒绝（审计实测 - 开头被 ssh 解析为选项）', () => {
+    expect(validateCard({ name: 'n', host: 'x', user: '-oProxyCommand=sh' }).ok).toBe(false)
+    expect(validateCard({ name: 'n', host: '-oProxyCommand=sh', user: 'u' }).ok).toBe(false)
+    expect(validateCard({ name: 'n', host: 'a b', user: 'u' }).ok).toBe(false)
+    expect(validateCard({ name: 'n', host: 'x', user: 'u v' }).ok).toBe(false)
+    expect(validateCard({ name: 'n', host: 'x', user: '' }).ok).toBe(false)
+    // 正常形态通过：域名/IPv4/IPv6 方括号
+    expect(validateCard({ name: 'n', host: '10.0.0.8', user: 'me' }).ok).toBe(true)
+    expect(validateCard({ name: 'n', host: 'host.example.com', user: 'root' }).ok).toBe(true)
+    expect(validateCard({ name: 'n', host: '[::1]', user: 'me' }).ok).toBe(true)
+  })
+
   it('cardToDevice: 卡片转设备配置', () => {
     const d = cardToDevice({ name: 'n', skills: [], host: 'h', user: 'u', port: 8022, pi: true })
     expect(d).toEqual({ host: 'h', user: 'u', port: 8022 })

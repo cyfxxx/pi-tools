@@ -54,13 +54,22 @@ export function buildCard(cfg: LinkConfig): AgentCard {
   }
 }
 
+/**
+ * ssh 目标 user@host 合法性：'-' 开头会被 ssh 解析为选项（审计实测：user 取
+ * -oProxyCommand=sh -c ... 时 ProxyCommand 在本机执行成功）。拒绝 - 开头/空白/控制字符。
+ * host 同规则（IPv6 方括号 [::1] 含 : 与 [] 均合法；不含空白即可）。
+ */
+export function isValidUserHost(v: unknown): v is string {
+  return typeof v === 'string' && v.length > 0 && v.length <= 253 && /^[^\s][^\s]*$/.test(v) && !v.startsWith('-')
+}
+
 /** 校验并规范化卡片（导入前） */
 export function validateCard(card: unknown): { ok: boolean; card?: AgentCard; detail?: string } {
   if (!card || typeof card !== 'object') return { ok: false, detail: '卡片不是对象' }
   const c = card as Record<string, unknown>
   if (typeof c.name !== 'string' || !c.name) return { ok: false, detail: '卡片缺少 name' }
-  if (typeof c.host !== 'string' || !c.host) return { ok: false, detail: '卡片缺少 host' }
-  if (typeof c.user !== 'string' || !c.user) return { ok: false, detail: '卡片缺少 user' }
+  if (!isValidUserHost(c.host)) return { ok: false, detail: 'host 非法（拒绝 - 开头/空白/控制字符）' }
+  if (!isValidUserHost(c.user)) return { ok: false, detail: 'user 非法（拒绝 - 开头/空白/控制字符）' }
   const port = typeof c.port === 'number' ? c.port : 22
   if (!Number.isInteger(port) || port <= 0 || port > 65535) return { ok: false, detail: `端口非法: ${port}` }
   const skills = Array.isArray(c.skills) ? c.skills.filter((x): x is string => typeof x === 'string').slice(0, 10) : []

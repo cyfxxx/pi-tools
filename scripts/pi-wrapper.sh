@@ -268,8 +268,10 @@ if [ ! -f "$LASTGOOD_FILE" ]; then
   save_lastgood
 fi
 
-# Save original args for restart reuse
-ORIG_ARGS="$@"
+# Save original args for restart reuse（数组保存：ORIG_ARGS="$@" 会把参数整体折叠为
+# 单个 argv——审计实测 --model x --session y 重启后变成 ["--model x --session y",
+# "--continue"]，模型/会话切换重启链路失真；无参时还会注入空串参数）
+ORIG_ARGS=("$@")
 
 # L1: tmux 自启（可选）。设置 PI_TMUX_SESSION 时，把 pi 放进指定 tmux 会话运行
 # （创建或附加），脱离/重连方便。仅交互式（stdout 是 TTY）才生效，
@@ -343,7 +345,7 @@ while true; do
         if rollback_to_lastgood; then
           echo "[pi-wrapper] 回滚后 1 秒重启..." >&2
           sleep 1
-          set -- "$ORIG_ARGS" "--continue"
+          set -- "${ORIG_ARGS[@]}" "--continue"
           continue
         fi
       fi
@@ -390,7 +392,7 @@ while true; do
   sleep 1
 
   # Merge original args with extra args (fresh per iteration)
-  set -- "$ORIG_ARGS" "${EXTRA_ARGS[@]}"
+  set -- "${ORIG_ARGS[@]}" "${EXTRA_ARGS[@]}"
 done
 
 exit "$EXIT_CODE"

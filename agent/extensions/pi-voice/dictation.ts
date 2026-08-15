@@ -48,6 +48,8 @@ export interface StopResult {
   autoReason?: 'timer' | 'exit'
   /** exit 异常提前结束时的实际录音秒数（提示用）。 */
   autoSec?: number
+  /** 转写进行中时 stop() 返回的提示结果（无转写内容，调用方据此不标失败）。 */
+  busy?: boolean
 }
 
 export interface DictationCallbacks {
@@ -178,7 +180,7 @@ export function createDictation(
               language: '',
             })
           }
-        })()
+        })().catch((e) => console.warn('[pi-voice] 录音进程退出处理失败:', (e as Error)?.message ?? e))
       } else {
         // 启动即失败或运行中异常退出：不转写空文件，直接把失败原因反馈给 UI
         currentFile = null
@@ -252,9 +254,10 @@ export function createDictation(
         // 自动路径（定时器触发）无调用方 UI 上下文：结果经 onAutoComplete 分发；
         // 状态机正常时 busy/未在录音不会出现（stop/cancel 已先 clearTimer），
         // stopInternal 对它们返回 null，此处不会分发。
+        // 兑底 → 兜底：stopInternal 抛错（转写/转码依赖异常）必须被捕获，否则成为 unhandledRejection。
         void stopInternal(true).then((res) => {
           if (res) cb.onAutoComplete(res)
-        })
+        }).catch((e) => console.warn('[pi-voice] 定时器自动停止失败:', (e as Error)?.message ?? e))
       }, cfg.maxSeconds * 1000)
     }
     // 就绪提示：文件实际生成（麦克风真在录，启动延迟实测 1-2s）时回调 onReady，
@@ -296,12 +299,14 @@ export function createDictation(
   }
 
   function stop(): Promise<StopResult> {
-    // 外部契约：busy/未在录音时返回提示消息（timer 路径无需提示，返回 null 即可）
+    // 外部契约：busy/未在录音时返回提示消息（timer 路径无需提示，返回 null 即可）；
+    // busy 用 busy 标志区分，供调用方（deliverResult）用 info 提示而非误报失败。
     return stopInternal(false).then((r) =>
       r ?? {
         message: busy ? '正在转写，请稍候' : '未在录音',
         text: '',
         language: '',
+        busy: busy || undefined,
       },
     )
   }

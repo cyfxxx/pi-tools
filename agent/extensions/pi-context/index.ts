@@ -24,6 +24,38 @@ export const EFFICIENCY_ADVICE = `## Execution Efficiency
 - During exploration/execution turns, do NOT write explanatory text or progress reports — output tool calls only. Summarize once when everything is done.
 - Exception: when todo progress updates are required or a plan summary is requested, output the required structured summary.`;
 
+/**
+ * R4 工具输出截断的纯函数（供单测）：超限时截断文本块；
+ * 非 text 块（read 返回的图片等）必须原样保留——重建 content 时不得静默丢弃。
+ * 未超限返回 undefined（handler 不修改事件）。
+ */
+export function truncateToolContent(
+	toolName: string,
+	content: ToolResultEvent["content"],
+	cap: number,
+): { content: ToolResultEvent["content"]; omittedBytes: number } | undefined {
+	const totalText = content
+		.filter((c) => c.type === "text")
+		.map((c) => c.text)
+		.join("");
+	if (Buffer.byteLength(totalText, "utf8") <= cap) return undefined;
+
+	const truncate = toolName === "bash" ? truncateTail : truncateHead;
+	const result = truncate(totalText, { maxBytes: cap });
+	const omittedBytes = Buffer.byteLength(totalText, "utf8") - result.outputBytes;
+
+	return {
+		content: [
+			...content.filter((c) => c.type !== "text"),
+			{
+				type: "text",
+				text: `${result.content}\n\n[...truncated ${omittedBytes} bytes]`,
+			},
+		],
+		omittedBytes,
+	};
+}
+
 export default function (pi: ExtensionAPI) {
 	const MAX_TOOL_BYTES = 5000;
 	const MAX_OTHER_TOOL_BYTES = 20 * 1024;
@@ -103,23 +135,10 @@ export default function (pi: ExtensionAPI) {
 	// （防止未来新工具输出失控直达上下文，子代理等合理输出不受影响）。
 	pi.on("tool_result", (event: ToolResultEvent) => {
 		const cap = event.toolName === "bash" || event.toolName === "read" ? MAX_TOOL_BYTES : MAX_OTHER_TOOL_BYTES;
-		const totalText = event.content
-			.filter((c) => c.type === "text")
-			.map((c) => c.text)
-			.join("");
-		if (Buffer.byteLength(totalText, "utf8") <= cap) return;
-
-		const truncate = event.toolName === "bash" ? truncateTail : truncateHead;
-		const result = truncate(totalText, { maxBytes: cap });
-		const omittedBytes = Buffer.byteLength(totalText, "utf8") - result.outputBytes;
-
+		const truncated = truncateToolContent(event.toolName, event.content, cap);
+		if (!truncated) return;
 		return {
-			content: [
-				{
-					type: "text",
-					text: `${result.content}\n\n[...truncated ${omittedBytes} bytes]`,
-				},
-			],
+			content: truncated.content,
 			details: event.details,
 		};
 	});

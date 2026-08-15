@@ -358,7 +358,7 @@ export default function (pi: ExtensionAPI): void {
     maybeWarnEnterPatch(pi)
     if (dictation.isRecording() || dictation.isTranscribing()) {
       awaitingResume = false // 手动停止：不进入听写待续录
-      void stopAndDeliver(pi, ctx, false)
+      void stopAndDeliver(pi, ctx, false).catch((e) => console.warn('[pi-voice] 停止转写失败:', (e as Error)?.message ?? e))
     } else {
       awaitingResume = false // 手动开始：退出待续录状态
       withStatus(pi, ctx, dictation.start())
@@ -467,13 +467,14 @@ export default function (pi: ExtensionAPI): void {
   // 中间轮（stopReason=toolUse）与 JSON/结构化摘要不朗读，避免语音轰炸与朗读垃圾内容
   pi.on('message_end', (event, ctx) => {
     lastCtx = ctx
-    if (!ttsEnabled) return
     const msg = event?.message
     if (!msg || msg.role !== 'assistant') return
     if (msg.stopReason !== 'stop') return
     const text = extractAssistantText(msg.content)
     if (!text || !isSpeechWorthy(text)) return
+    // 最近回复先记录（TTS 关闭期间也记录）：/voice tts speak 缺省朗读最近一条有效回复
     lastAssistantText = text
+    if (!ttsEnabled) return
     ttsQueue.enqueue(text)
   })
 
@@ -528,6 +529,11 @@ async function stopAndDeliver(pi: ExtensionAPI, ctx: ExtensionContext, dictating
 function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult, dictating = false): void {
   ctx.ui.setStatus('pi-voice', undefined)
   if (!r.text) {
+    // busy（转写进行中 stop）：info 提示即可，不误报“语音转写失败”
+    if (r.busy) {
+      ctx.ui.notify(r.message || '正在转写，请稍候', 'info')
+      return
+    }
     ctx.ui.notify('语音转写失败', 'error')
     reply(pi, r.message)
     return

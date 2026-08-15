@@ -483,8 +483,57 @@ describe('dictation 状态机', () => {
     })
     const busy = await d.stop()
     expect(busy.message).toContain('转写')
+    expect(busy.busy).toBe(true) // deliverResult 据此用 info 提示而非误报失败
+    expect(busy.text).toBe('')
     release()
     await p
+  })
+
+  it('定时器路径 stop 抛错被捕获（无 unhandledRejection）', async () => {
+    const rejections: unknown[] = []
+    const onUnhandled = (e: unknown) => { rejections.push(e) }
+    process.on('unhandledRejection', onUnhandled)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const deps = makeDeps({
+        transcribe: vi.fn(async () => { throw new Error('transcribe boom') }),
+      })
+      const cbs = makeCallbacks()
+      const d = createDictation({ ...cfg, maxSeconds: 0.1 }, deps, cbs)
+      d.start()
+      await new Promise((r) => setTimeout(r, 500))
+      expect(rejections).toHaveLength(0)
+      expect(warn).toHaveBeenCalled()
+      expect(cbs.autoResults).toHaveLength(0)
+      expect(d.isTranscribing()).toBe(false)
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+      warn.mockRestore()
+    }
+  })
+
+  it('exit 回调异步处理抛错被捕获（无 unhandledRejection）', async () => {
+    const rejections: unknown[] = []
+    const onUnhandled = (e: unknown) => { rejections.push(e) }
+    process.on('unhandledRejection', onUnhandled)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const deps = makeDeps({
+        queryRecording: vi.fn(async () => { throw new Error('query boom') }),
+      })
+      const cbs = makeCallbacks()
+      const d = createDictation(cfg, deps, cbs)
+      d.start()
+      const onExit = vi.mocked(deps.startRecording).mock.calls[0][1]
+      onExit(0)
+      await new Promise((r) => setTimeout(r, 200))
+      expect(rejections).toHaveLength(0)
+      expect(warn).toHaveBeenCalled()
+      expect(cbs.autoResults).toHaveLength(0)
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+      warn.mockRestore()
+    }
   })
 
   it('空转写 + 低音量提示检查麦克风', async () => {

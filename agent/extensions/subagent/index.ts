@@ -264,6 +264,20 @@ export function applyPreviousPlaceholder(task: string, previousOutput: string): 
 	return task.replace(/\{previous\}/g, () => previousOutput);
 }
 
+/**
+ * TUI 渲染兜底：模型输出可能缺 task 字段，空串兜底 + 清理 {previous} 占位 + 预览截断。
+ * 链/并行分支共用，缺字段时不再抛异常。
+ */
+export function taskPreview(task: string | undefined, maxLen = 40): string {
+	const cleanTask = (task ?? "").replace(/\{previous\}/g, "").trim();
+	return cleanTask.length > maxLen ? `${cleanTask.slice(0, maxLen)}...` : cleanTask;
+}
+
+/** TUI 渲染兜底：缺 agent 名时显示占位符，防渲染抛异常 */
+export function agentLabel(agent: string | undefined): string {
+	return agent ?? "?";
+}
+
 export function truncateParallelOutput(output: string): string {
 	const result = truncateHead(output, { maxBytes: PER_TASK_OUTPUT_CAP });
 	if (!result.truncated) return output;
@@ -878,14 +892,13 @@ export default function (pi: ExtensionAPI) {
 					theme.fg("muted", ` [${scope}]`);
 				for (let i = 0; i < Math.min(args.chain.length, 3); i++) {
 					const step = args.chain[i];
-					// Clean up {previous} placeholder for display
-					const cleanTask = step.task.replace(/\{previous\}/g, "").trim();
-					const preview = cleanTask.length > 40 ? `${cleanTask.slice(0, 40)}...` : cleanTask;
+					// Clean up {previous} placeholder for display；缺 task 兜底（模型输出可能缺字段）
+					const preview = taskPreview(step.task);
 					text +=
 						"\n  " +
 						theme.fg("muted", `${i + 1}.`) +
 						" " +
-						theme.fg("accent", step.agent) +
+						theme.fg("accent", agentLabel(step.agent)) +
 						theme.fg("dim", ` ${preview}`);
 				}
 				if (args.chain.length > 3) text += `\n  ${theme.fg("muted", `... +${args.chain.length - 3} more`)}`;
@@ -897,8 +910,8 @@ export default function (pi: ExtensionAPI) {
 					theme.fg("accent", `parallel (${args.tasks.length} tasks)`) +
 					theme.fg("muted", ` [${scope}]`);
 				for (const t of args.tasks.slice(0, 3)) {
-					const preview = t.task.length > 40 ? `${t.task.slice(0, 40)}...` : t.task;
-					text += `\n  ${theme.fg("accent", t.agent)}${theme.fg("dim", ` ${preview}`)}`;
+					const preview = taskPreview(t.task);
+					text += `\n  ${theme.fg("accent", agentLabel(t.agent))}${theme.fg("dim", ` ${preview}`)}`;
 				}
 				if (args.tasks.length > 3) text += `\n  ${theme.fg("muted", `... +${args.tasks.length - 3} more`)}`;
 				return new Text(text, 0, 0);

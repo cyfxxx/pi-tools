@@ -35,11 +35,13 @@ read_device() {
   fi
 }
 
-# 孤儿进程兑底：pidfile 之外按进程名匹配所有 whisper-server 实例（同用户），
+# 孤儿进程兑底：pidfile 之外匹配 python 解释器启动的 whisper-server 实例（同用户），
 # 防 pidfile 丢失/被杀后残留导致 stop 杀不掉、start 端口冲突（2026-08-14 实测：
 # /voice model 切换重启失败，旧进程占端口，新进程 Address already in use 崩溃）
+# 匹配锚定 python/python3 解释器：命令行仅"包含"脚本路径的无关进程
+# （编辑器打开该文件等）不会被误杀；排除 $$（脚本自身被 python 调用时防自杀）
 orphan_pids() {
-  pgrep -f "$SERVER" 2>/dev/null | grep -v "^$$" || true
+  pgrep -f "python3?.*whisper-server\.py" 2>/dev/null | grep -v "^$$" || true
 }
 
 is_running() {

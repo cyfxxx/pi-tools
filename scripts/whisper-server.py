@@ -185,6 +185,12 @@ class Handler(BaseHTTPRequestHandler):
         if length <= 0:
             self._send(400, {"error": "empty body"})
             return
+        # 请求体大小上限（审计：无上限时 Content-Length 任意值直接 read 入内存，
+        # 且默认无鉴权，浏览器页面可向 127.0.0.1 POST 任意大 body 耗尽内存）。
+        # 64MB 对最长语音（WAV 16kHz 16bit 单声道 ≈ 33 分钟）绰绰有余。
+        if length > 64 * 1024 * 1024:
+            self._send(413, {"error": "request body too large (max 64MB)"})
+            return
         # 语言优先级：请求 query lang > 环境变量 PI_WHISPER_LANGUAGE > 自动检测
         query = parse_qs(parsed.query)
         lang = (query.get("lang") or [None])[0] or LANGUAGE

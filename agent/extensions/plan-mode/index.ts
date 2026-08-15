@@ -90,6 +90,21 @@ async function cleanupOldPlans(): Promise<void> {
 
 type QAPair = { role: "user" | "assistant"; content: string };
 
+/** 会话恢复时计划模式开关决策：--plan 启动标志优先，持久化 enabled=false 不覆盖显式启动 */
+export function resolvePlanModeEnabled(
+  planFlag: boolean | undefined,
+  persistedEnabled: boolean | undefined,
+  current: boolean,
+): boolean {
+  if (planFlag === true) return true;
+  return persistedEnabled ?? current;
+}
+
+/** 持久化瘦身：qaMessages 只保留尾部若干条（长会话问答可达 MB 级，防 appendEntry 会话膨胀） */
+export function capQaMessages(qa: QAPair[], max = 20): QAPair[] {
+  return qa.length > max ? qa.slice(-max) : qa;
+}
+
 async function runGit(
   pi: ExtensionAPI,
   cwd: string,
@@ -252,7 +267,9 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     h = ((h << 5) - h + (planModeEnabled ? 1 : 0)) | 0;
     h = ((h << 5) - h + (executionMode ? 1 : 0)) | 0;
     h = ((h << 5) - h + (planPresented ? 1 : 0)) | 0;
-    const qaJson = JSON.stringify(qaMessages);
+    // 会话膨胀防护：只持久化 qaMessages 尾部 20 条（长会话问答历史可达 MB 级）
+    const qaToPersist = capQaMessages(qaMessages);
+    const qaJson = JSON.stringify(qaToPersist);
     for (let i = 0; i < qaJson.length; i++) {
       h = ((h << 5) - h + qaJson.charCodeAt(i)) | 0;
     }
@@ -271,7 +288,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       executing: executionMode,
       planPresented,
       planDir,
-      qaMessages,
+      qaMessages: qaToPersist,
     });
 
     // P1: 执行模式下 todo 变化实时同步到计划文件（git 版本化）——
@@ -1108,7 +1125,12 @@ ${todoList}
       | undefined;
 
     if (planModeEntry?.data) {
-      planModeEnabled = planModeEntry.data.enabled ?? planModeEnabled;
+      // --plan 启动标志优先：持久化 enabled=false 不覆盖显式启动
+      planModeEnabled = resolvePlanModeEnabled(
+        pi.getFlag("plan") as boolean | undefined,
+        planModeEntry.data.enabled,
+        planModeEnabled,
+      );
       executionMode = planModeEntry.data.executing ?? executionMode;
       planPresented = planModeEntry.data.planPresented ?? planPresented;
       planDir = planModeEntry.data.planDir ?? planDir;

@@ -5,7 +5,7 @@ import assert from "node:assert";
 
 const mod = await import(new URL("../index.ts", import.meta.url).href);
 
-const { formatTokens, formatUsageStats, isFailedResult, getFinalOutput, getResultOutput, truncateParallelOutput, mapWithConcurrencyLimit, isLocalProvider, applyPreviousPlaceholder } = mod;
+const { formatTokens, formatUsageStats, isFailedResult, getFinalOutput, getResultOutput, truncateParallelOutput, mapWithConcurrencyLimit, isLocalProvider, applyPreviousPlaceholder, taskPreview, agentLabel } = mod;
 
 let passed = 0;
 let failed = 0;
@@ -322,6 +322,18 @@ test("discoverAgents 解析 frontmatter readonly", () => {
 		cleanup();
 	}
 });
+
+// ---------- renderCall 缺 task/agent 守卫 (5) ----------
+test("taskPreview 缺 task -> 空串（模型输出缺字段不抛异常）", () =>
+	assert.strictEqual(taskPreview(undefined), ""));
+test("taskPreview 清理 {previous} 占位", () =>
+	assert.strictEqual(taskPreview("总结 {previous} 后继续"), "总结  后继续"));
+test("taskPreview 超过 40 字符截断", () =>
+	assert.strictEqual(taskPreview("x".repeat(50)), "x".repeat(40) + "..."));
+test("agentLabel 缺 agent -> 占位符", () =>
+	assert.strictEqual(agentLabel(undefined), "?"));
+test("agentLabel 有 agent -> 原样", () =>
+	assert.strictEqual(agentLabel("scout"), "scout"));
 
 // ---------- summary ----------
 console.log(`\n${passed} passed, ${failed} failed${failed ? `\n${failures.map((f) => `  ✗ ${f}`).join("\n")}` : ""}`);

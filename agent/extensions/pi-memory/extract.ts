@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -352,12 +352,25 @@ export interface PendingExtract {
   sessionId: string
   messageCount: number
   createdAt: number
+  /** 失败重试计数（审计修复：无上限时坏任务每次 session_start 无限重试） */
+  attempts?: number
   messages: ExtractMessage[]
 }
+
+/** pending 任务重试上限与过期窗口（坏任务不永久滞留、不无限 spawn 提取子进程） */
+export const PENDING_MAX_ATTEMPTS = 3
+export const PENDING_MAX_AGE_MS = 7 * 24 * 3600 * 1000
 
 export function queuePendingExtract(messages: ExtractMessage[], sessionId: string | null): string | null {
   try {
     mkdirSync(PENDING_DIR, { recursive: true })
+    // 按同 sessionId + 同消息数去重（审计：compact 提取过 + shutdown 又入队，
+    // 同段对话被提取两次；消息数不同说明有新内容，仍入队）
+    for (const existing of listPendingExtracts()) {
+      if (existing.sessionId === (sessionId || 'unknown') && existing.messageCount === messages.length) {
+        return null
+      }
+    }
     const file = join(PENDING_DIR, `${Date.now()}-${sanitizeFile(sessionId || 'unknown')}.json`)
     const job: PendingExtract = {
       sessionId: sessionId || 'unknown',
@@ -416,6 +429,12 @@ export async function processPendingExtracts(opts: ExtractOptions = {}): Promise
       removePendingExtract(file)
       continue
     }
+    // 过期任务直接丢弃（超过 7 天的陈旧对话无提取价值）
+    if (Date.now() - job.createdAt > PENDING_MAX_AGE_MS) {
+      removePendingExtract(file)
+      failed++
+      continue
+    }
     const outcome = await extractConversation(job.messages, {
       sessionId: job.sessionId,
       messageCount: job.messageCount,
@@ -427,10 +446,38 @@ export async function processPendingExtracts(opts: ExtractOptions = {}): Promise
       removePendingExtract(file)
       ok++
     } else {
+      // 失败计数写回：超过上限删除（坏任务不再每次 session_start 无限重试）
+      job.attempts = (job.attempts ?? 0) + 1
+      if (job.attempts >= PENDING_MAX_ATTEMPTS) {
+        removePendingExtract(file)
+      } else {
+        try {
+          writeFileSync(join(PENDING_DIR, file), JSON.stringify(job))
+        } catch { /* 写回失败保留原文件 */ }
+      }
       failed++
     }
   }
+  // 清理提取子进程遗留的会话文件（超过 24 小时无清理，审计实测 395 个残留）
+  cleanupExtractSessions()
   return { ok, failed }
+}
+
+/** 清理提取子进程会话隔离目录中的过期文件（子进程无扩展无法自清理，父进程兜底） */
+export function cleanupExtractSessions(maxAgeMs = 24 * 3600 * 1000): void {
+  let entries: string[]
+  try {
+    entries = readdirSync(EXTRACT_SESSIONS_DIR)
+  } catch {
+    return
+  }
+  const now = Date.now()
+  for (const name of entries) {
+    try {
+      const st = statSync(join(EXTRACT_SESSIONS_DIR, name))
+      if (now - st.mtimeMs > maxAgeMs) rmSync(join(EXTRACT_SESSIONS_DIR, name), { recursive: true, force: true })
+    } catch { /* ignore */ }
+  }
 }
 
 // ── 主流程 ──

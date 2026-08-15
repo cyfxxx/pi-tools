@@ -776,7 +776,9 @@ phase2_tmux() {
     ok "~/.tmux.conf 与仓库一致"
     return 0
   fi
-  cp "$src" "$dst" && ok "~/.tmux.conf 已同步（仓库版本）" || { warn "cp 失败"; return 1; }
+  # 覆盖前备份旧配置（时间戳后缀，幂等；dst 不存在时静默跳过）
+  cp "$dst" "$dst.bak.$(date +%s)" 2>/dev/null || true
+  cp "$src" "$dst" && ok "~/.tmux.conf 已同步（仓库版本，旧配置已备份）" || { warn "cp 失败"; return 1; }
   # 热加载：仅当 tmux server 在运行时 source-file（list-sessions 无 server 不会拉起新 server）
   if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
     if tmux source-file "$dst" >/dev/null 2>&1; then

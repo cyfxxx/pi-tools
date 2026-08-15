@@ -7,6 +7,19 @@ const AGENT_DIR = getAgentDir()
 
 let lastActivity = Date.now()
 
+// 回合进行中豁免：单次长静默工具/subagent 执行（>30min 无输出）期间 lastActivity 与
+// 会话文件 mtime 均不刷新，旧实现会误判挂死并 process.exit 杀主会话（审计实测）。
+// 挂死检测的目标是"会话整体无响应"，不是"单回合长"——busy 时不判挂死。
+let busyTurn = false
+
+export function setTurnBusy(busy: boolean): void {
+  busyTurn = busy
+}
+
+export function isTurnBusy(): boolean {
+  return busyTurn
+}
+
 export function touchActivity(): void {
   lastActivity = Date.now()
 }
@@ -22,6 +35,8 @@ export function lastActivityTs(): number {
 // 这样可避免启动初期：lastActivity 新鲜、但会话文件尚未创建/仍是旧文件时误报挂死
 export async function isHanging(maxIdleMinutes: number, now: number = Date.now()): Promise<boolean> {
   if (maxIdleMinutes <= 0) return false
+  // 回合进行中（长工具执行）豁免：turn_start 置 busy、turn_end/agent_settled 清除
+  if (busyTurn) return false
   const idle = now - lastActivity
   if (idle <= maxIdleMinutes * 60 * 1000) return false
   // 兜底：会话文件 mtime（仅当 lastActivity 已超时才作佐证）

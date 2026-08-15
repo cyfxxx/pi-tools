@@ -119,8 +119,18 @@ export function isSafeCommand(command: string): boolean {
   const core = /* cd 前缀剥离 */ cdMatch ? core0.slice(cdMatch[0].length).trim() : core0;
   if (cdMatch && core.includes("&&")) return false;
 
-  // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()）
-  if (/[;&|&]|`|\$\(/.test(core)) return false;
+  // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()、换行）
+  // 换行注入（审计实测）：'ls\nbash /tmp/x.sh' 以白名单命令开头时整串放行，
+  // 换行后的第二条命令不受任何白名单约束
+  if (/[;&|&]|`|\$\(|\n|\r/.test(core)) return false;
+
+  // awk 白名单存在任意执行/读文件形态（审计实测 system(...) 放行）——
+  // 收紧：禁止 system/getline（含无括号语句形态）与重定向
+  if (/^\s*awk\b/i.test(core) && /\b(system|getline)\b|>\s*\S/.test(core)) return false;
+
+  // curl 白名单存在外传形态（审计实测 -T/--upload-file、-d @file、-F file=@ 均放行）——
+  // 收紧为 GET-only 查询
+  if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data|--data-binary|-d|--form|-F)(\s|=)/.test(core)) return false;
 
   return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
 }

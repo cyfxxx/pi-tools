@@ -8,6 +8,7 @@ import {
   sendKeys,
   killSession,
   waitSession,
+  normalizeSessionName,
   loadRegistry,
   registerSession,
   unregisterSession,
@@ -31,9 +32,14 @@ function ok(text: string): ToolResultObj {
   return { content: [{ type: 'text', text }], details: null }
 }
 
-function resolveName(params: Record<string, unknown>, prefix: string): string {
+/**
+ * 会话名规范化（安全）：强制 pi- 前缀，仅允许字母/数字/下划线/中划线。
+ * 非法名（含 ../、/、空名等）抛错，由调用方 try/catch 转 err() 返回——
+ * 防止路径穿越注入日志路径（tmux_stop remove_log 删任意 .log、tmux_read 读任意 .log）。
+ */
+export function resolveName(params: Record<string, unknown>, prefix: string): string {
   const raw = String(params.name ?? '')
-  return raw.startsWith(prefix) ? raw : prefix + raw
+  return normalizeSessionName(raw, prefix)
 }
 
 async function requireTmux(cfg: TmuxConfig): Promise<TmuxOpts | { error: ReturnType<typeof err> }> {
