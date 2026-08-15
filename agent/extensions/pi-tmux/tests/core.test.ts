@@ -93,10 +93,13 @@ describe('pi-tmux tools resolveName 会话名安全', () => {
 
 // 集成类：真正调用 tmux（若环境无 tmux 则自动跳过）
 // Windows 后端安全：会话名 NAME_RE 校验（路径穿越防护）
+// Windows 后端（winSessionName 校验）仅 win32 生效——非 Windows 平台跳过
+const isWin32 = process.platform === 'win32'
+
 describe('pi-tmux Windows 后端会话名校验', () => {
   const opts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-test'), prefix: 'pi-' }
 
-  it('winSessionName 拒绝路径穿越名（../../x 等）', async () => {
+  it('winSessionName 拒绝路径穿越名（../../x 等）', { skip: !isWin32 }, async () => {
     const { runTmux } = await import('../core')
     // 非法名 → 不进入 pidfile/taskkill（kill-session 报错而非操作文件）
     for (const name of ['../../x', 'pi-../evil', 'pi-x/y', 'pi-%2e%2e']) {
@@ -108,7 +111,7 @@ describe('pi-tmux Windows 后端会话名校验', () => {
     }
   })
 
-  it('winSessionName 接受正常名（pi- 前缀）', async () => {
+  it('winSessionName 接受正常名（pi- 前缀）', { skip: !isWin32 }, async () => {
     const { runTmux } = await import('../core')
     const h = await runTmux(opts, ['has-session', '-t', 'pi-valid'], 5000)
     expect(h.code).toBe(1) // 会话不存在（非非法名报错）
