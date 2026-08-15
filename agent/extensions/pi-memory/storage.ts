@@ -135,9 +135,21 @@ export function saveSummaries(summaries: SummaryEntry[]) {
   writeJSONAtomic(SUMMARIES_FILE, { version: SUMMARY_VERSION, summaries } satisfies SummaryStore)
 }
 
+/**
+ * 追加/更新摘要：同 sessionId 只保留最新一条（upsert）。
+ * 审计发现：compact+shutdown 双路径提取时 messageCount 不同绕过指纹去重，
+ * 同一会话重复 append 致 summaries.json 累积 31 条重复（实测）；注入侧因此
+ * 重复展示同一会话的多条历史摘要。upsert 后同会话永远只有最新摘要。
+ */
 export function appendSummary(summary: SummaryEntry): SummaryEntry[] {
   const all = loadSummaries()
-  all.push(sanitizeSummary(summary))
+  const clean = sanitizeSummary(summary)
+  const existing = clean.sessionId ? all.findIndex(s => s.sessionId === clean.sessionId) : -1
+  if (existing >= 0) {
+    all[existing] = clean
+  } else {
+    all.push(clean)
+  }
   const trimmed = all.length > MAX_SUMMARIES ? all.slice(-MAX_SUMMARIES) : all
   saveSummaries(trimmed)
   return trimmed

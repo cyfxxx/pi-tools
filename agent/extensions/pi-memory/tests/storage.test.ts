@@ -119,6 +119,20 @@ describe('storage: notes + ctx-lite migration', () => {
 })
 
 describe('storage: summaries', () => {
+  it('appendSummary upserts same sessionId (重复摘要根因回归)', async () => {
+    const { appendSummary, loadSummaries } = await import('../storage.ts')
+    const base = { decisions: [], facts: [], prefs: [], lessons: [] }
+    appendSummary({ id: 'a1', sessionId: 'dup-sess', ts: '2026-01-01T00:00:00Z', title: '旧摘要', fullText: 'old', ...base })
+    appendSummary({ id: 'a2', sessionId: 'dup-sess', ts: '2026-01-02T00:00:00Z', title: '新摘要', fullText: 'new', ...base })
+    const all = loadSummaries()
+    expect(all).toHaveLength(1)
+    expect(all[0].title).toBe('新摘要')
+    expect(all[0].fullText).toBe('new')
+    // 无 sessionId 的仍追加
+    appendSummary({ id: 'a3', sessionId: null, ts: '2026-01-03T00:00:00Z', title: '无会话', fullText: '', ...base })
+    expect(loadSummaries()).toHaveLength(2)
+  })
+
   it('appendSummary trims to 50 entries', async () => {
     const { appendSummary, loadSummaries } = await import('../storage.ts')
     for (let i = 0; i < 55; i++) {
