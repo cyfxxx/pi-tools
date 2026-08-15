@@ -12,10 +12,11 @@ import { listSessions, killSession, isPiSession, loadRegistry } from './core'
 export default function (pi: ExtensionAPI): void {
   const cfg = loadConfig()
 
-  registerTmuxTools(pi, cfg)
+  const watcher = registerTmuxTools(pi, cfg)
 
   // 退出时清理：仅清理 pi- 前缀且在本扩展注册表中的会话，绝不触碰用户会话
   pi.on('session_shutdown', async () => {
+    watcher.stopAll() // 完成唤醒监听器先停（定时器 unref，不阻塞退出）
     try {
       const opts = toTmuxOpts(cfg)
       const reg = loadRegistry()
