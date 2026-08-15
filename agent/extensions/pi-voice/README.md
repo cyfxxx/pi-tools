@@ -53,8 +53,10 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 |------|------|------|-----|
 | termux（Android，默认） | termux-microphone-record（m4a） | ffmpeg m4a→wav | termux-tts-speak |
 | linux（桌面/WSL） | parec → `linuxMicDevice`（默认 RDPSource）直出 wav | 不需要 | espeak-ng 生成 wav + paplay → `linuxTtsSink`（默认 RDPSink） |
+| windows（便携版） | ffmpeg dshow（`micBin`+`micDevice`）直出 wav | 不需要 | SAPI 朗读 |
 
-- 平台由 `platform` 配置项决定：`auto`（探测：有 termux 工具 → termux，否则 linux）/ `termux` / `linux`；探测逻辑见 `platform.ts`
+- 平台由 `platform` 配置项决定：`auto`（探测：有 termux 工具 → termux，否则 linux）/ `termux` / `linux` / `windows`（便携版）；探测逻辑见 `platform.ts`
+- **Windows 便携版服务自启**：`ensureWhisperService` 默认启动走 `bin/check-services.js`（spawn python detached，端口 18767、small 模型、venv 路径），随 start.bat 自动拉起；无需手动 `pi-whisper.sh`
 - 新增设备适配：在 `platform.ts` 增加 spec 分支即可（录音命令构造 + TTS 构造 + 安装指引），上层 core/dictation 无需改动
 - WSL 注意：麦克风需 Windows 隐私权限允许；`PULSE_SERVER` 指向 WSLg（`unix:/mnt/wslg/PulseServer`）；录音输入源/输出 sink 见 `pactl list sources/sinks`
 - linux TTS 引擎 `ttsEngine`：`auto`（检测到 piper 命令 → 用 piper 神经 TTS（中文自然，需安装 piper-tts + 模型，模型路径 `linuxPiperModel`），否则 espeak-ng）/ `espeak-ng` / `piper`
@@ -94,7 +96,7 @@ apt-get install ffmpeg        # PRoot 侧
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `PI_VOICE_WHISPER_ENDPOINT` | `http://127.0.0.1:18766` | 转写服务地址 |
+| `PI_VOICE_WHISPER_ENDPOINT` | `http://127.0.0.1:18766` | 转写服务地址（Windows 便携版 = `http://127.0.0.1:18767`——见 pi-voice.json，避开 WSL 转发占用） |
 | `PI_VOICE_WHISPER_TOKEN` | 空 | whisper 服务 Bearer token（空 = 不鉴权） |
 | `PI_VOICE_MIC_BIN` | `termux-microphone-record` | 录音命令 |
 | `PI_VOICE_FFMPEG_BIN` | `ffmpeg` | 转码命令 |

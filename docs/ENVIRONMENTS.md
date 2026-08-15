@@ -53,16 +53,18 @@ pi-memory 扩展自动检测环境（`PI_MEMORY_ENV` 环境变量可显式覆盖
 
 ## 常见环境差异坑
 
-| 主题 | Termux | WSL2 | Linux 桌面 |
+| 主题 | Termux | WSL2 | Linux 桌面 | **Windows 便携版**（pi-portable，见 portable/README.md） |
 |------|--------|------|-----------|
 | tmux 组合键 | 需 `extended-keys` 透传 | 需 `extended-keys` | 一般无需 |
-| 录音/语音 | Termux:API + whisper（见 TERMUX-DEV-NOTES.md） | **parec → RDPSource + WSLg 音频桥**（需 Windows 麦克风权限；rdp-source 曾遇连接即卡死，根因是权限弹窗未处理） | 麦克风直连（parec/arecord） |
-| TTS | termux-tts-speak（系统引擎） | **piper 神经 TTS**（自然中文，`ttsEngine:auto` 自动选）或 espeak-ng 拼音合成 | 同 WSL2 |
-| whisper 推理 | CPU（int8，base 档位） | **GPU cuda/float16 可用**（RTX 实测；依赖 nvidia-cublas/cudnn，重建 `--voice` 时提示）；base 小模型 GPU 收益有限，medium/large 才显著 | GPU 可用 |
+| 录音/语音 | Termux:API + whisper（见 TERMUX-DEV-NOTES.md） | **parec → RDPSource + WSLg 音频桥**（需 Windows 麦克风权限；rdp-source 曾遇连接即卡死，根因是权限弹窗未处理） | 麦克风直连（parec/arecord） | **ffmpeg dshow 录音** → 本地 whisper（18767，small+zh+opencc 简体）→ SAPI 朗读 |
+| TTS | termux-tts-speak（系统引擎） | **piper 神经 TTS**（自然中文，`ttsEngine:auto` 自动选）或 espeak-ng 拼音合成 | 同 WSL2 | Windows SAPI（PowerShell） |
+| whisper 推理 | CPU（int8，base 档位） | **GPU cuda/float16 可用**（RTX 实测；依赖 nvidia-cublas/cudnn，重建 `--voice` 时提示）；base 小模型 GPU 收益有限，medium/large 才显著 | GPU 可用 | CPU（small；需 GPU 则装 nvidia-cublas/cudnn ~1GB） |
+| 搜索 | 本机 searxng（8889） | 本机 searxng（8889） | 本机 searxng（8889） | 本地 searxng（8890，cn.bing+360search） |
+| tmux | tmux 原生 | tmux 原生 | tmux 原生 | **pi-tmux 原生后端**（无 tmux：bash -c+pidfile/taskkill） |
+| 浏览器 | CloakBrowser headless | 可 headless/有 X | 有 X | CloakBrowser（.cloakbrowser/ 定制版，--no-proxy-server） |
 | 剪贴板 | 不适用 | `xclip`/WSLg 集成 | `xclip`/`wl-copy` |
-| 回车输入 | ICRNL 转 `\n`（Kitty 解析为 shift+enter） | 正常 | 正常 |
-| 浏览器 | CloakBrowser headless | 可 headless/有 X | 有 X |
-| GPU | 无 | 可用（d3d12） | 可用 |
+| 回车输入 | ICRNL 转 `\n`（Kitty 解析为 shift+enter） | 正常 | 正常 | 正常 |
+| GPU | 无 | 可用（d3d12） | 可用 | 可用（whisper 未启用） |
 
 ## 环境切换日常流程
 

@@ -10,6 +10,22 @@ import { appendRun, estimateCost } from './telemetry.ts'
 import { checkBudget } from './budget.ts'
 import { triggerHangRecovery, touchActivity } from './watchdog.ts'
 import { markPendingInjected } from './queue.ts'
+import { join } from 'node:path'
+import { homedir } from 'node:os'
+
+
+/**
+ * 解析 pi CLI 入口（spawn 用）。
+ * Linux/macOS：pi（PATH）。
+ * Windows 便携版：USERPROFILE=包根，spawn 不解析 .cmd——用包内 node + cli.js。
+ */
+function resolvePiSpawn(): { cmd: string; args: string[] } {
+  if (process.platform !== 'win32') return { cmd: 'pi', args: [] }
+  const root = process.env.USERPROFILE || homedir()
+  const node = join(root, 'node', 'node.exe')
+  const cli = join(root, 'pi-global', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist', 'cli.js')
+  return { cmd: node, args: [cli] }
+}
 
 export class SessionScheduler {
   private pi: ExtensionAPI
@@ -172,7 +188,10 @@ export class SessionScheduler {
 
   private async fireViaSubagent(task: Task, provider: string, model: string): Promise<void> {
     const { spawn } = await import('node:child_process')
-    const timeout = (task.maxRunTime || 300) * 1000
+    // 上下界钳位：负值/0 → setTimeout 立即触发误杀；≥2^31ms → Node 钳位 1ms 同样立即超时
+    const raw = task.maxRunTime || 300
+    const safe = Math.min(Math.max(raw, 5), 24 * 3600) // 5s ~ 24h
+    const timeout = safe * 1000
     const label = `[Scheduler] ${task.name}`
     touchActivity()
 
@@ -187,7 +206,8 @@ export class SessionScheduler {
         controller.abort()
         try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ }
       }, timeout)
-      const proc = spawn('pi', ['-p', renderPrompt(task.prompt)], {
+      const { cmd, args } = resolvePiSpawn()
+      const proc = spawn(cmd, [...args, '-p', renderPrompt(task.prompt)], {
         stdio: ['ignore', 'pipe', 'pipe'],
         signal: controller.signal,
         cwd: process.cwd(),

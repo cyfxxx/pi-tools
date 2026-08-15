@@ -3,6 +3,7 @@ name: pi-full-audit
 description: 全项目深度审计技能。区别于 pi-code-review（diff/改动审查）：对仓库做全量确定性检查 + 基线回归测试 + subagent 并行深度审查 + 复核子代理逐条核实建议 + 主会话终审 + 分级报告。含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。
 version: v1.7
 经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）；同日 dsh 深度分析（deepseek-ai/deepseek-harness 借鉴：注册即 effect、配置分层合并、测试分层、真实运行观察替代 keyless snapshot）；2026-08-14 补充基准工具 pi-bench.sh（usage/timing/compare 三子命令，守护缓存优化不回退）；2026-08-15 全流程实战（50 项发现：1 HIGH / 18 MEDIUM / 19 LOW / 12 同类遗漏，全部修复闭环 6 提交；4 组并行复核首次调用返回空结果→改 2+2 分批重试成功；修复分层执行模式验证：MEDIUM 主会话修 + LOW 三 worker 并行一次成功；scout readonly 化后复核实测改主会话/worker；todo 状态遗漏致 TUI 残留——修复逐项销账纪律；注入块内容质量抽查发现重复/空摘要/截断条目）
+
 ---
 
 # pi-full-audit 全项目深度审计
@@ -35,6 +36,33 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 - **"失败"项先定性再报告**，见"误报判别清单"
 - 阶段 C 可疑模式逐条人工确认（大部分是 child_process/console.log 的正常使用）
 
+### 第 1b 步：Windows 便携版专项检查（目标含 ps1/bat/便携包时）
+
+仓库含 PowerShell/bat/便携包（portable/ 种子 + 实例 bin/ 双份）时，除 review.sh 外追加：
+
+```powershell
+# 1. ps1 语法（PSParser；PS 5.1 无 BOM 按 GBK 解析中文 → 乱码破坏语法）
+$files = Get-ChildItem 'portable\bin\*.ps1','bin\*.ps1','start.ps1'
+foreach ($f in $files) {
+  $t=$null; $e=$null
+  [System.Management.Automation.Language.Parser]::ParseFile($f.FullName,[ref]$t,[ref]$e)|Out-Null
+  "{0}  {1}" -f ($(if($e.Count){"ERR($($e.Count))"}else{'OK'})), $f.Name
+}
+# 2. 编码/行尾：ps1 = UTF-8 BOM + CRLF；bat = 无 BOM（cmd 首行报错）
+#    BOM 检查：head -c 3 <f> | xxd -p（efbbbf = BOM）
+# 3. 种子 vs 实例一致性（忽略行尾）：diff <(cat portable/bin/$f) <(cat bin/$f)
+#    修复只改实例（gitignored）忘同步种子（入库）是经典漂移
+# 4. 构建链断点：setup 脚本依赖自足性——uv/python/服务端 py/补丁文件由谁下载？
+#    clone/pull/push 分支正确性（master 停更场景）；补丁查找路径（bin/ → scripts/ 兜底）
+```
+
+**编码/行尾实战坑（2026-08-15 沉淀）**：
+
+- ps1 中文必须 UTF-8 BOM（PS 5.1 无 BOM 按 ANSI/GBK 解析 → 乱码可能破坏语法）；bat 反之必须无 BOM
+- 修改 ps1 用 python `open(p,'w',encoding='utf-8-sig')`（保持 BOM）；含反斜杠的锚点用 raw 字符串（r"""..."""），否则 `\b`/`\n` 被解释成控制符导致匹配失败
+- PowerShell here-string 打开符 `@"` 必须行首（PS 5.1 缩进打开符报错）；转义串里多余反引号会把闭合引号转义掉 → 整文件解析崩溃（searxng-setup 实例，ParseFile 18 错误）
+- 种子/实例双份文件：修改后必须双向同步，提交只认种子（实例 bin/ gitignored）
+
 ### 第 2 步：基线回归测试（审查前必跑）
 
 - 用项目自带全量测试（~/.pi 仓库：`bash scripts/test-all.sh`）
@@ -57,7 +85,8 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 - 明确只读："只读审查，不修改任何文件"
 - 明确维度：正确性/安全/资源/并发与状态/回归影响/可维护性
 - **输出精简约束（防截断）**："只列问题，每条 文件:行号 + 一句话描述 + 级别（HIGH/MEDIUM/LOW），LOW 最多 5 条；无问题项明确说明；总输出控制在 3000 字内"
-- 涉及运行时行为/机制描述的建议（子进程语义、超时行为、事件时序等）标注"需实测"——审查阶段只做读码判断，实测留给第 4 步复核（减少复核排查面）
+- **涉及运行时行为/机制描述的建议标注"需实测"**（子进程语义、超时行为、事件时序等）——审查阶段只做读码判断，实测留给第 4 步复核（缩小复核排查面）
+
 - 指定 cwd 为仓库根
 
 **报告截断处理**：若返回报告被截断，重新委派该组并要求更精简格式，不要凭截断内容下结论。
@@ -141,11 +170,14 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 - **glob 陷阱**：`for d in dir/*/node_modules` 只在**全部不匹配**时保留字面量；部分不匹配 = 静默漏检，不是报错
 - **"没找到 X" ≠ "X 不存在"**：先 grep 确认是否在其他层实现（如删除落盘在 deleteEntry 内部 vs 工具函数外层）
 - **ETIMEDOUT 类分支**：Node 子进程超时行为与版本相关，实测确认，不要信注释或直觉
+- **运行时行为必须实测**（2026-08-15 扩展）：Node 子进程超时语义（err.code=null/signal='SIGTERM'）、glob 展开、spawn 错误事件（异步 error 而非同步抛错）等以实测为准，不凭注释/直觉/审查者的机制描述。注意：scout 已标 frontmatter `readonly: true`（subagent 扩展 spawn 时强制过滤 bash），复核 scout **无法执行 bash 实测**——需实测的验证由主会话（有 bash）或委派 worker 完成；scout 只做读码级核实并在报告中标注"未实测"项
 - **审查建议的行号引用**：常与实际位置不符（偏差可达几十行）——行为成立但行号错不算误报，以 grep/sed 实际定位为准并在结论中纠正
 - **审查者的机制描述**：不可轻信，追完整调用链核实（实战：“spawn 抛错即永久泄漏”实际是异步 error 事件且已有处理+测试）
 - **设计当 bug**：代码注释自认的故意设计（写死工具集/磁盘兜底/非阻塞注入）按设计权衡报并注明，不按纯 bug
 - **同类遗漏**：审查只报一处的，检查同模块第二处（environments 合并两处、ETIMEDOUT 两处、掩蔽路径两处）
 - **修复建议可改进**：审查给的修复方案常非最优或带副作用（预算拦截用 updateTaskAfterRun 会消耗重试次数），核实后给出更优方案
+- **PS 解析错误先查编码**：ParseFile 报乱码错误 = 无 BOM/GBK 解码（修复加 BOM）；报结构错误 = 看反引号/引号配对（多余反引号会转义掉闭合引号）
+- **Windows 测试隔离**：os.homedir() 优先 USERPROFILE 而非 HOME——stubEnv('HOME') 不生效 → 测试读写真实用户配置（pi-voice.json 被测试数据污染事故）；测试 stub 必须 HOME+USERPROFILE 双设
 
 ## 会话运行检查（运行时健康巡检）
 
@@ -166,6 +198,7 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 3. **会话体积**：会话 jsonl 大小 + 消息数（对比历史会话，异常膨胀提示上下文失控）
 4. **注入块**（适用性检查）：注入内容无时间戳/精确数值（缓存友好）。注意实测（2026-08-14）：注入在请求时生成、**不落盘会话文件**时，`grep -c pi-memory-injection <会话文件>` 只能命中工具参数文本，计数无意义——改用检查项 2 的缓存命中率反证注入稳定性；仅当会话文件中可见注入 customType 标记（落盘环境）时才用 grep 计数（应≈请求轮数）
    - **内容质量抽查**（2026-08-15 实战发现三类残留，已修复）：① 重复摘要（同 sessionId 多条历史摘要均注入——根因 appendSummary 无 upsert，已修）；② 空摘要（"开场问候无实质内容""无可提取"类仍在注入——已修 doExtract 质量门 + isSubstantiveSummary 过滤）；③ 硬截断条目（slice(0,200) 切半如"跨""用 readlink "——已修 truncateByTokens 80 token 带标记）。抽查 memory/summaries.json 与注入块构建逻辑，验证修复持续生效（无新增重复/空摘要/残句）
+
 5. **日志与残留**：`ls -lt logs/` 查错误；`logs/tmux/` 残留日志（测试遗留可清）；`tmux_status` 活动会话
 6. **后台任务**：`crontab -l` 中 pi-cron.sh；watchdog 状态文件（`agent/.pi-autopilot-state.json` 存在 = 触发过）
 7. **真实运行观察（keyless snapshot 替代，2026-08-14 沉淀）**：mock 测试发现不了缓存/注入/状态流问题（本次 72K 重发就是 mock 全绿+真实运行才暴露的）。做法：实际触发一轮关键路径操作并观察行为：

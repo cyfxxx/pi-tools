@@ -38,14 +38,29 @@ export async function acquireSessionLock(): Promise<boolean> {
       try {
         const oldPid = (await readFile(lockF, 'utf-8')).trim()
         if (oldPid && oldPid !== myPid) {
-          try {
-            await stat(`/proc/${oldPid}`)
+          let alive = false
+          if (process.platform === 'win32') {
+            // Windows 无 /proc——tasklist 探进程存在性（便携版多实例互斥）
+            const { execFile } = await import('node:child_process')
+            alive = await new Promise<boolean>((res) => {
+              execFile('tasklist', ['/FI', `PID eq ${oldPid}`], { windowsHide: true }, (err) => {
+                res(!err) // tasklist 找到进程 → exit 0；找不到 → 非 0
+              })
+            })
+          } else {
+            try {
+              await stat(`/proc/${oldPid}`)
+              alive = true
+            } catch {
+              alive = false
+            }
+          }
+          if (alive) {
             // 进程仍存活，锁被其他实例持有
             return false
-          } catch {
-            // /proc/${oldPid} 不存在 → 进程已死，清理陈旧锁
-            await unlink(lockF).catch(() => {})
           }
+          // 进程已死，清理陈旧锁
+          await unlink(lockF).catch(() => {})
         }
       } catch { /* 读锁文件失败，覆盖之 */ }
     }

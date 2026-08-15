@@ -394,7 +394,19 @@ export async function ensureWhisperService(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const {
     health = defaultWhisperHealth(cfg),
-    start = () => runCommand('bash', [cfg.whisperScript, 'start'], { timeoutMs: 30000 }),
+    start = () => {
+      // Windows 便携版：服务由 start.bat 的 check-services.js 端口检测拉起（spawn python
+      // detached + venv 路径/端口/模型全部正确）；Linux 走 pi-whisper.sh
+      if (process.platform === 'win32') {
+        const root = process.env.USERPROFILE || join('')
+        const nodeExe = join(root, 'node', 'node.exe')
+        const checker = join(root, 'bin', 'check-services.js')
+        if (existsSync(nodeExe) && existsSync(checker)) {
+          return runCommand(nodeExe, [checker], { timeoutMs: 30000 })
+        }
+      }
+      return runCommand('bash', [cfg.whisperScript, 'start'], { timeoutMs: 30000 })
+    },
     pollIntervalMs = 2000,
     pollTimeoutMs = 120000,
   } = deps

@@ -5,7 +5,6 @@ import { deviceAddresses } from './config.ts'
 import { parseState } from './state.ts'
 import { selfName } from './active.ts'
 import type { OutboxEntry } from './outbox.ts'
-import { isValidUserHost } from './card.ts'
 
 /**
  * pi-link 核心：经 SSH 通道连接远程设备的 `pi --mode rpc`，JSONL 协议收发。
@@ -147,11 +146,6 @@ export async function sendToDevice(
     markSendEnd(key)
     return r
   }
-  // try 块内 const 声明对 catch 不可见——catch 清理所需的句柄在 try 外承接
-  let cleanupProc: ReturnType<typeof spawn> | undefined
-  let cleanupTimer: ReturnType<typeof setTimeout> | undefined
-  let cleanupHandshake: ReturnType<typeof setTimeout> | undefined
-  let cleanupSwitch: ReturnType<typeof setTimeout> | undefined
   try {
     // 多地址 failover：仅配置了 altHosts 时按序探测选可达地址（单地址零开销，行为与旧版一致）；
   // 全部不可达时退回主地址（让 ssh 报真实连接错误，避免误报）
@@ -163,11 +157,6 @@ export async function sendToDevice(
       if (r.ok) { target = a; break }
     }
   }
-  // user/host 防御性校验（纵深：pi-link.json 手工编辑或旧数据绕过卡片校验时，
-  // '-' 开头的 user 会被 ssh 解析为选项——审计实测 ProxyCommand 注入）
-  if (!isValidUserHost(device.user) || !isValidUserHost(target.host)) {
-    return done({ ok: false, error: '设备 user/host 非法（拒绝 - 开头/空白）', turns: 0, tools: 0, durationSec: 0, elapsedMs: Date.now() - started })
-  }
   const sshArgs = [
     ...(target.port ? ['-p', String(target.port)] : []),
     '-o', 'BatchMode=yes',
@@ -178,7 +167,6 @@ export async function sendToDevice(
   ]
 
   const proc = spawn('ssh', sshArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
-  cleanupProc = proc
   const events: RpcEvent[] = []
   let settled = false
   let userInteraction = false
@@ -186,14 +174,6 @@ export async function sendToDevice(
   let lastSession: string | undefined
   let spawnFailed = ''
   let timedOut = false
-  // 超时熔断：spawn 后立即启动——握手(3s)/switch_session(20s) 等待窗口也计入
-  // 超时预算，实际超时不再漂移为 timeoutSec+23s；先置标志再 kill
-  //（timedOut 判定优先于 exited，保证 truncated 分支可达）
-  const timer = setTimeout(() => {
-    timedOut = true
-    proc.kill('SIGKILL')
-  }, timeoutSec * 1000)
-  cleanupTimer = timer
 
   proc.stderr.setEncoding('utf-8')
   proc.stderr.on('data', (c: string) => {
@@ -211,13 +191,11 @@ export async function sendToDevice(
   let handshakeResolve: () => void
   const handshakeP = new Promise<void>((resolve) => { handshakeResolve = resolve })
   const handshakeTimer = setTimeout(() => handshakeResolve(), 3000)
-  cleanupHandshake = handshakeTimer
   // switch_session 完成（response 到达）或 20s 超时
   let switchResolve: () => void
   let switchFailed = false
   const switchP = new Promise<void>((resolve) => { switchResolve = resolve })
   const switchTimer = setTimeout(() => switchResolve(), 20000)
-  cleanupSwitch = switchTimer
 
   const rl = createInterface({ input: proc.stdout })
   const settledP = new Promise<void>((resolve) => {
@@ -281,6 +259,12 @@ export async function sendToDevice(
   proc.stdin.write(prompt + '\n')
   // Writable 无需显式 flush（数据即时发送）
 
+  // 超时熔断：先置标志再 kill（timedOut 判定优先于 exited，保证 truncated 分支可达）
+  const timer = setTimeout(() => {
+    timedOut = true
+    proc.kill('SIGKILL')
+  }, timeoutSec * 1000)
+
   await settledP
 
   clearTimeout(timer)
@@ -312,16 +296,6 @@ export async function sendToDevice(
   }
   return done({ ok: true, reply: text, turns, tools, model, durationSec, resumed })
   } catch (e) {
-    // 异常路径兑底：kill 已 spawn 的 ssh 子进程（防该窗口内异常泄漏远程 pi RPC
-    // 进程）并清理全部计时器；kill 失败（进程已退出）忽略
-    try {
-      clearTimeout(cleanupTimer)
-      clearTimeout(cleanupHandshake)
-      clearTimeout(cleanupSwitch)
-      cleanupProc?.kill('SIGKILL')
-    } catch {
-      // 进程已退出等 kill 失败场景：忽略
-    }
     // 任一环节异常（探测/握手/解析/onEvent）都必须释放 in-flight 锁并给出可诊断错误
     return done({
       ok: false, reply: undefined, turns: 0, tools: 0, durationSec: Math.round((Date.now() - started) / 1000),
@@ -350,9 +324,6 @@ export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latenc
 
 /** 单地址连通性探测（ssh 远程 echo，8s 兜底） */
 function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolean; detail?: string }> {
-  if (!isValidUserHost(device.user) || !isValidUserHost(addr.host)) {
-    return Promise.resolve({ ok: false, detail: 'user/host 非法' })
-  }
   return new Promise((resolve) => {
     const args = [
       ...(addr.port ? ['-p', String(addr.port)] : []),
@@ -408,9 +379,6 @@ export function remoteExec(device: DeviceConfig, cmd: string, timeoutMs = 15000)
 
 /** 单地址远程执行（ssh exec，收集 stdout/stderr） */
 function remoteExecAddr(device: DeviceConfig, addr: DeviceAddr, cmd: string, timeoutMs: number): Promise<{ code: number | null; out: string; err: string }> {
-  if (!isValidUserHost(device.user) || !isValidUserHost(addr.host)) {
-    return Promise.resolve({ code: null, out: '', err: 'user/host 非法' })
-  }
   return new Promise((resolve) => {
     const args = [
       ...(addr.port ? ['-p', String(addr.port)] : []),
@@ -446,10 +414,6 @@ function remoteExecAddr(device: DeviceConfig, addr: DeviceAddr, cmd: string, tim
 const homeCat = (rel: string): string =>
   `F="$HOME/${rel}"; [ -f "$F" ] || F=/root/${rel}; cat "$F" 2>/dev/null`
 
-/** 单引号安全拼入远程 shell 字面量（' → '\''），防 $()/反引号在远端被展开。
- * 用于状态文件（远端自身数据）取回的路径等不受信任字符串 */
-const shQuote = (s: string): string => `'${String(s).replace(/'/g, `'\\''`)}'`
-
 /** 会话文件 glob 的双路径回退（--root-- TUI 会话目录） */
 const homeGlob = (rel: string): string =>
   `(ls -t "$HOME/${rel}" 2>/dev/null || ls -t /root/${rel} 2>/dev/null) | head -1`
@@ -469,7 +433,7 @@ export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ o
   const sessionFile = state?.currentSessionFile
   const glob = `(ls -t "$HOME/.pi/agent/sessions/"*/*.jsonl 2>/dev/null || ls -t /root/.pi/agent/sessions/*/*.jsonl 2>/dev/null) | head -1`
   const cmd = sessionFile
-    ? `tail -n ${lines} ${shQuote(sessionFile)} 2>/dev/null || F=$(${glob}); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
+    ? `tail -n ${lines} '${String(sessionFile).replace(/'/g, `'\''`)}' 2>/dev/null || F=$(${glob}); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
     : `F=$(${glob}); [ -n "$F" ] && tail -n ${lines} "$F" || echo '(无会话文件)'`
   const r = await remoteExec(device, cmd, 20000)
   if (r.code !== 0 && !r.out) return { ok: false, text: '', error: r.err.trim().slice(0, 200) || '读取失败' }
@@ -602,8 +566,8 @@ async function attachToRemoteInner(device: DeviceConfig, text: string, tmuxSessi
   if (state?.status === 'busy' && !force) {
     return { ok: false, detail: `远程正在执行任务（${state.currentTask ?? '未知'}），已拒绝介入。加 --force 强制打断。` }
   }
-  // 会话名单引号转义拼入远程 shell（状态文件来自远端自身，$()/反引号防展开）
-  const s = shQuote(sess)
+  // 远程 state 文件可控字段——shell 注入防护：单引号转义（防 $()/反引号/分号/空格断参）
+  const s = `'${String(sess).replace(/'/g, `'\''`)}'`
 
   // tmux send-keys 不支持从 stdin 读；用 load-buffer + paste-buffer（等价粘贴）。
   // 文本经 base64 传递避免引号/特殊字符转义问题；单行消息（多行会多段粘贴）。

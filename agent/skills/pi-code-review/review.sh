@@ -153,13 +153,13 @@ else
   say "== 审查范围: $SCAN_DIR =="
   # 排除第三方依赖与运行时数据（与 node_modules 同级：venv 虚拟环境、SearXNG
   # 第三方源码、日志、记忆提取缓存），避免逐文件语法检查拖垮扫描
-  mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' 2>/dev/null)
+  mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' ! -path '*/.pi/*' 2>/dev/null)
   # 扫描预览：先大致查看范围（文件数 + 目录分布），确认无需再排除
   TOTAL_FILES=$(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' 2>/dev/null | wc -l)
-  say "扫描预览: 源码文件 $TOTAL_FILES 个（已排除 node_modules/searxng venv+repo/logs/memory 运行时）"
+  say "扫描预览: 源码文件 $TOTAL_FILES 个（已排除 node_modules/searxng venv+repo/logs/memory/tools/pi-global 等运行时）"
   if [ "$TOTAL_FILES" -gt 300 ]; then
     say "  目录分布（前 15）:"
-    find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/*' 2>/dev/null | sed "s|$SCAN_DIR/||" | cut -d/ -f1-2 | sort | uniq -c | sort -rn | head -15
+    find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' ! -path '*/.pi/*' 2>/dev/null | sed "s|$SCAN_DIR/||" | cut -d/ -f1-2 | sort | uniq -c | sort -rn | head -15
   fi
 fi
 
@@ -309,7 +309,7 @@ for f in "${FILES[@]:-}"; do
   case "$f" in
     *.json)
       if command -v python3 >/dev/null 2>&1; then
-        if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f" >/dev/null 2>&1; then
+        if ! python3 -c "import json,sys; json.load(open(sys.argv[1], encoding='utf-8'))" "$f" >/dev/null 2>&1; then
           json_err=1
           fail "JSON 解析错误: $f"
         fi

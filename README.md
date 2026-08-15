@@ -66,6 +66,12 @@
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
 │   ├── patch-*.mjs            核心补丁（voice-enter 回车拦截 / footer-live-context / plan-tools，rebuild.sh 自动执行）
 │   └── pi-bg.sh               后台任务四件套隔离（见 README-pi-bg.md）
+├── portable/                  便携 pi（Windows 原生）种子：构建脚本 + 模板
+│   ├── bin/                  管理脚本（setup 构建器 / verify 验证 / diag 诊断 / update-pi 升级 / update-portable 扩展同步 / sync git）
+│   ├── start.bat/start.ps1   入口启动器（显式 node + PI_CODING_AGENT_DIR + junction 透明）
+│   ├── ca-bundle.crt         证书包（GitHub 被墙环境的 git 用）
+│   ├── tools/tmux/           tmux shim（wsl.exe tmux %*）
+│   └── README.md             种子/实例布局、构建、会话恢复、升级说明
 ├── logs/
 │   └── scheduler/             离线执行日志（自动清理，不 git 跟踪）
 ├── .gitignore                 已排除大二进制、密钥、运行时产物
@@ -130,6 +136,27 @@ pi-backup rebuild --yes          # 静默自动重建
 - **日志与退出码** — `--yes` 模式自动落盘 `logs/rebuild-<ts>.log`，各阶段标注耗时（+Ns）；verify 有异常时退出码非 0（自动化可判定失败，`--no-log` 关闭落盘）
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
+
+### Windows 原生便携安装（pi-portable）
+
+不想在 Windows 主机上安装、又想原生运行 pi（带完整配置与会话）时，使用便携包：
+
+1. 新建空文件夹，放入 `portable/` 下全部脚本；从本机拷贝配置（`agent/` 扩展与配置、`sessions/` 会话、`memory/` 记忆；密钥文件自行决定）
+2. PowerShell 运行 `bin\setup.ps1`（自动：下载 Node LTS 24+ → npmmirror 装 pi → 下载 ffmpeg/PortableGit → 装扩展运行时依赖 → 下载/重建 searxng+whisper；自动创建 `memory/` 并建 `.pi\agent`/`.pi\memory` 两个 junction）
+3. **必须** `bin\verify.ps1` 验证环境（含 junction 有效性、三补丁 marker、配置路径漂移检查）→ 全部通过后再启动
+4. `start.bat --continue` 恢复会话
+
+> ⚠ 迁移/重建后**跳过 verify.ps1 直接启动**是已知事故源（memory junction 悬空会直接导致 pi-memory 写入崩溃、shellPath 残留旧包路径导致 bash 工具 throw）。verify.ps1 全绿是启动前置条件。
+
+关键机制（详见 `portable/README.md` 与记忆「便携 pi Windows 最终架构」）：
+
+- **USERPROFILE=包根** + **PI_CODING_AGENT_DIR 显式**——配置/扩展/会话全落包内；agent/memory 经 junction 统一到包根（git 仓库工作副本 = 运行时真身）
+- **显式 `node.exe` 调 cli.js**——绕开 npm shim 的 node 解析（会落到系统 node，v22.14 无 zstd 崩溃）；**Node 必须 24+**（zlib 无 createZstdDecompress）
+- **完全脱离 WSL**：bash 工具 = PortableGit Git Bash；searxng（8890，cn.bing+360search）/ whisper（18767，small+zh+opencc 简体）本地内置；pi-tmux Windows 原生后端（bash -c + 日志 + pidfile）；pi-browser 官方 stealth 定制版（.cloakbrowser/，--no-proxy-server 防系统代理）
+- **wrapper 自动重启**：start.bat 循环 + check-restart.js（admin_restart 免手动）+ check-services.js（服务端口自启，直接 spawn base python + PYTHONPATH 注入 venv——避开 uv trampoline 弹窗，服务无终端窗口；start.bat 另含 junction 自动修复，解压即用）
+- **fd/rg Windows exe 预置** `.pi/agent/bin/`（GitHub 下载被墙）
+
+已知限制：whisper GPU 推理未启用（需 nvidia-cublas/cudnn ~1GB）；包内密钥（settings.json/auth.json/.ssh）自行决定是否携带。
 
 ### 新设备恢复引导
 
