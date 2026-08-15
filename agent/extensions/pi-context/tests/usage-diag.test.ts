@@ -37,7 +37,6 @@ function record(overrides: Partial<UsageRecord>): void {
     reasoning: 100,
     total: 30_600,
     contextTokens: 30_000,
-    compacted: false,
     ...overrides,
   })
 }

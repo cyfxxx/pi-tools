@@ -19,7 +19,6 @@ export interface UsageRecord {
   reasoning: number;
   total: number;
   contextTokens: number;
-  compacted: boolean;
 }
 
 export interface AutoCompactEvent {
@@ -130,7 +129,6 @@ export interface UsageSummary {
   cacheHitRatio: number;
   outputTotal: number;
   reasoningTotal: number;
-  compactEvents: number;
   recentTrend: number[];
 }
 
@@ -150,7 +148,6 @@ export function summarizeRecords(records: UsageRecord[]): UsageSummary | null {
         : 0,
     outputTotal: records.reduce((s, r) => s + r.output, 0),
     reasoningTotal: records.reduce((s, r) => s + r.reasoning, 0),
-    compactEvents: records.filter((r) => r.compacted).length,
     recentTrend: records.slice(-20).map((r) => r.contextTokens),
   };
 }

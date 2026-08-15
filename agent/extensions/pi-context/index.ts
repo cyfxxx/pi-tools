@@ -153,10 +153,7 @@ export default function (pi: ExtensionAPI) {
 		);
 	});
 
-	// 每轮用量记录 + 按窗口比例自动压缩
-	// 根因修复：pi 内置压缩阈值 = 窗口 - reserveTokens，对 1M 窗口模型高达 96.7 万，
-	// 会话每轮全量重发持续膨胀。这里在 20%（大窗口）/85%（小窗口）处主动触发压缩。
-	// 注意：ctx.compact() 会 abort 当前 agent 运行，因此判定放在 agent_end（run 结束）而非 turn_end。
+	// 每轮用量记录（compacted 死字段已移除：真实压缩事件由 recordAutoCompact 单独记录）
 	pi.on("turn_end", (event: TurnEndEvent) => {
 		const usage = (event.message as { usage?: Usage } | undefined)?.usage;
 		if (!usage || typeof usage.input !== "number") return;
@@ -172,11 +169,16 @@ export default function (pi: ExtensionAPI) {
 			reasoning: usage.reasoning || 0,
 			total: usage.totalTokens || 0,
 			contextTokens: input + cacheRead,
-			compacted: false,
 		});
 	});
 
-	pi.on("agent_end", (_event, ctx) => {
+	// 按窗口比例自动压缩（根因修复：pi 内置压缩阈值 = 窗口 - reserveTokens，对 1M 窗口
+	// 模型高达 96.7 万，会话每轮全量重发持续膨胀）。
+	// 挂在 agent_settled 而非 agent_end：AgentEndEvent 对扩展无 willRetry 字段（实测
+	// types.d.ts），agent_end 时内核可能仍会重试/续跑——此时 ctx.compact() 会 abort
+	// 杀掉内核重试轮。agent_settled 语义为"run 完全settled且无重试/压缩/排队续跑"
+	// （agent-session.js _emitAgentSettled），此点压缩不会打断任何内核后续动作。
+	pi.on("agent_settled", (_event, ctx) => {
 		const usage = ctx.getContextUsage();
 		if (!usage || typeof usage.tokens !== "number" || usage.tokens <= 0) return;
 		const contextWindow = usage.contextWindow;
@@ -185,10 +187,14 @@ export default function (pi: ExtensionAPI) {
 		const decision = compactDecider.decide(usage.tokens, contextWindow);
 		if (!decision.shouldCompact) return;
 
-		recordAutoCompact(usage.tokens, decision.threshold);
-		compactDecider.markCompact();
 		autoContinueGate.arm();
 		ctx.compact({
+			// 仅压缩成功后记账/记时：cooldown 起点取真实完成时刻；
+			// 失败不进入 cooldown，下一轮 agent_settled 可重试
+			onComplete: () => {
+				recordAutoCompact(usage.tokens, decision.threshold);
+				compactDecider.markCompact();
+			},
 			onError: (err) => {
 				autoContinueGate.disarm();
 				// 压缩失败不致命：内置 96.7 万兜底仍在
@@ -215,7 +221,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// 会话恢复：历史全量重发前先检查是否已超压缩阈值。
-	// resume 大会话时上下文立即回到之前大小（如 300K），若等首轮 agent_end
+	// resume 大会话时上下文立即回到之前大小（如 300K），若等首轮 agent_settled
 	// 再压缩会浪费一轮全量发送；此处无 agent 运行时直接压缩（abort 是 no-op）。
 	// 注意：compact() 会 emit session_compact，但 AutoContinueGate 未 arm →
 	// 不会触发自动继续（恢复后等待用户输入是正确行为）。
@@ -228,11 +234,14 @@ export default function (pi: ExtensionAPI) {
 		const decision = compactDecider.decide(usage.tokens, contextWindow);
 		if (!decision.shouldCompact) return;
 
-		recordAutoCompact(usage.tokens, decision.threshold);
-		compactDecider.markCompact();
 		ctx.compact({
+			// 与 agent_settled 一致：成功后才记账/记时
+			onComplete: () => {
+				recordAutoCompact(usage.tokens, decision.threshold);
+				compactDecider.markCompact();
+			},
 			onError: (err) => {
-				// 恢复时压缩失败不致命：首轮 agent_end 会再判定
+				// 恢复时压缩失败不致命：首轮 agent_settled 会再判定
 				console.error("pi-context: resume compact failed:", err);
 			},
 		});

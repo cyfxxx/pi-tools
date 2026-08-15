@@ -14,7 +14,7 @@
  *  - 窗口 ≤ 256K（如 local-llama 131K）：85% 触发，接近原生压缩行为
  */
 
-export type CompactReason = "over-threshold" | "cooldown" | "no-window";
+export type CompactReason = "under-threshold" | "over-threshold" | "cooldown" | "no-window";
 
 export interface CompactDecision {
   shouldCompact: boolean;
@@ -63,7 +63,7 @@ export function makeCompactDecider(cooldownMs = DEFAULT_COOLDOWN_MS): CompactDec
         return { shouldCompact: false, threshold: 0, contextTokens, reason: "no-window" };
       }
       if (contextTokens <= threshold) {
-        return { shouldCompact: false, threshold, contextTokens, reason: "over-threshold" };
+        return { shouldCompact: false, threshold, contextTokens, reason: "under-threshold" };
       }
       if (now - lastCompactAt < cooldownMs) {
         return { shouldCompact: false, threshold, contextTokens, reason: "cooldown" };

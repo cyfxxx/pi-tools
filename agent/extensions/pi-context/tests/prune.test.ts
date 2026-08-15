@@ -92,6 +92,46 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(messageText(m)).toBe('第一段\n第二段')
   })
 
+  it('非 text 块（图片等）参与擦除：被替换为占位文本块', () => {
+    // 5 轮，toolResult 含图片块（非 text）→ 名义 1000 token/块参与预算判定；
+    // 保护带外被擦除（index 2、5）的消息中 image 块也须被替换（修复前原样保留）
+    const tool = (imgData: string): PruneMessage => ({
+      role: 'toolResult',
+      content: [
+        { type: 'image', data: imgData, mimeType: 'image/png' },
+        { type: 'text', text: 'y'.repeat(200_000) },
+      ],
+    })
+    const msgs: PruneMessage[] = [
+      user(), assistant(), tool('aaaa'),
+      user(), assistant(), tool('bbbb'),
+      user(), assistant(), tool('cccc'),
+      user(), assistant(), tool('dddd'),
+      user(), assistant(), tool('eeee'),
+    ]
+    const r = pruneToolResults(msgs)
+    expect(r.modified).toBe(true)
+    // 被擦除消息（index 2、5）的 content 中不再残留 image 块（替换为占位文本块）
+    const blockTypes = (m: PruneMessage): string[] =>
+      Array.isArray(m.content) ? (m.content as { type?: string }[]).map((b) => b.type ?? '') : []
+    expect(blockTypes(r.messages[2])).not.toContain('image')
+    expect(blockTypes(r.messages[2])).toEqual(['text', 'text'])
+    expect(blockTypes(r.messages[5])).not.toContain('image')
+    expect(blockTypes(r.messages[5])).toEqual(['text', 'text'])
+    const markers = (m: PruneMessage): string[] =>
+      Array.isArray(m.content)
+        ? (m.content as { type?: string; text?: string }[])
+            .filter((b) => b.type === 'text')
+            .map((b) => b.text ?? '')
+        : []
+    expect(markers(r.messages[2]).every((t) => /^\[pruned: \d+ chars\]$/.test(t))).toBe(true)
+    expect(markers(r.messages[5]).every((t) => /^\[pruned: \d+ chars\]$/.test(t))).toBe(true)
+    // 预算内保留（index 8）与最近 2 轮（index 11、14）完整保留含图片
+    expect(blockTypes(r.messages[8])).toContain('image')
+    expect(blockTypes(r.messages[11])).toContain('image')
+    expect(blockTypes(r.messages[14])).toContain('image')
+  })
+
   it('自定义参数生效（protectTokens/minimumTokens/keepRecentTurns）', () => {
     const msgs = session(6, 100_000)
     const r = pruneToolResults(msgs, {

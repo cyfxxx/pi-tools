@@ -38,7 +38,7 @@ describe('auto-compact: 判定与防抖', () => {
     const d = makeCompactDecider()
     const decision = d.decide(100_000, 1_000_000, now)
     expect(decision.shouldCompact).toBe(false)
-    expect(decision.reason).toBe('over-threshold')
+    expect(decision.reason).toBe('under-threshold')
     expect(decision.threshold).toBe(400_000)
   })
 

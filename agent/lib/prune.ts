@@ -66,14 +66,30 @@ export function messageText(m: PruneMessage): string {
   return parts.join("\n");
 }
 
-/** 将消息 content 中的 text block 全部替换为占位文本；返回替换后的 content */
+/** 非 text 块（图片/附件等）数量：无法按字符估算，参与擦除判定时按名义 token 计 */
+export function nonTextBlockCount(m: PruneMessage): number {
+  if (!Array.isArray(m.content)) return 0;
+  let n = 0;
+  for (const block of m.content as { type?: string; text?: string }[]) {
+    if (!block || typeof block !== "object") continue;
+    if (block.type !== "text" || typeof block.text !== "string") n++;
+  }
+  return n;
+}
+
+// 非 text 块名义 token（保守下限：read 返回的截图常见视觉 token 数百至上千）
+export const NON_TEXT_BLOCK_TOKENS = 1000;
+
+/** 将消息 content 中全部块替换为占位文本（text 块与非 text 块一律擦除）；返回替换后的 content */
 export function pruneMessageText(m: PruneMessage, chars: number): unknown {
   if (!Array.isArray(m.content)) return m.content;
   return (m.content as { type?: string; text?: string }[]).map((block) => {
-    if (block && typeof block === "object" && block.type === "text" && typeof block.text === "string") {
+    if (!block || typeof block !== "object") return block;
+    if (block.type === "text" && typeof block.text === "string") {
       return { ...block, text: PRUNE_MARKER(chars) };
     }
-    return block;
+    // 非 text 块（图片等）同样擦除：替换为占位文本块，避免视觉数据持续占用上下文
+    return { type: "text", text: PRUNE_MARKER(chars) };
   });
 }
 
@@ -106,12 +122,12 @@ export function pruneToolResults(
     }
   }
 
-  // 每条 toolResult 消息的估算 token
+  // 每条 toolResult 消息的估算 token（含非 text 块名义 token）
   const sizes: number[] = new Array(n).fill(0);
   for (let i = 0; i < n; i++) {
     const m = messages[i];
     if (m.role !== "toolResult") continue;
-    sizes[i] = estimateTokens(messageText(m));
+    sizes[i] = estimateTokens(messageText(m)) + NON_TEXT_BLOCK_TOKENS * nonTextBlockCount(m);
   }
 
   // 从后往前累计保留预算：保护带内（最近轮次）无条件保留，绝不消耗预算；
