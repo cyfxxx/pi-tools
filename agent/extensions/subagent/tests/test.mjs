@@ -262,6 +262,67 @@ test("discoverAgents project 只取项目级", () => {
 	}
 });
 
+// ---------- readonly agent 只读隔离（5） ----------
+const { resolveAgentTools, buildAgentPrompt, scheduleKillChain } = mod;
+
+test("resolveAgentTools 非 readonly -> 原样返回", () =>
+	assert.deepStrictEqual(resolveAgentTools({ tools: ["read", "bash"] }), ["read", "bash"]));
+test("resolveAgentTools readonly -> 过滤 bash/edit/write", () =>
+	assert.deepStrictEqual(resolveAgentTools({ readonly: true, tools: ["read", "bash", "edit", "write", "ls"] }), ["read", "ls"]));
+test("resolveAgentTools readonly 全写入类 -> 回退最小只读集", () =>
+	assert.deepStrictEqual(resolveAgentTools({ readonly: true, tools: ["bash"] }), ["read", "ls"]));
+test("buildAgentPrompt readonly -> 前置只读声明", () => {
+	const out = buildAgentPrompt({ readonly: true, systemPrompt: "BODY" });
+	assert.ok(out.startsWith("\n\n---\n[强制只读模式]"));
+	assert.ok(out.endsWith("BODY"));
+});
+test("buildAgentPrompt 非 readonly -> 原样", () =>
+	assert.strictEqual(buildAgentPrompt({ systemPrompt: "BODY" }), "BODY"));
+
+test("scheduleKillChain SIGTERM 后升级 SIGKILL", async () => {
+	const kills = [];
+	const proc = { kill: (s) => { kills.push(s); return true; } };
+	scheduleKillChain(proc, 10);
+	await new Promise((r) => setTimeout(r, 40));
+	assert.deepStrictEqual(kills, ["SIGTERM", "SIGKILL"]);
+});
+
+test("scheduleKillChain close 事件清除升级定时器", async () => {
+	const kills = [];
+	let closeFn;
+	const proc = {
+		kill: (s) => { kills.push(s); return true; },
+		once: (ev, fn) => { if (ev === "close") closeFn = fn; },
+	};
+	scheduleKillChain(proc, 10);
+	closeFn();
+	await new Promise((r) => setTimeout(r, 40));
+	assert.deepStrictEqual(kills, ["SIGTERM"]);
+});
+
+test("scheduleKillChain kill 抛错（已退出）-> 不安排 SIGKILL", async () => {
+	const kills = [];
+	const proc = { kill: (s) => { kills.push(s); throw new Error("gone"); } };
+	scheduleKillChain(proc, 10);
+	await new Promise((r) => setTimeout(r, 40));
+	assert.deepStrictEqual(kills, ["SIGTERM"]);
+});
+
+test("discoverAgents 解析 frontmatter readonly", () => {
+	const { cwd, cleanup } = makeAgentDiscoveryFixtures();
+	try {
+		writeFileSync(join(process.env.PI_CODING_AGENT_DIR, "agents", "ro.md"),
+			"---\nname: ro\ndescription: 只读\nreadonly: true\n---\n\n只读 agent");
+		const { agents } = discoverAgents(cwd, "user");
+		const ro = agents.find((a) => a.name === "ro");
+		assert.strictEqual(ro.readonly, true);
+		const bar = agents.find((a) => a.name === "bar");
+		assert.strictEqual(bar.readonly, undefined);
+	} finally {
+		cleanup();
+	}
+});
+
 // ---------- summary ----------
 console.log(`\n${passed} passed, ${failed} failed${failed ? `\n${failures.map((f) => `  ✗ ${f}`).join("\n")}` : ""}`);
 if (failed > 0) process.exit(1);

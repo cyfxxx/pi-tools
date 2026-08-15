@@ -342,6 +342,20 @@ export function pruneEntries(entries: MemoryEntry[]): { removed: number; titles:
   return { removed, titles: removedTitles }
 }
 
+/**
+ * 自动回收（审计发现）：pruneEntries 仅由用户 /memory prune 触发，而提取持续 ADD
+ * 且 deleted/superseded 条目不回收 → entries.json 无界增长。before_agent_start 每轮
+ * 全量读盘时若条目数超阈值（默认 600）自动回收 deleted 软删条目（无风险子集，
+ * 不碰时效剪枝——那部分语义保留给用户显式 prune）。返回回收后条目（未触发返回 null）。
+ */
+export function autoReclaim(entries: MemoryEntry[], softLimit = 600): MemoryEntry[] | null {
+  if (entries.length <= softLimit) return null
+  const kept = entries.filter(e => !e.deleted)
+  if (kept.length === entries.length) return null
+  saveEntries(kept)
+  return kept
+}
+
 export function getStats(entries: MemoryEntry[]): MemoryStats {
   const now = Date.now()
   const byCategory: Record<string, number> = {}

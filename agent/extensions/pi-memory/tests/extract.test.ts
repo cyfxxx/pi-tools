@@ -248,6 +248,21 @@ describe('extract: prompt building', () => {
   })
 })
 
+describe('extract: 指纹持久化（重启防重复提取）', () => {
+  it('markExtracted 落盘后新模块实例 shouldExtract 跳过同指纹', async () => {
+    const { markExtracted } = await import('../extract.ts')
+    markExtracted('sess-1', 42)
+    vi.resetModules()
+    const fresh = await import('../extract.ts')
+    // 同指纹 + 冷却期内 → 新进程（重启后）也跳过
+    expect(fresh.shouldExtract('sess-1', 42)).toBe(false)
+    // 不同消息数 → 允许提取
+    expect(fresh.shouldExtract('sess-1', 43)).toBe(true)
+    // 未标记过的会话 → 允许
+    expect(fresh.shouldExtract('sess-new', 10)).toBe(true)
+  })
+})
+
 describe('extract: extractTextFromEntries', () => {
   it('extracts text blocks from session entries', async () => {
     const { extractTextFromEntries } = await import('../extract.ts')

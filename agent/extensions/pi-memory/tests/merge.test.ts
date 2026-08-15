@@ -101,6 +101,53 @@ describe('merge: decideMerge four actions', () => {
     expect(decision.note).toContain('矛盾取代')
   })
 
+  it('contradiction: manual 条目不被低置信度提取候选取代', async () => {
+    const { decideMerge } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: '咖啡偏好',
+      category: 'preference',
+      content: '用户喜欢咖啡，每天一杯',
+      tags: ['偏好'],
+      confidence: 0.9,
+      source: 'manual',
+    })
+    const candidate = makeEntry({
+      title: '咖啡偏好更新',
+      category: 'preference',
+      content: '用户不喜欢咖啡，改喝茶',
+      tags: ['偏好'],
+      confidence: 0.4,
+      source: 'extract',
+    })
+    const decision = await decideMerge([existing], candidate)
+    expect(decision.action).toBe('NOOP')
+    expect(existing.deleted).toBeFalsy()
+    expect(existing.supersededBy).toBeUndefined()
+  })
+
+  it('contradiction: manual 条目被高置信度候选正常取代', async () => {
+    const { decideMerge } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: '咖啡偏好',
+      category: 'preference',
+      content: '用户喜欢咖啡，每天一杯',
+      tags: ['偏好'],
+      confidence: 0.9,
+      source: 'manual',
+    })
+    const candidate = makeEntry({
+      title: '咖啡偏好更新',
+      category: 'preference',
+      content: '用户不喜欢咖啡，改喝茶',
+      tags: ['偏好'],
+      confidence: 0.9,
+      source: 'extract',
+    })
+    const decision = await decideMerge([existing], candidate)
+    expect(decision.action).toBe('ADD')
+    expect(existing.deleted).toBe(true)
+  })
+
   it('contradiction: 启用→禁用 supersedes (双向词对)', async () => {
     const { decideMerge } = await import('../merge.ts')
     const existing = makeEntry({

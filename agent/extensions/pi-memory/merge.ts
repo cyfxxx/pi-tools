@@ -79,6 +79,11 @@ export async function decideMerge(
   // 矛盾检测：同一主体的对立表达（喜欢→不喜欢）→ 取代而非合并
   // 先于相似度合并判断，避免"用户喜欢咖啡"被并入"用户不喜欢咖啡"
   if (detectContradiction(best.entry, candidate)) {
+    // manual 条目（用户明确存入）不被低置信度提取候选静默取代：噪声提取与
+    // 用户明确记录冲突时保留 manual（审计发现：source!=='manual' 仅保护标签路径）
+    if (best.entry.source === 'manual' && (candidate.confidence ?? 0) < 0.8) {
+      return { action: 'NOOP', note: `矛盾候选置信度不足，保留 manual 条目 ${best.entry.title}` }
+    }
     best.entry.supersededBy = candidate.id
     best.entry.deleted = true
     best.entry.updatedAt = new Date().toISOString()

@@ -13,6 +13,8 @@ export interface AgentConfig {
 	description: string;
 	tools?: string[];
 	model?: string;
+	/** frontmatter readonly: true 时 spawn 强制过滤写入类工具（bash/edit/write）+ 注入只读提示 */
+	readonly?: boolean;
 	systemPrompt: string;
 	source: "user" | "project";
 	filePath: string;
@@ -60,11 +62,14 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			.map((t: string) => t.trim())
 			.filter(Boolean);
 
+		const rawReadonly = (frontmatter as Record<string, unknown>).readonly;
+
 		agents.push({
 			name: frontmatter.name,
 			description: frontmatter.description,
 			tools: tools && tools.length > 0 ? tools : undefined,
 			model: frontmatter.model,
+			readonly: rawReadonly === true || rawReadonly === "true" ? true : undefined,
 			systemPrompt: body,
 			source,
 			filePath,
