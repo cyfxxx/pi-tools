@@ -44,13 +44,18 @@ if [ -d "$PI_BIN_DIR" ]; then
     [ ! -f "$PI_JS" ] && PI_JS=""
   fi
 fi
-# 5. 兜底：直接试 pi 命令（可能走 wrapper 循环但概率低）
+# 5. 兜底：直接试 pi 命令——但必须排除 wrapper 自身：pi 命令被本脚本接管后
+#    command -v pi 即 $0（wrapper 脚本），直接采用会自我递归直到资源耗尽
+#    （审计 MEDIUM）。仅当解析到非本脚本路径才采用。
 if [ -z "$PI_JS" ]; then
-  PI_JS="$(command -v pi 2>/dev/null || echo '')"
+  cand="$(command -v pi 2>/dev/null || echo '')"
+  if [ -n "$cand" ] && [ "$(readlink -f "$cand" 2>/dev/null)" != "$(readlink -f "$0" 2>/dev/null)" ]; then
+    PI_JS="$cand"
+  fi
 fi
 
-# 解析成功则刷新锚点
-if [ -n "$PI_JS" ] && [ -f "$PI_JS" ]; then
+# 解析成功则刷新锚点（仅 .js 真实入口可写锚点——wrapper 自身会污染锚点致后续递归）
+if [ -n "$PI_JS" ] && [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
   echo "$PI_JS" > "$ANCHOR_FILE" 2>/dev/null
 fi
 
@@ -65,7 +70,11 @@ fi
 # Termux 重建：cloakbrowser 官方只发布 linux/darwin/win 预编译包，
 # Termux (platform=android) 用本地 Chromium（pkg install x11-repo chromium），
 # playwright-core 已打 android→linux 补丁（见 rebuild 记录）。
-export CLOAKBROWSER_BINARY_PATH="${CLOAKBROWSER_BINARY_PATH:-/data/data/com.termux/files/usr/bin/chromium-browser}"
+# 注意：仅 Termux 设默认值——其他平台无条件导出会注入不存在的路径
+# 使 cloakbrowser 误走 override 分支启动失败（2026-08-15 WSL 实测）。
+if [ -d /data/data/com.termux ]; then
+  export CLOAKBROWSER_BINARY_PATH="${CLOAKBROWSER_BINARY_PATH:-/data/data/com.termux/files/usr/bin/chromium-browser}"
+fi
 
 # Termux 无 X server：浏览器默认 headless（有头需要 termux-x11；
 # 桌面环境（WSLg/原生 X）不受影响，可显式 export PI_WEB_TOOLKIT_HEADLESS=false 覆盖）
@@ -301,7 +310,9 @@ ensure_tmux() {
     local tpid
     tpid=$(ps -e -o pid,comm 2>/dev/null | awk '$2 == "tmux: server" {print $1; exit}')
     [ -n "$tpid" ] && kill -9 "$tpid" 2>/dev/null
-    rm -rf /tmp/tmux-* 2>/dev/null
+    # 审计 MEDIUM：rm -rf /tmp/tmux-* 在 root 下会连其他用户的 socket 一起删——
+    # 收窄为本用户 socket 目录（tmux 默认 /tmp/tmux-UID/）
+    rm -rf "/tmp/tmux-$(id -u)" 2>/dev/null
     echo "[pi-wrapper] 清理陈旧 tmux server/socket 并重建" >&2
     tmux new-session -d -s bootstrap -c "$HOME" >/dev/null 2>&1 || true
   fi
@@ -371,8 +382,9 @@ while true; do
 
   # Reset extra args each iteration to avoid accumulation
   EXTRA_ARGS=()
-  # Unset old target vars
-  unset TARGET_SESSION TARGET_MODEL
+  # 注意：不要在这里 unset TARGET_SESSION/TARGET_MODEL——下方分支判断依赖它们
+  # （2026-08-15 审计发现：unset 先于判断致 switch_session/set_model 分支恒假，
+  # 模型切换/会话切换/崩溃回滚静默降级为 --continue）
 
   if [ "$ACTION" = "switch_session" ] && [ -n "$TARGET_SESSION" ]; then
     EXTRA_ARGS+=(--session "$TARGET_SESSION")
@@ -387,6 +399,7 @@ while true; do
     EXTRA_ARGS+=(--continue)
     echo "[pi-wrapper] 目标: 恢复最近会话" >&2
   fi
+  unset TARGET_SESSION TARGET_MODEL
 
   echo "[pi-wrapper] 1 秒后重启..." >&2
   sleep 1

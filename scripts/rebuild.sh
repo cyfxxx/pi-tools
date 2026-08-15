@@ -983,10 +983,11 @@ verify() {
     }
   done
 
-  # git 卫生（D2）：敏感文件不得被意外追踪（与 pi-backup verify 对齐）
+  # git 卫生（D2）：敏感文件不得被意外追踪（与 pi-backup verify 对齐——审计 LOW：
+  # 此前只查 4 个，漏 pi-voice.json/trust.json/searxng settings.yml/pi-link.json）
   if [ -d "$PI_HOME/.git" ]; then
-    if git -C "$PI_HOME" ls-files agent/auth.json agent/settings.json agent/models.json agent/models-store.json 2>/dev/null | grep -q .; then
-      warn "敏感文件被 git 追踪（auth/settings/models）——运行 git rm --cached 排除"; errors=$((errors+1))
+    if git -C "$PI_HOME" ls-files agent/auth.json agent/settings.json agent/models.json agent/models-store.json agent/pi-voice.json agent/trust.json searxng/settings.yml pi-link.json 2>/dev/null | grep -q .; then
+      warn "敏感文件被 git 追踪（auth/settings/models/pi-voice/trust/searxng.yml/pi-link.json）——运行 git rm --cached 排除"; errors=$((errors+1))
     else
       ok "git 卫生：敏感文件未被追踪"
     fi
@@ -1184,6 +1185,14 @@ cd "$PI_HOME"
 detect_china_network
 set_mirrors
 preflight
+# 审计 MEDIUM：preflight 才安装 curl——缺 curl 的机器上 detect 探测静默失败
+# （baidu 不可达 → CHINA_MIRROR=0，本次全程直连；npm/pip/apt 未配镜像，失败后
+# 靠下一次重跑才补上）。装好 curl 后重新探测一次（set_mirrors 幂等：缓存为空时
+# 重新测速；真直连网络重探测仍为 0，无副作用）。
+if command -v curl &>/dev/null && [ "$CHINA_MIRROR" = "0" ]; then
+  detect_china_network
+  set_mirrors
+fi
 phase1_config
 
 # Phase 2-A (npm), 2-B (venv), 2-B2 (repo) 并行执行

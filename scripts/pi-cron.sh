@@ -49,6 +49,7 @@ check_lock() {
     return 1
   fi
   read -r LOCKED_PID < "$LOCK_FILE" 2>/dev/null || return 1
+  LOCKED_PID="${LOCKED_PID%%:*}"  # 锁内容 PID:时间戳（租约格式，审计 LOW 同步）
   # 检查 PID 是否存活（用 /proc 而非 kill -0：proot 下 PID 1 等进程存在但
   # 不可 signal，kill -0 会误判为已死）
   if [ -d "/proc/$LOCKED_PID" ]; then
@@ -70,6 +71,7 @@ acquire_lock() {
   if [ -f "$LOCK_FILE" ]; then
     local held_pid
     held_pid=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
+    held_pid="${held_pid%%:*}"  # 锁内容 PID:时间戳（租约格式，审计 LOW 同步）
     if [ -n "$held_pid" ] && [ "$held_pid" != "$my_pid" ] && [ -d "/proc/$held_pid" ]; then
       return 1
     fi
@@ -117,10 +119,13 @@ def _match_field(field, value):
                 return True
     return False
 
-def compute_next(task_type, schedule, last_run):
+def compute_next(task_type, schedule, last_run, last_result=''):
     now = now_local()
     if task_type == 'once':
-        if last_run: return None
+        # 成功执行后不再触发；失败（重试中）允许重算——审计 MEDIUM：此前 last_run
+        # 非空即返回 None，失败重试的 nextRun（60s 后）被重算成 None 永不触发
+        if last_run and last_result == 'success':
+            return None
         m = re.match(r'^\+(\d+)\s*(s|m|h|d)?$', schedule)
         if m:
             n = int(m.group(1))
@@ -199,7 +204,7 @@ if not due: sys.exit(0)
 due.sort(key=lambda x: x.get('nextRun', ''))
 for t in due:
     try:
-        t['_next_run'] = compute_next(t.get('type',''), t.get('schedule',''), t.get('lastRun','') or '')
+        t['_next_run'] = compute_next(t.get('type',''), t.get('schedule',''), t.get('lastRun','') or '', t.get('lastResult','') or '')
     except Exception as e:
         # 单任务 schedule 非法（如 'abc * * * *'）不能中断整个批次，只跳过该任务
         print('[pi-cron] 任务 schedule 计算异常，跳过: ' + str(t.get('name', '?')) + ' (' + str(e) + ')', file=sys.stderr)
@@ -274,7 +279,12 @@ for i, t in enumerate(data.get('tasks', [])):
             t['nextRun'] = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat().replace('+00:00', 'Z')
         else:
             t['runCount'] = t.get('runCount', 0) + 1
-            t['nextRun'] = next_run if next_run else None
+            # once 重试耗尽：显式停止（lastResult=failed 时 compute_next 不返回 None，
+            # 若沿用 next_run 会把 nextRun 设为未来时间导致任务继续触发）
+            if t.get('type') == 'once':
+                t['nextRun'] = None
+            else:
+                t['nextRun'] = next_run if next_run else None
     break
 
 tmp = tasks_file + '.tmp.' + str(os.getpid())
@@ -316,8 +326,14 @@ send_notification() {
   fi
 
   if [ -n "$webhook" ] && command -v curl >/dev/null 2>&1; then
+    # 审计 LOW：task_name/result 此前未转义（引号/反斜杠破坏 JSON，curl 静默失败）——
+    # 与 output 一致走 json.dumps
+    local task_json result_json output_json
+    task_json=$(printf '%s' "$task_name" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+    result_json=$(printf '%s' "$result" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+    output_json=$(printf '%s' "$output" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()[:1000]))')
     curl -s -X POST -H "Content-Type: application/json" \
-      -d "{\"task\":\"$task_name\",\"result\":\"$result\",\"time\":\"$(date -u -Iseconds)\",\"output\":$(printf '%s' "$output" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()[:1000]))')}" \
+      -d "{\"task\":$task_json,\"result\":$result_json,\"time\":\"$(date -u -Iseconds)\",\"output\":$output_json}" \
       "$webhook" >/dev/null 2>&1 || true
   fi
 }

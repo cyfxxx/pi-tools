@@ -153,13 +153,17 @@ else
   say "== 审查范围: $SCAN_DIR =="
   # 排除第三方依赖与运行时数据（与 node_modules 同级：venv 虚拟环境、SearXNG
   # 第三方源码、日志、记忆提取缓存），避免逐文件语法检查拖垮扫描
-  mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' ! -path '*/.pi/*' 2>/dev/null)
+  # 审计 2026-08-15：排除 */.pi/* 在扫描根自身是 .pi 目录（如 ~/.pi 仓库）时
+  # 会误伤全部文件（249 个源码只审到 1 个）——根为 .pi 时禁用该排除
+  local PI_EXCL=()
+  [ "$(basename "$SCAN_DIR")" != ".pi" ] && PI_EXCL=(! -path '*/.pi/*')
+  mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' "${PI_EXCL[@]}" 2>/dev/null)
   # 扫描预览：先大致查看范围（文件数 + 目录分布），确认无需再排除
   TOTAL_FILES=$(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' 2>/dev/null | wc -l)
   say "扫描预览: 源码文件 $TOTAL_FILES 个（已排除 node_modules/searxng venv+repo/logs/memory/tools/pi-global 等运行时）"
   if [ "$TOTAL_FILES" -gt 300 ]; then
     say "  目录分布（前 15）:"
-    find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' ! -path '*/.pi/*' 2>/dev/null | sed "s|$SCAN_DIR/||" | cut -d/ -f1-2 | sort | uniq -c | sort -rn | head -15
+    find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' "${PI_EXCL[@]}" 2>/dev/null | sed "s|$SCAN_DIR/||" | cut -d/ -f1-2 | sort | uniq -c | sort -rn | head -15
   fi
 fi
 
