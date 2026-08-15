@@ -335,6 +335,45 @@ test("agentLabel 缺 agent -> 占位符", () =>
 test("agentLabel 有 agent -> 原样", () =>
 	assert.strictEqual(agentLabel("scout"), "scout"));
 
+// ---------- 环境并发限制（Termux ≤2 / 桌面默认） (4) ----------
+test("桌面环境默认并行任务上限 8", () => {
+	const { getMaxParallelTasks, isTermuxEnv } = mod;
+	if (isTermuxEnv()) return; // Termux 实机上跳过（本用例只验证桌面默认）
+	assert.strictEqual(getMaxParallelTasks(), 8);
+});
+
+test("桌面环境云端并发 4 / 本地并发 1", () => {
+	const { getMaxConcurrency, isTermuxEnv } = mod;
+	if (isTermuxEnv()) return;
+	assert.strictEqual(getMaxConcurrency(false), 4);
+	assert.strictEqual(getMaxConcurrency(true), 1);
+});
+
+test("Termux 环境任务上限 2 / 并发 2", () => {
+	const { getMaxParallelTasks, getMaxConcurrency, isTermuxEnv } = mod;
+	const savedPlatform = process.platform;
+	const savedTermux = process.env.TERMUX_VERSION;
+	Object.defineProperty(process, 'platform', { value: 'android' });
+	process.env.TERMUX_VERSION = '0.118';
+	assert.strictEqual(isTermuxEnv(), true);
+	assert.strictEqual(getMaxParallelTasks(), 2);
+	assert.strictEqual(getMaxConcurrency(false), 2);
+	assert.strictEqual(getMaxConcurrency(true), 1); // 本地模型仍串行
+	delete process.env.TERMUX_VERSION;
+	Object.defineProperty(process, 'platform', { value: savedPlatform });
+	if (savedTermux !== undefined) process.env.TERMUX_VERSION = savedTermux;
+});
+
+test("TERMUX_VERSION 变量单独生效（WSL 内跑 Termux 场景）", () => {
+	const { isTermuxEnv, getMaxConcurrency } = mod;
+	const saved = process.env.TERMUX_VERSION;
+	process.env.TERMUX_VERSION = '0.118';
+	assert.strictEqual(isTermuxEnv(), true);
+	assert.strictEqual(getMaxConcurrency(false), 2);
+	delete process.env.TERMUX_VERSION;
+	if (saved !== undefined) process.env.TERMUX_VERSION = saved;
+});
+
 // ---------- summary ----------
 console.log(`\n${passed} passed, ${failed} failed${failed ? `\n${failures.map((f) => `  ✗ ${f}`).join("\n")}` : ""}`);
 if (failed > 0) process.exit(1);
