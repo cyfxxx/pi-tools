@@ -20,7 +20,9 @@
       "accessedAt": "2026-08-15T04:31:11.782Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-15T04:31:11.782Z",
+      "deleted": false
     },
     {
       "title": "便携版 pi-tools 仓库分支策略与双副本结构",
@@ -35,7 +37,9 @@
         "windows",
         "分支策略"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "0a3451e3-8697-4d0d-949d-01dc0cf3d7ff",
+      "updatedAt": "2026-08-15T11:09:56.684Z"
     },
     {
       "id": "fd30835b-fede-40b3-b2cb-0d83d6d6d2c9",
@@ -57,7 +61,9 @@
       "accessedAt": "2026-08-15T08:02:30.947Z",
       "environments": [
         "windows"
-      ]
+      ],
+      "observedAt": "2026-08-15T08:02:30.947Z",
+      "deleted": false
     },
     {
       "id": "1e40c26a-8242-44d3-a037-3dacdc5c0f94",
@@ -74,10 +80,10 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-07-31T13:00:27.399Z",
-      "updatedAt": "2026-07-31T13:00:27.399Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-07-31T13:00:27.399Z",
       "observedAt": "2026-07-31T13:00:27.399Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -212,12 +218,12 @@
       ],
       "confidence": 0.95,
       "createdAt": "2026-08-03T12:32:10.198028+00:00",
-      "updatedAt": "2026-08-03T12:32:10.198107+00:00",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessCount": 0,
       "lastAccessedAt": null,
       "referenceCount": 0,
       "superseded": false,
-      "supersededBy": null,
+      "supersededBy": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
       "sourceSessions": [],
       "observedAt": "2026-08-03T12:32:10.198028+00:00",
       "deleted": false,
@@ -239,13 +245,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-03T12:36:18.760Z",
-      "updatedAt": "2026-08-03T12:36:18.760Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-03T12:36:18.760Z",
       "observedAt": "2026-08-03T12:36:18.760Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "947be7fa-cc35-4304-8f8f-49e446d598b6"
     },
     {
       "id": "8135fb1e-e09f-4553-a063-f138ca2a77eb",
@@ -261,13 +268,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-03T12:36:18.760Z",
-      "updatedAt": "2026-08-03T12:36:18.761Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "5bbd8efb-d935-4c43-a661-cc1b84083dc0"
     },
     {
       "id": "6b87ae38-5f1f-480e-a6ec-c7fb16b01b85",
@@ -283,13 +291,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-03T12:36:18.761Z",
-      "updatedAt": "2026-08-03T12:36:18.761Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-03T12:36:18.761Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "5bbd8efb-d935-4c43-a661-cc1b84083dc0"
     },
     {
       "id": "e0a1406c-1a6d-49b0-85ef-94804123f067",
@@ -494,13 +503,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-03T13:33:21.832Z",
-      "updatedAt": "2026-08-03T13:33:21.832Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "27a1dd18-f103-4ef1-a100-1b3db6efc3e7"
     },
     {
       "id": "947be7fa-cc35-4304-8f8f-49e446d598b6",
@@ -884,7 +894,7 @@
       "id": "d33921da-2f60-4e5e-8a16-f44361950b16",
       "category": "procedure",
       "title": "searxng 服务故障排查流程",
-      "content": "web_search 报 fetch failed 时：1) 检查进程是否运行（granian）；2) 未运行则执行 bash /root/.pi/searxng/start.sh；3) 用 python urllib 直连 http://127.0.0.1:8888 验证 200（勿依赖 curl，Android proot 下不可靠）；4) 首请求延迟 20s 属引擎初始化正常；5) 实测 bing 引擎验证。",
+      "content": "web_search 报 fetch failed 时：1) 检查进程是否运行（granian）；2) 未运行则执行 bash /root/.pi/searxng/start.sh；3) 用 python urllib 直连 http://127.0.0.1:8889 验证 200（勿依赖 curl，Android proot 下不可靠）；4) 首请求延迟 20s 属引擎初始化正常；5) 实测 bing 引擎验证。",
       "tags": [
         "searxng",
         "故障排查",
@@ -894,7 +904,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-05T14:40:28.496Z",
-      "updatedAt": "2026-08-05T14:40:28.496Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-05T14:40:28.496Z",
       "observedAt": "2026-08-05T14:40:28.496Z",
       "deleted": false,
@@ -962,13 +972,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-05T15:04:03.663Z",
-      "updatedAt": "2026-08-05T15:04:03.663Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022"
     },
     {
       "id": "37e312c5-cf8b-47e6-b809-e421516b6e51",
@@ -983,13 +994,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-05T15:04:03.663Z",
-      "updatedAt": "2026-08-05T15:04:03.663Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40"
     },
     {
       "id": "73fafec9-c7dd-4792-893c-66d8701c6481",
@@ -2152,13 +2164,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T01:05:58.947Z",
-      "updatedAt": "2026-08-10T01:05:58.947Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T01:05:58.947Z",
       "observedAt": "2026-08-10T01:05:58.947Z",
       "deleted": false,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "c1b80f12-dde1-4f32-b15d-174d8d4d066b"
     },
     {
       "id": "74b41a71-d52f-4a47-8218-fd30f158a409",
@@ -2262,13 +2275,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T02:01:33.439Z",
-      "updatedAt": "2026-08-10T02:01:33.439Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "mem_planexit_confirm_20260814"
     },
     {
       "id": "8697154b-a194-4521-b481-0edf6baeb978",
@@ -2478,7 +2492,7 @@
       "id": "338c5ba2-9b62-4b00-bb60-10046a3f34c5",
       "category": "procedure",
       "title": "pi 重启流程（wrapper 循环 + state 文件）",
-      "content": "pi 重启机制（2026-08-10 实测通过）：proot 环境下 pi-wrapper.sh 循环可自动拉起 pi。流程：1) 写 ~/.pi/agent/.pi-admin-state.json 为 {\"action\":\"restart\",\"reason\":\"...\",\"timestamp\":<ms>,\"restartLog\":{...}}（原子写：tmp+rename，格式同 pi-autopilot/state.ts 的 writeRestartRequest）；2) 定位 pi 主进程 PID（ps -ef 找 pi-wrapper.sh 的子进程，进程名是 \"pi\" 而非 node，pgrep -f dist/cli.js 会误匹配）；3) kill -TERM <PID>；4) wrapper 检测 action≠none → 1 秒后自动重启并 --continue 恢复最近会话。用户说\"重启\"时按此执行，无需人工干预。",
+      "content": "pi 重启机制（2026-08-10 实测通过）：proot 环境下 pi-wrapper.sh 循环可自动拉起 pi。流程：1) 写 ~/.pi/agent/.pi-admin-state.json 为 {\"action\":\"restart\",\"reason\":\"...\",\"timestamp\":<ms>,\"restartLog\":{...}}（原子写：tmp+rename，格式同 pi-autopilot/state.ts 的 writeRestartRequest）；2) 定位 pi 主进程 PID（ps -ef 找 pi-wrapper.sh 的子进程，进程名是 \"pi\" 而非 node，pgrep -f dist/cli.js 会误匹配）；3) kill -TERM <PID>；4) wrapper 检测 action≠none → 1 秒后自动重启并 --continue 恢复最近会话。用户说\"重启\"时按此执行，无需人工干预。\n\n（补充：proot 环境曾无法用 admin_restart 工具重启（报错），2026-08-15 由 restoreAllTools 修复，/auto restart 恒可用。）",
       "tags": [
         "pi-wrapper",
         "restart",
@@ -2488,7 +2502,7 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-10T05:52:42.178Z",
-      "updatedAt": "2026-08-10T05:52:42.178Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T05:52:42.178Z",
       "observedAt": "2026-08-10T05:52:42.178Z",
       "deleted": false,
@@ -2590,7 +2604,7 @@
       "id": "891a7fbf-6c6b-4a30-8eae-fd26ec3a848f",
       "category": "fact",
       "title": "扩展命令整合后命令面",
-      "content": "2026-09 命令整合完成：/voice <start|stop|cancel|tts|doctor|model|bench|help>、/auto <status|policy|failover|pause|resume|restart|help>、/schedule（独立13子命令）、/plan <enter|exit|clear|resume|view|todos|help>（无参数=toggle）。旧命令 /tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart 已移除不保留别名。conflict-check.mjs 已守门，新扩展命令须同步清单。",
+      "content": "2026-08 命令整合完成：/voice <start|stop|cancel|tts|doctor|model|bench|help>、/auto <status|policy|failover|pause|resume|restart|help>、/schedule（独立13子命令）、/plan <enter|exit|clear|resume|view|todos|help>（无参数=toggle）。旧命令 /tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart 已移除不保留别名。conflict-check.mjs 已守门，新扩展命令须同步清单。",
       "tags": [
         "扩展",
         "命令整合",
@@ -2600,7 +2614,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T05:59:57.197Z",
-      "updatedAt": "2026-08-10T05:59:57.197Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T05:59:57.197Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
       "deleted": false,
@@ -2893,13 +2907,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T07:20:00.317Z",
-      "updatedAt": "2026-08-10T07:20:00.317Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
       "deleted": false,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40"
     },
     {
       "id": "f952eb6b-5848-4a55-94ab-6db828ce06ad",
@@ -3119,13 +3134,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T08:59:37.714Z",
-      "updatedAt": "2026-08-10T08:59:37.714Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
       "deleted": false,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
       "id": "f4c57db1-a18c-45c6-a47b-0374432cf5dc",
@@ -3359,12 +3375,12 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 87,
+      "recurrence": 98,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-15T04:11:13.413Z",
-      "accessedAt": "2026-08-15T04:11:13.413Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
+      "accessedAt": "2026-08-15T13:38:51.626Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -3407,13 +3423,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T10:04:10.970Z",
-      "updatedAt": "2026-08-10T10:04:10.970Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "82d4c1ef-9c02-483a-aa7f-407a9463c757"
     },
     {
       "id": "949b2466-f53f-46f0-9343-619f6c1e6175",
@@ -3722,13 +3739,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.357Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
       "deleted": false,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
       "id": "e42dc92d-7678-4ee9-9915-e3fbd1a8ac08",
@@ -3995,13 +4013,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T11:14:54.133Z",
-      "updatedAt": "2026-08-10T11:14:54.133Z",
+      "updatedAt": "2026-08-15T14:52:50.038Z",
       "accessedAt": "2026-08-10T11:14:54.133Z",
       "observedAt": "2026-08-10T11:14:54.133Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "0f84be13-ad34-47c5-bef5-133bdef033f1"
     },
     {
       "id": "697dcec7-49f8-4f92-95a0-9d56f19c6da6",
@@ -4138,13 +4157,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T23:16:51.279Z",
-      "updatedAt": "2026-08-10T23:16:51.279Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T23:16:51.279Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "949b2466-f53f-46f0-9343-619f6c1e6175"
     },
     {
       "id": "2a027aae-1fcc-4b92-911f-c824b63b912a",
@@ -4880,13 +4900,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-11T03:32:17.685Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
       "deleted": false,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "0cc13027-df87-453c-86e5-6424ea1ee714"
     },
     {
       "id": "ece90703-de96-42ca-b03f-f39030ba43c8",
@@ -4903,13 +4924,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-11T03:32:17.685Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
       "deleted": false,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
       "id": "91810526-a752-4530-b43d-188257fd5f94",
@@ -4926,10 +4948,10 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-11T03:32:17.685Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-11T03:32:17.685Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -5080,10 +5102,10 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T04:37:04.510Z",
-      "updatedAt": "2026-08-11T04:37:04.510Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-11T04:37:04.510Z",
       "observedAt": "2026-08-11T04:37:04.510Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -5355,13 +5377,13 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-11T13:54:24.746Z",
-      "updatedAt": "2026-08-11T13:54:24.746Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-11T13:54:24.746Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "1b0d69ae-cf06-40ff-9476-c6151726a44c",
@@ -5616,7 +5638,7 @@
       "id": "7fce32a4-43e5-4230-867d-ef9e0edb5497",
       "category": "fact",
       "title": "SearXNG 服务挂死是反复出现的已知问题",
-      "content": "本环境（/root/.pi 自托管 SearXNG，端口 8888）服务挂死问题反复出现，与历史会话记录一致。表现为 web_search 工具超时无响应。诊断时先检查服务是否存活（ps/端口探测），必要时重启 searxng 服务或重建 venv/repo（searxng/settings.yml 含密钥，git 忽略）。",
+      "content": "本环境（/root/.pi 自托管 SearXNG，端口 8889）服务挂死问题反复出现，与历史会话记录一致。表现为 web_search 工具超时无响应。诊断时先检查服务是否存活（ps/端口探测），必要时重启 searxng 服务或重建 venv/repo（searxng/settings.yml 含密钥，git 忽略）。",
       "tags": [
         "searxng",
         "web_search",
@@ -5627,7 +5649,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:33:43.458Z",
-      "updatedAt": "2026-08-12T00:33:43.458Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T00:33:43.458Z",
       "observedAt": "2026-08-12T00:33:43.458Z",
       "environments": [
@@ -5639,7 +5661,7 @@
       "id": "494cf20b-db7c-477b-b69b-36e805d2331e",
       "category": "procedure",
       "title": "web_search 故障排查多级降级链路",
-      "content": "web_search 超时/失败时的排查顺序：1) 检查本地 SearXNG 服务（localhost:8888）是否存活，挂死则重启；2) 用 web_fetch（HTTP GET 搜索引擎，不依赖 SearXNG）兜底；3) 仍被拦截则用 browser_navigate 隐身浏览器访问；4) 若网络层整体拦截（SSL 错误/外网连接失败），如实报告网络不可用原因，不要编造搜索结果。",
+      "content": "web_search 超时/失败时的排查顺序：1) 检查本地 SearXNG 服务（localhost:8889）是否存活，挂死则重启；2) 用 web_fetch（HTTP GET 搜索引擎，不依赖 SearXNG）兜底；3) 仍被拦截则用 browser_navigate 隐身浏览器访问；4) 若网络层整体拦截（SSL 错误/外网连接失败），如实报告网络不可用原因，不要编造搜索结果。",
       "tags": [
         "web_search",
         "故障排查",
@@ -5650,7 +5672,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:33:43.458Z",
-      "updatedAt": "2026-08-12T00:33:43.458Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T00:33:43.458Z",
       "observedAt": "2026-08-12T00:33:43.458Z",
       "environments": [
@@ -5763,13 +5785,13 @@
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:35:09.428Z",
-      "updatedAt": "2026-08-12T00:35:09.428Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T00:35:09.428Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-12T00:35:09.428Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "2171199d-eb24-4593-a740-42bc9898d442",
@@ -6332,13 +6354,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T04:30:08.118Z",
-      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T04:30:08.118Z",
       "observedAt": "2026-08-12T04:30:08.118Z",
       "environments": [
         "termux"
       ],
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "949b2466-f53f-46f0-9343-619f6c1e6175"
     },
     {
       "id": "a8013dec-29a7-484a-8e6d-624d3b957bb9",
@@ -6379,13 +6402,13 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T04:30:08.118Z",
-      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T04:30:08.118Z",
       "observedAt": "2026-08-12T04:30:08.118Z",
       "environments": [
         "termux"
       ],
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "ab84534c-fef4-4e47-adb1-487cce3ce3be",
@@ -6403,13 +6426,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T04:30:08.118Z",
-      "updatedAt": "2026-08-12T04:30:08.118Z",
+      "updatedAt": "2026-08-15T11:09:56.789Z",
       "accessedAt": "2026-08-12T04:30:08.118Z",
       "observedAt": "2026-08-12T04:30:08.118Z",
       "environments": [
         "termux"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "192cb0b3-61c6-4632-b7d1-303871c5dd6b"
     },
     {
       "id": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40",
@@ -6576,7 +6600,7 @@
       "id": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5",
       "category": "solutions",
       "title": "install-wrapper.sh readlink 解析 bug 修复",
-      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。\n/root/.pi/scripts/install-wrapper.sh 曾有一个 bug：list_pi_bins() 用 readlink -f 输出路径，把 npm 全局安装的 bin/pi symlink 解析成真实文件（dist/cli.js），install_one() 对其 readlink 返回空，报\"不是 symlink，无法备份（可能已被覆盖）\"并 exit 1。2025-08-10 已修复：改为输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key（sort -u -t'|' -k2 | cut -d'|' -f1）。同时修了 echo /usr/local/bin/pi /usr/bin/pi 一行两路径的问题。pi update 后 npm 会把 Termux 的 usr/bin/pi 覆盖回官方 symlink，属预期行为，自愈（install-wrapper.sh --ensure，由 pi-cron.sh/tmux 启动触发）会自动重建 wrapper 并保留 pi-original 备份。若再出现\"不是 symlink，无法备份\"报错，说明该脚本被改回或存在新的解析问题。",
+      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。\n/root/.pi/scripts/install-wrapper.sh 曾有一个 bug：list_pi_bins() 用 readlink -f 输出路径，把 npm 全局安装的 bin/pi symlink 解析成真实文件（dist/cli.js），install_one() 对其 readlink 返回空，报\"不是 symlink，无法备份（可能已被覆盖）\"并 exit 1。2026-08-10 已修复：改为输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key（sort -u -t'|' -k2 | cut -d'|' -f1）。同时修了 echo /usr/local/bin/pi /usr/bin/pi 一行两路径的问题。pi update 后 npm 会把 Termux 的 usr/bin/pi 覆盖回官方 symlink，属预期行为，自愈（install-wrapper.sh --ensure，由 pi-cron.sh/tmux 启动触发）会自动重建 wrapper 并保留 pi-original 备份。若再出现\"不是 symlink，无法备份\"报错，说明该脚本被改回或存在新的解析问题。",
       "tags": [
         "install-wrapper.sh",
         "symlink",
@@ -6587,7 +6611,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T14:50:07.175Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
@@ -6600,7 +6624,7 @@
       "id": "047d9ce4-be1a-497d-b4e3-97caf742466d",
       "category": "fact",
       "title": "GitHub PAT 泄露且 pi-tools 仓库公开",
-      "content": "2025-08 发现 GitHub PAT（ghp_PNN2l...，已脱敏为 ghp_***）明文存在于 memory/extract-sessions/（313 个对话 jsonl）和 pending-extracts/，实测仍有效（API 返回 200）。pi-tools 仓库是公开的（技术内容对所有人可见）。无本地 git 凭据、无 SSH key，推送只能靠该 PAT。需用户到 GitHub Settings 撤销并重新生成；新 token 到手后推送未提交的改动。",
+      "content": "2026-08 发现 GitHub PAT（ghp_PNN2l...，已脱敏为 ghp_***）明文存在于 memory/extract-sessions/（313 个对话 jsonl）和 pending-extracts/，实测仍有效（API 返回 200）。pi-tools 仓库是公开的（技术内容对所有人可见）。无本地 git 凭据、无 SSH key，推送只能靠该 PAT。需用户到 GitHub Settings 撤销并重新生成；新 token 到手后推送未提交的改动。",
       "tags": [
         "github",
         "PAT",
@@ -6611,7 +6635,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T14:50:07.175Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
@@ -6744,7 +6768,7 @@
       "id": "4f2ff459-1b93-41cd-a2e8-5fb22322f8c5",
       "category": "fact",
       "title": "记忆清理结果与 reverse-skill 判定",
-      "content": "2025-08 全面清理 pi-memory：entries 198→143 条（删 54 条：reverse-skill 相关 16 条——用户曾分析但未加入当前项目且后续用不到、重复条目 10 条、空条目 1 条、过时 4 条、plan-mode 会话冗余 24 条）、summaries 50→44 条（删 6 条 reverse 会话摘要）、notes 删 1 条过时项。保留条目全部为当前项目（pi 扩展开发、环境维护、协作偏好）有效知识。清理结果已推送（10ed442）。reverse-skill 属用户弃用项目，不应再注入。",
+      "content": "2026-08 全面清理 pi-memory：entries 198→143 条（删 54 条：reverse-skill 相关 16 条——用户曾分析但未加入当前项目且后续用不到、重复条目 10 条、空条目 1 条、过时 4 条、plan-mode 会话冗余 24 条）、summaries 50→44 条（删 6 条 reverse 会话摘要）、notes 删 1 条过时项。保留条目全部为当前项目（pi 扩展开发、环境维护、协作偏好）有效知识。清理结果已推送（10ed442）。reverse-skill 属用户弃用项目，不应再注入。",
       "tags": [
         "pi-memory",
         "清理",
@@ -6755,7 +6779,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T14:50:07.175Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
@@ -6802,14 +6826,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T16:03:30.223Z",
-      "updatedAt": "2026-08-12T16:03:30.223Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T16:03:30.223Z",
       "observedAt": "2026-08-12T16:03:30.223Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
       "id": "11b49a61-a0e6-4e48-95a4-53385cd764c7",
@@ -6944,14 +6969,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T16:03:30.224Z",
-      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-12T16:03:30.224Z",
       "observedAt": "2026-08-12T16:03:30.224Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "891a7fbf-6c6b-4a30-8eae-fd26ec3a848f"
     },
     {
       "id": "ff3ae7b5-c3fa-46a6-a03e-bee00f3db00a",
@@ -7271,7 +7297,7 @@
       "id": "030fa28c-ba52-4be2-9da8-1b3b54f31a6b",
       "category": "fact",
       "title": "restart_hang 看门狗阈值与配置",
-      "content": "pi-autopilot 看门狗 restart_hang 触发条件：maxIdleMinutes（默认 30 分钟）内无 session_start/用户输入/任务执行即判挂死重启。配置持久化于 ~/.pi/agent/.pi-autopilot-config.json，文件不存在时 readAutopilotConfig 按 {默认, ...配置} 合并回落默认值——记忆声称的 120 因文件不存在从未生效。2026-11 本环境已设为 maxIdleMinutes=60 并入库共享（git 排除区移除，无密钥；各环境可本地改不推送）。\n连续 6 次 restart_hang（31-50 分钟无活动），由 pi-autopilot 看门狗正常触发（maxIdleMinutes=30），锁修复后看门狗持续运行、触发稳定可靠。重启频繁主因是用户离开超 30 分钟；可 /auto:policy set maxIdleMinutes 60 调大阈值，不影响稳定性。",
+      "content": "pi-autopilot 看门狗 restart_hang 触发条件：maxIdleMinutes（默认 30 分钟）内无 session_start/用户输入/任务执行即判挂死重启。配置持久化于 ~/.pi/agent/.pi-autopilot-config.json，文件不存在时 readAutopilotConfig 按 {默认, ...配置} 合并回落默认值——记忆声称的 120 因文件不存在从未生效。2026-08 本环境已设为 maxIdleMinutes=60 并入库共享（git 排除区移除，无密钥；各环境可本地改不推送）。\n连续 6 次 restart_hang（31-50 分钟无活动），由 pi-autopilot 看门狗正常触发（maxIdleMinutes=30），锁修复后看门狗持续运行、触发稳定可靠。重启频繁主因是用户离开超 30 分钟；可 /auto:policy set maxIdleMinutes 60 调大阈值，不影响稳定性。",
       "tags": [
         "autopilot",
         "看门狗",
@@ -7282,14 +7308,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T00:06:13.074Z",
-      "updatedAt": "2026-08-13T00:06:13.074Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-13T00:06:13.074Z",
       "observedAt": "2026-08-13T00:06:13.074Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "a47507ac-dee0-4648-946a-40dda377b158"
     },
     {
       "id": "d7679ffe-1d67-47be-9f5c-6b54a4a660c3",
@@ -7319,7 +7346,7 @@
       "id": "e4105b41-acba-4e9c-8e21-e7a4f8e82661",
       "category": "fact",
       "title": "test-all.sh 扩展套件列表硬编码",
-      "content": "pi-tools 的 scripts/test-all.sh 中 vitest 套件列表为硬编码扩展名数组，新增扩展不会自动纳入（2026-11 拉取 pi-link 时发现漏掉，其他环境只改了统计数字 8→9 未改列表）。新增扩展后须手动在 test-all.sh 追加套件条目并本地验证，再推送同步。",
+      "content": "pi-tools 的 scripts/test-all.sh 中 vitest 套件列表为硬编码扩展名数组，新增扩展不会自动纳入（2026-08 拉取 pi-link 时发现漏掉，其他环境只改了统计数字 8→9 未改列表）。新增扩展后须手动在 test-all.sh 追加套件条目并本地验证，再推送同步。",
       "tags": [
         "test-all",
         "pi-tools",
@@ -7330,7 +7357,7 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T00:06:13.074Z",
-      "updatedAt": "2026-08-13T00:06:13.074Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-13T00:06:13.074Z",
       "observedAt": "2026-08-13T00:06:13.074Z",
       "environments": [
@@ -8525,14 +8552,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-13T12:17:18.122Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-13T12:17:18.122Z",
       "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "3d3dab2c-e66e-4049-8558-67ef9f6fe00e"
     },
     {
       "id": "a921a0de-3cb7-43d0-b019-723f001af181",
@@ -8940,14 +8968,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T01:44:50.414Z",
-      "updatedAt": "2026-08-14T01:44:50.414Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-14T01:44:50.414Z",
       "observedAt": "2026-08-14T01:44:50.414Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "e6da85b8-16e1-4f0d-ace8-9669e6535227"
     },
     {
       "id": "e74fd944-525f-4a4b-9593-63aaff1fff33",
@@ -9236,13 +9265,13 @@
       "source": "manual",
       "recurrence": 9,
       "createdAt": "2026-08-14T03:29:32.815Z",
-      "updatedAt": "2026-08-15T03:05:09.472Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-15T03:05:09.472Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-14T03:29:32.815Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "060a8aac-810b-4b00-8da4-c840cb361957",
@@ -9376,14 +9405,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T04:40:26.077Z",
-      "updatedAt": "2026-08-14T04:40:26.077Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022"
     },
     {
       "id": "6889040c-45e6-4e94-b37b-8e2d1471823e",
@@ -9546,14 +9576,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T08:31:00.967Z",
-      "updatedAt": "2026-08-14T08:31:00.967Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-14T08:31:00.967Z",
       "observedAt": "2026-08-14T08:31:00.967Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "83b605f1-cb15-46df-a08f-ccacff5fda9e",
@@ -9647,14 +9677,14 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T09:28:18.758Z",
-      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-14T09:28:18.758Z",
       "observedAt": "2026-08-14T09:28:18.758Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "966a1c16-e391-47f0-b6c0-1a4fea59b977",
@@ -9671,14 +9701,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T09:28:18.758Z",
-      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-14T09:28:18.758Z",
       "observedAt": "2026-08-14T09:28:18.758Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "a733e0e8-cc27-459e-a88e-3c457080ad42"
     },
     {
       "id": "a8c35c98-420e-4813-bf9d-54da97f85c1e",
@@ -10146,7 +10177,9 @@
         "portable",
         "cross-platform"
       ],
-      "deleted": false
+      "deleted": false,
+      "supersededBy": "a733e0e8-cc27-459e-a88e-3c457080ad42",
+      "updatedAt": "2026-08-15T21:45:00.000Z"
     },
     {
       "title": "pi-tmux Windows 桥接实现",
@@ -10161,7 +10194,8 @@
         "wsl",
         "bridge"
       ],
-      "deleted": false
+      "deleted": true,
+      "updatedAt": "2026-08-15T21:45:00.000Z"
     },
     {
       "title": "便携包目录重构最终结构",
@@ -10176,7 +10210,9 @@
         "refactor",
         "deploy"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "a7cab4fa-1a73-4495-8216-a260d7c62f11",
+      "updatedAt": "2026-08-15T11:09:56.997Z"
     },
     {
       "title": "便携版与 WSL 双环境 git 同步流程",
@@ -10349,6 +10385,902 @@
       ],
       "observedAt": "2026-08-15T02:41:15.789Z",
       "deleted": false
+    },
+    {
+      "id": "0a3451e3-8697-4d0d-949d-01dc0cf3d7ff",
+      "category": "solutions",
+      "title": "start.bat LF 行尾致 cmd 解析失败",
+      "content": "便携版 pi（E:\\pi-portable，v0.84.2）start.bat 被 pi edit 工具写成 LF 行尾后，cmd.exe 解析失败（报 'er' 不是内部或外部命令等一串错误），pi 无法启动。转 CRLF 后实测正常输出 0.84.2。修复须同步 portable/ 子目录副本。根治方案 .gitattributes（*.bat text eol=crlf）尚未添加，待 master 大改合并时实施。",
+      "tags": [
+        "portable",
+        "windows",
+        "crlf",
+        "bat"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:10:55.692Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": true,
+      "supersededBy": "d1a81c0f-5f7e-44d7-955d-51f2eef9e224"
+    },
+    {
+      "id": "bd150f0a-6306-4c46-93cb-c7dfea3a392b",
+      "category": "solutions",
+      "title": "check-restart.js 状态文件路径修正",
+      "content": "pi-autopilot 的 admin_restart 把 .pi-admin-state.json 写到 PI_CODING_AGENT_DIR（即 USERPROFILE\\.pi\\agent\\），原 check-restart.js 读 USERPROFILE\\agent\\ 导致 wrapper 永远检测不到重启请求。修复为三路回退：PI_CODING_AGENT_DIR → USERPROFILE\\.pi\\agent → USERPROFILE\\agent（旧路径兜底）。",
+      "tags": [
+        "portable",
+        "wrapper",
+        "restart",
+        "pi-autopilot"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "192cb0b3-61c6-4632-b7d1-303871c5dd6b",
+      "category": "solutions",
+      "title": "重启死循环修复：先消费 action 再拉起",
+      "content": "便携版 pi 启动崩溃时 .pi-admin-state.json 的 action=restart 残留，wrapper 检测到后无限拉起形成死循环。check-restart.js 增加消费语义：检测到 restart 先把 action 置为 none 再拉起 pi，即使启动失败循环也终止；restartLog 保留，pi 正常启动后仍能生成'系统已重启'恢复通知。",
+      "tags": [
+        "wrapper",
+        "死循环",
+        "restart",
+        "防故障"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "59a6b4eb-2220-4819-91d5-7941db9f3447",
+      "category": "solutions",
+      "title": "注释中 glob */ 提前闭合注释块",
+      "content": "pi-browser/browser/impl.ts 第 15 行注释写 `chromium-*/chrome.exe`，其中的 `*/` 提前闭合 /** */ 注释块，余下全角逗号'，'成为裸代码，bun 报 ParseError: Unexpected character '，'，pi 启动即崩溃。改为 `chromium-<ver>/chrome.exe` 修复。教训：注释内勿写含 `*/` 的 glob 模式。",
+      "tags": [
+        "pi-browser",
+        "语法错误",
+        "注释",
+        "ts"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "fe66bcac-c13f-41e7-8c42-cb1ecab1471d",
+      "category": "fact",
+      "title": "便携版 git 分支策略与 SSH 配置",
+      "content": "pi-tools 仓库远程 master 已 force-push 重写历史（HEAD=ca283a88），便携版（E:\\pi-portable）工作在 portable-win 分支（自 6fd2049 起），严禁向 master 推送。WSL 里操作便携版 git 须加 `-c core.sshCommand=ssh`：仓库 git config 的 ssh 指向 PortableGit 的 Windows ssh.exe，WSL 不可执行；Windows 侧无需该参数。",
+      "tags": [
+        "git",
+        "portable-win",
+        "ssh",
+        "分支策略"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "188e9c7a-18e9-4542-aed2-35481314bcdf",
+      "category": "fact",
+      "title": "看门狗挂死判定：双信号超时+仅输入刷新",
+      "content": "pi-autopilot 看门狗 triggerHangRecovery 判定挂死需 lastActivity 与最新会话文件 mtime 同时超过 maxIdleMinutes（本机实测生效值 60，注意 2026-08-10 记忆称改为 120，以实测为准）。touchActivity 只在用户输入和任务执行时刷新，assistant 输出/后台活动不刷新。2026-08-15 用户离开期间 62/61/61/61 分钟无输入连续触发 4 次 restart_hang 自动重启。阈值调整方案（180/禁用/保持）待用户确认。",
+      "tags": [
+        "pi-autopilot",
+        "watchdog",
+        "restart_hang"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:10:55.435Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": true,
+      "supersededBy": "20769623-2b18-41e1-9e5d-202868b23f06"
+    },
+    {
+      "id": "a7cab4fa-1a73-4495-8216-a260d7c62f11",
+      "category": "fact",
+      "title": "便携版仓库双副本结构",
+      "content": "便携 pi 仓库 git 跟踪 portable/ 子目录下文件（portable/start.bat、portable/bin/check-restart.js 等），包根 start.bat、bin/ 是运行副本，修改须双份同步且内容一致。deploy/tmux/ 下的运行时产物（status-loop.lock、tmux-status.txt）未被 .gitignore 覆盖，是提交噪音。pi-tmux 旧版反斜杠路径 bug 曾产生 E:\\pi-portable\\E:\\pi-portable\\.pi\\logs\\tmux\\ 怪目录，已清理。",
+      "tags": [
+        "portable",
+        "仓库结构",
+        "git"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "e8050184-cce8-419c-8437-6dd679396a42",
+      "category": "preference",
+      "title": "便携版修改不提交，等大改通知",
+      "content": "用户要求便携版 pi 仓库的修复只改工作区、不提交不推送（远程将有大改）；推送只推 portable-win 分支，严禁 master。pi-memory 的 entries.json 变更应合并提交到便携版 portable-win（2026-08-15 已执行：403→421 条，提交 5e5d602），而非本机主线。本机 /root/.pi 留在旧 master 不动，等通知后 fetch + reset --hard origin/master 再重新提交记忆。",
+      "tags": [
+        "工作流",
+        "git",
+        "便携版",
+        "偏好"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:09:56.619Z",
+      "updatedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "observedAt": "2026-08-15T11:09:56.619Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "2f79afe9-c9f8-4e6b-a291-e07b0dce4d12",
+      "category": "solutions",
+      "title": "便携版pi崩溃死循环修复",
+      "content": "便携版 pi（E:\\pi-portable，v0.84.2）无限重启根因链：pi-browser 的 browser/impl.ts 第 15 行注释 `chromium-*/chrome.exe` 中 `*/` 提前闭合 /** */ 注释块，残留全角逗号致 bun ParseError；pi 崩溃前 admin_restart 写入的 action=restart 未被消费，wrapper 检测到后无限拉起。修复：注释改 `chromium-<ver>/chrome.exe`；check-restart.js 检测重启请求时先置 action=none 再拉起（restartLog 保留供恢复通知）。tsc 验证通过。",
+      "tags": [
+        "便携版",
+        "pi-browser",
+        "死循环",
+        "check-restart",
+        "故障修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "3b9923b2-cb2f-440e-9a9f-5acc7762e3ef",
+      "category": "solutions",
+      "title": "pi-memory 提取文件名冲突修复",
+      "content": "pi-memory 的 queuePendingExtract 用 Date.now() 毫秒时间戳命名待提取文件，同一毫秒两次入队会覆盖同名文件，extract.test.ts 同步执行必触发稳定失败。这是真实正确性 bug 而非测试问题（与合并无关，master 自身存在）。修复方向：文件名增加唯一性（计数/随机后缀）。已提交至 test/portable-win-merge 分支。",
+      "tags": [
+        "pi-memory",
+        "并发",
+        "文件命名",
+        "bug修复"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T12:10:00.637Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": true,
+      "supersededBy": "cfb4c7c8-2fe9-4ad8-bc84-0c32f36cb3ff"
+    },
+    {
+      "id": "20769623-2b18-41e1-9e5d-202868b23f06",
+      "category": "fact",
+      "title": "看门狗挂死检测机制与误判",
+      "content": "pi-autopilot 看门狗 restart_hang：maxIdleMinutes=60 时，lastActivity 与最新会话文件 mtime 双信号同时超 60 分钟即触发重启。touchActivity 只在用户 input 事件和任务执行时刷新，assistant 输出、后台活动不刷新。长间隔操作且无定时任务时会周期性误判挂死（每约 1 小时重启一次）。可选方案：调大 180 / 禁用 / 保持 60，用户未确认未改。",
+      "tags": [
+        "pi-autopilot",
+        "看门狗",
+        "restart_hang",
+        "配置"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T12:10:00.692Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": true,
+      "supersededBy": "a47507ac-dee0-4648-946a-40dda377b158"
+    },
+    {
+      "id": "c32e41d7-6e0a-4385-a46f-dad2c6075725",
+      "category": "fact",
+      "title": "便携版仓库管理与推送约定",
+      "content": "便携版仓库 /mnt/e/pi-portable（WSL 挂载 Windows E: 盘），远程分支 portable-win 承载全部工作，推送用 `git push origin portable-win`，严禁推 master。WSL 操作该仓库 git 需加 `-c core.sshCommand=ssh`（原配置指向 PortableGit 的 Windows 路径 ssh.exe，WSL 不可用，Windows 侧无需改）。包根 start.bat/bin/ 是运行副本，git 跟踪 portable/ 子目录同名文件，两处需同步。",
+      "tags": [
+        "便携版",
+        "git",
+        "WSL",
+        "仓库约定"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "47bee5f4-5d33-4f5b-a43c-e083e65d7524",
+      "category": "fact",
+      "title": "主线与便携版合并背景与策略",
+      "content": "cyfxxx/pi-tools：master（334 提交，含 stable-20260814 tag）与 portable-win 分叉点 d30acbc，master 历史无 portable/ 内容。合并 120 文件差异 10 冲突：link.ts 取便携版（master 用 shQuote，便携版手写单引号转义更防 shell 注入）、impl.ts/pi-voice 取 master、.gitignore/test-all.sh/SKILL.md/core.test.ts 手动合并两边、deploy/tmux/tmux-status.txt 删除（master 误入库运行时产物）、entries.json 脚本合并。合并提交 c11b390 已推 test/portable-win-merge。",
+      "tags": [
+        "合并",
+        "git",
+        "pi-tools",
+        "冲突解决"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "ed418da7-d3ea-4502-a840-565db7175887",
+      "category": "procedure",
+      "title": "entries.json 跨分支合并流程",
+      "content": "memory/entries.json 跨分支合并必须脚本化：读取两侧文件按条目 id 做并集去重（保留便携版字段结构），合并后做 JSON 语法校验 + 无重复 id 校验 + 条目数≈两侧并集。不可用编辑器手工解多个冲突块。本会话 403+18 条合并为 421 条、合并测试 455 条均用此流程，合并前先备份（entries.json.bak-时间戳）。",
+      "tags": [
+        "pi-memory",
+        "entries.json",
+        "合并流程",
+        "数据合并"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "9ecd12f8-8c5c-47ca-9109-a7b38a7f9c83",
+      "category": "habit",
+      "title": "重要操作先方案后执行再分级验证",
+      "content": "用户对重要操作（如仓库合并）的固定流程：先深度分析现状并给完整方案（含风险与执行步骤），确认后才动手；先在测试分支（test/portable-win-merge）做真实合并测试，全量回归通过后，先 Docker 常规完整重建测试，再 Windows 便携版完整重建测试，全部通过才允许正式合入 master。代码改动按等通知约定提交推送。",
+      "tags": [
+        "用户习惯",
+        "合并流程",
+        "验证流程",
+        "测试分支"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "d1a81c0f-5f7e-44d7-955d-51f2eef9e224",
+      "category": "fact",
+      "title": "便携版行尾问题与根治方案",
+      "content": "便携版 pi 的 edit 工具默认写 LF 行尾是习惯行为：start.bat 被写成 LF 时 cmd.exe 解析失败（曾致便携版启动崩溃），diag.bat 同源；便携版 pi 会话曾做 LF 规范化又写回 LF。根治方案：master 大改合并时加 .gitattributes（*.bat text eol=crlf）。另：pi-tmux 的 Windows 后端测试在 Linux 上跑原生 tmux 会断言不匹配，需按非 win32 平台跳过。",
+      "tags": [
+        "便携版",
+        "行尾",
+        "CRLF",
+        ".gitattributes"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:10:55.286Z",
+      "updatedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "observedAt": "2026-08-15T11:10:55.286Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "54392bb5-b761-4da2-8d53-76763b5f870e",
+      "category": "fact",
+      "title": "便携版实例 skip-worktree 瘦身设计",
+      "content": "E:\\pi-portable 实例 git 仓库有 34 个 skip-worktree 文件（scripts/ 12 个 + docs/ 5 个 + searxng/ 3 个 + deploy/ 6 个 + 其他），其中 26 个文件在工作区不存在（已删除）。这是实例的有意瘦身设计：实例只保留运行时需要的文件（agent/memory junction + scripts 运行集 + tools/），docs/deploy/searxng/非运行 scripts 删除并标记 skip-worktree 防 pull/checkout 恢复。searxng 实例化在 tools/searxng（searxng-setup.ps1 重建），不依赖仓库 searxng/ 目录。注意：skip-worktree 文件在切换分支时会阻断 checkout（报 local changes would be overwritten），需 git update-index --no-skip-worktree <file> 临时取消。此设计勿误判为异常，勿清理。",
+      "tags": [
+        "portable",
+        "git",
+        "skip-worktree",
+        "实例瘦身"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T11:44:51.299Z",
+      "updatedAt": "2026-08-15T11:44:51.299Z",
+      "accessedAt": "2026-08-15T11:44:51.299Z",
+      "environments": [
+        "windows"
+      ],
+      "observedAt": "2026-08-15T11:44:51.299Z",
+      "deleted": false
+    },
+    {
+      "id": "25cb040c-8bbf-463b-b367-31b562d61251",
+      "category": "solutions",
+      "title": "checkout|tail管道吞错致误判合并状态",
+      "content": "2026-08-15 主线×便携版合并实测踩坑：`git checkout branch | tail` 管道中 checkout 失败时退出码被 tail 覆盖为 0，后续操作基于错误 HEAD 误判'合并成功'（实际发生在旧 master 上）。修复方式：checkout 单独执行并检查退出码，或加 set -o pipefail。",
+      "tags": [
+        "git",
+        "merge",
+        "shell"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "7e14218a-8f16-4b49-b827-0d20c71c1488",
+      "category": "solutions",
+      "title": "Docker重建缺curl致node安装失败",
+      "content": "docker run ubuntu:24.04 干净容器跑 rebuild.sh：缺 curl 时 NodeSource 安装链断裂，apt 回退只装 nodejs18（无 npm）导致全部扩展依赖安装失败。修复：rebuild.sh 系统依赖列表补 curl；同时 .mirror-cache 在 curl 缺失检测失败时不写缓存（否则陈旧缓存让后续一直直连 npmjs 挂起）。均已提交至测试分支。",
+      "tags": [
+        "rebuild",
+        "docker",
+        "curl",
+        "镜像"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.918Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "supersededBy": "6429db88-5681-4fc6-a8a5-84acaa28cc4f",
+      "deleted": true
+    },
+    {
+      "id": "cfb4c7c8-2fe9-4ad8-bc84-0c32f36cb3ff",
+      "category": "solutions",
+      "title": "pi-memory毫秒时间戳文件名覆盖致数据丢失",
+      "content": "pi-memory queuePendingExtract 提取队列文件名用 Date.now() 毫秒时间戳，同毫秒两次入队覆盖同名文件（测试同步执行必同毫秒），extract.test.ts 稳定失败暴露此真实正确性 bug。修复：文件名唯一化后套件全绿。",
+      "tags": [
+        "pi-memory",
+        "bug",
+        "修复"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "a47507ac-dee0-4648-946a-40dda377b158",
+      "category": "fact",
+      "title": "pi-autopilot挂死重启机制与用户确认",
+      "content": "restart_hang 触发条件：lastActivity 超 60 分钟 + 最新会话文件 mtime 超 60 分钟（双信号同时满足），touchActivity 仅用户 input 事件与任务执行时刷新，assistant 输出不刷新。maxIdleMinutes=60 配置于 .pi-autopilot-config.json。2026-08-15 连续 4 次触发后用户确认是设计行为，不调阈值不禁用。\n\n（历史补充：此前两条记忆声称\"已改为 120\"，实际 120 从未落地——.pi-autopilot-config.json 文件不存在时按代码默认 30，2026-08-11 写入 60 后持续生效；期间曾连续 6 次 restart_hang（31-50 分钟无活动），调整阈值后稳定。）",
+      "tags": [
+        "pi-autopilot",
+        "看门狗",
+        "重启"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T21:45:00.000Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "358aa0cd-bf45-4c7f-a869-99385787a156",
+      "category": "fact",
+      "title": "便携版34个skip-worktree文件为有意瘦身",
+      "content": "便携版 Windows 实例只保留运行时文件：docs/deploy/searxng/部分 scripts 被删除并设 skip-worktree 防 pull 恢复（共 34 个），searxng 实例化在 tools/ 下重建。合并收尾时确认是设计意图不清理；whisper-server.py 也带 skip-worktree 标记，切换分支需临时取消。",
+      "tags": [
+        "portable",
+        "skip-worktree",
+        "设计"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "90d81480-2675-4975-8f71-9a8f7aeeb3bf",
+      "category": "procedure",
+      "title": "主线×便携版合并方案与冲突解决表",
+      "content": "cyfxxx/pi-tools：master（334提交）与 portable-win 分叉于 d30acbc，本机旧 master 17 独有提交已含于 portable-win 可丢弃。10 冲突解决：link.ts 取便携版（手写单引号转义防 shell 注入，优于 master 的 shQuote）；impl.ts/pi-voice 取 master；.gitignore/test-all.sh/core.test.ts 手动合并；tmux-status.txt 删除（master 误入库运行时产物）；entries.json 用 Python 按 id 并集合并（455 条零重复）。合并提交 c11b390 用 cyf 身份（git 需先配 user.name/email）。",
+      "tags": [
+        "合并",
+        "git",
+        "portable-win"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "18ab6a78-9dad-44d8-85d7-ed0cd5b9ebbb",
+      "category": "fact",
+      "title": "合并验证全链路：回归+Docker+Windows全通过",
+      "content": "test/portable-win-merge=08c1951（合并 c11b390 + 5 个修复提交）：本机 test-all.sh 全绿；Docker 干净重建 74✓/0✗（ubuntu:24.04 容器 clone→rebuild.sh）；Windows 便携版 setup.ps1+verify.ps1 14 OK/0 失败；pi-voice.json micBin 漂移（旧路径 D:\\Desktop\\Tmp\\pi-build-test2）已修正。docker-rebuild-test.sh 已固化进 scripts/。",
+      "tags": [
+        "验证",
+        "docker",
+        "portable",
+        "回归"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "6429db88-5681-4fc6-a8a5-84acaa28cc4f",
+      "category": "solutions",
+      "title": "rebuild.sh npm install无超时保护致挂死",
+      "content": "rebuild.sh 的 npm_install_bg 直接跑 npm install，网络挂起时重建永久卡住（实测 10 分钟无进展）。修复：加 300s timeout 并计入失败重试；配合 mirror-cache 校验 curl 可用性后 npmmirror 镜像正常。rebuild 幂等可重跑。",
+      "tags": [
+        "rebuild",
+        "npm",
+        "超时"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:10:00.463Z",
+      "updatedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "observedAt": "2026-08-15T12:10:00.463Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "f943185c-51e1-4484-b255-06e3974ba8e4",
+      "category": "fact",
+      "title": "merge-test 分支全项目审计缺陷清单（待修复）",
+      "content": "pi-full-audit 审查 pi-tools merge-test 分支（2026-08-15，master×portable-win 合并测试版）发现并经复核确认的关键缺陷：①pi-wrapper.sh:366-381 TARGET_SESSION/TARGET_MODEL 读取后被 unset，switch_session/set_model 分支恒假——模型切换/会话切换/崩溃回滚静默降级为 --continue 恢复最近会话（HIGH）；②pi-autopilot failover 无熔断，双模型链 ping-pong 无限重启（HIGH，当前 failover 未配置未触发）；③pi-memory extract 子进程 pi -p 无 PI_MEMORY_EXTRACT 守卫，session_start 并发消费 pending 队列（HIGH）；④extract cooldown/锁竞争 skip 计 attempts，3 次 skip 删未处理 job（HIGH）；⑤merge.ts OPPOSITE_PAIRS 子串包含（能⊂不能）致双重否定互判矛盾删条目（MEDIUM）。审查还发现 review.sh --all 模式对 ~/.pi 自身失效（排除规则 */.pi/* 误伤扫描根）。修复状态：均未修复，待用户批准修复计划。",
+      "tags": [
+        "audit",
+        "pi-wrapper",
+        "pi-autopilot",
+        "pi-memory",
+        "缺陷清单"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T12:51:35.930Z",
+      "updatedAt": "2026-08-15T12:51:35.930Z",
+      "accessedAt": "2026-08-15T12:51:35.930Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T12:51:35.930Z",
+      "deleted": false
+    },
+    {
+      "id": "30b01bcc-cb2b-4c8c-9673-0ff7db90efe4",
+      "category": "solutions",
+      "title": "pi-context 擦除机制与缓存冲突：阈值调优与诊断法",
+      "content": "pi-context 的 pruneToolResults（工具输出事后擦除）与 DeepSeek 前缀缓存根本冲突：擦除动作本身改变消息序列（工具输出→[pruned] 占位），擦除轮发送的序列 ≠ 上一轮 → 缓存从擦除点断裂全量重发。prune.ts 原注释\"判定确定性→缓存前缀稳定\"是错误认知。实测（2026-08-15）：每轮擦除触发轮新增 40-60K；上下文 250K+ 时重发 200K+；日擦除断裂 ~4.7M tokens 浪费，高于 auto-compact 一次性成本（全量重发 ~500K + 摘要）。已修复：PRUNE_PROTECT_TOKENS 40K→80K、PRUNE_MINIMUM_TOKENS 20K→50K（降触发频率）。结构性解法：依赖 auto-compact 而非每轮擦除。缓存命中诊断方法：pi-bench.sh usage 看低命中占比（基准 <5%）；大轮（新增 40-60K 命中 50%）是工具结果大的正常表现（新增内容无法命中），真断裂特征是\"新增≈上下文一半以上且多轮持续\"。subagent 不影响缓存（--no-extensions 独立进程），但大报告加速上下文膨胀间接增加擦除触发。",
+      "tags": [
+        "缓存",
+        "pi-context",
+        "prune",
+        "前缀缓存",
+        "DeepSeek"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:43:19.109Z",
+      "updatedAt": "2026-08-15T14:43:19.109Z",
+      "accessedAt": "2026-08-15T14:43:19.109Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T14:43:19.109Z",
+      "deleted": false
+    },
+    {
+      "id": "d1a578e7-4ab2-4507-86a4-134aa40811cf",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-08-15T14:46:15.151Z",
+      "updatedAt": "2026-08-15T14:47:44.888Z",
+      "accessedAt": "2026-08-15T14:47:44.888Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T14:46:15.151Z",
+      "deleted": false
+    },
+    {
+      "id": "fa9ab4b8-0d1b-41d7-ad1b-6b2b113f4d47",
+      "category": "solutions",
+      "title": "pi-context擦除与缓存前缀断裂修复",
+      "content": "2026-08-15 定位：pruneToolResults 每轮在 context 事件对历史工具输出做擦除（旧输出→[pruned]占位），擦除动作本身改变消息序列，DeepSeek 缓存的是上一轮未擦除序列→前缀断裂全量重发（94轮×50K≈4.7M tokens浪费）。修复方案A已实施（提交perf(pi-context)）：agent/lib/prune.ts 的 PRUNE_PROTECT_TOKENS 40K→80K、PRUNE_MINIMUM_TOKENS 20K→50K，并修正注释'确定性=缓存安全'的错误认知；prune.test.ts 常量断言更新+新增默认值行为测试，74用例全过。约定2026-08-15下个任务后复查低命中占比（基准<5%）。",
+      "tags": [
+        "pi-context",
+        "缓存",
+        "prune",
+        "deepseek"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "a6dfe81d-c42b-42c1-94d3-32e65ff67faa",
+      "category": "fact",
+      "title": "subagent与缓存命中关系结论",
+      "content": "2026-08-15 分析结论：subagent 进程用 --no-extensions 启动，不加载扩展、不写 usage-diag、不共享主会话缓存，直接不影响缓存命中；间接影响是大报告（3-13K/份）写入主会话加速上下文膨胀→更多旧输出推出40K保护带→擦除触发更频繁，但非主因。低命中轮三种构成：大工具轮（正常）、擦除触发轮（真问题）、事件性断裂（如 entries.json 批量修改后一次性全量重发）。",
+      "tags": [
+        "subagent",
+        "缓存",
+        "usage-diag"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "ccbfab65-b2e8-4c78-bc01-c4b87d4f46c5",
+      "category": "reference",
+      "title": "usage-diag与会话文件字段语义",
+      "content": "分析缓存命中时的数据源要点：~/.pi/ 下 .usage-diag.jsonl 的 ts 字段是毫秒时间戳；会话 .jsonl 文件用 timestamp 字段（ISO 字符串）而非 ts；input 语义=新增发送 token，总消耗=input+cacheRead；低命中轮与大输入轮强相关；修复后基准低命中（<90%）轮占比<5%；注入内容带 [truncated: N chars → M chars (P%)] 截断标记，含动态数字会破坏缓存前缀。",
+      "tags": [
+        "usage-diag",
+        "缓存",
+        "数据分析"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "a6d8a703-12a8-4a0f-a37a-63fc3bf74077",
+      "category": "solutions",
+      "title": "wrapper级重启方法（pi重启不生效env修改）",
+      "content": "2026-08-15 踩坑：admin_restart 只重启 pi 进程，pi-wrapper.sh 进程的 env 在循环外导出、进程级固化（旧 wrapper 41317 号 19:21 启动），改 wrapper 后 pi 重启 env 仍是旧值。完整重启方案：确认 pi 进程 cmdline 后（pgrep 有自匹配陷阱，用精确方式），起独立 tmux 守护会话执行'杀旧 wrapper 树→在用户可见 tmux 会话 0 的 pane %0 启动新 wrapper'，pi 自动恢复会话。适用于任何 wrapper 级配置修改（如平台守卫、env 注入）。",
+      "tags": [
+        "pi-wrapper",
+        "重启",
+        "tmux",
+        "env"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "aadc1786-7458-44f9-b9b5-0934124b3612",
+      "category": "fact",
+      "title": "pi-browser wrapper平台守卫修复",
+      "content": "2026-08-15 pi-wrapper.sh 已加 Termux 平台守卫：CLOAKBROWSER_BINARY_PATH 不再注入 WSL（Termux 路径会污染 WSL 环境的浏览器工具）。修复已确认代码存在（if Termux 包着 export），2026-08-15 执行 wrapper 级重启，待重启后验证 env 不再注入且 browser_navigate 实际可用（chromium 在 ~/.cloakbrowser，vitest 25用例+LAUNCH OK 已过）。",
+      "tags": [
+        "pi-browser",
+        "wrapper",
+        "cloakbrowser",
+        "termux"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "c3fab155-2bdf-40d5-8863-084ed7be48b3",
+      "category": "fact",
+      "title": "2026-08-15文档审计修复内容",
+      "content": "文档全面检查修复完成：17文件3提交（aa00261错误修正8处+ce150fa/08dd613补充清理）。关键项：根README压力档位85%/95%→75%/90%、测试表5套→11套（用例数全面更新）、tsconfig.json→tsconfig.local.json、conflict-check 6→8项、skills/scripts树补齐；pi-backup备份清单补8脚本（patch-*.mjs×5等，此前备份静默漏补丁导致restore后rebuild无法打补丁）、9→10扩展、ENVIRONMENTS.md收录；AGENTS.md补丁3→5+scripts补7脚本；plan-mode行号19处更新（8处保留）+context语义修正；pi-translate-zh死引用清理；SSH443细节收敛为指针。",
+      "tags": [
+        "文档审计",
+        "AGENTS.md",
+        "pi-backup",
+        "README"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "0f84be13-ad34-47c5-bef5-133bdef033f1",
+      "category": "fact",
+      "title": "2026-08-15扩展全量回归结果",
+      "content": "10扩展全量测试全绿：9套vitest（web-search/memory/autopilot/browser/context/plan-mode/tmux/voice/link）+tsc -p tsconfig.local.json+subagent mjs 63用例+注册面extensions.test.ts 25用例+conflict-check 8项+自动发现完整性10目录。逐项实测：9/10正常，pi-browser 因旧env注入当前会话失败（wrapper修复后重启生效）；pi-voice环境齐（ffmpeg 6.1.1+pulse RDPSource）；web_search首次瞬时超时但SearXNG healthz OK后重试即恢复；清理3个历史tmux残留会话（audit-fix-verify/audit-regress/cloak-download）附日志删除。",
+      "tags": [
+        "测试",
+        "回归",
+        "扩展",
+        "tmux"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "4ef83153-0c22-447d-9dea-813e376d3efb",
+      "category": "solutions",
+      "title": "edit工具JSON转义失败改用python替换",
+      "content": "edit 工具的 oldText 含 \\\\ 转义序列时，JSON 序列化中 \\\\ 会变成 \\ 导致原文匹配失败（2026-08-15 portable README 34行补丁列表更新踩坑）。处理：改用 bash python 直接做字符串替换（如 python3 -c 读文件替换写回）。同轮多个 edit 中一个失败时，其余成功，失败项单独处理并核对原文。",
+      "tags": [
+        "edit工具",
+        "python",
+        "转义"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "accessedAt": "2026-08-15T14:52:49.701Z",
+      "observedAt": "2026-08-15T14:52:49.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
+    },
+    {
+      "id": "a6fe4cac-4de8-4c90-8abb-48a307f484bb",
+      "category": "solutions",
+      "title": "子进程超时判定：仅按 killed 判 124（SIGTERM 分支已移除）",
+      "content": "pi-voice/core.ts 与 pi-tmux/core.ts 的 runCommand/runTmux 超时判定（2026-08-15 审计修正）：Node v22 超时杀进程时 err.code=null、killed=true；**仅按 err.killed === true 判 124**——e.signal==='SIGTERM' 分支会误报：外部 SIGTERM 正常终止的进程（OOM 是 SIGKILL 不命中，但显式 kill/stop 场景命中）被误判为 timeout。whisper/ffmpeg 被外部 SIGTERM 时 stderr 误导排查。修改后外部终止走 code=1 分支保留真实退出信息。",
+      "tags": [
+        "pi-voice",
+        "pi-tmux",
+        "超时判定",
+        "SIGTERM"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T14:53:26.304Z",
+      "updatedAt": "2026-08-15T14:53:26.304Z",
+      "accessedAt": "2026-08-15T14:53:26.304Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T14:53:26.304Z",
+      "deleted": false
+    },
+    {
+      "id": "973b1adb-cbc0-4f5a-a9de-3fd075c510e2",
+      "category": "fact",
+      "title": "缓存异常模式：390K+ 上下文尾部 64K/轮断裂（机制未定，待重现验证）",
+      "content": "2026-08-15 缓存观察：上下文 390K+ 时（压缩前最后 4 轮 23:07-23:08）出现异常断裂模式——命中恒定 330-333K 缓慢增长 + 每轮新增 64-66K，ctx 持续增长未缩小（排除 prune 擦除：回收>50K 会缩 ctx；排除工具结果：重启后工具输出被 5KB 截断最大 4.5K 字符）。但同日更早 23:04:16-23:04:34（ctx 392-394K）命中 99.7-100% 与之矛盾。疑为 DeepSeek 侧长序列（390K+）缓存尾部失效或压缩评估期轮次特征，机制未定。验证方法：压缩后新上下文再涨至 ~390K 时观察是否重现。同日自动压缩在 398K 正常触发（1M 窗口 40% 阈值），压缩后新上下文 58K 重建、一次性冷启动成本 50K 属预期。",
+      "tags": [
+        "缓存",
+        "DeepSeek",
+        "压缩",
+        "usage-diag"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T15:11:08.629Z",
+      "updatedAt": "2026-08-15T15:11:08.629Z",
+      "accessedAt": "2026-08-15T15:11:08.629Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
