@@ -78,7 +78,7 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 ```
 
 - **复核子代理同时负责发现同类遗漏**：核实某条时留意同模块是否存在同一类问题（如“A 处不落盘”→ 查 B 处是否同样不落盘；“A 处 ETIMEDOUT 死分支”→ 查 B 处）
-- **运行时行为必须实测**：Node 子进程超时语义（err.code=null/signal='SIGTERM'）、glob 展开、spawn 错误事件（异步 error 而非同步抛错）等以实测为准，不凭注释/直觉/审查者的机制描述
+- **运行时行为必须实测**：Node 子进程超时语义（err.code=null/signal='SIGTERM'）、glob 展开、spawn 错误事件（异步 error 而非同步抛错）等以实测为准，不凭注释/直觉/审查者的机制描述。注意（2026-08-15）：scout 已标 frontmatter `readonly: true`（subagent 扩展 spawn 时强制过滤 bash，计划模式只读隔离修复），复核 scout **无法执行 bash 实测**——需实测的验证由主会话（有 bash）或委派 worker 完成；scout 只做读码级核实并在报告中标注“未实测”项
 - 报告截断处理同第 3 步（重委派要求精简）
 
 ### 第 5 步：主会话终审 + 分级报告
