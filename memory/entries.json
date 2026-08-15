@@ -8366,10 +8366,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 85,
+      "recurrence": 87,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-15T02:33:55.596Z",
-      "accessedAt": "2026-08-15T02:33:55.596Z",
+      "updatedAt": "2026-08-15T04:11:13.413Z",
+      "accessedAt": "2026-08-15T04:11:13.413Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -8845,6 +8845,29 @@
       "createdAt": "2026-08-15T02:41:15.789Z",
       "updatedAt": "2026-08-15T02:41:15.789Z",
       "accessedAt": "2026-08-15T02:41:15.789Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T02:41:15.789Z",
+      "deleted": false
+    },
+    {
+      "id": "e2f5ec55-0822-4995-bf9a-6dc6edf0a7d8",
+      "category": "reference",
+      "title": "pi-tmux tmux_run 完成自动唤醒机制",
+      "content": "pi-tmux 扩展 tmux_run 支持完成自动唤醒：启动会话后轮询 tmux has-session（5s），会话消失即通过 pi.sendMessage({customType:'pi-tmux-notify', content:..., display:true}, {triggerTurn:true}) 注入通知消息并触发新回合——后台任务完成后主会话自动被唤醒（无需用户发消息）。参数 notify=false 可关闭。风险防范机制：去重（同会话只通知一次）、定时器 unref+stopAll（session_shutdown 清理）、同名覆盖、hasSession 探测失败保守判存活防误报、通知失败静默。实现文件 agent/extensions/pi-tmux/watcher.ts（依赖注入可测试），测试 tests/watcher.test.ts。pi SDK 扩展主动触发回合的 API：pi.sendMessage(msg, {triggerTurn:true})（plan-mode/pi-context 已用）。",
+      "tags": [
+        "pi-tmux",
+        "tmux",
+        "extension",
+        "auto-notify"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T04:31:11.782Z",
+      "updatedAt": "2026-08-15T04:31:11.782Z",
+      "accessedAt": "2026-08-15T04:31:11.782Z",
       "environments": [
         "all"
       ]
