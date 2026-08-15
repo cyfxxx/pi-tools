@@ -221,6 +221,29 @@ describe('extract: pending queue (deferred shutdown extraction)', () => {
     expect(listPendingExtracts()).toHaveLength(1)
   })
 
+  it('bad job dropped after max attempts (不再无限重试)', async () => {
+    const { queuePendingExtract, processPendingExtracts, listPendingExtracts } = await import('../extract.ts')
+    queuePendingExtract([{ role: 'user', content: 'hi' }], 'sess-p2b')
+    const runner: Runner = async () => ({ stdout: 'garbage', stderr: '', code: 0 })
+    // 连续 3 次失败（每次 attempts+1）后任务被删除
+    await processPendingExtracts({ runner })
+    await processPendingExtracts({ runner })
+    const { ok, failed } = await processPendingExtracts({ runner })
+    expect(ok).toBe(0)
+    expect(failed).toBe(1)
+    expect(listPendingExtracts()).toHaveLength(0)
+  })
+
+  it('queue dedupes same sessionId + messageCount', async () => {
+    const { queuePendingExtract, listPendingExtracts } = await import('../extract.ts')
+    const msg = [{ role: 'user' as const, content: 'hi' }]
+    expect(queuePendingExtract(msg, 'sess-dup')).toBeTruthy()
+    expect(queuePendingExtract(msg, 'sess-dup')).toBeNull()
+    // 消息数不同（新内容）→ 仍入队
+    expect(queuePendingExtract([...msg, { role: 'assistant' as const, content: 'hi2' }], 'sess-dup')).toBeTruthy()
+    expect(listPendingExtracts()).toHaveLength(2)
+  })
+
   it('corrupted queue files are dropped without breaking the batch', async () => {
     const { queuePendingExtract, processPendingExtracts, listPendingExtracts } = await import('../extract.ts')
     queuePendingExtract([{ role: 'user', content: 'hi' }], 'sess-p3')

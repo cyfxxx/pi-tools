@@ -9,6 +9,7 @@ import {
   summarizeRecords,
   formatUsageSummary,
   getDiagFile,
+  trimDiagContent,
   type UsageRecord,
 } from '../../../lib/usage-diag.ts'
 
@@ -64,6 +65,17 @@ describe('usage-diag: 记录与读取', () => {
     appendFileSync(getDiagFile(), 'not json\n')
     record({})
     expect(loadDiagLines()).toHaveLength(2)
+  })
+
+  it('trimDiagContent 超上限截断保留尾部，未超限返回 null', () => {
+    const lines = Array.from({ length: 12 }, (_, i) => `line${i}`).join('\n') + '\n'
+    const out = trimDiagContent(lines, 10)
+    expect(out).not.toBeNull()
+    expect(out!.split('\n').filter(Boolean)).toHaveLength(10)
+    expect(out).toContain('line2')
+    expect(out).toContain('line11')
+    expect(out).not.toContain('line1\n')
+    expect(trimDiagContent('a\nb\n', 10)).toBeNull()
   })
 })
 

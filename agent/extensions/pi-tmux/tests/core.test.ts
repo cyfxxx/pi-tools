@@ -8,6 +8,7 @@ import {
   logPathFor,
   defaultOpts,
 } from '../core'
+import { resolveName, registerTmuxTools } from '../tools'
 
 // 纯函数测试：命名规范化、前缀判定、日志路径
 describe('pi-tmux core 纯函数', () => {
@@ -43,6 +44,50 @@ describe('pi-tmux core 纯函数', () => {
     expect(d.prefix).toBe('pi-')
     if (prev === undefined) delete process.env.PI_HOME
     else process.env.PI_HOME = prev
+  })
+})
+
+// 工具层会话名校验：resolveName 委托 normalizeSessionName，堵路径穿越
+//（tmux_stop remove_log 删任意 .log / tmux_read 读任意 .log 同根）
+describe('pi-tmux tools resolveName 会话名安全', () => {
+  const opts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-tools-test'), prefix: 'pi-' }
+
+  it('合法名自动加前缀（含已带前缀）', () => {
+    expect(resolveName({ name: 'build' }, 'pi-')).toBe('pi-build')
+    expect(resolveName({ name: 'pi-build' }, 'pi-')).toBe('pi-build')
+    expect(resolveName({ name: '  dev-server  ' }, 'pi-')).toBe('pi-dev-server')
+  })
+
+  it('拒绝路径穿越与空名', () => {
+    expect(() => resolveName({ name: '../etc/passwd' }, 'pi-')).toThrow(/非法/)
+    expect(() => resolveName({ name: '../../secret' }, 'pi-')).toThrow(/非法/)
+    expect(() => resolveName({ name: 'a/b' }, 'pi-')).toThrow(/非法/)
+    expect(() => resolveName({ name: '' }, 'pi-')).toThrow(/为空/)
+    expect(() => resolveName({ name: '   ' }, 'pi-')).toThrow(/为空/)
+  })
+
+  it('tmux_stop/tmux_read 对非法名直接 err 返回（不触达 tmux/文件系统）', async () => {
+    const { runTmux } = await import('../core')
+    const avail = await runTmux(opts, ['-V'], 5000)
+    if (avail.code === 127) return // 无 tmux 环境：跳过（纯逻辑用例已覆盖校验）
+
+    const tools: Record<string, { execute: (id: string, params: Record<string, unknown>) => Promise<{ isError?: boolean; content: { text: string }[] }> }> = {}
+    const pi = { registerTool: (t: { name: string; execute: unknown }) => { tools[t.name] = t as never } }
+    registerTmuxTools(pi as never, {
+      bin: 'tmux',
+      prefix: 'pi-',
+      logDir: opts.logDir,
+      defaultLines: 100,
+      defaultTimeoutSec: 60,
+    })
+    const stopRes = await tools.tmux_stop.execute('id', { name: '../evil', remove_log: true })
+    expect(stopRes.isError).toBe(true)
+    expect(stopRes.content[0].text).toContain('非法会话名')
+    const readRes = await tools.tmux_read.execute('id', { name: 'x/y' })
+    expect(readRes.isError).toBe(true)
+    expect(readRes.content[0].text).toContain('非法会话名')
+    const okRes = await tools.tmux_read.execute('id', { name: 'nonexistent' })
+    expect(okRes.isError).toBeUndefined()
   })
 })
 

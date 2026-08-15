@@ -24,6 +24,16 @@ describe('watchdog', () => {
     expect(await isHanging(10)).toBe(false)
   })
 
+  it('isHanging false during busy turn even if idle long (长工具执行豁免)', async () => {
+    const { setTurnBusy } = await import('../watchdog')
+    touchActivity()
+    setTurnBusy(true)
+    // 模拟 40 分钟无活动（工具静默执行），busy 回合不应误判挂死
+    expect(await isHanging(5, Date.now() + 40 * 60 * 1000)).toBe(false)
+    setTurnBusy(false)
+    expect(await isHanging(5, Date.now() + 40 * 60 * 1000)).toBe(true)
+  })
+
   it('isHanging true when idle exceeds threshold (injected now)', async () => {
     touchActivity()
     expect(await isHanging(5, Date.now() + 10 * 60 * 1000)).toBe(true)

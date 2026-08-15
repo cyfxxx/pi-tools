@@ -41,7 +41,13 @@ else
   skip "语音链路未配置（无 TTS 合成器；需要时 rebuild --voice）"
 fi
 if [ -n "$TTS_BIN" ]; then
-  RESP=$(curl -s --max-time 90 --data-binary @"$TMPWAV" "http://127.0.0.1:18766/transcribe?lang=zh" 2>/dev/null)
+  # 服务端配置 whisperToken 时转写接口强制 Bearer 鉴权——不带 token 必然 401 假失败
+  TOKEN=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/pi-voice.json')).get('whisperToken',''))" 2>/dev/null)
+  if [ -n "$TOKEN" ]; then
+    RESP=$(curl -s --max-time 90 -H "Authorization: Bearer $TOKEN" --data-binary @"$TMPWAV" "http://127.0.0.1:18766/transcribe?lang=zh" 2>/dev/null)
+  else
+    RESP=$(curl -s --max-time 90 --data-binary @"$TMPWAV" "http://127.0.0.1:18766/transcribe?lang=zh" 2>/dev/null)
+  fi
   if echo "$RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); t=d.get('text',''); sys.exit(0 if len(t)>0 else 1)" 2>/dev/null; then
     ok "whisper 转写成功（$TTS_BIN 合成）"
   else

@@ -243,4 +243,37 @@ describe('merge: mergeCandidates', () => {
     expect(skipped).toEqual(['t2'])
     expect(loadEntries()).toHaveLength(1)
   })
+
+  it('UPDATE 刷新 accessedAt（活跃提取不按旧访问时间被 30/60 天剪枝误剪）', async () => {
+    const { mergeCandidates } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: 'same title',
+      content: 'old',
+      accessedAt: '2026-01-01T00:00:00.000Z',
+    })
+    const candidate = makeEntry({
+      title: 'same title',
+      content: 'new content longer',
+      accessedAt: '2026-08-14T00:00:00.000Z',
+    })
+    const entries = [existing]
+    const { applied } = await mergeCandidates(entries, [candidate])
+    expect(applied[0]).toContain('UPDATE')
+    expect(entries[0].accessedAt).toBe('2026-08-14T00:00:00.000Z')
+  })
+
+  it('UPDATE 候选缺 accessedAt → 保留原值', async () => {
+    const { mergeCandidates } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: 'same title',
+      content: 'old',
+      accessedAt: '2026-01-01T00:00:00.000Z',
+    })
+    const candidate = makeEntry({ title: 'same title', content: 'new content longer' })
+    delete (candidate as Partial<MemoryEntry>).accessedAt
+    const entries = [existing]
+    const { applied } = await mergeCandidates(entries, [candidate])
+    expect(applied[0]).toContain('UPDATE')
+    expect(entries[0].accessedAt).toBe('2026-01-01T00:00:00.000Z')
+  })
 })

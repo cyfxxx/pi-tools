@@ -7,7 +7,7 @@ import { collectOfflineExecutions, formatSummary, markRead } from './notificatio
 import { consumeRestartLog } from './state.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
 import { collectPendingTasks, clearPending, clearAllPending, wasAbnormalShutdown, MAX_RECOVERY_ATTEMPTS } from './queue.ts'
-import { touchActivity } from './watchdog.ts'
+import { setTurnBusy, touchActivity } from './watchdog.ts'
 
 export default function piAutopilotExtension(pi: ExtensionAPI): void {
   let scheduler = new SessionScheduler(pi)
@@ -99,10 +99,20 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
     touchActivity()
   })
 
+  // 回合边界维护挂死豁免：长静默工具执行期间不判挂死（审计：>30min 工具被误杀）
+  pi.on('turn_start', async () => {
+    setTurnBusy(true)
+  })
+  pi.on('turn_end', async () => {
+    setTurnBusy(false)
+  })
+
   // 主会话空闲（回合结束）＝注入的任务已执行完成：清除 pendingInject 标记。
   // 双作用：① interval 任务可再次触发（防重叠期间正确跳过）；② 崩溃恢复时
   // collectPendingTasks 只收集真正"注入后未完成"的任务。
   pi.on('agent_settled', async () => {
+    // 兜底：turn_end 异常未发出时这里也解除豁免，防止 watchdog 永久静默
+    setTurnBusy(false)
     try {
       await clearAllPending()
     } catch { /* 清理失败不阻塞 */ }

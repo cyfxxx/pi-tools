@@ -212,6 +212,16 @@ export class BrowserManager {
   }
 
   async close(): Promise<void> {
+    // 竞态修复：launch 进行中时 close 必须等待其完成，否则 close 返回后
+    // launch 才完成并赋值 this.browser，浏览器进程泄漏。
+    // launch 失败（reject）无需关闭，静默吞掉。
+    if (this.initializing) {
+      try {
+        await this.initializing
+      } catch {
+        // launch 失败：无浏览器可关
+      }
+    }
     try {
       if (this.page && !this.page.isClosed()) await this.page.close()
     } catch (e) {

@@ -157,6 +157,9 @@ export async function mergeCandidates(
         e.confidence = Math.max(e.confidence, candidate.confidence)
         e.recurrence += 1
         e.updatedAt = candidate.updatedAt
+        // 活跃提取需刷新访问时间：否则按旧 accessedAt 参与 30/60 天剪枝会被误剪
+        // （与 storage.ts applyMem0Action UPDATE 分支一致）
+        e.accessedAt = candidate.accessedAt || e.accessedAt
         e.observedAt = candidate.observedAt || e.observedAt
         e.environments = mergeEnvironments(e.environments, candidate.environments)
         applied.push(`UPDATE: ${e.title}`)

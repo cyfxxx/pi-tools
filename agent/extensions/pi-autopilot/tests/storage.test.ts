@@ -307,6 +307,20 @@ describe('updateTaskAfterRun v2 behavior', () => {
     expect(store.tasks.some(x => x.id === task.id)).toBe(false)
   })
 
+  it('removes once tasks after retries exhausted (失败耗尽不滞留)', async () => {
+    const task = await addTask({ name: 'one-off-retry', type: 'once', schedule: '+30m', prompt: 'p', retries: 1 })
+    await updateTaskAfterRun(task.id, 'failed', 'boom')
+    const { readTasks } = await import('../storage')
+    // 第一次失败：重试窗口内，任务保留且 nextRun 已排定
+    let t = (await readTasks()).tasks.find(x => x.id === task.id)!
+    expect(t.failCount).toBe(1)
+    expect(t.nextRun).not.toBeNull()
+    // 第二次失败：重试耗尽 → once 任务直接移除（不再 nextRun=null 滞留）
+    await updateTaskAfterRun(task.id, 'failed', 'boom2')
+    const store = await readTasks()
+    expect(store.tasks.some(x => x.id === task.id)).toBe(false)
+  })
+
   it('schedules retry on failure when retries remain', async () => {
     const task = await addTask({ name: 'flaky', type: 'interval', schedule: '5m', prompt: 'p', retries: 2 })
     await updateTaskAfterRun(task.id, 'failed', 'boom')

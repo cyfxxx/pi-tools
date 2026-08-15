@@ -402,6 +402,12 @@ export async function updateTaskAfterRun(
       // 连续瞬时故障（provider_down/超时）用递增延迟避免自撞，抖动防共振
       task.nextRun = addMs(isoNow(), retryDelayMs(task.failCount))
     } else {
+      // once 任务重试耗尽：与成功分支一致直接移除，避免 nextRun=null 永久滞留列表
+      if (task.type === 'once') {
+        store.tasks.splice(idx, 1)
+        await writeTasks(store)
+        return
+      }
       task.runCount++
       task.nextRun = computeNextRun(task)
     }

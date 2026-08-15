@@ -101,6 +101,30 @@ describe('BrowserManager', () => {
     expect(bm.isPageActive()).toBe(false)
   })
 
+  it('should close browser launched during close() (launch 竞态不泄漏进程)', async () => {
+    const bm = await getBrowserManager()
+    // 挂起 launch：确保 close() 被调用时 initializing 仍在进行中
+    let resolveLaunch!: (b: unknown) => void
+    const cloakModule = await import('cloakbrowser')
+    ;(cloakModule.launch as any).mockImplementation(
+      () => new Promise((res) => { resolveLaunch = res }),
+    )
+    const launching = bm.ensureBrowser()
+    // 等 launch 真正开始执行（executor 运行后 resolveLaunch 才被赋值）
+    await vi.waitFor(() => {
+      expect(resolveLaunch).toBeTypeOf('function')
+    })
+    const closing = bm.close()
+    // launch 尚未完成：此时不能关闭（browser 尚未赋值）
+    expect(mockBrowser.close).not.toHaveBeenCalled()
+    // 让 launch 完成——close() 应等待它并关闭刚赋值给 this.browser 的实例
+    resolveLaunch(mockBrowser)
+    await closing
+    await launching
+    expect(mockBrowser.close).toHaveBeenCalledTimes(1)
+    expect(bm.isPageActive()).toBe(false)
+  })
+
   it('should navigate fallback from networkidle to load', async () => {
     const bm = await getBrowserManager()
     mockPage.goto

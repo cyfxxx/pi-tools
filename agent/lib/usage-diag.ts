@@ -6,7 +6,7 @@
  * 目标：量化每轮请求发送量（平台统计的核心），定位 token 消耗大头。
  */
 
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -42,13 +42,43 @@ export type DiagLine = UsageRecord | AutoCompactEvent | PruneEvent;
 const DIAG_FILE = join(homedir(), ".pi", "agent", ".usage-diag.jsonl");
 const MAX_LINES = 20_000;
 
+// 写入节流：每 N 行检查一次行数，超上限截断重写（保留尾部）。appendFileSync 无限
+// 追加时文件无界增长（审计实测 739KB/5K+ 行且 MAX_LINES 从未被引用）。
+let linesSinceCheck = 0;
+const CHECK_EVERY = 500;
+
 export function getDiagFile(): string {
   return process.env.PI_USAGE_DIAG_FILE || DIAG_FILE;
+}
+
+function rotateIfNeeded(): void {
+  linesSinceCheck++
+  if (linesSinceCheck < CHECK_EVERY) return
+  linesSinceCheck = 0
+  try {
+    const content = readFileSync(getDiagFile(), "utf-8")
+    const trimmed = trimDiagContent(content)
+    if (trimmed !== null) {
+      const tmp = getDiagFile() + ".tmp." + process.pid
+      writeFileSync(tmp, trimmed)
+      renameSync(tmp, getDiagFile())
+    }
+  } catch {
+    // 轮转失败不阻塞：下次检查再试
+  }
+}
+
+/** 超上限时截断为尾部 MAX_LINES 行；未超限返回 null（纯函数便于测试） */
+export function trimDiagContent(content: string, maxLines: number = MAX_LINES): string | null {
+  const lines = content.split("\n").filter(Boolean)
+  if (lines.length <= maxLines) return null
+  return lines.slice(-maxLines).join("\n") + "\n"
 }
 
 export function recordUsage(record: UsageRecord): void {
   try {
     appendFileSync(getDiagFile(), JSON.stringify(record) + "\n");
+    rotateIfNeeded();
   } catch {
     // 诊断记录失败不阻塞会话
   }
