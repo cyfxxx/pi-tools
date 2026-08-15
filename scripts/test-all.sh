@@ -115,7 +115,7 @@ if [ "$FAST" -eq 1 ] || [ -n "$ONLY" ]; then
   exit $FAILED
 fi
 
-cyn "== subagent mjs 测试（45 用例） =="
+cyn "== subagent mjs 测试（63 用例） =="
 if [ -f "$EXTS/subagent/tests/test.mjs" ]; then
   SDK_ENV=""
   if [ "$IS_WIN_PORTABLE" -eq 1 ] && [ -f "$PI_GLOBAL/dist/index.d.ts" ]; then
@@ -130,12 +130,6 @@ fi
 cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
 (cd "$EXTS/pi-web-search" && "$NODE" node_modules/vitest/vitest.mjs run tests/extensions.test.ts >/dev/null 2>&1)
 report $? "extensions.test.ts (25 用例)"
-
-cyn "== subagent 纯函数测试（mjs，无 vitest 环境） =="
-# 注释长期声称包含 subagent 但实际未执行（审计 2026-08-15 发现），补入回归面
-(cd "$EXTS/subagent" && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs >/dev/null 2>&1)
-report $? "subagent mjs"
-
 
 cyn "== 扩展冲突检查 =="
 (cd "$EXTS" && "$NODE" tests/conflict-check.mjs >/dev/null 2>&1)

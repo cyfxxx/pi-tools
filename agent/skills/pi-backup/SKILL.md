@@ -164,7 +164,7 @@ GitHub 同步完成
 
 **阶段 3：解压**
 
-6. 解压归档：`tar xzf {backup_path} -C ~/`
+6. 解压归档：`tar xzf {backup_path} -C ~/.pi/`（归档根为 `agent/ scripts/ memory/` 等，对应 `~/.pi/` 下的目录；解到 `~/` 会污染 home——审计 MEDIUM）
 7. 验证关键文件：`ls -la ~/.pi/agent/settings.json` 等。
 8. 如果备份中不含 `auth.json` 且未指定 `--include-auth`：告知用户 `auth.json` 未被恢复，当前文件保持不变。`pi-voice.json` / `models.json` 同理——未随备份提供时保持现状（`--with-auth` 创建的归档会包含它们）。
 
