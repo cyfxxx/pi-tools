@@ -27,7 +27,7 @@ usage() {
 pi-code-review 确定性检查
   默认: 审查 git 工作区变更（HEAD 与未跟踪文件）
   --all <dir>   扫描目录内全部源码文件（无需 git）
-  --selfcheck   检查技能自身更新（本仓库远程 + 参考项目 alibaba/open-code-review）
+  --selfcheck   检查技能自身更新（本仓库远程 + 参考项目 alibaba/open-code-review）；距上次检查不足 7 天时跳过远程查询，--force 强制检查
   --help        显示本帮助
 注: 大型目录全量扫描耗时（如 ~/.pi 约 40s），建议用 tmux_run 后台执行避免阻塞轮次
    （tmux_run name=review command="bash review.sh --all /root/.pi"; tmux_wait name=review until_exit=true）
@@ -38,6 +38,7 @@ for arg in "$@"; do
   case "$arg" in
     --help) usage; exit 0 ;;
     --selfcheck) MODE="selfcheck" ;;
+    --force) FORCE_CHECK=1 ;;
     --all) MODE="all" ;;
     --all=*) MODE="all"; SCAN_DIR="${arg#--all=}" ;;
     --*) say "未知参数: $arg（用 --help 查看用法）"; exit 0 ;;
@@ -48,6 +49,21 @@ done
 # ---------- 自检模式：检查技能自身更新 ----------
 if [ "$MODE" = "selfcheck" ]; then
   say "== pi-code-review 技能自检 =="
+  say ""
+  # 更新检查节流：距上次远程检查 < 7 天直接跳过（git fetch + GitHub API 查询
+  # 每次 ~5-15s，高频自检无必要）。--force 可强制检查。记录文件为运行时数据
+  # （不入库）；检查成功后更新时间戳。
+  SELFCHECK_META="${PI_HOME:-$HOME/.pi}/logs/pi-code-review-selfcheck.ts"
+  NOW_TS=$(date +%s)
+  LAST_TS=$(cat "$SELFCHECK_META" 2>/dev/null || echo 0)
+  AGE=$((NOW_TS - LAST_TS))
+  LAST_STR=$(python3 -c "import sys;from datetime import datetime;ts=int(sys.argv[1]);print(datetime.fromtimestamp(ts).strftime('%F %T'))" "$LAST_TS" 2>/dev/null || echo 未知)
+  if [ "${FORCE_CHECK:-0}" != "1" ] && [ "$AGE" -lt 604800 ]; then
+    say "  [–] 距上次更新检查不足 7 天（上次: $LAST_STR），跳过远程更新检查。--force 强制重新检查。"
+    say ""
+    say "自检完成。技能版本: v1.2"
+    exit 0
+  fi
   say ""
   say "--- 本仓库技能更新 ---"
   if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -81,6 +97,9 @@ if [ "$MODE" = "selfcheck" ]; then
   else
     skip "curl"
   fi
+  # 记录本次检查时间（更新检查节流，7 天内重复自检跳过远程查询）
+  mkdir -p "$(dirname "$SELFCHECK_META")" 2>/dev/null
+  date +%s > "$SELFCHECK_META" 2>/dev/null
   say ""
   say "自检完成。技能版本: v1.2"
   exit 0
