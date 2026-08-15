@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import type { MemoryCategory } from './types.ts'
+import type { MemoryCategory, MemoryEntry } from './types.ts'
 import {
   loadEntries,
   loadNotes,
@@ -138,7 +138,13 @@ export function registerCommands(pi: ExtensionAPI): void {
 
       // ── prune ──
       if (subcmd === 'prune') {
-        const entries = loadEntries()
+        let entries: MemoryEntry[]
+        try {
+          entries = loadEntries()
+        } catch (e) {
+          ctx.ui.notify(`读取记忆库失败: ${(e as Error).message}`, 'error')
+          return
+        }
         const stats = getStats(entries)
         if (stats.totalEntries === 0) {
           ctx.ui.notify('记忆库为空，无需清理', 'info')
@@ -149,9 +155,26 @@ export function registerCommands(pi: ExtensionAPI): void {
           `当前 ${stats.totalEntries} 条，${(stats.totalSizeBytes / (1024 * 1024)).toFixed(2)} MB。\n` +
             '将删除: 置信度<0.3 且 30天未访问 / 引用<2 且 60天未访问 的条目。',
         )
-        if (!choice) return
-        const removed = pruneEntries(entries)
-        ctx.ui.notify(`清理完成，删除了 ${removed} 条低价值记忆`, 'info')
+        if (!choice) {
+          ctx.ui.notify('已取消清理（未删除任何条目）', 'info')
+          return
+        }
+        let result: { removed: number; titles: string[] }
+        try {
+          result = pruneEntries(entries)
+        } catch (e) {
+          ctx.ui.notify(`清理失败: ${(e as Error).message}`, 'error')
+          return
+        }
+        if (result.removed === 0) {
+          ctx.ui.notify('没有符合清理条件的低价值记忆（置信度/引用/访问时间均达标）', 'info')
+          return
+        }
+        // 具体删除清单（标题列表，过长截断前 20 条）
+        const MAX_SHOW = 20
+        const list = result.titles.slice(0, MAX_SHOW).map(t => `  - ${t}`).join('\n')
+        const more = result.titles.length > MAX_SHOW ? `\n  …等共 ${result.titles.length} 条` : ''
+        ctx.ui.notify(`清理完成，删除了 ${result.removed} 条低价值记忆：\n${list}${more}`, 'info')
         return
       }
 
@@ -168,7 +191,10 @@ export function registerCommands(pi: ExtensionAPI): void {
             '清除所有笔记和检查点？',
             `这将删除 ${noteCount} 条笔记和 ${cpCount} 个检查点。此操作不可撤销。`,
           )
-          if (!choice) return
+          if (!choice) {
+            ctx.ui.notify('已取消清除（未删除任何数据）', 'info')
+            return
+          }
           if (existsSync(CHECKPOINTS_DIR)) rmSync(CHECKPOINTS_DIR, { recursive: true })
           saveNotes({})
           ctx.ui.notify(`已清除全部笔记数据 (${noteCount} 条笔记, ${cpCount} 个检查点)`, 'info')

@@ -316,9 +316,10 @@ export function deleteEntry(entries: MemoryEntry[], id: string): boolean {
   return true
 }
 
-export function pruneEntries(entries: MemoryEntry[]): number {
+export function pruneEntries(entries: MemoryEntry[]): { removed: number; titles: string[] } {
   const now = Date.now()
   const before = entries.length
+  const removedTitles: string[] = []
   const kept = entries.filter(e => {
     // 软删除/被取代条目直接回收（保留 superseded 统计用则仅回收 deleted）
     if (e.deleted) return false
@@ -328,11 +329,17 @@ export function pruneEntries(entries: MemoryEntry[]): number {
     if (e.recurrence < PRUNE_RECURRENCE && daysOld > PRUNE_DAYS_LOW) return false
     return true
   })
+  if (kept.length < before) {
+    const keptSet = new Set(kept)
+    for (const e of entries) {
+      if (!keptSet.has(e)) removedTitles.push(e.title)
+    }
+  }
   const removed = before - kept.length
   entries.length = 0
   entries.push(...kept)
   saveEntries(entries)
-  return removed
+  return { removed, titles: removedTitles }
 }
 
 export function getStats(entries: MemoryEntry[]): MemoryStats {
