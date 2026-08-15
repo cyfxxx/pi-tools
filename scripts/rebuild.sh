@@ -101,8 +101,9 @@ detect_china_network() {
 
 set_mirrors() {
   # C3：测速结果缓存（TTL 1h，幂等续跑跳过 ~12s 测速）
+  # 前置校验：curl 缺失时检测结果不可信（探测会静默失败误判直连）——不读缓存不写缓存
   local CACHE="$PI_HOME/logs/.mirror-cache"
-  if [ -f "$CACHE" ] && [ $(( $(date +%s) - $(stat -c %Y "$CACHE" 2>/dev/null || echo 0) )) -lt 3600 ]; then
+  if command -v curl &>/dev/null && [ -f "$CACHE" ] && [ $(( $(date +%s) - $(stat -c %Y "$CACHE" 2>/dev/null || echo 0) )) -lt 3600 ]; then
     read -r GH_PROXY CHINA_MIRROR < "$CACHE" 2>/dev/null || true
     ok "镜像缓存命中（<1h）：GH_PROXY=${GH_PROXY:-直连}"
     return 0
@@ -155,7 +156,12 @@ EOF
     GH_PROXY=""
     ok "网络直连模式"
   fi
-  echo "$GH_PROXY $CHINA_MIRROR" > "$PI_HOME/logs/.mirror-cache" 2>/dev/null || true
+  # 仅 curl 可用时写缓存（curl 缺失时探测结果不可信，写入会污染后续续跑）
+  if command -v curl &>/dev/null; then
+    echo "$GH_PROXY $CHINA_MIRROR" > "$PI_HOME/logs/.mirror-cache" 2>/dev/null || true
+  else
+    rm -f "$PI_HOME/logs/.mirror-cache" 2>/dev/null || true
+  fi
 }
 
 # ---- 前置检查 ----
@@ -188,6 +194,7 @@ preflight() {
   # Termux 包名经 pkg_map 映射；fd 探测兼容 Termux 的 fd 命令
   local pkgs=""
   command -v git        &>/dev/null || pkgs="$pkgs git"
+  command -v curl       &>/dev/null || pkgs="$pkgs curl"
   command -v fdfind     &>/dev/null || { command -v fd &>/dev/null || pkgs="$pkgs fd-find"; }
   command -v rg         &>/dev/null || pkgs="$pkgs ripgrep"
   dpkg -l python3-venv &>/dev/null 2>&1 || pkgs="$pkgs python3-venv"
@@ -383,16 +390,20 @@ phase2_npm() {
   local n=0
   local installed_count=0
 
+  # npm install 超时（秒）：网络挂起时避免 rebuild 永久卡住（2026-08-15 容器实测
+  # 直连 npmjs 挂 10 分钟无进展）。成功后跳过；失败按既有 A3 重跑捕获诊断。
+  local NPM_INSTALL_TIMEOUT=300
+
   npm_install_bg() {
     local d="$1"
     info "安装依赖: ${d#$PI_HOME/}"
-    if (cd "$d" && npm install --no-fund --no-audit >/dev/null 2>&1); then
+    if (cd "$d" && timeout $NPM_INSTALL_TIMEOUT npm install --no-fund --no-audit >/dev/null 2>&1); then
       echo "  ✓ npm install 完成: ${d#$PI_HOME/}"
     else
       echo "  ✗ npm install 失败: ${d#$PI_HOME/}"
       # A3：失败重跑一次捕获输出尾部，避免无从排查
       echo "  └ 诊断输出（尾部 10 行）:"
-      (cd "$d" && npm install --no-fund --no-audit 2>&1 | tail -10 | sed 's/^/    /')
+      (cd "$d" && timeout $NPM_INSTALL_TIMEOUT npm install --no-fund --no-audit 2>&1 | tail -10 | sed 's/^/    /')
     fi
   }
 
