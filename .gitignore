@@ -78,13 +78,9 @@ agent/.pi-autopilot-crash.json
 agent/.usage-diag.jsonl
 agent/extensions/*/node_modules
 
-# pi-tmux 运行时数据
-logs/tmux/
-logs/.mirror-cache
+# 运行时日志（pi-tmux/pi-voice/pi-bg/scheduler/wrapper/selfcheck 时间戳等全部运行时数据，不入库）
+logs/
 agent/.pi-tmux-registry.json
-# pi-voice 运行时数据
-logs/whisper/
-logs/voice/
 agent/pi-voice.json
 
 

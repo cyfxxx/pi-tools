@@ -69,12 +69,12 @@ fi
 
 cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
 (cd "$EXTS/pi-web-search" && ./node_modules/.bin/vitest run tests/extensions.test.ts >/dev/null 2>&1)
-report $? "extensions.test.ts (23 用例)"
+report $? "extensions.test.ts（注册面）"
 
 cyn "== subagent 纯函数测试（mjs，无 vitest 环境） =="
 # 注释长期声称包含 subagent 但实际未执行（审计 2026-08-15 发现），补入回归面
 (cd "$EXTS/subagent" && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs >/dev/null 2>&1)
-report $? "subagent mjs (54 用例)"
+report $? "subagent mjs（用例数见 runner 输出）"
 
 cyn "== 扩展冲突检查 =="
 (cd "$EXTS" && node tests/conflict-check.mjs >/dev/null 2>&1)
