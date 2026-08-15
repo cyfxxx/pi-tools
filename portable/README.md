@@ -13,10 +13,10 @@
 pi-portable/
 ├── start.bat / start.ps1   入口启动器（根目录，最显眼）
 ├── bin/                    管理脚本（setup/verify/diag/sync/update-pi/update-portable/patch/check-restart/check-services/searxng-setup/whisper-setup）
-├── node/                   Node LTS 便携版（setup 生成）
+├── node/                   Node LTS 便携版（setup 生成；**需 Node 24+**——zstd 压缩支持，旧版安装失败）
 ├── pi-global/              pi 本体（npm --prefix 本地安装）
 ├── tools/                  工具组件（ffmpeg/PortableGit/ca-bundle/uv/便携 Python/searxng 实例/whisper 实例）
-├── .cloakbrowser/          pi-browser 官方 stealth 定制 Chromium（537MB，gitignored）
+├── .cloakbrowser/          pi-browser 官方 stealth 定制 Chromium（解压后 537MB，gitignored）
 ├── agent/                  配置/会话/扩展唯一真身（仓库工作副本 + 运行时；.pi\agent junction 指向）
 ├── memory/                 pi-memory 数据（entries.json 入库共享；.pi\memory junction 指向）
 ├── .pi/                    junction 区（agent/memory 链接 + pi-link 运行时）[隐藏]
@@ -31,7 +31,7 @@ pi-portable/
 
 1. 新建空文件夹（如 `pi-portable`），把种子 `portable/` 全部内容拷进去（`bin/`、`start.bat`、`start.ps1`、`ca-bundle.crt`、`tools/`、`README.md`），另从仓库拷 `scripts/whisper-server.py`（whisper 服务端，check-services.js 依赖）
 2. 拷贝配置：从现有实例拷 `agent/`（含扩展源码与配置、sessions 会话；`settings.json`/`models.json`/`auth.json` 含密钥，自行决定）与 `memory/`
-3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit/uv → **自动创建 `memory/` 并建 `.pi\agent`/`.pi\memory` 两个 junction** → 装扩展依赖 → 应用核心补丁（patch-footer/voice-enter/plan-tools）→ 拷入 ca-bundle/tmux shim；重跑幂等）
+3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit/uv → **自动创建 `memory/` 并建 `.pi\agent`/`.pi\memory` 两个 junction** → 装扩展依赖 → 应用核心补丁（patch-footer/voice-enter/plan-tools；Termux 专属 playwright-core 与 tab-arg-completion 补丁不适用于 Windows）→ 拷入 ca-bundle/tmux shim；重跑幂等）
 4. 运行 `.\bin\verify.ps1` 验证环境（核心组件全 [OK]，含 junction 有效性/三补丁 marker/配置路径漂移检查；可选组件缺失属正常）
 5. 可选组件按需构建：`.\bin\searxng-setup.ps1`（本地搜索 8890）/ `.\bin\whisper-setup.ps1`（转写 18767）/ 手动部署浏览器（pi-browser README）
 6. `.\start.bat --continue` 启动（junction 自愈兜底，服务自动拉起）
@@ -70,7 +70,7 @@ pi-portable/
 | `tools/whisper/` | 重建：`bin\whisper-setup.ps1`（venv+faster-whisper+opencc） | 本地转写服务（端口 18767；模型 small+强制中文+opencc 繁→简；模型缓存 tools/whisper/models） |
 
 > **服务启动方式（重要）**：`check-services.js` 直接 spawn **base python**（`tools/python/cpython-*/python.exe`）+ `PYTHONPATH` 注入 venv site-packages，**不执行 venv 的 `Scripts\python.exe`**——那是 uv trampoline，其内部 spawn 的 base python 不受 `windowsHide` 控制，会弹出两个常驻终端窗口（searxng/whisper 各一）。venv 仅作包仓库。服务日志：`.pi\logs\searxng.log` / `.pi\logs\whisper.log`。
-| `.cloakbrowser/` | 手动下载官方定制版 zip 解压（562MB；GitHub 直连慢可走下载工具） | pi-browser 浏览器（stealth 指纹完整：webdriver=false 等）；npmmirror 普通 Chrome 可作替代（CLOAKBROWSER_BINARY_PATH 指向） |
+| `.cloakbrowser/` | 手动下载官方定制版 zip（zip 约 562MB，解压后 537MB；GitHub 直连慢可走下载工具） | pi-browser 浏览器（stealth 指纹完整：webdriver=false 等）；npmmirror 普通 Chrome 可作替代（CLOAKBROWSER_BINARY_PATH 指向） |
 
 > 大文件（ffmpeg/PortableGit）不入库，setup 首次运行下载；小文件（ca-bundle/shim）随种子拷贝。
 
@@ -107,13 +107,13 @@ powershell -ExecutionPolicy Bypass -File E:\pi-portable\bin\update-pi.ps1
 powershell -ExecutionPolicy Bypass -File E:\pi-portable\bin\update-portable.ps1
 ```
 
-拉仓库最新扩展/技能（robocopy 同步 agent/extensions 等 5 个目录，保留本地 settings/auth），pi-voice 保留（Windows 原生语音 71209d3 起支持）。
+拉仓库最新扩展/技能（robocopy 同步 agent/extensions 等 5 个目录，保留本地 settings/auth），pi-voice 保留（Windows 原生语音自 2026-08-14 起支持，提交 71209d3）。
 
 ## 已知限制
 
 - **服务自启**：start.bat 启动时 bin/check-services.js 检测 8890/18767 端口，未监听自动拉起（spawn python detached——cmd 嵌套实测失败）
 - **pi-tmux Windows 原生后端**（runTmux win32 分支：bash -c + --noprofile 执行 + 日志落盘 + pidfile/taskkill 树杀；不依赖 WSL。限制：bash -c 会话无 stdin 交互（tmux_send 仅 Ctrl-C/读取/停止），长驻命令需自写循环如 `while true; do ...; sleep 5; done`）
-- **pi-browser**：官方 stealth 定制版已部署 .cloakbrowser/（562MB zip 手动解压）；impl.ts 自动探测（优先定制版→回退 npmmirror）；--no-proxy-server 强制直连（系统代理干扰 ERR_NETWORK_ACCESS_DENIED）
+- **pi-browser**：官方 stealth 定制版已部署 .cloakbrowser/（zip 562MB 解压后 537MB）；impl.ts 自动探测（优先定制版→回退 npmmirror）；--no-proxy-server 强制直连（系统代理干扰 ERR_NETWORK_ACCESS_DENIED）
 - **pi-voice**：ffmpeg dshow 录音 + whisper small/zh/opencc 简体 + SAPI 朗读；回车听写需核心补丁（patch-voice-enter.mjs——便携包 PI_DIST/win32 探测已适配）
 - **whisper GPU 推理未启用**（需 nvidia-cublas/cudnn pip 包 ~1GB；small CPU 实时率可接受）
 - 大文件（node/pi-global/tools/.cloakbrowser 等）不入库——新设备 setup 自动下载/重建

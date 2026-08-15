@@ -9,7 +9,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装，dsh 借鉴）、`config.ts`（配置分层合并，默认+overlay 深合并）
 - `agent/agents/`、`agent/skills/` — 子代理模板、技能；`agent/prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 - `portable/` — 便携 pi（Windows 原生）种子：`bin/`（setup/verify/diag/update-pi/update-portable/sync/check-restart/check-services/searxng-setup/whisper-setup 等管理脚本）+ start.bat/start.ps1 入口 + ca-bundle.crt + tools/tmux shim（不含 .pi 内容，含密钥的配置不入库；完整经验见 `portable/README.md` 与记忆条目「便携 pi Windows 最终架构」）
-- `scripts/` — rebuild.sh（一键重建+补丁）、pi-wrapper.sh（生命周期）、pi-cron.sh（离线定时）、test-all.sh（回归，支持 --only/--fast 分层）、pi-bench.sh（用量基准：usage/timing/compare）、pi-whisper.sh + whisper-server.py（whisper 服务）、pi-bg.sh（后台任务，见 README-pi-bg.md）、patch-*.mjs（见下方补丁生命周期）
+- `scripts/` — rebuild.sh（一键重建+补丁）、pi-wrapper.sh（生命周期）、pi-cron.sh（离线定时）、test-all.sh（回归，支持 --only/--fast 分层）、pi-bench.sh（用量基准：usage/timing/compare）、docker-rebuild-test.sh（Docker 干净环境重建回归）、pi-whisper.sh + whisper-server.py（whisper 服务）、pi-bg.sh（后台任务，见 README-pi-bg.md）、smoke-test.sh（冒烟）、termux-prereq.sh（Termux 前置）、install-wrapper.sh + pi-orig.sh（wrapper 安装/逃生）、install-cron.sh / install-systemd.sh（调度安装）、patch-*.mjs（见下方补丁生命周期）
 - `deploy/` — 部署配置：`deploy/systemd/`（unit 模板）、`deploy/tmux/`（tmux.conf 与状态脚本）、`deploy/keys/`（pi-link 公钥合集）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 - `docs/` — 开发与部署文档（Termux 注意事项/Pi 扩展注意事项/SDK/tmux 部署/多环境指南 ENVIRONMENTS.md）
@@ -45,7 +45,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **后台任务（禁止阻塞前台）**：tmux_run 启动长任务后**立即结束回合**（默认 `notify=true` 自动唤醒：任务结束自动触发新回合汇报，无需用户发消息；`notify=false` 可关），进度在后续轮次用 tmux_read 轮询（响应其他消息时顺带查看）；**tmux_run 后同一轮内禁止 tmux_wait**——等待期间无法处理用户消息，等同占用前台（三次实战教训：2026-08-14 rebuild 任务 tmux_wait 连续阻塞 6 分钟×2；2026-08-15 全量回归 until_exit 阻塞 420 秒——命令尾部 bash 仍存活会话不退出，until_exit 注定等满超时）。确需等待时只用 `pattern=` 匹配具体完成标志且 timeout≤60s；until_exit 仅限命令会自然退出（尾部 `; exec true`）的形态。仅用户明确要求"等它完成"时例外；无 tmux 环境用 nohup 记 PID
 - **旧扩展名残留**：pi-web-toolkit / pi-router / pi-admin / pi-scheduler 均已融合或更名，新代码禁止引用
-- **补丁生命周期**：`patch-voice-enter.mjs`（回车拦截，缺失时 pi-voice 自动禁用回车听写）/`patch-footer-live-context.mjs`（footer 实时 token）/`patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行三个脚本）
+- **补丁生命周期**：`patch-voice-enter.mjs`（回车拦截，缺失时 pi-voice 自动禁用回车听写）/`patch-footer-live-context.mjs`（footer 实时 token）/`patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）/`patch-tab-arg-completion.mjs`（tab 参数补全）/`patch-playwright-core.mjs`（Termux android→linux 平台补丁）共 5 个由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行五个脚本）
 - **已知噪音（勿误判为 bug）**：pi 启动时可能打印 `Extension shortcut conflict: 'return'/'shift+enter' is built-in shortcut for tui.input.newLine and .../pi-voice/index.ts. Using .../pi-voice/index.ts.`——这是 pi-voice 故意注册回车键（`Key.return` + `Key.shift('enter')`，enter 本身是保留键会被静默丢弃）用于录音中切段转写，与内置 `tui.input.newLine` 冲突属设计行为（restrictOverride=false，扩展生效）。功能安全由 patch-voice-enter.mjs 保证（未录音时 handler 返回 false 放行回车）。扩展 API 无注销接口，无法消除该警告，无需处理
 
 ## 各扩展深度文档（指向）
