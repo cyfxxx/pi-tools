@@ -211,7 +211,6 @@ export default function (pi: ExtensionAPI): void {
     '/voice model [名称]      查看/切换 whisper 模型',
     '/voice device [cpu|gpu|auto]  查看/切换推理设备（GPU 被占用时切 cpu）',
     '/voice doctor             诊断录音/转写/朗读依赖',
-    '/voice model [名称]       查看/切换 whisper 模型',
     '/voice bench              录 5 秒测转写速度',
     '/voice help               显示本帮助',
     '（Tab 补全：/voice + 两次 Tab 显示子命令；子命令随输入过滤，如 tts s → status）',
