@@ -53,7 +53,7 @@
 | **只读工具集** | 限制可用工具为 read、bash、grep、glob、todo、web_search、fetch_url、subagent、plan_exit（共 9 个，`PLAN_MODE_TOOLS`） |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
-| **`[DONE:n]` 标记** ~~→ 已移除~~ | 统一使用 `todo update status=completed` 完成步骤 |
+| **`[DONE:n]` 标记（已移除）** | 统一使用 `todo update status=completed` 完成步骤 |
 | **进度追踪** | TUI 小部件 + TodoOverlay 实时显示完成比例（如 2/5） |
 | **会话持久化** | 所有状态（模式、待办、执行状态等）在 session resume 后完整恢复 |
 | **追问保护** | Agent 已展示计划后，普通追问（why/what）不会误覆盖计划；只有显式修改请求才产生新版本 |
@@ -133,8 +133,8 @@
               │  工具: 恢复完整权限                     │
               │  (read / bash / edit / write 等)      │
               │                                      │
-│  Agent 逐步执行每一步                   │
-│  使用 `todo update` 标记完成/进行中     │
+              │  Agent 逐步执行每一步                   │
+              │  使用 `todo update` 标记完成/进行中     │
               │                                      │
               │  TUI 显示实时进度: ☐ / ☑                │
               │                                      │
@@ -183,9 +183,9 @@
     │  │   └── 始终前置 Token 压力标签: "🔴🟡🟢 [token: N%]"
     │  │
     │  └── Execution Mode:
-│       └── 注入 [EXECUTING PLAN] 系统提示消息（customType: "plan-execution-context"）
-│           内容包括：剩余步骤列表、指示按顺序执行、使用 todo update 标记
-│           前置 Token 压力标签
+    │       └── 注入 [EXECUTING PLAN] 系统提示消息（customType: "plan-execution-context"）
+    │           内容包括：剩余步骤列表、指示按顺序执行、使用 todo update 标记
+    │           前置 Token 压力标签
     │
     ▼
   tool_call  (每次 LLM 请求调用工具时触发)
@@ -196,8 +196,8 @@
     │
     ▼
   context  (每次 LLM 请求前，可过滤消息)
-    │  └── 所有 plan-* 注入型消息只保留最新一条
-    │       （清除历史累积，本轮注入不受影响）
+    │  └── 所有 plan-* 注入型消息每类型只保留一条
+    │       （plan-mode-context 保留内容最长的一条，其余保留最新；清除历史累积，本轮注入不受影响）
     │
     ▼
   agent 生成回复（多轮 tool_call 循环，略）
@@ -264,7 +264,7 @@
 
 ### 5.2 核心状态变量
 
-所有状态定义在 `index.ts:95-99`：
+所有状态定义在 `index.ts:125-129`：
 
 ```typescript
 let planModeEnabled = false;    // 是否处于规划模式（只读）
@@ -274,7 +274,7 @@ let planDir: string | null = null; // 当前计划的 git 版本库路径
 let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 ```
 
-`lastPersistedHash`（`index.ts:197`）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
+`lastPersistedHash`（`index.ts:261`，定义于 `persistState()` 内）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
 
 ### 5.3 事件处理器详解
 
@@ -287,9 +287,11 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 - **subagent 隔离**：调用 `assertPlanSubagentAllowed()`，仅允许 `agent="scout"`（worker/reviewer/未指定均拦截，防落可写 general-purpose）
 
 #### `pi.on("context", ...)` — 消息上下文过滤
-- 对所有 `plan-*` 注入型消息（共 11 种：`plan-mode-context`、`plan-execution-context`、`plan-pressure-tag`、`plan-mode-recovery`、`plan-urgency-hint`、`plan-summary-request`、`plan-skill-list`、`plan-complete`、`plan-revise`、`plan-todo-list`、`plan-progress`，见 `index.ts` 的 `INJECTED_CUSTOM_TYPES`）执行**只保留最新一条**去重
+- 对所有 `plan-*` 注入型消息（共 11 种：`plan-mode-context`、`plan-execution-context`、`plan-pressure-tag`、`plan-mode-recovery`、`plan-urgency-hint`、`plan-summary-request`、`plan-skill-list`、`plan-complete`、`plan-revise`、`plan-todo-list`、`plan-progress`，见 `index.ts` 的 `INJECTED_CUSTOM_TYPES`）执行**每类型只保留一条**去重：
+  - `plan-mode-context`（规则块）：保留**内容最长的一条**而非最新一条——后续轮次注入的短句"保持相同规则"若替换掉规则块，模型即丢失规则原文（审计 MEDIUM 修复）
+  - 其余 10 种：保留最新一条
 - 防止历史注入消息作为 user 消息永久累积在上下文中，浪费 token
-- 本轮新注入的消息不受影响（保留最新一条）
+- 本轮新注入的消息不受影响
 
 #### `pi.on("before_agent_start", ...)` — 注入系统提示
 按优先级链注入，每轮最多一条：
@@ -354,7 +356,7 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 
 ## 六、安全模型：Bash Allowlist
 
-安全模型位于 `utils.ts:99`，采用**先规范化、再双重检查**的机制：
+安全模型位于 `utils.ts:103`（`isSafeCommand()`），采用**先规范化、再双重检查**的机制：
 
 ```typescript
 export function isSafeCommand(command: string): boolean {
@@ -534,7 +536,7 @@ function persistState(): void {
 
 ### 恢复
 
-在 `session_start` 事件中恢复（`index.ts:958-1038`）：
+在 `session_start` 事件中恢复（`index.ts:1114`）：
 
 1. 从 `ctx.sessionManager.getEntries()` 中找到最后一个 `customType === "plan-mode"` 的 entry
 2. 恢复所有状态变量（模式、执行状态、计划目录、QA 历史、任务列表）
@@ -557,7 +559,7 @@ function persistState(): void {
 ### 版本化流程
 
 ```typescript
-// index.ts:178
+// index.ts:242
 async function savePlanIteration(planText: string, iteration: number): Promise<string> {
   const timestamp = Date.now();
   const dir = planDir ?? join(PLANS_DIR, `plan-${timestamp}`);
@@ -594,14 +596,14 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 命令 | 描述 | 实现位置 |
 |------|------|----------|
-| `/plan` | 无参切换规划模式（只读探索）；退出时保留任务进度 | `index.ts:328`（registerCommand），无参分支 `index.ts:478` |
-| `/plan enter` | 启用规划模式（已在规划模式时无操作） | `index.ts:328` |
-| `/plan exit` | 退出规划模式（任务保留） | `index.ts:328` |
-| `/plan help` | 输出全部子命令用法（`-h`/`--help` 同义；PLAN_USAGE 定义于 `index.ts:316`） | `index.ts:328` |
+| `/plan` | 无参切换规划模式（只读探索）；退出时保留任务进度 | `registerCommand`（`index.ts:438`），无参分支 `index.ts:585` |
+| `/plan enter` | 启用规划模式（已在规划模式时无操作） | `registerCommand`（`index.ts`） |
+| `/plan exit` | 退出规划模式（任务保留） | `registerCommand`（`index.ts`） |
+| `/plan help` | 输出全部子命令用法（`-h`/`--help` 同义；PLAN_USAGE 定义于 `index.ts:426`） | `registerCommand`（`index.ts`） |
 | `/plan todos` | 按状态分组显示所有计划任务 | `todo.ts` |
-| `/plan view` | 显示当前版本计划全文；`--diff` 显示与上一版差异；`--qa` 显示问答历史 | `index.ts:328` |
-| `/plan clear` | 清空所有计划任务（手动重置） | `index.ts:328` |
-| `/plan resume` | 恢复执行模式，继续未完成的计划 | `index.ts:328` |
+| `/plan view` | 显示当前版本计划全文；`--diff` 显示与上一版差异；`--qa` 显示问答历史 | `registerCommand`（`index.ts`） |
+| `/plan clear` | 清空所有计划任务（手动重置） | `registerCommand`（`index.ts`） |
+| `/plan resume` | 恢复执行模式，继续未完成的计划 | `registerCommand`（`index.ts`） |
 
 ### 工具
 
@@ -629,13 +631,13 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 
 | 快捷键 | 操作 | 实现位置 |
 |--------|------|----------|
-| `Ctrl+Alt+P` | 切换规划模式 | `index.ts:468` |
+| `Ctrl+Alt+P` | 切换规划模式 | `index.ts:596`（`pi.registerShortcut`） |
 
 ### CLI 参数
 
 | 参数 | 描述 | 实现位置 |
 |------|------|----------|
-| `--plan` | 以规划模式启动（只读） | `index.ts:119` |
+| `--plan` | 以规划模式启动（只读） | `index.ts:164`（`pi.registerFlag`） |
 
 ---
 

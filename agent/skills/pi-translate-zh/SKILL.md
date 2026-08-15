@@ -44,10 +44,10 @@ node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs
 - **新增** 交互模式通用消息翻译（确认按钮、认证方式选择、导入/分享提示等）
 - **新增** 会话选择器排序/筛选标签翻译（Recent/Fuzzy/All/Named）
 - **新增** 登录对话框链接提示 fallback 翻译
-- **新增** `browser-automation` 和 `searxng-search` 用户 skill 描述翻译
-- **新增** `context-mode` 全部 8 个技能描述翻译（context-mode、ctx-doctor、ctx-index、ctx-insight、ctx-purge、ctx-search、ctx-stats、ctx-upgrade）
-- **新增** `pi-lens` 中 `/lens-tdi` 和 `/lens-health` 命令描述翻译
-- **新增** `pi-subagents` 扩展工具 label 和 description 翻译
+- **新增** `browser-automation` 和 `searxng-search` 用户 skill 描述翻译（后续已移除，见 v10）
+- **新增** `context-mode` 全部 8 个技能描述翻译（context-mode、ctx-doctor、ctx-index、ctx-insight、ctx-purge、ctx-search、ctx-stats、ctx-upgrade）（后续已移除）
+- **新增** `pi-lens` 中 `/lens-tdi` 和 `/lens-health` 命令描述翻译（后续已移除）
+- **新增** `pi-subagents` 扩展工具 label 和 description 翻译（后续已移除）
 
 ### 自动路径检测
 脚本不再硬编码 pi 安装路径，而是自动探测：
@@ -83,9 +83,6 @@ cp settings-selector.js.bak.1234567890 settings-selector.js
 | `interactive-mode.js` | ~40+ 条（非 description/label 格式的独立统计） |
 | `model-resolver.js` | 核心消息已覆盖 |
 | `agent-session.js` / `provider-composer.js` | 核心消息已覆盖 |
-| `pi-lens/index.ts` | ~53% |
-| `@plannotator/pi-extension/index.ts` | ~59% |
-| `pi-markdown-preview/index.ts` | ~46% |
 
 ## 覆盖范围
 
@@ -102,19 +99,8 @@ cp settings-selector.js.bak.1234567890 settings-selector.js
 | OAuth 提供商选择器 | `oauth-selector.js` | 5 项 |
 | CLI 主入口：提示/警告/错误 | `main.js` | 9 项 |
 | 启动页脚 | `daxnuts.js` | 2 项 |
-| pi-subagents 命令 + 状态消息 | `pi-subagents/src/slash/slash-commands.ts` | 12 项 |
-| pi-subagents 提示词描述 | `pi-subagents/prompts/*.md` | 7 个 |
-| pi-subagents 技能描述 | `pi-subagents/skills/*/SKILL.md` | 1 个 |
 | plan-mode todo 工具 + /todos 命令 | `plan-mode/todo.ts` | 2 条 |
-| **ctx-lite 扩展命令** | `extensions/ctx-lite.ts` | **4 条** |
 | **plan-mode 扩展命令/标志** | `extensions/plan-mode/index.ts` | **5 条** |
-| **@plannotator/pi-extension 命令/标志** | `index.ts` | **9 条** |
-| **@plannotator/pi-extension 技能** | `skills/*/SKILL.md` | **6 个** |
-| **pi-lens 标志/命令** | `index.ts` | **17 项** |
-| **pi-lens 技能** | `skills/*/SKILL.md` | **4 个** |
-| **pi-markdown-preview 命令/参数** | `index.ts` | **14 条** |
-| **plannotator.html UI 文字** | `plannotator.html` | **47 项** |
-| **review-editor.html UI 文字** | `review-editor.html` | **97 项** |
 
 ## 自定义翻译
 
@@ -131,11 +117,8 @@ pi update 后可能新增或修改界面文字。以下排查步骤定位需要�
 PI=/usr/lib/node_modules/@earendil-works/pi-coding-agent
 grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' "$PI/dist/" --include='*.js' | grep -v node_modules
 
-# npm 包扩展命令
-grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' /root/.pi/agent/npm/node_modules/*/index.ts 2>/dev/null
-
-# 上下文模式扩展
-grep -rn 'description:\s*"[A-Z]' /root/.pi/agent/npm/node_modules/context-mode/build/pi-extension.js 2>/dev/null
+# 扩展命令（agent/extensions/ 下各扩展入口）
+grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' /root/.pi/agent/extensions/*/index.ts 2>/dev/null
 ```
 
 ### 2. 查找未翻译的 SKILL.md 描述
@@ -144,8 +127,8 @@ grep -rn 'description:\s*"[A-Z]' /root/.pi/agent/npm/node_modules/context-mode/b
 # 用户技能
 find /root/.pi/agent/skills -name SKILL.md -exec grep -l '^description:' {} \;
 
-# npm 包技能
-find /root/.pi/agent/npm/node_modules -name SKILL.md -exec sh -c 'grep -q "^description:" "$1" && ! grep -qP "[\x{4e00}-\x{9fff}]" "$1" && echo "⚠️  $1"' _ {} \;
+# 扩展技能
+find /root/.pi/agent/extensions -name SKILL.md -exec sh -c 'grep -q "^description:" "$1" && ! grep -qP "[\x{4e00}-\x{9fff}]" "$1" && echo "⚠️  $1"' _ {} \;
 ```
 
 ### 3. 查找 pi 交互界面中未翻译的用户可见字符串
@@ -168,13 +151,12 @@ sed -n '95,100p' "$PI/dist/modes/interactive/components/login-dialog.js"
 sed -n '11,16p' "$PI/dist/modes/interactive/components/config-selector.js"
 ```
 
-### 4. 查找 context-mode 相关命令
+### 4. 查找扩展命令注册
 
 ```bash
 PI=/usr/lib/node_modules/@earendil-works/pi-coding-agent
 grep -n 'registerCommand' "$PI/dist/core/slash-commands.js"
-grep -n 'registerCommand' /root/.pi/agent/npm/node_modules/pi-lens/index.ts
-grep -n 'registerCommand' /root/.pi/agent/npm/node_modules/context-mode/build/pi-extension.js
+grep -rn 'commands: \|registerCommand\|name: "/' /root/.pi/agent/extensions/*/index.ts | head -50
 ```
 
 ### 查找原则
@@ -187,4 +169,4 @@ grep -n 'registerCommand' /root/.pi/agent/npm/node_modules/context-mode/build/pi
 
 ## 验证
 
-运行后重启 pi，输入 `/`、`/settings`、`/plannotator`、`/lens-toggle`、`/preview` 检查是否显示中文。
+运行后重启 pi，输入 `/`、`/settings`，并检查扩展命令（`/voice`、`/memory`、`/plan`、`/link` 等）的 help 输出与提示词是否显示中文。

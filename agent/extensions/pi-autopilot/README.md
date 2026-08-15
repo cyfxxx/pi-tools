@@ -24,11 +24,12 @@
 | 服务不可用 | provider/api/connection/network/429/503/502 等 | `failoverAfter`(2) 次后切换 fallback 链 |
 | 逻辑错误 | Error:/invalid 等 | 直接失败（不烧重启成本） |
 | 连续失败 | failCount ≥ `suspendAfter`(5) | 暂停任务 + Webhook 告警 |
+| failover 熔断 | failoverCount ≥ `maxFailovers`(1) | 暂停任务——连续切换模型已达上限，防双模型链 ping-pong 无限重启（2026-08 审计修复） |
 | 鉴权错误 | 401/403/unauthorized/invalid api key | 直接失败（重试无意义，不烧额度） |
 
 - **模型 failover**：`fallbackModels` 硬白名单（AI 不可自由选模型），结合历史成功率选目标，写 wrapper 状态后重启带 `--model`
 - **重试退避（A1，2026-08）**：失败重试延迟固定 60s 改为**指数退避 + 抖动**——`base 30s × 2^(failCount−1)`，上限 5min，±50% 抖动（下限 base/2）；连续瞬时故障（provider_down/超时）递增延迟避免自撞，抖动防共振
-- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）
+- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免，2026-08 审计修复）
 - **崩溃回滚**：pi-wrapper 连续 3 次崩溃 → 回滚 lastGood 模型（5 分钟防抖）
 - **任务超时钳位**：调度任务 `maxRunTime` 钳位到 [5, 86400] 秒（负值/0 → 5s，≥2³¹ 溢出 → 86400），防极端值导致任务被立即误杀 / `maxCostPerDay`(0=不限) / `allowedModels`，超限自动跳过并通知（跳过时推进下次调度时间，预算恢复后自动补跑；不记 failed 遥测，避免 todayRuns 越拦越满锁到次日零点）
 - **恢复队列（A2/A3，2026-08）**：
@@ -57,12 +58,14 @@
   "requeueOnRestart": true,
   "maxIdleMinutes": 30,
   "budget": { "maxRunsPerDay": 50, "maxCostPerDay": 0, "allowedModels": [] },
-  "policy": { "failoverAfter": 2, "suspendAfter": 5, "timeoutFactor": 2 },
+  "policy": { "failoverAfter": 2, "suspendAfter": 5, "timeoutFactor": 2, "maxFailovers": 1 },
   "fallbackModels": []
 }
 ```
 
 运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/` 下）。
+
+**调度锁**：`agent/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用，2026-08 审计修复）。
 
 ## 数据流
 
@@ -92,7 +95,7 @@
 
 ```bash
 npm install
-npx vitest run        # 88 用例：storage/notifications + policy/failover/budget/telemetry/queue/watchdog
+npx vitest run        # 102 用例：storage/notifications + policy/failover/budget/telemetry/queue/watchdog
 ```
 
 ## 升级说明

@@ -29,6 +29,7 @@
 - **工具输出截断**（R4）：写入时截断——bash/read 5KB（bash 用 `truncateTail` 保留尾部错误/结果，read 用 `truncateHead` 保留开头，并保留原始 details），其他工具 20KB 兜底（防止未来新工具输出失控直达上下文）。
 - **执行效率注入**（`EFFICIENCY_ADVICE`，静态缓存友好）：要求模型一轮内批量发出独立工具调用（内核已支持 parallel batch）、非终轮不写解释文本、todo/plan 摘要请求时例外。
 - **压力提示按档位**：基于 auto-compact 阈值比例注入固定文案（阈值内 <75% 不注入、≥75% 注入委托建议文案、≥90% 注入保存决策文案）；档位跳变才改变 system prompt，无压力时与 pi 原生完全一致 → 消息历史缓存前缀稳定。
+- **真实用量校准（2026-08 审计）**：`before_agent_start` 用 `ctx.getContextUsage()` 的真实 tokens 调 `setUsedTokens` 覆盖共享库上报值（recordToolUsage 只统计工具输出，与真实上下文用量口径不一致）——plan-mode 等共享 context-budget 的消费者压力提示随之准确
 - **缓存友好**：所有变换均为确定性（判定只依赖消息内容）；system prompt 注入不含时间戳与精确数值。
 - **compactionSummary 去重**（R2）：context 阶段只保留最新一份，省 500-1500 token/turn。
 

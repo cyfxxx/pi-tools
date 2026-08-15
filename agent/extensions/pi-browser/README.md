@@ -267,6 +267,7 @@ JSON.stringify({title: document.title, url: location.href})
 - **CloakBrowser 二进制校验**：从 CloakHQ 服务器下载的 Chromium 二进制文件会进行 SHA-256 校验。默认启用，不推荐关闭（`CLOAKBROWSER_SKIP_CHECKSUM`）。
 - **代理凭据安全**：HTTP/HTTPS/SOCKS5 代理的认证凭据会以明文传输，避免在不信任的网络中使用。
 - **截图清理**：截图文件保存在 `/tmp/` 目录，可能包含登录态、个人数据等敏感信息。会话关闭时自动清理，建议避免长时间保留截图。
+- **URL 协议校验（2026-08 审计）**：`browser_navigate` 只放行 http/https——拒绝 `file://`、`data:`、`javascript:` 等（防 prompt 注入导航读本地文件并经 extract_text 回传）；内网地址保留（本地服务/开发测试合法用途）。
 
 ## Token 效率
 
