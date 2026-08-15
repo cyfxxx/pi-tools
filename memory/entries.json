@@ -8366,10 +8366,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 66,
+      "recurrence": 80,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-14T02:27:18.590Z",
-      "accessedAt": "2026-08-14T02:27:18.590Z",
+      "updatedAt": "2026-08-15T01:21:36.303Z",
+      "accessedAt": "2026-08-15T01:21:36.303Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -8739,6 +8739,75 @@
         "termux"
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
+      "deleted": false
+    },
+    {
+      "id": "de76f5ed-d0ac-4062-8cb6-cd5a711788db",
+      "category": "fact",
+      "title": "pi-tools 主线稳定版 stable-20260814（回退锚点）",
+      "content": "pi-tools 主线稳定版锚点：tag stable-20260814（提交 55146f3）。定位：多环境日常运维基线（Termux/WSL2/Linux）。回退：git checkout stable-20260814；便携版开发：git checkout portable-win（24 个 Windows 便携提交，2026-08-14 15:51 起）。目录结构变更：keys/systemd/tmux → deploy/{keys,systemd,tmux}，其他设备同步后需 cp deploy/tmux/tmux.conf ~/.tmux.conf。",
+      "tags": [
+        "pi-tools",
+        "稳定版",
+        "tag",
+        "便携版"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-14T15:28:19.283Z",
+      "updatedAt": "2026-08-14T15:28:19.283Z",
+      "accessedAt": "2026-08-14T15:28:19.283Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-14T15:28:19.283Z",
+      "deleted": false
+    },
+    {
+      "id": "6ba2d631-2706-44c3-b69c-dc79849276ae",
+      "category": "solutions",
+      "title": "pi-tui 补全行为与回车劫持修复",
+      "content": "pi-tui 参数补全行为（0.84.x）与修复经验：\n1. Tab 两级补全：无空格只做命令名补全（自动加空格）；有空格才调用扩展 getArgumentCompletions。这是设计行为，非 bug。\n2. 原 bug：有空格按 Tab 走 forceFileAutocomplete（force:true 跳过斜杠命令分支，extractPathPrefix 把 '/voice ' 当路径）→ 子命令永远不显示，需删空格重打空格靠输入字符触发。修复：patch-tab-arg-completion.mjs 让斜杠命令上下文统一走 handleSlashCommandCompletion()（force:false）。\n3. 回车劫持（更隐蔽）：补全弹窗打开时回车=接受选中项。若 getArgumentCompletions 对任意输入都返回全部项（不过滤），弹窗永不关闭，输入 '/voice tts speak 你好' 回车会变成 'tts on'。修复模式（/link 同款）：前缀过滤 + 完整匹配排除（item.value.startsWith(prefix.trim()) && value !== prefix.trim()），不匹配返回空数组弹窗关闭；自由文本命令（如 speak）不入补全列表。\n4. 参数补全 value 是整体替换参数前缀，必须含完整参数（'tts on'），否则变成 '/voice on' 错命令。",
+      "tags": [
+        "pi-tui",
+        "autocomplete",
+        "补全",
+        "pi-voice"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T00:06:54.661Z",
+      "updatedAt": "2026-08-15T00:06:54.661Z",
+      "accessedAt": "2026-08-15T00:06:54.661Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T00:06:54.661Z",
+      "deleted": false
+    },
+    {
+      "id": "28e4896a-4b79-4cc5-a063-0775a0fb1eee",
+      "category": "procedure",
+      "title": "pi update 后恢复流程（补丁+翻译）",
+      "content": "pi update 覆盖 dist 后需恢复（2026-08-15 实战验证）：\n1. 跑 bash scripts/rebuild.sh（Phase 3 自动重打 4 个补丁：patch-voice-enter 回车听写、patch-footer-live-context footer token、patch-plan-tools 工具 schema、patch-tab-arg-completion Tab 参数补全——后两者目标文件不在 modes/interactive/ 顶层：footer 在 interactive/components/footer.js，plan-tools 在 core/agent-session.js，验证补丁要按目标路径 grep）\n2. 跑 node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs 恢复中文界面（rebuild.sh 不含翻译；0.84.2 实测 slash-commands 22/22、settings-selector 72/72 无未匹配警告）\n3. 重启 pi 生效\n症状对照：回车听写无效/tts speak 回车变其他命令 = patch-voice-enter 丢失；footer 无实时 token = patch-footer 丢失；TUI 英文 = 翻译丢失。扩展代码在 ~/.pi/agent/extensions/ 不受 update 影响，但改动后也需重启才加载。",
+      "tags": [
+        "pi-update",
+        "rebuild",
+        "翻译",
+        "补丁"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T00:06:54.756Z",
+      "updatedAt": "2026-08-15T00:06:54.756Z",
+      "accessedAt": "2026-08-15T00:06:54.756Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T00:06:54.756Z",
       "deleted": false
     }
   ]
