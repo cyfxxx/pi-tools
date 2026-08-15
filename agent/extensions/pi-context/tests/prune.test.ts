@@ -47,9 +47,10 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
   it('超保护带的更早 toolResult 输出被替换为占位（保留结构）', () => {
     // 5 轮，每轮输出 20 万字符 ≈ 5 万 token。
     // opencode 语义：最近 2 轮（index 11、14）绝不擦除；
-    // 保护带预算 40K 只够保留更早 1 条（index 8）→ index 5、2 被擦除。
+    // 显式传旧保护带 40K（新默认 80K 下 5 轮仅 1 条被擦，见下方新默认测试）——
+    // 保护带预算只够保留更早 1 条（index 8）→ index 5、2 被擦除。
     const msgs = session(5, 200_000)
-    const r = pruneToolResults(msgs)
+    const r = pruneToolResults(msgs, { protectTokens: 40_000, minimumTokens: 0 })
     expect(r.modified).toBe(true)
     expect(r.prunedCount).toBe(2)
     expect(r.messages[2].role).toBe('toolResult')
@@ -59,6 +60,17 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(messageText(r.messages[8])).toContain('y')
     expect(messageText(r.messages[11])).toContain('y')
     expect(messageText(r.messages[14])).toContain('y')
+  })
+
+  it('新默认（80K/50K）：5 轮×5万 token 仅擦 1 条（保护带翻倍降擦除频率，2026-08-15 审计）', () => {
+    const msgs = session(5, 200_000)
+    const r = pruneToolResults(msgs)
+    expect(r.modified).toBe(true)
+    // 80K 保护带可覆盖更早 2 条（index 8、5）→ 仅 index 2 被擦
+    expect(r.prunedCount).toBe(1)
+    expect(messageText(r.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
+    expect(messageText(r.messages[5])).toContain('y')
+    expect(messageText(r.messages[8])).toContain('y')
   })
 
   it('回收低于 minimumTokens → 不应用（保持原样）', () => {
@@ -109,7 +121,7 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
       user(), assistant(), tool('dddd'),
       user(), assistant(), tool('eeee'),
     ]
-    const r = pruneToolResults(msgs)
+    const r = pruneToolResults(msgs, { protectTokens: 40_000, minimumTokens: 0 })
     expect(r.modified).toBe(true)
     // 被擦除消息（index 2、5）的 content 中不再残留 image 块（替换为占位文本块）
     const blockTypes = (m: PruneMessage): string[] =>
@@ -143,9 +155,9 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(r.prunedCount).toBeGreaterThan(0)
   })
 
-  it('常数：与 opencode 默认值对齐', () => {
-    expect(PRUNE_PROTECT_TOKENS).toBe(40_000)
-    expect(PRUNE_MINIMUM_TOKENS).toBe(20_000)
+  it('常数：缓存友好调优（2026-08-15 审计：提高阈值降擦除频率，擦除轮必然破坏前缀缓存）', () => {
+    expect(PRUNE_PROTECT_TOKENS).toBe(80_000)
+    expect(PRUNE_MINIMUM_TOKENS).toBe(50_000)
     expect(KEEP_RECENT_TURNS).toBe(2)
   })
 })

@@ -14,7 +14,12 @@ export * from './context-budget.ts'
  * 工具输出在构建上下文时擦除（调用记录保留，仅删输出），回收 >20K 才执行。
  *
  * 本模块在 pi 的 context 事件阶段做同款"事后擦除"（确定性变换）：
- * - 判定只依赖消息内容本身 → 每轮结果一致，缓存前缀稳定
+ * - 判定只依赖消息内容本身 → 同一输入结果一致（但**擦除本身改变消息序列**：
+ *   擦除轮发送的序列 ≠ 上一轮 → DeepSeek 前缀缓存从擦除点断裂、全量重发。
+ *   2026-08-15 实测：每轮擦除触发轮新增 40-60K、长会话 250K+ 时重发 200K+；
+ *   成本量化：日擦除断裂 ~4.7M tokens 浪费，高于 auto-compact 一次性成本。
+ *   已通过提高保护带(80K)/最低回收(50K)降低触发频率；真正结构性解法是
+ *   依赖 auto-compact（一次性断裂+摘要）而非每轮事后擦除）
  * - 新消息追加后擦除点单调后移、已擦除的不会恢复
  * - 零 LLM 成本，推迟 auto-compact 触发、减少摘要调用
  */
@@ -22,9 +27,12 @@ export * from './context-budget.ts'
 import { estimateTokens } from "./context-budget.ts";
 
 // 保护带：从后往前累计保留的 token 预算（opencode PRUNE_PROTECT = 40_000）
-export const PRUNE_PROTECT_TOKENS = 40_000;
+// 2026-08-15 审计调至 80_000：事后擦除必然破坏 DeepSeek 前缀缓存（擦除轮从擦除点
+// 全量重发）。保护带越大擦除触发越少，长会话中省下的重发成本远大于多留的上下文。
+export const PRUNE_PROTECT_TOKENS = 80_000;
 // 最低回收阈值：预计回收低于此值不应用（opencode PRUNE_MINIMUM = 20_000）
-export const PRUNE_MINIMUM_TOKENS = 20_000;
+// 2026-08-15 审计调至 50_000：回收小于此值不值得承担一次缓存断裂（重发成本）。
+export const PRUNE_MINIMUM_TOKENS = 50_000;
 // 最近 N 个用户轮次豁免（opencode 跳过最近 2 轮）
 export const KEEP_RECENT_TURNS = 2;
 // 擦除后的占位文本
