@@ -43,9 +43,10 @@ export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Prom
         return
       }
       // Node v22 超时杀进程时 err.code=null、signal='SIGTERM'、killed=true，
-      // message 不含 ETIMEDOUT——按 killed/signal 判定超时（否则误报 code 1）
+      // message 不含 ETIMEDOUT——按 killed 判定超时（审计 LOW：e.signal==='SIGTERM'
+      // 会把外部 SIGTERM 正常终止的进程也误报 timeout；killed 仅超时自杀时置 true）
       const e = err as NodeJS.ErrnoException & { killed?: boolean; signal?: string }
-      if (e.killed === true || e.signal === 'SIGTERM') {
+      if (e.killed === true) {
         resolvePromise({ code: 124, stdout: stdout ?? '', stderr: `tmux timeout after ${timeoutMs}ms` })
         return
       }
@@ -150,21 +151,24 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
   // new-session -d -s NAME -c CWD → spawn 交互 shell + 日志 fd + pid
   if (cmd === 'new-session') {
     const name = winArgAt(args, '-s')
-    if (!name) return { code: 1, stdout: '', stderr: 'new-session: missing -s name' }
+    // 审计 LOW：纵深防御——其他子命令均经 winSessionName 的 NAME_RE 校验
+    // （防 pidfile/log 路径穿越），new-session 补同款校验
+    if (!name || !NAME_RE.test(name)) return { code: 1, stdout: '', stderr: 'new-session: invalid session name' }
     // 已存在且存活 → duplicate（与 tmux 语义一致）
     if (winChildren.has(name) || winPidAlive(winReadPid(opts, name))) {
       return { code: 1, stdout: '', stderr: `duplicate session: ${name}` }
     }
     const cwd = (winArgAt(args, '-c') || homedir()).replace(/\\/g, '/')
     // 末尾位置参数 = 启动命令（tmux 语义：new-session -d -s N -c CWD 'command'）
-    // 修复：位置参数可能以 '-' 开头（如 '-v'）——按 args 中 -d/-s/-c 之后的剩余参数取（排除 flag 及其值）
-    let launchCmd = ''
+    // 审计 LOW：原实现丢弃 '-' 开头参数（'ls -la' 的命令参数被删）且只取最后
+    // 一个位置参数（多词命令丢参）——收集剩余参数 join 保留完整命令
+    let launchArgs: string[] = []
     for (let i = 0; i < args.length; i++) {
       const a = args[i]
       if (['-d', '-s', '-c'].includes(a)) { i++; continue }
-      if (a.startsWith('-')) continue
-      launchCmd = a // 最后一个非 flag 位置参数 = 命令
+      launchArgs.push(a)
     }
+    const launchCmd = launchArgs.join(' ')
     const shell = resolveWindowsShell()
     const logPath = logPathFor(opts, name)
     ensureLogDir(opts)

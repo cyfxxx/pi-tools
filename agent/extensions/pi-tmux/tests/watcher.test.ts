@@ -76,6 +76,23 @@ describe('pi-tmux completion watcher（完成自动唤醒）', () => {
     expect(notify).toHaveBeenCalledTimes(1)
   })
 
+  it('通知后同名重新 watch：新会话结束仍通知（审计 MEDIUM：notified 残留静默丢通知）', async () => {
+    // 序列：[true, true, false, true, true, false]——第一段会话存在×2→消失→通知；
+    // 重注册后第二段新会话存在×2→消失→再通知
+    const { w, notify } = makeWatcher([true, true, false, true, true, false])
+    w.watch('pi-reuse', '/logs/pi-reuse.log', true)
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2) // 会话还在
+    expect(notify).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS) // 会话消失 → 通知 1
+    expect(notify).toHaveBeenCalledTimes(1)
+    // 同名重新注册（新会话）：notified 必须被清除
+    w.watch('pi-reuse', '/logs/pi-reuse.log', true)
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2) // 新会话还在
+    expect(notify).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS) // 新会话消失 → 再通知
+    expect(notify).toHaveBeenCalledTimes(2)
+  })
+
   it('stopAll 清空全部监听（session_shutdown 路径）', async () => {
     const { w, notify } = makeWatcher([false, false])
     w.watch('pi-a', '/logs/pi-a.log', true)

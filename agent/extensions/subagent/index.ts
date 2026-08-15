@@ -731,7 +731,9 @@ export default function (pi: ExtensionAPI) {
 
 				for (let i = 0; i < params.chain.length; i++) {
 					const step = params.chain[i];
-					const taskWithContext = applyPreviousPlaceholder(step.task, previousOutput);
+					// 审计 LOW：step.task 缺失时 applyPreviousPlaceholder 抛 TypeError 炸整个
+					// tool call（parallel 路径对 undefined 容忍，两路不一致）——空串兜底
+					const taskWithContext = applyPreviousPlaceholder(step.task ?? '', previousOutput);
 
 					// Create update callback that includes all previous results
 					const chainUpdate: OnUpdateCallback | undefined = onUpdate

@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import {
-  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun, withStoreLock,
+  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun, withStoreLock, isoNow,
 } from './storage.ts'
 import type { Task } from './types.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
@@ -113,16 +113,32 @@ export class SessionScheduler {
 
       if (task.useSubagent) {
         await this.fireViaSubagent(task, provider, model)
+        await updateTaskAfterRun(task.id, 'success', '', Date.now() - startedAt)
+        await appendRun({
+          ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
+          model, provider, result: 'success', durationMs: Date.now() - startedAt,
+          outputLen: 0, estCost: estimateCost(provider, model, task.prompt.length, 0),
+          errClass: null,
+        })
       } else {
+        // 注入式（fireViaMessage）：注入成功 ≠ 主会话执行成功——不记 success、
+        // 不发 webhook、不删 once（审计 MEDIUM：此前注入即记 success，主会话实际
+        // 失败不回写、notifyOnCompletion 提前发、once 任务在真正执行前就从存储删除）。
         await this.fireViaMessage(task, provider, model)
+        await withStoreLock(async () => {
+          const store = await readTasks()
+          const t = store.tasks.find(x => x.id === task.id)
+          if (t) {
+            let next = computeNextRun(t)
+            if (!next || new Date(next).getTime() <= Date.now()) {
+              // once/过期调度：推 1 小时后（与预算拦截分支一致，避免每 tick 重复注入）
+              next = new Date(Date.now() + 3600 * 1000).toISOString()
+            }
+            t.nextRun = next
+            await writeTasks(store)
+          }
+        })
       }
-      await updateTaskAfterRun(task.id, 'success', '', Date.now() - startedAt)
-      await appendRun({
-        ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
-        model, provider, result: 'success', durationMs: Date.now() - startedAt,
-        outputLen: 0, estCost: estimateCost(provider, model, task.prompt.length, 0),
-        errClass: null,
-      })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       const exitCode = (err as { exitCode?: number }).exitCode ?? 1
@@ -153,6 +169,12 @@ export class SessionScheduler {
           const plan = await planFailover(config.fallbackModels, provider, model)
           await updateTaskAfterRun(task.id, 'failed', `failover: ${action.note}`, Date.now() - startedAt)
           if (!plan.target) break
+          // 递增熔断计数：连续 failover 达到 maxFailovers 后 decide() 会熔断为 suspend_task
+          await withStoreLock(async () => {
+            const store = await readTasks()
+            const t = store.tasks.find(x => x.id === task.id)
+            if (t) { t.failoverCount = (t.failoverCount ?? 0) + 1; t.updatedAt = isoNow(); await writeTasks(store) }
+          })
           await sendWebhook(task, 'failed', `触发 failover → ${plan.target.provider}/${plan.target.model}: ${plan.reason}`)
           const msg = await executeFailover(plan.target, plan.reason, false)
           console.log(`[pi-autopilot] ${msg}`)
@@ -181,9 +203,8 @@ export class SessionScheduler {
       throw new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败')
     }
     await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
-    if (task.notifyOnCompletion) {
-      await sendWebhook(task, 'success', '')
-    }
+    // 注：不在此发 success webhook——注入成功 ≠ 执行成功（审计 MEDIUM 修复），
+    // notifyOnCompletion 应在主会话真实完成时（如任务内自行回调）触发
   }
 
   private async fireViaSubagent(task: Task, provider: string, model: string): Promise<void> {
@@ -214,8 +235,10 @@ export class SessionScheduler {
       })
       let stderr = ''
       let stdout = ''
-      proc.stderr.on('data', (data: Buffer) => { stderr += data.toString() })
-      proc.stdout.on('data', (data: Buffer) => { stdout += data.toString() })
+      // 审计 LOW：无界累积——失控子进程输出可耗尽内存；按需截断（与 sendWebhook 1000 对齐）
+      const MAX_CAPTURE = 64 * 1024
+      proc.stderr.on('data', (data: Buffer) => { if (stderr.length < MAX_CAPTURE) stderr += data.toString().slice(0, MAX_CAPTURE - stderr.length) })
+      proc.stdout.on('data', (data: Buffer) => { if (stdout.length < MAX_CAPTURE) stdout += data.toString().slice(0, MAX_CAPTURE - stdout.length) })
       proc.on('close', async (code) => {
         clearTimeout(timer)
         if (code === 0) {

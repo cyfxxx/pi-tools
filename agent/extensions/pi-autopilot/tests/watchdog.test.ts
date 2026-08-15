@@ -14,9 +14,14 @@ afterAll(async () => {
 
 const { touchActivity, isHanging, triggerHangRecovery } = await import('../watchdog')
 
+// 需要 setTurnBusy 重置用例间模块状态（busyTurn/busySince 是模块级变量）
+let setTurnBusy: (b: boolean) => void
+
 describe('watchdog', () => {
   beforeEach(async () => {
     await rm(join(TEST_DIR, '.pi-admin-state.json'), { force: true })
+    if (!setTurnBusy) setTurnBusy = (await import('../watchdog')).setTurnBusy
+    setTurnBusy(false)
   })
 
   it('isHanging false right after activity', async () => {
@@ -24,13 +29,21 @@ describe('watchdog', () => {
     expect(await isHanging(10)).toBe(false)
   })
 
-  it('isHanging false during busy turn even if idle long (长工具执行豁免)', async () => {
+  it('isHanging false during busy turn within grace (长工具执行豁免)', async () => {
     const { setTurnBusy } = await import('../watchdog')
     touchActivity()
     setTurnBusy(true)
-    // 模拟 40 分钟无活动（工具静默执行），busy 回合不应误判挂死
-    expect(await isHanging(5, Date.now() + 40 * 60 * 1000)).toBe(false)
+    // 模拟 8 分钟无活动（工具静默执行），在豁免上限（2×5min=10min）内不应误判挂死
+    expect(await isHanging(5, Date.now() + 8 * 60 * 1000)).toBe(false)
     setTurnBusy(false)
+    expect(await isHanging(5, Date.now() + 8 * 60 * 1000)).toBe(true)
+  })
+
+  it('isHanging true when busy exceeds grace (turn 内真挂死，审计 MEDIUM 修复)', async () => {
+    const { setTurnBusy } = await import('../watchdog')
+    touchActivity()
+    setTurnBusy(true)
+    // busy 40 分钟（> 2×5min 豁免上限）：turn_end 永不发出的真挂死不再被永久豁免
     expect(await isHanging(5, Date.now() + 40 * 60 * 1000)).toBe(true)
   })
 

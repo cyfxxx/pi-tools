@@ -11,7 +11,7 @@ import {
 import { registerTools } from './tools.ts'
 import { registerCommands } from './commands.ts'
 import { buildInjectionBlock, INJECT_TAG, filterInjectedMessages } from './inject.ts'
-import { extractConversation, extractTextFromEntries, processPendingExtracts, queuePendingExtract } from './extract.ts'
+import { extractConversation, extractTextFromEntries, isExtractWorker, processPendingExtracts, queuePendingExtract } from './extract.ts'
 import { writeCompactionSnapshot } from './snapshot.ts'
 import { resetOutputBudget } from '../../lib/prune.ts'
 
@@ -21,6 +21,13 @@ export default function (pi: ExtensionAPI): void {
 
   // ── 启动迁移报告 + compaction 恢复检测 ──
   pi.on('session_start', async (_event, ctx) => {
+    // 提取子进程守卫（审计修复 HIGH-3）：extract.ts spawn 的 `pi -p` 子进程
+    // 加载扩展会触发本回调，与父进程并发消费 pending 队列（抢锁失败按失败计数，
+    // 可误删父进程未处理 job）。子进程不消费 pending，只做提取执行。
+    if (isExtractWorker()) {
+      resetOutputBudget()
+      return
+    }
     // 会话边界重置输出预算（recordOutput/pruneToolOutput 的累计输出量；
     // 与 pi-web-search/pi-browser 的 session_start 对齐，防跨会话预算串味）
     resetOutputBudget()

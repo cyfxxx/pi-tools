@@ -91,6 +91,27 @@ describe('dictation 状态机', () => {
     expect(r.text).toBe('')
   })
 
+  it('停止窗口内 start 被拒绝（审计 MEDIUM：stopRecording 往返期间新录音被误停）', async () => {
+    const deps = makeDeps()
+    let resolveStop!: (v: { code: number; stdout: string; stderr: string }) => void
+    deps.stopRecording = vi.fn(() => new Promise((res) => { resolveStop = res })) as never
+    const d = createDictation(cfg, deps, makeCallbacks())
+    d.start()
+    const stopPromise = d.stop()
+    // 窗口内（stopRecording 挂起、currentFile 已置空）：start 不得启动新录音
+    const m = d.start()
+    expect(m).toContain('正在停止')
+    expect(deps.startRecording).toHaveBeenCalledTimes(1)
+    resolveStop({ code: 0, stdout: '', stderr: '' })
+    const r = await stopPromise
+    expect(r.text).toBe('你好，世界')
+    // 停止完成后可重新录音
+    expect(d.isRecording()).toBe(false)
+    const m2 = d.start()
+    expect(m2).not.toContain('正在停止')
+    expect(deps.startRecording).toHaveBeenCalledTimes(2)
+  })
+
   it('转写失败也删除音频并报错', async () => {
     const deps = makeDeps({ transcribe: vi.fn(async () => ({ text: '', language: '', error: 'whisper 不可达' })) })
     const d = createDictation(cfg, deps, makeCallbacks())

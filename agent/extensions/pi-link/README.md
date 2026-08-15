@@ -133,7 +133,7 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 
 1. 本机：`git push`（或远程自己 pull）
 2. 远程：`cd ~/.pi && git pull --rebase origin master`（entries.json 冲突时 `git checkout --theirs memory/entries.json` 保留远程）
-3. 远程重启 pi（退出重进或 `/admin:restart`）——扩展代码在启动时加载，**不重启不生效**（状态文件/信箱/watch/attach 均依赖新版扩展）
+3. 远程重启 pi（退出重进即可，/admin:restart 已移除——扩展代码在启动时加载，**不重启不生效**（状态文件/信箱/watch/attach 均依赖新版扩展）
 4. 验证：远程 `~/.pi/pi-link-state.json` 出现且含 `tmuxSession` 字段即加载成功
 
 ### Termux 设备特别说明

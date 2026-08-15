@@ -23,16 +23,22 @@ export async function readTelemetry(): Promise<TelemetryEntry[]> {
 }
 
 export async function appendRun(entry: TelemetryEntry): Promise<void> {
-  const runs = await readTelemetry()
-  runs.push(entry)
-  const trimmed = runs.length > TELEMETRY_LIMIT ? runs.slice(-TELEMETRY_LIMIT) : runs
-  const p = telemetryPath()
-  // pid 后缀：与 storage.ts 一致，防并发 appendRun（tick 与命令并发）互踩 tmp 文件
-  // 致 rename ENOENT 把正常执行误记为 failed
-  const tmp = p + '.tmp.' + process.pid
-  await mkdir(dirname(p), { recursive: true })
-  await writeFile(tmp, JSON.stringify({ runs: trimmed }, null, 2), 'utf-8')
-  await (await import('node:fs/promises')).rename(tmp, p)
+  // 审计 LOW：read-modify-write 此前无互斥（pid 后缀只防 tmp 踩踏不防丢更新）——
+  // 与 tick/命令并发 appendRun 或 pi-cron 离线进程并发时会丢失遥测条目（预算计数偏低）。
+  // 复用任务存储的 withStoreLock（同机互斥，跨进程经锁文件）。
+  const { withStoreLock } = await import('./storage.ts')
+  return withStoreLock(async () => {
+    const runs = await readTelemetry()
+    runs.push(entry)
+    const trimmed = runs.length > TELEMETRY_LIMIT ? runs.slice(-TELEMETRY_LIMIT) : runs
+    const p = telemetryPath()
+    // pid 后缀：与 storage.ts 一致，防并发 appendRun（tick 与命令并发）互踩 tmp 文件
+    // 致 rename ENOENT 把正常执行误记为 failed
+    const tmp = p + '.tmp.' + process.pid
+    await mkdir(dirname(p), { recursive: true })
+    await writeFile(tmp, JSON.stringify({ runs: trimmed }, null, 2), 'utf-8')
+    await (await import('node:fs/promises')).rename(tmp, p)
+  })
 }
 
 export interface ModelStats {

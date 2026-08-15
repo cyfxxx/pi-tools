@@ -68,6 +68,10 @@ export function validateCard(card: unknown): { ok: boolean; card?: AgentCard; de
   if (!card || typeof card !== 'object') return { ok: false, detail: '卡片不是对象' }
   const c = card as Record<string, unknown>
   if (typeof c.name !== 'string' || !c.name) return { ok: false, detail: '卡片缺少 name' }
+  // 审计 LOW：name 此前无长度/字符集限制（saveDevice 才拒，提示晚到）——提前校验
+  if (c.name.length > 40 || !/^[\w.-]+$/.test(c.name)) {
+    return { ok: false, detail: 'name 非法（≤40 字符，仅字母数字/下划线/点/连字符）' }
+  }
   if (!isValidUserHost(c.host)) return { ok: false, detail: 'host 非法（拒绝 - 开头/空白/控制字符）' }
   if (!isValidUserHost(c.user)) return { ok: false, detail: 'user 非法（拒绝 - 开头/空白/控制字符）' }
   const port = typeof c.port === 'number' ? c.port : 22

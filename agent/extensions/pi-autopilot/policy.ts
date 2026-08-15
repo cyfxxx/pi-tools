@@ -30,6 +30,14 @@ export function decide(
   const failoverAfter = policy.failoverAfter ?? 2
   const suspendAfter = policy.suspendAfter ?? 5
   const timeoutFactor = policy.timeoutFactor ?? 2
+  const maxFailovers = policy.maxFailovers ?? 1
+  // failover 熔断：连续切换模型超过上限后不再切（防双模型链 ping-pong 无限重启，
+  // 每次 failover 都写 set_model 重启请求，代价高且无收敛）。仅拦截 failover，不影响 retry。
+  const failoverBlocked = (task.failoverCount ?? 0) >= maxFailovers
+  const circuitBreak: PolicyAction = {
+    type: 'suspend_task',
+    note: `failover 熔断：连续切换模型已达上限 ${maxFailovers}（failoverCount=${task.failoverCount ?? 0}），暂停任务待人工介入`,
+  }
 
   // 逻辑错误：换模型无意义，直接失败
   if (errClass === 'logic_error') {
@@ -47,6 +55,7 @@ export function decide(
       return { type: 'retry', note: `超时（${Math.round(info.durationMs / 1000)}s），按重试计划执行` }
     }
     if (fallbackModels.length > 0) {
+      if (failoverBlocked) return circuitBreak
       return { type: 'failover', target: fallbackModels[0], note: `超时且重试耗尽，切换模型尝试` }
     }
     return {
@@ -59,6 +68,7 @@ export function decide(
   if (errClass === 'provider_down') {
     if (task.failCount >= failoverAfter) {
       if (fallbackModels.length > 0) {
+        if (failoverBlocked) return circuitBreak
         return { type: 'failover', target: fallbackModels[0], note: `连续 ${task.failCount} 次 provider 故障，切换模型` }
       }
       return { type: 'fail', note: 'provider 故障且未配置 fallbackModels，任务失败' }
@@ -74,6 +84,7 @@ export function decide(
     return { type: 'suspend_task', note: `连续失败 ${task.failCount} 次（>= suspendAfter ${suspendAfter}），暂停任务` }
   }
   if (fallbackModels.length > 0 && task.failCount >= failoverAfter) {
+    if (failoverBlocked) return circuitBreak
     return { type: 'failover', target: fallbackModels[0], note: `连续失败 ${task.failCount} 次，切换模型` }
   }
   return { type: 'fail', note: `未知错误: ${info.stderr.slice(0, 200)}` }

@@ -2,6 +2,7 @@ import { truncateHead, truncateTail, type ExtensionAPI, type ToolResultEvent, ty
 import type { Usage } from "@earendil-works/pi-ai";
 import {
 	setContextWindow,
+	setUsedTokens,
 	recordCacheUsage,
 } from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
 import { pruneThinkingBudget, pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
@@ -41,17 +42,30 @@ export function truncateToolContent(
 	if (Buffer.byteLength(totalText, "utf8") <= cap) return undefined;
 
 	const truncate = toolName === "bash" ? truncateTail : truncateHead;
-	const result = truncate(totalText, { maxBytes: cap });
+	// 审计 LOW：截断标记约 30-60 字节——maxBytes 减余量，最终字节不超 cap
+	const MARK_BUDGET = 64
+	const result = truncate(totalText, { maxBytes: Math.max(1, cap - MARK_BUDGET) });
 	const omittedBytes = Buffer.byteLength(totalText, "utf8") - result.outputBytes;
+	const truncatedText = `${result.content}\n\n[...truncated ${omittedBytes} bytes]`;
+
+	// 审计 LOW：原实现非 text 块前置、文本后置（块顺序改变）；改为原位重建——
+	// text 合并到第一个 text 块位置，非 text 块（图片等）保持相对顺序
+	const rebuilt: ToolResultEvent["content"] = [];
+	let textPlaced = false;
+	for (const c of content) {
+		if (c.type === "text") {
+			if (!textPlaced) {
+				rebuilt.push({ type: "text", text: truncatedText });
+				textPlaced = true;
+			}
+		} else {
+			rebuilt.push(c);
+		}
+	}
+	if (!textPlaced) rebuilt.push({ type: "text", text: truncatedText });
 
 	return {
-		content: [
-			...content.filter((c) => c.type !== "text"),
-			{
-				type: "text",
-				text: `${result.content}\n\n[...truncated ${omittedBytes} bytes]`,
-			},
-		],
+		content: rebuilt,
 		omittedBytes,
 	};
 }
@@ -279,6 +293,7 @@ export default function (pi: ExtensionAPI) {
 		let pressureLine = "";
 		if (usage && usage.contextWindow > 0 && typeof usage.tokens === "number") {
 			setContextWindow(usage.contextWindow);
+			setUsedTokens(usage.tokens); // 真实用量校准：plan-mode 等共享库消费者压力提示随之准确
 			const threshold = computeCompactThreshold(usage.contextWindow);
 			if (threshold !== null && threshold > 0) {
 				const near = usage.tokens / threshold;

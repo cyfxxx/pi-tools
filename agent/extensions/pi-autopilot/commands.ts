@@ -148,6 +148,16 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           }
           const path = m[1]
           const value = parseValue(m[2].trim())
+          // 审计 LOW：策略数值字段此前无类型校验——写字符串后 decide 中数值比较
+          // NaN 恒 false → failoverAfter/suspendAfter 静默失效。数字字段拒绝非数字值。
+          const numericPaths = new Set([
+            'policy.failoverAfter', 'policy.suspendAfter', 'policy.timeoutFactor', 'policy.maxFailovers',
+            'maxIdleMinutes', 'budget.maxRunsPerDay', 'budget.maxCostPerDay',
+          ])
+          if (numericPaths.has(path) && typeof value !== 'number') {
+            reply(pi, `拒绝写入: ${path} 是数值字段，收到 ${JSON.stringify(value)}（如 /auto policy set ${path} 5）`)
+            break
+          }
           const config = await readAutopilotConfig()
           const setDeep = (obj: Record<string, unknown>, p: string, v: unknown): boolean => {
             const parts = p.split('.')

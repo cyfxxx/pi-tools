@@ -114,8 +114,32 @@ function migrateEntry(e: MemoryEntry): MemoryEntry {
   return e
 }
 
-export function saveEntries(entries: MemoryEntry[]) {
-  writeJSONAtomic(ENTRIES_FILE, { version: STORE_VERSION, entries: entries.map(sanitizeEntry) } satisfies MemoryStore)
+export function saveEntries(entries: MemoryEntry[], opts: { excludeIds?: Set<string> } = {}) {
+  // 写前重读合并（审计 MEDIUM）：提取子进程（LLM 分钟级）写回前主进程可能已写入
+  // 新条目，全量覆盖会丢更新——重读磁盘按 id 合并（传入快照优先），补上并发新增
+  let merged = entries
+  try {
+    const onDisk = readEntriesRaw()
+    if (onDisk.length > 0) {
+      const byId = new Map(entries.map(e => [e.id, e]))
+      for (const d of onDisk) {
+        // 只补并发新增（磁盘活跃、快照没有）；deleted 条目不补（保留回收语义）；
+        // 传入快照优先覆盖同 id；excludeIds（真移除的墓碑）不补——防删除被复活
+        if (d.id && !byId.has(d.id) && !d.deleted && !opts.excludeIds?.has(d.id)) byId.set(d.id, d)
+      }
+      merged = [...byId.values()]
+    }
+  } catch {
+    /* 读失败（文件不存在/损坏）用传入快照 */
+  }
+  writeJSONAtomic(ENTRIES_FILE, { version: STORE_VERSION, entries: merged.map(sanitizeEntry) } satisfies MemoryStore)
+}
+
+function readEntriesRaw(): MemoryEntry[] {
+  ensureDir()
+  const store = readJSON<MemoryStore>(ENTRIES_FILE)
+  if (!store || !Array.isArray(store.entries)) return []
+  return store.entries
 }
 
 export function activeEntries(entries: MemoryEntry[]): MemoryEntry[] {
@@ -324,7 +348,8 @@ export function deleteEntry(entries: MemoryEntry[], id: string): boolean {
   const idx = entries.findIndex(e => e.id === id)
   if (idx === -1) return false
   entries.splice(idx, 1)
-  saveEntries(entries)
+  // 墓碑：写前合并（saveEntries）不得把刚删除的条目从磁盘复活
+  saveEntries(entries, { excludeIds: new Set([id]) })
   return true
 }
 

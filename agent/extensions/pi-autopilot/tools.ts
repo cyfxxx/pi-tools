@@ -242,9 +242,15 @@ export function registerTools(pi: ExtensionAPI): void {
       else if (rawValue.startsWith('[') || rawValue.startsWith('{')) {
         try { parsedValue = JSON.parse(rawValue) } catch { /* keep as string */ }
       }
-      if (isSensitiveKey(key) && ctx.hasUI) {
-        const ok = await ctx.ui.confirm('修改敏感配置', `确认修改 "${key}" 为 ${JSON.stringify(parsedValue)}？`)
-        if (!ok) return { content: [{ type: 'text', text: '已取消' }], details: null }
+      if (isSensitiveKey(key)) {
+        if (ctx.hasUI) {
+          const ok = await ctx.ui.confirm('修改敏感配置', `确认修改 "${key}" 为 ${JSON.stringify(parsedValue)}？`)
+          if (!ok) return { content: [{ type: 'text', text: '已取消' }], details: null }
+        } else {
+          // 审计 MEDIUM：headless 下无 UI 确认，敏感 key（含 key/token/secret）硬拒绝，
+          // 与 admin_set_model/admin_switch_session 的 headless 硬拒绝一致（防无人值守误改凭据）
+          return { content: [{ type: 'text', text: `headless 模式拒绝修改敏感配置 "${key}"（无确认通道，请在 TUI 会话中操作）` }], details: null, isError: true }
+        }
       }
       const result = updateSettings(key, parsedValue)
       if (!result.success) return { content: [{ type: 'text', text: result.error || '写入失败' }], details: null, isError: true }
