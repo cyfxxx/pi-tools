@@ -1,8 +1,8 @@
 ---
 name: pi-full-audit
 description: 全项目深度审计技能。区别于 pi-code-review（diff/改动审查）：对仓库做全量确定性检查 + 基线回归测试 + subagent 并行深度审查 + 复核子代理逐条核实建议 + 主会话终审 + 分级报告。含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。
-version: v1.7
-经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）；同日 dsh 深度分析（deepseek-ai/deepseek-harness 借鉴：注册即 effect、配置分层合并、测试分层、真实运行观察替代 keyless snapshot）；2026-08-14 补充基准工具 pi-bench.sh（usage/timing/compare 三子命令，守护缓存优化不回退）；2026-08-15 全流程实战（50 项发现：1 HIGH / 18 MEDIUM / 19 LOW / 12 同类遗漏，全部修复闭环 6 提交；4 组并行复核首次调用返回空结果→改 2+2 分批重试成功；修复分层执行模式验证：MEDIUM 主会话修 + LOW 三 worker 并行一次成功；scout readonly 化后复核实测改主会话/worker；todo 状态遗漏致 TUI 残留——修复逐项销账纪律；注入块内容质量抽查发现重复/空摘要/截断条目）
+version: v1.8
+经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）；同日 dsh 深度分析（deepseek-ai/deepseek-harness 借鉴：注册即 effect、配置分层合并、测试分层、真实运行观察替代 keyless snapshot）；2026-08-14 补充基准工具 pi-bench.sh（usage/timing/compare 三子命令，守护缓存优化不回退）；2026-08-15 全流程实战（50 项发现：1 HIGH / 18 MEDIUM / 19 LOW / 12 同类遗漏，全部修复闭环 6 提交；4 组并行复核首次调用返回空结果→改 2+2 分批重试成功；修复分层执行模式验证：MEDIUM 主会话修 + LOW 三 worker 并行一次成功；scout readonly 化后复核实测改主会话/worker；todo 状态遗漏致 TUI 残留——修复逐项销账纪律；注入块内容质量抽查发现重复/空摘要/截断条目）；同日合并后全量审计（test/portable-win-merge 分支，5 组并行=4 模块+1 文档专项，36 项发现经复核：3 误报纠正/2 部分属实降级/行号普遍 ±20-30，4 HIGH 全修复+回归测试；文档同步 4 处不一致；审计工具自身 bug：review.sh --all 对 ~/.pi 自身失效——排除规则 */.pi/* 误伤扫描根（249 文件只审到 1 个），修复后全量可扫；功能实测维度：扩展真实调用验证（含环境排查：CLOAKBROWSER_BINARY_PATH 从 Termux 泄漏到 WSL 致 pi-browser 启动失败——wrapper 无条件导出 Termux 路径）
 
 ---
 
@@ -79,7 +79,16 @@ foreach ($f in $files) {
   组2: pi-voice + pi-tmux + pi-browser（进程管理、平台适配）
   组3: pi-memory + pi-context + plan-mode（状态/注入/合并）
   组4: pi-web-search + subagent + scripts/ + skills/（fetch/补丁/脚本）
+  组5（文档专项，用户要求"检查文档是否更新"时加）: AGENTS.md + 各扩展 README + docs/ + portable/README + skills SKILL.md——
+      找：引用不存在的路径/命令/旧扩展名（pi-web-toolkit/pi-router/pi-admin/pi-scheduler、旧命令 /tts /planclear /auto:*）、
+      文档描述功能已删除更名、代码新增功能文档未提、计数类过时（"9 个扩展"、测试用例数）；输出严格精简（每条 ≤60 字、≤12 条、结尾给核对一致总结）
 ```
+
+**功能实测维度**（用户要求"测试所有扩展功能"时，审查之外对每个扩展做真实工具调用验证）：
+- 逐个调用扩展暴露的工具/能力（memory_stats、autopilot_status、link_status、web_search、browser_navigate、tmux_run、subagent 委派等），记录成功/失败/环境限制
+- 实测失败先排查环境再报扩展缺陷：2026-08-15 实战——browser_navigate 报 Termux 路径实际是 CLOAKBROWSER_BINARY_PATH 从 Termux 泄漏到 WSL（pi-wrapper.sh 无条件导出 Termux 默认值，无平台守卫）；pi-voice 缺 ffmpeg/pulse 属环境未装（apt install ffmpeg 即恢复）；searxng 瞬时超时重试即恢复
+- 环境限制项标注"受环境限制"并引用对应 vitest 用例数（如 pi-browser 24 用例全绿但运行时缺 chromium 二进制）
+- 修复环境后实测通过才销账（如 wrapper 修复需重启 pi 生效——记录"需重启验证"）
 
 **委派 prompt 要点**（照抄进任务描述）：
 - 明确只读："只读审查，不修改任何文件"
@@ -166,6 +175,7 @@ foreach ($f in $files) {
 遇到以下情况先定性，别直接报：
 
 - **密钥扫描命中**：先 `git ls-files <file>` + `git check-ignore -v <file>`。git ignored 的运行配置（~/.pi 的 auth.json/settings.json/models.json）是正常存在，**不是泄露**；只有被 git 跟踪的才是 HIGH
+- **review.sh --all 排除陷阱（2026-08-15 实测）**：排除规则 `! -path '*/.pi/*'` 在扫描根自身是 .pi 目录（如 `review.sh --all /root/.pi`）时误伤全部文件——"待审文件: 1 个"而预览 249 个即此症状。已修复（根为 .pi 时禁用该排除）；审计中若发现待审文件数远小于预览数，先怀疑排除规则而非仓库无文件
 - **运行时数据噪音**：`--all` 会扫入入库的运行时数据（如 memory/entries.json），其中的文本内容命中 rm -rf/密钥等模式属噪音，跳过
 - **glob 陷阱**：`for d in dir/*/node_modules` 只在**全部不匹配**时保留字面量；部分不匹配 = 静默漏检，不是报错
 - **"没找到 X" ≠ "X 不存在"**：先 grep 确认是否在其他层实现（如删除落盘在 deleteEntry 内部 vs 工具函数外层）
