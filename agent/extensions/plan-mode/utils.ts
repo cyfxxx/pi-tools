@@ -128,9 +128,10 @@ export function isSafeCommand(command: string): boolean {
   // 收紧：禁止 system/getline（含无括号语句形态）与重定向
   if (/^\s*awk\b/i.test(core) && /\b(system|getline)\b|>\s*\S/.test(core)) return false;
 
-  // curl 白名单存在外传形态（审计实测 -T/--upload-file、-d @file、-F file=@ 均放行）——
-  // 收紧为 GET-only 查询
-  if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data|--data-binary|-d|--form|-F)(\s|=)/.test(core)) return false;
+  // curl 白名单存在外传形态（审计实测 -T/--upload-file、-d @file、-F file=@ 均放行；
+  // 审计 MEDIUM：--data-urlencode/--data-raw/--data-json/--data-ascii 此前漏拦——
+  // --data 前缀后跟 `-` 不匹配 (\s|=) 锚定）——收紧为 GET-only 查询
+  if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data(?:-urlencode|-raw|-json|-ascii)?|--data-binary|-d|--form|-F)(\s|=)/.test(core)) return false;
 
   return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
 }

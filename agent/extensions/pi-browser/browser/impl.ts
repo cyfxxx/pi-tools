@@ -89,6 +89,17 @@ export class BrowserManager {
   }
 
   async navigate(url: string, signal?: AbortSignal): Promise<PageInfo> {
+    // 审计 MEDIUM：URL 协议校验——prompt 注入场景下导航 file:// 可读取本地文件内容
+    // 并经 extract_text 回传。只允许 http/https；内网地址保留（本地服务/开发测试合法用途）。
+    try {
+      const proto = new URL(url).protocol
+      if (proto !== 'http:' && proto !== 'https:') {
+        throw new Error(`协议不支持: ${proto}//（仅允许 http/https，拒绝 ${url.slice(0, 60)}）`)
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith('协议不支持')) throw e
+      throw new Error(`无效 URL: ${String(url).slice(0, 80)}`)
+    }
     const page = await this.ensurePage()
     const errors: Error[] = []
 

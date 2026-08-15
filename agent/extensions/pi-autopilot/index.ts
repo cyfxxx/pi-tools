@@ -2,7 +2,7 @@ import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { SessionScheduler } from './scheduler.ts'
 import { registerCommands } from './commands.ts'
 import { registerTools } from './tools.ts'
-import { acquireSessionLock, releaseSessionLock, renderPrompt, readTasks, updateTask, sendWebhook } from './storage.ts'
+import { acquireSessionLock, releaseSessionLock, renderPrompt, readTasks, updateTask, sendWebhook, withStoreLock, writeTasks, computeNextRun } from './storage.ts'
 import { collectOfflineExecutions, formatSummary, markRead } from './notifications.ts'
 import { consumeRestartLog } from './state.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
@@ -66,6 +66,20 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
               await updateTask(task.id, { recoveryCount: recovery })
               await pi.sendUserMessage?.(`[Scheduler] ${task.name}（上次会话中断，第 ${recovery} 次恢复注入）: ${renderPrompt(task.prompt)}`)
               await clearPending(task.id)
+              // 审计 MEDIUM 修复：恢复注入后推进 nextRun——否则 nextRun 仍停留在
+              // 过去（崩溃时任务正在执行），30s 后 tick 因 isDue 再次触发 → 双重执行
+              await withStoreLock(async () => {
+                const store = await readTasks()
+                const t = store.tasks.find(x => x.id === task.id)
+                if (t) {
+                  let next = computeNextRun(t)
+                  if (!next || new Date(next).getTime() <= Date.now()) {
+                    next = new Date(Date.now() + 3600 * 1000).toISOString()
+                  }
+                  t.nextRun = next
+                  await writeTasks(store)
+                }
+              })
             } catch { /* ignore */ }
           }
           sections.push(`已重新注入 ${pending.length - deadLettered.length} 个中断时未完成的任务（可能重复执行）`)

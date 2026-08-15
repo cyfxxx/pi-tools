@@ -26,7 +26,7 @@ const chain = [
   { provider: 'local-llama', model: 'qwen-7b' },
 ]
 
-function makeTask(overrides: Partial<{ failCount: number; retries: number }> = {}) {
+function makeTask(overrides: Partial<{ failCount: number; failoverCount: number; retries: number }> = {}) {
   return {
     id: 't1', name: 'task', type: 'interval', schedule: '5m', prompt: 'p',
     enabled: true, lastRun: null, lastResult: null, lastOutput: '', nextRun: null,
@@ -81,6 +81,32 @@ describe('decide', () => {
   it('provider down at threshold fails over', () => {
     const action = decide(makeTask({ failCount: 2 }), 'provider_down', defaultPolicy, chain, info)
     expect(action.type).toBe('failover')
+  })
+
+  it('failover circuit break: maxFailovers reached suspends instead of ping-pong', () => {
+    // failoverCount >= maxFailovers（默认 1）：A→B 切过一次后 B 再失败不得切回 A
+    const action = decide(makeTask({ failCount: 3, failoverCount: 1 }), 'provider_down', defaultPolicy, chain, info)
+    expect(action.type).toBe('suspend_task')
+    expect(action.type === 'suspend_task' && action.note).toContain('熔断')
+  })
+
+  it('failover circuit break: below limit still fails over', () => {
+    const action = decide(makeTask({ failCount: 2, failoverCount: 0 }), 'provider_down', defaultPolicy, chain, info)
+    expect(action.type).toBe('failover')
+  })
+
+  it('failover circuit break: custom maxFailovers policy', () => {
+    const policy = { ...defaultPolicy, maxFailovers: 2 }
+    const a1 = decide(makeTask({ failCount: 2, failoverCount: 1 }), 'provider_down', policy, chain, info)
+    expect(a1.type).toBe('failover')
+    const a2 = decide(makeTask({ failCount: 2, failoverCount: 2 }), 'provider_down', policy, chain, info)
+    expect(a2.type).toBe('suspend_task')
+  })
+
+  it('failover circuit break: retry still allowed when failover blocked', () => {
+    // 熔断只拦截 failover，不拦截 retry（failCount < retries 仍应重试）
+    const action = decide(makeTask({ retries: 3, failCount: 1, failoverCount: 3 }), 'timeout', defaultPolicy, chain, info)
+    expect(action.type).toBe('retry')
   })
 
   it('provider down without fallback chain fails with hint', () => {

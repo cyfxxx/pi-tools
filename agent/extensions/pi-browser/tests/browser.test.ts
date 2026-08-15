@@ -83,6 +83,18 @@ describe('BrowserManager', () => {
     expect(info.textContent).toBe('Hello World')
   })
 
+  it('should reject dangerous protocols (审计 MEDIUM：file:// 读取本地文件防护)', async () => {
+    const bm = await getBrowserManager()
+    await expect(bm.navigate('file:///etc/passwd')).rejects.toThrow('协议不支持')
+    await expect(bm.navigate('data:text/html,<script>alert(1)</script>')).rejects.toThrow('协议不支持')
+    await expect(bm.navigate('javascript:alert(1)')).rejects.toThrow('协议不支持')
+    await expect(bm.navigate('not-a-url')).rejects.toThrow('无效 URL')
+    // http/https 正常放行（含内网地址——本地服务合法用途）
+    mockPage.url.mockReturnValue('http://127.0.0.1:8889')
+    const info = await bm.navigate('http://127.0.0.1:8889')
+    expect(info.url).toBe('http://127.0.0.1:8889')
+  })
+
   it('should be active after navigation', async () => {
     const bm = await getBrowserManager()
     mockPage.url.mockReturnValue('https://example.com')

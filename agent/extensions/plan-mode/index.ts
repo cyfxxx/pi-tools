@@ -236,6 +236,9 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     updateStatus(ctx);
   }
 
+  // 审计 LOW：savePlanIteration 的 then 回调是 fire-and-forget——连续修订时旧回调
+  // 晚到会覆盖新 planDir。代次守卫：只应用最新代次的回调。
+  let planSaveGen = 0
   async function savePlanIteration(
     planText: string,
     iteration: number,
@@ -299,7 +302,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   }
 
   /** P1: 从 PLANS_DIR 最新 plan.md 解析任务状态（磁盘恢复兜底）。 */
-  async function restoreStateFromFile(): Promise<(TaskState & { planDirName: string }) | null> {
+  async function restoreStateFromFile(): Promise<TaskState | null> {
     try {
       const dirs = (await readdir(PLANS_DIR, { withFileTypes: true }))
         .filter((d) => d.isDirectory() && d.name.startsWith("plan-"))
@@ -319,7 +322,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
           (t) => t.status !== "completed" && t.status !== "deleted",
         );
         if (!hasRemaining) continue;
-        return { ...restored, planDirName: d.name };
+        return restored;
       }
     } catch { /* 无可用计划文件 */ }
     return null;
@@ -645,16 +648,28 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   pi.on("context", async (event) => {
     const seen = new Set<string>();
     const filtered: typeof event.messages = [];
+    // plan-mode-context 特殊处理：保留内容最长的一条（完整规则块）而不是最新一条——
+    // 第二轮起注入的短句 "保持相同规则" 若替换掉规则块，模型上下文即丢失规则原文
+    // （审计 MEDIUM）。其余注入类型保持"每种最新一条"防累积。
+    let bestRule: (AgentMessage & { customType?: string; content?: string }) | null = null
     for (let i = event.messages.length - 1; i >= 0; i--) {
       const m = event.messages[i];
-      const msg = m as AgentMessage & { customType?: string };
+      const msg = m as AgentMessage & { customType?: string; content?: string };
       const customType = msg.customType;
       if (customType && INJECTED_CUSTOM_TYPES.has(customType)) {
+        if (customType === "plan-mode-context") {
+          if (!bestRule || (msg.content?.length ?? 0) > (bestRule.content?.length ?? 0)) {
+            bestRule = msg
+          }
+          continue
+        }
         if (seen.has(customType)) continue;
         seen.add(customType);
       }
       filtered.unshift(m);
     }
+    // 规则块放上下文末尾（与 before_agent_start 注入位置一致）
+    if (bestRule) filtered.push(bestRule as typeof event.messages[number])
     return { messages: filtered };
   });
 
@@ -999,7 +1014,10 @@ ${todoList}
             const count = Number(stdout.trim());
             iteration = Number.isFinite(count) && count > 0 ? count + 1 : 2;
           }
+		const saveGen = ++planSaveGen
 		savePlanIteration(lastText, iteration).then((dir) => {
+			// 代次守卫：仅最新一次修订的回调可写 planDir（旧回调晚到直接丢弃）
+			if (saveGen !== planSaveGen) return
 			planDir = dir;
 			persistState();
 		}).catch((err) => {

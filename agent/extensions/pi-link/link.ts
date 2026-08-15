@@ -130,9 +130,12 @@ export async function sendToDevice(
   device: DeviceConfig,
   message: string,
   opts: SendOptions = {},
+  defaultTimeoutSec?: number,
 ): Promise<LinkResult> {
   const started = Date.now()
-  const timeoutSec = opts.timeoutSec ?? device.timeoutSec ?? 600
+  // 审计 LOW：defaultTimeoutSec（配置顶层默认）此前从未被消费——
+  // 优先级：调用方显式 > 设备级 > 配置默认 > 硬编码 600
+  const timeoutSec = opts.timeoutSec ?? device.timeoutSec ?? defaultTimeoutSec ?? 600
 
   // T2-4 并发保护与去重（进程内）
   const key = `${device.user}@${device.host}:${device.port ?? 22}`
@@ -327,6 +330,9 @@ function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolea
   return new Promise((resolve) => {
     const args = [
       ...(addr.port ? ['-p', String(addr.port)] : []),
+      // 审计 LOW：failover 探测此前不携带 device.sshArgs——依赖自定义 -i 等参数的
+      // 设备探测必失败（altHosts 备选地址永不生效）；与真实发送链路对齐
+      ...(device.sshArgs ?? []),
       '-o', 'BatchMode=yes',
       '-o', 'ConnectTimeout=3',
       `${device.user}@${addr.host}`,
@@ -596,7 +602,10 @@ async function attachToRemoteInner(device: DeviceConfig, text: string, tmuxSessi
       `tmux_cmd load-buffer -b ${buf} ${tmp} 2>&1 && ` +
       `tmux_cmd paste-buffer -b ${buf} -t ${s} 2>&1 && ` +
       (enter ? `sleep 0.5 && tmux_cmd send-keys -t ${s} Enter 2>&1 && ` : '') +
-      `rm -f ${tmp}`
+      `rm -f ${tmp}` +
+      // 审计 LOW：&& 链中断（load-buffer/paste 失败）时 rm 不执行，远程临时文件
+      // 残留——分号无条件兜底清理（幂等）
+      `; rm -f ${tmp} 2>/dev/null`
     const probe = `${tmuxProbe}` +
       `P=$(tmux_cmd display-message -p -t ${s} '#{cursor_y}' 2>/dev/null); ` +
       `[ -z "$P" ] && P=$(tmux_cmd capture-pane -p -t ${s} 2>/dev/null | wc -l); ` +
@@ -616,10 +625,11 @@ async function attachToRemoteInner(device: DeviceConfig, text: string, tmuxSessi
     return { ok: false, detail: 'tmux 操作失败（远程命令异常退出）' }
   }
   // 输入框有内容（有人在输入）——轮询等清空（最长 60s），清空后只粘贴不回车，由用户回车
-  let waited = 0
-  while (waited < 60000) {
+  // 审计 LOW：原 waited 只累计 sleep 2s，tryPaste 的 remoteExec（15s 超时）不计入——
+  // 实际等待可达 ~8 分钟；改为墙钟计时
+  const attachDeadline = Date.now() + 60000
+  while (Date.now() < attachDeadline) {
     await new Promise((r) => setTimeout(r, 2000))
-    waited += 2000
     const again = await tryPaste(false)
     if (again === 'sent') return { ok: true, detail: `已粘贴到远程 ${sess} 输入框（输入框曾被占用，请远程用户回车发送）` }
     if (again === 'failed') return { ok: false, detail: 'tmux 操作失败（远程命令异常退出）' }

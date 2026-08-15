@@ -29,15 +29,22 @@ function emptyStore(): TaskStore {
 export async function acquireSessionLock(): Promise<boolean> {
   const lockF = lockPath()
   const myPid = String(process.pid)
+  // 审计 LOW：锁内容 PID:时间戳——进程活着但调度异常停摆时锁被永久占用；
+  // PID 复用（旧进程死后新进程恰巧同 PID）会误判 alive。时间戳超 24h 视为
+  // 过期租约（无论 PID 是否活着），允许覆盖。
+  const LOCK_TTL_MS = 24 * 3600 * 1000
 
   // 单次获取尝试。锁可能被 pi-cron.sh（离线调度）短暂写入后释放，
   // 或与之竞争——失败时由外层重试，避免把在线调度+看门狗静默关掉。
   const tryOnce = async (): Promise<boolean> => {
-    // 检查是否存在陈旧锁（持有锁的进程已死）
+    // 检查是否存在陈旧锁（持有锁的进程已死 / 租约过期）
     if (existsSync(lockF)) {
       try {
-        const oldPid = (await readFile(lockF, 'utf-8')).trim()
-        if (oldPid && oldPid !== myPid) {
+        const raw = (await readFile(lockF, 'utf-8')).trim()
+        const oldPid = raw.split(':')[0] ?? raw
+        const oldTs = Number(raw.split(':')[1] ?? 0)
+        const staleByAge = oldTs > 0 && Date.now() - oldTs > LOCK_TTL_MS
+        if (oldPid && oldPid !== myPid && !staleByAge) {
           let alive = false
           if (process.platform === 'win32') {
             // Windows 无 /proc——tasklist 探进程存在性（便携版多实例互斥）
@@ -66,11 +73,11 @@ export async function acquireSessionLock(): Promise<boolean> {
     }
 
     try {
-      await writeFile(lockF + '.tmp', myPid, 'utf-8')
+      await writeFile(lockF + '.tmp', `${myPid}:${Date.now()}`, 'utf-8')
       await rename(lockF + '.tmp', lockF)
       await new Promise(r => setTimeout(r, 150))
       const content = await readFile(lockF, 'utf-8')
-      return content.trim() === myPid
+      return content.trim().split(':')[0] === myPid
     } catch {
       return false
     }
@@ -116,6 +123,7 @@ function migrateTasks(data: TaskStore): void {
     if (!Array.isArray(t.tags)) t.tags = []
     if (typeof t.retries !== 'number') t.retries = 0
     if (typeof t.failCount !== 'number') t.failCount = 0
+    if (typeof t.failoverCount !== 'number') t.failoverCount = 0
     if (typeof t.pendingInject !== 'boolean') t.pendingInject = false
     if (typeof t.maxRunTime !== 'number') t.maxRunTime = DEFAULT_MAX_RUN_TIME
     if (typeof t.notifyOnCompletion !== 'boolean') t.notifyOnCompletion = false
@@ -402,6 +410,7 @@ export async function updateTaskAfterRun(
 
   if (result === 'success') {
     task.failCount = 0
+    task.failoverCount = 0
     task.runCount++
     // once 任务完成后自动清理
     if (task.type === 'once') {

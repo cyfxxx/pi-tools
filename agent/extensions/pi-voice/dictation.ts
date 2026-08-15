@@ -94,6 +94,10 @@ export function createDictation(
   cb: DictationCallbacks,
 ): Dictation {
   let currentFile: string | null = null
+  // 停止进行中标志（审计 MEDIUM：stopInternal 置空 currentFile 后 await stopRecording
+  // 有 ~3s 窗口（termux -q 往返），期间新 start 会通过检查并启动新录音，被全局 -q /
+  // 模块级 activeLinuxRecorder 误停——加 stopping 拒绝窗口内启动）
+  let stopping = false
   let recordingChild: ChildProcess | null = null
   let busy = false
   /** 录音代次：cancel 或新 start 都会自增，使旧进程 exit 回调的异步等待作废（不转写旧文件）。 */
@@ -239,6 +243,7 @@ export function createDictation(
 
   function start(): string {
     if (busy) return '上一段仍在转写中，请稍候'
+    if (stopping) return '正在停止上一段录音，请稍候再试'
     if (currentFile !== null) return '已在录音中（再按 Ctrl+Alt+R 停止）'
     gen += 1
     retried = false
@@ -288,6 +293,7 @@ export function createDictation(
   async function stopInternal(auto: boolean): Promise<StopResult | null> {
     if (busy) return null
     if (currentFile === null) return null
+    stopping = true
     clearTimer()
     const file = currentFile
     currentFile = null
@@ -295,7 +301,11 @@ export function createDictation(
     // 发 -q 停止；进程可能已自行退出，忽略失败
     await deps.stopRecording(cfg).catch(() => undefined)
     // 定时器路径 = 已到上限，actualSec 按实际计时传入（提示用）；手动路径无前缀
-    return finish(file, auto ? 'timer' : 'manual', Math.max(1, Math.round((Date.now() - startedAt) / 1000)))
+    try {
+      return await finish(file, auto ? 'timer' : 'manual', Math.max(1, Math.round((Date.now() - startedAt) / 1000)))
+    } finally {
+      stopping = false
+    }
   }
 
   function stop(): Promise<StopResult> {

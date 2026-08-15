@@ -45,8 +45,9 @@ export function runCommand(
         return
       }
       // Node v22 超时杀进程时 err.code=null、signal='SIGTERM'、killed=true，
-      // message 不含 ETIMEDOUT——按 killed/signal 判定超时（否则误报 code 1）
-      if (e.killed === true || e.signal === 'SIGTERM') {
+      // message 不含 ETIMEDOUT——按 killed 判定超时（审计 LOW：e.signal==='SIGTERM'
+      // 会把外部 SIGTERM 正常终止的进程也误报 timeout；killed 仅超时自杀时置 true）
+      if (e.killed === true) {
         resolvePromise({ code: 124, stdout: stdout ?? '', stderr: `timeout after ${timeoutMs}ms` })
         return
       }

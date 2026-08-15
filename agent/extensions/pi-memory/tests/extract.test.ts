@@ -105,6 +105,16 @@ describe('extract: parseExtractResult', () => {
 })
 
 describe('extract: extractConversation full flow', () => {
+  it('extract worker guard: PI_MEMORY_EXTRACT env enables worker mode (HIGH-3)', async () => {
+    const { isExtractWorker } = await import('../extract.ts')
+    const prev = process.env.PI_MEMORY_EXTRACT
+    process.env.PI_MEMORY_EXTRACT = '1'
+    expect(isExtractWorker()).toBe(true)
+    delete process.env.PI_MEMORY_EXTRACT
+    expect(isExtractWorker()).toBe(false)
+    if (prev !== undefined) process.env.PI_MEMORY_EXTRACT = prev
+  })
+
   it('extracts, merges, and persists entries + summary via mock runner', async () => {
     const { extractConversation } = await import('../extract.ts')
     const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
@@ -232,6 +242,23 @@ describe('extract: pending queue (deferred shutdown extraction)', () => {
     expect(ok).toBe(0)
     expect(failed).toBe(1)
     expect(listPendingExtracts()).toHaveLength(0)
+  })
+
+  it('skip (cooldown/lock) keeps queue entry without attempts (HIGH-4)', async () => {
+    const { queuePendingExtract, processPendingExtracts, listPendingExtracts, markExtracted } = await import('../extract.ts')
+    // 制造冷却指纹：markExtracted('sess-pp', 1) → 同 sessionId+count 的入队 job 提取时被 skip
+    markExtracted('sess-pp', 1)
+    queuePendingExtract([{ role: 'user', content: 'hi' }], 'sess-pp')
+    const runner: Runner = async () => ({ stdout: VALID_JSON, stderr: '', code: 0 })
+    // 连续 3 次 skip（旧行为：每次 attempts+1，3 次后删除从未成功提取过的 job）
+    const r1 = await processPendingExtracts({ runner })
+    expect(r1.ok).toBe(0)
+    expect(r1.failed).toBe(0)
+    const r2 = await processPendingExtracts({ runner })
+    const r3 = await processPendingExtracts({ runner })
+    expect(r2.failed).toBe(0)
+    expect(r3.failed).toBe(0)
+    expect(listPendingExtracts()).toHaveLength(1)
   })
 
   it('queue dedupes same sessionId + messageCount', async () => {

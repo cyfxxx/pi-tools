@@ -128,7 +128,7 @@ export default function (pi: ExtensionAPI): void {
         }
       }
       try {
-        const r = await sendToDevice(dev, message, sendOpts)
+        const r = await sendToDevice(dev, message, sendOpts, cfg.defaultTimeoutSec)
         return ok(fmtResult(r), { device: name, ...r })
       } catch (e) {
         return err(`link_send 失败: ${(e as Error).message}`)
@@ -221,7 +221,7 @@ export default function (pi: ExtensionAPI): void {
           ctx.ui.notify('无人值守环境或本机长时间无交互，跨设备指令已拒绝（allowUnattended 可配置）', 'warning')
           return
         }
-        const r = await sendToDevice(dev, message, { fromName: me })
+        const r = await sendToDevice(dev, message, { fromName: me }, cfg.defaultTimeoutSec)
         await output(fmtResult(r))
         return
       }

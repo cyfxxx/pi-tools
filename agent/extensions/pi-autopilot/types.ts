@@ -28,6 +28,8 @@ export interface Task {
   tags: string[]
   retries: number
   failCount: number
+  /** failover 熔断计数：连续 failover 次数（只在 success 时重置），>= maxFailovers 后 suspend */
+  failoverCount?: number
   pendingInject: boolean
   /** A2: 崩溃恢复重注入累计次数（≥3 转 dead-letter 暂停，需人工介入） */
   recoveryCount?: number
@@ -64,6 +66,8 @@ export interface AutopilotPolicy {
   failoverAfter?: number
   suspendAfter?: number
   timeoutFactor?: number
+  /** failover 熔断：同一任务连续切换模型次数上限（防双模型 ping-pong 无限重启），默认 1 */
+  maxFailovers?: number
 }
 
 export interface AutopilotConfig {

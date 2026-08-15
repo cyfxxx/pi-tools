@@ -11,7 +11,7 @@ export function registerSearchTools(pi: ExtensionAPI, config: SearchConfig, reco
     name: 'web_search',
     label: '搜索网络',
     description:
-      '使用 SearXNG 私密元搜索引擎搜索网络。支持指定搜索引擎列表、分类过滤、分页、时间范围。自动报告不可用的搜索引擎，支持引擎故障切换。',
+      '使用 SearXNG 私密元搜索引擎搜索网络。支持指定搜索引擎列表、分类过滤、分页、时间范围。自动报告不可用引擎（故障切换由模型选择 web_fetch 兜底）。',
     promptSnippet: '搜索网络，支持多引擎、分类、分页和时间范围过滤',
     promptGuidelines: [
       '国内网络推荐 engines: ["baidu","sogou","bing"]，境外用 ["google","bing","duckduckgo"]',
@@ -83,11 +83,6 @@ export function registerSearchTools(pi: ExtensionAPI, config: SearchConfig, reco
       return toolResult(result)
     },
   })
-}
-
-function truncate(s: string, max: number): string {
-  if (!s) return ''
-  return s.length <= max ? s : s.slice(0, max) + '...'
 }
 
 function toolResult(text: string): AgentToolResult<Record<string, unknown>> {

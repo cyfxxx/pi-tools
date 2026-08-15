@@ -534,6 +534,12 @@ function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult, d
       ctx.ui.notify(r.message || '正在转写，请稍候', 'info')
       return
     }
+    // 审计 LOW：未在录音的 stop 是无害 no-op，info 提示而非误报失败
+    // （仅 /voice stop 子命令触发；快捷键 toggle 有 isRecording 守卫）
+    if (r.message && r.message.includes('未在录音')) {
+      ctx.ui.notify(r.message, 'info')
+      return
+    }
     ctx.ui.notify('语音转写失败', 'error')
     reply(pi, r.message)
     return

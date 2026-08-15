@@ -98,6 +98,17 @@ export function setContextWindow(contextWindow: number): void {
   }
 }
 
+// 真实用量校准（审计 MEDIUM：plan-mode/pi-web-search 的压力提示依赖 usedTotal，
+// 但 recordToolUsage 只统计上报过的工具输出——与真实上下文用量口径不一致）。
+// pi-context 在 before_agent_start 用 ctx.getContextUsage() 拿到真实 tokens 后调用本函数覆盖。
+export function setUsedTokens(used: number): void {
+  const s = getState()
+  if (Number.isFinite(used) && used >= 0) {
+    // 取 max：report 制累计不回退（会话内单调），真实校准只升不降
+    s.usedTotal = Math.max(s.usedTotal, used)
+  }
+}
+
 export function recordToolUsage(tool: string, tokens: number): void {
   const s = getState()
   s.tokenUsageLog.push({ tool, tokens, timestamp: Date.now() })

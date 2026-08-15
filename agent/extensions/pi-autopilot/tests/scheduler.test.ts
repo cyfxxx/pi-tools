@@ -100,7 +100,7 @@ describe('scheduler: 预算拦截（防自锁）', () => {
     expect(new Date(after.nextRun).getTime()).toBeGreaterThan(Date.now())
   })
 
-  it('预算充足时正常执行：注入消息并记 success、nextRun 推进', async () => {
+  it('预算充足时注入式执行：注入消息但不记 success（审计 MEDIUM 修复）', async () => {
     const task = makeTask()
     await writeTasksFile([task])
     await fillTelemetry(0)
@@ -114,13 +114,12 @@ describe('scheduler: 预算拦截（防自锁）', () => {
     expect(sent).toHaveLength(1)
     expect(sent[0]).toContain('do something')
     const saved = await readTasksFile()
-    const after = saved.tasks[0] as { nextRun: string; lastResult: string; history: Array<{ result: string }> }
-    expect(after.lastResult).toBe('success')
-    expect(after.history[0].result).toBe('success')
+    const after = saved.tasks[0] as { nextRun: string; lastResult: string | null; history: Array<{ result: string }> }
+    // 注入成功 ≠ 执行成功：不记 success、不写 history、无遥测（主会话执行结果未知）
+    expect(after.lastResult).toBeNull()
+    expect(after.history).toHaveLength(0)
     expect(new Date(after.nextRun).getTime()).toBeGreaterThan(Date.now())
-    // 遥测新增一条 success（51 = 0 + 1）
     const runs = await readTelemetryFile()
-    expect(runs).toHaveLength(1)
-    expect(runs[0].result).toBe('success')
+    expect(runs).toHaveLength(0)
   })
 })

@@ -351,15 +351,19 @@ export function registerTools(pi: ExtensionAPI): void {
           return { content: [{ type: 'text', text: `无效日期: ${olderThan}` }], details: null, isError: true }
         }
         const before = entries.length
+        const removedIds = new Set<string>()
         const kept = entries.filter(e => {
           if (e.category !== category) return true
-          return new Date(e.createdAt).getTime() > cutoff
+          if (new Date(e.createdAt).getTime() > cutoff) return true
+          removedIds.add(e.id)
+          return false
         })
         const removed = before - kept.length
         entries.length = 0
         entries.push(...kept)
         // 批量删除同样落盘（loadEntries 每次从磁盘重读，不落盘则下次调用即复活）
-        saveEntries(entries)
+        // 墓碑：写前合并（saveEntries）不得把刚批量删除的条目从磁盘复活
+        saveEntries(entries, { excludeIds: removedIds })
         return {
           content: [
             { type: 'text', text: `已删除 ${removed} 条 ${category} 类别记忆（${olderThan} 之前）` },
@@ -430,7 +434,9 @@ export function registerTools(pi: ExtensionAPI): void {
       }
 
       if (params.summaries === true) {
-        const summaries = loadSummaries().slice(-5).reverse()
+        // 审计 LOW：slice(-5) 按插入序（pending 延迟提取乱序 append 会取到非最近摘要）
+        // ——与 inject.ts 对齐，按 ts 排序后取最近 5 条
+        const summaries = [...loadSummaries()].sort((a, b) => (a.ts < b.ts ? 1 : -1)).slice(0, 5)
         if (summaries.length) {
           blocks.push(
             '最近会话摘要:\n' +

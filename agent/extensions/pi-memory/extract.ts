@@ -14,6 +14,12 @@ export interface ExtractMessage {
   content: string
 }
 
+/** 提取子进程守卫（HIGH-3）：spawn 的 `pi -p` 子进程 env 带 PI_MEMORY_EXTRACT=1，
+ *  session_start 据此跳过 pending 队列消费，避免与父进程并发抢任务。 */
+export function isExtractWorker(): boolean {
+  return process.env.PI_MEMORY_EXTRACT === '1'
+}
+
 export interface CandidateMemory {
   category: MemoryCategory
   title: string
@@ -173,7 +179,9 @@ export const defaultRunner: Runner = (bin, args, timeoutMs) =>
       done({ stdout, stderr, code })
     })
     proc.on('error', err => {
-      done({ stdout: '', stderr: err.message, code: null })
+      // 审计 LOW：原实现丢弃已累积的 stdout/stderr（传空串）——spawn 失败时
+      // stderr 可能已有数据（如动态加载器报错），保留排障信息
+      done({ stdout, stderr: stderr || err.message, code: null })
     })
   })
 
@@ -310,12 +318,14 @@ function diskHit(sessionId: string): TrackKey | undefined {
   return { sessionId: sessionId || 'global', fingerprint: rec.fingerprint }
 }
 
-export function shouldExtract(sessionId: string, messageCount: number, cooldownMs = 60_000): boolean {
+export function shouldExtract(sessionId: string, messageCount: number, cooldownMs = 24 * 3600 * 1000): boolean {
   const key = sessionId || 'global'
   const prev = tracker.get(key) ?? diskHit(key)
   const now = Date.now()
   if (!prev) return true
-  // 同指纹且冷却期内 → 跳过（幂等：同会话同消息数重复触发不重复提取）
+  // 同指纹且冷却期内 → 跳过（幂等：同会话同消息数重复触发不重复提取）。
+  // 审计 MEDIUM：冷却原为 60s——compact 提取 + shutdown 入队后重启超冷却即重复提取
+  // （title 匹配虚增 recurrence）；提至 24h 覆盖隔夜重启场景，超期后同指纹重提靠 merge NOOP 兜底
   if (prev.fingerprint === messageCount && now - lastExtractTs(key) < cooldownMs) return false
   return true
 }
@@ -445,6 +455,10 @@ export async function processPendingExtracts(opts: ExtractOptions = {}): Promise
     if (outcome.ok) {
       removePendingExtract(file)
       ok++
+    } else if (outcome.skipped > 0) {
+      // 审计修复 HIGH-4：cooldown/锁竞争 skip 不是失败——不递增 attempts、
+      // 不删文件（3 次 skip 曾永久删除从未成功提取过的 job）、不计 failed
+      continue
     } else {
       // 失败计数写回：超过上限删除（坏任务不再每次 session_start 无限重试）
       job.attempts = (job.attempts ?? 0) + 1
@@ -496,11 +510,11 @@ export async function extractConversation(
 ): Promise<ExtractOutcome> {
   const sessionId = opts.sessionId || 'unknown'
   if (!shouldExtract(sessionId, opts.messageCount ?? messages.length)) {
-    return { ok: false, error: 'skip: cooldown or duplicate', memories: 0, skipped: 0 }
+    return { ok: false, error: 'skip: cooldown or duplicate', memories: 0, skipped: 1 }
   }
   if (!messages.length) return { ok: false, error: 'empty conversation', memories: 0, skipped: 0 }
   if (!acquireExtractLock()) {
-    return { ok: false, error: 'skip: another extraction in progress', memories: 0, skipped: 0 }
+    return { ok: false, error: 'skip: another extraction in progress', memories: 0, skipped: 1 }
   }
 
   try {

@@ -113,7 +113,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
     name: 'browser_click',
     label: '点击',
     description:
-      '在页面中执行点击操作。支持两种模式：(1) 坐标模式 - 穿透 iframe/Shadow DOM/跨域框架，推荐配合截图使用；(2) 选择器模式 - 使用 CSS 选择器精准定位元素。',
+      '在页面中执行点击操作。支持两种模式：(1) 坐标模式 - 穿透 iframe/Shadow DOM/跨域框架，推荐配合截图使用；(2) 选择器模式 - 使用 CSS 选择器精准定位元素。注意：坐标是视口坐标，须以普通截图（full_page=false）量取，full_page 长截图会错位。',
     promptSnippet: '坐标或选择器点击，坐标模式可穿透 iframe/Shadow DOM',
     promptGuidelines: [
       '推荐先 browser_screenshot 截图，分析后使用坐标模式 (x, y) 点击',

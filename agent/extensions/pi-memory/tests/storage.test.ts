@@ -84,6 +84,37 @@ describe('storage: entries', () => {
     expect(existsSync(join(dir, 'entries.json.tmp'))).toBe(false)
     expect(loadEntries()).toHaveLength(1)
   })
+
+  it('saveEntries merges concurrent additions from disk (审计 MEDIUM：并发不丢更新)', async () => {
+    const { saveEntries, loadEntries } = await import('../storage.ts')
+    // 模拟：磁盘已有条目 A（提取子进程写回前主进程新增）
+    const diskEntry = makeEntry({ title: 'disk-added' })
+    saveEntries([diskEntry])
+    // 模拟：快照不含 A 的写回（旧快照），仅含 B
+    const b = makeEntry({ title: 'snapshot-b' })
+    saveEntries([b])
+    const loaded = loadEntries()
+    const ids = loaded.map(e => e.title)
+    // 并发新增 A 不被覆盖丢失；B 正常写入
+    expect(ids).toContain('disk-added')
+    expect(ids).toContain('snapshot-b')
+    // 传入快照优先：同 id 以调用方为准
+    const c = makeEntry({ title: 'overwrite-me' })
+    saveEntries([c])
+    saveEntries([{ ...c, title: 'overwritten' }])
+    const after = loadEntries()
+    expect(after.find(e => e.id === c.id)?.title).toBe('overwritten')
+  })
+
+  it('saveEntries does not resurrect deleted entries (回收语义保留)', async () => {
+    const { saveEntries, loadEntries } = await import('../storage.ts')
+    const e = makeEntry({ title: 'to-recycle' })
+    saveEntries([e])
+    // 软删除后回收（filter 移除）→ saveEntries 写回不得把 deleted 条目合并回来
+    saveEntries([{ ...e, deleted: true }])
+    saveEntries([])
+    expect(loadEntries()).toHaveLength(0)
+  })
 })
 
 describe('storage: notes + ctx-lite migration', () => {

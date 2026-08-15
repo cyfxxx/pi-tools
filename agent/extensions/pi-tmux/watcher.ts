@@ -47,6 +47,9 @@ export function createCompletionWatcher(deps: WatcherDeps): CompletionWatcher {
 
   function watch(name: string, logPath: string, notifyEnabled: boolean): WatcherHandle {
     clear(name) // 同名重复注册：旧监听器先停，防多定时器
+    // 审计 MEDIUM：同名重新注册 = 新会话启动（tmux_stop 后同名 tmux_run），
+    // 旧会话的 notified 标记必须清除——否则新会话结束时不发完成通知（静默丢通知）
+    notified.delete(name)
     if (!notifyEnabled) return { stop: () => {} }
 
     const timer = setInterval(async () => {

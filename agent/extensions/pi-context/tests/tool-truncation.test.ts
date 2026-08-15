@@ -78,6 +78,7 @@ describe('truncateToolContent: R4 工具输出截断', () => {
     const big = 'q'.repeat(8000)
     const r = truncateToolContent('read', [textBlock(big)], 5000)
     expect(r).toBeDefined()
-    expect(r!.omittedBytes).toBe(8000 - 5000)
+    // 截断目标为 cap 减去截断标记预算（64 字节），保证最终字节数不超 cap
+    expect(r!.omittedBytes).toBe(8000 - (5000 - 64))
   })
 })
