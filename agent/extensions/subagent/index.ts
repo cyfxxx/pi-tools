@@ -36,6 +36,25 @@ const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4; // 云端模型批量并行上限
 const LOCAL_CONCURRENCY = 1; // 本地模型串行：多进程会竞争 GPU 内存
 
+// 环境维度并发限制：Termux/Android 资源受限（移动端内存/电池），并行子代理
+// 最多 2 个防 OOM/卡顿；桌面环境（WSL/Windows/Linux/macOS）不受环境限制，
+// 保持默认并发（云端 4 / 本地 1）
+const TERMUX_MAX_PARALLEL = 2;
+const TERMUX_CONCURRENCY = 2;
+
+export function isTermuxEnv(): boolean {
+  return process.platform === 'android' || Boolean(process.env.TERMUX_VERSION)
+}
+
+export function getMaxParallelTasks(): number {
+  return isTermuxEnv() ? TERMUX_MAX_PARALLEL : MAX_PARALLEL_TASKS
+}
+
+export function getMaxConcurrency(localProvider: boolean): number {
+  if (localProvider) return LOCAL_CONCURRENCY
+  return isTermuxEnv() ? TERMUX_CONCURRENCY : MAX_CONCURRENCY
+}
+
 /** 写入类工具：readonly agent spawn 时强制移除（只读隔离的硬约束） */
 const WRITABLE_TOOLS = new Set(["bash", "edit", "write"]);
 
@@ -761,12 +780,12 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (params.tasks && params.tasks.length > 0) {
-				if (params.tasks.length > MAX_PARALLEL_TASKS)
+				if (params.tasks.length > getMaxParallelTasks())
 					return {
 						content: [
 							{
 								type: "text",
-								text: `Too many parallel tasks (${params.tasks.length}). Max is ${MAX_PARALLEL_TASKS}.`,
+								text: `Too many parallel tasks (${params.tasks.length}). Max is ${getMaxParallelTasks()}${isTermuxEnv() ? ' (Termux 环境限制)' : ''}.`,
 							},
 						],
 						details: makeDetails("parallel")([]),
@@ -803,7 +822,7 @@ export default function (pi: ExtensionAPI) {
 
 				const results = await mapWithConcurrencyLimit(
 					params.tasks,
-					isLocalProvider(currentModel?.provider) ? LOCAL_CONCURRENCY : MAX_CONCURRENCY,
+					getMaxConcurrency(isLocalProvider(currentModel?.provider)),
 					async (t, index) => {
 					const result = await runSingleAgent(
 						ctx.cwd,

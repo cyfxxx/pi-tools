@@ -114,10 +114,11 @@ subagent({
 })
 ```
 
-**并发控制（按模型类型自适应）**：
-- `MAX_PARALLEL_TASKS = 8` — 最大任务数
+**并发控制（按模型类型 + 环境自适应）**：
+- `MAX_PARALLEL_TASKS = 8` — 桌面环境最大任务数
 - 云端模型（API）：批量并行，`MAX_CONCURRENCY = 4`
 - 本地模型（provider 名匹配 ollama/localhost/127.0.0.1/lmstudio/vllm 等）：串行 `LOCAL_CONCURRENCY = 1`，避免多进程竞争 GPU 内存
+- **环境限制（Termux/Android）**：资源受限（移动端内存/电池），任务上限降为 2、云端并发降为 2（`TERMUX_MAX_PARALLEL`/`TERMUX_CONCURRENCY`，识别：platform=android 或 `TERMUX_VERSION` 环境变量）；本地模型任何环境均串行 1。WSL/Windows/Linux/macOS 无环境限制
 - 每任务输出截断到 **50 KB**（完整结果在 tool details 中）
 
 **结果格式**：

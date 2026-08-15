@@ -74,7 +74,7 @@ report $? "extensions.test.ts（注册面）"
 cyn "== subagent 纯函数测试（mjs，无 vitest 环境） =="
 # 注释长期声称包含 subagent 但实际未执行（审计 2026-08-15 发现），补入回归面
 (cd "$EXTS/subagent" && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs >/dev/null 2>&1)
-report $? "subagent mjs（用例数见 runner 输出）"
+report $? "subagent mjs"
 
 cyn "== 扩展冲突检查 =="
 (cd "$EXTS" && node tests/conflict-check.mjs >/dev/null 2>&1)
