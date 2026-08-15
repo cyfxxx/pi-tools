@@ -58,6 +58,7 @@ ctx-lite/
 memory/extract-sessions/
 memory/pending-extracts/
 memory/.extract-lock
+memory/extract-tracker.json
 # 多环境隔离（P1）：notes/summaries 为会话级/环境特定数据，不入库（避免多机 pull/push 互相覆盖）
 # entries.json（长期记忆）仍入库共享，冲突时以最新 push 为准
 memory/notes.json
