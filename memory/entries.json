@@ -8832,6 +8832,22 @@
       ],
       "observedAt": "2026-08-15T01:33:11.852Z",
       "deleted": false
+    },
+    {
+      "id": "e3d3758a-8d32-4864-926f-fd408b6a32e2",
+      "category": "habit",
+      "title": "行为纪律: 多任务合并完成时逐个核对 todo 状态，完成后 delete 归档",
+      "content": "todo 状态更新纪律（2026-08-15 实战教训）：多个 todo 任务在同一次修复中合并完成时（如\"任务 1+5 同文件一起改\"），容易只 update 其中一个任务、漏掉其余——残留任务停留在待办状态，TUI 任务展示行残留，用户会看到已完成任务还挂着。规则：一轮工具调用结束后立即对照 todo list 逐个核对所有涉及任务的 status，全部完成后 delete 归档（清除 TUI 展示）。",
+      "tags": [],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T02:41:15.789Z",
+      "updatedAt": "2026-08-15T02:41:15.789Z",
+      "accessedAt": "2026-08-15T02:41:15.789Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
