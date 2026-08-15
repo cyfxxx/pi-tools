@@ -28,7 +28,11 @@ export interface TmuxRunResult {
 export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Promise<TmuxRunResult> {
   if (process.platform === 'win32') return runTmuxWindows(opts, args)
   return new Promise((resolvePromise) => {
-    const child = execFile(opts.bin, args, { timeout: timeoutMs, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
+    // Windows 便携版：无原生 tmux，经 wsl.exe 调 WSL 后端 tmux（shim 与 spawn 兼容）
+    const win = process.platform === 'win32'
+    const bin = win ? 'wsl.exe' : opts.bin
+    const fullArgs = win ? ['tmux', ...args] : args
+    const child = execFile(bin, fullArgs, { timeout: timeoutMs, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (!err) {
         resolvePromise({ code: 0, stdout: stdout ?? '', stderr: stderr ?? '' })
         return
@@ -39,7 +43,7 @@ export function runTmux(opts: TmuxOpts, args: string[], timeoutMs = 15000): Prom
         return
       }
       if (err.message.includes('ENOENT')) {
-        resolvePromise({ code: 127, stdout: '', stderr: `tmux: command not found (${opts.bin})` })
+        resolvePromise({ code: 127, stdout: '', stderr: `tmux: command not found (${bin})` })
         return
       }
       // Node v22 超时杀进程时 err.code=null、signal='SIGTERM'、killed=true，
