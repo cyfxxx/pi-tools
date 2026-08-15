@@ -22,7 +22,7 @@ pi-memory 扩展自动检测环境（`PI_MEMORY_ENV` 环境变量可显式覆盖
 - **打标规则**：
   - 手动 `memory_store`：缺省 `all`（通用知识）；环境专属知识显式传 `environment` 参数（如 `'termux'`）
   - 自动提取：默认打当前环境标签（会话内操作与环境强相关）
-  - 已有条目回填已按关键词完成（`termux` 89 条 / `all` 175 条），误标时编辑 `memory/entries.json` 修正
+  - 已有条目回填已按关键词完成（2026-08 快照：`termux` 89 条 / `all` 175 条），误标时编辑 `memory/entries.json` 修正
 - **判定原则**：知识本身与环境相关才打标（如"Termux 录音快捷键"→termux）；只是"在某个环境里发现"的通用知识标 `all`（如"pi 补全 value 整体替换前缀"→all）
 
 ## 运行时数据冲突消解（P1）

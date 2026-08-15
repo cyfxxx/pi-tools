@@ -1,5 +1,7 @@
 # Alacritty + tmux 部署问题总结
 
+> **文档性质：一次性部署排障记录（2026-08-05，本机 WSL2 专属）**——7 个问题中部分为通用教训（TOML 语法、terminfo、会话内执行）、部分为本机环境特有（渲染后端、clipboard panic）。后续部署优先参考「最终架构」与「常用速查」两节；正文问题明细按需查阅。
+>
 > **适用环境：WSL2/WSLg**（Alacritty + tmux 部署）。Termux/Linux/macOS 下不适用。多环境使用总览见 `docs/ENVIRONMENTS.md`。
 
 > 环境: Ubuntu 24.04 (WSL2/WSLg), root 用户, 无独立 GPU

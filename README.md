@@ -37,7 +37,8 @@
 │   ├── skills/                自定义技能
 │   │   ├── pi-translate-zh/   中文翻译
 │   │   ├── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
-│   │   └── pi-code-review/    代码审查（确定性检查 + 分级报告）
+│   │   ├── pi-code-review/    代码审查（确定性检查 + 分级报告）
+│   │   └── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
 │   └── npm/
 │       ├── package.json       npm 包声明（rebuild.sh 按 settings.json packages 自动生成）
 │       └── .gitignore         只排除 node_modules/ 和 package-lock.json
@@ -64,7 +65,11 @@
 │   ├── test-all.sh            一键全量回归（测试+类型+冲突检查）
 │   ├── pi-whisper.sh          whisper 常驻服务管理（start/stop/status/restart）
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
-│   ├── patch-*.mjs            核心补丁（voice-enter 回车拦截 / footer-live-context / plan-tools，rebuild.sh 自动执行）
+│   ├── patch-*.mjs            核心补丁 5 个（voice-enter 回车拦截 / footer-live-context / plan-tools / tab-arg-completion / playwright-core，rebuild.sh Phase 3 自动执行）
+│   ├── docker-rebuild-test.sh  Docker 干净环境重建回归（clone→rebuild→判定，分支可指定）
+│   ├── pi-bench.sh             用量基准（usage/timing/compare）
+│   ├── smoke-test.sh           冒烟测试（rebuild 依赖其第 1 项）
+│   ├── termux-prereq.sh        Termux 前置依赖安装（rebuild 依赖）
 │   └── pi-bg.sh               后台任务四件套隔离（见 README-pi-bg.md）
 ├── portable/                  便携 pi（Windows 原生）种子：构建脚本 + 模板
 │   ├── bin/                  管理脚本（setup 构建器 / verify 验证 / diag 诊断 / update-pi 升级 / update-portable 扩展同步 / sync git）
@@ -373,10 +378,10 @@ pi-context 作为 token 优化中枢，通过 `before_agent_start` 事件在每�
 ### 缓存友好的动态压力提示
 
 ```
-[上下文压力较高（>85%）。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。]
+[上下文压力较高（≥75%）。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。]
 ```
 
-实时占用率仅做档位判断：空闲/中（<85%）**不注入**任何行；≥85% 注入固定文案；≥95% 注入更重文案。文案不含精确数字、不含时间戳 → system prompt 在档位内逐字节稳定，前缀缓存全程命中。
+实时占用率仅做档位判断：空闲/中（<75%）**不注入**任何行；≥75% 注入固定文案；≥90% 注入更重文案。文案不含精确数字、不含时间戳 → system prompt 在档位内逐字节稳定，前缀缓存全程命中。
 
 **依赖：** 需要 `subagent` 扩展和 agent 定义配合。
 
@@ -426,7 +431,7 @@ pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 
 ## 测试与回归
 
-一键全量回归（5 套测试 + 类型检查 + 扩展冲突检查 + 注册完整性）：
+一键全量回归（11 套测试 + 类型检查 + 扩展冲突检查 + 注册完整性）：
 
 ```bash
 bash scripts/test-all.sh
@@ -434,13 +439,21 @@ bash scripts/test-all.sh
 
 | 套件 | 命令 | 用例数 |
 |------|------|--------|
-| pi-web-search | `cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run` | 72 |
-| pi-memory | `cd agent/extensions/pi-memory && ./node_modules/.bin/vitest run` | 49 |
-| pi-autopilot | `cd agent/extensions/pi-autopilot && ./node_modules/.bin/vitest run` | 86 |
-| pi-browser | `cd agent/extensions/pi-browser && ./node_modules/.bin/vitest run` | 23 |
-| subagent | `cd agent/extensions/subagent && node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs` | 34 |
-| 类型检查 | `cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.json --noEmit` | — |
-| 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 6 项 |
+| pi-web-search | `cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run` | 75 |
+| pi-memory | `cd agent/extensions/pi-memory && ./node_modules/.bin/vitest run` | 94 |
+| pi-autopilot | `cd agent/extensions/pi-autopilot && ./node_modules/.bin/vitest run` | 102 |
+| pi-browser | `cd agent/extensions/pi-browser && ./node_modules/.bin/vitest run` | 25 |
+| pi-context | `cd agent/extensions/pi-context && ./node_modules/.bin/vitest run` | 73 |
+| plan-mode | `cd agent/extensions/plan-mode && ./node_modules/.bin/vitest run` | 70 |
+| pi-tmux | `cd agent/extensions/pi-tmux && ./node_modules/.bin/vitest run` | 20+2 跳过 |
+| pi-voice | `cd agent/extensions/pi-voice && ./node_modules/.bin/vitest run` | 129 |
+| pi-link | `cd agent/extensions/pi-link && ./node_modules/.bin/vitest run` | 62 |
+| subagent | `cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs` | 63 |
+| 注册面 | `cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts` | 25 |
+| 类型检查 | `cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit` | — |
+| 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 8 项 |
+
+（用例数快照于 2026-08-15 审计后；以 `bash scripts/test-all.sh` 输出为准）
 
 **约定：** 新增/修改扩展必须同步 `settings.json` extensions、`extensions/tsconfig.json` include、`tests/conflict-check.mjs` 监听者清单，并保持各套件用例全绿。
 

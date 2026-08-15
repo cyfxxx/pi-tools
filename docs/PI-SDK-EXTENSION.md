@@ -60,7 +60,7 @@ import { estimateTokens, createBashToolDefinition, SessionManager }
 | 函数 | 用途 |
 |------|------|
 | `estimateTokens(message)` | 估算单条消息 token 数（字符/4 保守估算） |
-| `estimateContextTokens(messages)` | 用最后一条 usage 计算总 context token，无则回退逐条估算 |
+| `estimateContextTokens(messages)` | 用最后一条 usage 计算总 context token，无则回退逐条估算（**注意：由 `@earendil-works/pi-agent-core` 导出，不在 pi-coding-agent**） |
 | `calculateContextTokens(usage)` | 从 usage 计算 context token（优先 totalTokens） |
 | `compact(preparation, model, ...)` | 执行压缩（全参数控制） |
 | `shouldCompact(contextTokens, contextWindow, settings)` | 判断是否需要压缩 |
@@ -76,7 +76,8 @@ import { estimateTokens, createBashToolDefinition, SessionManager }
 **示例：按实际 token 数做 context 裁剪**
 
 ```typescript
-import { estimateContextTokens, findCutPoint } from "@earendil-works/pi-coding-agent"
+import { estimateContextTokens } from "@earendil-works/pi-agent-core"
+import { findCutPoint } from "@earendil-works/pi-coding-agent"
 
 pi.on("context", (event, ctx) => {
   const { tokens } = estimateContextTokens(event.messages)
