@@ -5,7 +5,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 目录结构
 
 - `agent/settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
-- `agent/extensions/` — 9 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice（能力与配置见各自 README）
+- `agent/extensions/` — 10 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice / pi-link（能力与配置见各自 README）
 - `agent/lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装，dsh 借鉴）、`config.ts`（配置分层合并，默认+overlay 深合并）
 - `agent/agents/`、`agent/skills/` — 子代理模板、技能；`agent/prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 - `portable/` — 便携 pi（Windows 原生）种子：`bin/`（setup/verify/diag/update-pi/update-portable/sync/check-restart/check-services/searxng-setup/whisper-setup 等管理脚本）+ start.bat/start.ps1 入口 + ca-bundle.crt + tools/tmux shim（不含 .pi 内容，含密钥的配置不入库；完整经验见 `portable/README.md` 与记忆条目「便携 pi Windows 最终架构」）

@@ -21,7 +21,7 @@ pi-portable/
 ├── memory/                 pi-memory 数据（entries.json 入库共享；.pi\memory junction 指向）
 ├── .pi/                    junction 区（agent/memory 链接 + pi-link 运行时）[隐藏]
 ├── .ssh/ AppData/ Microsoft/  Windows 运行时（SSH 密钥/程序数据）[隐藏]
-├── docs/ scripts/ searxng/ systemd/ tmux/ keys/  仓库内容（Linux 部署相关，Windows 便携包用不到）
+├── deploy/               部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集；Linux 部署相关，Windows 便携包用不到）[git 跟踪]
 └── README.md .gitignore .git    pi-tools 仓库
 ```
 

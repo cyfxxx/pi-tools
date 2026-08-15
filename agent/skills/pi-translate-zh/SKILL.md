@@ -33,7 +33,7 @@ node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs
 
 ### v10 改进
 
-- **移除** `browser-automation` 和 `searx-search` 扩展引用（已被 `pi-web-toolkit` 替代）
+- **移除** `browser-automation` 和 `searx-search` 扩展引用（已被 `pi-web-toolkit` 替代；后者现名 `pi-web-search`）
 - **清理** 文档中已删除扩展的残留引用
 
 ### v8 改进
