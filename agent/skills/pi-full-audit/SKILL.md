@@ -1,8 +1,8 @@
 ---
 name: pi-full-audit
 description: 全项目深度审计技能。区别于 pi-code-review（diff/改动审查）：对仓库做全量确定性检查 + 基线回归测试 + subagent 并行深度审查 + 复核子代理逐条核实建议 + 主会话终审 + 分级报告。含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。
-version: v1.6
-经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）；同日 dsh 深度分析（deepseek-ai/deepseek-harness 借鉴：注册即 effect、配置分层合并、测试分层、真实运行观察替代 keyless snapshot）；2026-08-14 补充基准工具 pi-bench.sh（usage/timing/compare 三子命令，守护缓存优化不回退）
+version: v1.7
+经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）；同日 dsh 深度分析（deepseek-ai/deepseek-harness 借鉴：注册即 effect、配置分层合并、测试分层、真实运行观察替代 keyless snapshot）；2026-08-14 补充基准工具 pi-bench.sh（usage/timing/compare 三子命令，守护缓存优化不回退）；2026-08-15 全流程实战（50 项发现：1 HIGH / 18 MEDIUM / 19 LOW / 12 同类遗漏，全部修复闭环 6 提交；4 组并行复核首次调用返回空结果→改 2+2 分批重试成功；修复分层执行模式验证：MEDIUM 主会话修 + LOW 三 worker 并行一次成功；scout readonly 化后复核实测改主会话/worker；todo 状态遗漏致 TUI 残留——修复逐项销账纪律；注入块内容质量抽查发现重复/空摘要/截断条目）
 ---
 
 # pi-full-audit 全项目深度审计
@@ -38,7 +38,7 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 ### 第 2 步：基线回归测试（审查前必跑）
 
 - 用项目自带全量测试（~/.pi 仓库：`bash scripts/test-all.sh`）
-- 长任务用 `tmux_run` 后台跑，`tmux_wait` 等结果，不阻塞主会话
+- 长任务用 `tmux_run` 后台跑。**禁止 tmux_wait 阻塞等待**（AGENTS.md 铁律；2026-08-15 实战教训：until_exit 等满 420s 占用前台）——tmux_run 后结束回合或转做其他独立工作，后续轮次用 `tmux_read` 轮询结果
 - 测试**全绿**再进入深度审查；有红项先记录为问题，不阻塞后续步骤
 
 ### 第 3 步：subagent 并行深度审查（核心）
@@ -57,9 +57,12 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 - 明确只读："只读审查，不修改任何文件"
 - 明确维度：正确性/安全/资源/并发与状态/回归影响/可维护性
 - **输出精简约束（防截断）**："只列问题，每条 文件:行号 + 一句话描述 + 级别（HIGH/MEDIUM/LOW），LOW 最多 5 条；无问题项明确说明；总输出控制在 3000 字内"
+- 涉及运行时行为/机制描述的建议（子进程语义、超时行为、事件时序等）标注"需实测"——审查阶段只做读码判断，实测留给第 4 步复核（减少复核排查面）
 - 指定 cwd 为仓库根
 
 **报告截断处理**：若返回报告被截断，重新委派该组并要求更精简格式，不要凭截断内容下结论。
+
+**并行批空结果/超时降级**（2026-08-15 实战）：4 组并行委派首次调用返回 "No result provided"（空结果）——整个批失败不代表任务失败，降级分批重试（2+2 或逐组），不要凭空结果下"无问题"结论。
 
 ### 第 4 步：复核子代理逐条核实（防过度自信，必做）
 
@@ -94,10 +97,15 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
 ### 第 6 步：修复执行闭环（用户要求时）
 
 1. **先列修复计划**（todo 按 HIGH/MEDIUM 分批），用户批准后动手（审计本身只读）
-2. 每个修复点**至少一个回归测试**：优先补在对应扩展现有测试文件；测试要能捕获旧行为（修复前先跑一遍确认失败）
-3. 行为/语义变化的修复同步更新 README/CHANGELOG（有维护惯例的扩展，如 subagent/plan-mode/pi-web-search 有 CHANGELOG）；代码注释与实现矛盾的一并更正
-4. 全量回归：对应扩展 vitest + tsc + 注册面/conflict-check（`bash scripts/test-all.sh`）；新测试文件要进仓库而非临时验证
-5. 提交推送：按仓库惯例分离提交（如代码修复 / memory/entries.json 记忆增量分开）；push 前确认 remote 无凭证 token；SSH remote 直接推
+2. **修复分层执行模式**（2026-08-15 实战验证，高效且质量可控）：
+   - HIGH/MEDIUM 核心项：主会话亲自修（安全敏感逻辑，上下文可控）
+   - LOW 项：批量委派 worker 并行修（2-3 个 worker 按模块分组），每个 worker 的 prompt 给精确的 文件:行号 + 修复方案 + 回归测试要求 + 输出格式约束（每项一行、总输出≤1500 字）；worker 间文件不重叠防冲突
+   - **worker 修复报告不可全信**：主会话抽查关键 diff（每个 worker 抽 2-4 处：外部句柄承接/状态迁移/边界条件），确认与方案一致
+3. 每个修复点**至少一个回归测试**：优先补在对应扩展现有测试文件；测试要能捕获旧行为（修复前先跑一遍确认失败）
+4. 行为/语义变化的修复同步更新 README/CHANGELOG（有维护惯例的扩展，如 subagent/plan-mode/pi-web-search 有 CHANGELOG）；代码注释与实现矛盾的一并更正
+5. 全量回归：对应扩展 vitest + tsc + 注册面/conflict-check（`bash scripts/test-all.sh`）；新测试文件要进仓库而非临时验证；全量回归同样 tmux_run 后台跑（禁 tmux_wait，见第 2 步）
+6. **修复逐项销账**：对照审计报告清单逐项核对修复状态（2026-08-15 教训：多任务同文件合并完成时漏更新 todo 状态，#5 残留待办行被用户发现）；全部完成后 todo delete 归档清除 TUI 展示
+7. 提交推送：按仓库惯例分离提交（如代码修复 / memory/entries.json 记忆增量分开）；push 前确认 remote 无凭证 token；SSH remote 直接推
 
 ## 分级报告格式
 
@@ -157,6 +165,7 @@ bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
    - compacted=true 频率高 → 检查 pi-context 压缩配置
 3. **会话体积**：会话 jsonl 大小 + 消息数（对比历史会话，异常膨胀提示上下文失控）
 4. **注入块**（适用性检查）：注入内容无时间戳/精确数值（缓存友好）。注意实测（2026-08-14）：注入在请求时生成、**不落盘会话文件**时，`grep -c pi-memory-injection <会话文件>` 只能命中工具参数文本，计数无意义——改用检查项 2 的缓存命中率反证注入稳定性；仅当会话文件中可见注入 customType 标记（落盘环境）时才用 grep 计数（应≈请求轮数）
+   - **内容质量抽查**（2026-08-15 实战发现三类残留）：① 重复摘要（同 sessionId 多条历史摘要均注入）；② 空摘要（"开场问候无实质内容""无可提取"类仍在注入）；③ 硬截断条目（超长内容被切半如"跨""用 readlink "）。抽查 memory/summaries.json 与注入块构建逻辑，确认是否有去重/空摘要过滤/截断策略
 5. **日志与残留**：`ls -lt logs/` 查错误；`logs/tmux/` 残留日志（测试遗留可清）；`tmux_status` 活动会话
 6. **后台任务**：`crontab -l` 中 pi-cron.sh；watchdog 状态文件（`agent/.pi-autopilot-state.json` 存在 = 触发过）
 7. **真实运行观察（keyless snapshot 替代，2026-08-14 沉淀）**：mock 测试发现不了缓存/注入/状态流问题（本次 72K 重发就是 mock 全绿+真实运行才暴露的）。做法：实际触发一轮关键路径操作并观察行为：
