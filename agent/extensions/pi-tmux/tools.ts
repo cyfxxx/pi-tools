@@ -59,11 +59,17 @@ async function requireTmux(cfg: TmuxConfig): Promise<TmuxOpts | { error: ReturnT
 export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): CompletionWatcher {
   // 完成自动唤醒：tmux_run 启动会话后轮询，会话结束即 sendMessage 触发新回合
   // （风险：探测失败保守判存活防误报；通知失败静默不中断）
+  // opts 缓存：轮询每 5s 一次，若每次 re-spawn `tmux -V` 检查，长任务（小时级）
+  // 会 spawn 数百次子进程；tmux 配置在会话生命周期内不变，首次解析后复用
+  let cachedOpts: TmuxOpts | null = null
   const watcher = createCompletionWatcher({
     hasSession: async (name: string) => {
-      const maybe = await requireTmux(cfg)
-      if ('error' in maybe) return true // tmux 探测失败：保守认为存活，避免误报完成
-      return hasSession(maybe, name)
+      if (!cachedOpts) {
+        const maybe = await requireTmux(cfg)
+        if ('error' in maybe) return true // tmux 探测失败：保守认为存活，避免误报完成
+        cachedOpts = maybe
+      }
+      return hasSession(cachedOpts, name)
     },
     notify: async (text: string) => {
       await pi.sendMessage(
