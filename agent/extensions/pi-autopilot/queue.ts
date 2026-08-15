@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
-import { readTasks, writeTasks } from './storage.ts'
+import { readTasks, writeTasks, withStoreLock } from './storage.ts'
 import type { Task } from './types.ts'
 import { CRASH_FILE } from './types.ts'
 
@@ -10,14 +10,17 @@ const AGENT_DIR = getAgentDir()
 // A2: 崩溃恢复重注入次数上限（借鉴 swarmclaw orphan-recovery）
 export const MAX_RECOVERY_ATTEMPTS = 3
 
-// 标记任务已注入（会话中断时用于恢复）
+// 标记任务已注入（会话中断时用于恢复）。
+// 与 updateTaskAfterRun//schedule 编辑等写路径互斥（withStoreLock），避免陈旧副本覆盖。
 export async function markPendingInjected(id: string, pending: boolean = true): Promise<void> {
-  const store = await readTasks()
-  const task = store.tasks.find(t => t.id === id)
-  if (!task) return
-  task.pendingInject = pending
-  task.updatedAt = new Date().toISOString()
-  await writeTasks(store)
+  await withStoreLock(async () => {
+    const store = await readTasks()
+    const task = store.tasks.find(t => t.id === id)
+    if (!task) return
+    task.pendingInject = pending
+    task.updatedAt = new Date().toISOString()
+    await writeTasks(store)
+  })
 }
 
 export async function clearPending(id: string): Promise<void> {
@@ -26,16 +29,18 @@ export async function clearPending(id: string): Promise<void> {
 
 /** 清除所有任务的 pendingInject 标记（主会话空闲=注入任务已完成）。 */
 export async function clearAllPending(): Promise<void> {
-  const store = await readTasks()
-  let changed = false
-  for (const task of store.tasks) {
-    if (task.pendingInject) {
-      task.pendingInject = false
-      task.updatedAt = new Date().toISOString()
-      changed = true
+  await withStoreLock(async () => {
+    const store = await readTasks()
+    let changed = false
+    for (const task of store.tasks) {
+      if (task.pendingInject) {
+        task.pendingInject = false
+        task.updatedAt = new Date().toISOString()
+        changed = true
+      }
     }
-  }
-  if (changed) await writeTasks(store)
+    if (changed) await writeTasks(store)
+  })
 }
 
 // 收集待恢复注入的任务

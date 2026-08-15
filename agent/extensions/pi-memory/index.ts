@@ -5,6 +5,7 @@ import {
   loadSummaries,
   saveNotes,
   activeEntries,
+  autoReclaim,
   migrateFromCtxLite,
 } from './storage.ts'
 import { registerTools } from './tools.ts'
@@ -57,6 +58,8 @@ export default function (pi: ExtensionAPI): void {
   // 仅重发注入块本身（≤500 token），历史全命中。context hook 过滤旧注入防累积。
   pi.on('before_agent_start', async (_event, _ctx) => {
     const entries = loadEntries()
+    // 自动回收 deleted 软删条目（条目数超阈值时；无界增长审计修复）
+    autoReclaim(entries)
     const summaries = loadSummaries()
     const { block, entries: n, summaries: m } = buildInjectionBlock(entries, summaries)
     if (n === 0 && m === 0) return undefined

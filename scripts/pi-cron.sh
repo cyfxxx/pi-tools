@@ -173,7 +173,7 @@ def compute_next(task_type, schedule, last_run):
     return None
 
 try:
-    with open('$TASKS_FILE') as f:
+    with open(sys.argv[1]) as f:
         data = json.load(f)
 except (FileNotFoundError, json.JSONDecodeError):
     sys.exit(0)
@@ -198,12 +198,17 @@ if not due: sys.exit(0)
 
 due.sort(key=lambda x: x.get('nextRun', ''))
 for t in due:
-    t['_next_run'] = compute_next(t.get('type',''), t.get('schedule',''), t.get('lastRun','') or '')
+    try:
+        t['_next_run'] = compute_next(t.get('type',''), t.get('schedule',''), t.get('lastRun','') or '')
+    except Exception as e:
+        # 单任务 schedule 非法（如 'abc * * * *'）不能中断整个批次，只跳过该任务
+        print('[pi-cron] 任务 schedule 计算异常，跳过: ' + str(t.get('name', '?')) + ' (' + str(e) + ')', file=sys.stderr)
+        continue
     if not t['_next_run']:
         print('[pi-cron] 跳过无法计算下次运行的任务: ' + str(t.get('name', '?')), file=sys.stderr)
         continue
     print(json.dumps(t))
-"
+" "$1"
 }
 
 # ── 更新任务状态 ────────────────────────────────────
@@ -214,49 +219,53 @@ update_task() {
   local next_run="$4"
   local duration_ms="$5"
 
+  # 数据一律经 sys.argv 传入（直插 python 源码时，含引号/命令替换的任务数据
+  # 会语法错误或注入任意命令；审计实测：task_id 含 `'; os.system(...)'` 可执行）
   python3 -c "
-import json, sys
+import json, sys, os
 from datetime import datetime, timezone, timedelta
 
-with open('$TASKS_FILE') as f:
+task_id, result, output_file, next_run, duration_ms = sys.argv[1:6]
+tasks_file = sys.argv[6]
+with open(tasks_file) as f:
     data = json.load(f)
 
 output_text = ''
 try:
-    with open('$output_file') as f:
+    with open(output_file) as f:
         output_text = f.read()[:1000]
 except:
     pass
 
 now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
 for i, t in enumerate(data.get('tasks', [])):
-    if t['id'] != '$task_id':
+    if t['id'] != task_id:
         continue
     history = t.get('history') or []
     entry = {
         'time': now,
-        'result': '$result',
+        'result': result,
         'output': output_text,
     }
-    if '$duration_ms':
-        entry['durationMs'] = int('$duration_ms')
+    if duration_ms:
+        entry['durationMs'] = int(duration_ms)
     history.append(entry)
     if len(history) > 10:
         history = history[-10:]
     t['history'] = history
     t['lastRun'] = now
-    t['lastResult'] = '$result'
+    t['lastResult'] = result
     t['lastOutput'] = output_text
     t['updatedAt'] = now
 
-    if '$result' == 'success':
+    if result == 'success':
         t['failCount'] = 0
         # once 任务成功后自动移除
         if t.get('type') == 'once':
             data['tasks'].pop(i)
             break
         t['runCount'] = t.get('runCount', 0) + 1
-        t['nextRun'] = '$next_run' if '$next_run' else None
+        t['nextRun'] = next_run if next_run else None
     else:
         t['failCount'] = t.get('failCount', 0) + 1
         retries = t.get('retries', 0)
@@ -265,15 +274,14 @@ for i, t in enumerate(data.get('tasks', [])):
             t['nextRun'] = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat().replace('+00:00', 'Z')
         else:
             t['runCount'] = t.get('runCount', 0) + 1
-            t['nextRun'] = '$next_run' if '$next_run' else None
+            t['nextRun'] = next_run if next_run else None
     break
 
-tmp = '$TASKS_FILE.tmp.$$'
+tmp = tasks_file + '.tmp.' + str(os.getpid())
 with open(tmp, 'w') as f:
     json.dump(data, f, indent=2)
-import os
-os.rename(tmp, '$TASKS_FILE')
-"
+os.rename(tmp, tasks_file)
+" "$task_id" "$result" "$output_file" "$next_run" "$duration_ms" "$TASKS_FILE"
 }
 
 # ── 记录执行日志 ────────────────────────────────────
@@ -326,23 +334,31 @@ main() {
     exit 0  # 锁被其他进程持有
   fi
 
-  # 读取 settings（通知配置），环境变量可覆盖
+  # 读取 settings（通知配置），环境变量可覆盖。$() 捕获原文，无 eval 二次求值
+  # （旧实现 eval "$(python3 repr())"：值含单引号+命令替换时 repr 切双引号会被执行）
   SETTINGS_MAIL_TO=""
   SETTINGS_WEBHOOK=""
   if [ -f "$TASKS_FILE" ]; then
-    eval "$(python3 -c "
-import json
+    SETTINGS_MAIL_TO=$(python3 -c "
+import json, sys
 try:
-    s = json.load(open('$TASKS_FILE')).get('settings', {})
+    s = json.load(open(sys.argv[1])).get('settings', {})
 except Exception:
     s = {}
-print('SETTINGS_MAIL_TO=' + repr(s.get('mailTo', '') or ''))
-print('SETTINGS_WEBHOOK=' + repr(s.get('webhookUrl', '') or ''))
-")"
+print(s.get('mailTo', '') or '')
+" "$TASKS_FILE")
+    SETTINGS_WEBHOOK=$(python3 -c "
+import json, sys
+try:
+    s = json.load(open(sys.argv[1])).get('settings', {})
+except Exception:
+    s = {}
+print(s.get('webhookUrl', '') or '')
+" "$TASKS_FILE")
   fi
 
   # 查找到期任务
-  DUE_JSON=$(find_due_tasks)
+  DUE_JSON=$(find_due_tasks "$TASKS_FILE")
   if [ -z "$DUE_JSON" ]; then
     release_lock
     exit 0

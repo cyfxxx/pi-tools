@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import {
-  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun,
+  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun, withStoreLock,
 } from './storage.ts'
 import type { Task } from './types.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
@@ -76,17 +76,21 @@ export class SessionScheduler {
           await sendWebhook(task, 'skipped', `预算限制: ${b.reason}`)
           // 预算拦截不是任务失败：推进 nextRun 防止每 tick 重复触发（否则每 30s
           // 追加一条 failed 遥测，todayRuns 越拦越满，锁到次日零点）；不记 failed。
-          const store = await readTasks()
-          const t = store.tasks.find(x => x.id === task.id)
-          if (t) {
-            let next = computeNextRun(t)
-            if (!next || new Date(next).getTime() <= Date.now()) {
-              // once/过期调度：推到 1 小时后重试（预算恢复后自动补跑）
-              next = new Date(Date.now() + 3600 * 1000).toISOString()
+          // 读写经 withStoreLock 串行化：与 updateTaskAfterRun//schedule 编辑并发时
+          // 不得用陈旧副本覆盖（否则丢更新/复活已删任务）。
+          await withStoreLock(async () => {
+            const store = await readTasks()
+            const t = store.tasks.find(x => x.id === task.id)
+            if (t) {
+              let next = computeNextRun(t)
+              if (!next || new Date(next).getTime() <= Date.now()) {
+                // once/过期调度：推到 1 小时后重试（预算恢复后自动补跑）
+                next = new Date(Date.now() + 3600 * 1000).toISOString()
+              }
+              t.nextRun = next
+              await writeTasks(store)
             }
-            t.nextRun = next
-            await writeTasks(store)
-          }
+          })
           return
         }
       }

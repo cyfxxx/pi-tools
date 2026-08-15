@@ -36,6 +36,59 @@ const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4; // 云端模型批量并行上限
 const LOCAL_CONCURRENCY = 1; // 本地模型串行：多进程会竞争 GPU 内存
 
+/** 写入类工具：readonly agent spawn 时强制移除（只读隔离的硬约束） */
+const WRITABLE_TOOLS = new Set(["bash", "edit", "write"]);
+
+/** readonly agent 的强制只读系统提示（与工具过滤双保险） */
+const READONLY_AGENT_HINT = `
+
+---
+[强制只读模式] 本代理以只读模式运行：禁止创建、修改、删除任何文件，禁止执行写入性命令与网络上传操作。仅允许使用读取类工具（read/grep/find/ls 等）探索与验证。如需写入操作，在报告中说明需求，由主会话决定。
+`;
+
+/**
+ * readonly agent 的工具集收紧：过滤写入类工具；过滤后为空时回退最小只读集。
+ * 纯函数便于单测（plan-mode 只校验 agent 名，子进程 --no-extensions 无扩展拦截，
+ * 只读隔离必须在此层硬保证）。
+ */
+export function resolveAgentTools(agent: { readonly?: boolean; tools?: string[] }): string[] | undefined {
+	if (!agent.readonly) return agent.tools;
+	const filtered = (agent.tools ?? []).filter((t) => !WRITABLE_TOOLS.has(t));
+	return filtered.length > 0 ? filtered : ["read", "ls"];
+}
+
+/** readonly agent 的系统提示前置只读声明 */
+export function buildAgentPrompt(agent: { readonly?: boolean; systemPrompt: string }): string {
+	return agent.readonly ? READONLY_AGENT_HINT + agent.systemPrompt : agent.systemPrompt;
+}
+
+/**
+ * SIGTERM→SIGKILL 终止链：SIGTERM 后 delayMs 无条件升级 SIGKILL（proc.killed 在
+ * kill() 发送成功后即为 true，不代表进程已退出，不能用它判断）。close 事件
+ * 清除升级定时器。返回清理函数。
+ */
+export function scheduleKillChain(
+	proc: { kill: (signal?: NodeJS.Signals | number) => boolean; once?: (ev: string, fn: () => void) => void },
+	killDelayMs = 5000,
+): () => void {
+	try {
+		proc.kill("SIGTERM");
+	} catch {
+		return () => {};
+	}
+	const killTimer = setTimeout(() => {
+		try {
+			proc.kill("SIGKILL");
+		} catch {
+			/* 已退出 */
+		}
+	}, killDelayMs);
+	killTimer.unref?.();
+	const clear = () => clearTimeout(killTimer);
+	proc.once?.("close", clear);
+	return clear;
+}
+
 /**
  * 判断 provider 是否为本地推理服务（ollama/localhost/lmstudio/vllm 等）。
  * 本地模型资源有限且多进程会争抢 GPU/内存，须串行；云端模型可批量并行。
@@ -358,7 +411,8 @@ async function runSubprocessAgent(
 	const args: string[] = ["--mode", "json", "-p", "--no-session", "--no-extensions"];
 	const resolvedModel = resolveModelId(agent.model, currentModel);
 	if (resolvedModel) args.push("--model", resolvedModel);
-	if (agent.tools && agent.tools.length > 0) args.push("--tools", agent.tools.join(","));
+	const effectiveTools = resolveAgentTools(agent);
+	if (effectiveTools && effectiveTools.length > 0) args.push("--tools", effectiveTools.join(","));
 
 	let tmpPromptDir: string | null = null;
 	let tmpPromptPath: string | null = null;
@@ -386,7 +440,7 @@ async function runSubprocessAgent(
 
 	try {
 		if (agent.systemPrompt.trim()) {
-			const tmp = await writePromptToTempFile(agent.name, agent.systemPrompt);
+			const tmp = await writePromptToTempFile(agent.name, buildAgentPrompt(agent));
 			tmpPromptDir = tmp.dir;
 			tmpPromptPath = tmp.filePath;
 			args.push("--append-system-prompt", tmpPromptPath);
@@ -407,10 +461,7 @@ async function runSubprocessAgent(
 			// SIGTERM→SIGKILL 链终止；超时按失败结束（exitCode 124 语义）。
 			const totalTimer = setTimeout(() => {
 				wasAborted = true;
-				proc.kill("SIGTERM");
-				setTimeout(() => {
-					try { if (!proc.killed) proc.kill("SIGKILL") } catch { /* 已退出 */ }
-				}, 5000);
+				scheduleKillChain(proc);
 			}, 30 * 60 * 1000);
 			totalTimer.unref?.();
 			let buffer = "";
@@ -481,10 +532,7 @@ async function runSubprocessAgent(
 			if (signal) {
 				const killProc = () => {
 					wasAborted = true;
-					proc.kill("SIGTERM");
-					setTimeout(() => {
-						if (!proc.killed) proc.kill("SIGKILL");
-					}, 5000);
+					scheduleKillChain(proc);
 				};
 				if (signal.aborted) killProc();
 				else signal.addEventListener("abort", killProc, { once: true });

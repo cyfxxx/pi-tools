@@ -288,9 +288,31 @@ interface TrackKey {
 
 const tracker = new Map<string, TrackKey>()
 
+// 指纹持久化（审计发现）：tracker 仅存内存，重启后失效 → 同一段对话在
+// compact/shutdown 双路径被重复提取（实测 pending 目录出现多个同 sessionId 残留）。
+// 落盘后跨进程/重启幂等。读-改-写合并防提取子进程并发覆盖。
+const TRACKER_FILE = join(DATA_DIR, 'extract-tracker.json')
+let diskTrackerCache: Record<string, { fingerprint: number; lastTs: number }> | null = null
+function loadDiskTracker(): Record<string, { fingerprint: number; lastTs: number }> {
+  if (diskTrackerCache) return diskTrackerCache
+  try {
+    const parsed = JSON.parse(readFileSync(TRACKER_FILE, 'utf-8'))
+    if (parsed && typeof parsed === 'object') diskTrackerCache = parsed
+  } catch {
+    /* 首次运行或损坏：重建 */
+  }
+  return (diskTrackerCache ??= {})
+}
+
+function diskHit(sessionId: string): TrackKey | undefined {
+  const rec = loadDiskTracker()[sessionId || 'global']
+  if (!rec) return undefined
+  return { sessionId: sessionId || 'global', fingerprint: rec.fingerprint }
+}
+
 export function shouldExtract(sessionId: string, messageCount: number, cooldownMs = 60_000): boolean {
   const key = sessionId || 'global'
-  const prev = tracker.get(key)
+  const prev = tracker.get(key) ?? diskHit(key)
   const now = Date.now()
   if (!prev) return true
   // 同指纹且冷却期内 → 跳过（幂等：同会话同消息数重复触发不重复提取）
@@ -300,13 +322,23 @@ export function shouldExtract(sessionId: string, messageCount: number, cooldownM
 
 const lastTs = new Map<string, number>()
 export function lastExtractTs(sessionId: string): number {
-  return lastTs.get(sessionId || 'global') ?? 0
+  const key = sessionId || 'global'
+  const mem = lastTs.get(key)
+  if (mem) return mem
+  return loadDiskTracker()[key]?.lastTs ?? 0
 }
 
 export function markExtracted(sessionId: string, messageCount: number): void {
   const key = sessionId || 'global'
   tracker.set(key, { sessionId, fingerprint: messageCount })
   lastTs.set(key, Date.now())
+  const disk = loadDiskTracker()
+  disk[key] = { fingerprint: messageCount, lastTs: Date.now() }
+  try {
+    writeFileSync(TRACKER_FILE, JSON.stringify(disk), 'utf-8')
+  } catch {
+    /* 只读文件系统等：降级为仅内存指纹 */
+  }
 }
 
 // ── 退出期提取队列（延迟到下次启动消费） ──

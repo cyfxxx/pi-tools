@@ -198,6 +198,31 @@ describe('storage: prune + stats', () => {
     expect(entries.map(e => e.title)).toEqual(['warm'])
   })
 
+  it('autoReclaim 超阈值时回收 deleted 条目且落盘', async () => {
+    const { loadEntries, saveEntries, autoReclaim } = await import('../storage.ts')
+    const many = Array.from({ length: 7 }, (_, i) =>
+      makeEntry({ title: `n${i}`, deleted: i >= 5 }),
+    )
+    saveEntries(many)
+    const result = autoReclaim(loadEntries(), 5)
+    expect(result).not.toBeNull()
+    expect(result!.map(e => e.title)).toEqual(['n0', 'n1', 'n2', 'n3', 'n4'])
+    // 已落盘：再次加载仍为回收后状态
+    expect(loadEntries().map(e => e.title)).toEqual(['n0', 'n1', 'n2', 'n3', 'n4'])
+  })
+
+  it('autoReclaim 未超阈值或无 deleted 条目时不触发', async () => {
+    const { loadEntries, saveEntries, autoReclaim } = await import('../storage.ts')
+    const few = Array.from({ length: 3 }, (_, i) => makeEntry({ title: `n${i}` }))
+    saveEntries(few)
+    expect(autoReclaim(loadEntries(), 5)).toBeNull()
+    const allDeleted = Array.from({ length: 6 }, (_, i) =>
+      makeEntry({ title: `d${i}`, deleted: false }),
+    )
+    saveEntries(allDeleted)
+    expect(autoReclaim(loadEntries(), 5)).toBeNull()
+  })
+
   it('getStats counts active/superseded/summaries', async () => {
     const { loadEntries, saveEntries, getStats } = await import('../storage.ts')
     const now = new Date().toISOString()

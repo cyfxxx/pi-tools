@@ -54,6 +54,12 @@ RO_HINT="[后台任务] 只读模式：禁止修改/创建/删除文件，禁止
 sess() { echo "${SESS_PREFIX}$1"; }
 log() { echo "[pi-bg] $*"; }
 
+# 任务名校验：name 用于 tmux 会话名与日志路径（$LOG_DIR/$name.log），未净化时
+# 含 ../ 可路径穿越，含 ' 可在 tmux 命令串中注入（审计实测）。仅允许字母数字._-
+check_name() {
+  [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { log "非法任务名 \"$1\"（仅字母数字 . _ -，且不以 - 开头）"; exit 1; }
+}
+
 usage() {
   sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
 }
@@ -65,6 +71,7 @@ cmd_start() {
   [ "${1:-}" = "--cwd" ] && { cwd="$2"; shift 2; }
   [ $# -lt 2 ] && { usage; exit 1; }
   local name="$1"; shift
+  check_name "$name"
   local prompt="$*"
   local s=$(sess "$name") lf="$LOG_DIR/$name.log"
   if tmux has-session -t "$s" 2>/dev/null; then
@@ -77,9 +84,13 @@ cmd_start() {
 
 $prompt"
   # prompt 经 base64 传输（避免 shell 转义）；解码后经 stdin 合并进 -p（usage.md: print 模式读取 stdin）
-  local b64
+  local b64 pi_bin_q lf_q
   b64=$(python3 -c "import base64,sys;print(base64.b64encode(sys.argv[1].encode('utf-8')).decode())" "$prompt")
-  tmux new-session -d -s "$s" "cd '$cwd' && echo '$b64' | python3 -c \"import base64,sys;sys.stdout.buffer.write(base64.b64decode(sys.stdin.read().strip()))\" | '$PI_BIN' $args > '$lf' 2>&1; echo EXIT=\$? >> '$lf'" || { log "tmux new-session 失败"; exit 1; }
+  # PI_BIN/日志路径经 %q 转义后拼入 tmux 命令串；cwd 用 tmux -c 指定（独立 argv），
+  # 不再 cd 拼串（含 ' 的路径可注入，审计实测）
+  pi_bin_q=$(printf %q "$PI_BIN")
+  lf_q=$(printf %q "$lf")
+  tmux new-session -d -s "$s" -c "$cwd" "echo '$b64' | python3 -c \"import base64,sys;sys.stdout.buffer.write(base64.b64decode(sys.stdin.read().strip()))\" | $pi_bin_q $args > $lf_q 2>&1; echo EXIT=\$? >> $lf_q" || { log "tmux new-session 失败"; exit 1; }
   log "已启动后台任务 \"$name\"（$([ "$rw" -eq 0 ] && echo 只读 || echo 完整工具集)）
   日志: $lf
   状态: pi-bg.sh status $name"
@@ -92,6 +103,7 @@ cmd_rpc() {
   [ "${1:-}" = "--cwd" ] && { cwd="$2"; shift 2; }
   [ $# -lt 1 ] && { usage; exit 1; }
   local name="$1"
+  check_name "$name"
   local s=$(sess "$name") lf="$LOG_DIR/$name.log"
   if tmux has-session -t "$s" 2>/dev/null; then
     log "任务 \"$name\" 已在运行（会话 $s）。"
@@ -99,7 +111,10 @@ cmd_rpc() {
   fi
   local args="--no-session --no-extensions --mode rpc"
   [ "$rw" -eq 0 ] && args="$args --tools $RO_TOOLS"
-  tmux new-session -d -s "$s" "cd '$cwd' && '$PI_BIN' $args > '$lf' 2>&1" || { log "tmux new-session 失败"; exit 1; }
+  local pi_bin_q lf_q
+  pi_bin_q=$(printf %q "$PI_BIN")
+  lf_q=$(printf %q "$lf")
+  tmux new-session -d -s "$s" -c "$cwd" "$pi_bin_q $args > $lf_q 2>&1" || { log "tmux new-session 失败"; exit 1; }
   log "已启动 RPC 任务 \"$name\"（$([ "$rw" -eq 0 ] && echo 只读 || echo 完整工具集)）
   注入指令: pi-bg.sh prompt|steer $name \"<消息>\"
   日志: $lf"
@@ -108,6 +123,7 @@ cmd_rpc() {
 # ── RPC 注入（prompt / steer） ──────────────────────────────────
 rpc_send() {
   local type="$1" name="$2" msg="$3"
+  check_name "$name"
   local s=$(sess "$name")
   if ! tmux has-session -t "$s" 2>/dev/null; then
     log "任务 \"$name\" 未在运行。"
@@ -125,6 +141,7 @@ rpc_send() {
 # ── 状态 / 日志 / 停止 / 列表 ───────────────────────────────────
 cmd_status() {
   local name="${1:-}"
+  [ -n "$name" ] && check_name "$name"
   if [ -z "$name" ]; then
     for lf in "$LOG_DIR"/*.log; do
       [ -e "$lf" ] || continue
@@ -153,12 +170,14 @@ cmd_status() {
 cmd_log() {
   local name="${1:-}" lines="${2:-50}"
   [ -z "$name" ] && { usage; exit 1; }
+  check_name "$name"
   tail -n "$lines" "$LOG_DIR/$name.log" 2>/dev/null || log "（无日志 $LOG_DIR/$name.log）"
 }
 
 cmd_stop() {
   local name="${1:-}"
   [ -z "$name" ] && { usage; exit 1; }
+  check_name "$name"
   local s=$(sess "$name")
   if tmux has-session -t "$s" 2>/dev/null; then
     tmux kill-session -t "$s"

@@ -98,10 +98,15 @@ export_key() {
 
 add_key() {
   local key="$1"
+  # 拒绝换行/回车：authorized_keys 一行一公钥，换行可注入额外授权行
+  # （install 时会传播到所有互连设备，审计实测原实现仅校验 ssh- 前缀）
   case "$key" in
-    ssh-*) ;;
-    *) err "无效公钥（应为 ssh-ed25519 AAAA... 格式）"; return 1 ;;
+    *$'\n'*|*$'\r'*) err "公钥含换行，拒绝"; return 1 ;;
   esac
+  if ! [[ "$key" =~ ^ssh-(ed25519|rsa|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521)[[:space:]]+AAAA[A-Za-z0-9+/]+={0,2}([[:space:]]+[^[:space:]]+)?$ ]]; then
+    err "无效公钥（应为 ssh-ed25519 AAAA... [comment] 格式）"
+    return 1
+  fi
   [ -f "$KEYS_FILE" ] || { err "仓库公钥合集缺失: $KEYS_FILE（需在仓库目录 ~/.pi 下执行）"; return 1; }
   if grep -qF "$key" "$KEYS_FILE"; then
     info "该公钥已在合集中，跳过"
