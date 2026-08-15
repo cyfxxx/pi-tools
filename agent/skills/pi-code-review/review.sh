@@ -85,7 +85,7 @@ if [ "$MODE" = "selfcheck" ]; then
     RESP=$(curl -s --max-time 15 "https://api.github.com/repos/alibaba/open-code-review/releases/latest" 2>/dev/null)
     LATEST=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('tag_name','?'))" 2>/dev/null || echo "?")
     if [ "$LATEST" != "?" ]; then
-      BASELINE="v1.9.2"  # 2026-08-12 核对
+      BASELINE="v1.9.3"  # 2026-08-15 核对：v1.9.3 均为 Go 核心/Action 功能变更，无涉及技能审查规则
       if [ "$LATEST" != "$BASELINE" ]; then
         warn "参考项目已更新: $BASELINE -> $LATEST -> 查看 https://github.com/alibaba/open-code-review/releases 确认是否吸收新能力"
       else
