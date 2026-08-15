@@ -20,7 +20,7 @@ export function truncateContent(text: string): string {
 }
 
 /** 空摘要过滤：fullText 与 decisions 均空，或文案自认无可提取的摘要不注入 */
-const EMPTY_SUMMARY_PATTERN = /无可提取|无实质内容|无需衔接|没有可提取|无任务执行|无有效信息/
+const EMPTY_SUMMARY_PATTERN = /无可提取|无实质内容|无需衔接|没有可提取|未提取到内容|无任务执行|无有效信息|无有价值信息/
 export function isSubstantiveSummary(s: SummaryEntry): boolean {
   const text = (s.fullText || s.decisions?.join('; ') || '').trim()
   if (!text) return false
