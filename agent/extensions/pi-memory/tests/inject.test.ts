@@ -92,6 +92,45 @@ describe('inject: buildInjectionBlock', () => {
     expect(a.block).toContain('> pi-memory-injection')
     expect(a.block).not.toMatch(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/)
   })
+
+  it('超长内容带 [truncated] 标记截断（不再硬切残句）', async () => {
+    const { buildInjectionBlock, CONTENT_TOKEN_CAP } = await import('../inject.ts')
+    const longContent = '这是一段非常长的内容。'.repeat(60)
+    const result = buildInjectionBlock([makeEntry({ title: '长条目', content: longContent })], [], 2000)
+    expect(result.block).toContain('[truncated')
+    expect(result.block.length).toBeLessThan(longContent.length)
+  })
+
+  it('短内容不加截断标记', async () => {
+    const { buildInjectionBlock } = await import('../inject.ts')
+    const result = buildInjectionBlock([makeEntry({ title: '短条目', content: '短内容' })], [], 2000)
+    expect(result.block).not.toContain('[truncated')
+  })
+
+  it('空摘要（无可提取类）不注入', async () => {
+    const { buildInjectionBlock } = await import('../inject.ts')
+    const empty = makeSummary({
+      title: '开场问候无实质内容',
+      fullText: '本会话仅有问候，无可提取的长期记忆，无需衔接',
+    })
+    const substantive = makeSummary({ title: '有效摘要', fullText: '用户偏好：使用 Shell 管理', decisions: ['d1'] })
+    const result = buildInjectionBlock([], [empty, substantive], 500)
+    expect(result.summaries).toBe(1)
+    expect(result.block).toContain('有效摘要')
+    expect(result.block).not.toContain('开场问候')
+  })
+
+  it('摘要按 ts 排序取最新而非数组插入序', async () => {
+    const { buildInjectionBlock } = await import('../inject.ts')
+    const older = makeSummary({ title: '旧摘要-不应出现', ts: '2026-01-01T00:00:00Z', fullText: '旧内容' })
+    const newer = makeSummary({ title: '新摘要', ts: '2026-02-01T00:00:00Z', fullText: '新内容' })
+    const middle = makeSummary({ title: '中摘要', ts: '2026-01-15T00:00:00Z', fullText: '中内容' })
+    // 数组序打乱（旧在尾）——排序后应取 new/mid
+    const result = buildInjectionBlock([], [newer, older, middle], 2000)
+    expect(result.block).toContain('新摘要')
+    expect(result.block).toContain('中摘要')
+    expect(result.block).not.toContain('旧摘要-不应出现')
+  })
 })
 
 describe('buildInjectionBlock 环境过滤', () => {

@@ -1,11 +1,34 @@
 import type { MemoryEntry, SummaryEntry } from './types.ts'
 import { activeEntries } from './storage.ts'
 import { qualityScore, mmrDiversify, roundRobinBySession, buildDoc } from './retrieval.ts'
-import { estimateTokens } from '../../lib/context-budget.ts'
+import { estimateTokens, truncateByTokens } from '../../lib/context-budget.ts'
 import { detectEnvironment, isEnvVisible, type RuntimeEnv } from './env.ts'
 
 export const INJECT_TAG = 'pi-memory-injection'
 export const DEFAULT_BUDGET_TOKENS = 500
+
+/**
+ * 条目/摘要内容截断：带标记的 token 预算截断（复用 lib truncateByTokens）。
+ * 旧实现 slice(0,200) 硬切 UTF-16 码元：无边界无标记，emoji 代理对被切断、
+ * 长条目以半截内容注入（审计实测注入块出现"跨""用 readlink "等残句）。
+ * 200 码元 ≈ 中文 200 token / 英文 ~50 token，与注入预算不匹配，改用 80 token
+ * 上限（约 160 汉字/80 英文词）且超出时带 [truncated] 标记。
+ */
+export const CONTENT_TOKEN_CAP = 80
+export function truncateContent(text: string): string {
+  return truncateByTokens(text, CONTENT_TOKEN_CAP)
+}
+
+/** 空摘要过滤：fullText 与 decisions 均空，或文案自认无可提取的摘要不注入 */
+const EMPTY_SUMMARY_PATTERN = /无可提取|无实质内容|无需衔接|没有可提取|无任务执行|无有效信息/
+export function isSubstantiveSummary(s: SummaryEntry): boolean {
+  const text = (s.fullText || s.decisions?.join('; ') || '').trim()
+  if (!text) return false
+  if (EMPTY_SUMMARY_PATTERN.test(s.title + text) && !s.decisions?.length && !s.facts?.length && !s.prefs?.length && !s.lessons?.length) {
+    return false
+  }
+  return true
+}
 
 export function getBudget(): number {
   const env = process.env.PI_MEMORY_INJECT_TOKENS
@@ -53,7 +76,7 @@ export function buildInjectionBlock(
     const docMap = new Map(scored.map(x => [x.e.id, buildDoc(x.e)]))
     const ranked = roundRobinBySession(mmrDiversify(scored, maxRank, 0.7, docMap), maxRank)
     for (const { e } of ranked) {
-      const item = `- [${e.category}] ${e.title}: ${e.content.slice(0, 200)}`
+      const item = `- [${e.category}] ${e.title}: ${truncateContent(e.content)}`
       const cost = estimateTokens(item + '\n')
       if (used + cost > budgetTokens && injectedEntries > 0) break
       if (used + cost > budgetTokens * 2) break
@@ -64,10 +87,14 @@ export function buildInjectionBlock(
     }
   }
 
-  // L2 最近会话衔接（最多 2 条摘要）
-  const recent = summaries.slice(-2).reverse()
+  // L2 最近会话衔接（最多 2 条摘要；按 ts 排序取最新，不依赖数组插入序——
+  // pending 延迟提取可乱序 append，slice(-2) 取到的未必是最近摘要）
+  const recent = summaries
+    .filter(isSubstantiveSummary)
+    .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
+    .slice(0, 2)
   for (const s of recent) {
-    const item = `- 会话「${s.title}」: ${(s.fullText || s.decisions.join('; ')).slice(0, 200)}`
+    const item = `- 会话「${s.title}」: ${truncateContent(s.fullText || s.decisions.join('; '))}`
     const cost = estimateTokens(item + '\n')
     if (used + cost > budgetTokens && injectedSummaries > 0) break
     lines.push(item)

@@ -566,7 +566,18 @@ async function doExtract(
   }))
   const { applied, skipped } = await mergeCandidates(entries, candidates)
 
-  // 摘要存档
+  // 摘要存档（质量门：无实质内容类摘要不落库——审计发现 4 条"开场问候无实质
+  // 内容"空摘要进入注入块展示残留；过滤依据：无任何提取物且文案自认无可提取）
+  const emptySummaryPattern = /无可提取|无实质内容|无需衔接|没有可提取|无任务执行|无有效信息/
+  const hasSubstance = result.summary.decisions.length > 0
+    || result.summary.facts.length > 0
+    || result.summary.prefs.length > 0
+    || result.summary.lessons.length > 0
+  const selfAdmitsEmpty = emptySummaryPattern.test(result.summary.title + result.summary.fullText)
+  if (!hasSubstance && selfAdmitsEmpty) {
+    markExtracted(sessionId, opts.messageCount ?? messages.length)
+    return { ok: true, memories: applied.length, skipped: skipped.length }
+  }
   const summary: SummaryEntry = {
     id: randomUUID(),
     sessionId: sessionId === 'unknown' ? null : sessionId,
