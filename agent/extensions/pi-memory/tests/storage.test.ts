@@ -192,8 +192,9 @@ describe('storage: prune + stats', () => {
     const e2 = makeEntry({ title: 'warm', confidence: 0.9 })
     saveEntries([e1, e2])
     const entries = loadEntries()
-    const removed = pruneEntries(entries)
-    expect(removed).toBe(1)
+    const result = pruneEntries(entries)
+    expect(result.removed).toBe(1)
+    expect(result.titles).toEqual(['cold low conf'])
     expect(entries.map(e => e.title)).toEqual(['warm'])
   })
 
