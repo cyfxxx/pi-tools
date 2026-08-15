@@ -8366,10 +8366,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 80,
+      "recurrence": 82,
       "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-15T01:21:36.303Z",
-      "accessedAt": "2026-08-15T01:21:36.303Z",
+      "updatedAt": "2026-08-15T02:11:10.263Z",
+      "accessedAt": "2026-08-15T02:11:10.263Z",
       "observedAt": "2026-08-10T10:02:42.622Z",
       "deleted": false,
       "environments": [
@@ -8808,6 +8808,29 @@
         "all"
       ],
       "observedAt": "2026-08-15T00:06:54.756Z",
+      "deleted": false
+    },
+    {
+      "id": "ffa6f0d0-096f-4ded-b692-b506a6644226",
+      "category": "habit",
+      "title": "行为纪律: tmux_run 后禁止同轮 tmux_wait（三次实战教训）",
+      "content": "tmux_wait 阻塞前台的三次教训：2026-08-14 rebuild 任务连续阻塞 6 分钟 ×2；2026-08-15 全量回归 tmux_wait(until_exit=true) 阻塞 420 秒（命令是 bash test-all.sh; echo EXIT，脚本跑完后 bash 仍存活，tmux 会话不会退出，until_exit 注定等满超时）。根因分析：①\"一轮内完成修复→回归→提交→推送\"的收尾冲动压过流程纪律，把\"依赖结果\"误判成\"必须立即拿结果\"——提交没有时间敏感性，晚几分钟无差别；②until_exit 选择错误：会话不自然退出时必等满超时。改进规则（决策点强制检查）：tmux_run 后同一轮内禁止 tmux_wait，一律下轮 tmux_read 轮询；确需等待时只用 pattern= 匹配具体完成标志且 timeout≤60s，禁用 until_exit 除非命令本身会退出（如 exec 包装）。tmux_run 命令尾部加 ; exec true 让会话自然退出，用 tmux_status 判断完成。",
+      "tags": [
+        "tmux",
+        "discipline",
+        "blocking",
+        "lesson"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-15T01:33:11.852Z",
+      "updatedAt": "2026-08-15T01:33:11.852Z",
+      "accessedAt": "2026-08-15T01:33:11.852Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-15T01:33:11.852Z",
       "deleted": false
     }
   ]
