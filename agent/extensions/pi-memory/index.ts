@@ -13,6 +13,7 @@ import { registerCommands } from './commands.ts'
 import { buildInjectionBlock, INJECT_TAG, filterInjectedMessages } from './inject.ts'
 import { extractConversation, extractTextFromEntries, processPendingExtracts, queuePendingExtract } from './extract.ts'
 import { writeCompactionSnapshot } from './snapshot.ts'
+import { resetOutputBudget } from '../../lib/prune.ts'
 
 export default function (pi: ExtensionAPI): void {
   registerTools(pi)
@@ -20,6 +21,9 @@ export default function (pi: ExtensionAPI): void {
 
   // ── 启动迁移报告 + compaction 恢复检测 ──
   pi.on('session_start', async (_event, ctx) => {
+    // 会话边界重置输出预算（recordOutput/pruneToolOutput 的累计输出量；
+    // 与 pi-web-search/pi-browser 的 session_start 对齐，防跨会话预算串味）
+    resetOutputBudget()
     migrateFromCtxLite()
     const notes = loadNotes()
     const noteCount = Object.keys(notes).filter(k => !k.startsWith('__') && !k.startsWith('_ctx.')).length

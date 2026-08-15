@@ -1,0 +1,126 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { loadDiagLines } from '../../../lib/usage-diag.ts'
+
+// 回归：auto-compact 触发挂载点（agent_settled vs agent_end）与
+// recordAutoCompact/markCompact 时机（压缩成功回调后，而非发起前）。
+
+type Handler = (event: unknown, ctx: unknown) => unknown
+
+interface FakePi {
+  on: (name: string, h: Handler) => void
+  sendMessage: ReturnType<typeof vi.fn>
+  registerCommand: ReturnType<typeof vi.fn>
+}
+
+let dir: string
+const ORIG_ENV = { ...process.env }
+
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'index-compact-'))
+  process.env.PI_USAGE_DIAG_FILE = join(dir, 'diag.jsonl')
+})
+
+afterEach(() => {
+  process.env = { ...ORIG_ENV }
+  delete process.env.PI_USAGE_DIAG_FILE
+  rmSync(dir, { recursive: true, force: true })
+})
+
+/** 每个用例用 vi.resetModules 得到全新模块实例（fresh compactDecider/gate） */
+async function loadIndex(): Promise<{ handlers: Map<string, Handler[]>; pi: FakePi }> {
+  vi.resetModules()
+  const mod = await import('../index.ts')
+  const handlers = new Map<string, Handler[]>()
+  const pi: FakePi = {
+    on(name: string, h: Handler) {
+      const list = handlers.get(name) ?? []
+      list.push(h)
+      handlers.set(name, list)
+    },
+    sendMessage: vi.fn(),
+    registerCommand: vi.fn(),
+  }
+  mod.default(pi as never)
+  return { handlers, pi }
+}
+
+function overThresholdCtx(compact: (opts: { onComplete?: () => void; onError?: (e: Error) => void }) => void) {
+  return {
+    getContextUsage: () => ({ tokens: 450_000, contextWindow: 1_000_000 }),
+    compact,
+  }
+}
+
+describe('pi-context: 压缩触发挂载点与记账时机', () => {
+  it('挂载在 agent_settled 而非 agent_end（内核重试轮不被打断）', async () => {
+    // AgentEndEvent 无 willRetry 字段（types.d.ts 实测），扩展无法在
+    // agent_end 判断内核是否将重试；agent_settled 语义为"run 完全 settled，
+    // 无重试/压缩/排队续跑"，此点触发 compact 不会 abort 内核后续动作
+    const { handlers } = await loadIndex()
+    expect(handlers.has('agent_settled')).toBe(true)
+    expect(handlers.has('agent_end')).toBe(false)
+  })
+
+  it('压缩成功（onComplete）后才 recordAutoCompact + markCompact（cooldown 生效）', async () => {
+    const { handlers } = await loadIndex()
+    let compactOpts: { onComplete?: () => void; onError?: (e: Error) => void } | undefined
+    const ctx = overThresholdCtx((opts) => {
+      compactOpts = opts
+    })
+
+    handlers.get('agent_settled')![0](undefined, ctx)
+    expect(compactOpts).toBeDefined()
+    // 发起时尚未完成：不记账（修复前 recordAutoCompact 在 compact() 调用前执行）
+    expect(loadDiagLines().filter((l) => 'type' in l)).toHaveLength(0)
+
+    compactOpts!.onComplete!()
+    const lines = loadDiagLines()
+    expect(lines.some((l) => 'type' in l && l.type === 'auto-compact')).toBe(true)
+
+    // markCompact 在成功后执行 → cooldown 生效，紧随的下一轮不再触发
+    const compactAgain = vi.fn()
+    handlers.get('agent_settled')![0](
+      undefined,
+      overThresholdCtx(compactAgain as never),
+    )
+    expect(compactAgain).not.toHaveBeenCalled()
+  })
+
+  it('压缩失败（onError）→ 不记账、gate disarm、不自动继续', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { handlers, pi } = await loadIndex()
+      const ctx = overThresholdCtx((opts) => {
+        opts.onError!(new Error('boom'))
+      })
+
+      handlers.get('agent_settled')![0](undefined, ctx)
+      // 失败不 recordAutoCompact
+      expect(loadDiagLines().filter((l) => 'type' in l)).toHaveLength(0)
+
+      // gate 已 disarm：session_compact 不再触发自动继续
+      handlers.get('session_compact')![0]({}, {})
+      expect(pi.sendMessage).not.toHaveBeenCalled()
+    } finally {
+      errSpy.mockRestore()
+    }
+  })
+
+  it('压缩成功后 session_compact → 注入自动继续消息', async () => {
+    const { handlers, pi } = await loadIndex()
+    const ctx = overThresholdCtx((opts) => {
+      opts.onComplete!()
+    })
+
+    handlers.get('agent_settled')![0](undefined, ctx)
+    handlers.get('session_compact')![0]({}, {})
+    expect(pi.sendMessage).toHaveBeenCalledTimes(1)
+    expect(pi.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ customType: 'continue-after-compact' }),
+      { triggerTurn: true },
+    )
+  })
+})
