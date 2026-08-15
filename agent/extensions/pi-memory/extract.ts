@@ -371,7 +371,7 @@ export function queuePendingExtract(messages: ExtractMessage[], sessionId: strin
         return null
       }
     }
-    const file = join(PENDING_DIR, `${Date.now()}-${sanitizeFile(sessionId || 'unknown')}.json`)
+    const file = join(PENDING_DIR, `${Date.now()}-${randomUUID().slice(0, 8)}-${sanitizeFile(sessionId || 'unknown')}.json`)
     const job: PendingExtract = {
       sessionId: sessionId || 'unknown',
       messageCount: messages.length,
