@@ -7,10 +7,11 @@
  * 这里按窗口比例给出合理阈值，由扩展在 agent_end 触发 ctx.compact()。
  *
  * 阈值选择依据（2026-08 长任务实测：缓存命中率 86%，deepseek 缓存命中价格
- * 为输入的 1/50）：
+ * 为输入的 1/50；2026-08-17 对照 DeepSeek Harness（dsh）compaction-basic 策略：
+ * thresholdRatio 0.8 + 溢出恢复兜底，实测晚压缩更优——本实现同步对齐）：
  *  - 每轮全量重发的 cacheRead 成本可忽略 → 晚压缩更优（模型视野更大、压缩次数更少）
- *  - 窗口 > 256K（如 deepseek-v4-flash 1M）：40% 触发（压缩间隔 ~360K 增长，
- *    远低于早期 20% 的频繁压缩；400K 离 1M 上限仍有 60% 余量）
+ *  - 窗口 > 256K（如 deepseek-v4 系列 1M）：80% 触发（dsh 同值；内核压缩兜底
+ *    阈值 = 窗口 - reserveTokens（32K），0.8 给兜底留 20% 余量）
  *  - 窗口 ≤ 256K（如 local-llama 131K）：85% 触发，接近原生压缩行为
  */
 
@@ -23,17 +24,31 @@ export interface CompactDecision {
   reason: CompactReason;
 }
 
-// 窗口 > 256K（如 deepseek-v4-flash 1M）：40% 触发
+// 窗口 > 256K（如 deepseek-v4 系列 1M）：80% 触发（对齐 dsh thresholdRatio 0.8）
 // 窗口 ≤ 256K（如 local-llama 131K）：85% 触发，接近原生压缩行为
 export const LARGE_WINDOW_SIZE = 256_000;
-export const LARGE_WINDOW_RATIO = 0.4;
+export const LARGE_WINDOW_RATIO = 0.8;
 export const SMALL_WINDOW_RATIO = 0.85;
 export const DEFAULT_COOLDOWN_MS = 180_000;
 
-export function computeCompactThreshold(contextWindow: number): number | null {
+export interface CompactThresholdOpts {
+  /** 大窗口分界（默认 256K） */
+  largeWindowSize?: number
+  /** 大窗口压缩比例（默认 0.8，对齐 dsh thresholdRatio） */
+  largeRatio?: number
+  /** 小窗口压缩比例（默认 0.85） */
+  smallRatio?: number
+}
+
+export function computeCompactThreshold(
+  contextWindow: number,
+  opts: CompactThresholdOpts = {},
+): number | null {
   if (!Number.isFinite(contextWindow) || contextWindow <= 0) return null;
-  const ratio =
-    contextWindow > LARGE_WINDOW_SIZE ? LARGE_WINDOW_RATIO : SMALL_WINDOW_RATIO;
+  const lws = opts.largeWindowSize ?? LARGE_WINDOW_SIZE;
+  const lr = opts.largeRatio ?? LARGE_WINDOW_RATIO;
+  const sr = opts.smallRatio ?? SMALL_WINDOW_RATIO;
+  const ratio = contextWindow > lws ? lr : sr;
   return Math.floor(contextWindow * ratio);
 }
 
@@ -48,7 +63,10 @@ export interface CompactDecider {
  * 有状态判定器：decide 只读判定；调用方真正触发压缩后调用 markCompact 记时，
  * cooldown 内不再重复触发（防止压缩循环）。
  */
-export function makeCompactDecider(cooldownMs = DEFAULT_COOLDOWN_MS): CompactDecider {
+export function makeCompactDecider(
+  cooldownMs = DEFAULT_COOLDOWN_MS,
+  opts: CompactThresholdOpts = {},
+): CompactDecider {
   let lastCompactAt = 0;
   return {
     get cooldownMs() {
@@ -58,7 +76,7 @@ export function makeCompactDecider(cooldownMs = DEFAULT_COOLDOWN_MS): CompactDec
       return lastCompactAt;
     },
     decide(contextTokens, contextWindow, now = Date.now()): CompactDecision {
-      const threshold = computeCompactThreshold(contextWindow);
+      const threshold = computeCompactThreshold(contextWindow, opts);
       if (threshold === null) {
         return { shouldCompact: false, threshold: 0, contextTokens, reason: "no-window" };
       }
