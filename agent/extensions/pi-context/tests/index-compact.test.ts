@@ -49,7 +49,7 @@ async function loadIndex(): Promise<{ handlers: Map<string, Handler[]>; pi: Fake
 
 function overThresholdCtx(compact: (opts: { onComplete?: () => void; onError?: (e: Error) => void }) => void) {
   return {
-    getContextUsage: () => ({ tokens: 450_000, contextWindow: 1_000_000 }),
+    getContextUsage: () => ({ tokens: 850_000, contextWindow: 1_000_000 }),
     compact,
   }
 }
@@ -122,5 +122,46 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
       expect.objectContaining({ customType: 'continue-after-compact' }),
       { triggerTurn: true },
     )
+  })
+
+  it('内核无 contextWindow（getContextUsage undefined）→ turn_end 记录的 provider tokens fallback 仍触发压缩', async () => {
+    const { handlers } = await loadIndex()
+    // 先模拟 turn_end：provider 报告 contextTokens（input+cacheRead）
+    handlers.get('turn_end')![0](
+      { message: { usage: { input: 600_000, cacheRead: 250_000 } } },
+      {},
+    )
+    // getContextUsage 返回 undefined（opencode-go provider 场景——内核
+    // model.contextWindow 未配置 → 8-15 实测自动压缩从未触发的根因）
+    const compact = vi.fn((opts: { onComplete?: () => void }) => opts.onComplete?.())
+    handlers.get('agent_settled')![0](
+      undefined,
+      { getContextUsage: () => undefined, compact },
+    )
+    expect(compact).toHaveBeenCalledTimes(1)
+    // fallback 窗口 1M × 0.8 = 800K < 850K(tokens) → 触发后记账
+    const lines = loadDiagLines()
+    expect(lines.some((l) => 'type' in l && l.type === 'auto-compact')).toBe(true)
+  })
+
+  it('溢出兜底：tokens ≥ window 时绕过阈值/cooldown 强制压缩（对齐 dsh CONTEXT_WINDOW_EXCEEDED）', async () => {
+    const { handlers } = await loadIndex()
+    const compact = vi.fn((opts: { onComplete?: () => void }) => opts.onComplete?.())
+    // 100K cooldown 内也要强制（溢出不等待冷却）
+    handlers.get('agent_settled')![0](
+      undefined,
+      { getContextUsage: () => ({ tokens: 5_000_000, contextWindow: 1_000_000 }), compact },
+    )
+    expect(compact).toHaveBeenCalledTimes(1)
+    const lines = loadDiagLines()
+    expect(lines.some((l) => 'type' in l && l.type === 'auto-compact')).toBe(true)
+
+    // 溢出未发生时正常走 decider（未超阈值不压缩）
+    const compact2 = vi.fn()
+    handlers.get('agent_settled')![0](
+      undefined,
+      { getContextUsage: () => ({ tokens: 500_000, contextWindow: 1_000_000 }), compact: compact2 },
+    )
+    expect(compact2).not.toHaveBeenCalled()
   })
 })

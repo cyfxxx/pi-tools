@@ -70,11 +70,67 @@ export function truncateToolContent(
 	};
 }
 
+// ── 上下文解析 fallback（2026-08-17 修复：opencode-go provider 内核不提供
+// contextWindow（model.contextWindow 未配置 → getContextUsage() 返回 undefined），
+// 导致 agent_settled/session_start 双路径静默 return、自动压缩从未触发——8-15
+// 实测无 auto-compact 事件、12:26 靠内核内置兜底）。
+// fallback 链：内核 usage(contextWindow+tokens) → 最近 turn_end 的 provider
+// contextTokens（input+cacheRead，每轮有效）+ 配置窗口。窗口来源：
+// PI_CONTEXT_WINDOW_FALLBACK 环境变量（默认 1M，deepseek-v4 系列）。
+const FALLBACK_CONTEXT_WINDOW = 1_000_000
+let fallbackContextWindow = (() => {
+  const raw = process.env.PI_CONTEXT_WINDOW_FALLBACK
+  const n = raw ? Number(raw) : NaN
+  return Number.isFinite(n) && n > 0 ? n : FALLBACK_CONTEXT_WINDOW
+})()
+/** 最近一轮 provider 报告的 contextTokens（turn_end 时更新） */
+let lastProviderContextTokens = 0
+
+/** 读取 0-1 比例环境变量；未设置或非法返回 undefined（走默认） */
+function readEnvRatio(name: string): number | undefined {
+  const raw = process.env[name]
+  if (!raw) return undefined
+  const n = Number(raw)
+  return Number.isFinite(n) && n > 0 && n < 1 ? n : undefined
+}
+
+interface ResolvedContext {
+  tokens: number
+  window: number
+}
+
+/**
+ * 解析会话上下文信息：优先内核 getContextUsage（含真实 contextWindow），
+ * 不可用时回退到最近 provider contextTokens + 配置窗口（自动压缩必须可用）。
+ */
+function resolveContext(ctx: { getContextUsage?: () => unknown }): ResolvedContext | null {
+  const usage = ctx.getContextUsage?.() as
+    | { tokens?: number | null; contextWindow?: number; percent?: number | null }
+    | undefined
+  if (
+    usage &&
+    typeof usage.tokens === "number" &&
+    usage.tokens > 0 &&
+    typeof usage.contextWindow === "number" &&
+    usage.contextWindow > 0
+  ) {
+    return { tokens: usage.tokens, window: usage.contextWindow }
+  }
+  if (lastProviderContextTokens > 0) {
+    return { tokens: lastProviderContextTokens, window: fallbackContextWindow }
+  }
+  return null
+}
+
 export default function (pi: ExtensionAPI) {
 	const MAX_TOOL_BYTES = 5000;
 	const MAX_OTHER_TOOL_BYTES = 20 * 1024;
-	// 按窗口比例自动压缩（见 lib/auto-compact.ts 说明）
-	const compactDecider = makeCompactDecider();
+	// 按窗口比例自动压缩（见 lib/auto-compact.ts 说明；largeRatio/smallRatio
+	// 支持 PI_CONTEXT_COMPACT_LARGE_RATIO / PI_CONTEXT_COMPACT_SMALL_RATIO 覆盖）
+	const compactDecider = makeCompactDecider(undefined, {
+		largeRatio: readEnvRatio("PI_CONTEXT_COMPACT_LARGE_RATIO"),
+		smallRatio: readEnvRatio("PI_CONTEXT_COMPACT_SMALL_RATIO"),
+	});
 
 	// 压缩后自动继续门（见 lib/auto-compact.ts AutoContinueGate）：
 	// ctx.compact() 触发的 session_compact reason 恒为 "manual"（无法与用户手动
@@ -174,6 +230,9 @@ export default function (pi: ExtensionAPI) {
 
 		const input = usage.input || 0;
 		const cacheRead = usage.cacheRead || 0;
+		const contextTokens = input + cacheRead;
+		// 供 agent_settled/session_start fallback（内核无 contextWindow 时自动压缩用）
+		lastProviderContextTokens = contextTokens;
 		recordUsage({
 			ts: Date.now(),
 			input,
@@ -182,7 +241,7 @@ export default function (pi: ExtensionAPI) {
 			output: usage.output || 0,
 			reasoning: usage.reasoning || 0,
 			total: usage.totalTokens || 0,
-			contextTokens: input + cacheRead,
+			contextTokens,
 		});
 	});
 
@@ -193,12 +252,31 @@ export default function (pi: ExtensionAPI) {
 	// 杀掉内核重试轮。agent_settled 语义为"run 完全settled且无重试/压缩/排队续跑"
 	// （agent-session.js _emitAgentSettled），此点压缩不会打断任何内核后续动作。
 	pi.on("agent_settled", (_event, ctx) => {
-		const usage = ctx.getContextUsage();
-		if (!usage || typeof usage.tokens !== "number" || usage.tokens <= 0) return;
-		const contextWindow = usage.contextWindow;
-		if (!contextWindow || contextWindow <= 0) return;
+		const resolved = resolveContext(ctx);
+		if (!resolved) return;
+		const { tokens, window: contextWindow } = resolved;
 
-		const decision = compactDecider.decide(usage.tokens, contextWindow);
+		// 溢出兜底（对齐 dsh CONTEXT_WINDOW_EXCEEDED 路径）：上下文已超窗口时
+		// 绕过阈值/冷却强制压缩——比等内核在窗口-reserve 处兜底更早介入，
+		// 且保留 32K reserve 余量给模型响应。
+		if (tokens >= contextWindow) {
+			autoContinueGate.arm();
+			ctx.compact({
+				customInstructions:
+					"上下文已接近/超过模型窗口。请生成结构化摘要，并显式丢弃早期工具输出细节，保留关键决策、文件路径与待办。",
+				onComplete: () => {
+					recordAutoCompact(tokens, contextWindow);
+					compactDecider.markCompact();
+				},
+				onError: (err) => {
+					autoContinueGate.disarm();
+					console.error("pi-context: overflow compact failed:", err);
+				},
+			});
+			return;
+		}
+
+		const decision = compactDecider.decide(tokens, contextWindow);
 		if (!decision.shouldCompact) return;
 
 		autoContinueGate.arm();
@@ -206,7 +284,7 @@ export default function (pi: ExtensionAPI) {
 			// 仅压缩成功后记账/记时：cooldown 起点取真实完成时刻；
 			// 失败不进入 cooldown，下一轮 agent_settled 可重试
 			onComplete: () => {
-				recordAutoCompact(usage.tokens, decision.threshold);
+				recordAutoCompact(tokens, decision.threshold);
 				compactDecider.markCompact();
 			},
 			onError: (err) => {
@@ -240,18 +318,17 @@ export default function (pi: ExtensionAPI) {
 	// 注意：compact() 会 emit session_compact，但 AutoContinueGate 未 arm →
 	// 不会触发自动继续（恢复后等待用户输入是正确行为）。
 	pi.on("session_start", (_event, ctx) => {
-		const usage = ctx.getContextUsage();
-		if (!usage || typeof usage.tokens !== "number" || usage.tokens <= 0) return;
-		const contextWindow = usage.contextWindow;
-		if (!contextWindow || contextWindow <= 0) return;
+		const resolved = resolveContext(ctx);
+		if (!resolved) return;
+		const { tokens, window: contextWindow } = resolved;
 
-		const decision = compactDecider.decide(usage.tokens, contextWindow);
+		const decision = compactDecider.decide(tokens, contextWindow);
 		if (!decision.shouldCompact) return;
 
 		ctx.compact({
 			// 与 agent_settled 一致：成功后才记账/记时
 			onComplete: () => {
-				recordAutoCompact(usage.tokens, decision.threshold);
+				recordAutoCompact(tokens, decision.threshold);
 				compactDecider.markCompact();
 			},
 			onError: (err) => {
@@ -289,14 +366,14 @@ export default function (pi: ExtensionAPI) {
 	// 档位基于 auto-compact 阈值比例（早期实现用 contextWindow 的 85%/95%，
 	// 但 auto-compact 在 20% 处先触发，85%/95% 永不达到 → 死代码）。
 	pi.on("before_agent_start", async (event, ctx) => {
-		const usage = ctx.getContextUsage();
+		const resolved = resolveContext(ctx);
 		let pressureLine = "";
-		if (usage && usage.contextWindow > 0 && typeof usage.tokens === "number") {
-			setContextWindow(usage.contextWindow);
-			setUsedTokens(usage.tokens); // 真实用量校准：plan-mode 等共享库消费者压力提示随之准确
-			const threshold = computeCompactThreshold(usage.contextWindow);
+		if (resolved) {
+			setContextWindow(resolved.window);
+			setUsedTokens(resolved.tokens); // 真实用量校准：plan-mode 等共享库消费者压力提示随之准确
+			const threshold = computeCompactThreshold(resolved.window);
 			if (threshold !== null && threshold > 0) {
-				const near = usage.tokens / threshold;
+				const near = resolved.tokens / threshold;
 				if (near >= 0.9) {
 					pressureLine =
 						"\n\n[上下文接近自动压缩阈值（90%）。请用 ctx_note 保存关键决策与进度；压缩会自动触发并继续。]";
