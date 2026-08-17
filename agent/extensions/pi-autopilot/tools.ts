@@ -321,8 +321,30 @@ export function registerTools(pi: ExtensionAPI): void {
       properties: { reason: { type: 'string', description: '重启原因（可选）' } },
     },
     execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => {
+      // 重启前提示：上下文超重启压缩阈值（40% 窗口≈重启后首轮必全量重发）时，
+      // 告知可先 /compact 再重启，避免浪费几万-几十万未命中 token。
+      // 阈值与 pi-context 的 PI_CONTEXT_RESTART_RATIO（默认 0.4）保持一致。
+      const usage = ctx.getContextUsage?.() as
+        | { tokens?: number | null; contextWindow?: number; percent?: number | null }
+        | undefined
+      if (usage && typeof usage.tokens === 'number' && usage.tokens > 0 && typeof usage.contextWindow === 'number') {
+        const restartThreshold = Math.floor(usage.contextWindow * 0.4)
+        const pct = ((usage.tokens / usage.contextWindow) * 100).toFixed(0)
+        if (usage.tokens >= restartThreshold) {
+          ctx.ui.notify(
+            `上下文 ${(usage.tokens / 1000).toFixed(0)}K（${pct}% 窗口）。重启后首轮将全量重发，建议先执行 /compact 再重启可省重新计费。若坚持重启，继续调用 admin_restart 即可。`,
+            'warning',
+          )
+        }
+      }
       const reason = params.reason as string | undefined
       writeRestartRequest('restart', { reason: reason || '用户请求重启' })
+      // 重启原因一旦写入立即生效；提示文本随返回值展示，用户可见
+      const hintText =
+        usage && typeof usage.tokens === 'number' && usage.tokens > 0 && typeof usage.contextWindow === 'number' &&
+        usage.tokens >= Math.floor(usage.contextWindow * 0.4)
+          ? `\n提示：上下文 ${(usage.tokens / 1000).toFixed(0)}K（${((usage.tokens / usage.contextWindow) * 100).toFixed(0)}% 窗口），重启后首轮将全量重发。下次重启前可先执行 /compact 减少重新计费。`
+          : ''
       // ctx.shutdown() 在 TUI 环境实测不退出进程（admin_restart 后 PID 不变，
       // 新代码永不加载）。强制退出让 wrapper 检测到退出码并按 restart 请求
       // --continue 重启；1500ms 兜底（给 shutdown 异步保存会话的时间）。
@@ -335,7 +357,7 @@ export function registerTools(pi: ExtensionAPI): void {
         /* ignore */
       }
       setTimeout(() => process.exit(0), 1500)
-      return { content: [{ type: 'text', text: '正在重启...' }], details: null }
+      return { content: [{ type: 'text', text: `正在重启...${hintText}` }], details: null }
     },
   })
 

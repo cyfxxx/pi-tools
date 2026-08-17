@@ -132,6 +132,10 @@ export default function (pi: ExtensionAPI) {
 		smallRatio: readEnvRatio("PI_CONTEXT_COMPACT_SMALL_RATIO"),
 	});
 
+	// 重启/恢复场景压缩阈值（占窗口比例）：重启后首轮必全量重发，40% 以上
+	// 先压比直接重发省钱。PI_CONTEXT_RESTART_RATIO 可覆盖（0-1 有效，越界回退 0.4）。
+	const RESTART_COMPACT_RATIO = readEnvRatio("PI_CONTEXT_RESTART_RATIO") ?? 0.4;
+
 	// 压缩后自动继续门（见 lib/auto-compact.ts AutoContinueGate）：
 	// ctx.compact() 触发的 session_compact reason 恒为 "manual"（无法与用户手动
 	// /compact 区分），用门判断"压缩完成后是否自动继续"。
@@ -317,19 +321,23 @@ export default function (pi: ExtensionAPI) {
 	// 再压缩会浪费一轮全量发送；此处无 agent 运行时直接压缩（abort 是 no-op）。
 	// 注意：compact() 会 emit session_compact，但 AutoContinueGate 未 arm →
 	// 不会触发自动继续（恢复后等待用户输入是正确行为）。
+	// 阈值：恢复场景用 RESTART_COMPACT_RATIO（默认 40% 窗口）而非日常 80%——
+	// 重启/恢复后首轮必然全量重发，40% 以上先压比直接重发省钱（对齐 dsh
+	// 压缩保留尾部原文的缓存友好原则；依据 2026-08-17 实测：断链轮重发
+	// 40-105K 且未命中部分按全价计费）。全新会话 tokens 极小不会误触发。
 	pi.on("session_start", (_event, ctx) => {
 		const resolved = resolveContext(ctx);
 		if (!resolved) return;
 		const { tokens, window: contextWindow } = resolved;
 
-		const decision = compactDecider.decide(tokens, contextWindow);
-		if (!decision.shouldCompact) return;
+		const restartThreshold = Math.floor(contextWindow * RESTART_COMPACT_RATIO);
+		if (tokens < restartThreshold) return;
 
 		ctx.compact({
 			// 与 agent_settled 一致：成功后才记账/记时
 			onComplete: () => {
-				recordAutoCompact(tokens, decision.threshold);
-				compactDecider.markCompact();
+				recordAutoCompact(tokens, restartThreshold);
+				// session_start 压缩不参与日常 decider 的 cooldown（两者独立）
 			},
 			onError: (err) => {
 				// 恢复时压缩失败不致命：首轮 agent_settled 会再判定

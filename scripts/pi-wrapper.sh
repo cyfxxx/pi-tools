@@ -193,6 +193,29 @@ init_state_file
 
 # pi-autopilot：崩溃计数 / lastGood 快照 / 回滚
 
+# L3: pi update 后自动重跑 rebuild.sh 恢复补丁。
+# pi update 是 CLI 一次性命令（经 wrapper 执行 node cli.js update），升级会覆盖 dist，
+# Phase 3 的 7 个补丁（footer 实时token/CH/格式、回车拦截、工具schema、tab 补全、playwright）
+# 全部失效。此处拦截 update：执行成功后自动 rebuild，避免用户遗忘重跑。
+# 失败不 rebuild（避免在坏状态下改 dist）；rebuild 自身幂等。
+if [ "$1" = "update" ]; then
+  echo "[pi-wrapper] 执行 pi update..." >&2
+  node "$PI_JS" update
+  UPD_EXIT=$?
+  if [ "$UPD_EXIT" -eq 0 ]; then
+    echo "[pi-wrapper] update 完成，自动重跑 rebuild.sh 恢复补丁..." >&2
+    if [ -x "$HOME/.pi/scripts/rebuild.sh" ]; then
+      bash "$HOME/.pi/scripts/rebuild.sh"
+      echo "[pi-wrapper] rebuild 完成（exit $?），补丁已恢复" >&2
+    else
+      echo "[pi-wrapper] 警告：rebuild.sh 不存在，补丁未恢复，请手动重跑或重新安装" >&2
+    fi
+  else
+    echo "[pi-wrapper] pi update 失败（exit $UPD_EXIT），跳过 rebuild" >&2
+  fi
+  exit "$UPD_EXIT"
+fi
+
 init_crash_file() {
   if [ ! -f "$CRASH_FILE" ]; then
     echo '{"count":0,"ts":0}' > "$CRASH_FILE"
