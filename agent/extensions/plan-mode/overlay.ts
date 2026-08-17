@@ -1,5 +1,5 @@
 import type { ExtensionUIContext, Theme } from "@earendil-works/pi-coding-agent";
-import type { TUI } from "@earendil-works/pi-tui";
+import { truncateToWidth, visibleWidth, type TUI } from "@earendil-works/pi-tui";
 import { getState } from "./store.ts";
 import { selectHasActive, selectOverlayLayout, selectTodoCounts } from "./selectors.ts";
 import { formatStatusLabel } from "./view.ts";
@@ -127,18 +127,17 @@ export class TodoOverlay {
 
     const active = visible.find((t) => t.status === "in_progress");
     if (active) {
-      const maxSubject = Math.max(10, width - heading.length - 14);
-      const subject =
-        active.subject.length > maxSubject
-          ? `${active.subject.slice(0, maxSubject - 1)}…`
-          : active.subject;
+      // heading.length 会把 CJK 按 1 列算，窄终端下会低估实际宽度；改用可见宽度估算剩余空间。
+      const headingWidth = visibleWidth(heading);
+      const maxSubject = Math.max(10, width - headingWidth - 14);
+      const subject = truncateToWidth(active.subject, maxSubject, "…");
       heading += ` ${theme.fg("warning", `▶ ${subject}`)}`;
     }
 
     const lines: string[] = [heading];
     const layout = selectOverlayLayout({ tasks: visible, nextId: 0 }, MAX_WIDGET_LINES - 1);
     for (const task of layout.visible) {
-      lines.push(this.formatCheckboxLine(task, theme));
+      lines.push(this.formatCheckboxLine(task, theme, width));
     }
 
     for (const task of visible) {
@@ -157,11 +156,13 @@ export class TodoOverlay {
     if (layout.truncatedTail > 0) parts.push(`${layout.truncatedTail} ${formatStatusLabel("pending")}`);
     const summary = totalHidden > 0 ? `+${totalHidden} 更多 (${parts.join(", ")})` : `+${totalHidden} 更多`;
     lines.push(`${theme.fg("dim", summary)}`);
-    return this.withTrailingSpacer(lines);
+    // 兜底保险：任意行超宽（含主题色前缀的可见宽度差）都截断到终端宽度，
+    // 避免 pi-tui 渲染保护检测到 visibleWidth > width 直接抛异常终止进程（见 2026-08-17 崩溃）。
+    return this.withTrailingSpacer(lines.map((l) => (l ? truncateToWidth(l, width, "…") : l)));
   }
 
   /** opencode todos 风格行：`[✓]`（完成/灰）/ `[•]`（进行中/黄）/ `[ ]`（待办/灰） */
-  private formatCheckboxLine(task: { id: number; subject: string; status: "pending" | "in_progress" | "completed" | "blocked" | "deleted"; activeForm?: string }, theme: Theme): string {
+  private formatCheckboxLine(task: { id: number; subject: string; status: "pending" | "in_progress" | "completed" | "blocked" | "deleted"; activeForm?: string }, theme: Theme, width: number): string {
     const check =
       task.status === "completed"
         ? "[✓]"
@@ -171,15 +172,25 @@ export class TodoOverlay {
             ? "[⏸]"
             : "[ ]";
     const color = task.status === "in_progress" ? "warning" : "dim";
-    const subject =
-      task.subject.length > 60
-        ? `${task.subject.slice(0, 59)}…`
-        : task.subject;
+    const prefix = `${theme.fg(color, check)} `;
+    const prefixWidth = visibleWidth(prefix);
+    const form = task.status === "in_progress" && task.activeForm ? `(${task.activeForm})` : "";
+    const formWidth = form ? visibleWidth(form) : 0;
+    // subject 与 activeForm 共享剩余宽度，subject 优先；括号与空格留 3 列余量。
+    const subjectAvail = Math.max(8, width - prefixWidth - (form ? formWidth + 3 : 0));
+    const subject = truncateToWidth(task.subject, subjectAvail, "…");
     let line = `${theme.fg(color, check)} ${theme.fg(color, subject)}`;
-    if (task.status === "in_progress" && task.activeForm) {
-      line += ` ${theme.fg("dim", `(${task.activeForm})`)}`;
+    if (form) {
+      const rest = Math.max(0, width - visibleWidth(line));
+      if (rest >= formWidth + 1) {
+        line += ` ${theme.fg("dim", form)}`;
+      } else if (rest >= 3) {
+        // 空间不足时截断 activeForm（最小保留 1 列 + 省略号）
+        const clipped = truncateToWidth(form, Math.max(1, rest - 1), "…");
+        line += ` ${theme.fg("dim", clipped)}`;
+      }
     }
-    return line;
+    return truncateToWidth(line, width, "…");
   }
 
   private withTrailingSpacer(lines: string[]): string[] {
