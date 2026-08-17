@@ -57,6 +57,8 @@ CloakBrowser 首次启动会自动下载隐身 Chromium（约 200MB，存放在 
 
 浏览器：CloakBrowser 包自动下载官方 stealth Chromium 到 `~/.cloakbrowser/chromium-<ver>/chrome.exe`（或 Windows 实例中 `%USERPROFILE%\.cloakbrowser\`）。需要本地/定制版二进制时设 `CLOAKBROWSER_BINARY_PATH` 覆盖（如 `E:\pi-portable\.cloakbrowser\chromium-<ver>\chrome.exe`）。下载被墙时：先手动解压官方 zip 到 `~/.cloakbrowser/`，或设 `CLOAKBROWSER_DOWNLOAD_URL` 指向镜像，或用 `CLOAKBROWSER_BINARY_PATH` 指向已有 Chromium。注：Termux（Android）无官方预编译包，rebuild.sh 会自动用 `pkg install x11-repo chromium` 并设置 `CLOAKBROWSER_BINARY_PATH`。
 
+Windows 便携探测（2026-08-17 合入，源自 portable-win）：`CLOAKBROWSER_BINARY_PATH` 未设或指向不存在文件时，`impl.ts` 自动探测 `%USERPROFILE%\.cloakbrowser\chromium-*/chrome.exe`（官方定制版优先），回退 npmmirror `%USERPROFILE%\tools\chrome-win64\chrome.exe`——不依赖 start.bat wrapper 环境。Windows 下强制 `--no-proxy-server` 直连（系统代理无效/被墙 → ERR_NETWORK_ACCESS_DENIED）。
+
 ## 配置
 
 编辑 `~/.pi/agent/settings.json`（全局）或 `.pi/settings.json`（项目级），仅需 `pi-browser` 配置段（扩展已由目录自动发现）：

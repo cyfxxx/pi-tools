@@ -1,12 +1,46 @@
 import type { Browser, Page } from 'playwright-core'
 import type { BrowserConfig, PageInfo } from './types'
+import { existsSync, readdirSync } from 'fs'
 import { mkdir } from 'fs/promises'
 import { join } from 'path'
-import { tmpdir } from 'os'
+import { tmpdir, homedir } from 'os'
 
 /** 截图暂存目录（os.tmpdir()：Linux=/tmp，Termux=$PREFIX/tmp；cleanScreenshots 同名清理） */
 export function shotDir(): string {
   return join(tmpdir(), 'pi-browser-screenshots')
+}
+
+/**
+ * Windows 便携版：cloakbrowser 走 CLOAKBROWSER_BINARY_PATH；未设时自动探测
+ * 便携包内浏览器（优先官方 stealth 定制版 .cloakbrowser/chromium-<ver>/chrome.exe，
+ * 回退 npmmirror tools/chrome-win64）——不依赖 start.bat wrapper 环境
+ * （wrapper 循环内 set 不重跑）。非 win32 平台直接短路，零副作用。
+ */
+export function ensureLocalBinaryEnv(): void {
+  // 环境变量已设且文件存在 → 直接使用；指向不存在的文件（如已删的旧 npmmirror）→ 重新探测
+  if (process.env.CLOAKBROWSER_BINARY_PATH && existsSync(process.env.CLOAKBROWSER_BINARY_PATH)) return
+  if (process.platform !== 'win32') return
+  const root = process.env.USERPROFILE || homedir()
+  // 官方定制版缓存目录（cloakbrowser 结构：.cloakbrowser/chromium-<ver>/chrome.exe）
+  try {
+    const cacheDir = join(root, '.cloakbrowser')
+    if (existsSync(cacheDir)) {
+      for (const entry of readdirSync(cacheDir)) {
+        if (entry.startsWith('chromium-')) {
+          const chrome = join(cacheDir, entry, 'chrome.exe')
+          if (existsSync(chrome)) {
+            process.env.CLOAKBROWSER_BINARY_PATH = chrome
+            return
+          }
+        }
+      }
+    }
+  } catch { /* 缓存目录不可读 → 回退 */ }
+  // 回退：npmmirror chrome-for-testing
+  const chrome = join(root, 'tools', 'chrome-win64', 'chrome.exe')
+  if (existsSync(chrome)) {
+    process.env.CLOAKBROWSER_BINARY_PATH = chrome
+  }
 }
 
 export class BrowserManager {
@@ -37,6 +71,7 @@ export class BrowserManager {
   }
 
   private async launchBrowser(): Promise<Browser> {
+    ensureLocalBinaryEnv()
     let launch: typeof import('cloakbrowser')['launch']
     try {
       launch = (await import('cloakbrowser')).launch
@@ -57,6 +92,8 @@ export class BrowserManager {
 
     const opts: Record<string, unknown> = {
       headless: this.config.headless,
+      // Windows 便携版：Chrome 继承系统代理（无效/被墙代理 → ERR_NETWORK_ACCESS_DENIED）——强制直连
+      ...(process.platform === 'win32' ? { args: ['--no-proxy-server'] } : {}),
     }
 
     if (this.config.fingerprint_seed) {
