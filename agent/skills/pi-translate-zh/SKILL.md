@@ -1,6 +1,6 @@
 ---
 name: pi-translate-zh
-description: 将 pi TUI 的命令描述、设置菜单、子菜单、提示词描述、扩展命令、npm 插件文字、技能描述翻译为中文。适用于 pi update 后重新翻译。
+description: pi update 后重新翻译 TUI 中文界面：命令描述、设置菜单、子菜单、提示词描述、扩展命令、npm 插件文字、技能描述。用户说"翻译""中文化""汉化""翻译失效"时触发。
 ---
 
 # 补丁：pi TUI 完整中文化

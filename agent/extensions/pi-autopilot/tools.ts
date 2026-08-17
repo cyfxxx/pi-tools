@@ -156,7 +156,7 @@ export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'admin_set_model',
     label: '切换模型',
-    description: '切换默认模型和 Provider。会更新 settings.json 并立即重启 Agent 以加载新模型。重启后自动恢复当前会话。',
+    description: '切换默认模型和 Provider（更新 settings.json 并重启 Agent，自动恢复当前会话）。',
     parameters: {
       type: 'object',
       properties: {
@@ -284,7 +284,7 @@ export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'admin_switch_session',
     label: '切换会话',
-    description: '切换到指定的会话文件。支持按 sessionId 前缀匹配或直接指定文件路径。需要重启 Agent。',
+    description: '切换到指定会话文件（按 sessionId 前缀或路径）。需要重启 Agent。',
     parameters: {
       type: 'object',
       properties: {
@@ -343,14 +343,7 @@ export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'schedule_task',
     label: '管理定时任务',
-    description: `创建、列出、更新、删除、启用或禁用定时任务。
-支持的任务类型:
-- interval: 按间隔重复（例如 "5m", "1h", "30s"）
-- cron: 按 cron 表达式执行（5字段 POSIX，例如 "0 9 * * 1-5" 表示工作日9点）
-- once: 一次性任务（相对时间 "+30m" 或 ISO 时间戳），执行后自动移除
-
-prompt 支持模板变量: {{date}} {{time}} {{datetime}} {{cwd}}。
-失败重试: retries 指定失败后的额外尝试次数（每次间隔 60s）。`,
+    description: '创建/列出/更新/删除/启用/禁用定时任务。type: interval(如 "5m")/cron(5字段 POSIX，如 "0 9 * * 1-5")/once("+30m" 或 ISO，执行后自动移除)。prompt 支持模板变量 {{date}}/{{time}}/{{datetime}}/{{cwd}}；retries 为失败重试次数（间隔 60s）。',
     parameters: {
       type: 'object',
       properties: {
@@ -359,16 +352,16 @@ prompt 支持模板变量: {{date}} {{time}} {{datetime}} {{cwd}}。
           enum: ['add', 'list', 'update', 'delete', 'enable', 'disable', 'pause', 'resume'],
           description: '操作类型',
         },
-        name: { type: 'string', description: '任务名称（add 必需，delete/enable/disable/update 可用作标识）' },
-        type: { type: 'string', enum: ['interval', 'cron', 'once'], description: '任务类型（action=add 时必需）' },
-        schedule: { type: 'string', description: '调度表达式（action=add 必需；update 时可修改）' },
-        prompt: { type: 'string', description: '要执行的提示词（action=add 必需；update 时可修改）' },
-        useSubagent: { type: 'boolean', description: '是否在子代理中执行（不打断当前会话）' },
-        notifyOnCompletion: { type: 'boolean', description: '执行完成时是否发送 webhook 通知（需配置 webhookUrl）' },
-        maxRunTime: { type: 'number', description: '执行超时秒数（默认 300），仅 useSubagent=true 时生效' },
-        tags: { type: 'array', items: { type: 'string' }, description: '任务标签（可选，用于 list 过滤）' },
-        retries: { type: 'number', description: '失败后的额外重试次数（每次间隔 60s，默认 0）' },
-        taskId: { type: 'string', description: '任务 ID（用于 update/delete/enable/disable）' },
+        name: { type: 'string', description: '任务名称' },
+        type: { type: 'string', enum: ['interval', 'cron', 'once'], description: '任务类型' },
+        schedule: { type: 'string', description: '调度表达式' },
+        prompt: { type: 'string', description: '要执行的提示词' },
+        useSubagent: { type: 'boolean', description: '在子代理中执行（不打断当前会话）' },
+        notifyOnCompletion: { type: 'boolean', description: '完成后发送 webhook 通知（需配置 webhookUrl）' },
+        maxRunTime: { type: 'number', description: '执行超时秒数（默认 300；仅子代理模式生效）' },
+        tags: { type: 'array', items: { type: 'string' }, description: '任务标签（list 过滤用）' },
+        retries: { type: 'number', description: '失败后额外重试次数（默认 0）' },
+        taskId: { type: 'string', description: '任务 ID（更新/删除/启用/禁用用）' },
       },
       required: ['action'],
     },

@@ -83,8 +83,7 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
     name: 'tmux_run',
     label: '启动后台会话',
     description:
-      '在 detached tmux 会话中执行命令（pi- 前缀命名），输出持续落盘到 ~/.pi/logs/tmux/<会话>.log。' +
-      '适合长任务/dev server/watch/交互式程序：不阻塞当前对话、不依赖当前终端存活、会话可保留供后续读取与交互。',
+      '在分离的 tmux 会话中执行命令（pi- 前缀命名），输出持续落盘 ~/.pi/logs/tmux/<会话>.log。适合长任务/dev server/不用阻塞对话、不依赖终端存活、可后续读取与交互。',
     promptSnippet: '在后台 tmux 会话运行长任务',
     promptGuidelines: [
       '长任务（构建/测试/下载/服务）优先用 tmux_run 而非 bash 直接跑，避免输出截断与会话中断',
@@ -268,7 +267,7 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
   pi.registerTool({
     name: 'tmux_wait',
     label: '等待会话完成',
-    description: '轮询等待会话结束/日志出现 pattern/超时返回。阻塞式：等待期间无法处理用户新消息；仅本轮必须拿结果才能继续时才用，否则 tmux_run 后直接结束回合，进度下轮用 tmux_read 查看。',
+    description: '轮询等待会话结束/日志出现 pattern/超时返回。阻塞式（等待期间无法处理用户新消息）；仅本轮必须拿结果才能继续时才用，否则 tmux_run 后直接结束回合，进度下轮 tmux_read 查看。',
     promptSnippet: '等待后台任务完成（阻塞式，慎用）',
     promptGuidelines: [
       '需拿结果才能继续：tmux_wait(name=..., until_exit=true)',

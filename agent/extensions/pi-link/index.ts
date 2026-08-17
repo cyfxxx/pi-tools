@@ -72,8 +72,7 @@ export default function (pi: ExtensionAPI): void {
     name: 'link_send',
     label: '向其他设备上的 pi 发消息',
     description:
-      '向其他设备（局域网/Tailscale 组网）上运行的 pi 发送消息并等待其处理完成，返回最终回复。' +
-      '用于跨设备任务委派/信息查询。设备清单在 ~/.pi/pi-link.json，/link help 查看全部用法。',
+      '向其他设备（局域网/Tailscale）上的 pi 发送消息并等待处理完成。用于跨设备委派/查询。设备清单在 ~/.pi/pi-link.json，/link help 查看用法。',
     promptSnippet: '调用其他设备上的 pi 处理任务',
     promptGuidelines: [
       '跨设备任务（目标设备上才能做的操作、需要目标设备上下文的问题）用 link_send，其余本地处理',
@@ -139,7 +138,7 @@ export default function (pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'link_status',
     label: '查看 pi-link 设备清单与连通性',
-    description: '查看 pi-link 设备清单与连通性（探测失败仅表示目标设备离线或 ssh 不可达，不影响本机）',
+    description: '查看 pi-link 设备清单与连通性（探测失败仅表示目标离线或 ssh 不可达，不影响本机）',
     promptSnippet: '查看已配置的互联设备',
     parameters: { type: 'object', properties: {} },
     async execute() {

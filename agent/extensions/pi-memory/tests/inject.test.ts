@@ -46,11 +46,11 @@ describe('inject: buildInjectionBlock', () => {
     expect(result.block).toContain('持续记忆')
   })
 
-  it('caps entries at 6 max', async () => {
+  it('caps entries at 4 max', async () => {
     const { buildInjectionBlock } = await import('../inject.ts')
     const entries = Array.from({ length: 10 }, (_, i) => makeEntry({ title: `记忆 ${i}`, content: '短内容' }))
     const result = buildInjectionBlock(entries, [], 2000)
-    expect(result.entries).toBeLessThanOrEqual(6)
+    expect(result.entries).toBeLessThanOrEqual(4)
   })
 
   it('includes recent summaries up to 2', async () => {
