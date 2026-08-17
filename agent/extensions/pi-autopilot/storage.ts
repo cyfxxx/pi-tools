@@ -333,7 +333,7 @@ export async function addTask(params: Parameters<typeof createTask>[0]): Promise
 
 export async function updateTask(
   idOrName: string,
-  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries' | 'recoveryCount'>>
+  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries' | 'recoveryCount' | 'failCount' | 'failoverCount'>>
 ): Promise<Task | null> {
   return withStoreLock(async () => {
   const store = await readTasks()
