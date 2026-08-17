@@ -11039,10 +11039,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 2,
+      "recurrence": 4,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-15T14:47:44.888Z",
-      "accessedAt": "2026-08-15T14:47:44.888Z",
+      "updatedAt": "2026-08-17T03:48:34.437Z",
+      "accessedAt": "2026-08-17T03:48:34.437Z",
       "environments": [
         "all"
       ],
@@ -11280,7 +11280,9 @@
       "accessedAt": "2026-08-15T15:11:08.629Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-15T15:11:08.629Z",
+      "deleted": false
     }
   ]
 }
