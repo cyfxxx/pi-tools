@@ -35,6 +35,7 @@
 - **恢复队列（A2/A3，2026-08）**：
   - `pendingInject` 语义改为**运行中标记**——fireViaMessage 非阻塞（sendUserMessage 立即返回），tick 过滤 pendingInject=true 的任务防 interval 长任务重叠触发；`agent_settled`（主会话空闲）统一清除
   - 附带修复：旧实现注入后从不清除，崩溃恢复会重放全部历史注入任务；现只恢复真正"注入后未完成"的任务
+  - **注入式任务最终化（finalizeInjected，2026-08-17 补闭环）**：agent_settled 时对本轮注入的 message 任务回写 `updateTaskAfterRun('success')`——once 任务自动删除（修复前 nextRun 推 +1h 而 computeNextRun 对 once 返回过期时间 → 每小时重复注入、永不删除）、interval/cron 推进 nextRun 并重置 failCount/failoverCount、`notifyOnCompletion` 补发 success webhook（与 subagent 路径对齐）、任务已删/改型安全跳过；`/schedule enable` 清零熔断计数（suspend 恢复后不一次失败即再熔断）
   - **恢复次数上限**：`recoveryCount` 超 3 次转 dead-letter——暂停任务 + Webhook 告警，需人工介入（`/schedule enable` 恢复），防连续崩溃无限重注入
 
 ### 3. 自管理

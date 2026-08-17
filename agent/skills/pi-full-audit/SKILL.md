@@ -87,7 +87,7 @@ foreach ($f in $files) {
 **功能实测维度**（用户要求"测试所有扩展功能"时，审查之外对每个扩展做真实工具调用验证）：
 - 逐个调用扩展暴露的工具/能力（memory_stats、autopilot_status、link_status、web_search、browser_navigate、tmux_run、subagent 委派等），记录成功/失败/环境限制
 - 实测失败先排查环境再报扩展缺陷：2026-08-15 实战——browser_navigate 报 Termux 路径实际是 CLOAKBROWSER_BINARY_PATH 从 Termux 泄漏到 WSL（pi-wrapper.sh 无条件导出 Termux 默认值，无平台守卫）；pi-voice 缺 ffmpeg/pulse 属环境未装（apt install ffmpeg 即恢复）；searxng 瞬时超时重试即恢复
-- 环境限制项标注"受环境限制"并引用对应 vitest 用例数（如 pi-browser 24 用例全绿但运行时缺 chromium 二进制）
+- 环境限制项标注"受环境限制"并引用对应 vitest 用例数（如 pi-browser 25 用例全绿但运行时缺 chromium 二进制）
 - 修复环境后实测通过才销账（如 wrapper 修复需重启 pi 生效——记录"需重启验证"）
 
 **委派 prompt 要点**（照抄进任务描述）：
