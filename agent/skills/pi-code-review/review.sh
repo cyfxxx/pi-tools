@@ -155,7 +155,7 @@ else
   # 第三方源码、日志、记忆提取缓存），避免逐文件语法检查拖垮扫描
   # 审计 2026-08-15：排除 */.pi/* 在扫描根自身是 .pi 目录（如 ~/.pi 仓库）时
   # 会误伤全部文件（249 个源码只审到 1 个）——根为 .pi 时禁用该排除
-  local PI_EXCL=()
+  PI_EXCL=()
   [ "$(basename "$SCAN_DIR")" != ".pi" ] && PI_EXCL=(! -path '*/.pi/*')
   mapfile -t FILES < <(find "$SCAN_DIR" -type f \( -name '*.ts' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.sh' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' -o -name '.env' -o -name '.env.*' -o -name '*.env' \) ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/searxng/venv/*' ! -path '*/searxng/repo/*' ! -path '*/logs/*' ! -path '*/memory/pending-extracts/*' ! -path '*/memory/extract-sessions/*' ! -path '*/memory/checkpoints/*' ! -path '*/tools/*' ! -path '*/pi-global/*' ! -path '*/node/*' ! -path '*/.cloakbrowser/*' "${PI_EXCL[@]}" 2>/dev/null)
   # 扫描预览：先大致查看范围（文件数 + 目录分布），确认无需再排除
