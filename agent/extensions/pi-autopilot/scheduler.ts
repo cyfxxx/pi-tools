@@ -31,6 +31,8 @@ export class SessionScheduler {
   private pi: ExtensionAPI
   private timer: ReturnType<typeof setInterval> | null = null
   private firing = new Set<string>()
+  /** 本轮已注入主会话的 message 任务 id（agent_settled 时 finalizeInjected 消费） */
+  private injectedIds = new Set<string>()
 
   constructor(pi: ExtensionAPI) {
     this.pi = pi
@@ -204,7 +206,35 @@ export class SessionScheduler {
     }
     await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
     // 注：不在此发 success webhook——注入成功 ≠ 执行成功（审计 MEDIUM 修复），
-    // notifyOnCompletion 应在主会话真实完成时（如任务内自行回调）触发
+    // 完成回写由 agent_settled → finalizeInjected 统一处理（commit 补闭环）
+    this.injectedIds.add(task.id)
+  }
+
+  /**
+   * 注入式任务最终化（主会话回合结束 agent_settled 时调用，补 d323ab9 半闭环）：
+   * 注入后 sendUserMessage 返回仅代表消息已发，主会话处理该轮后才视为交付完成。
+   * 对每个本轮注入的任务：
+   *  - once：updateTaskAfterRun success → 自动 splice 删除（此前每小时重复注入、永不删除）
+   *  - interval/cron：回写 lastRun/lastResult、重置 failCount/failoverCount、
+   *    nextRun=computeNextRun（覆盖 fireTask 的 +1h 防重入缓冲）
+   *  - notifyOnCompletion：与 subagent 路径对齐补发 success webhook
+   * 单任务失败不阻塞其余；任务已被删除/改型时 updateTaskAfterRun 内部安全跳过。
+   */
+  async finalizeInjected(): Promise<void> {
+    const ids = [...this.injectedIds]
+    this.injectedIds.clear()
+    for (const id of ids) {
+      try {
+        const t = (await readTasks()).tasks.find((x) => x.id === id)
+        if (!t || !t.enabled) continue
+        await updateTaskAfterRun(id, 'success', '注入式任务完成（主会话回合结束回写）', 0)
+        if (t.notifyOnCompletion) {
+          await sendWebhook(t, 'success', '调度任务执行完成（注入式）')
+        }
+      } catch {
+        /* 单任务失败/已删：忽略，不阻塞其余 */
+      }
+    }
   }
 
   private async fireViaSubagent(task: Task, provider: string, model: string): Promise<void> {

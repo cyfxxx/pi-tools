@@ -122,4 +122,67 @@ describe('scheduler: 预算拦截（防自锁）', () => {
     const runs = await readTelemetryFile()
     expect(runs).toHaveLength(0)
   })
+
+  describe('scheduler: 注入式任务最终化（finalizeInjected 补闭环）', () => {
+    it('once 任务注入经 agent_settled 最终化后删除（修复前每小时重复注入、永不删除）', async () => {
+      const task = makeTask({ id: 'o1', type: 'once', schedule: '2026-01-01T00:00:00Z' })
+      await writeTasksFile([task])
+      const { SessionScheduler } = await import('../scheduler.ts')
+      const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+      const sched = new SessionScheduler(pi as never)
+      await (sched as unknown as { fireTask: (t: unknown) => Promise<void>; finalizeInjected: () => Promise<void> }).fireTask(task)
+      // 注入后任务仍在（半闭环残留：+1h 缓冲，未删）
+      expect((await readTasksFile()).tasks).toHaveLength(1)
+      // agent_settled → finalizeInjected：once 删除
+      await sched.finalizeInjected()
+      expect((await readTasksFile()).tasks).toHaveLength(0)
+    })
+
+    it('interval 任务最终化：回写 lastResult + 重置 failoverCount + nextRun 按调度推进', async () => {
+      const task = makeTask({ failoverCount: 3, failCount: 2, history: [] })
+      await writeTasksFile([task])
+      const { SessionScheduler } = await import('../scheduler.ts')
+      const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+      const sched = new SessionScheduler(pi as never)
+      await (sched as unknown as { fireTask: (t: unknown) => Promise<void>; finalizeInjected: () => Promise<void> }).fireTask(task)
+      await sched.finalizeInjected()
+      const after = (await readTasksFile()).tasks[0] as {
+        lastResult: string | null; failoverCount: number; failCount: number; nextRun: string; history: Array<{ result: string }>
+      }
+      expect(after.lastResult).toBe('success')
+      expect(after.failoverCount).toBe(0)
+      expect(after.failCount).toBe(0)
+      expect(after.history[after.history.length - 1].result).toBe('success')
+      // nextRun 推进到 5m 之后（computeNextRun），非 +1h 缓冲
+      const delta = new Date(after.nextRun).getTime() - Date.now()
+      expect(delta).toBeGreaterThan(0)
+      expect(delta).toBeLessThan(15 * 60_000)
+    })
+
+    it('notifyOnCompletion 最终化时补发 success webhook（与 subagent 路径对齐）', async () => {
+      const task = makeTask({ id: 'w1', notifyOnCompletion: true })
+      await writeTasksFile([task])
+      const { SessionScheduler } = await import('../scheduler.ts')
+      const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+      const sched = new SessionScheduler(pi as never)
+      await (sched as unknown as { fireTask: (t: unknown) => Promise<void>; finalizeInjected: () => Promise<void> }).fireTask(task)
+      // 无 webhookUrl 的任务：sendWebhook 内部应安全跳过（不抛错）
+      await expect(sched.finalizeInjected()).resolves.toBeUndefined()
+    })
+
+    it('任务已被删除时 finalize 安全跳过（updateTaskAfterRun 内部 findIndex -1）', async () => {
+      const { SessionScheduler } = await import('../scheduler.ts')
+      const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+      const sched = new SessionScheduler(pi as never)
+      // 不写任务文件直接 finalize：tasks=[] → 空跑
+      await expect(sched.finalizeInjected()).resolves.toBeUndefined()
+      // 注入后立即删除任务 → finalize 跳过
+      const task = makeTask({ id: 'g1' })
+      await writeTasksFile([task])
+      await (sched as unknown as { fireTask: (t: unknown) => Promise<void> }).fireTask(task)
+      await writeTasksFile([])
+      await sched.finalizeInjected()
+      expect((await readTasksFile()).tasks).toHaveLength(0)
+    })
+  })
 })

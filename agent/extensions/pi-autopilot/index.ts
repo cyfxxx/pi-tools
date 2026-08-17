@@ -121,13 +121,16 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
     setTurnBusy(false)
   })
 
-  // 主会话空闲（回合结束）＝注入的任务已执行完成：清除 pendingInject 标记。
+  // 主会话空闲（回合结束）＝注入的任务已执行完成：先最终化注入式任务
+  // （once 删除 + webhook + 调度推进，补 d323ab9 审计修复的半闭环——此前
+  // once 任务每小时重复注入、永不删除），再清除 pendingInject 标志。
   // 双作用：① interval 任务可再次触发（防重叠期间正确跳过）；② 崩溃恢复时
   // collectPendingTasks 只收集真正"注入后未完成"的任务。
   pi.on('agent_settled', async () => {
     // 兜底：turn_end 异常未发出时这里也解除豁免，防止 watchdog 永久静默
     setTurnBusy(false)
     try {
+      await scheduler.finalizeInjected()
       await clearAllPending()
     } catch { /* 清理失败不阻塞 */ }
   })

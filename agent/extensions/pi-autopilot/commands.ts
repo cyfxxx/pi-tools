@@ -357,7 +357,9 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           reply(pi, '用法: /schedule enable <id|name>')
           return
         }
-        const t = await updateTask(idOrName, { enabled: true })
+        // re-enable 时同时清零熔断/失败计数（audit 补充）：否则 suspend 恢复后
+        // 一次失败即再次熔断（failoverCount 在 message 路径永不自动重置）
+        const t = await updateTask(idOrName, { enabled: true, failoverCount: 0, failCount: 0 })
         reply(pi, t ? `已启用任务: ${t.name}` : `未找到任务: ${idOrName}`)
         return
       }
