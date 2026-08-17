@@ -11039,10 +11039,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 4,
+      "recurrence": 9,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-17T03:48:34.437Z",
-      "accessedAt": "2026-08-17T03:48:34.437Z",
+      "updatedAt": "2026-08-17T08:00:31.489Z",
+      "accessedAt": "2026-08-17T08:00:31.489Z",
       "environments": [
         "all"
       ],
@@ -11424,7 +11424,33 @@
       "accessedAt": "2026-08-17T07:03:05.205Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-17T07:03:05.205Z",
+      "deleted": false
+    },
+    {
+      "id": "26dcc57a-64d8-4e72-86eb-048ba45fe967",
+      "category": "procedure",
+      "title": "系统提示词瘦身：AGENTS.md 索引化+工具描述压缩+注入指向式（2026-08-17）",
+      "content": "2026-08-17 系统提示词瘦身实践（目标：减少固定 14.8K token 开销，全部命中 provider 缓存）：\n1. AGENTS.md 精简为索引式（10219→5288 字节，-48%）：目录结构/katalog 细节/用例数/补丁清单/已知噪音全部移到 docs/AGENTS-DETAILS.md，AGENTS.md 只留概要 + 硬约束（扩展注册/缓存友好/git push/后台任务不阻塞）。\n2. 工具描述压缩（扩展 34 工具 7326 字符→7118，-3%）：骨干是 schedule_task/memory_store/search/recall/forget 的参数描述；原则只删散文式重复措辞，不删参数结构/必填/枚举（准确性零损失）。真正大头的注入量是参数 schema 结构，description 只占 1.9K 字符，压缩空间有限。\n3. pi-memory 注入改指向式：引导语改为\"索引，细节用 memory_search 按需检索\"；L1 条目上限 6→4（实测注入块 4条+1摘要=488 tokens，原为 6条约500+）。\n验证：tsc 通过、conflict-check 8/8、pi-memory 94/pi-autopilot 106/pi-tmux/pi-link/plan 全绿；pi-web-search shared-libs 1 项失败为预存问题（stash 验证确认与本次无关）。\n结论：固定 14.8K 中可优化面只有 AGENTS.md(3.5-4K)+扩展工具(2.5K)+注入(0.5K)≈7K，其餘为 pi 核心 prompt+内置工具 schema（不可改）。每轮省约 2.2K token（AGENTS 部分为主）。存货要点：缓存友好核心是不破坏 system prompt 前缀（无时间戳/banding 锚定），瘦身不改前缀结构。",
+      "tags": [
+        "上下文优化",
+        "AGENTS.md",
+        "token",
+        "缓存",
+        "pi-memory"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T08:00:24.311Z",
+      "updatedAt": "2026-08-17T08:00:24.311Z",
+      "accessedAt": "2026-08-17T08:00:24.311Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-17T08:00:24.311Z",
+      "deleted": false
     }
   ]
 }
