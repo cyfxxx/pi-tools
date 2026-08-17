@@ -44,11 +44,24 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 
 `patch-voice-enter.mjs`（回车拦截，缺失时 pi-voice 自动禁用回车听写）
 `patch-footer-live-context.mjs`（footer 实时 token）
+`patch-footer-cache.mjs`（footer CH 双命中率实时/会话 + context 去百分比；依赖前者的实时 context 形态）
+`patch-footer-format.mjs`（footer 前 3 字段符号 Σ/↑/↓ + 成本人民币；依赖 cache 补丁之后的形态）
+`patch-footer-restart-hint.mjs`（上下文 >40% 窗口时 context 区追加 ⚠，提示重启前先压缩；依赖 cache 补丁的实时 context 形态）
 `patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）
 `patch-tab-arg-completion.mjs`（tab 参数补全）
 `patch-playwright-core.mjs`（Termux android→linux 平台补丁）
 
-共 5 个由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行五个脚本）。
+共 8 个由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行八个脚本）。
+
+footer 状态栏口径速查：`Σ/↑/↓`=会话累计（Σ=总输入=命中+未命中 / ↑=累计未命中输入 / ↓=累计输出）；`CH{x}/{y}%`=左实时（最近一轮）/右会话累计；context 区 `34.5k/200k`=实时/窗口（>40% 追加 ⚠ 提示重启前先压缩、>70% 黄、>90% 红，无括号百分比）；`¥`=成本人民币（参考汇率 6.77=2026-08 近 90 天中位数，常量在 patch-footer-format.mjs，改汇率后重跑自动更新 dist）。
+
+重启/压缩策略（2026-08-17 对齐 DeepSeek Harness dsh 源码结论）：
+- **日常压缩阈值** thresholdRatio 0.8（dsh compaction-basic 同值，晚压缩更优；verbatim tail 由 pi 内核 keepRecentTokens=20000 实现，同 dsh retainRatio 0.16 思路）
+- **重启/恢复阈值** 40% 窗口（PI_CONTEXT_RESTART_RATIO 可覆盖）：session_start 时上下文 ≥40% 窗口即自动压缩（pi-context index.ts），首轮不会再全量重发；admin_restart 工具超阈值前会 warning 提示先 /compact
+- **dsh 调研要点**（npm 包 @deepseek-ai/dsh 0.1.0-rc.7 源码）：无显式缓存优化代码，缓存友好是架构默认——静态 persona（{{model}}/{{cwd}} 启动时解析一次，无时间戳）、compaction 阈值 0.8+retainRatio 0.16、token-meter 按 input+cacheRead+cacheWrite 算压力。我们已全部对齐/超额。
+- **自动重启间隔**：看门狗 maxIdleMinutes 由用户改为 180（3 小时，.pi-autopilot-config.json；types.ts 默认同步），挂死判定放宽避免误杀长思考。
+
+补丁恢复保障：pi update 经 pi-wrapper.sh L3 拦截（CLI 一次性命令），成功后自动重跑 rebuild.sh 恢复全部补丁；手动 `bash scripts/rebuild.sh` 同样幂等可恢复。
 
 ## 已知噪音（勿误判为 bug）
 
