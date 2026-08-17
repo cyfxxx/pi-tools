@@ -1240,6 +1240,27 @@ if [ -f "$PI_HOME/scripts/patch-footer-live-context.mjs" ]; then
 else
   warn "patch-footer-live-context.mjs 缺失，跳过"
 fi
+if [ -f "$PI_HOME/scripts/patch-footer-cache.mjs" ]; then
+  node "$PI_HOME/scripts/patch-footer-cache.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "footer CH 双命中率 + context 去百分比补丁" \
+    || warn "footer 缓存补丁未应用（pi 版本可能已改动或 live-context 补丁缺失），需人工核对"
+else
+  warn "patch-footer-cache.mjs 缺失，跳过"
+fi
+if [ -f "$PI_HOME/scripts/patch-footer-format.mjs" ]; then
+  node "$PI_HOME/scripts/patch-footer-format.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "footer 字段中文标签 + 人民币成本补丁" \
+    || warn "footer 格式补丁未应用（pi 版本可能已改动或前后补丁顺序异常），需人工核对"
+else
+  warn "patch-footer-format.mjs 缺失，跳过"
+fi
+if [ -f "$PI_HOME/scripts/patch-footer-restart-hint.mjs" ]; then
+  node "$PI_HOME/scripts/patch-footer-restart-hint.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "footer 重启前建议压缩 ⚠ 提示补丁" \
+    || warn "footer 重启提示补丁未应用（pi 版本可能已改动或 cache 补丁缺失），需人工核对"
+else
+  warn "patch-footer-restart-hint.mjs 缺失，跳过"
+fi
 if [ -f "$PI_HOME/scripts/patch-voice-enter.mjs" ]; then
   node "$PI_HOME/scripts/patch-voice-enter.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "回车条件拦截补丁（pi-voice 听写）" \

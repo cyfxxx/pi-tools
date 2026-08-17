@@ -114,7 +114,7 @@ export function defaultAutopilotConfig(): AutopilotConfig {
   return {
     enabled: true,
     fallbackModels: [],
-    maxIdleMinutes: 30,
+    maxIdleMinutes: 180,
     requeueOnRestart: true,
     budget: { maxRunsPerDay: 50, maxCostPerDay: 0 },
     policy: { failoverAfter: 2, suspendAfter: 5, timeoutFactor: 2 },

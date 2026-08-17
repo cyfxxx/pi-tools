@@ -29,7 +29,7 @@ $New = (Get-Content "$PkgDir\package.json" -Raw | ConvertFrom-Json).version
 Write-Host "版本: $Old -> $New"
 
 # ---- 3. 重跑补丁（升级 dist 后补丁失效；只跑存在的） ----
-foreach ($patch in @('patch-footer-live-context.mjs', 'patch-voice-enter.mjs', 'patch-plan-tools.mjs')) {
+foreach ($patch in @('patch-footer-live-context.mjs', 'patch-footer-cache.mjs', 'patch-footer-format.mjs', 'patch-footer-restart-hint.mjs', 'patch-voice-enter.mjs', 'patch-plan-tools.mjs')) {
   # 优先 bin/（种子自带），兜底 scripts/（仓库内）
   $candidates = @((Join-Path $PSScriptRoot $patch), (Join-Path $Root 'scripts' $patch))
   $p = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
