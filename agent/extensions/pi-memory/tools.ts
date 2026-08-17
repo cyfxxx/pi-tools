@@ -117,40 +117,38 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'memory_store',
     label: '存储知识',
     description:
-      '存储一条知识到持久记忆库。当你在对话中发现新的有用信息、' +
-      '用户的偏好/习惯、项目约定、API 使用方法等值得长期记住的内容时调用。' +
-      '系统会自动去重：相同标题会更新，内容高度相似会合并。存储后可在未来所有会话中检索。',
+      '存储知识到持久记忆库（发现新信息/偏好/项目约定/API 用法时调用）。自动去重：同标题更新、近似内容合并。存储后未来会话可检索。',
     parameters: {
       type: 'object',
       properties: {
         category: {
           type: 'string',
           enum: CATEGORIES,
-          description: '类别: fact=事实, preference=用户偏好, habit=用户习惯, procedure=操作流程, reference=参考信息',
+          description: '类别: fact=事实, preference=偏好, habit=习惯, procedure=流程, reference=参考',
         },
         title: {
           type: 'string',
-          description: '简短标题，用作搜索关键词索引。例: "用户偏好: 使用 Shell 管理系统"',
+          description: '简短标题，作搜索索引。例: "用户偏好: 使用 Shell 管理系统"',
         },
         content: {
           type: 'string',
-          description: '详细内容，描述完整的知识信息',
+          description: '详细内容',
         },
         tags: {
           type: 'array',
           items: { type: 'string' },
-          description: '标签数组，用于分类检索。例: ["shell", "system", "preference"]',
+          description: '标签数组，用于分类检索',
         },
         confidence: {
           type: 'number',
           minimum: 0,
           maximum: 1,
-          description: '置信度 0-1，根据信息可靠程度自评。直接观察到的事实填 1.0，推断的填 0.5-0.7',
+          description: '置信度 0-1：直接观察到的事实填 1.0，推断的填 0.5-0.7',
         },
         environment: {
           type: 'string',
           enum: ENVIRONMENTS as unknown as string[],
-          description: '适用运行环境（缺省 all=通用，所有环境可见）。环境专属知识显式指定：termux/wsl2/linux/macos/windows',
+          description: '适用运行环境（缺省 all=通用，所有环境可见）。环境专属知识显式指定',
         },
       },
       required: ['category', 'title', 'content'],
@@ -196,9 +194,7 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'memory_search',
     label: '搜索记忆',
     description:
-      '从持久记忆库中搜索已存储的知识。支持按关键词、类别、标签过滤。' +
-      '结果按相关度排序（BM25 词法相关 + 置信度+时效性+引用频率）。' +
-      '当需要回忆之前学到的知识、用户偏好、项目约定时调用。',
+      '从持久记忆库检索知识。支持关键词/类别/标签过滤，结果按相关度排序（BM25 + 置信度/时效/引用频率）。回忆知识/偏好/项目约定时调用。',
     parameters: {
       type: 'object',
       properties: {
@@ -225,7 +221,7 @@ export function registerTools(pi: ExtensionAPI): void {
         env: {
           type: 'string',
           enum: ENVIRONMENTS as unknown as string[],
-          description: '按运行环境过滤（缺省 = 当前环境 + all；传 all 则不过滤）',
+          description: '按运行环境过滤（缺省=当前环境+all；传 all 则不过滤）',
         },
       },
     },
@@ -310,24 +306,22 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'memory_forget',
     label: '删除记忆',
     description:
-      '删除一条或多条记忆。可指定 id 精确删除，或按类别/时间范围批量删除。' +
-      '删除后不可恢复。',
+      '删除记忆。可指定 id 精确删除，或按类别+时间范围批量删除。删除后不可恢复。',
     parameters: {
       type: 'object',
       properties: {
         id: {
           type: 'string',
-          description: '要删除的记忆条目 ID。与 category+olderThan 互斥。',
+          description: '要删除的记忆条目 ID（与 category+olderThan 互斥）',
         },
         category: {
           type: 'string',
           enum: CATEGORIES,
-          description: '按类别批量删除。需要同时指定 olderThan。',
+          description: '按类别批量删除（需同时指定 olderThan）',
         },
         olderThan: {
           type: 'string',
-          description:
-            'ISO 日期字符串，删除在该日期之前创建且匹配 category 的记忆。格式: "2026-06-01"',
+          description: 'ISO 日期，删除该日期之前创建且匹配 category 的记忆。格式: "2026-06-01"',
         },
       },
     },
@@ -387,9 +381,7 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'memory_recall',
     label: '回忆记忆与摘要',
     description:
-      '综合检索跨会话长期记忆与历史会话摘要。' +
-      'query 匹配长期记忆条目（BM25 词法相关 + 质量分混合排序）；' +
-      '附加 --summaries 时同时返回最近会话摘要时间线，用于跨会话上下文衔接。',
+      '综合检索长期记忆与历史会话摘要。query 匹配记忆条目（BM25 + 质量分）；附带 --summaries 时同时返回最近会话摘要时间线，用于跨会话衔接。',
     parameters: {
       type: 'object',
       properties: {
@@ -461,8 +453,7 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'ctx_exec',
     label: 'Execute Code',
     description:
-      'Execute code (JS/TS/Python/Shell) in a child process. Only stdout enters the context window. ' +
-      'Use this instead of reading many files — write a script to aggregate data and print the result.',
+      '在子进程中执行代码（JS/TS/Python/Shell），仅 stdout 进入上下文。适合聚合处理多个文件后打印结果，代替逐个读文件。',
     parameters: Type.Object({
       code: Type.String({ description: 'Code to execute' }),
       language: Type.Optional(
@@ -506,14 +497,12 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'ctx_note',
     label: 'Store Note',
     description:
-      "Store a note that survives conversation compaction. Use this to remember " +
-      "file edits, task status, user decisions, errors, or any state across compactions. " +
-      "Set value to 'null' to delete. Append '@ttl=<ISO timestamp>' to key (e.g. 'task.status@ttl=2026-12-31T23:59:59Z') to auto-expire.",
+      '存储跨对话压缩存活的便笺（记录文件编辑/任务状态/用户决定/错误等状态）。value 为 null 时删除；key 追加 @ttl=<ISO 时间戳> 自动过期。',
     parameters: Type.Object({
       key: Type.String({
-        description: "Note key (dot notation for namespacing, e.g. 'task.current'). Append '@ttl=ISO_TIMESTAMP' for auto-expire.",
+        description: "便笺键（点号命名空间，如 'task.current'）。追加 '@ttl=ISO_TIMESTAMP' 自动过期。",
       }),
-      value: Type.Optional(Type.String({ description: "Value to store. Omit to read. Set to 'null' to delete." })),
+      value: Type.Optional(Type.String({ description: '存储值。省略=读取；null=删除。' })),
     }),
     async execute(_id, params, _signal, _onUpdate, _ctx) {
       const notes = loadNotes()
@@ -571,7 +560,7 @@ export function registerTools(pi: ExtensionAPI): void {
   pi.registerTool({
     name: 'ctx_list',
     label: 'List Notes',
-    description: "List all stored note keys with their sizes. Use detail:true to show values.",
+    description: "列出已存便笺键及其大小。detail:true 显示值。",
     parameters: Type.Object({
       prefix: Type.Optional(Type.String({ description: "Filter by key prefix (e.g. 'task')" })),
       detail: Type.Optional(Type.Boolean({ description: 'Show full values (default false)' })),
@@ -611,9 +600,7 @@ export function registerTools(pi: ExtensionAPI): void {
     name: 'ctx_snap',
     label: 'Save Checkpoint',
     description:
-      "Save a named checkpoint of current notes + timestamp. " +
-      "Use 'restore:<name>' to restore. Use 'list' to see all checkpoints. " +
-      'Useful before risky operations or at natural milestones.',
+      '保存当前便笺的命名检查点（含时间戳）。用 restore:<name> 恢复；list 查看全部。适合风险操作前或里程碑节点。',
     parameters: Type.Object({
       name: Type.String({
         description: "Checkpoint name (e.g. 'before-refactor'). Use 'restore:<name>' to restore. Use 'list' to list all.",

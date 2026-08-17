@@ -1,6 +1,6 @@
 ---
 name: pi-backup
-description: 备份和恢复 pi agent 配置、技能、扩展源码和用户数据。支持本地 tar.gz 归档和 GitHub git 同步两种模式。用户说"备份""存档""迁移""恢复""同步""推送"时触发。
+description: 备份/恢复 pi 配置、技能、扩展源码与用户数据（tar.gz 归档或 GitHub git 同步两种模式）。用户说"备份""存档""迁移""恢复""同步""推送"时触发。
 ---
 
 # pi-backup 技能

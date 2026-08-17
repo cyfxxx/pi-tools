@@ -347,7 +347,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     name: "plan_enter",
     label: "进入计划模式",
     description:
-      "进入计划模式（只读探索）：工具集切换为只读白名单（无 edit/write，bash 仅白名单命令），可安全调研代码库/网络资料后制定计划。已在计划模式时无操作。",
+      '进入计划模式（只读探索）：工具集切为只读白名单（无 edit/write，bash 仅白名单命令），可安全调研后制定计划。已在计划模式时无操作。',
     promptSnippet: "进入计划模式（只读探索）",
     promptGuidelines: [
       "适合需要先安全调研再动手的复杂任务：进入计划模式后用 read/bash/grep 探索代码、web_search/fetch_url 查资料、subagent(agent=scout) 并行调研，再用 todo 建立计划步骤。",
@@ -379,8 +379,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "plan_exit",
     label: "退出计划模式",
-    description:
-      "请求退出计划模式，恢复执行模式（可编辑文件、完整工具集）。计划任务保留（/plan todos 查看，/plan resume 可继续执行）。退出需用户手动确认：调用后系统弹出确认选择器，用户确认后才生效；用户取消则保持计划模式。不在计划模式时无操作。",
+    description: '请求退出计划模式，恢复执行模式（可编辑文件、完整工具集）。计划任务保留（/plan todos 查看，/plan resume 继续执行）。退出需用户手动确认：弹出选择器后确认生效，取消则保持计划模式。不在计划模式时无操作。',
     promptSnippet: "退出计划模式（需用户确认）",
     promptGuidelines: ["退出前先向用户说明计划完成情况与后续执行意向；调用本工具后等待用户确认，用户取消则继续计划模式。"],
     parameters: { type: "object", properties: {}, required: [] },

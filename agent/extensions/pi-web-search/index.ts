@@ -39,7 +39,7 @@ export default async function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "fetch_url",
     label: "获取 URL",
-    description: "使用 HTTP GET 获取 URL 内容。适用于纯文本、API 响应、JSON、Markdown 文档。需要 JavaScript 渲染的页面请用 browser_navigate。",
+    description: "使用 HTTP GET 获取 URL 内容（纯文本/API/JSON/Markdown）。需 JavaScript 渲染的页面用 browser_navigate。",
     promptSnippet: "获取网页内容",
     parameters: {
       type: "object",
@@ -87,7 +87,7 @@ export default async function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "web_fetch",
     label: "网络搜索",
-    description: "使用 HTTP GET 从搜索引擎获取搜索结果。不依赖 SearXNG 服务，适合搜索不可用时的 fallback。",
+    description: "使用 HTTP GET 从搜索引擎获取结果。不依赖 SearXNG，适合搜索不可用时的 fallback。",
     promptSnippet: "网络搜索",
     parameters: {
       type: "object",

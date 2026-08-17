@@ -58,7 +58,7 @@ export function buildInjectionBlock(
   const lines: string[] = []
   lines.push('## 持续记忆（pi-memory 自动注入，每轮刷新）')
   lines.push(
-    '以下是跨会话长期记忆。用到时直接使用；新发现的重要信息请用 memory_store 工具主动存入（会话结束也会自动提取）。',
+    '以下是跨会话长期记忆索引：仅常见价值高的条目与最近会话摘要。需要具体内容时用 memory_search 按需检索（如历史方法/踩坑细节）；新发现的重要信息请用 memory_store 主动存入（会话结束也会自动提取）。',
   )
   let used = estimateTokens(lines.join('\n') + '\n')
   let injectedEntries = 0
@@ -83,7 +83,7 @@ export function buildInjectionBlock(
       lines.push(item)
       used += cost
       injectedEntries++
-      if (injectedEntries >= 6) break
+      if (injectedEntries >= 4) break
     }
   }
 
