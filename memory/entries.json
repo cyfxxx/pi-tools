@@ -11283,6 +11283,148 @@
       ],
       "observedAt": "2026-08-15T15:11:08.629Z",
       "deleted": false
+    },
+    {
+      "id": "01badf94-f775-47d3-9925-670a0c312700",
+      "category": "reference",
+      "title": "opencode-go provider 无 contextWindow 的自动压缩 fallback 机制",
+      "content": "pi 的 opencode-go provider（opencode.ai 托管网关）不配置 model.contextWindow（运行时才知道），内核 getContextUsage() 返回 undefined/tokens=null → pi-context 自动压缩在 agent_settled/session_start 双路径静默 return、永不触发。2026-08-17 修复：resolveContext() 优先内核 usage，不可用时回退到最后 turn_end 的 provider contextTokens（input+cacheRead，每轮有效）+ PI_CONTEXT_WINDOW_FALLBACK 环境变量（默认 1M，deepseek-v4 系列窗口）。阈值仍按窗口比例：>256K 窗口 80%（对齐 dsh compaction-basic thresholdRatio 0.8），≤256K 85%；PI_CONTEXT_COMPACT_LARGE_RATIO/SMALL_RATIO 可覆盖。溢出兜底：tokens ≥ window 时绕过阈值/cooldown 强制压缩（对齐 dsh CONTEXT_WINDOW_EXCEEDED 路径，给内核 window-reserve 兜底留 32K reserve 余量）。实测 8-15 从未触发 auto-compact 事件、192K 靠内核兜底——根因即此。",
+      "tags": [
+        "pi-context",
+        "opencode-go",
+        "auto-compact",
+        "fallback",
+        "context-window"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T07:01:54.386Z",
+      "updatedAt": "2026-08-17T07:01:54.386Z",
+      "accessedAt": "2026-08-17T07:01:54.386Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-17T07:01:54.386Z",
+      "deleted": false
+    },
+    {
+      "id": "54dce6f2-d3f2-45d7-a118-125c0b15e4fe",
+      "category": "procedure",
+      "title": "git 合并完整性核查法（squash 可能只带早期快照）",
+      "content": "pi 仓库合并完整性核查法（2026-08-17 实战）：远程 squash 合并（单父提交）可能只带入分支早期快照，后续提交未真正进入目标分支。核查步骤：①git merge-base 确认分叉点 ②git log <base>..<branch> 列出全部未合入提交 ③对每个既有文件做 master vs 分支 md5 对比（git show origin/master:$f | md5sum）④差异文件逐一看方向（master 更新版 vs 旧版/缺失）⑤grep 功能符号确认关键补丁是否存在（如 ensureLocalBinaryEnv、--no-proxy-server）。教训：diff 输出方向确认（`<`/`>` 哪个是 master）别看反（.gitignore 误报）；临时文件用完整路径或唯一后缀命名，basename 冲突会互相覆盖污染 diff；合并后必须验证\"master 独有修复\"未被覆盖（如 URL 协议校验、close 竞态）。实际案例：portable-win 46 提交仅早期快照入 master，pi-browser 4 个 Windows 便携修复（探测/直连/路径校验）缺失，后手工三点合并移植。",
+      "tags": [
+        "git",
+        "merge",
+        "audit",
+        "portable-win",
+        "pi-browser"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T07:02:17.984Z",
+      "updatedAt": "2026-08-17T07:02:17.984Z",
+      "accessedAt": "2026-08-17T07:02:17.984Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-17T07:02:17.984Z",
+      "deleted": false
+    },
+    {
+      "id": "68d6addc-2a0f-4a8f-bd4d-973754e214d0",
+      "category": "reference",
+      "title": "DeepSeek 缓存断裂三类型与命中率判定法",
+      "content": "DeepSeek 缓存前后缀命中与断裂的三种类型（usage-diag 实测分类法，2026-08-17 复查确认优化后常态命中 99.5%+）：①重启/新会话首轮全量未命中（cacheRead=0，input≈整个上下文，成本一次全价，低频可接受 $0.04/次 137K）；②注入变化断裂（pi-memory 记忆注入内容变化破坏前缀 → 单轮 40-80% 未命中，下一轮自动恢复）——修复方向是注入稳定化（截断点固定、静态文案、无时间戳）；③擦除/压缩断裂（prune 事后擦除破坏前缀，80K/50K 阈值调高后零擦除轮）。判定指标：cacheRead/(input+cacheRead) 命中率、input 突增量（>10K 异常）、0% 且 input>10K 的全量轮。数据源：~/.pi/agent/.usage-diag.jsonl（多实例追加，按 ts 排序；记录 input/cacheRead/cacheWrite/output/reasoning/contextTokens）。opencode stats 命令给全局汇总（Cache Read/Input 全账户 27 天 94.7%）；opencode.db SQLite 的 message.data.tokens.cache.read 逐消息可查。",
+      "tags": [
+        "cache",
+        "deepseek",
+        "usage-diag",
+        "命中率",
+        "缓存断裂"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T07:02:28.758Z",
+      "updatedAt": "2026-08-17T07:02:28.758Z",
+      "accessedAt": "2026-08-17T07:02:28.758Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-17T07:02:28.758Z",
+      "deleted": false
+    },
+    {
+      "id": "d2290e32-bab0-4de7-a5b3-17365c8ef032",
+      "category": "reference",
+      "title": "pi-memory 注入截断机制（边界感知+标记预算）",
+      "content": "pi-memory 注入截断机制（2026-08-17 修复版）：truncateByTokens(text, CONTENT_TOKEN_CAP=80) 在 lib/context-budget.ts。两个修复：①句子边界感知——二分定位 token 截断点后，向前回退到最近断点字符（TRUNC_BREAKS='。；;！!？?…\\n，,、 ()：\"\\\"'），回退下限为截断点 50%（防无标点长串砍太狠），避免硬切残句（旧版在词中/句中断）；②标记预算扣除——TRUNC_MARK_TOKEN_BUDGET=12，内容按 maxTokens-12 截，内容+标记总 token 严格 ≤ cap（旧版标记 ~11 token 不计预算，实际超 11）。验证：匹配注入块 `[truncated: X chars → Y chars (Z%)]` 的 Y 应从旧值（如 251）变新值（如 208），且截断后紧跟标点/空格。改动需重启 pi 才生效（扩展加载时快照）；注入内容若超时长但 token 少（中文占比高）可能保留更多字符（estimateTokens 中文 1 字=0.5 token）。",
+      "tags": [
+        "pi-memory",
+        "inject",
+        "truncate",
+        "token-budget",
+        "缓存"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T07:02:41.220Z",
+      "updatedAt": "2026-08-17T07:02:41.220Z",
+      "accessedAt": "2026-08-17T07:02:41.220Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-17T07:02:41.220Z",
+      "deleted": false
+    },
+    {
+      "id": "614f704f-7722-4f48-8ffd-8fe318a4e72c",
+      "category": "reference",
+      "title": "opencode.ai usage 查询路径（stats/db/usage-diag 三途径）",
+      "content": "opencode.ai 云 workspace usage 页面（wrk_01KZ3.../usage）访问法（2026-08-17 实测）：浏览器直连无 cookie 会跳 auth.opencode.ai OAuth（GitHub/Google 登录，需用户凭据）；curl 层面 api.opencode.ai 是 LLM 网关节点（根返回 Hello world，其余全 Not Found），非管理 API；opencode.ai SPA 的 usage 数据走 SSR RPC（SolidStart server function），前端 JS 抓不到 API 路径。可行替代：①opencode stats（全局 27 天汇总 Input/Cache Read/Cost）②~/.local/share/opencode/opencode.db SQLite（message.data 有 tokens.total/input/output/cache.read/write + cost，join session.workspace_id 按 workspace 过滤）③本地 usage-diag 逐轮（最精确）。本机 opencode CLI 已登录 opencode-go（auth.json 的 sk-u0h 开头 key 即 opencode 账户令牌，同时用于 API 调用）。Termux 环境浏览器：~/.cloakbrowser/chromium-*/chrome 可作 chromium-browser 符号链接（/data/data/com.termux/files/usr/bin/chromium-browser → chrome）。",
+      "tags": [
+        "opencode",
+        "usage",
+        "api",
+        "浏览器",
+        "workspace"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T07:02:53.107Z",
+      "updatedAt": "2026-08-17T07:02:53.107Z",
+      "accessedAt": "2026-08-17T07:02:53.107Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-17T07:02:53.107Z",
+      "deleted": false
+    },
+    {
+      "id": "a2d89d06-cb54-4cbb-990c-d23d6bfee4e0",
+      "category": "procedure",
+      "title": "pi-autopilot 注入式任务半闭环修复模式",
+      "content": "pi 调度任务 asg 半闭环修复参考（2026-08-17）：d323ab9 审计把 fireViaMessage\"注入即记 success\"改为不记——但遗留半闭环：①once 任务注入后 nextRun 推 +1h 而 computeNextRun 对 once 返回过期时间 → 每小时重复注入、永不删除（修复前全仓无\"真正执行后删除\"机制）②notifyOnCompletion success webhook 调用点删除后无任何完成回调（死功能）③failoverCount 只在 subagent 成功路径重置。修复方案：agent_settled（主会话回合结束=注入已交付）时 finalizeInjected()——维护 injectedIds 集合（fireViaMessage 成功时 add），对每个 id 调 updateTaskAfterRun('success')（自带 once splice 删除/nextRun 推进/计数重置/历史记录）+ notifyOnCompletion 补发 webhook；任务已删/改型由 updateTaskAfterRun 内部 findIndex -1 安全跳过。教训：审计对语义修正要同时检查调用链闭环（once 生命周期谁终结/webhook 谁触发/计数谁重置），\"表面测试通过\"可能因测试只覆盖 subagent 路径而掩盖 message 路径断裂。",
+      "tags": [
+        "pi-autopilot",
+        "scheduler",
+        "once",
+        "webhook",
+        "审计"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T07:03:05.205Z",
+      "updatedAt": "2026-08-17T07:03:05.205Z",
+      "accessedAt": "2026-08-17T07:03:05.205Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
