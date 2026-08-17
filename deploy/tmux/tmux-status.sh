@@ -5,7 +5,8 @@
 # 颜色: tmux 格式指令 #[fg=...]（渲染时解析）
 # 注意: 不用 tmux #() 命令替换——Termux 的 tmux 3.7b 中 #() 不执行（实测为空），
 #       故状态循环用 set-option 直接写入 status-right。
-# 容错: /proc/loadavg 在 Termux(SELinux) 不可读时负载显示 '--'；meminfo 同理。
+# 容错: /proc/loadavg 在 Termux(SELinux) 不可读时回退 uptime（sysinfo syscall 不受文件级限制）；
+#       两者都失效/无数据时才显示 '--'。meminfo 同理不可读时显示 '--'。
 set -u
 
 OUT="$(cd "$(dirname "$0")" && pwd)/tmux-status.txt"
@@ -13,6 +14,11 @@ OUT="$(cd "$(dirname "$0")" && pwd)/tmux-status.txt"
 load1="--"
 if [ -r /proc/loadavg ]; then
   read -r load1 _ < /proc/loadavg
+fi
+# Termux(SELinux) 拒读 /proc/loadavg 时回退 uptime（sysinfo syscall，不受文件级 SELinux 限制）
+if [ "$load1" = "--" ] && command -v uptime >/dev/null 2>&1; then
+  load1=$(uptime 2>/dev/null | sed -n 's/.*load average: *\([0-9][0-9.]*\),.*/\1/p')
+  [ -n "$load1" ] || load1="--"
 fi
 cores=$(nproc 2>/dev/null || echo 1)
 
