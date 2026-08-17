@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { visibleWidth } from '@earendil-works/pi-tui'
 import { TodoOverlay } from '../overlay'
 import { replaceState, resetState } from '../store'
 import type { Task } from '../state'
@@ -106,5 +107,33 @@ describe('TodoOverlay: opencode todos 风格面板', () => {
     const widget = factory({ requestRender: () => {} }, ui.theme)
     const text = widget.render(120).join('\n')
     expect(text).toContain('+4 更多')
+  })
+
+  it('窄终端下渲染行不超宽（回归: 2026-08-17 pi 多次崩溃，超宽行触发 pi-tui 渲染保护抛异常）', () => {
+    const ui = mockUI()
+    const overlay = new TodoOverlay()
+    overlay.setUICtx(ui as never)
+    // 复现崩溃场景：长 subject + 长 activeForm，终端宽度 46
+    replaceState({
+      tasks: [
+        task({
+          id: 1,
+          status: 'in_progress',
+          subject: 'termux-ubuntu 公钥注释统一为 termux-ubuntu',
+          activeForm: '正在修改 termux-ubuntu 私钥注释并同步 authorized_keys',
+        }),
+        task({ id: 2, status: 'pending', subject: '步骤二' }),
+      ],
+      nextId: 3,
+    })
+    overlay.update()
+    const factory = ui.setWidget.mock.calls[0][1]
+    const widget = factory({ requestRender: () => {} }, ui.theme)
+    for (const width of [46, 40, 30]) {
+      const lines = widget.render(width)
+      for (const line of lines) {
+        expect(visibleWidth(line), `宽度 ${width} 下行超宽: ${line}`).toBeLessThanOrEqual(width)
+      }
+    }
   })
 })
