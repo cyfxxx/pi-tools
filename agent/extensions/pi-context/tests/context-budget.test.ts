@@ -94,3 +94,33 @@ describe('context-budget: emoji 按 1 token 保守校准', () => {
     expect(estimateTokens('1234567890')).toBe(3)
   })
 })
+
+describe('context-budget: truncateByTokens 边界感知与标记预算 (2026-08-17)', () => {
+  it('截断在句子边界（句号后）而非硬切残句', async () => {
+    const { truncateByTokens } = await import('../../../lib/context-budget.ts')
+    const text = '这是一段有明确句子的长内容。第二句也很重要。第三句会超过预算因此应当被截掉。后缀'.repeat(4)
+    const out = truncateByTokens(text, 40)
+    expect(out).toContain('[truncated:')
+    // 截断内容以句号结尾（不是在句子中间断）
+    const content = out.split('\n\n[truncated:')[0]
+    expect(content.endsWith('。')).toBe(true)
+    expect(content.endsWith('。后缀')).toBe(false) // 不残留半句
+  })
+
+  it('无标点长串回退下限：至少保留截断点一半（不因找断点砍太狠）', async () => {
+    const { truncateByTokens } = await import('../../../lib/context-budget.ts')
+    const text = '无标点长串'.repeat(80) // 320 字符中文
+    const out = truncateByTokens(text, 30)
+    const content = out.split('\n\n[truncated:')[0]
+    expect(content.length).toBeGreaterThan(20)
+  })
+
+  it('标记预算扣除：内容+标记总 token ≤ cap（修复前超 ~11 token）', async () => {
+    const { truncateByTokens, estimateTokens } = await import('../../../lib/context-budget.ts')
+    const text = '中文内容'.repeat(100)
+    const cap = 60
+    const out = truncateByTokens(text, cap)
+    expect(estimateTokens(out)).toBeLessThanOrEqual(cap + 2)
+    expect(out).toContain('chars')
+  })
+})

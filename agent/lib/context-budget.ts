@@ -189,17 +189,35 @@ export function estimateTokens(text: string): number {
   return Math.ceil(cjk / 2 + digits / 3.5 + astral + other / 4)
 }
 
+// 截断断点字符：优先中文句末标点/换行，其次英文句末/空格（按优先级从截断点往
+// 回找最近断点，回退下限为截断点 50%——防止无标点长串把内容砍得过短）
+const TRUNC_BREAKS = '。；;！!？?…\n，,、 ()：“”"'
+/** 截断标记自身 token 成本（预留：实际 ~11，多留 1） */
+const TRUNC_MARK_TOKEN_BUDGET = 12
+
 export function truncateByTokens(text: string, maxTokens: number): string {
   if (estimateTokens(text) <= maxTokens) return text
-  // 按 token 预算换算目标字符数（逐段逼近，保守取 3/4）
+  // 标记预算从内容预算扣除：实际注入 = 内容 + 标记 ≤ maxTokens
+  const contentCap = Math.max(1, maxTokens - TRUNC_MARK_TOKEN_BUDGET)
+  // 按 token 预算换算目标字符数（逐段逼近）
   let low = 0
   let high = text.length
   while (low < high) {
     const mid = Math.ceil((low + high) / 2)
-    if (estimateTokens(text.slice(0, mid)) <= maxTokens) low = mid
+    if (estimateTokens(text.slice(0, mid)) <= contentCap) low = mid
     else high = mid - 1
   }
-  const truncated = text.slice(0, low)
+  // 句子边界感知：从截断点往回找最近断点，避免硬切残句（缓存友好：
+  // 注入内容以完整句号结尾时，前缀重放更稳定）
+  const floor = Math.floor(low / 2)
+  let cut = low
+  for (let i = low - 1; i >= floor; i--) {
+    if (TRUNC_BREAKS.includes(text[i])) {
+      cut = i + 1
+      break
+    }
+  }
+  const truncated = text.slice(0, cut)
   const ratio = text.length > 0 ? Math.round((truncated.length / text.length) * 100) : 0
   return `${truncated}\n\n[truncated: ${text.length} chars → ${truncated.length} chars (${ratio}%)]`
 }
