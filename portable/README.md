@@ -31,7 +31,7 @@ pi-portable/
 
 1. 新建空文件夹（如 `pi-portable`），把种子 `portable/` 全部内容拷进去（`bin/`、`start.bat`、`start.ps1`、`ca-bundle.crt`、`tools/`、`README.md`），另从仓库拷 `scripts/whisper-server.py`（whisper 服务端，check-services.js 依赖）
 2. 拷贝配置：从现有实例拷 `agent/`（含扩展源码与配置、sessions 会话；`settings.json`/`models.json`/`auth.json` 含密钥，自行决定）与 `memory/`
-3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit/uv → **自动创建 `memory/` 并建 `.pi\agent`/`.pi\memory` 两个 junction** → 装扩展依赖 → 应用核心补丁（patch-footer/voice-enter/plan-tools；Termux 专属 playwright-core 与 tab-arg-completion 补丁不适用于 Windows）→ 拷入 ca-bundle/tmux shim；重跑幂等）
+3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit/uv → **自动创建 `memory/` 并建 `.pi\agent`/`.pi\memory` 两个 junction** → 装扩展依赖 → 应用核心补丁（patch-footer 系列 4 个 + voice-enter/plan-tools；Termux 专属 playwright-core 与 tab-arg-completion 补丁不适用于 Windows）→ 拷入 ca-bundle/tmux shim；重跑幂等）
 4. 运行 `.\bin\verify.ps1` 验证环境（核心组件全 [OK]，含 junction 有效性/三补丁 marker/配置路径漂移检查；可选组件缺失属正常）
 5. 可选组件按需构建：`.\bin\searxng-setup.ps1`（本地搜索 8890）/ `.\bin\whisper-setup.ps1`（转写 18767）/ 手动部署浏览器（pi-browser README）
 6. `.\start.bat --continue` 启动（junction 自愈兜底，服务自动拉起）
@@ -99,7 +99,7 @@ Node 压缩包与 LTS 版本查询另有 npmmirror 镜像 fallback（国内 20MB
 powershell -ExecutionPolicy Bypass -File E:\pi-portable\bin\update-pi.ps1
 ```
 
-不要用 pi 内置更新命令（走系统 npm 路径解析，便携环境不可靠）。脚本自动：npm 原地升级 pi-global（npmmirror 镜像）→ 重跑 3 个核心补丁（patch-footer-live-context / patch-voice-enter / patch-plan-tools，bin/ 优先、scripts/ 兜底，传 dist 参数）→ verify；失败提示回退命令。
+不要用 pi 内置更新命令（走系统 npm 路径解析，便携环境不可靠）。脚本自动：npm 原地升级 pi-global（npmmirror 镜像）→ 重跑 6 个核心补丁（patch-footer-live-context / patch-footer-cache / patch-footer-format / patch-footer-restart-hint / patch-voice-enter / patch-plan-tools，bin/ 优先、scripts/ 兜底，传 dist 参数）→ verify；失败提示回退命令。
 
 ## 更新扩展代码
 

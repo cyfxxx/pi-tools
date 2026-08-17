@@ -11451,6 +11451,28 @@
       ],
       "observedAt": "2026-08-17T08:00:24.311Z",
       "deleted": false
+    },
+    {
+      "id": "bb4f2ec7-c09e-4030-bdb5-07a643081e88",
+      "category": "reference",
+      "title": "deepseek-harness 缓存策略源码调研（threshold 0.8 / retain 0.16 / 静态 prompt）",
+      "content": "DeepSeek Harness (github.com/deepseek-ai/deepseek-harness, npm @deepseek-ai/dsh v0.1.0-rc.7, 2026-08-14 开源 MIT, 分支 master) 缓存策略调研结论（2026-08-17，分析 npm 子包源码 dsh-compaction-basic / dsh-compaction / dsh-session-projection / dsh-token-meter / dsh-llm）：\n\ndsh 没有显式\"缓存命中优化\"代码，缓存友好是架构默认：\n1. 静态 persona：system prompt 模板 {{model}}/{{cwd}} 在启动时解析一次，无时间戳/统计（见 config/agent-presets/*/agent.cordis.yml）\n2. 压缩策略 dsh-compaction-basic：DEFAULT_THRESHOLD_RATIO=0.8（80% 窗口触发）、DEFAULT_RETAIN_RATIO=0.16（压缩保留尾部 16% 原文 verbatim tail，摘要替换旧部分缓存可续）\n3. token-meter：pressureFrom = inputTokens + cacheReadTokens + cacheWriteTokens（标准 usage 字段统计，用于压力决策）\n4. session-projection/session-reference：事件日志 + 按 seq 的 checkpoint 投影重建，避免全量重发\n5. tool-pairing 平衡（balanceCache/extendCache）：保证 toolCall/toolResult 配对不破坏 surface 结构\n\n本机对齐情况：auto-compact.ts 已对齐 0.8（LARGE_WINDOW_RATIO）；pi 内核 keepRecentTokens=20000 实现 verbatim tail（settings.compaction.keepRecentTokens）；usage-diag/context-budget 已统计 cacheRead/Write。新增对齐：2026-08-17 起重启/恢复压缩阈值 PI_CONTEXT_RESTART_RATIO=0.4（session_start 触发，40% 窗口即压缩，避免重启首轮全量重发）；footer ≥40% 窗口显示 ⚠ 提示先压缩。\n\nGitHub 直连不可用（DNS 污染/IP 封禁），调研走 npm registry + jsDelivr CDN（仓库分支是 master 不是 main）。",
+      "tags": [
+        "deepseek-harness",
+        "dsh",
+        "缓存",
+        "prompt-cache",
+        "研究"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-17T13:49:43.882Z",
+      "updatedAt": "2026-08-17T13:49:43.882Z",
+      "accessedAt": "2026-08-17T13:49:43.882Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }

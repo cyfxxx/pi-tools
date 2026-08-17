@@ -38,7 +38,7 @@ bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **后台任务（禁止阻塞前台）**：tmux_run 启动长任务后**立即结束回合**（`notify=true` 默认自动唤醒）；同轮内禁止 tmux_wait；确需等待只用 `pattern=` 匹配完成标志且 timeout≤60s；until_exit 仅限命令会自然退出（尾部 `; exec true`）；仅用户明确要求"等它完成"时例外；无 tmux 环境用 nohup 记 PID
 - 旧扩展名（pi-web-toolkit / pi-router / pi-admin / pi-scheduler）已融合或更名，禁止引用
-- **补丁生命周期**：5 个 patch-*.mjs 由 rebuild.sh Phase 3 自动执行（幂等）；pi update 后需重跑 rebuild.sh。清单见 `docs/AGENTS-DETAILS.md`
+- **补丁生命周期**：8 个 patch-*.mjs（live-context/cache/format/restart-hint 四款 footer + voice-enter + plan-tools + tab-arg-completion + playwright-core）由 rebuild.sh Phase 3 自动执行（幂等）；pi update 后需重跑 rebuild.sh，或直接在 wrapper 里执行 `pi update`（L3 钩子自动 rebuild）。清单见 `docs/AGENTS-DETAILS.md`
 - **已知噪音（勿误判）**：pi-voice 回车键冲突警告属设计行为，无需处理。详见 `docs/AGENTS-DETAILS.md`
 
 ## 各扩展深度文档（指向）

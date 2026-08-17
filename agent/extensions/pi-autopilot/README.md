@@ -29,7 +29,7 @@
 
 - **模型 failover**：`fallbackModels` 硬白名单（AI 不可自由选模型），结合历史成功率选目标，写 wrapper 状态后重启带 `--model`
 - **重试退避（A1，2026-08）**：失败重试延迟固定 60s 改为**指数退避 + 抖动**——`base 30s × 2^(failCount−1)`，上限 5min，±50% 抖动（下限 base/2）；连续瞬时故障（provider_down/超时）递增延迟避免自撞，抖动防共振
-- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免，2026-08 审计修复）
+- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；默认 **180（3 小时）**——长思考/长时间等待场景不再误判；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免，2026-08 审计修复）
 - **崩溃回滚**：pi-wrapper 连续 3 次崩溃 → 回滚 lastGood 模型（5 分钟防抖）
 - **任务超时钳位**：调度任务 `maxRunTime` 钳位到 [5, 86400] 秒（负值/0 → 5s，≥2³¹ 溢出 → 86400），防极端值导致任务被立即误杀 / `maxCostPerDay`(0=不限) / `allowedModels`，超限自动跳过并通知（跳过时推进下次调度时间，预算恢复后自动补跑；不记 failed 遥测，避免 todayRuns 越拦越满锁到次日零点）
 - **恢复队列（A2/A3，2026-08）**：
@@ -57,12 +57,16 @@
 {
   "enabled": true,
   "requeueOnRestart": true,
-  "maxIdleMinutes": 30,
+  "maxIdleMinutes": 180,
   "budget": { "maxRunsPerDay": 50, "maxCostPerDay": 0, "allowedModels": [] },
   "policy": { "failoverAfter": 2, "suspendAfter": 5, "timeoutFactor": 2, "maxFailovers": 1 },
   "fallbackModels": []
 }
 ```
+
+## admin_restart 上下文提示（2026-08-17）
+
+调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（对齐 pi-context 的 `PI_CONTEXT_RESTART_RATIO=0.4`），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。重启照常执行（提示不阻断），避免用户毫不知情地烧掉一次全量重新计费。
 
 运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/` 下）。
 
