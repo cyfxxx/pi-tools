@@ -124,7 +124,11 @@ if b < a - 1.0 or d > c + 2:
     sys.exit(1)
 print('✓ 无退化（命中率/低命中轮在容差内）')
 PYEOF
+  # 审计 MEDIUM 修复：此前退出码被丢弃（函数以 rm -f 的退出码返回），
+  # 头注释承诺的"退出码 1 表示退化"不生效，自动化判定会漏报
+  degraded=$?
   rm -f "$cur"
+  return $degraded
 }
 
 case "${1:-}" in

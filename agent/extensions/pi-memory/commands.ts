@@ -121,7 +121,9 @@ export function registerCommands(pi: ExtensionAPI): void {
       if (subcmd === 'summary') {
         const n = parseInt(parts[1] ?? '', 10)
         const limit = Number.isFinite(n) && n > 0 ? Math.min(n, 20) : 10
-        const summaries = loadSummaries().slice(-limit).reverse()
+        // 审计 LOW：slice(-limit) 按插入序（pending 延迟提取乱序 append 会取到
+        // 非最近摘要）——与 tools.ts memory_recall 对齐，按 ts 倒序取前 limit 条
+        const summaries = [...loadSummaries()].sort((a, b) => (a.ts < b.ts ? 1 : -1)).slice(0, limit)
         if (!summaries.length) {
           ctx.ui.notify('(暂无会话摘要)', 'info')
           return

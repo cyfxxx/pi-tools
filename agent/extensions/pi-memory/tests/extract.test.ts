@@ -311,6 +311,27 @@ describe('extract: 指纹持久化（重启防重复提取）', () => {
     // 未标记过的会话 → 允许
     expect(fresh.shouldExtract('sess-new', 10)).toBe(true)
   })
+  it('匿名会话不共用固定 key：跨进程（新模块实例）同消息数不被冷却跳过（LOW 修复）', async () => {
+    const { markExtracted } = await import('../extract.ts')
+    // 匿名会话（null 归一 'unknown'）提取并落盘
+    markExtracted(null as unknown as string, 10)
+    vi.resetModules()
+    const fresh = await import('../extract.ts')
+    // 修复前：新进程匿名会话命中磁盘 'global' key → 同指纹 24h 内被跳过；
+    // 修复后：进程级随机 key → 视为不同匿名会话，允许提取
+    expect(fresh.shouldExtract(null as unknown as string, 10)).toBe(true)
+    expect(fresh.shouldExtract('unknown', 10)).toBe(true)
+  })
+
+  it('同进程内匿名会话双路径仍幂等（compact+shutdown 共享进程 key 不重复提取）', async () => {
+    const { shouldExtract, markExtracted } = await import('../extract.ts')
+    expect(shouldExtract(null as unknown as string, 7)).toBe(true)
+    markExtracted(null as unknown as string, 7)
+    // 同进程内再次触发（compact 后 shutdown 入队处理）→ 同指纹冷却期内跳过
+    expect(shouldExtract('unknown', 7)).toBe(false)
+    // 消息数不同 → 仍允许（新内容）
+    expect(shouldExtract(null as unknown as string, 8)).toBe(true)
+  })
 })
 
 describe('extract: extractTextFromEntries', () => {

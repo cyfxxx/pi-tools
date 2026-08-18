@@ -107,9 +107,16 @@ def _match_field(field, value):
     for part in field.split(','):
         if '/' in part:
             base, step = part.split('/')
-            base = 0 if base == '*' else int(base)
-            if (value - base) % int(step) == 0 and value >= base:
-                return True
+            if '-' in base:
+                # 审计 MEDIUM 修复：范围+步长组合（如 1-15/2）此前 int('1-15')
+                # 抛 ValueError 被外层 catch 静默跳过任务
+                lo, hi, step = int(base.split('-')[0]), int(base.split('-')[1]), int(step)
+                if lo <= value <= hi and (value - lo) % step == 0:
+                    return True
+            else:
+                base = 0 if base == '*' else int(base)
+                if (value - base) % int(step) == 0 and value >= base:
+                    return True
         elif '-' in part:
             lo, hi = part.split('-')
             if int(lo) <= value <= int(hi):
@@ -118,6 +125,27 @@ def _match_field(field, value):
             if int(part) == value:
                 return True
     return False
+
+def _norm_dow_field(field):
+    """POSIX dow 允许 0 与 7 均为周日；cron 侧 value 为 0-6（周日=0），
+    将字段中的 7 归一为 0（单值/列表/范围；*/7 步长等价 0,7 即每周日）。"""
+    out = []
+    for part in field.split(','):
+        if '/' in part:
+            base, step = part.split('/')
+            if int(step) == 7 and (base == '*' or int(base) == 0):
+                out.append('0')
+            else:
+                out.append(part)
+        elif '-' in part:
+            lo, hi = part.split('-')
+            lo_i, hi_i = int(lo), int(hi)
+            vals = sorted({v % 7 for v in range(lo_i, hi_i + 1)})
+            out.append(','.join(str(v) for v in vals))
+        else:
+            v = int(part)
+            out.append('0' if v == 7 else str(v))
+    return ','.join(out)
 
 def compute_next(task_type, schedule, last_run, last_result=''):
     now = now_local()
@@ -159,17 +187,29 @@ def compute_next(task_type, schedule, last_run, last_result=''):
                     cur = cur.replace(month=cur.month + 1, day=1, hour=0, minute=0)
                 continue
             if not _match_field(hour, cur.hour):
-                cur += timedelta(hours=1)
+                # 审计修复：逐小时推进必须归零分钟（09:59 +1h = 10:59 永远扫不到 09:00 整点，
+                # 分钟=0 的调度整点被系统性错过一天）
+                cur = cur.replace(minute=0, second=0) + timedelta(hours=1)
                 continue
-            if dow != '*':
+            if dow != '*' and dom != '*':
+                # POSIX cron：dom 与 dow 同时受限时任一匹配即触发（OR）——
+                # 审计 MEDIUM 修复：此前实现为两者都须匹配（AND）且 dom 匹配时
+                # 无条件 continue 跳过 minute 检查，dom 受限的调度永不触发
                 cron_dow = (cur.weekday() + 1) % 7
-                if not _match_field(dow, cron_dow):
-                    cur += timedelta(days=1)
+                dow_field = _norm_dow_field(dow)
+                if not (_match_field(dow_field, cron_dow) or _match_field(dom, cur.day)):
+                    cur = (cur + timedelta(days=1)).replace(hour=0, minute=0)
                     continue
-            if dom != '*':
+            elif dow != '*':
+                cron_dow = (cur.weekday() + 1) % 7
+                dow_field = _norm_dow_field(dow)
+                if not _match_field(dow_field, cron_dow):
+                    cur = (cur + timedelta(days=1)).replace(hour=0, minute=0)
+                    continue
+            elif dom != '*':
                 if not _match_field(dom, cur.day):
-                    cur += timedelta(days=1)
-                continue
+                    cur = (cur + timedelta(days=1)).replace(hour=0, minute=0)
+                    continue
             if not _match_field(minute, cur.minute):
                 cur += timedelta(minutes=1)
                 continue

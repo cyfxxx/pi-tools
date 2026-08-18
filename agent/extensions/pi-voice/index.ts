@@ -540,6 +540,13 @@ function deliverResult(pi: ExtensionAPI, ctx: ExtensionContext, r: StopResult, d
       ctx.ui.notify(r.message, 'info')
       return
     }
+    // 审计 LOW：非错误空转写结果（未检测到声音信号/未识别到语音内容）
+    // 属正常完成但无内容，info 提示 + 回显说明，不标“语音转写失败”
+    if (r.message && (r.message.includes('未检测到声音信号') || r.message.includes('未识别到语音内容'))) {
+      ctx.ui.notify(r.message, 'info')
+      reply(pi, r.message)
+      return
+    }
     ctx.ui.notify('语音转写失败', 'error')
     reply(pi, r.message)
     return

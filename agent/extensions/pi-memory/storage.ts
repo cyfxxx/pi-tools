@@ -366,16 +366,22 @@ export function pruneEntries(entries: MemoryEntry[]): { removed: number; titles:
     if (e.recurrence < PRUNE_RECURRENCE && daysOld > PRUNE_DAYS_LOW) return false
     return true
   })
+  const keptSet = new Set(kept)
+  const prunedIds = new Set<string>()
   if (kept.length < before) {
-    const keptSet = new Set(kept)
     for (const e of entries) {
-      if (!keptSet.has(e)) removedTitles.push(e.title)
+      if (!keptSet.has(e)) {
+        removedTitles.push(e.title)
+        prunedIds.add(e.id)
+      }
     }
   }
   const removed = before - kept.length
   entries.length = 0
   entries.push(...kept)
-  saveEntries(entries)
+  // 审计修复：剪枝是真移除（非软删除），须传 excludeIds 墓碑，否则 saveEntries
+  // 写前磁盘合并会把磁盘上仍活跃的剪枝条目补回复活（对照 deleteEntry 的正确传法）
+  saveEntries(entries, { excludeIds: prunedIds })
   return { removed, titles: removedTitles }
 }
 

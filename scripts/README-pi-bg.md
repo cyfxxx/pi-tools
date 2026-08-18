@@ -10,7 +10,7 @@ pi 执行长任务时前台 TUI 被占用，无法同时对话。`pi-bg.sh` 用 
 |---|---|---|
 | 会话文件 | 同 cwd 下 `-c` 续同一 JSONL → 双树交错损坏 | `--no-session`，后台零会话写入 |
 | 扩展副作用 | pi-voice 启动清空录音 tmp、autopilot 调度锁、memory 写入、usage-diag | `--no-extensions`，后台不加载任何扩展 |
-| 文件修改 | 两 agent 同时改同一文件 | 默认 `--tools read,glob,grep,bash` 只读集合 + 提示词只读约束；确需写操作用 `--rw` 并自行保证与前台分文件 |
+| 文件修改 | 两 agent 同时改同一文件 | 默认 `--tools read,ls,grep,bash` 只读集合 + 提示词只读约束；确需写操作用 `--rw` 并自行保证与前台分文件 |
 | 模型切换 | settings.json last-writer-wins 互相覆盖 | 后台不切模型（`--no-extensions` 亦禁 `/model` 切换入口） |
 
 > 若前台与后台必须同时写文件（如构建产物、同一仓库），用 `--rw` 时请：

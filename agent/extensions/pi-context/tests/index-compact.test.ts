@@ -148,6 +148,44 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
     expect(lines.some((l) => 'type' in l && l.type === 'auto-compact')).toBe(true)
   })
 
+  it('新会话（reason=new/fork）清零跨会话残留 provider contextTokens（LOW 修复）', async () => {
+    const { handlers } = await loadIndex()
+    // 上一会话 turn_end 记录的大值（模块级残留）
+    handlers.get('turn_end')![0](
+      { message: { usage: { input: 600_000, cacheRead: 250_000 } } },
+      {},
+    )
+    // 新会话启动：fallback 已清零 → 内核无 contextWindow 时不再按旧会话大值误触发
+    const compactNew = vi.fn()
+    handlers.get('session_start')![0](
+      { reason: 'new' },
+      { getContextUsage: () => undefined, compact: compactNew },
+    )
+    expect(compactNew).not.toHaveBeenCalled()
+    // fork（分叉=新会话身份）同样清零
+    const compactFork = vi.fn()
+    handlers.get('session_start')![0](
+      { reason: 'fork' },
+      { getContextUsage: () => undefined, compact: compactFork },
+    )
+    expect(compactFork).not.toHaveBeenCalled()
+  })
+
+  it('恢复会话（reason=resume）保留 provider contextTokens fallback（断链恢复仍可压缩）', async () => {
+    const { handlers } = await loadIndex()
+    handlers.get('turn_end')![0](
+      { message: { usage: { input: 600_000, cacheRead: 250_000 } } },
+      {},
+    )
+    const compact = vi.fn((opts: { onComplete?: () => void }) => opts.onComplete?.())
+    handlers.get('session_start')![0](
+      { reason: 'resume' },
+      { getContextUsage: () => undefined, compact },
+    )
+    // 850K ≥ 1M×0.4 恢复阈值 → 触发
+    expect(compact).toHaveBeenCalledTimes(1)
+  })
+
   it('溢出兜底：tokens ≥ window 时绕过阈值/cooldown 强制压缩（对齐 dsh CONTEXT_WINDOW_EXCEEDED）', async () => {
     const { handlers } = await loadIndex()
     const compact = vi.fn((opts: { onComplete?: () => void }) => opts.onComplete?.())

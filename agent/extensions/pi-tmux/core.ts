@@ -252,11 +252,17 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
   // list-sessions -F ...
   if (cmd === 'list-sessions') {
     const names = new Set<string>([...winChildren.keys()])
-    for (const f of readdirSync(opts.logDir, { withFileTypes: true })) {
-      if (f.isFile() && f.name.endsWith('.pid')) {
-        const n = f.name.slice(0, -4)
-        if (winPidAlive(winReadPid(opts, n))) names.add(n)
+    // 审计 MEDIUM 修复：全新环境（从未创建会话）logDir 不存在 → readdirSync
+    // 抛 ENOENT 致首次 tmux_status 必失败；缺失目录按空列表处理
+    try {
+      for (const f of readdirSync(opts.logDir, { withFileTypes: true })) {
+        if (f.isFile() && f.name.endsWith('.pid')) {
+          const n = f.name.slice(0, -4)
+          if (winPidAlive(winReadPid(opts, n))) names.add(n)
+        }
       }
+    } catch {
+      /* logDir 不存在/不可读：仅返回进程内会话 */
     }
     const out = [...names].map((n) => `${n}\t0`).join('\n')
     return { code: 0, stdout: out, stderr: '' }

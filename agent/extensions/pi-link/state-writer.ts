@@ -1,6 +1,10 @@
 import { homedir } from 'node:os'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+// 审计 MEDIUM 修复（2026-08-18）：本文件为 ESM 模块（package.json "type":"module"），
+// 此前裸 require('node:fs') 抛 ReferenceError 被外层 catch 吞掉——读合并逻辑成死代码，
+// 未传字段（currentTask/tmuxSession/currentSessionFile）每次写入静默丢失。改静态导入
 
 /**
  * 本机状态文件写入（T2-2）：远程设备 attach/watch 时经 ssh 读取本机状态。
@@ -28,7 +32,7 @@ export function writeLocalState(partial: Partial<LocalState>): void {
     mkdirSync(join(file, '..'), { recursive: true })
     let cur: Partial<LocalState> = {}
     try {
-      cur = JSON.parse(require('node:fs').readFileSync(file, 'utf-8'))
+      cur = JSON.parse(readFileSync(file, 'utf-8'))
     } catch {
       // 首次写入
     }

@@ -388,6 +388,10 @@ function remoteExecAddr(device: DeviceConfig, addr: DeviceAddr, cmd: string, tim
   return new Promise((resolve) => {
     const args = [
       ...(addr.port ? ['-p', String(addr.port)] : []),
+      // 审计 MEDIUM 修复（2026-08-18）：remoteExecAddr 此前不携带 device.sshArgs——
+      // probeAddr（failover 探测）与主发送链路均已带，唯此遗漏：配置自定义 -i 密钥
+      // 等 sshArgs 的设备 /link watch、/link inbox、/link attach、状态读取全部静默失败
+      ...(device.sshArgs ?? []),
       '-o', 'BatchMode=yes',
       '-o', 'ConnectTimeout=5',
       `${device.user}@${addr.host}`,

@@ -289,6 +289,16 @@ function arr(v: unknown): string[] {
 
 // ── 幂等与限频 ──
 
+// 匿名会话（sessionId 为 null/空/'unknown'）不能用固定 'global' key：
+// 两个不同匿名会话同消息数时，第二个会被 24h 冷却误跳过（tracker/disk
+// 双残留，跨进程场景实测）。改为进程级随机 key：同进程内 compact+shutdown
+// 双路径共享同一 key 保持幂等；跨进程匿名会话互不干扰（匿名会话本就无法
+// 跨进程识别，恢复场景无会话上下文可依赖）。
+const ANON_TRACKER_KEY = `anon:${randomUUID().slice(0, 8)}`
+function trackerKey(sessionId: string | null | undefined): string {
+  return sessionId && sessionId !== 'unknown' ? sessionId : ANON_TRACKER_KEY
+}
+
 interface TrackKey {
   sessionId: string
   fingerprint: number
@@ -312,14 +322,14 @@ function loadDiskTracker(): Record<string, { fingerprint: number; lastTs: number
   return (diskTrackerCache ??= {})
 }
 
-function diskHit(sessionId: string): TrackKey | undefined {
-  const rec = loadDiskTracker()[sessionId || 'global']
+function diskHit(sessionId: string | null | undefined): TrackKey | undefined {
+  const rec = loadDiskTracker()[trackerKey(sessionId)]
   if (!rec) return undefined
-  return { sessionId: sessionId || 'global', fingerprint: rec.fingerprint }
+  return { sessionId: trackerKey(sessionId), fingerprint: rec.fingerprint }
 }
 
 export function shouldExtract(sessionId: string, messageCount: number, cooldownMs = 24 * 3600 * 1000): boolean {
-  const key = sessionId || 'global'
+  const key = trackerKey(sessionId)
   const prev = tracker.get(key) ?? diskHit(key)
   const now = Date.now()
   if (!prev) return true
@@ -332,15 +342,15 @@ export function shouldExtract(sessionId: string, messageCount: number, cooldownM
 
 const lastTs = new Map<string, number>()
 export function lastExtractTs(sessionId: string): number {
-  const key = sessionId || 'global'
+  const key = trackerKey(sessionId)
   const mem = lastTs.get(key)
   if (mem) return mem
   return loadDiskTracker()[key]?.lastTs ?? 0
 }
 
 export function markExtracted(sessionId: string, messageCount: number): void {
-  const key = sessionId || 'global'
-  tracker.set(key, { sessionId, fingerprint: messageCount })
+  const key = trackerKey(sessionId)
+  tracker.set(key, { sessionId: key, fingerprint: messageCount })
   lastTs.set(key, Date.now())
   const disk = loadDiskTracker()
   disk[key] = { fingerprint: messageCount, lastTs: Date.now() }

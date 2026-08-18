@@ -25,7 +25,7 @@ import { formatPlanMessageLine, parsePlanFile, renderPlanFile } from "./view.ts"
 import { registerTodoTool, runTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "glob", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent", "plan_enter"];
 
 /**

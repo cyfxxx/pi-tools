@@ -88,6 +88,9 @@ PI_AUTOPILOT=1
 export PI_AUTOPILOT
 CRASH_THRESHOLD=3
 LAST_ROLLBACK_TS=0
+# 审计 MEDIUM 修复：崩溃计数时间窗（24h）——窗口外的旧计数清零，
+# 避免长期积累的正常使用（零散非零退出）被误判为连续崩溃触发回滚
+CRASH_WINDOW_MS=$((24 * 3600 * 1000))
 
 init_state_file() {
   mkdir -p "$(dirname "$STATE_FILE")"
@@ -231,6 +234,15 @@ read_crash_count() {
   " 2>/dev/null || echo "0"
 }
 
+read_crash_ts() {
+  node -e "
+    try {
+      const s = require('$CRASH_FILE');
+      console.log(s.ts || 0);
+    } catch(e) { console.log('0'); }
+  " 2>/dev/null || echo "0"
+}
+
 write_crash_count() {
   local count="$1"
   node -e "
@@ -279,16 +291,18 @@ rollback_to_lastgood() {
     echo "[pi-wrapper] 无 lastGood 快照，无法回滚" >&2
     return 1
   fi
-  node -e "
-    const fs = require('fs');
-    const s = JSON.parse(fs.readFileSync('$STATE_FILE', 'utf-8'));
-    s.action = 'set_model';
-    s.targetProvider = '$provider';
-    s.targetModel = '$model';
-    s.reason = '连续崩溃' + '$CRASH_THRESHOLD' + ' 次，自动回滚至稳定模型';
+  # provider/model 作为 argv 传入（而非直插源码），模型名含单引号/空白也不破坏 JS
+  node -e '
+    const fs = require("fs");
+    const [stateFile, provider, model, threshold] = process.argv.slice(1);
+    const s = JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+    s.action = "set_model";
+    s.targetProvider = provider || "";
+    s.targetModel = model || "";
+    s.reason = "连续崩溃" + threshold + " 次，自动回滚至稳定模型";
     s.timestamp = Date.now();
-    fs.writeFileSync('$STATE_FILE', JSON.stringify(s, null, 2));
-  " 2>/dev/null
+    fs.writeFileSync(stateFile, JSON.stringify(s, null, 2));
+  ' "$STATE_FILE" "$provider" "$model" "$CRASH_THRESHOLD" 2>/dev/null
   LAST_ROLLBACK_TS=$now
   write_crash_count 0
   echo "[pi-wrapper] 已触发回滚至 $provider/$model" >&2
@@ -369,9 +383,16 @@ while true; do
   echo "[pi-wrapper] 状态: action=$ACTION" >&2
 
   if [ "$ACTION" = "none" ] || [ -z "$ACTION" ]; then
-    if [ "$EXIT_CODE" -ne 0 ]; then
-      # 非正常退出（崩溃）：累计计数，达到阈值回滚 lastGood
+    # 审计 MEDIUM 修复：排除用户主动退出（130=Ctrl+C SIGINT、143=SIGTERM）——
+    # 此前一律计崩溃，正常手动退出累计 3 次即误触发 lastGood 回滚+自动重启
+    if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 130 ] && [ "$EXIT_CODE" -ne 143 ]; then
+      # 非正常退出（崩溃）：累计计数，达到阈值回滚 lastGood；24h 窗口外旧计数清零
       crash_count=$(read_crash_count)
+      crash_ts=$(read_crash_ts)
+      now_ms=$(date +%s%3N)
+      if [ "$crash_ts" -gt 0 ] 2>/dev/null && [ $((now_ms - crash_ts)) -gt "$CRASH_WINDOW_MS" ] 2>/dev/null; then
+        crash_count=0
+      fi
       crash_count=$((crash_count + 1))
       write_crash_count "$crash_count"
       echo "[pi-wrapper] 检测到崩溃 (第 ${crash_count} 次)" >&2

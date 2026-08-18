@@ -133,6 +133,13 @@ export function isSafeCommand(command: string): boolean {
   // --data 前缀后跟 `-` 不匹配 (\s|=) 锚定）——收紧为 GET-only 查询
   if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data(?:-urlencode|-raw|-json|-ascii)?|--data-binary|-d|--form|-F)(\s|=)/.test(core)) return false;
 
+  // 进程替换 <(...)（审计实测：`diff <(python3 -c '写文件') <(echo x)` 曾放行——
+  // 核心分隔符检查只拦 $()/反引号，< 不在列；>( 已被重定向拦截，<( 是唯一漏网入口）
+  if (/<\(/.test(core)) return false;
+
+  // sort -o/--output 可写文件（审计实测：sort 在白名单且 DESTRUCTIVE 无 -o 拦截）
+  if (/^\s*sort\b/i.test(core) && /(^|\s)(-o|--output)(\s|=)/.test(core)) return false;
+
   return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
 }
 

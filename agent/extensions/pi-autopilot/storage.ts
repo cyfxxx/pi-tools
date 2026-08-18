@@ -73,12 +73,14 @@ export async function acquireSessionLock(): Promise<boolean> {
     }
 
     try {
-      await writeFile(lockF + '.tmp', `${myPid}:${Date.now()}`, 'utf-8')
-      await rename(lockF + '.tmp', lockF)
-      await new Promise(r => setTimeout(r, 150))
-      const content = await readFile(lockF, 'utf-8')
-      return content.trim().split(':')[0] === myPid
+      // 审计 MEDIUM 修复（2026-08-18）：rename 覆盖式写锁非原子——实例 B 的 rename
+      // 落在实例 A 的 150ms 回读校验之后时，双方都验证通过（双调度器并发跑同一任务、
+      // 重复扣预算）。改 O_EXCL 原子创建：创建成功 = 唯一持有者，失败 = 他人持有，
+      // 无需回读校验，竞争窗口彻底消除。
+      await writeFile(lockF, `${myPid}:${Date.now()}`, { encoding: 'utf-8', flag: 'wx' })
+      return true
     } catch {
+      // EEXIST：竞态中他人刚创建——由外层重试（下一轮先判陈旧再尝试）
       return false
     }
   }
@@ -97,8 +99,15 @@ export async function acquireSessionLock(): Promise<boolean> {
 export async function releaseSessionLock(): Promise<void> {
   if (!lockPid) return
   try {
-    await unlink(lockPath())
-  } catch { /* ignore */ }
+    // 审计 MEDIUM 修复：无条件 unlink 可能删掉他人刚获取的锁（本进程 lockPid 过期后
+    // 另一实例已持锁）——先校验锁文件持有者是自己再删
+    const raw = await readFile(lockPath(), 'utf-8')
+    if (raw.trim().split(':')[0] === String(lockPid)) {
+      await unlink(lockPath())
+    }
+  } catch {
+    /* 锁文件不存在（他人已释放/被清理） */
+  }
   lockPid = null
 }
 

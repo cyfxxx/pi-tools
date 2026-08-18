@@ -243,6 +243,21 @@ describe('storage: prune + stats', () => {
     expect(entries.map(e => e.title)).toEqual(['warm'])
   })
 
+  it('pruneEntries 剪枝后落盘不复活（审计实测：saveEntries 写前合并会补回磁盘活跃条目）', async () => {
+    const { loadEntries, saveEntries, pruneEntries } = await import('../storage.ts')
+    const old = new Date(Date.now() - 40 * 86400000).toISOString()
+    const e1 = makeEntry({ title: 'cold low conf', confidence: 0.2, accessedAt: old })
+    const e2 = makeEntry({ title: 'warm', confidence: 0.9 })
+    saveEntries([e1, e2])
+    const entries = loadEntries()
+    const result = pruneEntries(entries)
+    expect(result.removed).toBe(1)
+    // 重新从磁盘加载：被剪枝的条目不得被写前合并复活
+    const reloaded = loadEntries()
+    expect(reloaded.map(e => e.title)).toEqual(['warm'])
+    expect(reloaded).toHaveLength(1)
+  })
+
   it('autoReclaim 超阈值时回收 deleted 条目且落盘', async () => {
     const { loadEntries, saveEntries, autoReclaim } = await import('../storage.ts')
     const many = Array.from({ length: 7 }, (_, i) =>

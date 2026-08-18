@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
+import { spawn } from 'node:child_process'
 import {
   listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun, withStoreLock, isoNow,
 } from './storage.ts'
@@ -210,6 +211,11 @@ export class SessionScheduler {
     this.injectedIds.add(task.id)
   }
 
+  /** 崩溃恢复重注入旁路（index.ts session_start）登记——与 fireViaMessage 共用 finalizeInjected 闭环 */
+  markInjected(taskId: string): void {
+    this.injectedIds.add(taskId)
+  }
+
   /**
    * 注入式任务最终化（主会话回合结束 agent_settled 时调用，补 d323ab9 半闭环）：
    * 注入后 sendUserMessage 返回仅代表消息已发，主会话处理该轮后才视为交付完成。
@@ -238,7 +244,6 @@ export class SessionScheduler {
   }
 
   private async fireViaSubagent(task: Task, provider: string, model: string): Promise<void> {
-    const { spawn } = await import('node:child_process')
     // 上下界钳位：负值/0 → setTimeout 立即触发误杀；≥2^31ms → Node 钳位 1ms 同样立即超时
     const raw = task.maxRunTime || 300
     const safe = Math.min(Math.max(raw, 5), 24 * 3600) // 5s ~ 24h
@@ -255,13 +260,21 @@ export class SessionScheduler {
       const timer = setTimeout(() => {
         timedOut = true
         controller.abort()
-        try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ }
+        // 审计 MEDIUM 修复（2026-08-18）：SIGKILL 只杀直接子进程——pi -p 派生出的
+        // 孙进程（bash 等）不在同一进程组会孤儿化残留。detached 使子进程成为
+        // 进程组组长，-pid 杀整个组；Windows 用 taskkill /T（进程树）
+        if (process.platform === 'win32') {
+          try { spawn('taskkill', ['/PID', String(proc.pid), '/T', '/F'], { windowsHide: true }) } catch { /* ignore */ }
+        } else {
+          try { process.kill(-proc.pid!, 'SIGKILL') } catch { try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ } }
+        }
       }, timeout)
       const { cmd, args } = resolvePiSpawn()
       const proc = spawn(cmd, [...args, '-p', renderPrompt(task.prompt)], {
         stdio: ['ignore', 'pipe', 'pipe'],
         signal: controller.signal,
         cwd: process.cwd(),
+        detached: process.platform !== 'win32',
       })
       let stderr = ''
       let stdout = ''

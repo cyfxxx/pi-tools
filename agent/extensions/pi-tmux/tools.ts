@@ -18,7 +18,7 @@ import {
   tmuxUnsupportedError,
 } from './core'
 import type { TmuxConfig } from './config'
-import { createCompletionWatcher, type CompletionWatcher, NOTIFY_CUSTOM_TYPE } from './watcher'
+import { createCompletionWatcher, type CompletionWatcher, type WatcherHandle, NOTIFY_CUSTOM_TYPE } from './watcher'
 
 type ToolText = { type: 'text'; text: string }[]
 type ToolResultObj = { content: ToolText; details: unknown }
@@ -62,6 +62,9 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
   // opts 缓存：轮询每 5s 一次，若每次 re-spawn `tmux -V` 检查，长任务（小时级）
   // 会 spawn 数百次子进程；tmux 配置在会话生命周期内不变，首次解析后复用
   let cachedOpts: TmuxOpts | null = null
+  // 审计 MEDIUM 修复：tmux_run 的 watcher 句柄按会话名登记——tmux_stop 主动
+  // 停止时须同步停监听，否则 ≤5s 内轮询发现会话消失触发 sendMessage 空唤醒新回合
+  const watcherHandles = new Map<string, WatcherHandle>()
   const watcher = createCompletionWatcher({
     hasSession: async (name: string) => {
       if (!cachedOpts) {
@@ -110,7 +113,7 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         if (started) {
           registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
           // 完成自动唤醒（默认开；沿用已有会话不注册，防误报用户会话）
-          watcher.watch(name, logPath, params.notify !== false)
+          watcherHandles.set(name, watcher.watch(name, logPath, params.notify !== false))
         }
         const note = started ? '已启动' : '已存在同名会话（沿用）'
         return ok(`tmux 会话 ${name} ${note}\n命令: ${params.command}\n日志: ${logPath}\n\n查看: tmux_read(name=${name})\n交互: tmux_send(name=${name})\n等待: tmux_wait(name=${name})`)
@@ -255,6 +258,10 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         const name = resolveName(params, cfg.prefix)
         await killSession(opts, name)
         unregisterSession(name)
+        // 审计 MEDIUM 修复：主动停止时停掉完成监听，防止 5s 内轮询发现会话消失
+        // 而触发 sendMessage 空唤醒新回合（与“手动停止”语义冲突）
+        watcherHandles.get(name)?.stop()
+        watcherHandles.delete(name)
         if (params.remove_log) removeLog(opts, name)
         return ok(`会话 ${name} 已结束${params.remove_log ? '，日志已删除' : ''}`)
       } catch (e) {

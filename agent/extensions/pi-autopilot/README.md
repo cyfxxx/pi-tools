@@ -100,7 +100,7 @@
 
 ```bash
 npm install
-npx vitest run        # 102 用例：storage/notifications + policy/failover/budget/telemetry/queue/watchdog
+npx vitest run        # 106 用例：storage/notifications + scheduler + policy/failover/budget/telemetry/queue/watchdog
 ```
 
 ## 升级说明
