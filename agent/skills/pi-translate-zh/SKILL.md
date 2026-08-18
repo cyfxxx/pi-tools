@@ -33,7 +33,7 @@ node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs
 
 ### v10 改进
 
-- **移除** `browser-automation` 和 `searx-search` 扩展引用（已被 `pi-web-toolkit` 替代；后者现名 `pi-web-search`）
+- **移除** `browser-automation` 和 `searx-search` 扩展引用（现名 `pi-web-search`/`pi-browser`；旧 pi-web-toolkit 名已废弃）
 - **清理** 文档中已删除扩展的残留引用
 
 ### v8 改进
@@ -99,7 +99,7 @@ cp settings-selector.js.bak.1234567890 settings-selector.js
 | OAuth 提供商选择器 | `oauth-selector.js` | 5 项 |
 | CLI 主入口：提示/警告/错误 | `main.js` | 9 项 |
 | 启动页脚 | `daxnuts.js` | 2 项 |
-| plan-mode todo 工具 + /todos 命令 | `plan-mode/todo.ts` | 2 条 |
+| plan-mode todo 工具 + /plan todos 命令 | `plan-mode/todo.ts` | 2 条 |
 | **plan-mode 扩展命令/标志** | `extensions/plan-mode/index.ts` | **5 条** |
 
 ## 自定义翻译
