@@ -136,3 +136,6 @@ deploy/tmux/*.lock
 
 # 便携包临时恢复快照（junction 修复备份）
 _recovery-*/
+
+# 根级 node_modules（npm 安装产物，不入库）
+agent/node_modules/

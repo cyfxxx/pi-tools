@@ -1,5 +1,6 @@
+import { execSync } from 'node:child_process'
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { loadConfig, getDevice, describeDevice, saveDevice, type DeviceConfig, type LinkConfig } from './config.ts'
+import { loadConfig, configPath, getDevice, describeDevice, saveDevice, type DeviceConfig, type LinkConfig } from './config.ts'
 import { sendToDevice, probeDevice, watchRemote, attachToRemote, readRemoteState, readRemoteOutbox, type SendOptions } from './link.ts'
 import { touchActive, isActive, readActive, selfName, isUnattendedEnv } from './active.ts'
 import { writeLocalState } from './state-writer.ts'
@@ -22,21 +23,20 @@ function fmtResult(r: { ok: boolean; reply?: string; turns: number; tools: numbe
   return `${head}\n${r.reply}`
 }
 
-import { configPath } from './config.ts'
-
 function cfgPathOf(): string {
   return process.env.PI_LINK_CONFIG ?? configPath()
 }
 
 export default function (pi: ExtensionAPI): void {
-  const cfg = loadConfig()
+  let cfg = loadConfig()
   const me = selfName(cfg.selfName)
+  // 配置热更新：工具/命令执行前重读 pi-link.json（编辑文件或 import-card 后无需重启 pi）
+  const refreshCfg = (): void => { cfg = loadConfig() }
 
   // 探测本机 tmux 会话名（其他设备 attach 时定位输入框）
   function detectTmuxSession(): string | undefined {
     try {
       if (process.env.TMUX) {
-        const { execSync } = require('node:child_process')
         const out = execSync('tmux display-message -p "#S" 2>/dev/null', { timeout: 3000 }).toString().trim()
         if (out) return out
       }
@@ -75,9 +75,8 @@ export default function (pi: ExtensionAPI): void {
       '向其他设备（局域网/Tailscale）上的 pi 发送消息并等待处理完成。用于跨设备委派/查询。设备清单在 ~/.pi/pi-link.json，/link help 查看用法。',
     promptSnippet: '调用其他设备上的 pi 处理任务',
     promptGuidelines: [
-      '跨设备任务（目标设备上才能做的操作、需要目标设备上下文的问题）用 link_send，其余本地处理',
-      '目标设备离线或超时会返回错误，不要反复重试',
-      '先 link_status 确认设备可达再 link_send',
+      '仅当任务需要远程 pi 自主处理（多步操作/判断/纠错/出报告）时用 link_send；单条确定性命令直接用 bash 执行 ssh，更快更省 token',
+      '先 link_status 确认设备可达再 link_send；离线或超时返回错误后不要反复重试',
     ],
     parameters: {
       type: 'object',
@@ -89,6 +88,7 @@ export default function (pi: ExtensionAPI): void {
       required: ['device', 'message'],
     },
     async execute(_id, params, _signal, onUpdate) {
+      refreshCfg()
       const name = String((params as Record<string, unknown>).device ?? '')
       const message = String((params as Record<string, unknown>).message ?? '')
       if (!name) return err('缺少 device 参数。用法: link_send <device> <message>（/link help 查看全部）')
@@ -142,6 +142,7 @@ export default function (pi: ExtensionAPI): void {
     promptSnippet: '查看已配置的互联设备',
     parameters: { type: 'object', properties: {} },
     async execute() {
+      refreshCfg()
       const names = Object.keys(cfg.devices)
       if (names.length === 0) {
         return ok('未配置任何设备。在 ~/.pi/pi-link.json 添加（参考 /link help）后重试。')
@@ -178,6 +179,7 @@ export default function (pi: ExtensionAPI): void {
       return []
     },
     handler: async (args: string, ctx) => {
+      refreshCfg()
       const parts = (args ?? '').trim().split(/\s+/).filter(Boolean)
       const sub = parts[0] ?? 'help'
       const output = async (text: string) => {
@@ -287,8 +289,7 @@ export default function (pi: ExtensionAPI): void {
           return
         }
         const r = saveDevice(cfgPathOf(), v.card.name, cardToDevice(v.card))
-        // 同步更新内存 cfg（loadConfig 仅启动时读取，不更新则需重启才生效）
-        if (r.ok) cfg.devices[v.card.name] = cardToDevice(v.card)
+        // 配置由 refreshCfg 在下次工具/命令调用时重读，无需手动同步内存
         await output(r.detail)
         return
       }
@@ -343,6 +344,10 @@ function helpText(): string {
     '工具:',
     '  link_send(device, message, timeoutSec?)  — 同上，供模型直接调用',
     '  link_status()                            — 设备清单与连通性',
+    '',
+    '边界:',
+    '  单条确定性命令请直接用 ssh 执行（更快更省 token）；',
+    '  link_send 用于需要远程 pi 自主多步处理的任务（判断/纠错/报告）',
     '',
     '配置 ~/.pi/pi-link.json（示例）:',
     '  { "devices": { "phone": { "host": "100.101.102.103", "user": "u0_a123",',
