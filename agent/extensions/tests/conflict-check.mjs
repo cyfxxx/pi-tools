@@ -9,10 +9,13 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { mkdirSync, appendFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const EXTENSIONS_DIR = join(fileURLToPath(new URL('..', import.meta.url)))
+const ROOT = join(EXTENSIONS_DIR, '..') // agent/
 const EXT_NAMES = readdirSync(EXTENSIONS_DIR, { withFileTypes: true })
   .filter(d => d.isDirectory() && d.name !== 'tests' && d.name !== 'types' && d.name !== 'node_modules')
   .map(d => d.name)
@@ -314,6 +317,56 @@ async function main() {
         shortcutMap[item.value] = ext
       }
     }
+  })
+
+  // ── 6. 工具定义指纹（跨会话漂移记录，2026-08-18）——
+  // 提取全部 registerTool 块的有效载荷（name/description/parameters/行为源码），
+  // 整体 sha256 追加到 agent/stats/tool-fingerprint.jsonl（跨会话累积）。
+  // 用途：与 cache-guard 注入面基线互补——工具 schema 是 system prompt 一部分，
+  // 跨会话漂移会破坏前缀缓存；指纹记录让漂移可追溯、可对照审计时间点。
+  await test('tool definition fingerprint (cross-session drift ledger)', () => {
+    const payloads = []
+    for (const ext of ALL_EXTENSIONS) {
+      const dir = join(EXTENSIONS_DIR, ext)
+      ;(function walk(d) {
+        let ents
+        try { ents = readdirSync(d, { withFileTypes: true }) } catch { return }
+        for (const e of ents) {
+          const p = join(d, e.name)
+          if (e.isDirectory()) {
+            if (e.name !== 'node_modules' && e.name !== 'tests') walk(p)
+          } else if (e.name.endsWith('.ts') && !e.name.endsWith('.d.ts')) {
+            const src = readFileSync(p, 'utf-8')
+            let idx = 0
+            while ((idx = src.indexOf('registerTool(', idx)) !== -1) {
+              // 平衡括号截取整个对象
+              let depth = 0, j = idx + 'registerTool('.length
+              for (; j < src.length; j++) {
+                if (src[j] === '(') depth++
+                else if (src[j] === ')') { depth--; if (depth === 0) break }
+              }
+              if (depth === 0) payloads.push(src.slice(idx, j + 1))
+              idx += 16
+            }
+          }
+        }
+      })(dir)
+    }
+    if (!payloads.length) throw new Error('未扫描到任何 registerTool 定义')
+    const fp = createHash('sha256').update(payloads.sort().join('\n')).digest('hex')
+    const statsDir = join(ROOT, 'stats')
+    const ledger = join(statsDir, 'tool-fingerprint.jsonl')
+    let prev = null
+    try {
+      const lines = readFileSync(ledger, 'utf-8').trim().split('\n').filter(Boolean)
+      if (lines.length) prev = JSON.parse(lines[lines.length - 1]).fingerprint
+    } catch { /* 首次运行 */ }
+    if (prev !== fp) {
+      mkdirSync(statsDir, { recursive: true })
+      appendFileSync(ledger, JSON.stringify({ ts: new Date().toISOString(), fingerprint: fp, toolBlocks: payloads.length }) + '\n')
+    }
+    const state = prev === null ? '首次记录' : (prev === fp ? '无漂移' : '漂移（本次变更已入账）')
+    console.log(`  工具定义指纹: ${fp.slice(0, 16)}… (${payloads.length} 块, ${state}) → ${relative(ROOT, ledger)}`)
   })
 
   // ── Summary ──

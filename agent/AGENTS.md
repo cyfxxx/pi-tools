@@ -23,9 +23,10 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 验证命令
 
 ```bash
-bash scripts/test-all.sh          # 一键全量回归
+bash scripts/test-all.sh          # 一键全量回归（含 cache-guard 注入面守门）
 bash scripts/test-all.sh --only=<ext1>,<ext2>  # 分层快检
-bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check
+bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check/cache-guard
+node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输出历史对比与当前差距）
 ```
 
 单套件/注册面/subagent/tsc 细节：见 `docs/AGENTS-DETAILS.md`。

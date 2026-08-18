@@ -77,6 +77,9 @@ agent/.pi-autopilot-crash.json
 
 # pi-context 用量诊断运行时数据
 agent/.usage-diag.jsonl
+
+# 跨会话统计（cache-guard/工具指纹/用量聚合，运行时数据不入库）
+agent/stats/
 agent/extensions/*/node_modules
 
 # 运行时日志（pi-tmux/pi-voice/pi-bg/scheduler/wrapper/selfcheck 时间戳等全部运行时数据，不入库）

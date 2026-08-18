@@ -62,15 +62,28 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(messageText(r.messages[14])).toContain('y')
   })
 
-  it('新默认（80K/50K）：5 轮×5万 token 仅擦 1 条（保护带翻倍降擦除频率，2026-08-15 审计）', () => {
+  it('新默认（120K/80K）：5 轮×5万 token 不再触发（预算覆盖 2 条后耗尽、回收 0 < 80K 最低）', () => {
+    // 2026-08-18 审计：保护带提至 120K/80K 后，会话早期 5 轮×50K 的输出完全被保护带
+    // 覆盖 + 回收不足最低阈值 → 不擦除（append-only：宁可多留上下文也不承担缓存断裂）
     const msgs = session(5, 200_000)
     const r = pruneToolResults(msgs)
+    expect(r.modified).toBe(false)
+    expect(r.prunedCount).toBe(0)
+  })
+
+  it('更大会话量（8 轮×5万 token）才跨过保护带触发擦除', () => {
+    // 8 轮：toolResult index 2,5,8,11,14,17,20,23（各 50K）。最近 2 轮豁免（index 18+）。
+    // 120K 预算覆盖 17,14，index 11 扣尽残余 → 预算耗尽后 index 8,5,2 擦除（回收 150K ≥ 80K）
+    const msgs = session(8, 200_000)
+    const r = pruneToolResults(msgs)
     expect(r.modified).toBe(true)
-    // 80K 保护带可覆盖更早 2 条（index 8、5）→ 仅 index 2 被擦
-    expect(r.prunedCount).toBe(1)
-    expect(messageText(r.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
-    expect(messageText(r.messages[5])).toContain('y')
-    expect(messageText(r.messages[8])).toContain('y')
+    expect(r.prunedCount).toBe(3)
+    for (const i of [2, 5, 8]) {
+      expect(messageText(r.messages[i])).toMatch(/^\[pruned: \d+ chars\]$/)
+    }
+    for (const i of [11, 14, 17, 20, 23]) {
+      expect(messageText(r.messages[i])).toContain('y')
+    }
   })
 
   it('回收低于 minimumTokens → 不应用（保持原样）', () => {
@@ -81,15 +94,17 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(r.prunedCount).toBe(0)
   })
 
-  it('擦除单调性：追加新回合后旧擦除点保持擦除', () => {
-    const before = pruneToolResults(session(5, 200_000))
+  it('擦除单调性：追加新回合后旧擦除点保持擦除（占位不恢复）', () => {
+    const before = pruneToolResults(session(8, 200_000))
     expect(before.modified).toBe(true)
+    expect(messageText(before.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
+    // 追加新轮后：已擦占位保持（单调性），且因占位不再贡献回收、残留预算覆盖更多，
+    // 后续轮基本不再触发新擦除（120K/80K 下擦除近一次性——符合 append-only 意图）
     const extended = [...before.messages, user(), assistant(), toolResult('z'.repeat(200_000))]
     const after = pruneToolResults(extended)
-    expect(after.modified).toBe(true)
-    const firstTool = after.messages.findIndex((m, i) => i < 3 && m.role === 'toolResult')
-    expect(firstTool).toBe(2)
-    expect(messageText(after.messages[firstTool])).toMatch(/^\[pruned: \d+ chars\]$/)
+    expect(messageText(after.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
+    expect(messageText(after.messages[5])).toMatch(/^\[pruned: \d+ chars\]$/)
+    expect(messageText(after.messages[8])).toMatch(/^\[pruned: \d+ chars\]$/)
   })
 
   it('messageText 只提取 text block', () => {
@@ -155,9 +170,9 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(r.prunedCount).toBeGreaterThan(0)
   })
 
-  it('常数：缓存友好调优（2026-08-15 审计：提高阈值降擦除频率，擦除轮必然破坏前缀缓存）', () => {
-    expect(PRUNE_PROTECT_TOKENS).toBe(80_000)
-    expect(PRUNE_MINIMUM_TOKENS).toBe(50_000)
+  it('常数：缓存友好调优（2026-08-18 审计：120K/80K 阈值下普通会话不触发，append-only 优先）', () => {
+    expect(PRUNE_PROTECT_TOKENS).toBe(120_000)
+    expect(PRUNE_MINIMUM_TOKENS).toBe(80_000)
     expect(KEEP_RECENT_TURNS).toBe(2)
   })
 })
