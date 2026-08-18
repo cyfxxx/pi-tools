@@ -182,7 +182,22 @@ describe('BrowserManager', () => {
     // Windows 路径含反斜杠，不能拼进 RegExp 字面量，改用 toContain + 尾部模式
     const shotsDir = join(tmpdir(), 'pi-browser-screenshots')
     expect(path).toContain(shotsDir)
-    expect(path).toMatch(/pi-screenshot-\d+\.png$/)
+    expect(path).toMatch(/pi-screenshot-\d+-[a-z0-9]{6}\.png$/)
+  })
+
+  it('should generate collision-free screenshot filenames across rapid calls', async () => {
+    const bm = await getBrowserManager()
+    mockPage.url.mockReturnValue('https://example.com')
+    mockPage.title.mockResolvedValue('Example')
+    mockPage.evaluate.mockResolvedValue('')
+    await bm.navigate('https://example.com')
+
+    // 连续两次截图：文件名必须仍唯一（Date.now() 同毫秒时靠随机后缀区分）
+    const pathA = await bm.screenshot()
+    const pathB = await bm.screenshot()
+    expect(pathA).not.toBe(pathB)
+    expect(pathA).toMatch(/pi-screenshot-\d+-[a-z0-9]{6}\.png$/)
+    expect(pathB).toMatch(/pi-screenshot-\d+-[a-z0-9]{6}\.png$/)
   })
 
   it('should support click with coordinates and button type', async () => {

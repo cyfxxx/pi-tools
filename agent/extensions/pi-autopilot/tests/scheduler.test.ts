@@ -138,6 +138,27 @@ describe('scheduler: 预算拦截（防自锁）', () => {
       expect((await readTasksFile()).tasks).toHaveLength(0)
     })
 
+    it('崩溃恢复旁路 markInjected 同样走 finalizeInjected 闭环（审计 MEDIUM：once 不重复执行、interval 回写）', async () => {
+      const once = makeTask({ id: 'ro1', type: 'once', schedule: '2026-01-01T00:00:00Z' })
+      const iv = makeTask({ id: 'riv', type: 'interval', intervalMinutes: 60 })
+      await writeTasksFile([once, iv])
+      const { SessionScheduler } = await import('../scheduler.ts')
+      const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+      const sched = new SessionScheduler(pi as never)
+      const api = sched as unknown as { markInjected: (id: string) => void; finalizeInjected: () => Promise<void> }
+      const onceId = once.id as string
+      const ivId = iv.id as string
+      // 模拟 session_start 恢复路径：注入 + markInjected（不经过 fireTask）
+      api.markInjected(onceId)
+      api.markInjected(ivId)
+      await sched.finalizeInjected()
+      // once 任务被删除；interval 保留且 lastRun 已回写
+      const tasks = (await readTasksFile()).tasks as Array<{ id: string; lastRun?: string }>
+      expect(tasks.map(t => t.id)).not.toContain(onceId)
+      const ivAfter = tasks.find(t => t.id === ivId)
+      expect(ivAfter?.lastRun).toBeTruthy()
+    })
+
     it('interval 任务最终化：回写 lastResult + 重置 failoverCount + nextRun 按调度推进', async () => {
       const task = makeTask({ failoverCount: 3, failCount: 2, history: [] })
       await writeTasksFile([task])

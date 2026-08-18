@@ -25,7 +25,9 @@ export async function readTelemetry(): Promise<TelemetryEntry[]> {
 export async function appendRun(entry: TelemetryEntry): Promise<void> {
   // 审计 LOW：read-modify-write 此前无互斥（pid 后缀只防 tmp 踩踏不防丢更新）——
   // 与 tick/命令并发 appendRun 或 pi-cron 离线进程并发时会丢失遥测条目（预算计数偏低）。
-  // 复用任务存储的 withStoreLock（同机互斥，跨进程经锁文件）。
+  // 复用任务存储的 withStoreLock（注意：withStoreLock 仅为进程内 Promise 队列互斥——
+  // 主 TUI 与后台 pi 实例并发 appendRun 时跨进程丢更新窗口仍存在，预算可能偏低，
+  // 属已知限制；pid 后缀 tmp + rename 保证不出现文件损坏/误记 failed）
   const { withStoreLock } = await import('./storage.ts')
   return withStoreLock(async () => {
     const runs = await readTelemetry()

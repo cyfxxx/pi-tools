@@ -81,7 +81,7 @@ install_one() {
       ln -s "$ORIG_TARGET" "$PI_ORIGINAL"
     else
       echo "错误: $PI_BIN 不是 symlink，无法备份（可能已被覆盖）" >&2
-      exit 1
+      return 1
     fi
   fi
 
@@ -115,13 +115,13 @@ for PI_BIN in $(list_pi_bins); do
   fi
   FOUND=1
   if [ "$ENSURE" -eq 1 ]; then
-    install_one "$PI_BIN"
+    install_one "$PI_BIN" || continue   # 单入口失败不中止其余入口（自愈循环）
   else
     log "检测到未托管的 pi 命令: $PI_BIN"
     log "  $(ls -la "$PI_BIN")"
     read -p "安装 wrapper 到 $PI_BIN？(y/N): " CONFIRM
     if [ "$CONFIRM" = "y" ] || [ "$CONFIRM" = "Y" ]; then
-      install_one "$PI_BIN"
+      install_one "$PI_BIN" || continue   # 同上：失败继续处理下一入口
     else
       echo "已取消"
     fi

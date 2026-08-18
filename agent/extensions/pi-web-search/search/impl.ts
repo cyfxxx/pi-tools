@@ -66,7 +66,8 @@ export async function searchWeb(
     }
 
     const data: SearchResponse = await res.json()
-    return formatResponse(data, query, options?.max_results ?? 5, options?.brief ?? false)
+    const maxResults = sanitizeMaxResults(options?.max_results)
+    return formatResponse(data, query, maxResults, options?.brief ?? false)
   } catch (err: unknown) {
     if ((err as Error)?.name === 'AbortError') {
       if (signal?.aborted) return '搜索已取消。'
@@ -77,6 +78,12 @@ export async function searchWeb(
     clearTimeout(timer)
     if (signal) signal.removeEventListener('abort', onAbort)
   }
+}
+
+/** max_results 显式校验：<=0 或非有限数时回退默认 5（避免 slice(0,0) 空结果 / slice(0,-1) 全量泄露） */
+function sanitizeMaxResults(maxResults?: number): number {
+  if (maxResults === undefined || !Number.isFinite(maxResults) || maxResults <= 0) return 5
+  return Math.floor(maxResults)
 }
 
 function formatResponse(data: SearchResponse, query: string, maxResults: number = 5, brief: boolean = false): string {

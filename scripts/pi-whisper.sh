@@ -41,7 +41,7 @@ read_device() {
 # 匹配锚定 python/python3 解释器：命令行仅"包含"脚本路径的无关进程
 # （编辑器打开该文件等）不会被误杀；排除 $$（脚本自身被 python 调用时防自杀）
 orphan_pids() {
-  pgrep -f "python3?.*whisper-server\.py" 2>/dev/null | grep -v "^$$" || true
+  pgrep -u "$(id -un)" -f "python3?.*whisper-server\.py" 2>/dev/null | grep -v "^$$" || true
 }
 
 is_running() {

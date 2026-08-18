@@ -27,7 +27,7 @@ set -u
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 LOG_DIR="$PI_HOME/logs/bg"
 SESS_PREFIX="pi-bg-"
-RO_TOOLS="read,glob,grep,bash"   # 默认只读集合（bash 仍可执行命令，约束见 RO_HINT）
+RO_TOOLS="read,ls,grep,bash"     # 默认只读集合（bash 仍可执行命令，约束见 RO_HINT；glob 非 pi 工具已被 allowlist 忽略）
 
 mkdir -p "$LOG_DIR"
 

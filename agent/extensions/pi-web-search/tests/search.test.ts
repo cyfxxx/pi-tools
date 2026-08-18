@@ -201,6 +201,38 @@ describe('search', () => {
 
       expect(result).toContain('还有 20 条结果未显示')
     })
+
+    it.each([
+      { max_results: 0, label: '0' },
+      { max_results: -3, label: '负数' },
+      { max_results: NaN, label: '非有限数' },
+    ])('max_results=$label → 回退默认 5，不返回空也不泄露全部', async ({ max_results }) => {
+      const { searchWeb } = await import('../search/impl')
+      const manyResults = Array.from({ length: 7 }, (_, i) => ({
+        title: `Result ${i + 1}`,
+        url: `https://example.com/${i + 1}`,
+      }))
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          number_of_results: 7,
+          results: manyResults,
+          answers: [],
+          corrections: [],
+          suggestions: [],
+          unresponsive_engines: [],
+          infoboxes: [],
+        }),
+      }) as any
+
+      const config = { searxng_url: 'https://searx.be', timeout: 5000 }
+      const result = await searchWeb(config, 'test', { max_results }, undefined)
+
+      // 恰好 5 条结果（不是 0 条、也不是全部 7 条）
+      const shown = (result.match(/https:\/\/example\.com\/\d+/g) ?? []).length
+      expect(shown).toBe(5)
+      expect(result).toContain('还有 2 条结果未显示')
+    })
   })
 
   describe('fetch error handling', () => {

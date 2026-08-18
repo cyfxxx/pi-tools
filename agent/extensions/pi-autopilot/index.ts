@@ -65,6 +65,11 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
               }
               await updateTask(task.id, { recoveryCount: recovery })
               await pi.sendUserMessage?.(`[Scheduler] ${task.name}（上次会话中断，第 ${recovery} 次恢复注入）: ${renderPrompt(task.prompt)}`)
+              // 审计 MEDIUM 修复（2026-08-18）：恢复注入同样登记 injectedIds——
+              // 否则 agent_settled 的 finalizeInjected 不感知本路径（d323ab9 只补了
+              // fireViaMessage 正常注入），once 任务恢复注入后永不删除、nextRun 缓冲
+              // 到期再执行一次；interval 不回写 lastRun；notifyOnCompletion 不发 webhook
+              scheduler.markInjected(task.id)
               await clearPending(task.id)
               // 审计 MEDIUM 修复：恢复注入后推进 nextRun——否则 nextRun 仍停留在
               // 过去（崩溃时任务正在执行），30s 后 tick 因 isDue 再次触发 → 双重执行

@@ -225,6 +225,20 @@ describe('pi-link: sendToDevice', () => {
     expect(args.join(' ')).toContain('pi --mode rpc')
   })
 
+  it('自定义 sshArgs（如 -i 密钥）透传到发送链路与 remoteExec（审计 MEDIUM：此前 remoteExecAddr 遗漏致 watch/inbox 静默失败）', async () => {
+    const dev = { ...DEV, sshArgs: ['-i', '/root/.ssh/id_ed25519'] }
+    spawnMock.mockImplementation(() => fakeProc([
+      { type: 'tool_execution_end' },
+      { type: 'turn_end' },
+      { type: 'agent_settled' },
+    ]))
+    const r = await sendToDevice(dev, 'hello', { timeoutSec: 30 })
+    expect(r.ok).toBe(true)
+    // 发送链路：sshArgs 已透传到 spawn args（calls 跨测试累积，取最后一条）
+    const args = spawnMock.mock.calls.at(-1)![1] as string[]
+    expect(args.join(' ')).toContain('-i /root/.ssh/id_ed25519')
+  })
+
   it('agent 请求交互时返回错误', async () => {
     spawnMock.mockImplementation(() => fakeProc([
       { type: 'extension_ui_request', request: { id: 1 } },

@@ -113,7 +113,7 @@ describe('deliverResult busy 分支（转写中 stop 不误报失败）', () => 
     )
   })
 
-  it('/voice stop 普通空转写结果 → 仍按失败提示（回归）', async () => {
+  it('/voice stop 非错误空转写结果（未识别到语音内容）→ info 提示、不标失败', async () => {
     mocks.dictation.stop.mockResolvedValue({
       message: '未识别到语音内容，请靠近麦克风重试',
       text: '',
@@ -122,9 +122,44 @@ describe('deliverResult busy 分支（转写中 stop 不误报失败）', () => 
     const { commands, api } = await loadExt()
     const ctx = mockCtx()
     await commands['voice'].handler?.('stop', ctx)
-    expect(ctx.ui.notify).toHaveBeenCalledWith('语音转写失败', 'error')
+    expect(ctx.ui.notify).toHaveBeenCalledWith('未识别到语音内容，请靠近麦克风重试', 'info')
+    expect(ctx.ui.notify).not.toHaveBeenCalledWith('语音转写失败', 'error')
     expect(api.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({ content: '未识别到语音内容，请靠近麦克风重试' }),
+    )
+  })
+
+  it('/voice stop 未检测到声音信号 → info 提示、不标失败', async () => {
+    mocks.dictation.stop.mockResolvedValue({
+      message: '未检测到声音信号（最大音量 -60 dB），请检查麦克风权限与音量',
+      text: '',
+      language: '',
+    })
+    const { commands, api } = await loadExt()
+    const ctx = mockCtx()
+    await commands['voice'].handler?.('stop', ctx)
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      '未检测到声音信号（最大音量 -60 dB），请检查麦克风权限与音量',
+      'info',
+    )
+    expect(ctx.ui.notify).not.toHaveBeenCalledWith('语音转写失败', 'error')
+    expect(api.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ content: '未检测到声音信号（最大音量 -60 dB），请检查麦克风权限与音量' }),
+    )
+  })
+
+  it('/voice stop 真实错误（m4a 转 wav 失败）→ 仍按失败提示（回归）', async () => {
+    mocks.dictation.stop.mockResolvedValue({
+      message: 'm4a 转 wav 失败，请确认 ffmpeg 已安装',
+      text: '',
+      language: '',
+    })
+    const { commands, api } = await loadExt()
+    const ctx = mockCtx()
+    await commands['voice'].handler?.('stop', ctx)
+    expect(ctx.ui.notify).toHaveBeenCalledWith('语音转写失败', 'error')
+    expect(api.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'm4a 转 wav 失败，请确认 ffmpeg 已安装' }),
     )
   })
 })

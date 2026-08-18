@@ -33,5 +33,33 @@ nohup granian searx.webapp:app \
 
 PID=$!
 echo $PID > "$PID_FILE"
-echo "SearXNG 已启动 (PID $PID)"
-echo "日志: $SEARXNG_DIR/searxng.log"
+
+# 启动后校验：granian 可能因端口占用等立即退出，不能只看 PID 存活
+# 端口监听检测：优先 curl（HTTP 可达即监听成功），无 curl 时回落 grep /proc/net/tcp
+wait_ready() {
+  local i
+  for i in 1 2 3 4 5 6 7 8; do
+    if ! kill -0 "$PID" 2>/dev/null; then return 1; fi   # 进程已退出 → 启动失败
+    if command -v curl >/dev/null 2>&1; then
+      if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:8889/" 2>/dev/null; then
+        return 0
+      fi
+    elif awk '$2=="0100007F:22B9" && $4=="0A"' /proc/net/tcp 2>/dev/null | grep -q .; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+if wait_ready; then
+  echo "SearXNG 已启动 (PID $PID)"
+  echo "日志: $SEARXNG_DIR/searxng.log"
+  exit 0
+else
+  echo "错误: SearXNG 启动失败（进程已退出或端口 8889 未监听）" >&2
+  echo "日志尾部:" >&2
+  tail -n 20 "$SEARXNG_DIR/searxng.log" >&2 2>/dev/null || true
+  rm -f "$PID_FILE"
+  exit 1
+fi

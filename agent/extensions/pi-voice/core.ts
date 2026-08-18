@@ -138,7 +138,15 @@ export function startRecording(
   const stdio: ['ignore' | 'pipe', 'pipe', 'pipe'] =
     spec.kind === 'windows' ? ['pipe', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe']
   const child = spawn(spec.recorder.bin, args, { stdio })
-  if (spec.kind === 'linux' || spec.kind === 'windows') activeLinuxRecorder = { child, file }
+  if (spec.kind === 'linux' || spec.kind === 'windows') {
+    // 审计 MEDIUM 修复：覆盖前先终止仍存活的旧录音进程——热重载/扩展重载时
+    // 旧句柄丢失，不杀则 parec/ffmpeg 成孤儿持续占麦克风并向 tmpDir 写文件
+    const prev = activeLinuxRecorder
+    if (prev && prev.child.exitCode === null && prev.child.pid !== undefined) {
+      try { prev.child.kill('SIGTERM') } catch { /* 已退出 */ }
+    }
+    activeLinuxRecorder = { child, file }
+  }
   let errBuf = ''
   let outBuf = ''
   child.stdout?.on('data', (d: Buffer) => {

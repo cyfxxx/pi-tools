@@ -145,6 +145,20 @@ export class BrowserManager {
         const gotoOpts: Record<string, unknown> = { waitUntil, timeout: 30000 }
         if (signal) gotoOpts.signal = signal
         await page.goto(url, gotoOpts)
+        // 审计 MEDIUM 修复：校验最终落地 URL（重定向后）——初始协议校验可被
+        // 302 → file:// 等绕过；Chromium 默认拦 http→file 顶层跳转，此处为纵深防御。
+        // about:blank 是浏览器初始空页（未导航/mock 未同步），排除在拒绝外
+        const finalUrl = page.url()
+        if (finalUrl && finalUrl !== 'about:blank') {
+          try {
+            const fp = new URL(finalUrl).protocol
+            if (fp !== 'http:' && fp !== 'https:') {
+              throw new Error(`重定向到不允许的协议: ${fp}//（浏览器已拦截 ${finalUrl.slice(0, 60)}）`)
+            }
+          } catch {
+            throw new Error(`导航失败: 无效的最终 URL ${String(finalUrl).slice(0, 80)}`)
+          }
+        }
         return this.getPageInfo()
       } catch (e) {
         if (signal?.aborted) throw new Error('导航已取消')
@@ -201,7 +215,7 @@ export class BrowserManager {
     const page = await this.ensurePage()
     const dir = shotDir()
     await mkdir(dir, { recursive: true })
-    const path = join(dir, `pi-screenshot-${Date.now()}.png`)
+    const path = join(dir, `pi-screenshot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`)
     await page.screenshot({ path, fullPage })
     return path
   }

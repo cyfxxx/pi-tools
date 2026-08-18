@@ -364,7 +364,12 @@ export default function (pi: ExtensionAPI) {
 	// 重启/恢复后首轮必然全量重发，40% 以上先压比直接重发省钱（对齐 dsh
 	// 压缩保留尾部原文的缓存友好原则；依据 2026-08-17 实测：断链轮重发
 	// 40-105K 且未命中部分按全价计费）。全新会话 tokens 极小不会误触发。
-	pi.on("session_start", (_event, ctx) => {
+	pi.on("session_start", (event, ctx) => {
+		// 审计 LOW：lastProviderContextTokens 为模块级跨会话残留——新会话启动时
+		// 若按旧会话大值走 fallback，会误触发恢复压缩（全新会话 tokens 极小，
+		// 阈值 40% 窗口根本不该触发）。new/fork 是新会话身份，清零；
+		// resume/reload 是同一会话恢复，保留供断链恢复判定。
+		if (event.reason === "new" || event.reason === "fork") lastProviderContextTokens = 0
 		const resolved = resolveContext(ctx);
 		if (!resolved) return;
 		const { tokens, window: contextWindow } = resolved;
@@ -528,7 +533,20 @@ export default function (pi: ExtensionAPI) {
 	// 但 auto-compact 在 20% 处先触发，85%/95% 永不达到 → 死代码）。
 	pi.on("before_agent_start", async (event, ctx) => {
 		// 首次 run 前应用工具分层（此时全部扩展已注册，getAllTools 完整）
-		if (!layeringApplied) applyToolLayering();
+		if (!layeringApplied) {
+			applyToolLayering();
+		} else {
+			// 审计 MEDIUM 修复（2026-08-18）：plan-mode 进出计划模式会
+			// restoreAllTools(全量) 覆盖分层，layeringApplied 门不再重应用 →
+			// 休眠组 schema 永久恢复注入、分层失效。每轮幂等检测：当前活动工具
+			// 含（未启用组的）休眠工具则重新应用。仅漂移时 setActiveTools,
+			// 无漂移零开销（不触发前缀缓存变化）。
+			const cur = (pi as ExtensionAPI & { getActiveTools(): string[] }).getActiveTools();
+			const dormant = SLEEPING_GROUPS.filter((g) => !enabledGroups.has(g.name)).flatMap((g) => g.tools);
+			if (dormant.some((n) => cur.includes(n))) {
+				applyToolLayering();
+			}
+		}
 
 		const resolved = resolveContext(ctx);
 		let pressureLine = "";

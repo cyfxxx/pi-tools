@@ -145,44 +145,51 @@ export function createDictation(
           }
           currentFile = null
           recordingChild = null
-          // 服务端也已停/从未录：补发 -q 强制服务收尾（moov atom），再等文件稳定
-          await deps.stopRecording(cfg).catch(() => undefined)
-          // 进程退出 ≠ 文件写完：MediaRecorder 仍会写入尾部（moov atom），需等大小稳定
-          // 才能区分“正常超时”与“启动即失败/单实例被占用”（后者无文件或恒为 0 字节）
-          // 失败判定窗口缩短到 5s：启动失败时尽快进入重试（默认 15s 会让用户等太久）
-          const stable = await deps.waitForFileStable(file, { maxWaitMs: 5000 })
-          // 等待期间用户 cancel / 开始了新录音：旧文件作废，静默丢弃
-          if (expectGen !== gen) return
-          if (stable) {
-            // -l 0 后服务端不再有超时机制：进程自行退出必然是异常（服务不稳定
-            // 中途停录等），一律按“异常提前结束”提示，不再误报“时长到上限”
-            const actualSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000))
-            const r = await finish(file, 'exit', actualSec)
-            cb.onAutoComplete(r)
-          } else {
-            // 等待窗口内始终无有效文件：单实例冲突（“Recording already in progress!”，退出码恰为 0）
-            // 或 MediaRecorderService 仍在收尾（写 moov atom）未释放。自动重试一次：
-            // 等 2s 再拉起新进程，避免用户反复手动触发同一故障。
-            if (!retried) {
-              retried = true
-              // MediaRecorderService 释放慢：pkill/-q 后服务侧可能仍需数秒才完全
-              // 释放麦克风，立即重试会再次假成功（stdout 显示 Recording started 但
-              // 无文件）。等 3s 再拉起新进程。
-              await new Promise((r2) => setTimeout(r2, 3000))
-              if (expectGen !== gen || currentFile !== null || busy) return
-              // 重试强制清理（forceClean）：上次失败说明服务侧大概率残留 MediaRecorder
-              spawnRecorder(expectGen, true)
-              return
+          // 审计 MEDIUM 修复：补发 -q 前设 stopping（全局 -q 会停掉窗口内新录音）；
+          // 等待文件稳定/转写期间也拦截新 start
+          stopping = true
+          try {
+            // 服务端也已停/从未录：补发 -q 强制服务收尾（moov atom），再等文件稳定
+            await deps.stopRecording(cfg).catch(() => undefined)
+            // 进程退出 ≠ 文件写完：MediaRecorder 仍会写入尾部（moov atom），需等大小稳定
+            // 才能区分“正常超时”与“启动即失败/单实例被占用”（后者无文件或恒为 0 字节）
+            // 失败判定窗口缩短到 5s：启动失败时尽快进入重试（默认 15s 会让用户等太久）
+            const stable = await deps.waitForFileStable(file, { maxWaitMs: 5000 })
+            // 等待期间用户 cancel / 开始了新录音：旧文件作废，静默丢弃
+            if (expectGen !== gen) return
+            if (stable) {
+              // -l 0 后服务端不再有超时机制：进程自行退出必然是异常（服务不稳定
+              // 中途停录等），一律按“异常提前结束”提示，不再误报“时长到上限”
+              const actualSec = Math.max(1, Math.round((Date.now() - startedAt) / 1000))
+              const r = await finish(file, 'exit', actualSec)
+              cb.onAutoComplete(r)
+            } else {
+              // 等待窗口内始终无有效文件：单实例冲突（“Recording already in progress!”，退出码恰为 0）
+              // 或 MediaRecorderService 仍在收尾（写 moov atom）未释放。自动重试一次：
+              // 等 2s 再拉起新进程，避免用户反复手动触发同一故障。
+              if (!retried) {
+                retried = true
+                // MediaRecorderService 释放慢：pkill/-q 后服务侧可能仍需数秒才完全
+                // 释放麦克风，立即重试会再次假成功（stdout 显示 Recording started 但
+                // 无文件）。等 3s 再拉起新进程。
+                await new Promise((r2) => setTimeout(r2, 3000))
+                if (expectGen !== gen || currentFile !== null || busy) return
+                // 重试强制清理（forceClean）：上次失败说明服务侧大概率残留 MediaRecorder
+                spawnRecorder(expectGen, true)
+                return
+              }
+              const detailTxt = detail?.trim() ? `（termux-api 输出：${detail.trim().slice(0, 200)}）` : ''
+              const serviceAnomaly = detail?.includes('Recording started') && detail?.includes('Max Duration')
+              cb.onAutoComplete({
+                message: serviceAnomaly
+                  ? `录音启动失败：termux-api 响应异常（接受请求但未写入音频文件）${detailTxt}。已自动重试，若仍失败请稍候再试`
+                  : `录音启动失败：录音进程已退出且未生成音频${detailTxt}（可能已被其他录音占用）。请先执行 /voice stop 停止现有录音，或检查麦克风权限`,
+                text: '',
+                language: '',
+              })
             }
-            const detailTxt = detail?.trim() ? `（termux-api 输出：${detail.trim().slice(0, 200)}）` : ''
-            const serviceAnomaly = detail?.includes('Recording started') && detail?.includes('Max Duration')
-            cb.onAutoComplete({
-              message: serviceAnomaly
-                ? `录音启动失败：termux-api 响应异常（接受请求但未写入音频文件）${detailTxt}。已自动重试，若仍失败请稍候再试`
-                : `录音启动失败：录音进程已退出且未生成音频${detailTxt}（可能已被其他录音占用）。请先执行 /voice stop 停止现有录音，或检查麦克风权限`,
-              text: '',
-              language: '',
-            })
+          } finally {
+            stopping = false
           }
         })().catch((e) => console.warn('[pi-voice] 录音进程退出处理失败:', (e as Error)?.message ?? e))
       } else {
@@ -218,24 +225,31 @@ export function createDictation(
       void (async () => {
         currentFile = null
         recordingChild = null
-        // 停掉服务端假状态（-q 可能无效果，但进程会被终止，exit 回调因
-        // currentFile 已置 null 而忽略）
-        await deps.stopRecording(cfg).catch(() => undefined)
-        if (expectGen !== gen) return
-        if (!retried) {
-          retried = true
-          // MediaRecorderService 释放慢（实测需数秒）：等 3s 再拉起，避免重试
-          // 撞上未释放窗口再次假成功（此前 1s 太短，连续 3 次录音失败）
-          await new Promise((r) => setTimeout(r, 3000))
-          if (expectGen !== gen || currentFile !== null || busy) return
-          spawnRecorder(expectGen, true)
-          return
+        // 审计 MEDIUM 修复：置空后异步停旧录音存在竞态窗口（全局 -q 会停掉刚启动的
+        // 新录音）——与 stopInternal 同款 stopping 标志拦截窗口内新 start
+        stopping = true
+        try {
+          // 停掉服务端假状态（-q 可能无效果，但进程会被终止，exit 回调因
+          // currentFile 已置 null 而忽略）
+          await deps.stopRecording(cfg).catch(() => undefined)
+          if (expectGen !== gen) return
+          if (!retried) {
+            retried = true
+            // MediaRecorderService 释放慢（实测需数秒）：等 3s 再拉起，避免重试
+            // 撞上未释放窗口再次假成功（此前 1s 太短，连续 3 次录音失败）
+            await new Promise((r) => setTimeout(r, 3000))
+            if (expectGen !== gen || currentFile !== null || busy) return
+            spawnRecorder(expectGen, true)
+            return
+          }
+          cb.onAutoComplete({
+            message: '录音启动失败：服务端未实际开始录音（无音频文件生成），已自动重试仍失败。请稍候再试，或检查麦克风权限',
+            text: '',
+            language: '',
+          })
+        } finally {
+          stopping = false
         }
-        cb.onAutoComplete({
-          message: '录音启动失败：服务端未实际开始录音（无音频文件生成），已自动重试仍失败。请稍候再试，或检查麦克风权限',
-          text: '',
-          language: '',
-        })
       })()
     }, 8000)
     return { child, file }
@@ -328,7 +342,10 @@ export function createDictation(
     const file = currentFile
     currentFile = null
     recordingChild = null
-    void deps.stopRecording(cfg).catch(() => undefined)
+    // 审计 MEDIUM 修复：异步停旧录音（termux 全局 -q）与 stopInternal 同款
+    // stopping 标志，拦截窗口内新 start 被误停
+    stopping = true
+    void deps.stopRecording(cfg).catch(() => undefined).finally(() => { stopping = false })
     deps.deleteAudioPair(cfg, file)
     return '已取消'
   }
