@@ -29,10 +29,14 @@ import { estimateTokens } from "./context-budget.ts";
 // 保护带：从后往前累计保留的 token 预算（opencode PRUNE_PROTECT = 40_000）
 // 2026-08-15 审计调至 80_000：事后擦除必然破坏 DeepSeek 前缀缓存（擦除轮从擦除点
 // 全量重发）。保护带越大擦除触发越少，长会话中省下的重发成本远大于多留的上下文。
-export const PRUNE_PROTECT_TOKENS = 80_000;
+// 2026-08-18 再调至 120_000：承载 1M 窗口（compact 阈值 40%=400K）下普通会话全程
+// 不触发；对齐"append-only 不动老消息"缓存哲学（Reasonix/Orca 实测 99%+ 命中），
+// 事后擦除仅作为极长会话的底线保障，清理职责让给 auto-compact（一次性断裂）。
+export const PRUNE_PROTECT_TOKENS = 120_000;
 // 最低回收阈值：预计回收低于此值不应用（opencode PRUNE_MINIMUM = 20_000）
 // 2026-08-15 审计调至 50_000：回收小于此值不值得承担一次缓存断裂（重发成本）。
-export const PRUNE_MINIMUM_TOKENS = 50_000;
+// 2026-08-18 再调至 80_000：与保护带同步提高，减少触发频率（每次擦除=一次缓存断裂）。
+export const PRUNE_MINIMUM_TOKENS = 80_000;
 // 最近 N 个用户轮次豁免（opencode 跳过最近 2 轮）
 export const KEEP_RECENT_TURNS = 2;
 // 擦除后的占位文本

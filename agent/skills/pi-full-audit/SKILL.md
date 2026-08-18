@@ -196,12 +196,14 @@ foreach ($f in $files) {
 ### 检查清单（按序）
 
 1. **运行时状态**：`admin_status`（模型/provider/会话文件/思考层级）+ `autopilot_status`（自主运行开关、任务数、遥测、预算、failover）+ `schedule_task list`（定时任务）
-2. **缓存命中与 token**：读 `agent/.usage-diag.jsonl` 尾部 3 条：
+2. **缓存命中与 token**：先跑 `node scripts/usage-stats.mjs`（跨会话聚合，幂等；按 startTs 去重入账 `agent/stats/usage-sessions.jsonl`）看历史对比与当前会话断裂/浪费，再读 `agent/.usage-diag.jsonl` 尾部 3 条：
    - 命中率 = cacheRead / (input + cacheRead)，正常 >90%（实测 98%+）；偏低 → system prompt 前缀不稳定（时间戳注入/banding 失效）
    - **统计修正（2026-08-14 实战）**：先排除 run 边界轮——重启/--continue 恢复/新实例后的首轮必然重发（context 重建），不算异常；usage-diag 记录所有 turn_end（含同机其他 pi 实例、昨晚实例），统计全量时先按时间窗口滤出当前会话活跃期
    - **断裂点定位法**：低命中轮的 cacheRead ≈ 断裂点位置。断裂点 ≈ system prompt 尾部 → **systemPrompt 拼入式注入**（如 pi-memory 旧实现）——变化时全部历史重发，应改为消息注入；断裂点在消息末尾 → 注入块变化，成本仅注入本身（≤几 K），正常
-   - **请求级验证法（比 usage 统计更精确，2026-08-14 实测）**：usage 的 in≈40-50K 并不等于消息序列断裂——写临时 debug 扩展监听 `before_provider_request`，对每条消息做完整内容 hash，对比相邻请求：前 N 条 hash 全同 = 无断裂（in 大是 DeepSeek 侧缓存未命中，与消息内容无关）；首个不同消息 = 精确断裂点。测完删除扩展
-   - **缓存断裂三类成因（实测分类）**：A 注入变化（systemPrompt 拼入式注入，已修）；B DeepSeek 侧缓存未命中（100K+ 上下文时偶发 in≈41K 轮，消息序列无断裂，嫌疑 thinking 全文/请求格式，超出扩展可控范围）；C run 边界（重启/恢复首轮）。另有 pi 内部轻量请求（nMsg=4，每 3-5 分钟一次）不影响主请求缓存
+   - **请求级验证法（比 usage 统计更精确）**：usage 的 in≈40-50K 并不等于消息序列断裂——写临时 debug 扩展监听 `before_provider_request`，对每条消息做完整内容 hash，对比相邻请求：前 N 条 hash 全同 = 无断裂（in 大是 DeepSeek 侧缓存未命中，与消息内容无关）；首个不同消息 = 精确断裂点。测完删除扩展
+   - **缓存断裂成因（2026-08-18 更新分类，thinking 剪枝根因已定位）**：A 注入变化（systemPrompt 拼入式注入，已修）；B **post-hoc 消息修改**（thinking 剪枝/分层擦除等事后改历史——2026-08-18 实测根因：16K thinking 预算每 2-3 轮超限删早期 thinking → 3.8h 27 次断裂、1.46M token 浪费；已调阈值 64K/120K/80K 休眠）；C DeepSeek 侧缓存未命中（100K+ 上下文偶发 in≈41K 轮，消息序列无断裂）；D run 边界（重启/恢复首轮）。**诊断提示**：断裂轮出现且 cacheRead 残值单调后移 → 查 lib/prune.ts 阈值是否被回退（`node agent/extensions/tests/cache-guard.mjs` 有契约校验）
+   - **注入面守门**（2026-08-18 新增）：`node agent/extensions/tests/cache-guard.mjs` 校验注入面指纹（AGENTS.md/注入文案/阈值）——任何漂移必须显式 `--update-baseline`，否则回退式改动直接阻断
+   - **工具列表跨会话漂移**（2026-08-18 新增）：`agent/stats/tool-fingerprint.jsonl`（conflict-check 每次运行入账）——工具 schema 是 system prompt 一部分，漂移破坏前缀；查看最后两条 timestamp 间隔与内容
    - input 应远小于 cacheRead（每轮只发增量）；input 涨到数千 → 历史膨胀
    - contextTokens 接近预算上限 → 报告压力档位注入（≥75%/≥90% 文案）
    - 自动压缩触发次数高（usage-diag 中 `type:"auto-compact"` 事件行）→ 检查 pi-context 压缩配置
