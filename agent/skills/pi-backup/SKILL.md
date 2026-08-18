@@ -536,7 +536,7 @@ pi-backup verify
 | 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
 | 回归测试脚本 | `scripts/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
 | 重建回归脚本 | `scripts/docker-rebuild-test.sh` | Docker 干净环境重建回归（clone→rebuild→判定） |
-| 核心补丁 | `scripts/patch-*.mjs`（5 个：voice-enter/footer-live-context/plan-tools/tab-arg-completion/playwright-core） | rebuild.sh Phase 3 自动执行；**漏备份则 restore 后 rebuild 无法打补丁** |
+| 核心补丁 | `scripts/patch-*.mjs`（8 个：voice-enter/footer-live-context/plan-tools/tab-arg-completion/playwright-core/footer-cache/footer-format/footer-restart-hint） | rebuild.sh Phase 3 自动执行；**漏备份则 restore 后 rebuild 无法打补丁** |
 | 用量基准 | `scripts/pi-bench.sh` | usage/timing/compare 基准工具 |
 | 后台任务脚本 | `scripts/pi-bg.sh` + `scripts/README-pi-bg.md` | 后台任务四件套隔离 + 文档 |
 | 冒烟测试 | `scripts/smoke-test.sh` | rebuild 依赖其第 1 项 |
