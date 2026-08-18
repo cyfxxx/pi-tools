@@ -13,6 +13,7 @@ interface FakePi {
   on: (name: string, h: Handler) => void
   sendMessage: ReturnType<typeof vi.fn>
   registerCommand: ReturnType<typeof vi.fn>
+  registerTool: ReturnType<typeof vi.fn>
 }
 
 let dir: string
@@ -42,6 +43,7 @@ async function loadIndex(): Promise<{ handlers: Map<string, Handler[]>; pi: Fake
     },
     sendMessage: vi.fn(),
     registerCommand: vi.fn(),
+    registerTool: vi.fn(),
   }
   mod.default(pi as never)
   return { handlers, pi }

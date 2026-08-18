@@ -20,10 +20,8 @@ import type { AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { Message } from "@earendil-works/pi-ai";
 import { StringEnum } from "@earendil-works/pi-ai";
 import {
-	CONFIG_DIR_NAME,
 	calculateContextTokens,
 	type ExtensionAPI,
-	getAgentDir,
 	getMarkdownTheme,
 	truncateHead,
 	withFileMutationQueue,
@@ -635,29 +633,11 @@ export default function (pi: ExtensionAPI) {
 		name: "subagent",
 		label: "Subagent",
 		promptSnippet: "Delegate tasks to subagents for parallel/isolated work",
-		promptGuidelines: [
-			"Use `subagent` for codebase exploration — it runs in an isolated context and returns compressed output, keeping your context clean",
-			"Use `subagent` parallel mode for independent tasks (e.g., search multiple directories at once) — cloud models batch-run tasks in parallel (up to 4); local models (ollama/localhost etc.) run 1 at a time to avoid resource contention",
-			"Use `subagent` chain mode for complex multi-step workflows — each step has an isolated context, avoiding context pollution; pass prior output via {previous}",
-			"For pure research or exploration questions, delegate entirely to a subagent and consume only its compressed summary",
-			"When context is getting large (>70% of limit), favor subagent delegation over reading more files yourself",
-			"Available agents (scout/worker/reviewer) are optional: omit `agent` and the subagent runs with a general-purpose default prompt",
-		],
 		description: [
 			"Delegate tasks to subagents with isolated context windows.",
-			"",
-			"When to use this tool:",
-			"- Codebase exploration: delegates to isolated context, returns compressed output",
-			"- Parallel work: run N independent searches/analyses (up to 8 tasks; cloud provider: parallel batch; local provider: serial 1-at-a-time)",
-			"- Multi-step workflows: chain agents together for complex implementations, passing output between steps with {previous}",
-			"- Heavy lifting: move large refactoring or batch changes to a sub-agent to keep main context clean",
-			"- Context preservation: delegate scoped tasks to avoid polluting the main conversation with intermediate results",
-			"",
-			"Modes: single (task, optional agent), parallel (tasks array), chain (sequential with {previous} placeholder).",
-			`When no agent is specified (or the name is unknown), the subagent runs with a general-purpose default prompt.`,
-			`Custom agents can be defined as markdown files in ${path.join(getAgentDir(), "agents")}.`,
-			`To enable project-local agents in ${CONFIG_DIR_NAME}/agents, set agentScope: "both" (or "project").`,
-		].join("\n"),
+			"Modes: single (task, optional agent), parallel (tasks array), chain (sequential steps with {previous} placeholder).",
+			"Usage scenarios, agents (scout/worker/reviewer) and delegation guidance: see the Proactive Delegation section in the system prompt.",
+		].join(" "),
 		parameters: SubagentParams,
 
 		async execute(_toolCallId, rawParams, signal, onUpdate, ctx) {

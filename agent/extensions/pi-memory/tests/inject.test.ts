@@ -97,14 +97,14 @@ describe('inject: buildInjectionBlock', () => {
     const { buildInjectionBlock, CONTENT_TOKEN_CAP } = await import('../inject.ts')
     const longContent = '这是一段非常长的内容。'.repeat(60)
     const result = buildInjectionBlock([makeEntry({ title: '长条目', content: longContent })], [], 2000)
-    expect(result.block).toContain('[truncated')
+    expect(result.block).toContain('[截断]')
     expect(result.block.length).toBeLessThan(longContent.length)
   })
 
   it('短内容不加截断标记', async () => {
     const { buildInjectionBlock } = await import('../inject.ts')
     const result = buildInjectionBlock([makeEntry({ title: '短条目', content: '短内容' })], [], 2000)
-    expect(result.block).not.toContain('[truncated')
+    expect(result.block).not.toContain('[截断]')
   })
 
   it('空摘要（无可提取类）不注入', async () => {

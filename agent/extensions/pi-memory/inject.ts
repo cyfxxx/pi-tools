@@ -56,10 +56,8 @@ export function buildInjectionBlock(
   const live = activeEntries(entries).filter(e => isEnvVisible(e.environments, currentEnv))
 
   const lines: string[] = []
-  lines.push('## 持续记忆（pi-memory 自动注入，每轮刷新）')
-  lines.push(
-    '以下是跨会话长期记忆索引：仅常见价值高的条目与最近会话摘要。需要具体内容时用 memory_search 按需检索（如历史方法/踩坑细节）；新发现的重要信息请用 memory_store 主动存入（会话结束也会自动提取）。',
-  )
+  lines.push('## 持续记忆（每轮注入）')
+  lines.push('高价值记忆与最近会话摘要；细节用 memory_search 检索，新知识用 memory_store 存入。')
   let used = estimateTokens(lines.join('\n') + '\n')
   let injectedEntries = 0
   let injectedSummaries = 0

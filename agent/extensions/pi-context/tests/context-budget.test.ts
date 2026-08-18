@@ -100,9 +100,9 @@ describe('context-budget: truncateByTokens 边界感知与标记预算 (2026-08-
     const { truncateByTokens } = await import('../../../lib/context-budget.ts')
     const text = '这是一段有明确句子的长内容。第二句也很重要。第三句会超过预算因此应当被截掉。后缀'.repeat(4)
     const out = truncateByTokens(text, 40)
-    expect(out).toContain('[truncated:')
+    expect(out).toContain('[截断]')
     // 截断内容以句号结尾（不是在句子中间断）
-    const content = out.split('\n\n[truncated:')[0]
+    const content = out.split('\n\n[截断]')[0]
     expect(content.endsWith('。')).toBe(true)
     expect(content.endsWith('。后缀')).toBe(false) // 不残留半句
   })
@@ -111,7 +111,7 @@ describe('context-budget: truncateByTokens 边界感知与标记预算 (2026-08-
     const { truncateByTokens } = await import('../../../lib/context-budget.ts')
     const text = '无标点长串'.repeat(80) // 320 字符中文
     const out = truncateByTokens(text, 30)
-    const content = out.split('\n\n[truncated:')[0]
+    const content = out.split('\n\n[截断]')[0]
     expect(content.length).toBeGreaterThan(20)
   })
 
@@ -121,6 +121,6 @@ describe('context-budget: truncateByTokens 边界感知与标记预算 (2026-08-
     const cap = 60
     const out = truncateByTokens(text, cap)
     expect(estimateTokens(out)).toBeLessThanOrEqual(cap + 2)
-    expect(out).toContain('chars')
+    expect(out).toContain('[截断]')
   })
 })

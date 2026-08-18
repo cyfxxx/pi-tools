@@ -3210,29 +3210,6 @@
       ]
     },
     {
-      "id": "a1b33604-60ac-40b3-bb5b-e941675c3611",
-      "category": "fact",
-      "title": "symlink 断裂修复",
-      "content": "pi update 后 extensions/node_modules 下 @earendil-works/pi-coding-agent symlink 可能指向失效的 pi-node/current/（实际目录为 node-v22.23.1-linux-arm64），typebox 成空目录，致 extensions.test.ts 18 用例失败。修复：重建 symlink 指向真实目录。",
-      "tags": [
-        "node_modules",
-        "symlink",
-        "故障"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T08:59:37.714Z",
-      "updatedAt": "2026-08-10T10:16:05.604Z",
-      "accessedAt": "2026-08-10T08:59:37.714Z",
-      "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": true,
-      "supersededBy": "bc925ab9-808c-431f-868d-aeba9d2c6036",
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "99e95879-5385-4ec2-8c9f-c972b355df56",
       "category": "fact",
       "title": "settings 扩展数组无效",
@@ -6840,7 +6817,7 @@
       "id": "11b49a61-a0e6-4e48-95a4-53385cd764c7",
       "category": "solutions",
       "title": "extensions/node_modules symlink 断裂修复",
-      "content": "pi update 后包结构变化导致 extensions/node_modules 下 @earendil-works/pi-coding-agent symlink 指向 /root/.local/share/pi-node/current/ 失效（实际安装目录为 node-v22.23.1-linux-arm64），typebox 为空目录，症状是 extensions.test.ts 18 个用例模块解析失败。修复：检查 6 个子包 symlink 后重建指向真实目录的链接。下次 pi update 后遇模块解析失败优先查此。",
+      "content": "pi update 后包结构变化导致 extensions/node_modules 下 @earendil-works/pi-coding-agent symlink 指向失效的 pi-node/current/（实际安装目录为 node-v22.23.1-linux-arm64），typebox 成空目录，症状是 extensions.test.ts 18 个用例模块解析失败。修复：检查 6 个子包 symlink 后重建指向真实目录的链接。下次 pi update 后遇模块解析失败优先查此。",
       "tags": [
         "pi",
         "symlink",
@@ -6851,11 +6828,11 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T16:03:30.224Z",
-      "updatedAt": "2026-08-12T16:03:30.224Z",
+      "updatedAt": "2026-08-18T11:36:22.840Z",
       "accessedAt": "2026-08-12T16:03:30.224Z",
       "observedAt": "2026-08-12T16:03:30.224Z",
       "environments": [
-        "termux"
+        "all"
       ],
       "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
       "deleted": false
@@ -11039,10 +11016,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 9,
+      "recurrence": 13,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-17T08:00:31.489Z",
-      "accessedAt": "2026-08-17T08:00:31.489Z",
+      "updatedAt": "2026-08-18T11:47:12.781Z",
+      "accessedAt": "2026-08-18T11:47:12.781Z",
       "environments": [
         "all"
       ],
@@ -11472,7 +11449,9 @@
       "accessedAt": "2026-08-17T13:49:43.882Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-17T13:49:43.882Z",
+      "deleted": false
     }
   ]
 }
