@@ -57,10 +57,12 @@ function overThresholdCtx(compact: (opts: { onComplete?: () => void; onError?: (
 }
 
 describe('pi-context: 压缩触发挂载点与记账时机', () => {
-  it('挂载在 agent_settled 而非 agent_end（内核重试轮不被打断）', async () => {
+  it('挂载在 agent_settled 而非 agent_end（内核重试轮不被打断）', { timeout: 30_000 }, async () => {
     // AgentEndEvent 无 willRetry 字段（types.d.ts 实测），扩展无法在
     // agent_end 判断内核是否将重试；agent_settled 语义为"run 完全 settled，
     // 无重试/压缩/排队续跑"，此点触发 compact 不会 abort 内核后续动作
+    // 注：本用例是文件内首次 loadIndex——冷加载真实 @earendil-works/
+    // pi-coding-agent 包需 ~18s（arm64），超过 vitest 默认 5s 超时，故显式 30s
     const { handlers } = await loadIndex()
     expect(handlers.has('agent_settled')).toBe(true)
     expect(handlers.has('agent_end')).toBe(false)
