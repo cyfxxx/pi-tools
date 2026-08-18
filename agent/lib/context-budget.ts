@@ -192,8 +192,8 @@ export function estimateTokens(text: string): number {
 // 截断断点字符：优先中文句末标点/换行，其次英文句末/空格（按优先级从截断点往
 // 回找最近断点，回退下限为截断点 50%——防止无标点长串把内容砍得过短）
 const TRUNC_BREAKS = '。；;！!？?…\n，,、 ()：“”"'
-/** 截断标记自身 token 成本（预留：实际 ~11，多留 1） */
-const TRUNC_MARK_TOKEN_BUDGET = 12
+/** 截断标记自身 token 成本（[截断] 实际 ~3，多留余量） */
+const TRUNC_MARK_TOKEN_BUDGET = 6
 
 export function truncateByTokens(text: string, maxTokens: number): string {
   if (estimateTokens(text) <= maxTokens) return text
@@ -218,8 +218,7 @@ export function truncateByTokens(text: string, maxTokens: number): string {
     }
   }
   const truncated = text.slice(0, cut)
-  const ratio = text.length > 0 ? Math.round((truncated.length / text.length) * 100) : 0
-  return `${truncated}\n\n[truncated: ${text.length} chars → ${truncated.length} chars (${ratio}%)]`
+  return `${truncated}\n\n[截断]`
 }
 
 // ── 输出预算（按 token，整合自 prune.ts） ──
@@ -248,7 +247,7 @@ export function pruneToolOutput(text: string, toolName: string): string {
   }
   const ratio = Math.round((allowed / textTokens) * 100)
   const truncated = truncateByTokens(text, allowed)
-  const truncatedText = truncated.replace(/\[truncated: [^\]]+\]$/, "")
+  const truncatedText = truncated.replace(/\n\n\[截断\]$/, "")
   return `${truncatedText}\n\n[${toolName} 输出已截断：约 ${textTokens} token → ${allowed} token (${ratio}%)]`
 }
 

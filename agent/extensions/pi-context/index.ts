@@ -14,6 +14,13 @@ import {
 	recordUsage,
 	type UsageRecord,
 } from "../../lib/usage-diag.ts";
+import {
+	CORE_TOOLS,
+	SLEEPING_GROUPS,
+	SLEEPING_TOOL_SET,
+	buildSleepingSummary,
+	computeActiveTools,
+} from "./tool-groups.ts";
 
 // 执行效率指令（静态注入，缓存友好）：批量工具调用 + 抑制中间答复。
 // 依据 2026-08 实测：同一任务 pi 40 请求 vs opencode 16（同模型 deepseek-v4-flash），
@@ -24,6 +31,38 @@ export const EFFICIENCY_ADVICE = `## Execution Efficiency
 - Independent tool calls (multiple reads, greps, globs) MUST be issued in a single assistant turn — batch them together; a parallel batch costs only one request.
 - During exploration/execution turns, do NOT write explanatory text or progress reports — output tool calls only. Summarize once when everything is done.
 - Exception: when todo progress updates are required or a plan summary is requested, output the required structured summary.`;
+
+/**
+ * 低压力精简版委托建议（静态注入，缓存友好）：
+ * 上下文 <75% 自动压缩阈值时只注入要点（~90 token，省 ~280），
+ * 完整场景表仅在 ≥75% 压力档注入（见 before_agent_start 档位逻辑）。
+ */
+export const LOW_PRESSURE_DELEGATION = `## Proactive Delegation
+
+- Codebase exploration / pure research → \`subagent\` (\`scout\`) — isolated context, compressed summary.
+- Independent subtasks → \`subagent\` parallel mode; multi-step workflows → chain (scout→planner→worker).
+- Reading >3 files or heavy refactors → delegate to keep the main context clean.`;
+
+/** 完整委托建议（含场景表 + 决策启发式），仅在压力档位（≥75% 阈值）注入 */
+export const FULL_DELEGATION_ADVICE = `## Proactive Delegation
+
+You have access to \`subagent\` tool with specialized agents (scout, planner, worker, reviewer). Use them proactively:
+
+| Scenario | Action | Why |
+|----------|--------|-----|
+| Codebase exploration ("find where X is", "how does Y work") | Call \`subagent\` with \`scout\` agent | Scout runs in isolated context, returns compressed summary — keeps your main context clean |
+| 2+ independent subtasks | Call \`subagent\` parallel mode | Runs tasks one at a time in isolated contexts instead of N sequential turns that bloat the main conversation |
+| Multi-step implementation | Call \`subagent\` chain: scout→planner→worker | Each step has isolated context, no context pollution |
+| Reading many files (>3) | Delegate to a worker agent instead | Keeps your context window clean and focused |
+| Pure research ("explain architecture") | Delegate entirely to scout agent | Consume only the compressed summary |
+
+**Decision heuristic:**
+- Ask yourself: "Can this task be done in an isolated context?"
+- If yes → delegate to \`subagent\`
+- Ask yourself: "Will this task make my context window >70% full?"
+- If yes → delegate to \`subagent\`
+- Ask yourself: "Are there independent sub-tasks?"
+- If yes → parallel \`subagent\``;
 
 /**
  * R4 工具输出截断的纯函数（供单测）：超限时截断文本块；
@@ -366,6 +405,120 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	// ── 工具分层与按需加载（2026-08-18，详见 README「工具分层与按需加载」） ──
+	// 核心工具 schema 常驻；休眠工具组（browser/admin/autopilot/link）不注入
+	// schema，模型需要时调用 enable_tool("组名") 启用（本会话内保持）。
+	// 缓存约束：启用是低频显式操作（工具列表变化 = 前缀缓存断裂一次），
+	// 禁止任何每轮动态启停实现；启用状态为进程内存态，重启恢复默认分层。
+	// 注：getAllTools/getActiveTools 未声明在官方 d.ts（plan-mode 同用法），
+	// 运行时内核已提供（agent-session.js getActiveToolNames/allTools），用类型断言。
+	const enabledGroups = new Set<string>();
+	let layeringApplied = false;
+
+	/** 应用工具分层：全部注册工具减去未启用休眠组的工具 */
+	const applyToolLayering = () => {
+		const api = pi as ExtensionAPI & { getAllTools(): Array<{ name: string }> };
+		const all = api.getAllTools().map((t) => t.name);
+		const active = computeActiveTools(all, enabledGroups);
+		pi.setActiveTools(active);
+		layeringApplied = true;
+	};
+
+	/** 生成 /tools list 报告（不进 LLM 上下文，仅展示） */
+	const buildToolsReport = () => {
+		const api = pi as ExtensionAPI & { getActiveTools(): string[] };
+		const activeNames = new Set(api.getActiveTools());
+		const lines = ["## 工具分层状态"];
+		lines.push(`核心常驻（${CORE_TOOLS.length}）: ${CORE_TOOLS.join(", ")}`);
+		for (const g of SLEEPING_GROUPS) {
+			const state = enabledGroups.has(g.name) ? "已启用" : "休眠";
+			lines.push(`- ${g.name} [${state}]（${g.tools.length}）: ${g.tools.join(", ")}`);
+		}
+		const inactive = activeNames.size === 0 ? "(未知)" : `${activeNames.size} 个活动`;
+		lines.push(`当前活动工具: ${inactive}`);
+		return lines.join("\n");
+	};
+
+	pi.registerTool({
+		name: "enable_tool",
+		label: "启用休眠工具组",
+		description:
+			"启用休眠工具组（browser/admin/autopilot/link）。启用后工具列表更新一次（前缀缓存重算），本会话内保持，重启恢复默认分层；已启用的组再次启用无副作用。",
+		parameters: {
+			type: "object",
+			properties: {
+				group: {
+					type: "string",
+					enum: SLEEPING_GROUPS.map((g) => g.name),
+					description: "要启用的休眠工具组名",
+				},
+			},
+			required: ["group"],
+		},
+		execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => {
+			const group = params?.group as string | undefined;
+			const g = SLEEPING_GROUPS.find((x) => x.name === group);
+			if (!g) {
+				return {
+					content: [
+						{
+							type: "text",
+							text: `未知工具组: ${group ?? "(空)"}。可用组: ${SLEEPING_GROUPS.map((x) => x.name).join(", ")}`,
+						},
+					],
+					isError: true,
+					details: null,
+				};
+			}
+			if (enabledGroups.has(g.name)) {
+				return {
+					content: [{ type: "text", text: `工具组 ${g.name} 已在启用状态（${g.tools.join(", ")}），无操作。` }],
+					details: null,
+				};
+			}
+			enabledGroups.add(g.name);
+			applyToolLayering();
+			return {
+				content: [
+					{
+						type: "text",
+						text: `已启用工具组 ${g.name}: ${g.tools.join(", ")}。本会话内保持可用；重启 pi 后恢复默认分层（如需常驻可后续调整工具分组配置）。`,
+					},
+				],
+				details: null,
+			};
+		},
+	});
+
+	// 工具分层管理命令：/tools list | enable <group>
+	pi.registerCommand("tools", {
+		description: "工具分层：list 查看分组/状态，enable <group> 启用休眠组（见 /tools help）",
+		handler: async (args, ctx) => {
+			const [cmd, ...rest] = args.trim().split(/\s+/);
+			if (cmd === "enable" && rest[0]) {
+				const g = SLEEPING_GROUPS.find((x) => x.name === rest[0]);
+				if (!g) {
+					ctx.ui.notify(`未知组: ${rest[0]}。可用: ${SLEEPING_GROUPS.map((x) => x.name).join(", ")}`, "warning");
+					return;
+				}
+				enabledGroups.add(g.name);
+				applyToolLayering();
+				ctx.ui.notify(`已启用工具组 ${g.name}（${g.tools.join(", ")}），本会话内保持。`, "info");
+				return;
+			}
+			const content = buildToolsReport();
+			ctx.ui.notify(`tools: ${SLEEPING_GROUPS.length} 个休眠组，${CORE_TOOLS.length} 个核心工具`, "info");
+			pi.sendMessage(
+				{
+					customType: "tools-report",
+					content,
+					display: true,
+				},
+				{ triggerTurn: false },
+			);
+		},
+	});
+
 	// 融合 pi-router：before_agent_start 注入主动路由策略 + 档位化压力提示
 	// 缓存友好原则：
 	//  - 静态的 delegationAdvice 在前（内容永不变化）
@@ -374,6 +527,9 @@ export default function (pi: ExtensionAPI) {
 	// 档位基于 auto-compact 阈值比例（早期实现用 contextWindow 的 85%/95%，
 	// 但 auto-compact 在 20% 处先触发，85%/95% 永不达到 → 死代码）。
 	pi.on("before_agent_start", async (event, ctx) => {
+		// 首次 run 前应用工具分层（此时全部扩展已注册，getAllTools 完整）
+		if (!layeringApplied) applyToolLayering();
+
 		const resolved = resolveContext(ctx);
 		let pressureLine = "";
 		if (resolved) {
@@ -392,28 +548,25 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 
-		const delegationAdvice = `## Proactive Delegation${pressureLine}
+		// 档位化委托建议：低压力（<75% 阈值）注入精简版（~90 token），
+		// 完整场景表仅压力档（≥75%/≥90%）注入 + 压力提示行。
+		// 档位跳变才改变 system prompt，低档位时缓存前缀更稳定。
+		const delegationAdvice = pressureLine
+			? FULL_DELEGATION_ADVICE + "\n" + pressureLine
+			: LOW_PRESSURE_DELEGATION;
 
-You have access to \`subagent\` tool with specialized agents (scout, planner, worker, reviewer). Use them proactively:
-
-| Scenario | Action | Why |
-|----------|--------|-----|
-| Codebase exploration ("find where X is", "how does Y work") | Call \`subagent\` with \`scout\` agent | Scout runs in isolated context, returns compressed summary — keeps your main context clean |
-| 2+ independent subtasks | Call \`subagent\` parallel mode | Runs tasks one at a time in isolated contexts instead of N sequential turns that bloat the main conversation |
-| Multi-step implementation | Call \`subagent\` chain: scout→planner→worker | Each step has isolated context, no context pollution |
-| Reading many files (>3) | Delegate to a worker agent instead | Keeps your context window clean and focused |
-| Pure research ("explain architecture") | Delegate entirely to scout agent | Consume only the compressed summary |
-
-**Decision heuristic:**
-- Ask yourself: "Can this task be done in an isolated context?"
-- If yes → delegate to \`subagent\`
-- Ask yourself: "Will this task make my context window >70% full?"
-- If yes → delegate to \`subagent\`
-- Ask yourself: "Are there independent sub-tasks?"
-- If yes → parallel \`subagent\``;
+		// 休眠工具组简介（静态，缓存友好——不随启用状态变化）
+		const toolSummary = buildSleepingSummary();
 
 		return {
-			systemPrompt: event.systemPrompt + "\n\n" + delegationAdvice + "\n\n" + EFFICIENCY_ADVICE,
+			systemPrompt:
+				event.systemPrompt +
+				"\n\n" +
+				delegationAdvice +
+				"\n\n" +
+				EFFICIENCY_ADVICE +
+				"\n\n" +
+				toolSummary,
 		};
 	});
 }

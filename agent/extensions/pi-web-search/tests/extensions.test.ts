@@ -10,6 +10,8 @@ interface MockPI {
   appendEntry?: ReturnType<typeof vi.fn>
   sendUserMessage?: ReturnType<typeof vi.fn>
   setActiveTools?: ReturnType<typeof vi.fn>
+  getAllTools?: ReturnType<typeof vi.fn>
+  getActiveTools?: ReturnType<typeof vi.fn>
   getFlag?: ReturnType<typeof vi.fn>
 }
 
@@ -23,6 +25,8 @@ const mockPi = (): MockPI => ({
   appendEntry: vi.fn(),
   sendUserMessage: vi.fn(),
   setActiveTools: vi.fn(),
+  getAllTools: vi.fn(() => []),
+  getActiveTools: vi.fn(() => []),
   getFlag: vi.fn(() => false),
 })
 
@@ -64,13 +68,14 @@ describe('pi-context extension', () => {
     expect(events).toContain('before_agent_start')
   })
 
-  it('does not register tools; registers only the usage-diag command', async () => {
+  it('registers enable_tool + usage-diag/tools commands（工具分层 2026-08-18）', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-context/index')).default
     await main(pi as any)
-    expect(pi.registerTool).not.toHaveBeenCalled()
+    const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name)
+    expect(toolNames).toContain('enable_tool')
     const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
-    expect(cmdNames).toEqual(['usage-diag'])
+    expect(cmdNames).toEqual(expect.arrayContaining(['usage-diag', 'tools']))
   })
 
   it('before_agent_start does not change systemPrompt when context is idle (cache-friendly)', async () => {

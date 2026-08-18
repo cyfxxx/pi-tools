@@ -107,9 +107,9 @@ describe('context-budget: truncateByTokens', () => {
   it('truncates to approximate token budget', () => {
     const text = '中文'.repeat(200) + ' english words here'
     const out = truncateByTokens(text, 50)
-    // 截断主体贴近预算（标记行本身另计 ~10 token）
-    expect(estimateTokens(out)).toBeLessThanOrEqual(65)
-    expect(out).toContain('[truncated:')
+    // 截断主体贴近预算（标记行本身另计 ~6 token，2026-08-18 精简标记后）
+    expect(estimateTokens(out)).toBeLessThanOrEqual(60)
+    expect(out).toContain('[截断]')
   })
 })
 

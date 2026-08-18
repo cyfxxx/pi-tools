@@ -115,6 +115,7 @@ async function main() {
       }
     }
     const expected = [
+      'enable_tool', // pi-context 工具分层（2026-08-18）
       'admin_status', 'admin_list_models', 'admin_set_model', 'admin_get_config',
       'admin_set_config', 'admin_list_sessions', 'admin_switch_session', 'admin_restart',
       'autopilot_status', 'autopilot_stats', 'autopilot_policy', 'autopilot_failover',
@@ -148,7 +149,7 @@ async function main() {
     }
     // 命令整合规范（2026-09）：每扩展 ≤2 命令，具体功能用子命令参数指定，description 标注 help 用法；
     // 新增命令必须同步更新此清单（防 / 菜单噪音回归）
-    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link']
+    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link', 'tools']
     const actual = Object.keys(cmdMap).sort()
     const missing = expected.filter((c) => !cmdMap[c])
     const extra = actual.filter((c) => !expected.includes(c))

@@ -20,6 +20,29 @@
 | 命令 | 说明 |
 |------|------|
 | `/usage-diag` | 显示会话 LLM 用量诊断：每轮 input/缓存/输出汇总 + prune 擦除量 + 压缩触发记录（数据存 `~/.pi/agent/.usage-diag.jsonl`，仅展示不进 LLM 上下文） |
+| `/tools` | 工具分层管理：`/tools list` 查看核心/休眠组状态；`/tools enable <group>` 手动启用休眠组（同 enable_tool） |
+
+## 工具分层与按需加载（2026-08-18）
+
+**动机**：45 个扩展工具的全量 schema 每轮注入约 5K token（首轮全价 + 每轮 cacheRead），且随功能增加线性增长。
+
+**机制**（`tool-groups.ts`）：
+- **核心常驻 29 个**：内置 7 + todo/plan 3 + subagent + ctx 4 + memory 5 + web 3 + tmux 6——schema 每轮完整注入
+- **休眠 4 组 23 个**：`browser`（8）/ `admin`（8）/ `autopilot`（含 schedule_task，5）/ `link`（2）——schema 不注入，system prompt 保留 1 行简介
+- **启用**：模型调用 `enable_tool("<组名>")` 或 `/tools enable <组名>` → `setActiveTools(全部 − 未启用休眠组)` → 本会话内保持；`/tools list` 查看状态
+- **未知工具自动保留**：`computeActiveTools` 用 `getAllTools()` 全集减去休眠组——未来新扩展的工具默认进核心，无需维护名单
+
+**缓存影响（重要）**：
+- 工具列表变化 = 请求前缀变化 = DeepSeek 前缀缓存断裂一次（全量重发 + 重建）。启用是低频显式操作（每会话 0-2 次），**禁止实现任何“每轮动态启停”**（每轮断缓存，得不偿失）
+- 长会话后阶段（如 200K）断一次 ≈ 5-10 轮命中成本（命中 1/5 折价 vs 全价重发），可控但应避免频繁启停；工具持续增长时核心组大小封顶，成本不随工具数线性增长
+- system prompt 的休眠组简介**静态**（不随启用状态变化）——启用前前缀完全稳定，启用轮仅 tools 数组变一次
+
+**故障定位指南**：
+- 工具“不见了”（`browser_navigate` 等调用报 unknown tool）→ `/tools list` 查状态；默认休眠属预期行为，用 enable_tool 启用
+- 启用后仍不可用 → 检查 `layeringApplied` 逻辑：分层在首个 `before_agent_start` 应用（此时全部扩展已注册）；若扩展加载顺序异常（工具在 pi-context 之后注册）会漏——重启 pi 后重新评估
+- 重启后工具恢复休眠 → 预期行为（启用状态为进程内存态，未持久化）；如需常驻把工具移入 `CORE_TOOLS`
+- 缓存命中率异常下降 → 检查是否在会话中反复 enable/disable（只允许单向启用，无 disable）；usage-diag 看 cacheRead 占比
+- 类型注：`getAllTools`/`getActiveTools` 未声明于官方 d.ts（plan-mode 同用法），pi-context 用类型断言访问；内核在 agent-session.js 提供
 
 ## 关键机制
 

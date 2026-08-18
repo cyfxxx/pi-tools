@@ -30,7 +30,7 @@
 ## 回归验证细节
 
 单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`
-（基线用例数：pi-web-search 75 / pi-memory 94 / pi-autopilot 106 / pi-browser 25 / pi-context 81 / plan-mode 69 / pi-tmux 19 / pi-voice 128 / pi-link 57，以 test-all.sh 当前输出为准）
+（基线用例数：pi-web-search 75 / pi-memory 94 / pi-autopilot 106 / pi-browser 25 / pi-context 89 / plan-mode 69 / pi-tmux 19 / pi-voice 128 / pi-link 57，以 test-all.sh 当前输出为准）
 
 注册面：`cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`
 （须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
