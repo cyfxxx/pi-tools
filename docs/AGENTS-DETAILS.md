@@ -7,6 +7,8 @@
 ### agent/
 - `settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
 - `extensions/` — 10 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice / pi-link
+- `extensions/tests/` — 跨扩展检查：`conflict-check.mjs`（9 项：注册冲突/工具指纹入账等）、`cache-guard.mjs`（缓存注入面守门：注入面 sha256 基线 + prune 阈值契约 + 动态源扫描；漂移须 `--update-baseline`）
+- `stats/` — 运行时统计（git 忽略）：`usage-sessions.jsonl`（跨会话命中聚合）、`tool-fingerprint.jsonl`（工具定义指纹历史）
 - `lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装）、`config.ts`（配置分层合并）
 - `agents/`、`skills/` — 子代理模板、技能；`prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 
@@ -19,6 +21,7 @@
 ### scripts/
 - rebuild.sh（一键重建+补丁）/ pi-wrapper.sh（生命周期）/ pi-cron.sh（离线定时）
 - test-all.sh（回归，--only/--fast 分层）/ pi-bench.sh（用量基准）/ docker-rebuild-test.sh（Docker 干净环境重建回归）
+- usage-stats.mjs（跨会话缓存/用量聚合，幂等入账 stats/usage-sessions.jsonl，输出历史对比与当前 vs 97% 目标差距）
 - pi-whisper.sh + whisper-server.py（whisper 服务）/ pi-bg.sh（后台任务，见 README-pi-bg.md）/ smoke-test.sh（冒烟）
 - termux-prereq.sh（Termux 前置）/ install-wrapper.sh + pi-orig.sh（wrapper 安装/逃生）
 - install-cron.sh / install-systemd.sh（调度安装）/ patch-*.mjs（见下方补丁生命周期）
@@ -30,7 +33,7 @@
 ## 回归验证细节
 
 单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`
-（基线用例数：pi-web-search 75 / pi-memory 94 / pi-autopilot 106 / pi-browser 25 / pi-context 89 / plan-mode 69 / pi-tmux 19 / pi-voice 128 / pi-link 57，以 test-all.sh 当前输出为准）
+（基线用例数：pi-web-search 75 / pi-memory 94 / pi-autopilot 106 / pi-browser 25 / pi-context 90 / plan-mode 69 / pi-tmux 19 / pi-voice 128 / pi-link 57，以 test-all.sh 当前输出为准）
 
 注册面：`cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`
 （须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
@@ -39,6 +42,14 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 
 类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit`
 （必须 local.json——共享 tsconfig.json 的 paths 为空会全量报 Cannot find module；缺失时回退共享配置）
+
+## 缓存治理（2026-08-18，append-only 原则）
+
+对齐 Reasonix/Orca 99%+ 命中实践（不动老消息）：
+- `lib/prune.ts` 阈值 = 缓存契约：`PRUNE_PROTECT_TOKENS=120K`（分层擦除保护带）、`PRUNE_MINIMUM_TOKENS=80K`（最低回收）、`DEFAULT_KEEP_THINKING_TOKENS=64K`（thinking 剪枝）——1M 窗口内普通会话全程不触发，清理交给 auto-compact；阈值回退会被 cache-guard 阻断
+- 历史背景：16K thinking 预算曾致 3.8h 会话 27 次缓存断裂、1.46M token 浪费（每 2-3 轮改早期消息 → 前缀断裂）；64K 后模拟断裂 39→4 次，实测 0 断裂/98%+
+- 工具 schema 是 system prompt 一部分：conflict-check 每次运行将 registerTool 块 sha256 入账 `stats/tool-fingerprint.jsonl`，跨会话漂移可追溯
+- 诊断：`node scripts/usage-stats.mjs` 看每会话命中/断裂/浪费；断裂轮 cacheRead ≈ 断裂点，对照该轮事件定位；`cache-guard.mjs` 查注入面漂移
 
 ## 补丁生命周期
 
