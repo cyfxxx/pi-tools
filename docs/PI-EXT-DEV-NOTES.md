@@ -6,6 +6,7 @@ pi（earendil-works/pi-coding-agent）扩展开发实测经验汇总（2026-08�
 
 - pi 0.83+ 从 `~/.pi/agent/extensions/` **自动发现**扩展（扫描含 index.ts 的子目录）；settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制 / `-` 排除），裸路径条目无效
 - 新扩展须同步：目录 index.ts、`extensions/tsconfig.json` include、`tests/conflict-check.mjs` 监听者清单、`extensions.test.ts`（注册面）
+- 注入类改动（AGENTS.md/注入文案/消息变换阈值）须跑 `tests/cache-guard.mjs --help` 并过基线：注入面是缓存前缀，漂移须 `--update-baseline` 显式确认；prune 阈值（120K/80K/64K）回退会被阻断
 - 扩展代码改动后需重启 pi（或 `/reload`）生效
 
 ## 命令注册
