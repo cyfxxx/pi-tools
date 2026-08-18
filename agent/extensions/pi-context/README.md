@@ -55,7 +55,8 @@
   - **溢出兜底**（对齐 dsh CONTEXT_WINDOW_EXCEEDED）：tokens ≥ window 时绕过阈值/冷却强制压缩，比等内核在窗口-reserve 处兜底更早介入
 - **分层擦除**（`lib/prune.ts`）：最近 2 轮 + **80K** token 保护带内保留（`PRUNE_PROTECT_TOKENS`，2026-08-15 从 40K 调高），更早的 toolResult 输出替换为 `[pruned]` 占位（保留结构）；预计回收 **≥50K** 才应用（`PRUNE_MINIMUM_TOKENS`，从 20K 调高）；判定确定性、擦除点单调后移。**缓存冲突警告（2026-08-15 审计）**：擦除动作本身改变消息序列（工具输出 → 占位），擦除轮发送的序列 ≠ 上一轮 → DeepSeek 前缀缓存从擦除点断裂全量重发。旧参数（40K/20K）下实测每轮擦除触发轮新增 40-60K、长会话 250K+ 时重发 200K+，日浪费 ~4.7M tokens（高于 auto-compact 一次性成本）；调高阈值后重启实测零擦除断裂轮。
   - **B 方案（预留，未启用）：擦除时机后移**——完全禁用事后擦除（依赖 auto-compact），或仅在 `session_compact` 后执行一次擦除。代价：旧工具输出全保留 → 上下文膨胀更快 → compact 更频繁（每次 compact = 一次性大断裂 + 摘要 LLM 成本）+ 每轮 cacheRead 体积更大（命中 token 也计费）。净收益只在极长会话 + 极高工具输出密度时体现。**启用条件（观察指标）**：①上下文 >150K 且工具输出密集时再次出现周期性断裂轮（每 N 轮一次、新增≈上下文一半、命中 20-50%）；②`pi-bench.sh usage` 低命中占比回升 >5% 且断裂点（cacheRead）单调后移；③单日擦除断裂浪费 >1M tokens。实现位置：`lib/prune.ts` 调用点（pi-context index.ts context 事件）。
-- **thinking 剪枝**（token 预算规则）：保留最近 16K token 的 thinking（`DEFAULT_KEEP_THINKING_TOKENS = 16000`），预算耗尽处及更早的全部删除。早期"保留最近 2 轮"的数量规则已废弃——max 推理级别下单轮 reasoning 可达 5-10K，轮数上限不可控。
+- **thinking 剪枝**（token 预算规则）：保留最近 64K token 的 thinking（`DEFAULT_KEEP_THINKING_TOKENS = 64000`），预算耗尽处及更早的全部删除。早期"保留最近 2 轮"的数量规则已废弃——max 推理级别下单轮 reasoning 可达 5-10K，轮数上限不可控。
+  - **2026-08-18 实测调高 16K→64K**：16K 预算下剪枝触发率 70%（max 推理级别每 2-3 轮超预算），每次触发修改早期消息序列 → 前缀缓存从删除点断裂全价重发（3.8h 会话 27 次断裂、1.46M token 浪费 ≈ 9.2M/天，总累计命中率被拉到 88%）。64K 覆盖典型会话全部 thinking（实测 52K）→ 剪枝休眠；仅超长深推理会话触发，触发间隔 = 64K/每轮 thinking ≈ 12-30 轮。代价：thinking 全保留使每轮 cacheRead 多 ~52K × 1/5 折价 ≈ 10K/轮等价值，远低于断裂重发成本。
 - **工具输出截断**（R4）：写入时截断——bash/read 5KB（bash 用 `truncateTail` 保留尾部错误/结果，read 用 `truncateHead` 保留开头，并保留原始 details），其他工具 20KB 兜底（防止未来新工具输出失控直达上下文）。
 - **执行效率注入**（`EFFICIENCY_ADVICE`，静态缓存友好）：要求模型一轮内批量发出独立工具调用（内核已支持 parallel batch）、非终轮不写解释文本、todo/plan 摘要请求时例外。
 - **压力提示按档位**：基于 auto-compact 阈值比例注入固定文案（阈值内 <75% 不注入、≥75% 注入委托建议文案、≥90% 注入保存决策文案）；档位跳变才改变 system prompt，无压力时与 pi 原生完全一致 → 消息历史缓存前缀稳定。
