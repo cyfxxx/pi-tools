@@ -30,6 +30,14 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 | `link_send` | `device`, `message`, `timeoutSec?` | 向目标设备 pi 发消息，等待完成，返回最终回复（含流式进度回传） |
 | `link_status` | — | 设备清单 + 连通性探测（● 可达 / ○ 不可达） |
 
+### 与直接 ssh 的边界
+
+`link_send` 的价值是"远程 agent 自主处理"，不是"远程执行命令"。判断准则：
+
+- **单条确定性命令**（更新包、查状态、跑脚本）→ 本机直接用 `bash` 执行 `ssh host "cmd"`，更快、无双重 LLM 开销
+- **需要远程 pi 自主多步处理**（拆解任务、判断纠错、输出报告）→ `link_send`
+- 远程设备未安装 pi 时本扩展不可用（只有 ssh 通道）
+
 ## 斜杠命令
 
 `/link send <设备> <消息>` — 发送消息并等待回复（无人值守拒绝）
@@ -133,7 +141,7 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 
 1. 本机：`git push`（或远程自己 pull）
 2. 远程：`cd ~/.pi && git pull --rebase origin master`（entries.json 冲突时 `git checkout --theirs memory/entries.json` 保留远程）
-3. 远程重启 pi（退出重进即可，/admin:restart 已移除——扩展代码在启动时加载，**不重启不生效**（状态文件/信箱/watch/attach 均依赖新版扩展）
+3. 远程重启 pi（`admin_restart` 工具或退出重进均可——扩展代码在启动时加载，**不重启不生效**（状态文件/信箱/watch/attach 均依赖新版扩展）
 4. 验证：远程 `~/.pi/pi-link-state.json` 出现且含 `tmuxSession` 字段即加载成功
 
 ### Termux 设备特别说明

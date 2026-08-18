@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
-import { readFileSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 
 /**
  * pi-link 配置：设备清单（每环境独立，gitignored）
@@ -106,8 +106,7 @@ export function saveDevice(path: string, name: string, d: DeviceConfig): { ok: b
   const existed = name in cfg.devices
   cfg.devices[name] = { ...d }
   try {
-    const { mkdirSync, writeFileSync } = require('node:fs') as typeof import('node:fs')
-    mkdirSync(path.slice(0, path.lastIndexOf('/')), { recursive: true })
+    mkdirSync(dirname(path), { recursive: true })
     writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n', 'utf-8')
   } catch (e) {
     return { ok: false, detail: `写入失败: ${(e as Error).message}` }
