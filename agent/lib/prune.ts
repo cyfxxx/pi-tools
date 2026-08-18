@@ -183,8 +183,14 @@ export function pruneToolResults(
  * 预算耗尽处及更早的 thinking 块全部删除（保留消息其余内容）。
  * 确定性：判定只依赖消息内容，内容不变结果不变 → 缓存前缀稳定。
  * 默认预算与 pi-context 的 KEEP_THINKING_TOKENS 一致。
+ *
+ * 2026-08-18 实测：16K 预算下 max 推理级别每 2-3 轮即超预算，剪枝触发率
+ * 70%，且每次触发都修改早期消息序列 → 前缀缓存从删除点断裂全价重发
+ * （3.8h 会话 27 次断裂、1.46M token 浪费 ≈ 9.2M/天）。预算提高至 64K：
+ * 覆盖典型会话全部 thinking（实测 52K），剪枝休眠；仅超长深推理会话触发，
+ * 触发间隔 = 64K/每轮 thinking ≈ 12-30 轮，断裂频率可控。
  */
-export const DEFAULT_KEEP_THINKING_TOKENS = 16_000;
+export const DEFAULT_KEEP_THINKING_TOKENS = 64_000;
 
 export function pruneThinkingBudget(input: PruneMessage[], budgetTokens = DEFAULT_KEEP_THINKING_TOKENS): PruneResult {
   const n = input.length;
