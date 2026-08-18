@@ -11016,10 +11016,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 13,
+      "recurrence": 23,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-18T11:47:12.781Z",
-      "accessedAt": "2026-08-18T11:47:12.781Z",
+      "updatedAt": "2026-08-18T15:15:37.411Z",
+      "accessedAt": "2026-08-18T15:15:37.411Z",
       "environments": [
         "all"
       ],
@@ -11451,6 +11451,28 @@
         "all"
       ],
       "observedAt": "2026-08-17T13:49:43.882Z",
+      "deleted": false
+    },
+    {
+      "id": "2d1ab847-e45e-447e-94fd-c1398ab325fb",
+      "category": "reference",
+      "title": "2026-08-18 全项目审计发现清单（修复前基线）",
+      "content": "2026-08-18 全项目审计（pi-full-audit）关键发现（修复前基线）：HIGH×2 = plan-mode utils.ts:103 isSafeCommand 的 <(...) 进程替换与 sort -o 绕过只读白名单（实测确认）、pi-memory storage.ts:356 pruneEntries 不传 excludeIds 致剪枝被 saveEntries 写前合并复活；MEDIUM 重点 = pi-autopilot index.ts:60-76 崩溃恢复重注入未登记 injectedIds（once 任务重复执行）、link.ts:398 remoteExecAddr 缺 device.sshArgs、pi-cron.sh dom/dow AND 语义错 + dow=7 不匹配 + 1-15/2 步长 ValueError、pi-bench.sh compare 退出码丢失、pi-wrapper.sh 崩溃计数无时间窗且 130/143 计入、cache-guard baseline 过期（d97788f 改 AGENTS.md 未 --update-baseline）；运维 = README.md 5 处过时（补丁数/16K→64K/处理器数/conflict 8→9/用例表）、pi-backup SKILL.md 补丁计数 5 vs 8。回归基线：9 套 vitest + tsc + subagent 63 用例 + extensions 25 + conflict 9 全绿。",
+      "tags": [
+        "audit",
+        "pi-full-audit",
+        "baseline"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-18T13:20:10.728Z",
+      "updatedAt": "2026-08-18T13:20:10.728Z",
+      "accessedAt": "2026-08-18T13:20:10.728Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-18T13:20:10.728Z",
       "deleted": false
     }
   ]
