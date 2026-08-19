@@ -42,6 +42,15 @@ const DIAG = join(AGENT, '.usage-diag.jsonl')
 const STATS_DIR = join(AGENT, 'stats')
 const OUTPUT = join(STATS_DIR, 'usage-sessions.jsonl')
 
+// 工具启用事件台账（2026-08-19：enable_tool 唯一能改运行时工具集，事件供 A 类断裂归因）
+const TOOL_EVENTS = join(AGENT, 'stats', 'tool-events.jsonl')
+const toolEvents = existsSync(TOOL_EVENTS)
+  ? readFileSync(TOOL_EVENTS, 'utf8').trim().split('\n').filter(Boolean)
+      .map(l => { try { return JSON.parse(l) } catch { return null } })
+      .filter(e => e && e.type === 'tool-enable')
+  : []
+const TOOL_EVENT_WINDOW_MS = 120_000 // 断裂轮前后 2 分钟内的启用事件视为可能归因
+
 const args = process.argv.slice(2)
 const SHOW_ALL = args.includes('--all')
 const JSON_ONLY = args.includes('--json')
@@ -153,6 +162,15 @@ for (const s of list) {
   if ((s.breakList && s.breakList.length) && (rate < 90 || SHOW_ALL)) {
     for (const b of s.breakList) {
       console.log(`      └ [${b.cls}] 轮#${b.i} @${fmtMin(b.ts)} 断前前缀${b.prevCacheK}K→命中${b.cacheReadK}K 重发${b.inputK}K 浪费${b.wasteK}K${b.compacted ? ' (compacted)' : ''}`)
+      // A 类归因：关联工具启用事件台账（±2 分钟窗口）
+      if (b.cls === 'A') {
+        const nearby = toolEvents.filter(e => Math.abs(e.ts - b.ts) < TOOL_EVENT_WINDOW_MS)
+        if (nearby.length) {
+          for (const e of nearby) console.log(`            ⚑ 归因: ${e.group} 组启用（via ${e.via}）@${fmtMin(e.ts)} → 工具 schema 变化致前缀全断`)
+        } else {
+          console.log(`            ○ 该轮无工具启用事件 → 排除工具 schema，指向 compaction/早期消息改写/provider 缓存键`)
+        }
+      }
     }
   }
 }
