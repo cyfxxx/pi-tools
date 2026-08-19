@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync, mkdtempSync } from 'node:fs'
+import { existsSync, rmSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -10,6 +10,11 @@ import {
   benchSuggestion,
   isSpeechWorthy,
   ensureWhisperService,
+  ensureSherpaService,
+  transcribeSherpa,
+  transcribeByBackend,
+  prewarmStt,
+  createWakeSession,
   createTtsDispatcher,
   detectAudioLevel,
 } from '../core'
@@ -325,3 +330,164 @@ describe('detectAudioLevel（真实 ffmpeg 集成）', () => {
     expect(lv).toBeNull()
   })
 })
+
+describe('sherpa 后端（SenseVoice）', () => {
+  const base = { ...DEFAULTS } as VoiceConfig
+  const whisperCfg: VoiceConfig = { ...base, sttBackend: 'whisper', whisperEndpoint: 'http://127.0.0.1:18766', whisperToken: 'wtok' }
+  const sherpaCfg: VoiceConfig = {
+    ...base, sttBackend: 'sherpa', sherpaEndpoint: 'http://127.0.0.1:18768', sherpaToken: 'stok', sherpaScript: '/root/.pi/scripts/pi-sherpa.sh', language: 'zh',
+  }
+
+  const mkWav = (): string => {
+    const p = join(tmpdir(), `pi-voice-sherpa-${Date.now()}-${Math.random().toString(36).slice(2)}.wav`)
+    writeFileSync(p, Buffer.alloc(4096)) // 任意字节：fetch 被 mock，不解析 wav
+    return p
+  }
+
+  const stubFetch = (health = true, body: { text?: string; language?: string } = { text: '今天天气很好' }) => {
+    const mock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      const u = String(url)
+      if (u.includes('/health')) {
+        return new Response(JSON.stringify({ ok: health }), { status: health ? 200 : 500 })
+      }
+      if (u.includes('/transcribe')) {
+        return new Response(JSON.stringify(body), { status: 200 })
+      }
+      return new Response('', { status: 500 })
+    })
+    vi.stubGlobal('fetch', mock)
+    return mock
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('ensureSherpaService：在线直接 ok，不触发拉起', async () => {
+    const start = vi.fn(async () => ({ code: 0, stdout: '', stderr: '' }))
+    const r = await ensureSherpaService(sherpaCfg, { health: async () => true, start })
+    expect(r).toEqual({ ok: true })
+    expect(start).not.toHaveBeenCalled()
+  })
+
+  it('ensureSherpaService：拉起成功 → 轮询就绪', async () => {
+    let healthy = false
+    const r = await ensureSherpaService(sherpaCfg, {
+      health: async () => healthy,
+      start: async () => { healthy = true; return { code: 0, stdout: '', stderr: '' } },
+      pollIntervalMs: 1, pollTimeoutMs: 500,
+    })
+    expect(r).toEqual({ ok: true })
+  })
+
+  it('ensureSherpaService：拉起失败返回故障提示', async () => {
+    const r = await ensureSherpaService(sherpaCfg, {
+      health: async () => false,
+      start: async () => ({ code: 127, stdout: '', stderr: 'bash not found' }),
+      pollIntervalMs: 1, pollTimeoutMs: 50,
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok === false) expect(r.error).toContain('自动启动失败')
+  })
+
+  it('ensureSherpaService：拉起后仍不可达 → 超时', async () => {
+    const r = await ensureSherpaService(sherpaCfg, {
+      health: async () => false,
+      start: async () => ({ code: 0, stdout: '', stderr: '' }),
+      pollIntervalMs: 1, pollTimeoutMs: 50,
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok === false) expect(r.error).toContain('仍不可达')
+  })
+
+  it('transcribeByBackend：whisper 走 18766（默认后端行为不变）', async () => {
+    const mock = stubFetch(true, { text: '好的', language: 'zh' })
+    const wav = mkWav()
+    try {
+      const r = await transcribeByBackend(whisperCfg, wav)
+      expect(r.text).toBe('好的')
+      const urls = mock.mock.calls.map((c) => String(c[0]))
+      expect(urls.some((u) => u.includes('18766'))).toBe(true)
+      expect(urls.some((u) => u.includes('18768'))).toBe(false)
+    } finally {
+      rmSync(wav, { force: true })
+    }
+  })
+
+  it('transcribeByBackend：sherpa 走 18768 且带 sherpaToken', async () => {
+    const mock = stubFetch(true, { text: '明天去北京', language: 'zh' })
+    const wav = mkWav()
+    try {
+      const r = await transcribeByBackend(sherpaCfg, wav)
+      expect(r.text).toBe('明天去北京')
+      const urls = mock.mock.calls.map((c) => String(c[0]))
+      expect(urls.some((u) => u.includes('18768'))).toBe(true)
+      // 转写请求带 Bearer sherpaToken
+      const tr = mock.mock.calls.find((c) => String(c[0]).includes('/transcribe'))
+      const headers = (tr?.[1] as RequestInit)?.headers as Record<string, string> | undefined
+      expect(headers?.['Authorization']).toBe('Bearer stok')
+    } finally {
+      rmSync(wav, { force: true })
+    }
+  })
+
+  it('transcribeSherpa：服务 500 → 返回错误', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string | URL) => {
+      if (String(url).includes('/health')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      return new Response('', { status: 500 })
+    }))
+    const wav = mkWav()
+    try {
+      const r = await transcribeSherpa(sherpaCfg, wav)
+      expect(r.error).toContain('sherpa 服务返回 500')
+    } finally {
+      rmSync(wav, { force: true })
+    }
+  })
+
+  it('transcribeSherpa：fetch 抛错 → 不可达', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string | URL) => {
+      if (String(url).includes('/health')) return new Response(JSON.stringify({ ok: true }), { status: 200 })
+      throw new Error('ECONNREFUSED')
+    }))
+    const wav = mkWav()
+    try {
+      const r = await transcribeSherpa(sherpaCfg, wav)
+      expect(r.error).toContain('sherpa 服务不可达')
+    } finally {
+      rmSync(wav, { force: true })
+    }
+  })
+
+  it('prewarmStt：whisper 后端直接返回，不触发请求', async () => {
+    const mock = vi.fn()
+    vi.stubGlobal('fetch', mock)
+    await prewarmStt(whisperCfg)
+    expect(mock).not.toHaveBeenCalled()
+  })
+
+  it('prewarmStt：sherpa 后端触发健康检查预热（模型随 /health 懒加载）', async () => {
+    const mock = vi.fn(async (_url: string | URL) => new Response(JSON.stringify({ ok: true }), { status: 200 }))
+    vi.stubGlobal('fetch', mock)
+    await expect(prewarmStt(sherpaCfg)).resolves.toBeUndefined()
+    const urls = mock.mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('/health'))).toBe(true)
+  })
+
+  it('createWakeSession：非 Linux 平台（Termux）抛错，提示录音 API 限制', () => {
+    const termuxCfg: VoiceConfig = { ...base, platform: 'termux' }
+    expect(() => createWakeSession(termuxCfg, { onHit: () => {}, onStatus: () => {} })).toThrow(/Linux/)
+  })
+
+  it('createWakeSession：Linux 平台可创建（未 start 不 spawn），stop 幂等', async () => {
+    const linuxCfg: VoiceConfig = { ...base, platform: 'linux' }
+    const ws = createWakeSession(linuxCfg, { onHit: () => {}, onStatus: () => {} })
+    expect(ws.isRunning()).toBe(false)
+    expect(ws.stop()).toContain('已停止')
+    expect(ws.hits()).toBe(0)
+  })
+})
+

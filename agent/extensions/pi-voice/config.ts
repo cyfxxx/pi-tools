@@ -56,6 +56,14 @@ export interface VoiceConfig {
   whisperDevice: 'auto' | 'cpu' | 'cuda'
   /** whisper 服务管理脚本（转写前自动拉起时使用） */
   whisperScript: string
+  /** 转写后端：whisper（faster-whisper，默认，行为不変）或 sherpa（SenseVoice 独立服务） */
+  sttBackend: 'whisper' | 'sherpa'
+  /** sherpa 转写服务地址（SenseVoice 独立进程，端口 18768 错开 whisper） */
+  sherpaEndpoint: string
+  /** sherpa 服务 Bearer token（服务端读 sherpaToken 优先、回退 whisperToken；空 = 不鉴权） */
+  sherpaToken: string
+  /** sherpa 服务管理脚本（转写前自动拉起时使用） */
+  sherpaScript: string
 }
 
 /** Android（Termux）上 MediaRecorder 只能打开系统可访问路径；proot 容器内路径会 open failed: ENOENT。 */
@@ -96,6 +104,10 @@ export const DEFAULTS: VoiceConfig = {
   whisperModel: 'base',
   whisperDevice: 'auto',
   whisperScript: join(homedir(), '.pi', 'scripts', 'pi-whisper.sh'),
+  sttBackend: 'whisper',
+  sherpaEndpoint: 'http://127.0.0.1:18768',
+  sherpaToken: '',
+  sherpaScript: join(homedir(), '.pi', 'scripts', 'pi-sherpa.sh'),
 }
 
 const CONFIG_PATH = join(homedir(), '.pi', 'agent', 'pi-voice.json')
@@ -146,6 +158,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, configPath: str
     whisperModel: env.PI_VOICE_WHISPER_MODEL ?? file.whisperModel ?? DEFAULTS.whisperModel,
     whisperDevice: (env.PI_VOICE_WHISPER_DEVICE ?? file.whisperDevice ?? DEFAULTS.whisperDevice) as 'auto' | 'cpu' | 'cuda',
     whisperScript: env.PI_VOICE_WHISPER_SCRIPT ?? file.whisperScript ?? DEFAULTS.whisperScript,
+    sttBackend: (env.PI_VOICE_STT_BACKEND ?? file.sttBackend ?? DEFAULTS.sttBackend) as VoiceConfig['sttBackend'],
+    sherpaEndpoint: env.PI_VOICE_SHERPA_ENDPOINT ?? file.sherpaEndpoint ?? DEFAULTS.sherpaEndpoint,
+    sherpaToken: env.PI_VOICE_SHERPA_TOKEN ?? file.sherpaToken ?? file.whisperToken ?? DEFAULTS.sherpaToken,
+    sherpaScript: env.PI_VOICE_SHERPA_SCRIPT ?? file.sherpaScript ?? DEFAULTS.sherpaScript,
   }
   return merged
 }
@@ -203,6 +219,10 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
     whisperModel: 'PI_VOICE_WHISPER_MODEL',
     whisperDevice: 'PI_VOICE_WHISPER_DEVICE',
     whisperScript: 'PI_VOICE_WHISPER_SCRIPT',
+    sttBackend: 'PI_VOICE_STT_BACKEND',
+    sherpaEndpoint: 'PI_VOICE_SHERPA_ENDPOINT',
+    sherpaToken: 'PI_VOICE_SHERPA_TOKEN',
+    sherpaScript: 'PI_VOICE_SHERPA_SCRIPT',
   }
   return map[key] ?? null
 }
