@@ -11815,6 +11815,29 @@
       "accessedAt": "2026-08-19T07:32:21.378Z",
       "environments": [
         "all"
+      ],
+      "observedAt": "2026-08-19T07:32:21.377Z",
+      "deleted": false
+    },
+    {
+      "id": "a126a0c7-a9bf-458d-ace9-e51f16407d82",
+      "category": "solutions",
+      "title": "待办: pi-tmux 完成通知防积压/过期（批量延迟报警，未动代码）",
+      "content": "【待办】pi-tmux 完成通知防积压/过期（2026-08-19 实测：6 个 tmux 会话实际上午 13:36-14:38 +0800 完成，通知到 15:21+0800 才批量出现，延迟 40-100min）。现象与已确认事实：watcher.ts 逻辑正确（每 5s 轮询 has-session，会话消失即 pi.sendMessage({triggerTurn:true})）；批量延迟根因在投递环节——会话完成时若恰逢我已在回合中处理其他事（或已用 tmux_wait/read 人工验证过），triggerTurn 消息被排队挂起，直到用户下一条真实消息才统一 flush，且积压无过期/合并机制，造成\"历史任务完成数十分钟后冗余报警\"。改法方向（落在 pi-tmux 扩展）：1) notify 前对积压消息做去重合并（同批 N 个完成合成一条汇总而非 N 条）；2) harness 侧给 triggerTurn 注入消息加期限（如积压>5min 丢弃或合并）；3) 或 watcher 增加\"已确认\"标记（若会话已被 tmux_read 消费则跳过通知）。约束：不能破坏\"回合进行中不打断\"的合理设计。优先级：低（不阻塞，我收到延迟通知会先 tmux_status 核对存活/已完成再响应）。",
+      "tags": [
+        "tmux",
+        "通知",
+        "待办",
+        "唤醒"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T07:33:59.997Z",
+      "updatedAt": "2026-08-19T07:33:59.997Z",
+      "accessedAt": "2026-08-19T07:33:59.997Z",
+      "environments": [
+        "all"
       ]
     }
   ]
