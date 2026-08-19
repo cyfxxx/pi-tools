@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-footer-format.mjs — footer 字段与货币补丁（幂等，含旧版迁移）。
  *
  * 背景：`↑↓RW$` 符号抽象（↑=累计输入未命中、↓=累计输出、R=缓存命中、

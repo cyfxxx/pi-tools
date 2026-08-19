@@ -1,9 +1,10 @@
 # 自动生成的 session 文件
 agent/sessions/
 
-# npm 安装的依赖
-agent/npm/node_modules/
-agent/npm/package-lock.json
+# npm 安装的依赖（统一根：agent/package.json → agent/node_modules，10 扩展共享）
+agent/node_modules/
+agent/package-lock.json
+# 防护：个别扩展若出现独立依赖，不入库（rebuild 时应清理回统一根）
 agent/extensions/*/node_modules/
 agent/extensions/*/package-lock.json
 

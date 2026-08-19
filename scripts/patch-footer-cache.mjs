@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-footer-cache.mjs — footer CH 双命中率 + context 去百分比补丁（幂等）。
  *
  * 背景：pi footer 的 `CH85.3%` 只显示最近一轮缓存命中率（latestCacheHitRate，

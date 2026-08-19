@@ -1,7 +1,0 @@
-{
-  "name": "pi-agent-npm",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Pi agent npm dependencies",
-  "dependencies": {}
-}

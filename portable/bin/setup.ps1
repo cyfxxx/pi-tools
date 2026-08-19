@@ -259,20 +259,16 @@ if (-not (Test-Path "$Tools\PortableGit\cmd\git.exe")) {
   } else { Write-Host "  [XX] PortableGit 未就绪（cmd\git.exe 缺失）" -ForegroundColor Red }
 } else { Write-Host '  PortableGit 已存在，跳过' }
 
-# ---- 4b. 扩展运行时依赖（有 package.json 的扩展 npm install --omit=dev） ----
-$ExtRoot = "$Root\.pi\agent\extensions"
-if (Test-Path $ExtRoot) {
-  Write-Host '-- 扩展依赖' -ForegroundColor Cyan
-  Get-ChildItem $ExtRoot -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'package.json') } | ForEach-Object {
-    $ename = $_.Name
-    $has = Test-Path (Join-Path $_.FullName 'node_modules')
-    if (-not $has) {
-      Write-Host "  安装 $ename 依赖 ..."
-      & "$Root\node\npm.cmd" install --prefix $_.FullName --omit=dev --registry=https://registry.npmmirror.com 2>$null | Out-Null
-      if ($LASTEXITCODE -eq 0) { Write-Host "  [OK] $ename" } else { Write-Host "  [XX] $ename 安装失败（可稍后手动: npm install --prefix $ename）" -ForegroundColor Yellow }
-    } else { Write-Host "  $ename 已就绪，跳过" }
-  }
-} else { Write-Host '-- 扩展目录不存在，跳过依赖安装（.pi/agent 未拷贝时正常）' -ForegroundColor Yellow }
+# ---- 4b. 扩展依赖（统一根 agent/：全部扩展共享，Node 向上寻径解析） ----
+$AgentRoot = "$Root\.pi\agent"
+if (Test-Path "$AgentRoot\package.json") {
+  Write-Host '-- 扩展依赖（agent/node_modules 统一根）' -ForegroundColor Cyan
+  if (-not (Test-Path "$AgentRoot\node_modules")) {
+    Write-Host '  安装依赖 ...'
+    & "$Root\node\npm.cmd" install --prefix $AgentRoot --registry=https://registry.npmmirror.com 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { Write-Host '  [OK] agent 依赖' } else { Write-Host '  [XX] agent 依赖安装失败（可稍后手动: npm install --prefix <agent>）' -ForegroundColor Yellow }
+  } else { Write-Host '  agent 依赖已就绪，跳过' }
+} else { Write-Host '-- agent/package.json 不存在，跳过依赖安装（.pi/agent 未拷贝时正常）' -ForegroundColor Yellow }
 
 # ---- 4c. 核心补丁（pi dist 每次更新后失效，setup/update 后重跑） ----
 $Dist = "$Root\pi-global\node_modules\@earendil-works\pi-coding-agent\dist"

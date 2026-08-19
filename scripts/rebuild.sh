@@ -18,7 +18,8 @@ fi
 # ---- 参数解析 ----
 # --yes 非交互 | --voice/--no-voice 语音重建开关 | --whisper-model=<名> 模型档位 | --no-gpu/--no-piper 抑制可选子项
 # --no-log 关闭自动日志（默认 --yes 模式落盘 logs/rebuild-<ts>.log，带时间戳可追溯）
-YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0
+# --skip-patches 跳过 Phase 3 版本校验与全部 TUI 补丁（临时逃生，不推荐）
+YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0; SKIP_PATCHES=0
 
 # ---- 输出辅助（先于参数解析定义：warn 可能在参数解析中被调用） ----
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -39,6 +40,7 @@ while [ $# -gt 0 ]; do
     --no-gpu) NO_GPU=1 ;;
     --no-piper) NO_PIPER=1 ;;
     --no-log) NO_LOG=1 ;;
+    --skip-patches) SKIP_PATCHES=1 ;;
     *) warn "未知参数: $1（忽略）" ;;
   esac
   shift
@@ -315,30 +317,30 @@ else:
 PY
   fi
 
-  # agent/npm/package.json
-  if [ ! -f "$PI_HOME/agent/npm/package.json" ]; then
-    if [ -f "$PI_HOME/agent/settings.json" ]; then
-      PACKAGES=$(python3 -c "import json; d=json.load(open('$PI_HOME/agent/settings.json')); pkgs=d.get('packages',[]); print('\n'.join(pkgs) if pkgs else '')" 2>/dev/null || echo "")
-      if [ -n "$PACKAGES" ]; then
-        cat > "$PI_HOME/agent/npm/package.json" <<EOF
-{
-  "name": "pi-agent-npm",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-$(echo "$PACKAGES" | while read -r pkg; do
-  echo "    \"${pkg#npm:}\": \"*\","
-done)
-  }
-}
-EOF
-        ok "agent/npm/package.json 已自动生成"
+  # settings.packages（npm 插件依赖）合并进 agent/package.json（统一依赖根）
+  if [ -f "$PI_HOME/agent/settings.json" ]; then
+    PACKAGES=$(python3 -c "import json; d=json.load(open('$PI_HOME/agent/settings.json')); print('\n'.join(d.get('packages',[])))" 2>/dev/null || echo "")
+    if [ -n "$PACKAGES" ]; then
+      MERGED_ANY=0
+      while IFS= read -r pkg; do
+        [ -z "$pkg" ] && continue
+        MERGED=$(cd "$PI_HOME/agent" && node -e "
+          const fs=require('fs');
+          const p='package.json';
+          const d=JSON.parse(fs.readFileSync(p,'utf8'));
+          const name='${pkg#npm:}';
+          d.dependencies=d.dependencies||{};
+          if(!d.dependencies[name]){ d.dependencies[name]='*'; fs.writeFileSync(p,JSON.stringify(d,null,2)+'\\n'); console.log('  + '+name); }
+        " 2>/dev/null || echo "  merge-failed: $pkg")
+        if [ -n "$(echo "$MERGED" | grep '^  +')" ]; then MERGED_ANY=1; fi
+        [ -n "$MERGED" ] && echo "$MERGED"
+      done <<< "$PACKAGES"
+      if [ "$MERGED_ANY" = "1" ]; then
+        ok "settings.packages 已合并进 agent/package.json（下次 rebuild 安装）"
       else
-        warn "settings.json 中无 packages，跳过 package.json 生成"
+        ok "settings.packages 已在 agent/package.json 中"
       fi
     fi
-  else
-    ok "agent/npm/package.json 已存在"
   fi
 
   mkdir -p "$PI_HOME/agent/bin"
@@ -383,88 +385,44 @@ PY
 }
 
 phase2_npm() {
-  title "Phase 2-A" "npm 依赖（并发 ≤3）"
+  # 统一依赖根：10 个扩展共享 agent/node_modules（Node 向上寻径解析，见 agent/package.json）。
+  # 一次 npm install 替换旧的“每扩展独立 node_modules”（约省 500MB / 9 份 vitest）。
+  title "Phase 2-A" "npm 依赖（统一根 agent/）"
 
-  local MAX_JOBS=3
-  local -a pids=()
-  local n=0
-  local installed_count=0
+  local d="$PI_HOME/agent"
+  if [ ! -f "$d/package.json" ]; then
+    ok "agent/package.json 缺失，跳过 npm 安装"
+    return 0
+  fi
 
   # npm install 超时（秒）：网络挂起时避免 rebuild 永久卡住（2026-08-15 容器实测
   # 直连 npmjs 挂 10 分钟无进展）。成功后跳过；失败按既有 A3 重跑捕获诊断。
   local NPM_INSTALL_TIMEOUT=300
 
-  npm_install_bg() {
-    local d="$1"
-    info "安装依赖: ${d#$PI_HOME/}"
+  local missing
+  missing=$(npm_missing_deps "$d")
+  if [ -n "$missing" ] && [ "$missing" != "PKGERR" ]; then
+    info "安装依赖: agent/（缺失: $missing）"
     if (cd "$d" && timeout $NPM_INSTALL_TIMEOUT npm install --no-fund --no-audit >/dev/null 2>&1); then
-      echo "  ✓ npm install 完成: ${d#$PI_HOME/}"
+      ok "agent/node_modules 依赖安装完成（$(ls "$d/node_modules" 2>/dev/null | wc -l) packages）"
     else
-      echo "  ✗ npm install 失败: ${d#$PI_HOME/}"
+      echo "  ✗ npm install 失败: $d"
       # A3：失败重跑一次捕获输出尾部，避免无从排查
       echo "  └ 诊断输出（尾部 10 行）:"
       (cd "$d" && timeout $NPM_INSTALL_TIMEOUT npm install --no-fund --no-audit 2>&1 | tail -10 | sed 's/^/    /')
     fi
-  }
-
-  enqueue_install() {
-    local d="$1"
-    npm_install_bg "$d" &
-    pids+=("$!")
-    n=$((n + 1))
-    installed_count=$((installed_count + 1))
-    # 滚动窗口：满 MAX_JOBS 时等最早一个完成再继续。
-    # 注：bash 5.2.21 实测 wait -n 不输出完成 pid（手册 "may print"），
-    # 无法精确移除——等最早一个（pids[0]）语义正确且兼容所有 bash ≥4.0。
-    if [ "$n" -ge "$MAX_JOBS" ]; then
-      wait "${pids[0]}" 2>/dev/null || true
-      pids=("${pids[@]:1}")
-      n=$((n - 1))
-    fi
-  }
-
-  if [ -f "$PI_HOME/agent/npm/package.json" ]; then
-    local missing
-    missing=$(npm_missing_deps "$PI_HOME/agent/npm")
-    if [ -n "$missing" ] && [ "$missing" != "PKGERR" ]; then
-      enqueue_install "$PI_HOME/agent/npm"
-    else
-      ok "agent/npm/node_modules/ 依赖齐备"
-    fi
-  fi
-
-  for ext in "$PI_HOME/agent/extensions"/*/; do
-    [ -d "$ext" ] || continue
-    local name=$(basename "$ext")
-    if [ -f "$ext/package.json" ]; then
-      local missing
-      missing=$(npm_missing_deps "${ext%/}")
-      if [ -n "$missing" ] && [ "$missing" != "PKGERR" ]; then
-        enqueue_install "${ext%/}"
-      else
-        ok "extensions/$name/node_modules/ 依赖齐备"
-      fi
-    fi
-  done
-
-  # 收尾：等剩余并发任务
-  for pid in "${pids[@]}"; do
-    wait "$pid" 2>/dev/null || true
-  done
-
-  if [ "$installed_count" -gt 0 ]; then
-    info "本次安装 $installed_count 个依赖集（其余幂等跳过）"
-    # 安装后统一报告各目录包数
-    [ -d "$PI_HOME/agent/npm/node_modules" ] && ok "agent/npm: $(ls "$PI_HOME/agent/npm/node_modules" 2>/dev/null | wc -l) packages"
-    for ext in "$PI_HOME/agent/extensions"/*/; do
-      [ -d "$ext/node_modules" ] && ok "extensions/$(basename "$ext"): $(ls "$ext/node_modules" 2>/dev/null | wc -l) packages"
-    done
+  else
+    ok "agent/node_modules/ 依赖齐备"
   fi
 }
 
 # ---- Phase 2-B: Python 环境 (venv) ----
 phase2_python_venv() {
   title "Phase 2-B" "Python venv"
+  if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
+    ok "CI 模式：跳过 Phase 2-B（CI_SKIP_HEAVY）"
+    return 0
+  fi
 
   if [ -f "$PI_HOME/searxng/settings.yml" ]; then
     # 幂等判定：python 与 pip 都必须存在（中断的 venv 创建可能只有 python 没有 pip）
@@ -492,6 +450,10 @@ phase2_python_venv() {
 # ---- Phase 2-B2: 克隆 SearXNG repo (可并行) ----
 phase2_repo() {
   title "Phase 2-B2" "SearXNG repo"
+  if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
+    ok "CI 模式：跳过 Phase 2-B2（CI_SKIP_HEAVY）"
+    return 0
+  fi
 
   if [ ! -d "$PI_HOME/searxng/repo/.git" ]; then
     info "克隆 SearXNG repo..."
@@ -541,6 +503,10 @@ phase2_repo() {
 # ---- Phase 2-B3: 从 repo requirements.txt 安装 SearXNG 依赖 (串行，在 venv+repo 就绪后) ----
 phase2_searxng_deps() {
   title "Phase 2-B3" "SearXNG 依赖"
+  if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
+    ok "CI 模式：跳过 Phase 2-B3（CI_SKIP_HEAVY）"
+    return 0
+  fi
 
   if [ -f "$PI_HOME/searxng/venv/bin/python" ] && [ -f "$PI_HOME/searxng/repo/requirements.txt" ]; then
     # 检查关键模块是否缺失。searx 本体由 start.sh 的 PYTHONPATH=repo 提供，
@@ -676,10 +642,14 @@ chrome_ready() {
 }
 phase2_browser() {
   title "Phase 2-C2" "CloakBrowser Chromium"
+  if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
+    ok "CI 模式：跳过 Phase 2-C2（CI_SKIP_HEAVY）"
+    return 0
+  fi
 
-  local ext="$PI_HOME/agent/extensions/pi-browser"
+  local ext="$PI_HOME/agent"
   if [ ! -d "$ext/node_modules/cloakbrowser" ]; then
-    info "pi-browser 扩展未安装，跳过"
+    info "cloakbrowser 未安装（agent/node_modules），跳过"
     return 0
   fi
 
@@ -863,6 +833,10 @@ phase2_systemd() {
 # GPU 检测提示 CUDA 库（--no-gpu 跳过）；piper 可选（--no-piper 跳过）。
 phase2_voice() {
   title "Phase 2-F" "语音服务（pi-voice 后端）"
+  if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
+    ok "CI 模式：跳过 Phase 2-F（CI_SKIP_HEAVY）"
+    return 0
+  fi
   local wsv="$PI_HOME/scripts/pi-whisper.sh"
   local voice_cfg="$PI_HOME/agent/pi-voice.json"
   [ -f "$wsv" ] || { warn "pi-whisper.sh 缺失，跳过"; return 0; }
@@ -965,22 +939,23 @@ verify() {
 
   local errors=0
 
-  # npm
-  for d in "$PI_HOME/agent/npm/node_modules" "$PI_HOME/agent/extensions"/*/node_modules; do
-    [ -d "$d" ] && ok "npm: $d ($(ls "$d" 2>/dev/null | wc -l) packages)" || {
-      # 检查 package.json 有无依赖：无依赖时 node_modules 不生成是正常行为
-      local pkg_json="${d%/node_modules}/package.json"
-      if [ -f "$pkg_json" ]; then
-        local dep_count=$(python3 -c "import json; d=json.load(open('$pkg_json')); print(len(d.get('dependencies',{})))" 2>/dev/null || echo "?")
-        if [ "$dep_count" = "0" ]; then
-          ok "npm: $d (无依赖，跳过)"
-        else
-          warn "npm: $d MISSING ($dep_count 依赖未安装)"; errors=$((errors+1))
-        fi
-      else
-        warn "npm: $d MISSING"; errors=$((errors+1))
-      fi
-    }
+  # npm（统一依赖根 agent/node_modules）
+  if [ -d "$PI_HOME/agent/node_modules" ]; then
+    ok "npm: $PI_HOME/agent/node_modules ($(ls "$PI_HOME/agent/node_modules" 2>/dev/null | wc -l) packages)"
+  else
+    local dep_count
+    dep_count=$(python3 -c "import json; d=json.load(open('$PI_HOME/agent/package.json')); print(len(d.get('dependencies',{}))+len(d.get('devDependencies',{})))" 2>/dev/null || echo "?")
+    if [ "$dep_count" = "0" ]; then
+      ok "npm: agent 无依赖声明（跳过）"
+    else
+      warn "npm: agent/node_modules MISSING ($dep_count 依赖未安装，cd agent && npm install)"; errors=$((errors+1))
+    fi
+  fi
+  # 扩展目录残留 node_modules 防御：统一根架构下扩展不应有真实依赖（vitest 的 .vite 缓存占位不告警）
+  for d in "$PI_HOME/agent/extensions"/*/node_modules; do
+    if [ -d "$d" ] && find "$d" -mindepth 1 -maxdepth 1 ! -name '.*' 2>/dev/null | grep -q .; then
+      warn "npm: $d 残留真实依赖（统一根架构下应清理回 agent/node_modules）"
+    fi
   done
 
   # git 卫生（D2）：敏感文件不得被意外追踪（与 pi-backup verify 对齐——审计 LOW：
@@ -1050,12 +1025,12 @@ verify() {
   fi
 
   # CloakBrowser 检测
-  if [ -f "$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json" ]; then
-    CB_VER=$(node -e "console.log(require('$PI_HOME/agent/extensions/pi-browser/node_modules/cloakbrowser/package.json').version)" 2>/dev/null)
+  if [ -f "$PI_HOME/agent/node_modules/cloakbrowser/package.json" ]; then
+    CB_VER=$(node -e "console.log(require('$PI_HOME/agent/node_modules/cloakbrowser/package.json').version)" 2>/dev/null)
     ok "CloakBrowser v$CB_VER"
     # 检测 Chromium 是否已安装且共享库齐备（chrome_ready：Installed 字段 + 文件存在 + ldd，无假阳性）
     if command -v npx &>/dev/null; then
-      chrome_ready "$PI_HOME/agent/extensions/pi-browser"
+      chrome_ready "$PI_HOME/agent"
       local crc=$?
       if [ "$crc" = "0" ]; then
         ok "Chromium 已安装且共享库齐备（$CHROME_BIN_PATH）"
@@ -1064,7 +1039,7 @@ verify() {
         info "修复: apt-get install -y libnss3 libnspr4 libasound2t64 libatk1.0-0t64 libcups2t64 libgbm1（旧发行版去掉 t64 后缀）"
       else
         warn "Chromium 未安装，浏览器功能不可用"
-        info "运行: cd $PI_HOME/agent/extensions/pi-browser && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install 安装"
+        info "运行: cd $PI_HOME/agent && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install 安装"
       fi
     else
       warn "npx 不可用，无法检测 Chromium"
@@ -1232,7 +1207,18 @@ if [ -n "$PI_ROOT" ] && [ -d "$PI_ROOT/lib/node_modules/@earendil-works/pi-codin
 fi
 if [ -z "$PI_DIST" ]; then
   warn "未找到 pi dist 目录，跳过全部 TUI 补丁（安装 pi 后重跑 rebuild 即可补齐）"
+elif [ "$SKIP_PATCHES" = "1" ]; then
+  warn "--skip-patches：跳过补丁版本校验与全部 TUI 补丁（临时逃生）"
 else
+# 版本关联校验（2026-08-19）：8 个 patch-*.mjs 头部声明 @target-version <major.minor>，
+# 与当前 pi 版本失配时显式失败——避免 pi update 后补丁静默失效（footer 无实时 token / 回车被吞等回退）
+if node "$PI_HOME/scripts/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
+  ok "补丁目标版本匹配（$(node -e "console.log(require('$(dirname "$PI_DIST")/package.json').version)" 2>/dev/null)）"
+else
+  fail "补丁与当前 pi 版本不匹配：pi update 后需逐补丁核对并更新 @target-version 声明（scripts/verify-patches.mjs 打印明细）"
+  info "确认补丁已核对后重跑 rebuild；临时跳过可加 --skip-patches"
+  exit 1
+fi
 if [ -f "$PI_HOME/scripts/patch-footer-live-context.mjs" ]; then
   node "$PI_HOME/scripts/patch-footer-live-context.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "footer 实时上下文 token 补丁" \
@@ -1288,7 +1274,7 @@ fi
 # 1) playwright-core android→linux 平台补丁（pi-browser npm 重装后自动恢复）
 # 2) 本地 Chromium 符号链接到 cloakbrowser 缓存路径（跳过平台检测与下载）
 if [ "$IS_TERMUX" = "1" ]; then
-  pwext="$PI_HOME/agent/extensions/pi-browser"
+  pwext="$PI_HOME/agent"
   if [ -d "$pwext/node_modules/cloakbrowser" ]; then
     if [ -f "$PI_HOME/scripts/patch-playwright-core.mjs" ]; then
       node "$PI_HOME/scripts/patch-playwright-core.mjs" "$pwext" >/dev/null 2>&1 \

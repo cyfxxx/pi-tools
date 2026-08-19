@@ -52,7 +52,7 @@ description: 备份/恢复 pi 配置、技能、扩展源码与用户数据（ta
      "full": false,
      "has_auth": false,
      "files": ["agent/settings.json", "..."],
-     "excluded": ["agent/npm/node_modules/", "..."]
+     "excluded": ["agent/node_modules/", "..."]
    }
    ```
 5. 运行 `tar czf {output_path} -C /tmp/pi-backup-{timestamp}/ .`
@@ -157,7 +157,7 @@ GitHub 同步完成
      -C ~ .pi/agent/settings.json .pi/agent/models.json .pi/agent/models-store.json .pi/agent/pi-voice.json \
         .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
         .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
-        .pi/agent/agents .pi/agent/prompts .pi/agent/npm/package.json \
+        .pi/agent/agents .pi/agent/prompts .pi/agent/package.json \
         .pi/memory .pi/searxng/settings.yml .pi/scripts \
         .tmux.conf .config/alacritty/alacritty.toml .termux
    ```
@@ -253,7 +253,7 @@ GitHub 同步完成
 
    | 重建项 | 预估 |
    |---|---|
-   | npm install（agent/npm、各扩展） | 1-5 分钟/项 |
+   | npm install（agent/ 统一根） | 1-5 分钟 |
    | searxng venv + pip install 全量依赖 | 5-15 分钟 |
    | whisper 模型下载（base） | 2-10 分钟（档位越大越久） |
    | git clone（ghproxy 镜像） | 1-5 分钟 |
@@ -280,15 +280,14 @@ GitHub 同步完成
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 0 | `searxng/settings.yml` | 文件不存在或缺少 `secret_key` | `cd ~/.pi/searxng && bash generate-config.sh 2>&1` |
-| 1 | `agent/npm/package.json` | 文件不存在且 `settings.json` 引用了 `packages` | 自动生成最小 `package.json`（含 `settings.json` 中 `packages` 字段列出的依赖） |
+| 1 | `agent/package.json` | 文件不存在（统一依赖根声明，10 扩展共享） | 从 git 恢复（`agent/package.json` 入库）；`settings.json` 中 `packages` 引用由 rebuild.sh Phase 1 自动合并进其 dependencies |
 | 2 | `~/.pi/agent/bin/` | 目录不存在 | `mkdir -p ~/.pi/agent/bin` |
 
 **Phase 2 — 并行组 A（npm 依赖）：**
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 3 | `agent/npm/node_modules/` | 存在 `agent/npm/package.json` 且目录不存在或为空 | `cd ~/.pi/agent/npm && npm install 2>&1` |
-| 4 | `agent/extensions/*/node_modules/` | 扩展目录下有 `package.json` 且缺 `node_modules` | 对每个匹配扩展：`cd ~/.pi/agent/extensions/{name} && npm install 2>&1` |
+| 3 | `agent/node_modules/` | 存在 `agent/package.json` 且目录不存在或为空 | `cd ~/.pi/agent && npm install 2>&1`（全量含 dev 工具，供测试/类型检查） |
 
 **Phase 2 — 并行组 B（Python 环境）：**
 
@@ -364,7 +363,7 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 
 | 验证项 | 命令 |
 |--------|------|
-| npm 依赖 | `ls ~/.pi/agent/npm/node_modules/ 2>/dev/null \| wc -l` |
+| npm 依赖 | `ls ~/.pi/agent/node_modules/ 2>/dev/null \| wc -l` |
 | 扩展依赖 | `for d in ~/.pi/agent/extensions/*/; do [ -d "$d/node_modules" ] && echo "$d OK" \|\| echo "$d MISSING"; done` |
 | fd | `fd --version 2>/dev/null \|\| echo "fd not available"` |
 | rg | `rg --version 2>/dev/null \|\| echo "rg not available"` |
@@ -391,14 +390,11 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 
 [Phase 1] 配置补全
   ✓ searxng/settings.yml (secret_key 已生成)
-  ✓ agent/npm/package.json (已存在)
+  ✓ agent/package.json (已存在)
   ✓ agent/bin/ (已存在)
 
-[Phase 2-A] npm 依赖
-  ✓ agent/extensions/pi-browser/node_modules/ (49 packages)
-  ✓ agent/extensions/pi-web-search/node_modules/ (87 packages)
-  ✓ agent/extensions/pi-memory/node_modules/ (76 packages)
-  ✓ agent/extensions/pi-autopilot/node_modules/ (76 packages)
+[Phase 2-A] npm 依赖（统一根）
+  ✓ agent/node_modules/ (~50 packages，10 扩展共享)
 
 [Phase 2-B] Python 环境
   ✓ searxng/venv/ (Python 3.12.3)
@@ -516,7 +512,7 @@ pi-backup verify
 | 开发文档 | `docs/` | 开发/部署文档（TERMUX-DEV-NOTES、PI-EXT-DEV-NOTES、PI-SDK-EXTENSION、alacritty-tmux-setup、ENVIRONMENTS） |
 | 便携包脚本 | `portable/` | Windows 便携 pi 种子（bin/ 管理脚本 + start 入口 + ca-bundle + tmux shim，不含 .pi 密钥内容；完整便携包见 memory「便携 pi Windows 最终架构」） |
 
-| npm 配置 | `agent/npm/package.json` | npm 包声明 |
+| npm 配置 | `agent/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
 | 记忆 | `memory/` | pi-memory 持久记忆数据（如存在；已含原 ctx-lite 数据） |
@@ -568,14 +564,13 @@ pi-backup verify
 | 分组 | 相对路径 | 说明 | 重建方式 |
 |------|----------|------|---------|
 | 会话 | `agent/sessions/` | 对话历史（可能含隐私） | 不可重建，需通过 `--include-sessions` 恢复 |
-| npm 依赖 | `agent/npm/node_modules/` | npm 包 | `npm install` |
-| 扩展依赖 | `agent/extensions/*/node_modules/` | 扩展 npm 包 | 每个扩展目录下 `npm install` |
+| npm 依赖 | `agent/node_modules/` | npm 包（统一依赖根，10 扩展共享） | `cd ~/.pi/agent && npm install` |
 | 运行时二进制 | `agent/bin/` | fd、rg | 自动下载 |
 | Python 虚拟环境 | `searxng/venv/` | SearXNG Python 依赖 | `python3 -m venv venv && pip install` |
 | SearXNG 源码 | `searxng/repo/` | SearXNG 原始项目 | `git clone` |
 | 日志 | `searxng/searxng.log` | 运行时日志 | 不可重建，不恢复 |
 | 调度日志 | `logs/scheduler/` | 离线执行日志 | 不可重建，不恢复 |
-| npm lock | `agent/npm/package-lock.json` | npm 锁定文件 | 由 `npm install` 生成 |
+| npm lock | `agent/package-lock.json` | npm 锁定文件 | 由 `npm install` 生成 |
 | 扩展 lock | `agent/extensions/*/package-lock.json` | 扩展 npm 锁定文件 | 由 `npm install` 生成 |
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
 | 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-voice-enter.mjs — pi-voice 回车拦截补丁（幂等）。
  *
  * 背景：pi 的 registerShortcut 匹配按键即消费，handler 返回值被忽略，

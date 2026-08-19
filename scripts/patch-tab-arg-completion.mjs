@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-tab-arg-completion.mjs — Tab 参数补全补丁（幂等）。
  *
  * 背景：pi-tui editor.js handleTabCompletion 中，斜杠命令上下文只有"无空格"
