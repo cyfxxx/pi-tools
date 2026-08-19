@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rebuild-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: 安装 pi 本体
+        run: npm install -g @earendil-works/pi-coding-agent --no-fund --no-audit
+
+      - name: 重建依赖 + 补丁（CI 模式：CI_SKIP_HEAVY=1 跳过 searxng/chromium/whisper）
+        run: |
+          CI_SKIP_HEAVY=1 bash scripts/rebuild.sh --yes --no-voice --no-piper --no-log 2>&1
+
+      - name: 全量回归（9 套 vitest + tsc + subagent + 注册面 + 冲突 + 缓存守门）
+        run: bash scripts/test-all.sh
+
+      - name: 备份体检（git 卫生 / 密钥泄漏 / 依赖完整）
+        run: |
+          node scripts/usage-stats.mjs --check 2>/dev/null || true
+          bash -c 'grep -rIl --exclude-dir=node_modules --exclude-dir=.git "BEGIN .*PRIVATE KEY" . | grep -cv "deploy/keys" || true' | grep -q '^0$' && echo "无密钥泄漏" || echo "⚠ 检查 deploy/keys 白名单"

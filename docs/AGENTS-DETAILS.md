@@ -32,15 +32,15 @@
 
 ## 回归验证细节
 
-单套件：`cd agent/extensions/<ext> && ./node_modules/.bin/vitest run`
-（基线用例数：pi-web-search 75 / pi-memory 94 / pi-autopilot 106 / pi-browser 25 / pi-context 90 / plan-mode 69 / pi-tmux 19 / pi-voice 128 / pi-link 57，以 test-all.sh 当前输出为准）
+单套件：`cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run`（统一依赖根 agent/node_modules）
+（基线用例数：pi-web-search 75+ / pi-memory 94+ / pi-autopilot 106+ / pi-browser 25+ / pi-context 92 / plan-mode 72 / pi-tmux 20+2 跳过 / pi-voice 128+ / pi-link 58，以 test-all.sh 当前输出为准）
 
-注册面：`cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts`
+注册面：`cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run tests/extensions.test.ts`
 （须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
 
 subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`
 
-类型检查：`cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit`
+类型检查：`cd agent/extensions && ../../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit`
 （必须 local.json——共享 tsconfig.json 的 paths 为空会全量报 Cannot find module；缺失时回退共享配置）
 
 ## 缓存治理（2026-08-18，append-only 原则）

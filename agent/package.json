@@ -1,0 +1,20 @@
+{
+  "name": "pi-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "pi 配置仓库统一依赖（10 个扩展共享 agent/node_modules，Node 向上寻径解析）",
+  "dependencies": {
+    "cloakbrowser": "0.3.31",
+    "croner": "10.0.1",
+    "mmdb-lib": "^3.0.3",
+    "playwright-core": "^1.53.0",
+    "puppeteer-core": "^21.11.0",
+    "socks-proxy-agent": "^10.1.0",
+    "typescript": "6.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "vitest": "^4.1.10"
+  }
+}

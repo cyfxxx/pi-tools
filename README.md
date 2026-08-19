@@ -39,16 +39,15 @@
 │   │   ├── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
 │   │   ├── pi-code-review/    代码审查（确定性检查 + 分级报告）
 │   │   └── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
-│   └── npm/
-│       ├── package.json       npm 包声明（rebuild.sh 按 settings.json packages 自动生成）
-│       └── .gitignore         只排除 node_modules/ 和 package-lock.json
+│   └── package.json           统一依赖根（10 扩展共享 agent/node_modules，Node 向上寻径解析）
 ├── docs/                      开发与部署文档
 │   ├── TERMUX-DEV-NOTES.md    Termux 环境开发注意事项（Android API/录音/网络）
 │   ├── PI-EXT-DEV-NOTES.md    Pi 扩展开发注意事项（隐性契约/踩坑/黑盒流程）
 │   ├── PI-SDK-EXTENSION.md    Pi SDK 扩展开发说明
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
 ├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
-├── memory/                    pi-memory 运行时数据（entries/notes/summaries/checkpoints）
+├── ctx-lite/                  压缩级便笺（ctx_note/ctx_snap，跨对话存活；边界：非长期记忆）
+├── memory/                    pi-memory 长期记忆（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
 │   ├── generate-config.sh     settings.yml 自动生成脚本
@@ -219,14 +218,14 @@ bash scripts/smoke-test.sh
 
 # 核心依赖
 ls agent/bin/fd agent/bin/rg && echo "binaries OK"
-ls agent/extensions/pi-browser/node_modules/ | wc -l
+ls agent/node_modules/ | wc -l
 
 # SearXNG
 ls searxng/venv/bin/python && echo "venv OK"
 ls searxng/repo/.git && echo "repo OK"
 
 # 定时任务
-ls agent/extensions/pi-autopilot/node_modules/ | wc -l
+ls agent/node_modules/croner/package.json && echo "croner OK"
 crontab -l | grep pi-cron && echo "crontab OK"
 
 # 持久记忆
@@ -439,18 +438,18 @@ bash scripts/test-all.sh
 
 | 套件 | 命令 | 用例数 |
 |------|------|--------|
-| pi-web-search | `cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run` | 78 |
-| pi-memory | `cd agent/extensions/pi-memory && ./node_modules/.bin/vitest run` | 99 |
-| pi-autopilot | `cd agent/extensions/pi-autopilot && ./node_modules/.bin/vitest run` | 107 |
-| pi-browser | `cd agent/extensions/pi-browser && ./node_modules/.bin/vitest run` | 26 |
-| pi-context | `cd agent/extensions/pi-context && ./node_modules/.bin/vitest run` | 92 |
-| plan-mode | `cd agent/extensions/plan-mode && ./node_modules/.bin/vitest run` | 72 |
-| pi-tmux | `cd agent/extensions/pi-tmux && ./node_modules/.bin/vitest run` | 20+2 跳过 |
-| pi-voice | `cd agent/extensions/pi-voice && ./node_modules/.bin/vitest run` | 131 |
-| pi-link | `cd agent/extensions/pi-link && ./node_modules/.bin/vitest run` | 58 |
+| pi-web-search | `cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run` | 75+ |
+| pi-memory | `cd agent/extensions/pi-memory && ../../node_modules/vitest/vitest.mjs run` | 94+ |
+| pi-autopilot | `cd agent/extensions/pi-autopilot && ../../node_modules/vitest/vitest.mjs run` | 106+ |
+| pi-browser | `cd agent/extensions/pi-browser && ../../node_modules/vitest/vitest.mjs run` | 25+ |
+| pi-context | `cd agent/extensions/pi-context && ../../node_modules/vitest/vitest.mjs run` | 92 |
+| plan-mode | `cd agent/extensions/plan-mode && ../../node_modules/vitest/vitest.mjs run` | 72 |
+| pi-tmux | `cd agent/extensions/pi-tmux && ../../node_modules/vitest/vitest.mjs run` | 20+2 跳过 |
+| pi-voice | `cd agent/extensions/pi-voice && ../../node_modules/vitest/vitest.mjs run` | 128+ |
+| pi-link | `cd agent/extensions/pi-link && ../../node_modules/vitest/vitest.mjs run` | 58 |
 | subagent | `cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs` | 63 |
-| 注册面 | `cd agent/extensions/pi-web-search && ./node_modules/.bin/vitest run tests/extensions.test.ts` | 25 |
-| 类型检查 | `cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit` | — |
+| 注册面 | `cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run tests/extensions.test.ts` | 25 |
+| 类型检查 | `cd agent/extensions && ../../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit` | — |
 | 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 9 项（含工具指纹入账） |
 
 （用例数快照于 2026-08-18 全项目审计修复后；以 `bash scripts/test-all.sh` 输出为准）

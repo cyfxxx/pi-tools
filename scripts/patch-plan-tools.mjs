@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-plan-tools.mjs — plan-mode 工具 schema 恢复补丁（幂等）。
  *
  * 背景（2026-08-10 实证）：--continue 恢复会话后，模型函数调用 schema 不含

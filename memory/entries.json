@@ -11016,10 +11016,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 23,
+      "recurrence": 29,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-18T15:15:37.411Z",
-      "accessedAt": "2026-08-18T15:15:37.411Z",
+      "updatedAt": "2026-08-19T06:38:09.161Z",
+      "accessedAt": "2026-08-19T06:38:09.161Z",
       "environments": [
         "all"
       ],
@@ -11496,7 +11496,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "3e005442-10cc-446c-b793-c6eadf0e4c3d",
@@ -11518,7 +11519,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "bc42fac8-b38c-4a7a-991d-ff3bacb25ca9",
@@ -11540,7 +11542,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "78893616-8fa5-488c-a852-e5bb85a06abc",
@@ -11562,7 +11565,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "02e2aee9-1b98-4ed7-9117-ff5f8f2c9c64",
@@ -11584,7 +11588,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "ce2089da-7512-4ca7-abd8-ab03f660edb7",
@@ -11606,7 +11611,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "75868e20-2b83-49ed-8c3a-4d74b3055107",
@@ -11628,7 +11634,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
     },
     {
       "id": "fd7e4349-88f4-44f7-bcef-5d2d78a5e891",
@@ -11649,7 +11656,76 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4"
+      "lastSessionId": "01a013e8-b389-764c-ad3f-9e3044ed3da4",
+      "deleted": false
+    },
+    {
+      "id": "e0ebdbf8-b75a-414d-abf1-2d5ab9e8286f",
+      "category": "fact",
+      "title": "项目架构：统一依赖根 agent/node_modules（2026-08-19）",
+      "content": "pi 配置仓库 10 个扩展（pi-autopilot/pi-browser/pi-context/pi-link/pi-memory/pi-tmux/pi-voice/pi-web-search/plan-mode/subagent）已合并依赖：全部第三方依赖集中在 agent/package.json → agent/node_modules（Node 向上寻径：扩展目录 → extensions → agent → agent/node_modules）。旧架构每个扩展独立 node_modules（9 份 vitest、8 份 @types/node，合计约 558MB）已删除。agent/npm/ 目录已删（settings.packages 为空）。关键点：@earendil-works/* 与 typebox 的解析依赖 extensions/node_modules 下的 symlink（指向全局 pi 安装，rebuild 时建立），不受合并影响；真实第三方依赖（croner/cloakbrowser/mmdb-lib/playwright-core/puppeteer-core/socks-proxy-agent/typescript + vitest/@types/node）在 agent/package.json。tsconfig.json typeRoots 已改为 `../node_modules/@types`（相对 extensions）。test-all.sh 用 `$PI_HOME/agent/node_modules/vitest/vitest.mjs run` 与 `$PI_HOME/agent/node_modules/typescript/bin/tsc`。vitest 3→4 已验证兼容（pi-tmux 20 用例通过）。pi-link typescript 5.7→6.0.3 兼容。",
+      "tags": [
+        "架构",
+        "依赖",
+        "rebuild",
+        "扩展"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T06:36:32.552Z",
+      "updatedAt": "2026-08-19T06:36:32.552Z",
+      "accessedAt": "2026-08-19T06:36:32.552Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T06:36:32.552Z",
+      "deleted": false
+    },
+    {
+      "id": "8a776d6b-d690-4c17-97cb-8b54d4f920fa",
+      "category": "fact",
+      "title": "补丁版本关联：@target-version + verify-patches.mjs（2026-08-19）",
+      "content": "8 个 patch-*.mjs 头部声明 `@target-version <major.minor>`（当前 0.84）；scripts/verify-patches.mjs 读取 PI_DIST 推导当前 pi 版本，minor 级校验，失配 exit 1。rebuild.sh Phase 3 先跑 verify-patches：失配则显式失败（此前仅 warn 静默跳过），`--skip-patches` 参数可临时跳过（逃生）。playwright-core 补丁（Termux android→linux）已适配统一根：目标为 playwright-core@1.53.0 的 lib/server 结构（hostPlatform.js/userAgent.js/registry/index.js/crPage.js/webkit.js/bidiFirefox.js/electron.js/firefox.js/cli/program.js），逐文件精确字符串替换（非正则通配），三种平台写法（platform/process.platform/os.platform()），幂等 marker=`=== \"linux\" ||`（原生代码不出现）。注意：registry 原生含 `d.name === \"android\"`，勿用 `=== \"android\"` 做幂等标记。",
+      "tags": [
+        "补丁",
+        "rebuild",
+        "playwright",
+        "版本"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T06:36:32.599Z",
+      "updatedAt": "2026-08-19T06:36:32.599Z",
+      "accessedAt": "2026-08-19T06:36:32.599Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T06:36:32.599Z",
+      "deleted": false
+    },
+    {
+      "id": "a0d27f4e-e208-4986-97fa-3b5659d40e89",
+      "category": "fact",
+      "title": "rebuild.sh CI_SKIP_HEAVY + GitHub Actions（2026-08-19）",
+      "content": "rebuild.sh 新增 `CI_SKIP_HEAVY=1` 环境变量：跳过 5 个重型 Phase（2-B searxng venv / 2-B2 repo clone / 2-B3 deps pip / 2-C2 CloakBrowser Chromium / 2-F whisper voice），CI 与轻量重建用。GitHub Actions 已有 .github/workflows/ci.yml（ubuntu-latest：装 pi 全局 → CI_SKIP_HEAVY=1 rebuild.sh --yes --no-voice --no-piper --no-log → test-all.sh 全量）。注意 rebuild.sh 是 set -u，条件用 `[ \"${CI_SKIP_HEAVY:-0}\" = \"1\" ]`。verify 段 npm 检查：统一根 agent/node_modules；扩展目录 node_modules 若含非 dot 内容则 warn 残留（vitest 的 .vite/.vite-temp 缓存占位不告警）。wrapper 环境 rebuild 时 \"Pi CLI 未能在 5s 内响应\" ⚠ 是已知行为（provider 连接等待），非失败。pi-backup SKILL.md、portable/bin/setup.ps1 已同步统一根布局（portable 用 npm install --prefix <agent> 不带 --omit=dev）。",
+      "tags": [
+        "CI",
+        "rebuild",
+        "架构"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T06:37:00.081Z",
+      "updatedAt": "2026-08-19T06:37:00.081Z",
+      "accessedAt": "2026-08-19T06:37:00.081Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T06:37:00.081Z",
+      "deleted": false
     }
   ]
 }

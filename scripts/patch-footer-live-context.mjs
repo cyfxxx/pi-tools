@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-footer-live-context.mjs — footer 实时上下文 token 显示补丁（幂等）。
  *
  * 背景：pi footer 的 `↑↓RW$` 统计整个会话文件的累计消耗（含已压缩历史与

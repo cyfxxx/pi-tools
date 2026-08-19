@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /**
+ * @target-version 0.84
  * patch-footer-restart-hint.mjs — footer 重启前建议压缩提示补丁（幂等）。
  *
  * 背景：上下文超过重启压缩阈值（40% 窗口）时，重启后首轮必然全量重发

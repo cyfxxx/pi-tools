@@ -10,7 +10,7 @@
     "allowImportingTsExtensions": true,
     "ignoreDeprecations": "6.0",
     "typeRoots": [
-      "./pi-web-search/node_modules/@types"
+      "../node_modules/@types"
     ],
     "types": [
       "node"

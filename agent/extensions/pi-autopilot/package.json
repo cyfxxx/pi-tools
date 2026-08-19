@@ -4,17 +4,9 @@
   "private": true,
   "description": "自主运行扩展 — 定时任务调度 + Agent 自管理 + 失败自愈（failover/看门狗/遥测/预算）",
   "type": "module",
-  "dependencies": {
-    "croner": "10.0.1"
-  },
   "pi": {
     "extensions": [
       "./index.ts"
     ]
-  },
-  "devDependencies": {
-    "@types/node": "^26.0.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
   }
 }

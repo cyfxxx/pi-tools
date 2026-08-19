@@ -16,6 +16,10 @@ set -uo pipefail
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 EXTS="$PI_HOME/agent/extensions"
+# 统一依赖根（10 扩展共享 agent/node_modules；Node 向上寻径解析）
+AGENT_NM="$PI_HOME/agent/node_modules"
+VITEST_MJS="$AGENT_NM/vitest/vitest.mjs"
+TSC_BIN="$AGENT_NM/typescript/bin/tsc"
 FAILED=0
 ONLY=""
 FAST=0
@@ -60,16 +64,14 @@ report() {
   if [ "$1" -eq 0 ]; then green "✓ $2"; else red "✗ $2"; FAILED=$((FAILED+1)); fi
 }
 
-cyn "== vitest 套件 =="
+cyn "== vitest 套件（统一根 $AGENT_NM） =="
+if [ ! -f "$VITEST_MJS" ]; then
+  red "✗ $VITEST_MJS 不存在（需先重建依赖: bash scripts/rebuild.sh --yes 或 cd agent && npm install）"; FAILED=$((FAILED+1))
+fi
 for ext in $ALL_EXTS; do
   if [ -d "$EXTS/$ext" ]; then
-    if [ -f "$EXTS/$ext/node_modules/vitest/vitest.mjs" ]; then
-      (cd "$EXTS/$ext" && "$NODE" node_modules/vitest/vitest.mjs run >/dev/null 2>&1)
-      report $? "$ext vitest"
-    else
-      # 无 vitest 的扩展（如 subagent 用 node 直跑）不参与本环节
-      cyn "– $ext 无 vitest（跳过）"
-    fi
+    (cd "$EXTS/$ext" && "$NODE" "$VITEST_MJS" run >/dev/null 2>&1)
+    report $? "$ext vitest"
   else
     red "✗ $ext 目录不存在"; FAILED=$((FAILED+1))
   fi
@@ -106,7 +108,7 @@ else
   cyn "⚠ 未找到 tsconfig.local.json 且非便携布局，跳过 tsc 类型检查"
 fi
 if [ -f "$EXTS/$TSCONFIG" ]; then
-  (cd "$EXTS" && "$NODE" ./pi-web-search/node_modules/typescript/bin/tsc -p "$TSCONFIG" --noEmit >/dev/null 2>&1)
+  (cd "$EXTS" && "$NODE" "$TSC_BIN" -p "$TSCONFIG" --noEmit >/dev/null 2>&1)
   report $? "tsc -p $TSCONFIG"
 fi
 
@@ -128,7 +130,7 @@ else
 fi
 
 cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
-(cd "$EXTS/pi-web-search" && "$NODE" node_modules/vitest/vitest.mjs run tests/extensions.test.ts >/dev/null 2>&1)
+(cd "$EXTS/pi-web-search" && "$NODE" "$VITEST_MJS" run tests/extensions.test.ts >/dev/null 2>&1)
 report $? "extensions.test.ts (25 用例)"
 
 cyn "== 扩展冲突检查 =="
