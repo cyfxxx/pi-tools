@@ -6,7 +6,7 @@
  * 目标：量化每轮请求发送量（平台统计的核心），定位 token 消耗大头。
  */
 
-import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -98,6 +98,49 @@ export function recordPrune(prunedTokens: number, prunedChars: number, prunedCou
     appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
   } catch {
     // ignore
+  }
+}
+
+// ── 工具启用事件台账（2026-08-19）──
+// enable_tool 是唯一改变运行时工具集的入口（pi-context 分层，改 setActiveTools）。
+// 启用事件落到独立台账 agent/stats/tool-events.jsonl（非 usage-diag，避免污染用量统计），
+// 供 usage-stats 在 A 类断裂（前缀全段重放）时按 ts 关联归因：有事件 → 工具 schema 变化；
+// 无事件 → 排除工具侧，指向 compaction/provider。仅数据文件、不进注入路径（缓存友好）。
+export interface ToolEnableEvent {
+  type: "tool-enable";
+  ts: number;
+  group: string;
+  via: "enable_tool" | "cmd";
+}
+
+export const TOOL_EVENTS_FILE = join(homedir(), ".pi", "agent", "stats", "tool-events.jsonl");
+
+export function getToolEventsFile(): string {
+  return process.env.PI_TOOL_EVENTS_FILE || TOOL_EVENTS_FILE;
+}
+
+export function recordToolEnable(group: string, via: "enable_tool" | "cmd"): void {
+  try {
+    const ev: ToolEnableEvent = { type: "tool-enable", ts: Date.now(), group, via };
+    appendFileSync(getToolEventsFile(), JSON.stringify(ev) + "\n");
+  } catch {
+    // ignore（台账失败不影响工具启用功能）
+  }
+}
+
+/** 读取工具启用事件台账（供 usage-stats 等诊断工具） */
+export function loadToolEnableEvents(): ToolEnableEvent[] {
+  try {
+    return readFileSync(getToolEventsFile(), "utf-8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => {
+        try { return JSON.parse(l) as ToolEnableEvent } catch { return null }
+      })
+      .filter((e): e is ToolEnableEvent => e !== null && e.type === "tool-enable");
+  } catch {
+    return [];
   }
 }
 

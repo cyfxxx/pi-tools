@@ -11,6 +11,7 @@ import {
 	loadDiagLines,
 	recordAutoCompact,
 	recordPrune,
+	recordToolEnable,
 	recordUsage,
 	type UsageRecord,
 } from "../../lib/usage-diag.ts";
@@ -483,6 +484,7 @@ export default function (pi: ExtensionAPI) {
 			}
 			enabledGroups.add(g.name);
 			applyToolLayering();
+			recordToolEnable(g.name, "enable_tool");
 			return {
 				content: [
 					{
@@ -508,6 +510,7 @@ export default function (pi: ExtensionAPI) {
 				}
 				enabledGroups.add(g.name);
 				applyToolLayering();
+				recordToolEnable(g.name, "cmd");
 				ctx.ui.notify(`已启用工具组 ${g.name}（${g.tools.join(", ")}），本会话内保持。`, "info");
 				return;
 			}

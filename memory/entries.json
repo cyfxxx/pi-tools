@@ -11792,6 +11792,29 @@
       "accessedAt": "2026-08-19T07:14:14.473Z",
       "environments": [
         "all"
+      ],
+      "observedAt": "2026-08-19T07:14:14.473Z",
+      "deleted": false
+    },
+    {
+      "id": "6fc5fe64-2413-470b-b18b-4789f9d67e2a",
+      "category": "reference",
+      "title": "工具启用事件台账 + A 类断裂归因（enable_tool 监控闭环）",
+      "content": "工具启用事件台账（2026-08-19 落地，A 类断裂归因闭环）：pi-context 的 enable_tool 工具与 /tools enable 命令（唯一改 setActiveTools 的入口）每次启用写 {type,ts,group,via} 到 agent/stats/tool-events.jsonl（lib/usage-diag.ts 的 recordToolEnable；仅数据文件、不进注入路径、失败静默，缓存友好）。scripts/usage-stats.mjs 在 A 类断裂（前缀全段重放 cacheRead≈0）时按 ts±2min 关联台账输出归因：有事件→\"⚑ 组启用 via → 工具 schema 变化致前缀全断\"；无事件→\"○ 排除工具 schema，指向 compaction/早期消息改写/provider 缓存键\"。双分支已验证。验证方法：cat agent/stats/tool-events.jsonl 看事件；需同时确认 tool-groups.ts 的 computeActiveTools 通用性（未来新扩展工具默认进核心，不会因名单维护而漂移）。",
+      "tags": [
+        "缓存",
+        "工具事件",
+        "归因",
+        "usage-stats"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T07:32:21.377Z",
+      "updatedAt": "2026-08-19T07:32:21.378Z",
+      "accessedAt": "2026-08-19T07:32:21.378Z",
+      "environments": [
+        "all"
       ]
     }
   ]
