@@ -27,6 +27,10 @@ const cfg = {
   whisperModel: 'base',
   whisperDevice: 'auto',
   whisperScript: '/root/.pi/scripts/pi-whisper.sh',
+  sttBackend: 'whisper',
+  sherpaEndpoint: 'http://127.0.0.1:18768',
+  sherpaToken: '',
+  sherpaScript: '/root/.pi/scripts/pi-sherpa.sh',
 } satisfies VoiceConfig
 
 const fakeChild = { pid: 1234, kill: vi.fn() } as unknown as ChildProcess

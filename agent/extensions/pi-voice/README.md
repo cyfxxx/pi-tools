@@ -48,6 +48,43 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 | `espeak-ng` + `paplay` | 本地朗读（linux 平台：生成 wav + PulseAudio 播放） | `apt-get install espeak-ng pulseaudio-utils` |
 | tmux `extended-keys` | 透传 Ctrl+Alt+R 修饰键序列 | 见“安装与启动”第 4 步 |
 
+## 转写后端：whisper / sherpa（SenseVoice）
+
+扩展支持两个转写后端，`/voice backend` 切换（默认 whisper，切换前行为不变）：
+
+| 后端 | 模型 | 准确率 | 速度（RTF） | 适用 |
+|------|------|--------|------|------|
+| whisper（默认） | faster-whisper base/small/medium | 中 | 手机 CPU 慢 | 稳定、可切换模型 |
+| sherpa | SenseVoice int8（229MB，端侧） | **高**（中文保标点，含数字 ITN） | **极快（RTF≈0.04）** | 中文为主、追求速度与准确 |
+
+- `sherpa` = 独立 Python 进程（`pi-sherpa-server.py`，端口 18768），走 HTTP 与扩展通信；**原生模型不加载进 pi 的 Node 进程**（独立进程崩溃不影响 pi），这是防崩溃的关键设计
+- **懒加载 + 预拉起**：录音开始时 `prewarmStt` 自动拉起 sherpa 服务并触发模型加载（健康检查顺带懒加载），消除首次转写的模型加载等待
+- sherpa 服务不可达时转写返回明确错误（不阻塞 pi），可用 `/voice doctor` 查看两后端就绪状态
+
+### 安装 sherpa 服务（手机 proot / Linux 一次性）
+
+```bash
+python3 -m venv /opt/pi-sherpa/venv
+/opt/pi-sherpa/venv/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple sherpa-onnx numpy
+# 下载 SenseVoice 模型（hf-mirror，约 229MB）到 /opt/pi-sherpa/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/
+~/.pi/scripts/pi-sherpa.sh start
+# 扩展侧切换到 sherpa 后端（写入 pi-voice.json）：
+/voice backend sherpa
+```
+
+### KWS 唤醒监听（/voice wake，Linux）
+
+说“开启语音输入”自动开始录音。仅 Linux（parec 持续采 PCM 流式上传检测）；**Termux 录音 API（MediaRecorder）无实时 PCM 流，不支持**。
+
+```bash
+/voice backend sherpa   # 依赖 sherpa 后端
+/voice wake on          # 进入监听；命中“开启语音输入”自动开始录音
+/voice wake off         # 停止监听
+```
+
+- KWS 模型：`sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01`（4.9MB，拼音建模、自定唤醒词）。服务端首次监听时若 `/opt/pi-sherpa/models/wakeup_keywords.txt` 不存在会自动生成（默认词“开启语音输入”），可手工编辑自定义（格式：拼音序列 + `@` 中文，一行一词）
+- 唤醒词拼音约束：声母为单 token（`sh` 不可拆成 `s h`），韵母带声调
+
 ## 平台适配
 
 | 平台 | 录音 | 转码 | TTS |
@@ -70,6 +107,11 @@ pi 回复  → message_end 事件 → 提取文本 → termux-tts-speak 朗读
 python3 -m venv /opt/pi-whisper/venv
 /opt/pi-whisper/venv/bin/pip install faster-whisper opencc-python-reimplemented
 ~/.pi/scripts/pi-whisper.sh start        # 常驻服务启动（含断线自恢复提示）
+# （可选，推荐）sherpa SenseVoice 后端：独立进程，中文更准更快
+python3 -m venv /opt/pi-sherpa/venv
+/opt/pi-sherpa/venv/bin/pip install sherpa-onnx numpy
+~/.pi/scripts/pi-sherpa.sh start        # 端口 18768
+# 在 pi 内 /voice backend sherpa 切换后生效
 
 # 2. 录音依赖
 pkg install termux-api        # Termux 侧；再装 Termux:API 应用并授权麦克风
@@ -112,6 +154,9 @@ apt-get install ffmpeg        # PRoot 侧
 | `PI_VOICE_MIC_DEVICE` / `PI_VOICE_LINUX_MIC_DEVICE` | 空 / `RDPSource` | 录音设备（termux 忽略；Linux 如 `RDPSource`） |
 | `PI_VOICE_TTS_ENGINE` / `PI_VOICE_PIPER_MODEL` | `auto` / 模型路径 | Linux TTS 引擎（auto/piper/sapi/espeak）+ piper 模型 |
 | `PI_VOICE_WHISPER_DEVICE` / `PI_VOICE_WHISPER_SCRIPT` | `auto` / 脚本路径 | whisper 计算设备 + 服务脚本 |
+| `PI_VOICE_STT_BACKEND` | `whisper` | 转写后端：`whisper`（faster-whisper，默认）或 `sherpa`（SenseVoice 端侧模型，中文更准更快） |
+| `PI_VOICE_SHERPA_ENDPOINT` / `PI_VOICE_SHERPA_SCRIPT` | `18768` / 脚本路径 | sherpa 服务地址 + 服务管理脚本 |
+| `PI_VOICE_SHERPA_TOKEN` | 空（回退 whisperToken） | sherpa 服务 Bearer token |
 
 > 注意：环境变量优先于 json；由环境变量定义的字段不会写入 json。
 

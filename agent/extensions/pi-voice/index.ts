@@ -44,6 +44,9 @@ import {
   stopRecording,
   convertToWav,
   transcribe,
+  transcribeByBackend,
+  prewarmStt,
+  createWakeSession,
   deleteAudioPair,
   waitForFileStable,
   cleanupStaleAudio,
@@ -58,6 +61,7 @@ import {
   fileExists,
   createTtsDispatcher,
   type TtsDispatcher,
+  type WakeSession,
 } from './core'
 
 /** 听写回车防抖窗口（ms）：连击只处理一次 */
@@ -77,6 +81,7 @@ let lastEnterAt = 0
 let awaitingResume = false
 let dictation: Dictation
 let ttsQueue: TtsDispatcher
+let wakeSession: WakeSession | null = null
 
 /** 可用 whisper 模型（faster-whisper）与设备说明 */
 const WHISPER_MODELS: Record<string, string> = {
@@ -159,7 +164,7 @@ export default function (pi: ExtensionAPI): void {
   dictation = createDictation(
     config,
     {
-      startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe, deleteAudioPair, waitForFileStable, detectAudioLevel,
+      startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe: transcribeByBackend, deleteAudioPair, waitForFileStable, detectAudioLevel,
       micLabel: spec.recorder.micLabel,
       micInstallHint: spec.recorder.installHint,
       micPermissionHint: spec.recorder.permissionHint,
@@ -208,6 +213,8 @@ export default function (pi: ExtensionAPI): void {
     '/voice tts <on|off>       开关自动朗读回复',
     '/voice tts status         查看朗读/转写状态',
     '/voice tts speak [文本]   手动朗读（缺省朗读最近回复）',
+    '/voice backend [whisper|sherpa]  查看/切换转写后端（sherpa = SenseVoice 端侧模型）',
+    '/voice wake <on|off|status>  唤醒监听（Linux：说“开启语音输入”自动开始录音；需 sherpa 后端）',
     '/voice model [名称]      查看/切换 whisper 模型',
     '/voice device [cpu|gpu|auto]  查看/切换推理设备（GPU 被占用时切 cpu）',
     '/voice doctor             诊断录音/转写/朗读依赖',
@@ -257,12 +264,27 @@ export default function (pi: ExtensionAPI): void {
           { value: 'device auto', label: 'device auto', description: '自动检测（默认）' },
         ])
       }
+      if (first === 'backend') {
+        return pick([
+          { value: 'backend whisper', label: 'backend whisper', description: 'whisper（faster-whisper，默认）' },
+          { value: 'backend sherpa', label: 'backend sherpa', description: 'sherpa（SenseVoice 端侧）' },
+        ])
+      }
+      if (first === 'wake') {
+        return pick([
+          { value: 'wake on', label: 'wake on', description: '开启唤醒监听（Linux）' },
+          { value: 'wake off', label: 'wake off', description: '停止监听' },
+          { value: 'wake status', label: 'wake status', description: '查看监听状态' },
+        ])
+      }
       return pick([
         { value: 'start', label: 'start', description: '开始录音' },
         { value: 'stop', label: 'stop', description: '停止录音并转写' },
         { value: 'cancel', label: 'cancel', description: '取消录音并丢弃音频' },
         { value: 'tts', label: 'tts', description: '朗读：on/off/status/speak' },
         { value: 'doctor', label: 'doctor', description: '诊断依赖' },
+        { value: 'backend', label: 'backend', description: '查看/切换转写后端' },
+        { value: 'wake', label: 'wake', description: '唤醒监听（Linux）' },
         { value: 'model', label: 'model', description: '查看/切换 whisper 模型' },
         { value: 'device', label: 'device', description: '查看/切换推理设备' },
         { value: 'bench', label: 'bench', description: '转写速度基准' },
@@ -278,11 +300,13 @@ export default function (pi: ExtensionAPI): void {
           if (dictation.isRecording()) {
             await stopAndDeliver(pi, ctx, false)
           } else {
+            void prewarmStt(config).catch(() => {})
             withStatus(pi, ctx, dictation.start())
           }
           break
         case 'start':
           awaitingResume = false
+          void prewarmStt(config).catch(() => {})
           withStatus(pi, ctx, dictation.start())
           break
         case 'stop': {
@@ -333,6 +357,12 @@ export default function (pi: ExtensionAPI): void {
         case 'doctor':
           await cmdDoctor(pi, ctx, config)
           break
+        case 'backend':
+          await cmdBackend(pi, ctx, config, rest.join(' '))
+          break
+        case 'wake':
+          await cmdWake(pi, ctx, config, rest.join(' '))
+          break
         case 'model':
           await cmdModel(pi, ctx, config, rest.join(' '))
           break
@@ -361,6 +391,7 @@ export default function (pi: ExtensionAPI): void {
       void stopAndDeliver(pi, ctx, false).catch((e) => console.warn('[pi-voice] 停止转写失败:', (e as Error)?.message ?? e))
     } else {
       awaitingResume = false // 手动开始：退出待续录状态
+      void prewarmStt(config).catch(() => {})
       withStatus(pi, ctx, dictation.start())
     }
   }
@@ -478,9 +509,11 @@ export default function (pi: ExtensionAPI): void {
     ttsQueue.enqueue(text)
   })
 
-  // 退出/重载时清理录音进程与残留文件（隐私兜底）
+  // 退出/重载时清理录音进程、唤醒监听与残留文件（隐私兜底）
   pi.on('session_shutdown', () => {
     dictation.cleanup()
+    wakeSession?.stop()
+    wakeSession = null
     cleanupStaleAudio(config, 0)
   })
 }
@@ -591,6 +624,94 @@ async function cmdDoctor(api: ExtensionAPI, ctx: ExtensionCommandContext, config
   reply(api, lines.join('\n'))
 }
 
+/** /voice backend [whisper|sherpa]：查看或切换转写后端（sherpa = SenseVoice 端侧模型）。
+ *  仅影响转写路径；录音/ TTS 等不受影响。whisper 为默认后端，切换前行为不变。 */
+async function cmdBackend(api: ExtensionAPI, ctx: ExtensionCommandContext, config: VoiceConfig, arg: string): Promise<void> {
+  const name = arg.trim().toLowerCase()
+  if (name === 'whisper' || name === 'sherpa') {
+    if (name === config.sttBackend) {
+      reply(api, `转写后端已是 ${name === 'sherpa' ? 'sherpa（SenseVoice）' : 'whisper（faster-whisper）'}`)
+      return
+    }
+    config.sttBackend = name
+    try {
+      persistConfig({ sttBackend: name }, process.env)
+    } catch {
+      // 持久化失败不阻塞（下次 /voice backend 再试）
+    }
+    reply(api, `转写后端已切换为 ${name === 'sherpa' ? 'sherpa（SenseVoice 端侧模型）' : 'whisper（faster-whisper）'}，下次录音转写生效。${name === 'sherpa' ? '\n提示：首次使用会自动拉起 sherpa 服务（端口 18768）；可 /voice doctor 检查两后端就绪状态。' : ''}`)
+    return
+  }
+  if (name) {
+    reply(api, `未知后端: ${name}（可用 whisper | sherpa）`)
+    return
+  }
+  const cur = config.sttBackend
+  ctx.ui.setStatus('pi-voice', undefined)
+  reply(
+    api,
+    `当前转写后端：${cur === 'sherpa' ? 'sherpa（SenseVoice 端侧模型）' : 'whisper（faster-whisper）'}` +
+      `\n切换：/voice backend whisper|sherpa` +
+      `\n说明：默认 whisper（行为不变）；sherpa 用端侧 SenseVoice，中文准确率更高、CPU 更快。` +
+      `\n两后端就绪状态用 /voice doctor 查看。`,
+  )
+}
+
+/** /voice wake <on|off|status>：唤醒监听（Linux）。
+ *  on：持续采麦克风 PCM → 轮询 sherpa /wake；命中唤醒词自动开始录音。
+ *  需 { sttBackend: 'sherpa' }（SenseVoice 后端）。Termux 录音 API 无实时流，不支持。 */
+async function cmdWake(api: ExtensionAPI, ctx: ExtensionCommandContext, config: VoiceConfig, want: string): Promise<void> {
+  const arg = want.trim().toLowerCase()
+  if (arg === 'off') {
+    const msg = wakeSession?.stop() ?? '唤醒监听未启用'
+    wakeSession = null
+    ctx.ui.setStatus('pi-voice', undefined)
+    reply(api, msg)
+    return
+  }
+  if (arg === 'status' || arg === '') {
+    reply(api, wakeSession?.isRunning()
+      ? `唤醒监听中，已命中唤醒词 ${wakeSession.hits()} 次（说“开启语音输入”开始录音；/voice wake off 停止）`
+      : '唤醒监听未启用（可用 /voice wake on）')
+    return
+  }
+  if (arg === 'on') {
+    if (wakeSession?.isRunning()) {
+      reply(api, '已在监听中')
+      return
+    }
+    if (config.sttBackend !== 'sherpa') {
+      reply(api, '唤醒监听依赖 sherpa 转写后端（SenseVoice），请先切换：/voice backend sherpa')
+      return
+    }
+    try {
+      wakeSession = createWakeSession(config, {
+        onHit: (kw) => {
+          wakeSession?.stop()
+          wakeSession = null
+          ctx.ui.setStatus('pi-voice', undefined)
+          ctx.ui.notify(`已唤醒：${kw}`, 'warning')
+          reply(api, `已唤醒「${kw}」，开始录音（/voice wake on 可再次进入监听）`)
+          if (!dictation.isRecording() && !dictation.isTranscribing()) {
+            void prewarmStt(config).catch(() => {})
+            withStatus(api, ctx, dictation.start())
+          }
+        },
+        onStatus: (s) => {
+          ctx.ui.setStatus('pi-voice', s.startsWith('🎧') ? s : undefined)
+          reply(api, s)
+        },
+      })
+      await wakeSession.start()
+    } catch (e) {
+      wakeSession = null
+      reply(api, `唤醒监听不可用：${(e as Error).message}`)
+    }
+    return
+  }
+  reply(api, `未知参数：${want}。用法：/voice wake <on|off|status>`)
+}
+
 /** /voice model [name]：列出或切换 whisper 模型（切换需重启服务，加载耗时）。 */
 async function cmdModel(
   api: ExtensionAPI,
@@ -604,6 +725,10 @@ async function cmdModel(
       .map(([name, note]) => `  ${name}${name === config.whisperModel ? '（当前）' : ''} — ${note}`)
       .join('\n')
     reply(api, `当前模型：${config.whisperModel}（服务端实际：${current ?? '不可达'}）\n可用模型：\n${list}\n切换：/voice model <名称>`)
+    return
+  }
+  if (config.sttBackend === 'sherpa') {
+    reply(api, '当前转写后端为 sherpa（SenseVoice），模型设置仅对 whisper 后端生效。如需调整请先 /voice backend whisper 切换后再操作。')
     return
   }
   if (!(want in WHISPER_MODELS)) {
@@ -656,6 +781,10 @@ async function cmdDevice(
   want: string,
 ): Promise<void> {
   const DEVICE_NAMES: Record<string, string> = { auto: '自动检测', cuda: 'NVIDIA GPU', cpu: 'CPU' }
+  if (want !== '' && config.sttBackend === 'sherpa') {
+    reply(api, '当前转写后端为 sherpa（SenseVoice），设备设置仅对 whisper 后端生效。如需调整请先 /voice backend whisper 切换后再操作。')
+    return
+  }
   const actual = await whisperDevice(config)
   if (want === '') {
     const list = Object.entries(DEVICE_NAMES)

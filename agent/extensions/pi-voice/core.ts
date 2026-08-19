@@ -397,6 +397,23 @@ export function defaultWhisperHealth(cfg: VoiceConfig): () => Promise<boolean> {
   }
 }
 
+/** sherpa (SenseVoice) 服务健康检查。token 优先 sherpaToken（服务端读 sherpaToken→回退 whisperToken）。 */
+export function defaultSherpaHealth(cfg: VoiceConfig): () => Promise<boolean> {
+  return async () => {
+    try {
+      const headers: Record<string, string> = {}
+      if (cfg.sherpaToken) headers['Authorization'] = `Bearer ${cfg.sherpaToken}`
+      const res = await fetch(`${cfg.sherpaEndpoint}/health`, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
+}
+
 export async function ensureWhisperService(
   cfg: VoiceConfig,
   deps: EnsureWhisperDeps = {},
@@ -469,6 +486,81 @@ export async function transcribe(cfg: VoiceConfig, wavPath: string): Promise<Tra
     return { text: data.text ?? '', language: data.language ?? '' }
   } catch (e) {
     return { text: '', language: '', error: `whisper 服务不可达: ${(e as Error).message}` }
+  }
+}
+
+/** sherpa (SenseVoice) 服务启停：与 ensureWhisperService 语义一致的独立后背。 */
+export async function ensureSherpaService(
+  cfg: VoiceConfig,
+  deps: EnsureWhisperDeps = {},
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const {
+    health = defaultSherpaHealth(cfg),
+    start = () => runCommand('bash', [cfg.sherpaScript, 'start'], { timeoutMs: 30000 }),
+    pollIntervalMs = 2000,
+    pollTimeoutMs = 120000,
+  } = deps
+  if (await health()) return { ok: true }
+  const res = await start()
+  if (res.code !== 0) {
+    return { ok: false, error: `sherpa 服务不可用且自动启动失败：${res.stderr.trim() || res.stdout.trim() || '未知错误'}（可手动运行 bash ${cfg.sherpaScript} start）` }
+  }
+  const deadline = Date.now() + pollTimeoutMs
+  while (Date.now() < deadline) {
+    if (await health()) return { ok: true }
+    await new Promise((r) => setTimeout(r, pollIntervalMs))
+  }
+  return { ok: false, error: `sherpa 服务自动启动后仍不可达（${cfg.sherpaEndpoint}），请检查 ~/.pi/logs/sherpa/server.log` }
+}
+
+/** 调 sherpa-onnx (SenseVoice) 常驻服务转写 wav 字节（输入须 16k 单声道；客户端 convertToWav 已满足）。 */
+export async function transcribeSherpa(cfg: VoiceConfig, wavPath: string): Promise<TranscribeResult> {
+  const ready = await ensureSherpaService(cfg)
+  if (!ready.ok) {
+    return { text: '', language: '', error: (ready as { ok: false; error: string }).error }
+  }
+  let body: Buffer
+  try {
+    body = readFileSync(wavPath)
+  } catch (e) {
+    return { text: '', language: '', error: `读取 wav 失败: ${(e as Error).message}` }
+  }
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'audio/wav',
+      'Content-Length': String(body.length),
+    }
+    if (cfg.sherpaToken) headers['Authorization'] = `Bearer ${cfg.sherpaToken}`
+    const res = await fetch(`${cfg.sherpaEndpoint}/transcribe`, {
+      method: 'POST',
+      headers,
+      body: new Uint8Array(body),
+      signal: AbortSignal.timeout(120000),
+    })
+    if (!res.ok) {
+      return { text: '', language: '', error: `sherpa 服务返回 ${res.status}` }
+    }
+    const data = (await res.json()) as { text?: string; language?: string; error?: string }
+    if (data.error) return { text: '', language: '', error: data.error }
+    return { text: data.text ?? '', language: cfg.language }
+  } catch (e) {
+    return { text: '', language: '', error: `sherpa 服务不可达: ${(e as Error).message}` }
+  }
+}
+
+/** 按 cfg.sttBackend 选择转写后端（dictation 注入用；默认 whisper 行为不变）。 */
+export async function transcribeByBackend(cfg: VoiceConfig, wavPath: string): Promise<TranscribeResult> {
+  return cfg.sttBackend === 'sherpa' ? transcribeSherpa(cfg, wavPath) : transcribe(cfg, wavPath)
+}
+
+/** 录音前预拉起 STT 后端：sherpa 时顺带触发模型加载（/health 内懒加载），
+ *  消除首次转写的模型加载等待（录音启动 1-2s 窗口内完成）；失败静默，转写路径会再检查。 */
+export async function prewarmStt(cfg: VoiceConfig): Promise<void> {
+  if (cfg.sttBackend !== 'sherpa') return
+  try {
+    await ensureSherpaService(cfg)
+  } catch {
+    // 忽略：转写时会再次检查并给出提示
   }
 }
 
@@ -678,6 +770,20 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
   } catch {
     lines.push('✗ whisper 服务不可达：请运行 ~/.pi/scripts/pi-whisper.sh start')
   }
+  // 4. sherpa (SenseVoice) 服务（独立后端，端口 18768）
+  try {
+    const headers: Record<string, string> = {}
+    if (cfg.sherpaToken) headers['Authorization'] = `Bearer ${cfg.sherpaToken}`
+    const res = await fetch(`${cfg.sherpaEndpoint}/health`, { headers, signal: AbortSignal.timeout(5000) })
+    if (!res.ok) {
+      lines.push('✗ sherpa 服务鉴权失败（401）：token 与 ~/.pi/scripts/pi-sherpa.sh 读取的配置不一致')
+    } else {
+      const data = (await res.json()) as { ok?: boolean; model?: string }
+      lines.push(data.ok ? `✓ sherpa 服务可用（模型 ${data.model ?? ''}）` : '✓ sherpa 服务运行中（模型加载中）')
+    }
+  } catch {
+    lines.push(`✗ sherpa 服务不可达：请运行 ~/.pi/scripts/pi-sherpa.sh start（当前后端 ${cfg.sttBackend === 'sherpa' ? '正使用' : '未使用'}）`)
+  }
   // 5. GPU 推理提示：以服务端实际设备为准（nvidia-smi 可用 ≠ whisper 用 cuda；
   // 2026-08-14 实测：驱动可见但缺 cublas/cudnn 库时服务端 auto 探测判 cpu，此处曾误报）
   if (spec.kind === 'linux' || spec.kind === 'windows') {
@@ -765,17 +871,135 @@ export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
     return { lines: ['✗ 基准测试失败：m4a 转 wav 失败（检查 ffmpeg）'], rtf: null }
   }
   const t1 = Date.now()
-  const r = await transcribe(cfg, wav)
+  const r = await transcribeByBackend(cfg, wav)
   const transcribeMs = Date.now() - t1
   deleteAudioPair(cfg, file)
   if (r.error) return { lines: [`✗ 转写失败：${r.error}`], rtf: null }
   const audioSec = recordedMs / 1000
   const rtf = transcribeMs / 1000 / audioSec
+  const backendLabel = cfg.sttBackend === 'sherpa' ? `sherpa (SenseVoice)` : `whisper (${cfg.whisperModel})`
   const lines = [
-    `模型：${cfg.whisperModel}`,
+    `后端/模型：${backendLabel}`,
     `音频：${audioSec.toFixed(1)}s；转写耗时：${(transcribeMs / 1000).toFixed(1)}s`,
     `实时率 RTF：${rtf.toFixed(2)}（${rtf <= 1 ? '快于实时' : '慢于实时'}）`,
     `建议：${benchSuggestion(rtf)}`,
   ]
   return { lines, rtf }
+}
+
+// ---- KWS 唤醒监听（/voice wake，Linux 平台） ----
+// Termux 录音 API 无实时 PCM 流（MediaRecorder 仅 aac/amr），无法持续监听；
+// Linux（parec 直出 s16le 到 stdout）可直接流式采音 → POST sherpa 服务 /wake 检测。
+
+const WAKE_RING_MS = 3000 // 环形缓冲保留最近 3s 音频
+const WAKE_UPLOAD_MS = 2500 // 每次检测上传最近 2.5s
+const WAKE_POLL_MS = 500 // 检测间隔
+
+/** 唤醒监听器：持续从麦克风采 PCM，轮询 sherpa 服务 /wake 检测唤醒词。 */
+export interface WakeSession {
+  start(): Promise<void>
+  stop(): string
+  isRunning(): boolean
+  hits(): number
+}
+
+export interface WakeOptions {
+  onHit: (keyword: string) => void
+  onStatus: (status: string) => void
+}
+
+/** 构造唤醒会话；非 linux 平台直接抛错（带原因）。需 cfg.sttBackend===sherpa。 */
+export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSession {
+  const spec = platformOf(cfg)
+  if (spec.kind !== 'linux') {
+    throw new Error('唤醒监听仅支持 Linux 平台（Termux 录音 API 无实时 PCM 流；Windows 暂未支持）')
+  }
+
+  let child: ChildProcess | null = null
+  let ring: Buffer = Buffer.alloc(0)
+  let timer: ReturnType<typeof setInterval> | null = null
+  let running = false
+  let hitCount = 0
+  let inFlight = false
+
+  const appender = (buf: Buffer): void => {
+    ring = Buffer.concat([ring, buf])
+    const cap = WAKE_RING_MS * 16 * 2 // 16kHz×2字节×秒数 = 3s≈96KB
+    if (ring.length > cap) ring = ring.subarray(ring.length - cap)
+  }
+
+  const poll = async (): Promise<void> => {
+    if (!running || inFlight) return
+    if (ring.length < 16000) return // 不足 1s 不上传，避免反复空检测
+    const upLen = WAKE_UPLOAD_MS * 16 * 2
+    const seg = ring.length > upLen ? ring.subarray(ring.length - upLen) : ring
+    inFlight = true
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/octet-stream' }
+      if (cfg.sherpaToken) headers['Authorization'] = `Bearer ${cfg.sherpaToken}`
+      const res = await fetch(`${cfg.sherpaEndpoint}/wake`, {
+        method: 'POST',
+        headers,
+        body: new Uint8Array(seg),
+        signal: AbortSignal.timeout(6000),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { hits?: string[] }
+        if (data.hits && data.hits.length > 0) {
+          hitCount += data.hits.length
+          opts.onHit(data.hits[0])
+          ring = Buffer.alloc(0) // 命中后清空，避免同一词重复触发
+        }
+      }
+    } catch {
+      // 服务临时不可达：静默跳过本轮，下轮重试
+    } finally {
+      inFlight = false
+    }
+  }
+
+  return {
+    async start() {
+      if (running) return
+      running = true
+      hitCount = 0
+      // parec 持续输出 s16le 到 stdout（同录音参数，但不写文件、不加 --file-format）
+      const args: string[] = []
+      if (cfg.linuxMicDevice) args.push('--device', cfg.linuxMicDevice)
+      args.push('--format=s16le', '--rate=16000', '--channels=1')
+      child = spawn(cfg.micBin === 'termux-microphone-record' ? 'parec' : cfg.micBin, args, { stdio: ['ignore', 'pipe', 'ignore'] })
+      opts.onStatus('🎧 唤醒监听中（说“开启语音输入”开始录音）')
+      child.stdout?.on('data', appender)
+      child.on('error', (e) => {
+        running = false
+        opts.onStatus(`唤醒监听启动失败：${(e as Error).message}`)
+      })
+      child.on('exit', (code) => {
+        if (running) {
+          running = false
+          opts.onStatus(code === 0 ? '唤醒监听已停止' : `唤醒监听异常退出（${code ?? '?'}）`)
+        }
+      })
+      timer = setInterval(() => void poll(), WAKE_POLL_MS)
+    },
+    stop() {
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+      if (child && child.exitCode === null) {
+        child.kill('SIGTERM')
+        // 兜底：2s 内未退出则强杀
+        setTimeout(() => {
+          if (child && child.exitCode === null) child.kill('SIGKILL')
+        }, 2000).unref()
+      }
+      running = false
+      ring = Buffer.alloc(0)
+      child = null
+      return '唤醒监听已停止'
+    },
+    isRunning: () => running,
+    hits: () => hitCount,
+  }
 }

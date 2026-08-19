@@ -68,4 +68,22 @@ describe('config 持久化', () => {
     expect(loadConfig({}).whisperScript).toBe(DEFAULTS.whisperScript)
     expect(loadConfig({ PI_VOICE_WHISPER_SCRIPT: '/tmp/whisper.sh' }).whisperScript).toBe('/tmp/whisper.sh')
   })
+
+  it('sherpa 后端字段：默认值 / env 覆盖 / sherpaToken 回退 whisperToken', async () => {
+    const { loadConfig, persistConfig, DEFAULTS } = await import('../config')
+    const cfg = loadConfig({})
+    expect(cfg.sttBackend).toBe('whisper')
+    expect(cfg.sherpaEndpoint).toBe(DEFAULTS.sherpaEndpoint)
+    expect(cfg.sherpaScript).toBe(DEFAULTS.sherpaScript)
+    // env 覆盖
+    expect(loadConfig({ PI_VOICE_STT_BACKEND: 'sherpa' }).sttBackend).toBe('sherpa')
+    expect(loadConfig({ PI_VOICE_SHERPA_ENDPOINT: 'http://127.0.0.1:19999' }).sherpaEndpoint).toBe('http://127.0.0.1:19999')
+    expect(loadConfig({ PI_VOICE_SHERPA_SCRIPT: '/tmp/sherpa.sh' }).sherpaScript).toBe('/tmp/sherpa.sh')
+    // sherpaToken 回退 whisperToken
+    persistConfig({ whisperToken: 'tok-a' }, process.env)
+    expect(loadConfig({}).sherpaToken).toBe('tok-a')
+    // sherpa 专属 token 优先
+    persistConfig({ sherpaToken: 'tok-s' }, process.env)
+    expect(loadConfig({}).sherpaToken).toBe('tok-s')
+  })
 })
