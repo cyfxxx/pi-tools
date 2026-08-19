@@ -23,7 +23,7 @@
 │   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
 │   │   ├── pi-browser/       浏览器自动化（CloakBrowser，自 pi-web-toolkit 拆出）
 │   │   ├── plan-mode/         计划模式（TUI 计划/任务管理）
-│   │   ├── pi-memory/         跨会话持久记忆（已合并 ctx-lite，自主学习闭环）
+│   │   ├── pi-memory/         跨会话持久记忆（自主学习闭环）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-tmux/           tmux 会话管理（后台任务/长任务）
 │   │   ├── pi-voice/          语音交流（Termux：录音转写 + TTS 朗读）
@@ -69,7 +69,11 @@
 │   ├── pi-bench.sh             用量基准（usage/timing/compare）
 │   ├── smoke-test.sh           冒烟测试（rebuild 依赖其第 1 项）
 │   ├── termux-prereq.sh        Termux 前置依赖安装（rebuild 依赖）
+│   ├── usage-stats.mjs         跨会话缓存/用量聚合统计（幂等入账）
+│   ├── verify-patches.mjs      补丁版本校验（Phase 3：@target-version 与 pi 版本失配显式失败）
 │   └── pi-bg.sh               后台任务四件套隔离（见 README-pi-bg.md）
+├── .github/
+│   └── workflows/ci.yml     CI（Ubuntu 干净环境 → 装 pi → 重建 → 全量回归）
 ├── portable/                  便携 pi（Windows 原生）种子：构建脚本 + 模板
 │   ├── bin/                  管理脚本（setup 构建器 / verify 验证 / diag 诊断 / update-pi 升级 / update-portable 扩展同步 / sync git）
 │   ├── start.bat/start.ps1   入口启动器（显式 node + PI_CODING_AGENT_DIR + junction 透明）
@@ -131,12 +135,13 @@ pi-backup rebuild --yes          # 静默自动重建
 - **幂等** — 已存在项跳过，只重建缺失内容（npm 按 package.json 逐包探测缺失，非仅目录非空；venv 要求 python+pip 齐备）
 - **国内镜像加速** — 自动检测并切换 apt/npm/pip/GitHub 镜像（探测 baidu.com，成功后 GitHub 走 ghproxy.net 前缀）
 - **Node.js 自动升级** — 检测到 <20 时自动安装 22.x
-- **并行执行** — npm 依赖（≤3 并发滚动窗口）、venv、SearXNG repo 三路并行；SearXNG 依赖与 npm 重叠执行（npm 是耗时大头）
+- **并行执行** — npm 依赖（统一根 agent/ 单次集中安装）、venv、SearXNG repo 三路并行；SearXNG 依赖与 npm 重叠执行（npm 是耗时大头）
 - **浏览器自动安装** — pi-browser 扩展存在时自动安装 CloakBrowser Chromium；直连失败自动回退 GH_PROXY 镜像源（CLOAKBROWSER_DOWNLOAD_URL），仍失败给出手动 TLS 绕过命令；Chromium 运行库按 .so 缺失自动补装（libasound2t64 等，t64/经典包名双回退）
-- **自动补全配置** — 自动生成 `searxng/settings.yml`、`agent/npm/package.json`（如缺失）；SearXNG 就绪后自动把 `pi-web-search` 指向本地实例（127.0.0.1:8889）
+- **自动补全配置** — 自动生成 `searxng/settings.yml`；`settings.json` 的 `packages` 依赖自动合并进 `agent/package.json`；SearXNG 就绪后自动把 `pi-web-search` 指向本地实例（127.0.0.1:8889）
 - **格式校验** — 重建后自动验证 YAML/JSON 配置文件（模型配置兼容 `models.json`/`models-store.json`）
 - **venv 实际探测** — 安装依赖前用 `python3 -m venv /tmp/.venv-probe` 验证 ensurepip 可用（dpkg 里的 `python3-venv` 可能是空壳），失败自动补装 `python3.12-venv`
 - **TUI 补丁自动定位 dist** — 补丁脚本不再依赖 `which pi`（wrapper 接管后反推会失败），rebuild.sh 自行推导 pi 安装目录并传入
+- **补丁版本关联** — Phase 3 先跑 `verify-patches.mjs`：核对 8 个 `patch-*.mjs` 头部声明的 `@target-version` 与当前 pi 版本（minor 级），失配显式失败而非静默跳过（`--skip-patches` 可临时逃生）
 - **日志与退出码** — `--yes` 模式自动落盘 `logs/rebuild-<ts>.log`，各阶段标注耗时（+Ns）；verify 有异常时退出码非 0（自动化可判定失败，`--no-log` 关闭落盘）
 
 支持自动下载/重建：npm 依赖、扩展依赖、fd/rg 二进制、SearXNG venv、SearXNG 源码（从 repo `requirements.txt` 安装全部依赖）。
@@ -292,7 +297,7 @@ bash scripts/install-systemd.sh        # 或安装 systemd timer
 
 ## 持久记忆（pi-memory）
 
-`pi-memory` 扩展（已合并 ctx-lite）提供跨会话持久记忆 + 自主学习闭环：
+`pi-memory` 扩展提供跨会话持久记忆 + 自主学习闭环：
 
 | 工具 | 功能 |
 |------|------|
@@ -301,7 +306,7 @@ bash scripts/install-systemd.sh        # 或安装 systemd timer
 | `memory_recall` | 综合回忆：记忆检索 + 会话摘要时间线（`summaries:true`） |
 | `memory_stats` | 查看记忆库统计信息 |
 | `memory_forget` | 删除记忆（按 ID 精确删除或按类别+时间批量删除） |
-| `ctx_exec/ctx_note/ctx_list/ctx_snap` | ctx-lite 迁移工具（同名同行为） |
+| `ctx_exec/ctx_note/ctx_list/ctx_snap` | 跨对话便笺（ctx_note 可 @ttl 过期，ctx_snap 命名检查点） |
 
 **自主学习闭环：**
 - **自动提取** — compaction / 会话结束时 LLM 分析会话，提取决策/事实/偏好/约定/教训入长期记忆（`pi -p` 离线通道，失败静默，同会话幂等）
@@ -348,7 +353,7 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 // 链式（{previous} 占位符传递上一步输出）
 { "chain": [
   { "agent": "scout", "task": "Find all code for X" },
-  { "agent": "planner", "task": "Plan improvements using: {previous}" },
+  { "agent": "reviewer", "task": "Review the approach in: {previous}" },
   { "agent": "worker", "task": "Implement: {previous}" }
 ]}
 ```
@@ -430,7 +435,7 @@ pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 
 ## 测试与回归
 
-一键全量回归（11 套测试 + 类型检查 + 扩展冲突检查 + 注册完整性）：
+一键全量回归（9 套 vitest + subagent 63 用例 + 注册面 + 类型检查 + 冲突检查 + 缓存注入面守门）：
 
 ```bash
 bash scripts/test-all.sh
@@ -451,10 +456,11 @@ bash scripts/test-all.sh
 | 注册面 | `cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run tests/extensions.test.ts` | 25 |
 | 类型检查 | `cd agent/extensions && ../../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit` | — |
 | 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 9 项（含工具指纹入账） |
+| 缓存注入面守门 | `cd agent/extensions && node tests/cache-guard.mjs` | 注入面指纹/阈值契约/动态源 |
 
-（用例数快照于 2026-08-18 全项目审计修复后；以 `bash scripts/test-all.sh` 输出为准）
+（用例数快照于 2026-08-18 全项目审计修复后；统一依赖根 vitest（2026-08-19）以 `bash scripts/test-all.sh` 输出为准）
 
-**约定：** 新增/修改扩展必须同步 `settings.json` extensions、`extensions/tsconfig.json` include、`tests/conflict-check.mjs` 监听者清单，并保持各套件用例全绿。
+**约定：** 扩展由 pi 0.83+ 自动发现（目录含 index.ts 即可）。新增/修改扩展必须同步 `extensions/tsconfig.json` include、`tests/conflict-check.mjs` 监听者清单、`tests/cache-guard.mjs` 基线（注入面变化时 `--update-baseline`），并保持各套件用例全绿。
 
 ## ⚠ 安全注意事项
 
@@ -474,7 +480,7 @@ bash scripts/test-all.sh
 |------|------|------|---------|
 | `searxng/venv/` | ~94 MB | `python3 -m venv` | `scripts/rebuild.sh` 自动创建 |
 | `searxng/repo/` | ~28 MB | `git clone searxng/searxng`（--depth 1） | `scripts/rebuild.sh` 自动克隆 |
-| `agent/extensions/*/node_modules/` | ~330 MB（4 扩展合计） | `npm install` | `scripts/rebuild.sh` 自动安装 |
+| `agent/node_modules/` | ~135 MB（统一依赖根，10 扩展共享） | `npm install` | `scripts/rebuild.sh` Phase 2-A 自动安装 |
 
 ## 常见问题
 
@@ -570,14 +576,14 @@ rm -f agent/scheduler.lock
 
 **解决：**
 ```bash
-cd ~/.pi
+cd ~/.pi/agent
 npx cloakbrowser install          # 安装 chromium（下载报 "fetch failed" 时见下）
 apt-get install -y libnspr4 libnss3 libatk1.0-0t64 libcups2t64 libgbm1
 ```
 
 **`npx cloakbrowser install` 报 "fetch failed"**（沙箱/代理网络无法验证 GitHub/cloakbrowser.dev 证书链，`UNABLE_TO_VERIFY_LEAF_SIGNATURE`）：
 ```bash
-NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install   # 绕过 TLS 校验，仅限不可信网络环境
+cd ~/.pi/agent && NODE_TLS_REJECT_UNAUTHORIZED=0 npx cloakbrowser install   # 绕过 TLS 校验，仅限不可信网络环境
 ```
 
 
