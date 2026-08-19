@@ -11726,6 +11726,73 @@
       ],
       "observedAt": "2026-08-19T06:37:00.081Z",
       "deleted": false
+    },
+    {
+      "id": "c37f6417-0688-41b0-8062-d2f0c45fdd7d",
+      "category": "fact",
+      "title": "缓存命中率诊断 2026-08-19：A/B 分类与根因假设",
+      "content": "2026-08-19 缓存命中率诊断现状（与 08-18 治理后期 98-99% 基线相比跌落 4-6pp）：架构优化会话（05:20）94.4%（4 断/700K）、本会话 06:35 起 93.1%（4 断/809K，上下文至 212K 未压缩）。断裂分类（usage-stats.mjs 2026-08-19 新增持久化 breakList）：A 类全段重放×2（150K 与 200K 前缀整体失效，cacheRead≈0，waste≈302/396K）、B 类尾部重写×2（前缀 152K 仍命中、尾段 28K 重建 ≈ compaction.keepRecentTokens=20000+余量）。A 类最可能根因：运行时工具 schema 变化（enable_tool 启用休眠组新增注册工具使 system prompt 变）——tool-fingerprint.jsonl 只扫描扩展 .ts 源码的 registerTool 静态文本且在指纹变化时才 append（当前仅 08-18 一条），无法追踪运行时动态注册；次要可能：compaction 改写早期消息或 provider 缓存键变化（模型切换）。B 类尾断已排除 pi-memory 注入块（inject.ts 恒定 > pi-memory-injection 标记、无时间戳，cache-guard 已锁定基线）；指向 keepRecentTokens 设计代价。",
+      "tags": [
+        "缓存",
+        "命中率",
+        "断裂分类",
+        "enable_tool"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T07:13:56.813Z",
+      "updatedAt": "2026-08-19T07:13:56.813Z",
+      "accessedAt": "2026-08-19T07:13:56.813Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T07:13:56.813Z",
+      "deleted": false
+    },
+    {
+      "id": "2044a076-5b25-402d-9815-2d70e86b7e13",
+      "category": "procedure",
+      "title": "缓存断裂排查流程（usage-stats A/B/C 分类）",
+      "content": "缓存命中率/断裂排查流程（2026-08-19 定型）：\n1) `node scripts/usage-stats.mjs` 看会话命中率与断裂数；命中<90% 或断>3 会输出断裂分类汇总与定位指引。\n2) `--json` 看当前会话；`--all` 看历史（含每会话 breakList 明细：轮序/类别/断前前缀/重发/浪费/compacted，已持久化到 agent/stats/usage-sessions.jsonl 跨会话保留）。\n3) 断裂分类判读：A=全段重放（cacheRead≈0 且 input≈ctx）查 enable_tool/工具 schema 运行时变化/compaction 改写早期消息/provider 缓存键；B=尾部重写（前缀命中、尾段重建）查注入块变化/压力档位切换/keepRecentTokens=20000 重建；C=起步重建（前 5 轮内）正常忽略。A 类到大上下文时浪费最大（150-200K/次）。\n4) 对照 `node agent/extensions/tests/cache-guard.mjs`（注入面指纹 + 动态源扫描 + 阈值契约；已覆盖 pi-memory/inject.ts）；A 类到 agent/sessions/ 查该断裂轮时间点会话文件里的操作痕迹（enable_tool/压缩）。\n5) 2026-08-18 已修根因参考：thinking 剪枝 16K 预算是断裂主源，已调 64K；prune 阈值 120K/80K 防回退。注意事项：usage-stats 每秒回话做幂等去重（startTs 相等 + 轮数/input 相同才不更新）；断裂判定口径与 usage-stats 的\"突降>100 且 input>10K\"一致。",
+      "tags": [
+        "缓存",
+        "排查",
+        "usage-stats",
+        "断裂"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T07:13:56.890Z",
+      "updatedAt": "2026-08-19T07:13:56.890Z",
+      "accessedAt": "2026-08-19T07:13:56.890Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T07:13:56.890Z",
+      "deleted": false
+    },
+    {
+      "id": "f6c36f12-a650-408e-8927-e3f41f4c6c85",
+      "category": "reference",
+      "title": "缓存检查工具能力边界（cache-guard/fingerprint/usage-stats）",
+      "content": "缓存检查工具能力边界（2026-08-19 确认）：1) cache-guard.mjs（agent/extensions/tests/）：INJECTION_SURFACE 含 pi-memory/inject.ts（high）在内的 8 个注入面文件，做指纹基线 + 动态时间/随机源扫描 + prune 阈值契约；改注入面需 --update-baseline；当前全绿。2) tool-fingerprint.jsonl（agent/stats/）：只扫描扩展 .ts 源码里 registerTool 静态文本、只在指纹变化时 append——无法追踪运行时动态注册（enable_tool 启用休眠组/会话注册差异），属静态漂移台账非运行时监控。3) usage-stats.mjs：脚本目录，2026-08-19 起输出断裂 A/B/C 分类 + breakList 明细并落盘 usage-sessions.jsonl（agent/stats/，gitignored）。盲区：会话中 enable_tool 造成的前缀全断无运行时痕迹可归因；若要闭环需在运行时记录工具集 hash（侵入 pi 运行时，暂未做）。",
+      "tags": [
+        "缓存",
+        "工具",
+        "监控",
+        "能力边界"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T07:14:14.473Z",
+      "updatedAt": "2026-08-19T07:14:14.473Z",
+      "accessedAt": "2026-08-19T07:14:14.473Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }

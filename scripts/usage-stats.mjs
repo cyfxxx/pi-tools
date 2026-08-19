@@ -1,25 +1,35 @@
 #!/usr/bin/env node
 /**
- * usage-stats — 跨会话缓存/用量聚合统计（2026-08-18）
+ * usage-stats — 跨会话缓存/用量聚合统计（2026-08-18，断裂画像增强 2026-08-19）
  *
  * 数据源：~/.pi/agent/.usage-diag.jsonl（pi-context 每轮 turn_end 记录）
- * 输出：agent/stats/usage-sessions.jsonl（按会话聚合，startTs 幂等去重）
+ * 输出：agent/stats/usage-sessions.jsonl（按会话聚合，startTs 幂等去重；含断裂明细跨会话保留）
  *
  * 会话分段规则：
  *   - 时间间隔 > 8min 视为新会话（停顿）
  *   - contextTokens 较上轮回落 > 60% 视为会话重建（重启/恢复/压缩）
  * 每会话指标：轮数 / input 总量 / cacheRead 总量 / 加权命中率 /
  *   断裂次数（cacheRead 较上轮突降 >100 且 input 暴增）/ 断裂零命中浪费 /
- *   起始与结束上下文 / 起止时间
+ *   断裂明细（breakList：轮序/类别/前后上下文/compacted）/ 起始与结束上下文 / 起止时间
+ *
+ * 断裂类别判读（2026-08-19 加入）：
+ *   [A] 全段重放  cacheRead≈0 且 input≈前轮上下文 → 前缀整体失效。挂钩：
+ *       工具 schema 运行时变化（enable_tool 启用休眠组会新增注册工具，system prompt 变）、
+ *       compaction/裁剪改写早期消息、provider 侧缓存键变化（模型切换/failover）。
+ *   [B] 尾部重写  cacheRead 有值但较上轮突降输入暴增 → 前缀命中、尾段重建。挂钩：
+ *       注入块字节变化（pi-memory 注入/压力档位切换）、keepRecentTokens 保留块重建。
+ *   [C] 起步重建  断裂发生在会话前 5 轮内 → 上下文初始化，正常开销，不计入修复目标。
+ *
+ * 诊断指引（对照 stats/tool-fingerprint.jsonl 与 agent/sessions/ 会话文件）：
+ *   A 类 → 查该断裂轮时间点附近的 enable_tool / 工具注册变化；指纹台账是静态源码扫描，
+ *           无法追踪运行时动态注册，无确认则视为「会话内工具面变化」。
+ *   B 类 → 查 pi-memory/inject.ts 注入块与上下文压力档位（cache-guard 已锁定其注入面基线）。
+ *   C 类 → 无需处理。
  *
  * 用法：
  *   node scripts/usage-stats.mjs            # 聚合并输出最近 10 会话对比（幂等）
  *   node scripts/usage-stats.mjs --all      # 输出全部历史会话
  *   node scripts/usage-stats.mjs --json     # 只输出当前会话 JSON（供自动化）
- *
- * 与 99% 目标的差距诊断：命中率 < 90% 或断裂 > 3 次 → 用 cache-guard + usage-diag
- * 逐轮定位（断裂轮 cacheRead ≈ 断裂点位置；对照该轮事件找根因，2026-08-18 实战：
- * thinking 剪枝 16K 预算每 2-3 轮改早期消息 → 27 次断裂/3.8h，64K 预算后休眠）。
  */
 
 import { readFileSync, existsSync, mkdirSync, readdirSync, appendFileSync, writeFileSync } from 'node:fs'
@@ -61,6 +71,7 @@ for (const r of turns) {
       startTs: ts, lastTs: ts, lastCtx: ctx,
       rounds: 0, input: 0, cacheRead: 0, breaks: 0, breakWaste: 0,
       ctxStart: ctx, ctxEnd: ctx, prevCacheRead: null,
+      breakList: [],
     }
     sessions.push(cur)
   }
@@ -73,7 +84,23 @@ for (const r of turns) {
   // 断裂判定：cacheRead 较上轮突降且 input 暴增（≈重发大量旧内容）
   if (cur.prevCacheRead !== null && r.cacheRead < cur.prevCacheRead - 100 && r.input > 10_000) {
     cur.breaks++
-    cur.breakWaste += r.input + Math.max(0, cur.prevCacheRead - r.cacheRead)
+    const waste = r.input + Math.max(0, cur.prevCacheRead - r.cacheRead)
+    cur.breakWaste += waste
+    // 断裂分类（A 全段重放 / B 尾部重写 / C 起步重建）——持久化供跨会话归因
+    const prevCacheK = cur.prevCacheRead >= 1000 ? Math.round(cur.prevCacheRead / 1000) : cur.prevCacheRead
+    const cls = cur.rounds <= 5 ? 'C'
+      : (r.cacheRead <= (r.contextTokens * 0.1) && r.contextTokens > 0 ? 'A' : 'B')
+    cur.breakList.push({
+      i: cur.rounds,
+      cls,
+      ts,
+      prevCacheK,               // 断前命中前缀长度（疑似丢失起点）
+      cacheReadK: Math.round(r.cacheRead / 1000),
+      inputK: Math.round(r.input / 1000),
+      ctxK: Math.round(r.contextTokens / 1000),
+      wasteK: Math.round(waste / 1000),
+      compacted: !!r.compacted,
+    })
   }
   cur.prevCacheRead = r.cacheRead
 }
@@ -122,16 +149,29 @@ for (const s of list) {
   console.log(
     `${fmtDate(s.startTs)} ${fmtMin(s.startTs)} | ${String(s.rounds).padStart(4)} | ${String(s.input).padStart(11)} | ${String(rate).padStart(5)}%${flag} | ${String(s.breaks).padStart(4)} | ${String(s.breakWaste).padStart(10)} | ${s.ctxStart}→${s.ctxEnd}`
   )
+  // 断裂明细（2026-08-19：命中 <90% 或有断裂时展示分类，供跨会话归因）
+  if ((s.breakList && s.breakList.length) && (rate < 90 || SHOW_ALL)) {
+    for (const b of s.breakList) {
+      console.log(`      └ [${b.cls}] 轮#${b.i} @${fmtMin(b.ts)} 断前前缀${b.prevCacheK}K→命中${b.cacheReadK}K 重发${b.inputK}K 浪费${b.wasteK}K${b.compacted ? ' (compacted)' : ''}`)
+    }
+  }
 }
 // 当前会话 vs 目标
 const curS = all[all.length - 1]
 const target = 0.97
 const gap = curS.hitRate - target
 console.log(`\n当前会话: 命中 ${(curS.hitRate * 100).toFixed(1)}%（目标 ${(target * 100).toFixed(0)}%）差距 ${gap >= 0 ? '+' : ''}${(gap * 100).toFixed(1)}pp | 断裂 ${curS.breaks} 次, 浪费 ${curS.breakWaste} tokens`)
+// 断裂分类汇总（2026-08-19）：A 全段重放 / B 尾部重写 / C 起步
+if (curS.breakList && curS.breakList.length) {
+  const agg = curS.breakList.reduce((m, b) => { m[b.cls] = (m[b.cls] || 0) + 1; return m }, {})
+  const hint = Object.entries(agg).map(([c, n]) => `${c}×${n}`).join(' ')
+  console.log(`  断裂分类: ${hint}${agg.A ? ' — A 类查：enable_tool/工具 schema 运行时变化（tool-fingerprint 静态扫描覆盖不到）/compaction 改写/provider 缓存键' : ''}${agg.B ? ' — B 类查：pi-memory 注入块变化/压力档位切换/keepRecentTokens 重建' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
+}
 if (curS.hitRate < 0.90 || curS.breaks > 3) {
   console.log('  ⚠ 低于健康线 — 定位流程：')
   console.log('    1) node scripts/usage-stats.mjs --json 看当前会话细分')
   console.log('    2) 找断裂轮（usage-diag 中 cacheRead 突降 + input 暴增）→ 断裂点 ≈ cacheRead')
   console.log('    3) 对照该轮事件（大工具输出/注入变化/消息修改机制）；运行 node agent/extensions/tests/cache-guard.mjs 查注入面')
-  console.log('    4) 2026-08-18 已知根因参考：thinking 剪枝/擦除等 post-hoc 修改历史 → 已调阈值（64K/120K/80K）')
+  console.log('    4) A 类断裂可在本输出上方看断裂分类与轮序，再到 agent/sessions/ 查该时刻会话文件里的操作（enable_tool/大压缩等）')
+  console.log('    5) 2026-08-18 已知根因参考：thinking 剪枝/擦除等 post-hoc 修改历史 → 已调阈值（64K/120K/80K）')
 }
