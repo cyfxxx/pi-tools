@@ -223,6 +223,10 @@ export function registerTools(pi: ExtensionAPI): void {
           enum: ENVIRONMENTS as unknown as string[],
           description: '按运行环境过滤（缺省=当前环境+all；传 all 则不过滤）',
         },
+        asOf: {
+          type: 'string',
+          description: 'ISO 时间点：返回在该时刻有效的记忆（回溯查询，含被后来取代的旧事实；缺省=当前态）',
+        },
       },
     },
     execute: async (_toolCallId, params) => {
@@ -236,6 +240,7 @@ export function registerTools(pi: ExtensionAPI): void {
         params.tags as string[] | undefined,
         typeof params.limit === 'number' ? (params.limit as number) : 5,
         envFilter,
+        typeof params.asOf === 'string' ? (params.asOf as string) : undefined,
       )
 
       if (!results.length) {

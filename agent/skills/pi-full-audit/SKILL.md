@@ -1,8 +1,8 @@
 ---
 name: pi-full-audit
-description: 全项目深度审计（区别于 code-review 的 diff 审查）：全量确定性检查 + 回归测试 + subagent 并行审查与复核 + 分级报告；含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。
-version: v1.8
-经验基线: 2026-08-13 /root/.pi 全项目深度审查实战（4 HIGH / 22 MEDIUM 发现，1 项 subagent 方向性误报被人工验证纠正）；同日二次实战：外部 33 条优化建议经 5 组复核子代理逐条核实 → 0 捏造、约 20 准确、12 部分属实、2 处行号错、1 处位置错、3 处同类遗漏，HIGH 中 1 条机制描述错误被纠正降级，1 条"设计当 bug"被驳回；2026-08-14 会话运行巡检实战（缓存命中率 98%+ 实测基准、usage-diag 判定法、注入块 grep 验证的适用性局限——注入不落盘时改用缓存命中率反证、断裂点定位法——systemPrompt 拼入式注入是历史重发根因，pi-memory 改消息注入 + context hook 过滤防累积）；同日缓存验证测试（请求级消息 hash 对比法：usage in 大≠消息断裂，DeepSeek 侧缓存未命中是独立现象；轻量请求 nMsg=4 不影响主请求缓存；修复后记忆变化轮 in=40-92，命中 100%）；同日 dsh 深度分析（deepseek-ai/deepseek-harness 借鉴：注册即 effect、配置分层合并、测试分层、真实运行观察替代 keyless snapshot）；2026-08-14 补充基准工具 pi-bench.sh（usage/timing/compare 三子命令，守护缓存优化不回退）；2026-08-15 全流程实战（50 项发现：1 HIGH / 18 MEDIUM / 19 LOW / 12 同类遗漏，全部修复闭环 6 提交；4 组并行复核首次调用返回空结果→改 2+2 分批重试成功；修复分层执行模式验证：MEDIUM 主会话修 + LOW 三 worker 并行一次成功；scout readonly 化后复核实测改主会话/worker；todo 状态遗漏致 TUI 残留——修复逐项销账纪律；注入块内容质量抽查发现重复/空摘要/截断条目）；同日合并后全量审计（test/portable-win-merge 分支，5 组并行=4 模块+1 文档专项，36 项发现经复核：3 误报纠正/2 部分属实降级/行号普遍 ±20-30，4 HIGH 全修复+回归测试；文档同步 4 处不一致；审计工具自身 bug：review.sh --all 对 ~/.pi 自身失效——排除规则 */.pi/* 误伤扫描根（249 文件只审到 1 个），修复后全量可扫；功能实测维度：扩展真实调用验证（含环境排查：CLOAKBROWSER_BINARY_PATH 从 Termux 泄漏到 WSL 致 pi-browser 启动失败——wrapper 无条件导出 Termux 路径）；2026-08-17 远程合并超严格审计实战（用户强调重要性：合并完整性用 md5 逐文件比对 master vs 分支 + 功能符号 grep，发现 squash 合并只带早期快照——portable-win 46 提交仅早期入 master、pi-browser Windows 便携修复（探测/直连/路径校验）缺失，三点合并移植保留 master 独有修复；subagent 并行 4 组确认每项修复方案，修正 2 处主会话误判：rebase diff 方向看反的 .gitignore 误报、bash 顶层 local 报错但变量仍设置的行为噪音误判；深层审查揪出 d323ab9 审计修复半闭环——fireViaMessage 改语义后 once 任务每小时重复注入永不删除、notifyOnCompletion 死功能、failoverCount 不重置（表面测试通过因只覆盖 subagent 路径），在 agent_settled 补 finalizeInjected 闭环；dsh 优化落地：opencode-go 无 contextWindow 致自动压缩静默失效（getContextUsage 返回 undefined）——resolveContext fallback（turn_end provider tokens + PI_CONTEXT_WINDOW_FALLBACK 1M）+ 0.8 阈值对齐 dsh + 溢出兜底；注入截断质量：truncateByTokens 硬切残句 + 标记预算未扣除（实测超 11 token）——句子边界感知 + TRUNC_MARK_TOKEN_BUDGET 修复；缓存复查：优化后常态命中 99.5%+ vs 历史 86% 基线，断裂三类分类法（重启首轮/注入变化/擦除压缩）；openocde.ai usage 云页访问失败（OAuth/SPA SSR RPC 拿不到）——本地三途径替代（stats/db/usage-diag）。教训沉淀：临时文件 basename 冲突覆盖污染 diff、sed 行号删除后先 grep 验证、合并后验证 master 独有修复未被覆盖、审计语义修正必须检查调用链闭环）；2026-08-18 下午全流程实战（2 HIGH + 15 MEDIUM + 20 LOW + 文档 8 处，0 误报，全部修复闭环；方法沉淀——① BOM/行尾检查用 `od -A n -t x1` 而非 xxd（xxd 在精简环境缺失致 portable 检查误报“无 BOM”）；② summaries/entries 检测脚本须先打印字段结构（首版用 content 字段误报 19 条空摘要，实为 fullText）；③ 组 5 文档专项首轮报告截断→重委派“≤8 条 ≤1200 字”精简版成功；④ 复核子代理本次 2 组并行一次成功（与“4 组返回空→2+2 分批”经验不矛盾，按场景选）；⑤ cache-guard baseline 漂移排查用时间线比对（file mtime vs `git log --format=%ci` vs baseline mtime）确认为有意改动（如 d97788f 缓存治理提交同步改 AGENTS.md）后再 --update-baseline，非回退式改动；⑥ pi-cron 内嵌 Python 段提取验证须截到模块级执行前（try:/tasks= 前），且 compute_next 的 cron 语法须传 task_type=cron（传 interval 得 None 误判）；⑦ 顺带发现新高危 bug：逐小时推进保留分钟（09:59+1h=10:59）使分钟=0 的整点调度被系统性错过一天——阶梯扫描每级推进须归零下级单位；⑧ dom/dow 双限两者连续 continue 结构 bug（dom 匹配时也 continue 跳过 minute 检查）致 dom 受限调度永不触发）
+description: 全项目深度审计（区别于 code-review 的 diff 审查）：全量确定性检查 + 回归测试 + subagent 并行审查与复核 + 分级报告；含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。。不适用：仅审一次 git diff 用 pi-code-review；查询具体文件/单点问题用 grep/read。
+version: v1.9
+经验基线: 见 references/EXPERIENCE-BASELINE.md（已外置，历次沉淀逐次追加）
 
 ---
 
@@ -170,24 +170,9 @@ foreach ($f in $files) {
 
 分级标准与 pi-code-review 一致（HIGH=明确 bug/安全；MEDIUM=边界/健壮性/性能；LOW=疑似误报/吹毛求疵）。
 
-## 误报判别清单（本次实战沉淀）
+## 误报判别清单（外置）
 
-遇到以下情况先定性，别直接报：
-
-- **密钥扫描命中**：先 `git ls-files <file>` + `git check-ignore -v <file>`。git ignored 的运行配置（~/.pi 的 auth.json/settings.json/models.json）是正常存在，**不是泄露**；只有被 git 跟踪的才是 HIGH
-- **review.sh --all 排除陷阱（2026-08-15 实测）**：排除规则 `! -path '*/.pi/*'` 在扫描根自身是 .pi 目录（如 `review.sh --all /root/.pi`）时误伤全部文件——"待审文件: 1 个"而预览 249 个即此症状。已修复（根为 .pi 时禁用该排除）；审计中若发现待审文件数远小于预览数，先怀疑排除规则而非仓库无文件
-- **运行时数据噪音**：`--all` 会扫入入库的运行时数据（如 memory/entries.json），其中的文本内容命中 rm -rf/密钥等模式属噪音，跳过
-- **glob 陷阱**：`for d in dir/*/node_modules` 只在**全部不匹配**时保留字面量；部分不匹配 = 静默漏检，不是报错
-- **"没找到 X" ≠ "X 不存在"**：先 grep 确认是否在其他层实现（如删除落盘在 deleteEntry 内部 vs 工具函数外层）
-- **ETIMEDOUT 类分支**：Node 子进程超时行为与版本相关，实测确认，不要信注释或直觉
-- **运行时行为必须实测**（2026-08-15 扩展）：Node 子进程超时语义（err.code=null/signal='SIGTERM'）、glob 展开、spawn 错误事件（异步 error 而非同步抛错）等以实测为准，不凭注释/直觉/审查者的机制描述。注意：scout 已标 frontmatter `readonly: true`（subagent 扩展 spawn 时强制过滤 bash），复核 scout **无法执行 bash 实测**——需实测的验证由主会话（有 bash）或委派 worker 完成；scout 只做读码级核实并在报告中标注"未实测"项
-- **审查建议的行号引用**：常与实际位置不符（偏差可达几十行）——行为成立但行号错不算误报，以 grep/sed 实际定位为准并在结论中纠正
-- **审查者的机制描述**：不可轻信，追完整调用链核实（实战：“spawn 抛错即永久泄漏”实际是异步 error 事件且已有处理+测试）
-- **设计当 bug**：代码注释自认的故意设计（写死工具集/磁盘兜底/非阻塞注入）按设计权衡报并注明，不按纯 bug
-- **同类遗漏**：审查只报一处的，检查同模块第二处（environments 合并两处、ETIMEDOUT 两处、掩蔽路径两处）
-- **修复建议可改进**：审查给的修复方案常非最优或带副作用（预算拦截用 updateTaskAfterRun 会消耗重试次数），核实后给出更优方案
-- **PS 解析错误先查编码**：ParseFile 报乱码错误 = 无 BOM/GBK 解码（修复加 BOM）；报结构错误 = 看反引号/引号配对（多余反引号会转义掉闭合引号）
-- **Windows 测试隔离**：os.homedir() 优先 USERPROFILE 而非 HOME——stubEnv('HOME') 不生效 → 测试读写真实用户配置（pi-voice.json 被测试数据污染事故）；测试 stub 必须 HOME+USERPROFILE 双设
+> 20 条实战判别规则见 `references/ERROR-CHECKLIST.md`。遇到误报疑问（密钥扫描/git 排除/glob/编码等）先查该清单再定性。
 
 ## 会话运行检查（运行时健康巡检）
 
@@ -249,9 +234,9 @@ foreach ($f in $files) {
 
 ## 每次审计后必须沉淀技能（用户硬性要求，2026-08-18 起）
 
-**每次执行本技能（无论是否产出修复）结束后，必须把本次过程经验沉淀回本 SKILL.md 的“经验基线”frontmatter 与相关章节**，这是显式要求而非可选优化：
+**每次执行本技能（无论是否产出修复）结束后，必须把本次过程经验沉淀到 references/EXPERIENCE-BASELINE.md（原 frontmatter 巨型行已外置）与相关章节**，这是显式要求而非可选优化：
 
-1. **过程经验**（正反面皆记）：工具坑（如 xxd 缺失用 od）、检测脚本误报（字段名先验）、报告截断处理、复核分批策略、排查路径（如 baseline 漂移时间线比对法）——追加到“经验基线”段，标注日期+场景。
+1. **过程经验**（正反面皆记）：工具坑（如 xxd 缺失用 od）、检测脚本误报（字段名先验）、报告截断处理、复核分批策略、排查路径（如 baseline 漂移时间线比对法）——追加到 references/EXPERIENCE-BASELINE.md，标注日期+场景。
 2. **本次特有发现**：同类遗漏、误报类别、定级争议——浓缩成 ≤8 条。
 3. **技能缺陷修正**：流程本身暴露的问题（命令失效/字段过时/分组不合理/输出约束不足）直接改对应章节，不只写进经验基线。
 4. 沉淀在提交前完成，确保跨会话可见。
@@ -262,13 +247,3 @@ foreach ($f in $files) {
 - **复核必做**：任何建议清单（本技能产出或外部审查模型提供）进入修复前，必须经第 4 步复核子代理逐条核实。
 - **敏感信息脱敏**：报告密钥只报位置。
 - **报告与验证分离**：报告中每个 HIGH 明确标注“主会话已验证/复核核实/待验证”，防止未经验证的判断误导修复优先级。
-
-## 经验基线（2026-08-20 体检沉淀，逐次追加）
-
-### 2026-08-20 全项目体检
-- context 钩子为**链式传递**（内核 dist/core/extensions/runner.js emitContext：handler 返回 messages 喂给下一个），非 last-wins；scout 将“未验证 composer 语义”列为 H1 属过度担忧——此类条目应先在代码定论再定级。
-- review.sh 对 node shebang 的 .sh（pi-notify.sh）误报 shell 语法错误：判定前先 head -1 看 shebang，属已知噪声。
-- cache-guard 注入面指纹含文件整体（pi-context/index.ts 仅注释改动即触发漂移）：审计注释型改动前先评估基线影响，改动后 --update-baseline。
-- 同轮并行 edit+bash 执行顺序不保证，验证性 grep 可能读到编辑前快照——改动验证放独立轮。
-- SECRET_PATTERNS 键值形态模式排除集须含 `[`（\x5b），否则二次匹配 `[REDACTED:xxx]` 覆盖强模式结果（storage.test 捕获此回归）。
-- 安全修复改命令输出格式（如 session-dir 加引号）会使测试断言失配——先判实现 vs 测试谁对，行为变化同步更新断言。

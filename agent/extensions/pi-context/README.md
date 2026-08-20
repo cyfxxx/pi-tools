@@ -7,7 +7,7 @@
 | # | Hook | 作用 | 省 token |
 |---|------|------|----------|
 | 1 | `context` | 过滤 usage-diag 诊断消息（仅展示、不进 LLM 上下文）+ 工具输出分层擦除 + 只保留最新一份 compactionSummary + thinking 按 token 预算剪枝 | 数千/turn |
-| 2 | `tool_result` | bash/read 输出 >5KB 截断（bash 保留尾部、read 保留头部），其他工具 >20KB 兜底截断 | 50-80% 工具结果 |
+| 2 | `tool_result` | 工具输出>5KB（bash/read）/>20KB（其他）截断：内容路由三阶段——①JSON 结构压缩（合法 JSON 二分收缩，保前段+截断标记）②错误脱水（有 Error/Traceback 标记才激活：折叠连续重复行+截断超长行，降到 cap 内则免截断）③通用截断（bash 保留尾部、read 保留头部）。全部确定性变换（同输入必同输出），写时不改写历史 | 50-80% 工具结果 |
 | 3 | `tool_result` | 缓存命中统计（聚合 cacheRead/cacheWrite，仅记录，不注入上下文） | — |
 | 4 | `turn_end` | 每轮用量记录（input/缓存/输出，写入 usage-diag 日志） | — |
 | 5 | `agent_settled` | 按窗口比例自动压缩判定 + `ctx.compact()`（判定放 run 完全 settled 后——agent_end 时内核可能重试/续跑，compact 会 abort 杀掉重试轮；agent_settled 语义为无重试/压缩/排队续跑） | 大窗口会话持续膨胀 |

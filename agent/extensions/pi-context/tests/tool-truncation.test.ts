@@ -82,3 +82,96 @@ describe('truncateToolContent: R4 工具输出截断', () => {
     expect(r!.omittedBytes).toBe(8000 - (5000 - 64))
   })
 })
+
+describe('truncateToolContent: JSON 内容路由（确定性结构压缩）', () => {
+  const jsonArr = JSON.stringify(Array.from({ length: 200 }, (_, i) => ({ id: i, name: `item-${i}`, v: 'x'.repeat(30) })))
+
+  it('合法 JSON 数组超限 → 保前段 + 截断标记', () => {
+    expect(Buffer.byteLength(jsonArr, 'utf8')).toBeGreaterThan(5000)
+    const r = truncateToolContent('bash', [textBlock(jsonArr)], 5000)
+    expect(r).toBeDefined()
+    const text = textOf(r!.content)
+    expect(text).toContain('[...truncated')
+    const jsonPart = text.split('\n\n[...truncated')[0]
+    const parsed = JSON.parse(jsonPart) // 压缩后仍是合法 JSON
+    expect(Array.isArray(parsed)).toBe(true)
+    expect(parsed.length).toBeLessThan(200)
+    expect(Buffer.byteLength(text, 'utf8')).toBeLessThanOrEqual(5000)
+  })
+
+  it('合法 JSON 对象超限 → 保前键', () => {
+    const obj: Record<string, string> = {}
+    for (let i = 0; i < 100; i++) obj[`key${i}`] = 'v'.repeat(60)
+    const big = JSON.stringify(obj)
+    const r = truncateToolContent('bash', [textBlock(big)], 5000)
+    expect(r).toBeDefined()
+    const text = textOf(r!.content)
+    const jsonPart = text.split('\n\n[...truncated')[0]
+    const parsed = JSON.parse(jsonPart) as Record<string, string>
+    expect(parsed['key0']).toBeDefined()
+    expect(Object.keys(parsed).length).toBeLessThan(100)
+  })
+
+  it('JSON 后接日志（非纯 JSON）→ 回退通用截断', () => {
+    const big = jsonArr + '\nsome trailing log line that is long '.repeat(50)
+    const r = truncateToolContent('read', [textBlock(big)], 5000)
+    expect(r).toBeDefined()
+    const text = textOf(r!.content)
+    expect(text).toContain('[...truncated')
+  })
+
+  it('单条超长字符串 JSON → 回退通用截断（不产生非法片段）', () => {
+    const big = JSON.stringify({ msg: 'x'.repeat(20000), tail: 'end' })
+    const r = truncateToolContent('read', [textBlock(big)], 5000)
+    expect(r).toBeDefined()
+    const text = textOf(r!.content)
+    expect(text).toContain('[...truncated')
+    expect(text).not.toContain('"tail')
+  })
+
+  it('确定性：同一输入两次压缩输出逐字节一致（缓存友好）', () => {
+    const a = truncateToolContent('bash', [textBlock(jsonArr)], 5000)
+    const b = truncateToolContent('bash', [textBlock(jsonArr)], 5000)
+    expect(textOf(a!.content)).toBe(textOf(b!.content))
+  })
+})
+
+describe('truncateToolContent: 错误确定性脱水（12-factor factor-09）', () => {
+  it('无错误标记 → 不改变文本（走通用截断）', () => {
+    const big = 'normal line\n'.repeat(3000)
+    const r = truncateToolContent('bash', [textBlock(big)], 5000)
+    expect(r).toBeDefined()
+    // 走通用截断：无折叠标记
+    expect(textOf(r!.content)).not.toContain('行重复已折叠')
+  })
+
+  it('错误标记 + 连续重复行 → 折叠为 2 行 + 标记（原超限，脱水后免截断）', () => {
+    const err = 'Error: connection refused\n' + ('same error line\n'.repeat(600)) + 'tail kept here'
+    expect(Buffer.byteLength(err, 'utf8')).toBeGreaterThan(5000)
+    const r = truncateToolContent('bash', [textBlock(err)], 5000)
+    expect(r).toBeDefined()
+    const text = textOf(r!.content)
+    expect(text).toContain('行重复已折叠')
+    expect(text).toContain('Error: connection refused')
+    expect(text).toContain('tail kept here') // 头部尾部都保留
+  })
+
+  it('错误标记 + 超长行 → 行截断', () => {
+    const err = 'Error: boom\n' + 'stack-frame-xyz '.repeat(1000)
+    expect(Buffer.byteLength(err, 'utf8')).toBeGreaterThan(5000)
+    const r = truncateToolContent('bash', [textBlock(err)], 5000)
+    expect(r).toBeDefined()
+    expect(textOf(r!.content)).toContain('[行截断]')
+  })
+
+  it('错误文本脱水后仍在 cap 内 → 免通用截断完整保留头尾', () => {
+    const err = 'Error: start here\n' + 'dup line\n'.repeat(3000) + 'end marker here'
+    expect(Buffer.byteLength(err, 'utf8')).toBeGreaterThan(5000)
+    const r = truncateToolContent('bash', [textBlock(err)], 5000)
+    expect(r).toBeDefined()
+    const text = textOf(r!.content)
+    expect(text).toContain('Error: start here')
+    expect(text).toContain('end marker here') // 未砍头砍尾
+    expect(text).toContain('行重复已折叠')
+  })
+})

@@ -1,7 +1,7 @@
 ---
 name: pi-code-review
-description: 审查 git 变更（diff/HEAD/未跟踪）：确定性检查 + 清单核对 + HIGH/MEDIUM/LOW 分级报告。用户说"审查""评审""review""检查代码""看下这个改动""PR 审查"时触发。
-version: v1.2
+description: 审查 git 变更（diff/HEAD/未跟踪）：确定性检查 + 清单核对 + HIGH/MEDIUM/LOW 分级报告。用户说"审查""评审""review""检查代码""看下这个改动""PR 审查"时触发。。不适用：全项目/运行态健康检查用 pi-full-audit；纯文档改动且无逻辑变更。
+version: v1.3
 参考基线: alibaba/open-code-review v1.9.3（2026-08-15 核对：v1.9.3 均为 Go 核心/Action 功能变更，无涉及技能审查规则；与 review.sh BASELINE 同步）
 ---
 
