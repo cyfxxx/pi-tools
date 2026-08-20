@@ -12233,6 +12233,27 @@
       ],
       "observedAt": "2026-08-20T03:57:15.347Z",
       "deleted": false
+    },
+    {
+      "id": "a5a3e433-9806-45c2-abee-7ef6ff182e98",
+      "category": "procedure",
+      "title": "通知骨架: ntfy 推送配置与使用（pi→手机单向）",
+      "content": "通知推送链路（手机验证通过的骨架，2026-08-20）：\n- 配置: ~/.pi/agent/notify.json（enabled=true; gitignore 不入库，因含 topic/密钥）。channels 数组，每条 type=cmd 的 curl 模板。占位符 {{subject}}/{{body}} 为 URL 编码、{{subject_json}}/{{body_json}} 为 JSON 转义。rateLimitMinutes（默认60）内同 subject 只发一次。\n- 发送: node scripts/pi-notify.sh [--dry-run] <subject> [<body>]；未配置/超限静默 exit 0；发送失败写 logs/notify.log 不抛错。\n- ntfy 通道 template 例: curl -fsS -H 'Content-Type: application/json' -d '{\"title\":{{subject_json}},\"message\":{{body_json}},\"priority\":4,\"tags\":[\"rotating_light\"]}' 'https://ntfy.sh/<主题>'\n- 读取主题消息: GET https://ntfy.sh/<主题>/json?poll=1 立即返回最后一条；?last=N 取 N 条；json 流长连需 timeout。\n- 主题即密钥：用 openssl rand -hex 4 生成随机主题，app 端输入订阅即可收推。主题明文勿写入记忆库。\n- 现状局限: 单向推送，pi 侧无常驻监听；手机→pi 需 autopilot 轮询 inbox 实现分钟级感知。",
+      "tags": [
+        "notify",
+        "ntfy",
+        "推送",
+        "通知链路"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T08:47:27.799Z",
+      "updatedAt": "2026-08-20T08:47:27.799Z",
+      "accessedAt": "2026-08-20T08:47:27.799Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
