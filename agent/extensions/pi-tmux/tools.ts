@@ -189,6 +189,9 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         const out = await readOutput(opts, name, lines)
         const src = out.source === 'log' ? '日志' : '当前屏幕'
         const tag = out.truncated ? ' (已截断)' : ''
+        // 完成自动唤醒 ack：用户已读取过该会话（日志已人工查看），
+        // 会话完成时不再触发完成通知打扰（防积压/冗余报警）
+        watcher.ack(name)
         return ok(`[${name} · ${src}${tag}]\n${out.text || '(无输出)'}`)
       } catch (e) {
         return err(`读取会话失败: ${(e as Error).message}`)
