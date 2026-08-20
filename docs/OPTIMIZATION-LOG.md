@@ -202,3 +202,22 @@
 - 行为符合设计权衡（BASELINE 16K→39 断 / 64K→4 断已实证），非 bug；命中率仍 >90% 健康线。
 - 可改进（低优先）：给 pruneThinkingBudget 加事件记账（同 recordPrune/快照），使 A 类断裂可归因——待工单。
 - 对照实验（若频繁 100K+ 长会话）：thinking 档位 max→high，before/after 记入本 LOG 再定。
+
+---
+
+## 2026-08-20 thinking 档位 max→high 切换（task #14 对照实验起点）
+- 状态: 变更（用户主动配置，settings.json 本地不入库；无代码改动）
+
+### 变更（Change）
+- agent/settings.json defaultThinkingLevel: max → high
+- 触发背景: 昨日诊断确认长会话 A 类断裂 = thinking 剪枝（pruneThinkingBudget
+  静默改写早期 thinking）；high 档减每轮 reasoning 量、降 64K 预算触达频率。
+
+### Before（max 档基线，已完成）
+- 当前会话: 93.4% / 8 断（A×5 + B×2 + C×1）/ 浪费 1.59M；A 类归因=thinking 剪枝
+- 2026-08-18 16K 预算实测: 触发率 70%，3.8h 27 断 / 1.46M 浪费
+
+### After（high 档待观测）
+- 注入面判定: thinking 档位不入 system prompt → 切换不额外断缓存、不污染前缀
+- 预期: 每轮 thinking 下降 → 剪枝触发间隔拉长 → A 类断裂减少 → 命中率回升
+- 观测: 每日 daily-health-check 命中率 vs Before；本 LOG 后续追加对比行
