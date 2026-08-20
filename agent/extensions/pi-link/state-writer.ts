@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync, readFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 
 // 审计 MEDIUM 修复（2026-08-18）：本文件为 ESM 模块（package.json "type":"module"），
@@ -44,7 +44,9 @@ export function writeLocalState(partial: Partial<LocalState>): void {
       currentSessionFile: partial.currentSessionFile ?? cur.currentSessionFile,
       updatedAt: Date.now(),
     }
-    writeFileSync(file, JSON.stringify(next, null, 2), 'utf-8')
+    const tmp = file + '.tmp.' + process.pid
+    writeFileSync(tmp, JSON.stringify(next, null, 2), 'utf-8')
+    renameSync(tmp, file)
   } catch {
     // 写失败不影响主流程
   }

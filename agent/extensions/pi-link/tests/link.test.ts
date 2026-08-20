@@ -120,7 +120,7 @@ describe('pi-link: buildRemoteCommand', () => {
   it('默认 --no-extensions + 默认 session dir + LD_PRELOAD 清除', () => {
     const cmd = buildRemoteCommand(DEV, {})
     expect(cmd.startsWith('unset LD_PRELOAD 2>/dev/null;')).toBe(true)
-    expect(cmd).toContain('--mode rpc --no-extensions --session-dir ~/.pi/agent/sessions/pi-link')
+    expect(cmd).toContain('--mode rpc --no-extensions --session-dir "~/.pi/agent/sessions/pi-link"')
     // 绕过 wrapper：node + 真实 cli.js 优先
     expect(cmd).toContain('readlink -f')
     expect(cmd).toContain('command -v pi-original')
@@ -142,7 +142,8 @@ describe('pi-link: buildRemoteCommand', () => {
     expect(buildRemoteCommand(DEV, { cwd: '~/work' })).toContain('cd "$HOME/work" && unset LD_PRELOAD')
   })
   it('自定义 sessionDir', () => {
-    expect(buildRemoteCommand(DEV, { sessionDir: '/tmp/x' })).toContain('--session-dir /tmp/x')
+    // 引号保护（审计 LOW）：sessionDir 含空格/元字符时防远端注入
+    expect(buildRemoteCommand(DEV, { sessionDir: '/tmp/x' })).toContain('--session-dir "/tmp/x"')
   })
 })
 

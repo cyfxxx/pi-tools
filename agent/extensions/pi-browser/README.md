@@ -44,8 +44,8 @@
 ## 安装
 
 ```bash
-# 1. 安装依赖
-bash ~/.pi/agent/extensions/pi-browser/install.sh
+# 1. 安装依赖（仓库无 install.sh，用 npm 安装）
+cd ~/.pi/agent/extensions/pi-browser && npm install && npx playwright install chromium
 
 # 2. 启动 Pi（pi 0.83+ 从 extensions/ 目录自动发现，无需手动注册）
 pi
@@ -101,7 +101,6 @@ Windows 便携探测（2026-08-17 合入，源自 portable-win）：`CLOAKBROWSE
 ├── types.ts                   # BrowserOnlyConfig
 ├── package.json               # npm 包配置，入口 → ./index.ts
 ├── tsconfig.json
-├── install.sh                 # 一键安装脚本
 │
 ├── browser/                   # 🌐 浏览器功能
 │   ├── index.ts               #   registerBrowserTools()

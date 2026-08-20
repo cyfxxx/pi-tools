@@ -240,8 +240,11 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
       return { code: 1, stdout: '', stderr: `send-keys: session ${name} 无 stdin 交互（bash -c 启动或已重启）——仅支持 Ctrl-C/读取/停止` }
     }
     const li = args.indexOf('-l')
-    if (li >= 0) child.stdin.write(args[li + 1] ?? '')
-    if (args.includes('Enter')) child.stdin.write('\n')
+    // stdin EPIPE 防护：会话恰在守卫检查后退出时 write 抛错，须捕获避免 unhandled 崩进程
+    try {
+      if (li >= 0) child.stdin.write(args[li + 1] ?? '')
+      if (args.includes('Enter')) child.stdin.write('\n')
+    } catch {}
     if (args.includes('C-c')) {
       const pid = winReadPid(opts, name)
       if (pid && winPidAlive(pid)) return winTaskkill(pid)

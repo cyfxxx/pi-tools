@@ -39,14 +39,16 @@ export function decide(
     note: `failover 熔断：连续切换模型已达上限 ${maxFailovers}（failoverCount=${task.failoverCount ?? 0}），暂停任务待人工介入`,
   }
 
+  // A1: 鉴权/配置错误（401/403/unauthorized）：重试无意义（烧额度），直接失败。
+  // 置于 logic_error 之前：errClassOf 会把含 "authentication" 的 stderr 归为 logic_error，
+  // 鉴权错误应明确提示凭证问题而非笼统“逻辑错误”。
+  if (/401|403|unauthorized|invalid api key|authentication/i.test(info.stderr)) {
+    return { type: 'fail', note: `鉴权错误（不重试，请检查 provider 凭证）: ${info.stderr.slice(0, 150)}` }
+  }
+
   // 逻辑错误：换模型无意义，直接失败
   if (errClass === 'logic_error') {
     return { type: 'fail', note: `逻辑错误: ${info.stderr.slice(0, 200)}` }
-  }
-
-  // A1: 鉴权/配置错误（401/403/unauthorized）：重试无意义（烧额度），直接失败
-  if (/401|403|unauthorized|invalid api key|authentication/i.test(info.stderr)) {
-    return { type: 'fail', note: `鉴权错误（不重试，请检查 provider 凭证）: ${info.stderr.slice(0, 150)}` }
   }
 
   if (errClass === 'timeout') {

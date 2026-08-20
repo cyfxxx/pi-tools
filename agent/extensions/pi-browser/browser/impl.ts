@@ -81,10 +81,9 @@ export class BrowserManager {
         (e as Error)?.message?.includes('Cannot find module')
       ) {
         throw new Error(
-          '浏览器依赖未安装。请运行安装脚本：\n' +
-          '  bash ~/.pi/agent/extensions/pi-browser/install.sh\n' +
-          '或手动安装依赖：\n' +
-          '  cd ~/.pi/agent/extensions/pi-browser && npm install'
+          '浏览器依赖未安装。请安装依赖：\n' +
+          '  cd ~/.pi/agent/extensions/pi-browser && npm install\n' +
+          '（并确保 Playwright 浏览器已下载，如 npx playwright install chromium）'
         )
       }
       throw e

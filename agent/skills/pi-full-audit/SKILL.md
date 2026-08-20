@@ -262,3 +262,13 @@ foreach ($f in $files) {
 - **复核必做**：任何建议清单（本技能产出或外部审查模型提供）进入修复前，必须经第 4 步复核子代理逐条核实。
 - **敏感信息脱敏**：报告密钥只报位置。
 - **报告与验证分离**：报告中每个 HIGH 明确标注“主会话已验证/复核核实/待验证”，防止未经验证的判断误导修复优先级。
+
+## 经验基线（2026-08-20 体检沉淀，逐次追加）
+
+### 2026-08-20 全项目体检
+- context 钩子为**链式传递**（内核 dist/core/extensions/runner.js emitContext：handler 返回 messages 喂给下一个），非 last-wins；scout 将“未验证 composer 语义”列为 H1 属过度担忧——此类条目应先在代码定论再定级。
+- review.sh 对 node shebang 的 .sh（pi-notify.sh）误报 shell 语法错误：判定前先 head -1 看 shebang，属已知噪声。
+- cache-guard 注入面指纹含文件整体（pi-context/index.ts 仅注释改动即触发漂移）：审计注释型改动前先评估基线影响，改动后 --update-baseline。
+- 同轮并行 edit+bash 执行顺序不保证，验证性 grep 可能读到编辑前快照——改动验证放独立轮。
+- SECRET_PATTERNS 键值形态模式排除集须含 `[`（\x5b），否则二次匹配 `[REDACTED:xxx]` 覆盖强模式结果（storage.test 捕获此回归）。
+- 安全修复改命令输出格式（如 session-dir 加引号）会使测试断言失配——先判实现 vs 测试谁对，行为变化同步更新断言。

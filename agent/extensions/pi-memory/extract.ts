@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import type { MemoryCategory, MemoryEntry, SummaryEntry } from './types.ts'
-import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR } from './storage.ts'
+import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR, writeJSONAtomic } from './storage.ts'
 import { mergeCandidates } from './merge.ts'
 import { detectEnvironment } from './env.ts'
 
@@ -355,7 +355,7 @@ export function markExtracted(sessionId: string, messageCount: number): void {
   const disk = loadDiskTracker()
   disk[key] = { fingerprint: messageCount, lastTs: Date.now() }
   try {
-    writeFileSync(TRACKER_FILE, JSON.stringify(disk), 'utf-8')
+    writeJSONAtomic(TRACKER_FILE, disk)
   } catch {
     /* 只读文件系统等：降级为仅内存指纹 */
   }
