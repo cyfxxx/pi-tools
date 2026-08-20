@@ -786,6 +786,26 @@ phase2_link_keys() {
     || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/scripts/pi-link-keys.sh install）"
 }
 
+# ---- Phase 2-F4: packs 第三方技能包同步（reverse-skill 等；packs/ 不入库） ----
+# 每设备重建时从 GitHub 原项目拉齐 packs（增量）；网络差/仓库不可达不中断 rebuild。
+# 包内容不入 git，同步脚本 scripts/packs-sync.sh 入库随仓库分发。
+phase2_packs() {
+  title "Phase 2-F4" "packs 技能包同步"
+  if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
+    ok "CI 模式：跳过 Phase 2-F4（CI_SKIP_HEAVY）"
+    return 0
+  fi
+  if [ ! -f "$PI_HOME/scripts/packs-sync.sh" ]; then
+    warn "packs-sync.sh 缺失，跳过"
+    return 0
+  fi
+  if bash "$PI_HOME/scripts/packs-sync.sh" >/dev/null 2>&1; then
+    ok "packs 同步完成（按需读取，不注册技能面）"
+  else
+    warn "packs 同步失败（网络/仓库问题，手动: bash $PI_HOME/scripts/packs-sync.sh）"
+  fi
+}
+
 # ---- Phase 2-G: systemd 服务注册（SearXNG + whisper 常驻自启） ----
 # 仅真实 systemd 环境生效（Termux/proot/容器内无 systemctl 时自动跳过）。
 # unit 模板在 $PI_HOME/deploy/systemd/ 目录
@@ -1190,6 +1210,7 @@ phase2_types
 phase2_wrapper
 phase2_tmux
 phase2_link_keys
+phase2_packs
 phase2_systemd
 phase2_voice
 
