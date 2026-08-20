@@ -1,5 +1,8 @@
 import { truncateHead, truncateTail, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
 import type { Usage } from "@earendil-works/pi-ai";
+import { writeFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import {
 	setContextWindow,
 	setUsedTokens,
@@ -12,6 +15,7 @@ import {
 	recordAutoCompact,
 	recordPrune,
 	recordToolEnable,
+	recordToolUsage,
 	recordUsage,
 	type UsageRecord,
 } from "../../lib/usage-diag.ts";
@@ -67,6 +71,59 @@ You have access to \`subagent\` tool with specialized agents (scout, planner, wo
 
 // R4 常量：截断标记约 30-60 字节——maxBytes 减余量，最终字节不超 cap
 const MARK_BUDGET = 64;
+
+// ── 压缩可逆快照（2026-08-20，headroom CCR 本地化）──
+// auto-compact 是唯一允许改写历史的地方，压缩后原文不可追溯。
+// 在压缩触发前把当前消息全文落盘 logs/compact-snapshots/，供按需检索（bash/ls 查看）。
+// 纯落盘不进注入面/不入上下文 → 零缓存影响。快照取 context 阶段的过滤后 messages
+// （已含 R4 截断结果），最接近实际进入模型的内容。
+const SNAPSHOT_DIR = join(homedir(), ".pi", "logs", "compact-snapshots");
+const SNAPSHOT_MAX_FILES = 8; // 文件数上限（保最新，防磁盘膨胀）
+const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
+
+/** context hook 最近一次拿到的 messages（引用，不拷贝——会话内本就持有） */
+let lastContextMessages: unknown[] | null = null;
+
+function snapshotBeforeCompact(contextTokens: number, threshold: number): void {
+  try {
+    if (!lastContextMessages || lastContextMessages.length === 0) return;
+    mkdirSync(SNAPSHOT_DIR, { recursive: true });
+    const ts = Date.now();
+    const file = join(SNAPSHOT_DIR, `compact-${ts}.json`);
+    const payload = {
+      ts,
+      contextTokens,
+      threshold,
+      messages: lastContextMessages,
+    };
+    writeFileSync(file, JSON.stringify(payload), "utf8");
+    // 清理：超龄 + 超量（保最新）
+    const files = readdirSync(SNAPSHOT_DIR).filter((f) => f.startsWith("compact-") && f.endsWith(".json"));
+    const now = Date.now();
+    const stale = new Set(
+      files.filter((f) => {
+        try {
+          return now - statSync(join(SNAPSHOT_DIR, f)).mtimeMs > SNAPSHOT_MAX_AGE_MS;
+        } catch {
+          return false;
+        }
+      }),
+    );
+    const fresh = files.filter((f) => !stale.has(f)).sort().reverse();
+    for (const f of fresh.slice(SNAPSHOT_MAX_FILES)) stale.add(f);
+    for (const f of stale) {
+      try {
+        unlinkSync(join(SNAPSHOT_DIR, f));
+      } catch {
+        /* 并发清理竞态可忽略 */
+      }
+    }
+  } catch (err) {
+    // 快照失败不阻塞压缩
+    console.error("pi-context: compact snapshot failed:", err);
+  }
+}
+
 
 // ── 内容路由：JSON 结构性压缩（2026-08-20，headroom ContentRouter 思想本地化）──
 // 结构化大输出（curl|python、API 返回）走确定性结构压缩：解析→二分收缩→再序列化，
@@ -305,6 +362,8 @@ export default function (pi: ExtensionAPI) {
 
 	// R2/R3：context 阶段确定性过滤（结果每轮一致，不破坏缓存前缀）
 	pi.on("context", (event) => {
+		// 供压缩快照用：保存当前消息全文（引用，agent_settled 压缩前落盘可追溯）
+		lastContextMessages = event.messages;
 		let messages = event.messages;
 		let modified = false;
 
@@ -377,6 +436,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// 缓存命中统计：聚合每次调用的 cacheRead/cacheWrite（仅记录，不注入上下文）
+	// + 工具用量账单（2.5）：按工具累加 per-call usage 到 stats/tool-usage.json
 	pi.on("tool_result", (event: ToolResultEvent) => {
 		const usage: Usage | undefined = event.usage;
 		if (!usage) return;
@@ -384,6 +444,11 @@ export default function (pi: ExtensionAPI) {
 			typeof usage.cacheRead === "number" ? usage.cacheRead : undefined,
 			typeof usage.cacheWrite === "number" ? usage.cacheWrite : undefined,
 		);
+		recordToolUsage(event.toolName, {
+			input: typeof usage.input === "number" ? usage.input : undefined,
+			cacheRead: typeof usage.cacheRead === "number" ? usage.cacheRead : undefined,
+			cacheWrite: typeof usage.cacheWrite === "number" ? usage.cacheWrite : undefined,
+		});
 	});
 
 	// 每轮用量记录（compacted 死字段已移除：真实压缩事件由 recordAutoCompact 单独记录）
@@ -423,6 +488,8 @@ export default function (pi: ExtensionAPI) {
 		// 绕过阈值/冷却强制压缩——比等内核在窗口-reserve 处兜底更早介入，
 		// 且保留 32K reserve 余量给模型响应。
 		if (tokens >= contextWindow) {
+			// 压缩前原文快照（可逆追溯，零缓存影响）
+			snapshotBeforeCompact(tokens, contextWindow);
 			autoContinueGate.arm();
 			ctx.compact({
 				customInstructions:
@@ -442,6 +509,8 @@ export default function (pi: ExtensionAPI) {
 		const decision = compactDecider.decide(tokens, contextWindow);
 		if (!decision.shouldCompact) return;
 
+		// 压缩前原文快照（可逆追溯，零缓存影响）
+		snapshotBeforeCompact(tokens, decision.threshold);
 		autoContinueGate.arm();
 		ctx.compact({
 			// 仅压缩成功后记账/记时：cooldown 起点取真实完成时刻；

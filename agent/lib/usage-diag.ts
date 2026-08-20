@@ -8,7 +8,7 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export interface UsageRecord {
   ts: number;
@@ -160,6 +160,50 @@ export function loadDiagLines(max = 5000): DiagLine[] {
     return out;
   } catch {
     return [];
+  }
+}
+
+// ── 工具用量账单（2026-08-20，2.5 阶段；数据源 tool_result hook 的 per-call usage）──
+// 按工具名累加调用次数与 input/cacheRead/cacheWrite，持久化 stats/tool-usage.json。
+// MK：只写 stats 数据文件，不进注入面/上下文（缓存友好）；失败静默。
+export interface ToolUsage {
+  calls: number
+  input: number
+  cacheRead: number
+  cacheWrite: number
+}
+export const TOOL_USAGE_FILE = join(homedir(), ".pi", "agent", "stats", "tool-usage.json")
+export function getToolUsageFile(): string {
+  return process.env.PI_TOOL_USAGE_FILE || TOOL_USAGE_FILE
+}
+export function loadToolUsage(): Record<string, ToolUsage> {
+  try {
+    const f = getToolUsageFile()
+    if (!existsSync(f)) return {}
+    return JSON.parse(readFileSync(f, "utf8")) as Record<string, ToolUsage>
+  } catch {
+    return {}
+  }
+}
+export function recordToolUsage(
+  toolName: string,
+  usage: { input?: number; cacheRead?: number; cacheWrite?: number },
+): void {
+  try {
+    const all = loadToolUsage()
+    const cur: ToolUsage = all[toolName] ?? { calls: 0, input: 0, cacheRead: 0, cacheWrite: 0 }
+    cur.calls += 1
+    cur.input += usage.input ?? 0
+    cur.cacheRead += usage.cacheRead ?? 0
+    cur.cacheWrite += usage.cacheWrite ?? 0
+    all[toolName] = cur
+    const f = getToolUsageFile()
+    mkdirSync(dirname(f), { recursive: true })
+    const tmp = f + ".tmp"
+    writeFileSync(tmp, JSON.stringify(all), "utf8")
+    renameSync(tmp, f)
+  } catch {
+    /* 记录失败静默 */
   }
 }
 
