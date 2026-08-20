@@ -141,7 +141,7 @@ function rpcReply(text, timeoutMs = 90000) {
   return new Promise((resolve) => {
     if (!CLI.cli) return resolve({ ok: false, text: '', error: '未解析到 pi cli 路径' })
     const sdir = path.join(AGENT, 'sessions', 'pi-relay')
-    const proc = spawn(CLI.node || 'node', [CLI.cli, '--mode', 'rpc', '--session-dir', JSON.stringify(sdir)], { stdio: ['pipe', 'pipe', 'pipe'] })
+    const proc = spawn(CLI.node || 'node', [CLI.cli, '--mode', 'rpc', '--session-dir', sdir], { stdio: ['pipe', 'pipe', 'pipe'] })
     const events = []
     let settled = false
     let stderr = ''
