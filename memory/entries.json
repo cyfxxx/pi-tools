@@ -10992,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 42,
+      "recurrence": 46,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-20T05:08:15.814Z",
-      "accessedAt": "2026-08-20T05:08:15.814Z",
+      "updatedAt": "2026-08-20T11:30:36.366Z",
+      "accessedAt": "2026-08-20T11:30:36.366Z",
       "environments": [
         "all"
       ],
@@ -12253,7 +12253,55 @@
       "accessedAt": "2026-08-20T08:47:27.799Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-20T08:47:27.799Z",
+      "deleted": false
+    },
+    {
+      "id": "f599d1af-0644-476a-ab55-3091df3537d5",
+      "category": "reference",
+      "title": "技术跟踪: quant.cpp 无损 KV 缓存压缩",
+      "content": "quantumaikr/quant.cpp：LLM 推理层无损 KV cache 压缩，声称上下文 7 倍，纯 C 单头零依赖。技术路线：provider/推理层压缩，与 pi 侧 agent 上下文管理（pi-context 算法层压缩/截断）互补不同层。跟踪价值：若 pi 后端 provider 支持该类压缩，会话上下文成本可大幅下降。2026-08-20 调研记录，状态=关注池，未落地。",
+      "tags": [
+        "research",
+        "kv-cache",
+        "context",
+        "quant.cpp"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T11:22:10.860Z",
+      "updatedAt": "2026-08-20T11:22:10.860Z",
+      "accessedAt": "2026-08-20T11:22:10.860Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-20T11:22:10.860Z",
+      "deleted": false
+    },
+    {
+      "id": "bd189192-c278-4272-a6d0-4513062646bf",
+      "category": "reference",
+      "title": "superpowers 的 pi 集成注入机制审查结论",
+      "content": "obra/superpowers 的 pi 集成（.pi/extensions/superpowers.ts）审查（2026-08-20）：①注入即 context hook 里插入静态 bootstrap 消息（SKILL.md 正文剥离 frontmatter + 固定 marker + piToolMapping 适配文案），进程内 cachedBootstrap 缓存，幂等（按 marker 防重）；②注入文本无时间戳/精确数值，字节稳定，缓存友好达标；③风险点：消息对象带 timestamp: Date.now()（元数据，待实测内核是否进上下文）；resources_discover 声明全部 skills → 大量 skill description 进 system prompt（安装后一次性膨胀+断裂，skills 更新会再断）；④试用建议：隔离环境安装，用 /usage-diag 监控命中率，skills 目录可裁剪子集。",
+      "tags": [
+        "research",
+        "superpowers",
+        "cache",
+        "skills"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T11:22:10.969Z",
+      "updatedAt": "2026-08-20T11:22:10.969Z",
+      "accessedAt": "2026-08-20T11:22:10.969Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-20T11:22:10.969Z",
+      "deleted": false
     }
   ]
 }

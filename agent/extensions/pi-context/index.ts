@@ -65,10 +65,129 @@ You have access to \`subagent\` tool with specialized agents (scout, planner, wo
 - Ask yourself: "Are there independent sub-tasks?"
 - If yes → parallel \`subagent\``;
 
+// R4 常量：截断标记约 30-60 字节——maxBytes 减余量，最终字节不超 cap
+const MARK_BUDGET = 64;
+
+// ── 内容路由：JSON 结构性压缩（2026-08-20，headroom ContentRouter 思想本地化）──
+// 结构化大输出（curl|python、API 返回）走确定性结构压缩：解析→二分收缩→再序列化，
+// 比"砍头/砍尾"保留更高信息密度。纯规则（同输入必同输出），不含 LLM/时间戳，
+// 写时处理不事后改写 → 不破坏 DeepSeek 前缀缓存。
+const MAX_JSON_PARSE_BYTES = 2 * 1024 * 1024; // 超大文本跳过解析，防卡顿
+const JSON_MIN_ITEMS = 2; // 数组/对象收缩到该粒度仍超限 → 回退通用截断
+
+function jsonBytes(data: unknown): number {
+	const s = JSON.stringify(data);
+	return s === undefined ? 0 : Buffer.byteLength(s, "utf8");
+}
+
+/** 二分收缩一层：数组保前一半元素；对象保前一半键（保持原文键序）。 */
+function shrinkHalf(data: unknown): unknown {
+	if (Array.isArray(data)) {
+		if (data.length <= JSON_MIN_ITEMS) return data;
+		return data.slice(0, Math.ceil(data.length / 2));
+	}
+	if (data && typeof data === "object") {
+		const keys = Object.keys(data as Record<string, unknown>);
+		if (keys.length <= JSON_MIN_ITEMS) return data;
+		const half = Math.ceil(keys.length / 2);
+		const out: Record<string, unknown> = {};
+		for (const k of keys.slice(0, half)) out[k] = (data as Record<string, unknown>)[k];
+		return out;
+	}
+	return data;
+}
+
+/**
+ * JSON 结构性压缩：合法 JSON 且超限时二分收缩到预算内。
+ * 失败（非 JSON/解析异常/无法缩小到预算内）返回 undefined → 走通用截断。
+ */
+function compactJson(
+	text: string,
+	cap: number,
+): { text: string; omittedBytes: number } | undefined {
+	if (Buffer.byteLength(text, "utf8") > MAX_JSON_PARSE_BYTES) return undefined;
+	let data: unknown;
+	try {
+		data = JSON.parse(text);
+	} catch {
+		return undefined;
+	}
+	if (jsonBytes(data) <= cap) return undefined; // 防御：调用方已判超限
+	const budget = Math.max(1, cap - MARK_BUDGET);
+	let current = data;
+	for (let i = 0; i < 32; i++) {
+		const shrunk = shrinkHalf(current);
+		if (shrunk === current) break; // 无法继续缩小（单条超长字符串等）
+		current = shrunk;
+		if (jsonBytes(current) <= budget) break;
+	}
+	const outBytes = jsonBytes(current);
+	if (outBytes > budget) return undefined; // 仍超限 → 回退通用截断
+	const omittedBytes = Buffer.byteLength(text, "utf8") - outBytes;
+	if (omittedBytes <= 0) return undefined;
+	return {
+		text: `${JSON.stringify(current)}\n\n[...truncated ${omittedBytes} bytes]`,
+		omittedBytes,
+	};
+}
+
+// ── 错误输出确定性脱水（12-factor factor-09 本地化）──
+// 仅白名单激活（文本中出现错误标记行），折叠连续重复行 + 截断超长行；
+// 规则确定性 → 同输入同输出，不破坏缓存；无错误标记时不改动。
+const ERROR_MARK_RE = /(^|\n)\s*(Error|ERROR|Traceback \(most recent call last\)|error:)/;
+const ERROR_LINE_MAX = 800;
+const ERROR_LINE_KEEP = 240;
+
+function dehydrateErrorOutput(text: string): string | undefined {
+	if (!ERROR_MARK_RE.test(text)) return undefined;
+	const lines = text.split("\n");
+	const out: string[] = [];
+	let changed = false;
+	let i = 0;
+	while (i < lines.length) {
+		const line = lines[i];
+		let run = 1;
+		while (i + run < lines.length && lines[i + run] === line) run++;
+		if (run > 2) {
+			out.push(line, line, `[...${run - 2} 行重复已折叠]`);
+			changed = true;
+		} else if (Buffer.byteLength(line, "utf8") > ERROR_LINE_MAX) {
+			out.push(`${line.slice(0, ERROR_LINE_KEEP)}...[行截断]`);
+			changed = true;
+		} else {
+			out.push(line);
+		}
+		i += run;
+	}
+	return changed ? out.join("\n") : undefined;
+}
+
+/** 原位重建：合并 text 到第一个 text 块位置，非 text 块（图片等）保持相对顺序。 */
+function rebuildTextContent(
+	content: ToolResultEvent["content"],
+	text: string,
+): ToolResultEvent["content"] {
+	const rebuilt: ToolResultEvent["content"] = [];
+	let textPlaced = false;
+	for (const c of content) {
+		if (c.type === "text") {
+			if (!textPlaced) {
+				rebuilt.push({ type: "text", text });
+				textPlaced = true;
+			}
+		} else {
+			rebuilt.push(c);
+		}
+	}
+	if (!textPlaced) rebuilt.push({ type: "text", text });
+	return rebuilt;
+}
+
 /**
  * R4 工具输出截断的纯函数（供单测）：超限时截断文本块；
  * 非 text 块（read 返回的图片等）必须原样保留——重建 content 时不得静默丢弃。
  * 未超限返回 undefined（handler 不修改事件）。
+ * 超限后按内容路由处理：JSON 结构压缩 → 错误脱水 → 通用截断（确定性变换，稳定）。
  */
 export function truncateToolContent(
 	toolName: string,
@@ -81,31 +200,29 @@ export function truncateToolContent(
 		.join("");
 	if (Buffer.byteLength(totalText, "utf8") <= cap) return undefined;
 
+	// 内容路由分支 1：JSON 结构性压缩（确定性）
+	const jsonCompact = compactJson(totalText, cap);
+	if (jsonCompact !== undefined) {
+		return { content: rebuildTextContent(content, jsonCompact.text), omittedBytes: jsonCompact.omittedBytes };
+	}
+	// 内容路由分支 2：错误脱水（把文本降到 cap 内则免截断，保留错误信息）
+	const dehy = dehydrateErrorOutput(totalText);
+	if (dehy !== undefined && Buffer.byteLength(dehy, "utf8") <= cap) {
+		const omitted = Buffer.byteLength(totalText, "utf8") - Buffer.byteLength(dehy, "utf8");
+		if (omitted > 0) {
+			return { content: rebuildTextContent(content, dehy), omittedBytes: omitted };
+		}
+	}
+
+	// 通用截断：脱过水则截脱水版（错误信息优先保留），omitted 仍相对原文报告
+	const base = dehy ?? totalText;
 	const truncate = toolName === "bash" ? truncateTail : truncateHead;
-	// 审计 LOW：截断标记约 30-60 字节——maxBytes 减余量，最终字节不超 cap
-	const MARK_BUDGET = 64
-	const result = truncate(totalText, { maxBytes: Math.max(1, cap - MARK_BUDGET) });
+	const result = truncate(base, { maxBytes: Math.max(1, cap - MARK_BUDGET) });
 	const omittedBytes = Buffer.byteLength(totalText, "utf8") - result.outputBytes;
 	const truncatedText = `${result.content}\n\n[...truncated ${omittedBytes} bytes]`;
 
-	// 审计 LOW：原实现非 text 块前置、文本后置（块顺序改变）；改为原位重建——
-	// text 合并到第一个 text 块位置，非 text 块（图片等）保持相对顺序
-	const rebuilt: ToolResultEvent["content"] = [];
-	let textPlaced = false;
-	for (const c of content) {
-		if (c.type === "text") {
-			if (!textPlaced) {
-				rebuilt.push({ type: "text", text: truncatedText });
-				textPlaced = true;
-			}
-		} else {
-			rebuilt.push(c);
-		}
-	}
-	if (!textPlaced) rebuilt.push({ type: "text", text: truncatedText });
-
 	return {
-		content: rebuilt,
+		content: rebuildTextContent(content, truncatedText),
 		omittedBytes,
 	};
 }

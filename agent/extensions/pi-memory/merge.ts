@@ -86,6 +86,8 @@ export async function decideMerge(
     }
     best.entry.supersededBy = candidate.id
     best.entry.deleted = true
+    // v5: 记录失效时点（bi-temporal；供 asOf 回溯查询旧事实）
+    best.entry.validUntil = new Date().toISOString()
     best.entry.updatedAt = new Date().toISOString()
     return {
       action: 'ADD',
@@ -120,6 +122,8 @@ export async function decideMerge(
   ) {
     best.entry.supersededBy = candidate.id
     best.entry.deleted = true
+    // v5: 记录失效时点（bi-temporal；供 asOf 回溯查询旧事实）
+    best.entry.validUntil = new Date().toISOString()
     best.entry.updatedAt = new Date().toISOString()
     return {
       action: 'ADD',

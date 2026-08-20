@@ -24,6 +24,8 @@ export interface MemoryEntry {
   environments?: string[]
   /** v4: 最近一次写入/提取该条目的会话（跨会话 round-robin 分组用） */
   lastSessionId?: string
+  /** v5: 失效时间（被取代/冲突发生时点，ISO）。有值表示该条目在此刻后不再有效，供 asOf 回溯查询 */
+  validUntil?: string
 }
 
 export interface SummaryEntry {

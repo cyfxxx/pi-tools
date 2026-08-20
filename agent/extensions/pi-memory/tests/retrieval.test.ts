@@ -169,3 +169,46 @@ describe('retrieval: M1 多样性增强', () => {
     expect(out.map(x => x.e.lastSessionId)).toEqual(['S1', 'S2', 'S3', 'S1'])
   })
 })
+
+describe('retrieval: bi-temporal asOf（2026-08-20，graphiti 时间窗本地化）', () => {
+  it('asOf 早于取代时点 → 旧事实可见', async () => {
+    const { searchEntries } = await import('../retrieval.ts')
+    const base = { category: 'preference' as const, content: '用户喜欢咖啡', tags: ['coffee'], confidence: 0.9, source: 'extract' as const }
+    const old = makeEntry({ ...base, id: 'old', title: '咖啡偏好', createdAt: '2026-08-01T00:00:00Z', validUntil: '2026-08-10T00:00:00Z', supersededBy: 'new', deleted: true })
+    const fresh = makeEntry({ ...base, id: 'fresh', title: '咖啡偏好', createdAt: '2026-08-10T01:00:00Z' })
+    const results = searchEntries([old, fresh], undefined, undefined, undefined, 5, undefined, '2026-08-05T00:00:00Z')
+    expect(results.map(e => e.id)).toContain('old')
+    expect(results.map(e => e.id)).not.toContain('fresh') // 尚未创建
+  })
+
+  it('asOf 晚于取代时点 → 旧事实不可见，新条目可见', async () => {
+    const { searchEntries } = await import('../retrieval.ts')
+    const old = makeEntry({ id: 'old', title: '工具偏好', content: '用户启用 X', createdAt: '2026-08-01T00:00:00Z', validUntil: '2026-08-10T00:00:00Z', supersededBy: 'new', deleted: true })
+    const fresh = makeEntry({ id: 'fresh', title: '工具偏好', content: '用户禁用 X', createdAt: '2026-08-10T01:00:00Z' })
+    const results = searchEntries([old, fresh], '工具', undefined, undefined, 5, undefined, '2026-08-15T00:00:00Z')
+    expect(results.map(e => e.id)).not.toContain('old')
+    expect(results.map(e => e.id)).toContain('fresh')
+  })
+
+  it('软删无 validUntil → 回溯不可见（保守）', async () => {
+    const { searchEntries } = await import('../retrieval.ts')
+    const softDeleted = makeEntry({ id: 'gone', title: '旧条目', deleted: true, createdAt: '2026-08-01T00:00:00Z' })
+    const results = searchEntries([softDeleted], undefined, undefined, undefined, 5, undefined, '2026-08-02T00:00:00Z')
+    expect(results.map(e => e.id)).not.toContain('gone')
+  })
+
+  it('asOf 非法 → 返回空', async () => {
+    const { searchEntries } = await import('../retrieval.ts')
+    const e = makeEntry({ title: '正常条目' })
+    const results = searchEntries([e], undefined, undefined, undefined, 5, undefined, 'not-a-date')
+    expect(results).toEqual([])
+  })
+
+  it('缺省（无 asOf）行为不变：活跃条目 + 排除已取代/软删', async () => {
+    const { searchEntries } = await import('../retrieval.ts')
+    const live = makeEntry({ title: 'live', content: 'alive' })
+    const gone = makeEntry({ title: 'gone', content: 'alive', deleted: true, supersededBy: 'x', validUntil: '2026-08-10T00:00:00Z' })
+    const results = searchEntries([live, gone], 'alive', undefined, undefined, 5)
+    expect(results.map(e => e.id)).toEqual([live.id])
+  })
+})

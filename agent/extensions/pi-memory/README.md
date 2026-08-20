@@ -167,6 +167,7 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 1. **时效指数衰减**：`recency = exp(-daysOld/90)`（半衰期约 62 天），久远记忆缓慢衰减而非 180 天线性归零
 2. **MMR 主题多样性（带 banding）**：与最高分差距 <15% 的高分条目**锚定原序**（不参与重排——记忆库增量不破坏缓存前缀）；仅对分数相近的尾部 band 做 MMR 选择（`λ·score − (1−λ)·maxSim`，λ=0.7），防注入块主题冗余
 3. **跨会话 round-robin**：按 `lastSessionId` 分组轮转交错，防单会话条目垄断 top 位置（v4 字段，自动提取时打会话标签，手动存储缺省无）
+4. **bi-temporal asOf 回溯（v5 validUntil，2026-08-20）**：被取代/冲突条目写入 `validUntil`（取代发生时刻）；`memory_search` 支持 `asOf=<ISO>` 查询“该时刻有效”的记忆（如三天前的项目约定），旧事实可回溯、新状态仍为当前态。注入路径不变（仍取当前活跃态）
 
 ### solutions 类别（M2，2026-08）
 
@@ -191,7 +192,7 @@ LLM 的两大固有限制：**无长期记忆**（每次会话从零开始）与
 
 ```
 ~/.pi/memory/
-├── entries.json      L1 长期记忆（schema v2: observedAt/supersededBy/deleted）
+├── entries.json      L1 长期记忆（schema v2 + v5 validUntil: observedAt/supersededBy/deleted/validUntil）
 ├── notes.json        L0 工作笔记（ctx-lite 迁移，TTL + _ctx.→_mem. 键改名）
 ├── summaries.json    L2 会话摘要时间线（最多 50 条）
 └── checkpoints/      compaction 自动快照（保留 5）+ 手动检查点

@@ -71,6 +71,16 @@ function tokenJaccard(a: DocTokens, b: DocTokens): number {
 
 interface Scored { e: MemoryEntry; score: number }
 
+/** bi-temporal 可见性：在 asOf 时刻该条目是否有效（2026-08-20，graphiti 时间窗思想本地化）。 */
+export function visibleAt(e: MemoryEntry, asOfTs: number): boolean {
+  if (asOfTs < new Date(e.createdAt).getTime()) return false // 尚未创建
+  if (e.supersededBy || e.deleted) {
+    if (e.validUntil) return new Date(e.validUntil).getTime() > asOfTs
+    return false // 软删无失效时间 → 保守视为不可回溯
+  }
+  return true
+}
+
 /**
  * 轻量 MMR（Maximal Marginal Relevance）多样性重排：
  * 每轮取 score 最高且与已选条目相似度最低的候选（lambda 高=重相关，低=重多样）。
@@ -154,6 +164,9 @@ export interface SearchOptions {
 }
 
 // 混合检索：有 query 时 70% 词法 + 30% 质量；无 query 时纯质量
+// asOf（ISO 时间点）可选：返回“在该时刻有效”的记忆（bi-temporal 回溯查询）。
+// 规则：createdAt ≤ asOf；被取代/软删条目须 validUntil > asOf 才可见（无 validUntil 视为不可回溯）；
+// 活跃条目始终可见（除非 asOf < createdAt）。缺省走 activeEntries（当前态），注入路径不变。
 export function searchEntries(
   entries: MemoryEntry[],
   query?: string,
@@ -161,8 +174,16 @@ export function searchEntries(
   tags?: string[],
   limit = 5,
   env?: RuntimeEnv | 'all',
+  asOf?: string,
 ): MemoryEntry[] {
-  let live = activeEntries(entries)
+  let live: MemoryEntry[]
+  if (asOf) {
+    const asOfTs = new Date(asOf).getTime()
+    if (Number.isNaN(asOfTs)) return []
+    live = entries.filter(e => visibleAt(e, asOfTs))
+  } else {
+    live = activeEntries(entries)
+  }
   if (!live.length) return []
   if (env && env !== 'all') {
     live = live.filter(e => isEnvVisible(e.environments, env))
