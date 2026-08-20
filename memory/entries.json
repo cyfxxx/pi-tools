@@ -10279,7 +10279,7 @@
       "id": "28e4896a-4b79-4cc5-a063-0775a0fb1eee",
       "category": "procedure",
       "title": "pi update 后恢复流程（补丁+翻译）",
-      "content": "pi update 覆盖 dist 后需恢复（2026-08-15 实战验证）：\n1. 跑 bash scripts/rebuild.sh（Phase 3 自动重打 4 个补丁：patch-voice-enter 回车听写、patch-footer-live-context footer token、patch-plan-tools 工具 schema、patch-tab-arg-completion Tab 参数补全——后两者目标文件不在 modes/interactive/ 顶层：footer 在 interactive/components/footer.js，plan-tools 在 core/agent-session.js，验证补丁要按目标路径 grep）\n2. 跑 node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs 恢复中文界面（rebuild.sh 不含翻译；0.84.2 实测 slash-commands 22/22、settings-selector 72/72 无未匹配警告）\n3. 重启 pi 生效\n症状对照：回车听写无效/tts speak 回车变其他命令 = patch-voice-enter 丢失；footer 无实时 token = patch-footer 丢失；TUI 英文 = 翻译丢失。扩展代码在 ~/.pi/agent/extensions/ 不受 update 影响，但改动后也需重启才加载。",
+      "content": "pi update 覆盖 dist 后需恢复（2026-08-15 实战验证）：\n1. 跑 bash scripts/rebuild.sh（Phase 3 自动重打 4 个补丁：patch-voice-enter 回车听写、patch-footer-live-context footer token、patch-plan-tools 工具 schema、patch-tab-arg-completion Tab 参数补全——后两者目标文件不在 modes/interactive/ 顶层：footer 在 interactive/components/footer.js，plan-tools 在 core/agent-session.js，验证补丁要按目标路径 grep）\n2. 跑 node ~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs 恢复中文界面（rebuild.sh 不含翻译；0.84.2 实测 slash-commands 22/22、settings-selector 72/72 无未匹配警告）\n3. 重启 pi 生效\n症状对照：回车听写无效/tts speak 回车变其他命令 = patch-voice-enter 丢失；footer 无实时 token=[REDACTED] 丢失；TUI 英文 = 翻译丢失。扩展代码在 ~/.pi/agent/extensions/ 不受 update 影响，但改动后也需重启才加载。",
       "tags": [
         "pi-update",
         "rebuild",
@@ -10992,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 36,
+      "recurrence": 42,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-19T21:58:53.030Z",
-      "accessedAt": "2026-08-19T21:58:53.030Z",
+      "updatedAt": "2026-08-20T05:08:15.814Z",
+      "accessedAt": "2026-08-20T05:08:15.814Z",
       "environments": [
         "all"
       ],
@@ -12230,7 +12230,9 @@
       "accessedAt": "2026-08-20T03:57:15.347Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-20T03:57:15.347Z",
+      "deleted": false
     }
   ]
 }
