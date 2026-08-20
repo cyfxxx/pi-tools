@@ -146,3 +146,6 @@ agent/node_modules/
 # 通知配置（可能含 token）
 agent/notify.json
 agent/.notify-state.json
+
+# 第三方技能包（按需加载，不入库）
+packs/
