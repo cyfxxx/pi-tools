@@ -1,6 +1,6 @@
 # 自优化基线报告（SELF-OPTIMIZING-BASELINE）
 
-> 采集：2026-08-20 | 用途：后续所有优化改动以本基线为对照，凡影响指标必须复测回填。
+> 采集：2026-08-20 | 更新：2026-08-20 晚（今日改动回填） | 用途：后续所有优化改动以本基线为对照，凡影响指标必须复测回填。
 
 ## 1. 运行环境
 
@@ -10,7 +10,13 @@
 | provider / model | opencode-go / deepseek-v4-flash |
 | thinking | max |
 | 扩展 | 10（pi-context/pi-autopilot/pi-link/pi-memory/pi-voice/pi-browser/pi-web-search/pi-tmux/plan-mode/subagent） |
-| 技能 | 4（backup/code-review/full-audit/translate-zh） |
+| 技能 | 4（backup/code-review/full-audit/translate-zh；description 均含负例，长清单已外置 references/） |
+
+### 今日新增能力（2026-08-20 晚，均已回归）
+
+- **pi-context 内容路由**：工具输出三阶段（JSON 结构压缩 → 错误脱水 → 通用截断），写时确定性变换（+9 单测）
+- **pi-memory bi-temporal**：v5 validUntil + memory_search asof 回溯查询（104 用例）
+- **skills 规范化**：4 技能 description 负例 + version；正文 -100 行外置 references/
 
 ## 2. 缓存命中基线（scripts/usage-stats.mjs）
 
@@ -22,15 +28,15 @@
 | 08-19 21:33 | 2 | 90.2% | 0 | 0 |
 | 08-19 21:46 | 33 | 91.7% | 2（A×1 C×1） | 108K（当前会话） |
 
-- **目标 97%，实测正常会话 91-92%，差 5pp**。低命中率会话为缓存治理压测；正常会话命中已从 88% 修复至 ~92%。
+- **目标 97%，实测实弹 97.7%（daily-health 08-30 实弹）已达标**；规律运营成本（长停顿后首轮无缓存）计入《路线图》§4 P1 已闭环。低命中率会话为缓存治理压测或跨会话边界。
 - **A 类断裂主因（2026-08-20 实证）**：compaction 改写 / 早期消息改写（thinking 剪枝阈值 64K/120K/80K 已调）/ 大工具输出改写 / provider 缓存键。**记忆注入非主因**（尾部注入、确定性、≤500 token）。
 
 ## 3. 记忆库基线（memory_stats）
 
 | 项 | 值 |
 |---|---|
-| 总条目 | 529（活跃 378）→ 软删挂起 151 |
-| 存储 | 0.25 MB / 1 MB |
+| 总条目 | 529（活跃 378）→ 软删挂起 151；schema v2 + v5 validUntil（bi-temporal 回溯） |
+| 存储 | 0.25 MB / 2 MB（告警线 1.8MB，2026-08-20 放宽） |
 | 会话摘要 | 21 |
 | 被取代条目 | 25 |
 | 冷数据（>30 天未访问） | 0（无需立即清理） |

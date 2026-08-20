@@ -47,6 +47,8 @@ const OUTPUT = join(STATS_DIR, 'usage-sessions.jsonl')
 
 // 工具启用事件台账（2026-08-19：enable_tool 唯一能改运行时工具集，事件供 A 类断裂归因）
 const TOOL_EVENTS = join(AGENT, 'stats', 'tool-events.jsonl')
+// 工具用量账单（2026-08-20 2.5 阶段：pi-context tool_result hook 按工具累加）
+const TOOL_USAGE = join(AGENT, 'stats', 'tool-usage.json')
 const toolEvents = existsSync(TOOL_EVENTS)
   ? readFileSync(TOOL_EVENTS, 'utf8').trim().split('\n').filter(Boolean)
       .map(l => { try { return JSON.parse(l) } catch { return null } })
@@ -57,6 +59,7 @@ const TOOL_EVENT_WINDOW_MS = 120_000 // 断裂轮前后 2 分钟内的启用事�
 const args = process.argv.slice(2)
 const SHOW_ALL = args.includes('--all')
 const JSON_ONLY = args.includes('--json')
+const TOOLS = args.includes('--tools')
 
 if (!existsSync(DIAG)) {
   console.error(`usage-diag 不存在: ${DIAG}`)
@@ -195,4 +198,26 @@ if (curS.hitRate < 0.90 || curS.breaks > 3) {
   console.log('    3) 对照该轮事件（大工具输出/注入变化/消息修改机制）；运行 node agent/extensions/tests/cache-guard.mjs 查注入面')
   console.log('    4) A 类断裂先查 compaction/早期消息改写（对照 usage-diag 该轮前后 cacheRead 细分）；pi-memory 注入在尾部（≤500 token）非主因，勿再归因记忆操作')
   console.log('    5) 2026-08-18 已知根因参考：thinking 剪枝/擦除等 post-hoc 修改历史 → 已调阈值（64K/120K/80K）')
+}
+// 工具用量账单（--tools，2026-08-20 2.5 阶段）
+if (TOOLS) {
+  console.log('\n工具用量账单（累计，数据源 stats/tool-usage.json，--tools）\n')
+  console.log('工具名           调用数   input总计    cacheRead    命中率   cacheWrite')
+  try {
+    const tu = existsSync(TOOL_USAGE) ? JSON.parse(readFileSync(TOOL_USAGE, 'utf8')) : {}
+    const rows = Object.entries(tu)
+      .map(([name, v]) => ({ name, ...v, ratio: (v.input + v.cacheRead) > 0 ? v.cacheRead / (v.input + v.cacheRead) : 0 }))
+      .sort((a, b) => b.input - a.input)
+    for (const r of rows.slice(0, 20)) {
+      console.log(
+        `${r.name.padEnd(18)} ${String(r.calls).padStart(5)}  ${String(Math.round(r.input / 1000) + 'K').padStart(9)}  ${String(Math.round(r.cacheRead / 1000) + 'K').padStart(9)}  ${(r.ratio * 100).toFixed(1) + '%'.padStart(5)}  ${String(Math.round(r.cacheWrite / 1000) + 'K').padStart(9)}`,
+      )
+    }
+    if (rows.length === 0) console.log('  （暂无数据：运行过工具调用后落账）')
+    const callTotal = rows.reduce((s, r) => s + r.calls, 0)
+    const inputTotal = rows.reduce((s, r) => s + r.input, 0)
+    console.log(`\n合计: ${rows.length} 个工具, ${callTotal} 次调用, input ${Math.round(inputTotal / 1000)}K（按 input 降序 top20）`)
+  } catch (e) {
+    console.log('  （账单读取失败: ' + e.message + '）')
+  }
 }
