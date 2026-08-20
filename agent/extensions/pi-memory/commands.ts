@@ -106,7 +106,7 @@ export function registerCommands(pi: ExtensionAPI): void {
           [
             'pi-memory',
             `  条目: ${stats.totalEntries}（活跃 ${stats.activeEntries}）`,
-            `  大小: ${sizeMB} MB / 1 MB`,
+            `  大小: ${sizeMB} MB / 2 MB`,
             `  会话摘要: ${stats.summaries} 条`,
             `  被取代: ${stats.superseded} 条`,
             `  冷数据: ${stats.coldEntries}`,

@@ -21,8 +21,11 @@
  *   [C] 起步重建  断裂发生在会话前 5 轮内 → 上下文初始化，正常开销，不计入修复目标。
  *
  * 诊断指引（对照 stats/tool-fingerprint.jsonl 与 agent/sessions/ 会话文件）：
- *   A 类 → 查该断裂轮时间点附近的 enable_tool / 工具注册变化；指纹台账是静态源码扫描，
- *           无法追踪运行时动态注册，无确认则视为「会话内工具面变化」。
+ *   A 类 → 全重放（cacheRead≈0）。2026-08-20 实证（agent-session.js:902 + 会话文件查验）：
+ *           pi-memory 注入块位于消息序列尾部（紧贴对应 user 消息之后，buildInjectionBlock
+ *           确定性重建，无写入时恒定），其变化只重发注入块自身（≤500 token），不可能造成
+ *           数百 K 浪费。大浪费应优先查：compaction 改写 / 早期消息改写（thinking 剪枝等
+ *           post-hoc 修改）/ provider 缓存键变化 / 大工具输出改写 / steering/follow-up 注入。
  *   B 类 → 查 pi-memory/inject.ts 注入块与上下文压力档位（cache-guard 已锁定其注入面基线）。
  *   C 类 → 无需处理。
  *
@@ -168,7 +171,7 @@ for (const s of list) {
         if (nearby.length) {
           for (const e of nearby) console.log(`            ⚑ 归因: ${e.group} 组启用（via ${e.via}）@${fmtMin(e.ts)} → 工具 schema 变化致前缀全断`)
         } else {
-          console.log(`            ○ 该轮无工具启用事件 → 排除工具 schema，指向 compaction/早期消息改写/provider 缓存键`)
+          console.log(`            ○ 该轮无工具启用事件 → 注入块(≤500 token,尾部)不是大浪费来源；优先查 compaction 改写/早期消息改写/大工具输出改写/provider 缓存键（用法见 usage-diag 会话细分）`)
         }
       }
     }
@@ -183,13 +186,13 @@ console.log(`\n当前会话: 命中 ${(curS.hitRate * 100).toFixed(1)}%（目标
 if (curS.breakList && curS.breakList.length) {
   const agg = curS.breakList.reduce((m, b) => { m[b.cls] = (m[b.cls] || 0) + 1; return m }, {})
   const hint = Object.entries(agg).map(([c, n]) => `${c}×${n}`).join(' ')
-  console.log(`  断裂分类: ${hint}${agg.A ? ' — A 类查：enable_tool/工具 schema 运行时变化（tool-fingerprint 静态扫描覆盖不到）/compaction 改写/provider 缓存键' : ''}${agg.B ? ' — B 类查：pi-memory 注入块变化/压力档位切换/keepRecentTokens 重建' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
+  console.log(`  断裂分类: ${hint}${agg.A ? ' — A 类查：compaction 改写/早期消息改写（thinking 剪枝等）/大工具输出改写/provider 缓存键（注入块仅尾部≤500 token 非主因）' : ''}${agg.B ? ' — B 类查：压力档位切换/keepRecentTokens 重建/注入块尾部变化' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
 }
 if (curS.hitRate < 0.90 || curS.breaks > 3) {
   console.log('  ⚠ 低于健康线 — 定位流程：')
   console.log('    1) node scripts/usage-stats.mjs --json 看当前会话细分')
   console.log('    2) 找断裂轮（usage-diag 中 cacheRead 突降 + input 暴增）→ 断裂点 ≈ cacheRead')
   console.log('    3) 对照该轮事件（大工具输出/注入变化/消息修改机制）；运行 node agent/extensions/tests/cache-guard.mjs 查注入面')
-  console.log('    4) A 类断裂可在本输出上方看断裂分类与轮序，再到 agent/sessions/ 查该时刻会话文件里的操作（enable_tool/大压缩等）')
+  console.log('    4) A 类断裂先查 compaction/早期消息改写（对照 usage-diag 该轮前后 cacheRead 细分）；pi-memory 注入在尾部（≤500 token）非主因，勿再归因记忆操作')
   console.log('    5) 2026-08-18 已知根因参考：thinking 剪枝/擦除等 post-hoc 修改历史 → 已调阈值（64K/120K/80K）')
 }

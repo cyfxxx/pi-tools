@@ -32,7 +32,7 @@ import { searchEntries } from './retrieval.ts'
 import { detectEnvironment, ENVIRONMENTS, formatEnvironments, type RuntimeEnv } from './env.ts'
 
 const MAX_CHECKPOINTS_LIST = 100
-const MAX_NOTES_SIZE = 1024 * 1024
+const MAX_NOTES_SIZE = 2048 * 1024
 
 const LANGUAGES: Record<string, { cmd: string; args: string[] }> = {
   js: { cmd: process.argv[0], args: ['-e'] },
@@ -181,8 +181,8 @@ export function registerTools(pi: ExtensionAPI): void {
       }
 
       let msg = `已${actionMap[action]}记忆: "${entry.title}" (${entry.category})`
-      if (totalSize > 900 * 1024) {
-        msg += `\n警告: 记忆库 ${(totalSize / (1024 * 1024)).toFixed(1)} MB，接近 1 MB 上限，请考虑 /memory prune 清理`
+      if (totalSize > 1800 * 1024) {
+        msg += `\n警告: 记忆库 ${(totalSize / (1024 * 1024)).toFixed(1)} MB，接近 2 MB 上限，请考虑 /memory prune 清理`
       }
 
       return { content: [{ type: 'text', text: msg }], details: null }
@@ -284,7 +284,7 @@ export function registerTools(pi: ExtensionAPI): void {
             text: [
               `记忆库统计:`,
               `  总条目: ${stats.totalEntries}（活跃 ${stats.activeEntries}）`,
-              `  存储大小: ${sizeMB} MB / 1 MB`,
+              `  存储大小: ${sizeMB} MB / 2 MB`,
               `  会话摘要: ${stats.summaries} 条`,
               `  被取代条目: ${stats.superseded} 条`,
               `  冷数据(>30天未访问): ${stats.coldEntries} 条`,
@@ -549,7 +549,7 @@ export function registerTools(pi: ExtensionAPI): void {
       let msg = `Saved note "${key}" (${valueKB} KB)`
       if (totalSize > MAX_NOTES_SIZE) {
         const sizeMB = (totalSize / (1024 * 1024)).toFixed(1)
-        msg += `\nWarning: total notes size ${sizeMB} MB exceeds 1 MB — consider cleaning up with /memory cleanup`
+        msg += `\nWarning: total notes size ${sizeMB} MB exceeds 2 MB — consider cleaning up with /memory cleanup`
       }
       if (ttl) msg += `\nExpires: ${ttl}`
       return { content: [{ type: 'text', text: msg }], details: null }

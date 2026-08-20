@@ -10532,30 +10532,6 @@
       "deleted": false
     },
     {
-      "id": "e8050184-cce8-419c-8437-6dd679396a42",
-      "category": "preference",
-      "title": "便携版修改不提交，等大改通知",
-      "content": "用户要求便携版 pi 仓库的修复只改工作区、不提交不推送（远程将有大改）；推送只推 portable-win 分支，严禁 master。pi-memory 的 entries.json 变更应合并提交到便携版 portable-win（2026-08-15 已执行：403→421 条，提交 5e5d602），而非本机主线。本机 /root/.pi 留在旧 master 不动，等通知后 fetch + reset --hard origin/master 再重新提交记忆。",
-      "tags": [
-        "工作流",
-        "git",
-        "便携版",
-        "偏好"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-15T11:09:56.619Z",
-      "updatedAt": "2026-08-15T11:09:56.619Z",
-      "accessedAt": "2026-08-15T11:09:56.619Z",
-      "observedAt": "2026-08-15T11:09:56.619Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
-      "deleted": false
-    },
-    {
       "id": "2f79afe9-c9f8-4e6b-a291-e07b0dce4d12",
       "category": "solutions",
       "title": "便携版pi崩溃死循环修复",
@@ -11016,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 29,
+      "recurrence": 36,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-19T06:38:09.161Z",
-      "accessedAt": "2026-08-19T06:38:09.161Z",
+      "updatedAt": "2026-08-19T21:58:53.030Z",
+      "accessedAt": "2026-08-19T21:58:53.030Z",
       "environments": [
         "all"
       ],
@@ -11820,22 +11796,438 @@
       "deleted": false
     },
     {
-      "id": "a126a0c7-a9bf-458d-ace9-e51f16407d82",
-      "category": "solutions",
-      "title": "待办: pi-tmux 完成通知防积压/过期（批量延迟报警，未动代码）",
-      "content": "【待办】pi-tmux 完成通知防积压/过期（2026-08-19 实测：6 个 tmux 会话实际上午 13:36-14:38 +0800 完成，通知到 15:21+0800 才批量出现，延迟 40-100min）。现象与已确认事实：watcher.ts 逻辑正确（每 5s 轮询 has-session，会话消失即 pi.sendMessage({triggerTurn:true})）；批量延迟根因在投递环节——会话完成时若恰逢我已在回合中处理其他事（或已用 tmux_wait/read 人工验证过），triggerTurn 消息被排队挂起，直到用户下一条真实消息才统一 flush，且积压无过期/合并机制，造成\"历史任务完成数十分钟后冗余报警\"。改法方向（落在 pi-tmux 扩展）：1) notify 前对积压消息做去重合并（同批 N 个完成合成一条汇总而非 N 条）；2) harness 侧给 triggerTurn 注入消息加期限（如积压>5min 丢弃或合并）；3) 或 watcher 增加\"已确认\"标记（若会话已被 tmux_read 消费则跳过通知）。约束：不能破坏\"回合进行中不打断\"的合理设计。优先级：低（不阻塞，我收到延迟通知会先 tmux_status 核对存活/已完成再响应）。",
+      "id": "2ec775d2-4750-4338-aa3e-93afe7e0fa8c",
+      "category": "procedure",
+      "title": "待办流程规范：todo 与记忆双轨联动",
+      "content": "跨会话待办管理规范（2026-08-19 从\"查看待办时 todo 为空\"暴露的流程问题落地）：1) 发现跨会话待办（长任务/需后续处理的事项）时，同时做两件事：todo 工具 create 任务跟踪 + memory_store 存【待办】标题条目（含背景/方向/约束/优先级，标题以\"待办:\"开头便于检索）；2) 处理待办时更新 todo 状态（pending→in_progress→completed），并可用 todo 的 failure 字段记录阻塞原因；3) 待办完成后双向清理：todo 归档（delete），并 memory_forget 删除对应记忆条目——避免已解决历史污染记忆检索；4) 用户说\"查看待办\"时先查 todo list，若空再用 memory_search 搜\"待办\"。会话内短任务只用 todo（无需存记忆）；跨会话长任务两条都要。教训案例：pi-tmux 通知防积压待办仅存记忆未建 todo，处理该待办时 todo 为空，靠记忆搜索才找到。",
       "tags": [
-        "tmux",
-        "通知",
         "待办",
-        "唤醒"
+        "todo",
+        "记忆",
+        "工作流"
       ],
       "confidence": 1,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-19T07:33:59.997Z",
-      "updatedAt": "2026-08-19T07:33:59.997Z",
-      "accessedAt": "2026-08-19T07:33:59.997Z",
+      "createdAt": "2026-08-19T11:56:37.715Z",
+      "updatedAt": "2026-08-19T11:56:37.715Z",
+      "accessedAt": "2026-08-19T11:56:37.715Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T11:56:37.715Z",
+      "deleted": false
+    },
+    {
+      "id": "1b937b26-e1f3-4e1e-bf93-43ebf67a3312",
+      "category": "reference",
+      "title": "pi harness triggerTurn 队列机理与 patch 评估（调研结论）",
+      "content": "【调研 2026-08-19】pi 主程序 triggerTurn 消息投递机理（dist/core/agent-session.js + @earendil-works/pi-agent-core/dist/agent.js + agent-loop.js）：1) idle 时 sendCustomMessage({triggerTurn:true}) → 直接 await _runAgentPrompt 立即触发新回合（无积压）;2) streaming 时 → agent.steer/followUp 入 PendingMessageQueue，主循环每轮 turn_end 后 getSteeringMessages 轮询消费，回合结束（shouldStopAfterTurn 后不再轮询 queue）残留消息由 _handlePostAgentRun 的 agent.hasQueuedMessages() 捕获 → agent.continue() 延续新回合;3) agent_end 处理器入队的消息同走延续路径（CHANGELOG #5115 已修复）。待办实测\"6 会话完成延迟 40-100min 批量通知\"的确切根因在静态代码未复现（idle/streaming 两路径理论均即时），最可疑：notification 触发的新回合模型快速结束无实质输出，或 interactive-mode idle 门控压后——需实测复现（模拟 6 会话场景）才能定性。patch 可行性：边界较清晰的落点是 _handlePostAgentRun 的 hasQueuedMessages 分支（agent-session.js:797）——延续前检查队列中 custom 消息 timestamp 过期（>5min）丢弃/合并;风险中高（agent-session.js 是核心文件，patch 破坏影响所有扩展，dist 有 .bak 惯例需遵守，rebuild.sh Phase 3 自动执行需重跑验证）。结论：技术可行，但先复现定性再动，列入待办。",
+      "tags": [
+        "pi内部",
+        "harness",
+        "triggerTurn",
+        "队列",
+        "patch"
+      ],
+      "confidence": 0.75,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T11:56:37.888Z",
+      "updatedAt": "2026-08-19T11:56:37.888Z",
+      "accessedAt": "2026-08-19T11:56:37.888Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T11:56:37.888Z",
+      "deleted": false
+    },
+    {
+      "id": "b8151c62-9a0e-4c2b-ba97-2b1251fe3c0d",
+      "category": "solutions",
+      "title": "待办: 复现验证 triggerTurn 通知延迟机理后评估 patch",
+      "content": "【待办】复现验证 triggerTurn 通知延迟机理（2026-08-19 调研后立案，优先级：低-中）。背景：pi-tmux 完成通知实测延迟 40-100min 批量出现（6 会话），扩展侧已做合并+ack 降冗；harness 侧 idle 直接触发新回合、streaming 走 steer 队列+延续，静态代码两路径理论均即时，根因未复现。待做：模拟多会话完成场景实测——①idle 时 watcher 触发是否立即新回合且模型有可见输出；②streaming 时入队消息是否在 agent_end 后被延续处理；③TUI idle 门控是否压后。定性后再决定是否写 patch（候选落点：agent-session.js:797 _handlePostAgentRun 的 hasQueuedMessages 分支，对积压 custom 消息做 timestamp 过期丢弃/合并）。约束：agent-session.js 是核心文件，patch 前备份（dist 已有 .bak 惯例）、写完跑 rebuild + 全量回归；不能破坏\"回合进行中不打断\"设计。",
+      "tags": [
+        "待办",
+        "harness",
+        "triggerTurn",
+        "patch"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T11:56:49.683Z",
+      "updatedAt": "2026-08-19T11:56:49.683Z",
+      "accessedAt": "2026-08-19T11:56:49.683Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T11:56:49.683Z",
+      "deleted": false
+    },
+    {
+      "id": "eea6d660-9a65-4dcb-b4d6-7a958d9ed3c7",
+      "category": "reference",
+      "title": "缓存断裂归因：pi-memory 注入块变化是全重放主因",
+      "content": "缓存断裂归因要点（2026-08-19 会话实测，88.3% 命中 6 断裂 378K 浪费）：pi-memory 注入块位于上下文头部（system prompt 后首条 custom_message），内容=高价值记忆排序+最近摘要，任何记忆增删/排序变化都会改写块 → 完整前缀重放（cacheRead=0）→ usage-stats 会误判为 A 类（其提示\"查 enable_tool/工具 schema\"，而真因是注入块变化）。归因流程修正：全重放断裂先对照会话时间线的记忆操作（memory_store/forget 时刻与断裂时刻对齐），无记忆事件的才查 provider 缓存失效（特征：间隔 ~18K 规律、正常轮连续命中）。代价量化：单次记忆操作断裂浪费 24~108K tokens。缓解：记忆批量攒操作（并行 store/forget 合并为一次）、避免会话中途碎片化写入；注入块变化是记忆价值换取缓存代价的固有成本（缓存友好与记忆写入矛盾，取舍明确）。",
+      "tags": [
+        "缓存",
+        "断裂归因",
+        "pi-memory",
+        "注入块",
+        "usage-stats"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T12:03:15.982Z",
+      "updatedAt": "2026-08-19T12:03:15.982Z",
+      "accessedAt": "2026-08-19T12:03:15.982Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T12:03:15.982Z",
+      "deleted": false
+    },
+    {
+      "id": "e34c15cd-284d-41ba-9d49-3a366f5180cc",
+      "category": "procedure",
+      "title": "待办管理规范：todo 与记忆双轨联动（含记忆写入攒批）",
+      "content": "跨会话待办管理规范：1) 发现跨会话待办（长任务/需后续处理的事项）时，同时做两件事：todo 工具 create 任务跟踪 + memory_store 存【待办】标题条目（含背景/方向/约束/优先级，标题以\"待办:\"开头便于检索）；2) 处理待办时更新 todo 状态（pending→in_progress→completed），并可用 todo 的 failure 字段记录阻塞原因；3) 待办完成后双向清理：todo 归档（delete），并 memory_forget 删除对应记忆条目——避免已解决历史污染记忆检索；4) 用户说\"查看待办\"时先查 todo list，若空再用 memory_search 搜\"待办\"。会话内短任务只用 todo（无需存记忆）；跨会话长任务两条都要。5) 记忆写入攒批（缓存代价约束，2026-08-19 实测补）：同一会话内多条记忆写入尽量并行合并为一次调用（如一次 memory_store 多参数/批量 store+forget），避免碎片化逐一写入——pi-memory 注入块位于上下文头部，每次变更导致 24~108K tokens 前缀全重放（实测 6 断裂中 4 次因此）；会话中途非必要不做记忆增删。教训案例：pi-tmux 通知防积压待办仅存记忆未建 todo，处理该待办时 todo 为空，靠记忆搜索才找到。",
+      "tags": [
+        "待办",
+        "todo",
+        "记忆",
+        "工作流",
+        "缓存"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T12:10:06.690Z",
+      "updatedAt": "2026-08-19T12:10:06.690Z",
+      "accessedAt": "2026-08-19T12:10:06.690Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T12:10:06.690Z",
+      "deleted": false
+    },
+    {
+      "id": "4e2ee8cf-5eda-4a58-8814-5c0cd7c2034d",
+      "category": "fact",
+      "title": "pi-voice 部署拓扑与多环境使用",
+      "content": "pi-voice 语音功能部署形态：Android 手机语音主环境是「termux 容器中的 ubuntu（proot-distro）」，whisper 服务 venv 在 /opt/pi-whisper/venv（python3.12），录音写 /storage/emulated/0/pi-voice/。用户还在多设备使用 pi：termux 原始环境、Linux、Windows、WSL2。后续 sherpa-onnx 服务端须多平台适配（venv/可执行路径可配置，参照 pi-whisper.sh 模式）。",
+      "tags": [
+        "pi-voice",
+        "部署",
+        "环境"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T12:40:29.977Z",
+      "updatedAt": "2026-08-19T12:40:29.977Z",
+      "accessedAt": "2026-08-19T12:40:29.977Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T12:40:29.977Z",
+      "deleted": false
+    },
+    {
+      "id": "0ffcedb2-37c2-457d-9a23-cf4db71cbbfd",
+      "category": "preference",
+      "title": "语音唤醒词: 开启语音输入",
+      "content": "pi 语音唤醒（KWS）唤醒词确定为「开启语音输入」（响应用户所选中文短语）。KWS 只认固定短语，中英混排会降低触发率。",
+      "tags": [
+        "pi-voice",
+        "KWS",
+        "唤醒词"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T12:40:30.049Z",
+      "updatedAt": "2026-08-19T12:40:30.049Z",
+      "accessedAt": "2026-08-19T12:40:30.049Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T12:40:30.049Z",
+      "deleted": false
+    },
+    {
+      "id": "a5dd4d7a-9f97-4477-bc9b-b69e51bbef1a",
+      "category": "solutions",
+      "title": "pi-voice sherpa 后端改造完成",
+      "content": "pi-voice 语音优化改造（2026-08 完成）:\n- 新增 sherpa-onnx 后端（独立进程 pi-sherpa-server.py，端口 18768，Bearer 鉴权），SenseVoice int8 转写（RTF≈0.04，中文含标点）+ KWS 唤醒。扩展用 /voice backend whisper|sherpa 切换（默认 whisper 不変），/voice wake 监听（仅 Linux，parec 流式采音）。\n- 防崩溃关键：原生模型绝不加载进 pi Node 进程，全部走独立进程 HTTP；sherpa 故障只报错不阻塞。\n- Termux 录音限制：termux-microphone-record 仅 aac/amr 容器（MediaRecorder），无实时 PCM 流 → 真流式出字与后台 KWS 唤醒在 Termux 不可做，仅 Linux 可用。\n- KWS 唤醒词拼音格式关键坑：翘舌音声母必须单 token（\"sh\" 不可拆 \"s h\"）；格式\"拼音序列 @中文\"。\n- 部署：venv /opt/pi-sherpa/venv（pip install sherpa-onnx numpy），模型 /opt/pi-sherpa/models/（SenseVoice 229MB + KWS 4.9MB），手机 proot 同架构可直接跑。\n- 编程与测试：单测 144，tsc 干净，test-all 全量绿。",
+      "tags": [
+        "pi-voice",
+        "sherpa",
+        "SenseVoice",
+        "KWS",
+        "语音"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T17:41:12.389Z",
+      "updatedAt": "2026-08-19T17:41:12.389Z",
+      "accessedAt": "2026-08-19T17:41:12.389Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T17:41:12.389Z",
+      "deleted": false
+    },
+    {
+      "id": "56a15889-4f90-4b2f-903e-c9f12b5f2552",
+      "category": "procedure",
+      "title": "模型下载源优先级与静默下载规范",
+      "content": "国内下载模型/大文件源优先级（实测 2026-08）: 1) modelscope 文件 resolve URL（https://www.modelscope.cn/models/<owner>/<repo>/resolve/master/<file>，秒级）最快最稳；2) hf-mirror.com resolve URL（中大模型可用，API /api/models 偶发 401 需重试或改用 resolve direct）；3) gh-proxy.com 代理 GitHub release（约 300KB/s，需 -C - 断点续传）；4) GitHub 直连/其它镜像常 000/超时。命令统一加 -q/--quiet，里程碑用 echo 标记（避免进度条污染 tmux 日志）。目标环境是 aarch64 proot（与手机同构）时，开发机 aarch64 实测 RTF 可直接作为手机端参考。",
+      "tags": [
+        "下载",
+        "镜像",
+        "模型",
+        "效率"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T19:13:51.358Z",
+      "updatedAt": "2026-08-19T19:13:51.358Z",
+      "accessedAt": "2026-08-19T19:13:51.358Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T19:13:51.358Z",
+      "deleted": false
+    },
+    {
+      "id": "d3ec9605-ddbb-45d4-8641-e097c90e40a9",
+      "category": "procedure",
+      "title": "任务执行纪律：todo 同步/下载合并/字段语义/只读管道",
+      "content": "任务执行纪律（会话复盘固化，2026-08）:\n1) todo：计划创建后把编号与 subject 绑定，阶段边界 force diff 一次 todo 状态；user 拉 pump/系统提示\"未同步 todo\"时立即核对。\n2) 同阶段下载/长任务合成一个 tmux 脚本（一次 run 多步串行 + 里程碑 echo），避免每次唤醒一轮。\n3) 接口字段单位先在契约注释显式（如 rtf 是秒还是比率，先定死再联调）；异常数值先查字段语义而非怀疑性能。\n4) 计划模式 bash：`curl -s <URL>` 单条 GET 本就白名单可用（GET-only）；组合需 `| head/tail/grep 等无写切片`（单只读管道④已放行）；勿用管道到执行器（python3/node/bash 均拒）。\n5) 新接口先读官方样例数据再调试（能省 2-3 轮试错，如 KWS 拼音 sh 单 token）。",
+      "tags": [
+        "效率",
+        "纪律",
+        "todo",
+        "调试"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T19:24:51.283Z",
+      "updatedAt": "2026-08-19T19:24:51.283Z",
+      "accessedAt": "2026-08-19T19:24:51.283Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T19:24:51.283Z",
+      "deleted": false
+    },
+    {
+      "id": "d401ace2-2538-4b15-87fc-0a5617551059",
+      "category": "fact",
+      "title": "memory_store 每次写入会重放整段前缀缓存",
+      "content": "缓存命中成本认知（usage-stats 实测，2026-08-19 会话）：memory_store / memory_forget 每执行一次，pi-memory 注入块（系统 prompt 头部）即变化 → 该轮起整段前缀缓存全重放（等同一次断裂，浪费可达每断裂数十万 tokens）。实测 08-19 11:33 段 90 轮内 9 次 [A] 类断裂全部对应 memory 操作。纪律：多次小 store 合并为低频一次写入；优先在会话自然边界（用户新需求/任务切换）写入；避免循环内 store。另：会话 ctx 接近 256K 上限时前缀巨大，任何小变化都会全段重发（19:07 段 ctx 251K-262K，4 次断裂浪费 2M tokens）——超长会话应及时收敛/压缩。",
+      "tags": [
+        "缓存",
+        "记忆",
+        "token",
+        "效率"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T19:25:22.963Z",
+      "updatedAt": "2026-08-19T19:25:22.963Z",
+      "accessedAt": "2026-08-19T19:25:22.963Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T19:25:22.963Z",
+      "deleted": false
+    },
+    {
+      "id": "0b45301f-0972-4d6e-bf23-428598fc878a",
+      "category": "preference",
+      "title": "用户长期目标：可自我优化私人助手",
+      "content": "用户明确以'构建可自我优化的全能型私人助手'为长期目标，要求先分析当前资源与目标差距再输出行动计划。此前投入的缓存命中治理（工具分层 29 核心+23 休眠、thinking 64K）、pi-link 四设备互联、记忆系统、定时调度（pi-autopilot）均服务于该目标。后续扩展/优化方向应与此目标对齐。",
+      "tags": [
+        "目标",
+        "自我优化",
+        "私人助手"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T21:36:09.543Z",
+      "updatedAt": "2026-08-19T21:36:09.543Z",
+      "accessedAt": "2026-08-19T21:36:09.543Z",
+      "observedAt": "2026-08-19T21:36:09.543Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a01bed-282b-7db5-aa78-f3a30e359feb",
+      "deleted": false
+    },
+    {
+      "id": "a43827d1-ae3f-49a8-b59b-aca8dffac22e",
+      "category": "fact",
+      "title": "pi 仓库资源盘点（差距分析基线）",
+      "content": "/root/.pi 为 pi 本地配置仓库（2026-08 时点）：10 个扩展（pi-context/plan-mode/pi-autopilot/pi-tmux/pi-link/pi-memory/pi-web-search/pi-browser/pi-voice/subagent）、4 个技能（pi-backup/pi-code-review/pi-full-audit/pi-translate-zh）、lib 共享库、自托管 SearXNG、scripts 生命周期脚本；Termux/WSL2/Linux 多环境经 GitHub 同步。",
+      "tags": [
+        "仓库结构",
+        "pi",
+        "资源盘点"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T21:36:09.544Z",
+      "updatedAt": "2026-08-19T21:36:09.544Z",
+      "accessedAt": "2026-08-19T21:36:09.544Z",
+      "observedAt": "2026-08-19T21:36:09.544Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a01bed-282b-7db5-aa78-f3a30e359feb",
+      "deleted": false
+    },
+    {
+      "id": "d9430ee3-143a-4825-8d60-e9089e6066b1",
+      "category": "fact",
+      "title": "运行环境：Termux/Android + Node v22",
+      "content": "pi 运行于 Termux/Android（linux-arm64，Node v22.23.1，镜像路径 /root/.local/share/pi-node）。多环境记忆带环境标签（all/termux/wsl2/linux/macos/windows）自动过滤；settings/models/auth 每环境独立不跨机覆盖，.pi-autopilot-config.json 共享入库。",
+      "tags": [
+        "环境",
+        "termux",
+        "node"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T21:36:09.544Z",
+      "updatedAt": "2026-08-19T21:36:09.544Z",
+      "accessedAt": "2026-08-19T21:36:09.545Z",
+      "observedAt": "2026-08-19T21:36:09.545Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a01bed-282b-7db5-aa78-f3a30e359feb",
+      "deleted": false
+    },
+    {
+      "id": "b9e395ff-7439-4cd1-a7ed-6d7d1390e053",
+      "category": "procedure",
+      "title": "记忆库 GC 策略（2026-08-20 基线）",
+      "content": "pi-memory 垃圾清理规则（基线：529 条目/活跃 378/0.25MB/1MB/冷数据 0）：\n1) 软删条目（非活跃 151 条）：autoReclaim 已在写入超阈值时回收；手动回收可在 memory 量异常时调用 storage.autoReclaim。\n2) 冷数据（>30 天未访问）触发清理阈值：>50 条 或 占活跃 >20% 时，先只读统计再评估压缩/归档低价值分类（reference 冗余、陈旧 fact）。\n3) entries.json 达 0.8MB 时触发 review：删除被取代旧版、合并近似条目、清理过期 preference/procedure。\n4) 清理前必须快照（ctx_snap 或 cp entries.json 备份），清理后跑 memory_stats 复测。\n5) 清理属\"低风险自动执行\"授权项；批量删除仍按高风险需用户确认。",
+      "tags": [
+        "memory",
+        "gc",
+        "self-optimize"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-19T21:59:40.028Z",
+      "updatedAt": "2026-08-19T21:59:40.028Z",
+      "accessedAt": "2026-08-19T21:59:40.029Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-19T21:59:40.028Z",
+      "deleted": false
+    },
+    {
+      "id": "10eb37b3-c3f8-46ea-9d72-f51772614e90",
+      "category": "procedure",
+      "title": "优化工单闭环流程",
+      "content": "优化工单闭环（自优化闭环的执行层，衔接 health-alert）：\n1) DETECT: 每日自检/审计发现异常 → memory_store 存 fact \"health-alert <日期>\"（自检任务已实现）。\n2) TICKET: 转工单 → memory_store 存 fact \"optimize-ticket <日期> <简述>\"；content 含 {state: open; 指标; 根因线索; 建议}，tag self-optimize。\n3) EXECUTE: 按 ticket 执行改动 → 必记 docs/OPTIMIZATION-LOG.md 的 Before/Change。\n4) VERIFY: test-all 回归 + 复测指标（LOG After）。\n5) CLOSE: memory_forget 删除该 ticket（OPTIMIZATION-LOG 为永久载体）；若需留档则更新 state=done。\n6) ROLLBACK: verify 失败 → git 回滚 + LOG 记 rolled-back。\n原则：1 ticket = 1 独立改动与验证；open 工单 >2 时先处理最大浪费项，勿并行铺开。回滚与删除走授权边界。",
+      "tags": [
+        "self-optimize",
+        "workflow",
+        "ticket"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T01:37:15.581Z",
+      "updatedAt": "2026-08-20T01:37:15.581Z",
+      "accessedAt": "2026-08-20T01:37:15.581Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-20T01:37:15.581Z",
+      "deleted": false
+    },
+    {
+      "id": "2e81a86d-306c-49f0-9fdd-c7fe910aa7cc",
+      "category": "preference",
+      "title": "ntfy 自托管待办（阶段 3.5）",
+      "content": "通知推送渠道决策（2026-08-20）：用户选择自托管 ntfy（Tailscale 内网，消息不出内网)，已登记为 roadmap 阶段 3.5 待办。前置条件：需确认是否有常驻开机、可跑 Docker/systemd 的节点（VPS 或常驻设备）。确认后：部署 ntfy → 配置 notify.json 对接 pi-notify.sh → 真实发送首测。临时替代：ntfy.sh 公共随机话题 + Android App（仅起步，国内直连不稳）。",
+      "tags": [
+        "ntfy",
+        "notify",
+        "roadmap",
+        "self-optimize"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T02:08:08.507Z",
+      "updatedAt": "2026-08-20T02:08:08.507Z",
+      "accessedAt": "2026-08-20T02:08:08.507Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-20T02:08:08.507Z",
+      "deleted": false
+    },
+    {
+      "id": "bec766b2-28c4-4998-9295-51ae7d4f0dfe",
+      "category": "solutions",
+      "title": "缓存断链根因: opencode-go 窗口 ~130-155K（fallback 已改 160K）",
+      "content": "opencode-go 是内核不完整识别的自定义 provider，pi-context 的 getContextUsage() 返回 undefined，contextWindow 走 fallback（PI_CONTEXT_WINDOW_FALLBACK）。实测 opencode-go 网关实际可用窗口 ≈130-155K，上下文到该量级即被网关强制裁剪（cacheRead 从 ~130K 骤降至 ~1K，全量重发 46-130K/次）。2026-08-20 已把 extensions/pi-context/index.ts 的 FALLBACK_CONTEXT_WINDOW 从 1M 改为 160_000（auto-compact 80%→128K 主动压缩，抢在网关硬线前）。排障顺序：先看断链集中在 ~130-160K 与否；改窗口经该常量或环境变量；内置 provider 走真实窗口不受影响。",
+      "tags": [
+        "pi-context",
+        "缓存",
+        "opencode-go",
+        "auto-compact",
+        "排障"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T03:41:31.817Z",
+      "updatedAt": "2026-08-20T03:41:31.817Z",
+      "accessedAt": "2026-08-20T03:41:31.817Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-20T03:41:31.817Z",
+      "deleted": false
+    },
+    {
+      "id": "34432570-e0da-47e8-bf62-0782dde53850",
+      "category": "solutions",
+      "title": "缓存断链真相: TTL过期+会话边界, 非网关硬裁（曾误诊已回滚）",
+      "content": "opencode-go 缓存\"断链\"实为两类自然现象，非故障：① 缓存 TTL 过期——长停顿 5-26 分钟后下轮全 miss（cacheRead≈1K），随后秒级轮次原值恢复命中；② 跨会话边界——usage-stats 相邻\"段\"是不同的独立会话各自增长，勿把 ctx 起止连读成同一会话内压缩。判断真压缩/裁剪必须以会话 jsonl 的 session_compact/compaction 事件为准（grep 时注意源码文本会被误匹配，需确认是事件而非文档）。曾误诊\"网关在 130-155K 硬裁\"并短暂把 pi-context fallback 窗口从 1M 改 160K，已回滚（无硬裁）。排障：先区分 TTL 过期 vs 事件；长上下文(1M)健康增长属预期，省 token 靠高频交互而非改窗口。",
+      "tags": [
+        "pi-context",
+        "缓存",
+        "TTL",
+        "排障",
+        "误诊记录"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-20T03:57:15.347Z",
+      "updatedAt": "2026-08-20T03:57:15.347Z",
+      "accessedAt": "2026-08-20T03:57:15.347Z",
       "environments": [
         "all"
       ]
