@@ -55,7 +55,9 @@ tmux_stop(name="build", remove_log=true)
 
 `tmux_run` 启动会话后轮询 `tmux has-session`（5s），会话消失即视为完成，经 `pi.sendMessage({customType:'pi-tmux-notify'},{triggerTurn:true})` 注入通知并触发新回合——后台任务结束后主会话自动被唤醒查看结果并收尾，无需用户发消息。
 
-风险防范：同会话只通知一次（去重）；定时器 `unref` + `session_shutdown` 时 `stopAll` 清理；同名重复注册覆盖旧监听器；`hasSession` 探测失败保守判存活（防 tmux 抖动误报完成）；通知失败静默；通知文本无时间戳（缓存友好）；`notify=false` 不注册监听；沿用已有会话（`started=false`，即同名会话已存在）不注册。实现见 `watcher.ts`（依赖注入纯逻辑，测试 `tests/watcher.test.ts`）。
+风险防范：同会话只通知一次（去重）；定时器 `unref` + `session_shutdown` 时 `stopAll` 清理；同名重复注册覆盖旧监听器（notified/acked 标记一并清除）；`hasSession` 探测失败保守判存活（防 tmux 抖动误报完成）；通知失败静默；通知文本无时间戳（缓存友好）；`notify=false` 不注册监听；沿用已有会话（`started=false`，即同名会话已存在）不注册。实现见 `watcher.ts`（依赖注入纯逻辑，测试 `tests/watcher.test.ts`）。
+
+防积压（待办 2026-08-19：批量完成通知延迟 40-100min 冗余报警）：①**同批合并**——完成事件先入 pending 队列，`MERGE_WINDOW_MS`（5s = 轮询间隔）固定窗口从首个完成起算，窗口内到期的会话合成一条汇总通知（同轮批量任务完成不再 N 条各自 sendMessage 积压）；②**消费标记**——`tmux_read` 成功读取后 `watcher.ack(name)`，该会话完成时不再通知（已人工查看过，含已入 pending 未 flush 的直接移除）；③**主动停止丢弃**——`tmux_stop` 的 `stop()` 丢弃该会话 pending 条目，防轮询竞态触发空通知。限制：harness 侧"回合进行中 triggerTurn 排队、下条用户消息才 flush"与积压消息过期均无法从扩展侧改变（sendMessage 后不可撤回），扩展侧只做合并降冗 + 已消费免打扰。
 
 ## 配置
 

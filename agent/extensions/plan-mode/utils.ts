@@ -93,12 +93,25 @@ const SAFE_PATTERNS = [
   /^\s*eza\b/,
 ];
 
+/** 只读管道右侧允许的切片命令（无写文件能力；sed -w/sort -o 等一律不放行） */
+const PIPE_TAIL_RE = /^\s*(head|tail|less|more|wc|uniq|cat|grep)\b([ \t].*)?$/;
+
+/** 单条只读段判定：无分隔符/命令替换/换行/重定向，且命中白名单、不命中破坏性。 */
+function isReadOnlyCmd(s: string): boolean {
+  const t = s.trim();
+  if (!t) return false;
+  // 单条：无 ; && | <(进程替换) >写 `< >( 重定向) 或 反引号/$() 或 换行
+  if (/[;&|<>]|`|\$\(|\n|\r/.test(t)) return false;
+  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(t)) && SAFE_PATTERNS.some((p) => p.test(t));
+}
+
 /**
  * 规划模式 bash 只读校验。
- * 借鉴 opencode 的"模式只是提示词、机制要可预期"思路，放宽两处高频误拦：
+ * 借鉴 opencode 的"模式只是提示词、机制要可预期"思路，放宽高频误拦：
  *  1. `cd <目录> && <单条白名单命令>` 前缀（模型习惯性打包导航）
  *  2. 命令尾部 `2>/dev/null`（丢弃 stderr，非落盘）
- * 其余复合（`;`、管道、`&&` 多重、命令替换、重定向到文件）一律拒绝。
+ *  3. 单一只读管道：`<只读命令> | <无写切片>`（如 curl GET URL | head，右侧限无写能力）
+ * 其余复合（`;`、多管道、`&&` 多重、命令替换、重定向到文件、写落盘切片）一律拒绝。
  */
 export function isSafeCommand(command: string): boolean {
   const trimmed = command.trim();
@@ -119,10 +132,22 @@ export function isSafeCommand(command: string): boolean {
   const core = /* cd 前缀剥离 */ cdMatch ? core0.slice(cdMatch[0].length).trim() : core0;
   if (cdMatch && core.includes("&&")) return false;
 
-  // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()、换行）
-  // 换行注入（审计实测）：'ls\nbash /tmp/x.sh' 以白名单命令开头时整串放行，
-  // 换行后的第二条命令不受任何白名单约束
-  if (/[;&|&]|`|\$\(|\n|\r/.test(core)) return false;
+  // 单一只读管道特判：<只读单命令> | <无写切片>（左右各自单条、无写、无分隔）
+  // 其余管道形态落入下面的分隔符拒绝
+  const pipeIdx = core.indexOf("|");
+  const singlePipe = pipeIdx >= 0 && !core.includes("|", pipeIdx + 1);
+  let readOnlyPipe = false;
+  if (singlePipe) {
+    const lhs = core.slice(0, pipeIdx);
+    const rhs = core.slice(pipeIdx + 1);
+    readOnlyPipe = isReadOnlyCmd(lhs) && PIPE_TAIL_RE.test(rhs.trim()) && !rhs.includes(">");
+  }
+  if (!readOnlyPipe) {
+    // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()、换行）
+    // 换行注入（审计实测）：'ls\nbash /tmp/x.sh' 以白名单命令开头时整串放行，
+    // 换行后的第二条命令不受任何白名单约束
+    if (/[;&|&]|`|\$\(|\n|\r/.test(core)) return false;
+  }
 
   // awk 白名单存在任意执行/读文件形态（审计实测 system(...) 放行）——
   // 收紧：禁止 system/getline（含无括号语句形态）与重定向
