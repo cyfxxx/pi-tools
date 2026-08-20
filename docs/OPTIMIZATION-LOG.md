@@ -175,3 +175,30 @@
 ### After
 - 受影响 7 扩展 vitest 全绿 + tsc ✓（pi-memory 1 用例回归先红后修）；pi-link 2 断言随行为同步。
 - 遗留：注入预算放宽（设计权衡保缓存稳定，降 LOW）；调度语义（appendRun/failover graceful/双调度锁）立项批2 待有完整测试环境执行。
+
+---
+
+## 2026-08-20 长会话 A 类断裂归因诊断（93.4% 命中率分析）
+- 状态: 诊断（非改动）；关联: SELF-OPTIMIZING-ROADMAP §4.1 命中率退化
+
+### 现象（Before）
+- 当前会话（230+ 轮 / ctx 176K / max thinking）命中率 92.5-93.4%，8 次断裂浪费 1.59M；
+  A 类断裂 ×5 距上轮仅 11-30s（短间隔全断）。
+
+### 排除项（逐步证伪）
+- TTL 长停顿：A 类断点间隔 11-30s，非停顿首轮 → 排除
+- auto-compact：logs/compact-snapshots/ 为空（今日 2.6 上线，ctx 176K 远未到 1M 窗口 85% 阈值）→ 排除
+- 工具结果分层擦除（pruneToolResults）：usage-diag prune 事件本会话为 0 → 排除
+- 工具启用/注入块：本会话未 enable 休眠组；注入块尾部 ≤500 token → 排除
+
+### 根因（判定）
+- **A 类断裂 = pruneThinkingBudget（64K 预算）静默改写早期 thinking 消息**：
+  max thinking 每轮 5-10K reasoning，长会话累积远超 64K → 触发时删除较早期 thinking →
+  早期消息被修改 → 前缀整体失效 → 下轮 A 类重发。
+- **盲点确认**：recordPrune 只在 pruneToolResults 路径调用（index.ts:391）；pruneThinkingBudget
+  （index.ts:417-421）无任何事件记账 → 触发不可见。是当前唯一无账可查的 post-hoc 改写。
+
+### 结论与建议（After / 后续工单）
+- 行为符合设计权衡（BASELINE 16K→39 断 / 64K→4 断已实证），非 bug；命中率仍 >90% 健康线。
+- 可改进（低优先）：给 pruneThinkingBudget 加事件记账（同 recordPrune/快照），使 A 类断裂可归因——待工单。
+- 对照实验（若频繁 100K+ 长会话）：thinking 档位 max→high，before/after 记入本 LOG 再定。

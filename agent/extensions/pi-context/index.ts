@@ -418,6 +418,9 @@ export default function (pi: ExtensionAPI) {
 		if (thinking.modified) {
 			messages = thinking.messages as unknown as typeof messages;
 			modified = true;
+			// 记账（2026-08-20 补盲点）：thinking 剪枝是唯一无事件的 post-hoc 改写，
+			// 类型 prune-think 供 A 类断裂归因区分于工具结果擦除
+			recordPrune(thinking.prunedTokens, thinking.prunedChars, thinking.prunedCount, "thinking");
 		}
 		if (modified) return { messages };
 	});

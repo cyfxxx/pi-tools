@@ -29,7 +29,7 @@ export interface AutoCompactEvent {
 }
 
 export interface PruneEvent {
-  type: "prune";
+  type: "prune" | "prune-think";
   ts: number;
   prunedTokens: number;
   prunedChars: number;
@@ -92,9 +92,20 @@ export function recordAutoCompact(contextTokens: number, threshold: number): voi
   }
 }
 
-export function recordPrune(prunedTokens: number, prunedChars: number, prunedCount: number): void {
+export function recordPrune(
+  prunedTokens: number,
+  prunedChars: number,
+  prunedCount: number,
+  kind: "tool" | "thinking" = "tool",
+): void {
   try {
-    const event: PruneEvent = { type: "prune", ts: Date.now(), prunedTokens, prunedChars, prunedCount };
+    const event: PruneEvent = {
+      type: kind === "thinking" ? "prune-think" : "prune",
+      ts: Date.now(),
+      prunedTokens,
+      prunedChars,
+      prunedCount,
+    };
     appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
   } catch {
     // ignore
