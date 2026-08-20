@@ -152,3 +152,26 @@
 - 脚本 node --check 语法 OK，输出正常（当前会话 91.7%，A 类 1 次）。
 - 回归：test-all.sh --fast 全绿。
 - 结论：保留。后续会话不再将大断裂误归因记忆操作。
+
+
+## 2026-08-20 pi-full-audit 全面体检 + 修复批1（第4步复核后）
+- 状态: done（全量回归待最终确认）
+
+### Before
+- 确定性检查 2 失败：auth.json 密钥=预期本地凭证（gitignore）；pi-notify.sh shell 语法=node shebang 被当 shell 误报。
+- 4 组 scout 并行审查产出建议；复核子代理逐条核实修正（context 钩子=链式传递非 last-wins、cron 锁有存活校验、resetBudget 3 处调用等）。
+
+### Change（复核后修复批1）
+- scripts/knowledge-fetch.py:78 getsize 崩溃→exists 判断；docstring --days 对齐 --limit
+- pi-memory SECRET_PATTERNS 补 PEM 私钥 + 密码/令牌键值形态（排除集含 \x5b 防二次匹配已替换标记）；markExtracted→writeJSONAtomic
+- pi-link state-writer/active 直写→tmp+rename 原子写；buildRemoteCommand session-dir JSON.stringify 引号保护（测试断言同步）
+- pi-autopilot policy 鉴权分支前移（先于 logic_error）
+- pi-voice WakeSession.stop SIGKILL 死代码修复（局部快照闭包）
+- pi-tmux Windows send-keys stdin EPIPE 捕获
+- plan-mode NORMAL_MODE_TOOLS 补 memory_search/memory_recall/ctx_note（执行模式记忆可检索）
+- README/impl 不存在 install.sh→web-search 用 start-searxng.sh、browser 用 npm install
+- cache-guard baseline 固化（pi-context 注释改动审计通过）
+
+### After
+- 受影响 7 扩展 vitest 全绿 + tsc ✓（pi-memory 1 用例回归先红后修）；pi-link 2 断言随行为同步。
+- 遗留：注入预算放宽（设计权衡保缓存稳定，降 LOW）；调度语义（appendRun/failover graceful/双调度锁）立项批2 待有完整测试环境执行。

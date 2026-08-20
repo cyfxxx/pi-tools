@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """knowledge-fetch.py —— 知识订阅增量抓取（roadmap 3.2，零 LLM）
-用法: knowledge-fetch.py [--days N] [--limit K]
+用法: knowledge-fetch.py [--limit K]
 对主题列表调本地 SearXNG(127.0.0.1:8889)，按标题 hash 去重（logs/knowledge/.seen.txt），
 新增结果追加写 logs/knowledge/<date>.md。主题与频率在 TOPICS/调度处调整。
 """
@@ -75,7 +75,10 @@ def main():
     else:
         print('无新增（各主题与上次一致）')
     today = os.path.join(KLOG, f'{date}.md')
-    print('当日文件:', os.path.getsize(today), 'bytes' if os.path.exists(today) else '(未创建)')
+    if os.path.exists(today):
+        print('当日文件:', os.path.getsize(today), 'bytes')
+    else:
+        print('当日文件: (未创建)')
 
 if __name__ == '__main__':
     main()

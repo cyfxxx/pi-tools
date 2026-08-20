@@ -42,7 +42,7 @@ function readJSON<T>(file: string): T | null {
   }
 }
 
-function writeJSONAtomic(file: string, data: unknown) {
+export function writeJSONAtomic(file: string, data: unknown) {
   ensureDir()
   // pid 后缀：主进程与提取子进程并发写同文件时互不踩踏 tmp 文件
   const tmp = `${file}.${process.pid}.tmp`
@@ -67,6 +67,10 @@ const SECRET_PATTERNS: Array<[RegExp, string]> = [
   [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, '[REDACTED:jwt]'],
   // Authorization Bearer 头
   [/\bBearer\s+[A-Za-z0-9._-]{16,}\b/gi, '[REDACTED:bearer-token]'],
+  // PEM 私钥/证书块（RSA/EC/OpenSSH/DSA/加密私钥），可跨行；防对话中粘贴私钥原文入库（审计 MEDIUM）
+  [/\b-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]+PRIVATE KEY-----\b/g, '[REDACTED:private-key]'],
+  // 密码/令牌键值形态: password/secret/api_key/token/access_key = 或 :（保守长值防误伤）
+  [/\b(password|passwd|secret|api[_-]?key|token|access[_-]?key)\s*[=:]\s*['\"]?[^\s'\",;\x5b]{8,}/gi, '$1=[REDACTED]'],
 ]
 
 export function scrubSecrets(text: string): string {

@@ -26,7 +26,7 @@ import { registerTodoTool, runTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
 const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
-const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent", "plan_enter"];
+const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent", "plan_enter", "memory_search", "memory_recall", "ctx_note"];
 
 /**
  * 退出受限状态时恢复全量工具（方案 1）。

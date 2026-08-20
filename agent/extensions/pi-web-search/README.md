@@ -44,8 +44,8 @@
 ### 一键部署
 
 ```bash
-# 运行扩展目录中的安装脚本（包含 SearXNG 部署选项）
-bash ~/.pi/agent/extensions/pi-web-search/install.sh
+# 运行扩展目录中的部署/启动脚本（SearXNG 已部署时仅启动）
+bash ~/.pi/agent/extensions/pi-web-search/start-searxng.sh
 ```
 
 脚本会自动完成：系统依赖 → 克隆仓库 → 创建 venv → 安装 SearXNG → 生成配置 → 启动并验证。
@@ -178,7 +178,6 @@ bash ~/.pi/searxng/stop.sh && bash ~/.pi/searxng/start.sh
 ├── types.ts                   # SearchOnlyConfig
 ├── package.json               # npm 包配置，入口 → ./index.ts
 ├── tsconfig.json
-├── install.sh                 # 一键安装脚本（部署扩展 + 可选 SearXNG）
 ├── start-searxng.sh           # 启动本地 SearXNG 服务
 │
 ├── fetch.ts                   # ⚡ 轻量 HTTP 工具（fetch_url + web_fetch）
@@ -242,9 +241,8 @@ bash ~/.pi/searxng/stop.sh && bash ~/.pi/searxng/start.sh
 #### 方式 A：一键安装（推荐）
 
 ```bash
-# 运行安装脚本（自动处理一切）
-# 可选择是否部署本地 SearXNG
-bash ~/.pi/agent/extensions/pi-web-search/install.sh
+# 运行部署/启动脚本（自动处理一切）
+bash ~/.pi/agent/extensions/pi-web-search/start-searxng.sh
 ```
 
 #### 方式 B：手动安装

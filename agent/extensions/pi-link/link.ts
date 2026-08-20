@@ -99,7 +99,9 @@ export function buildRemoteCommand(d: DeviceConfig, opts: SendOptions): string {
   const parts = ['--mode', 'rpc']
   if (!(opts.extensions ?? d.extensions ?? false)) parts.push('--no-extensions')
   const sdir = opts.sessionDir ?? '~/.pi/agent/sessions/pi-link'
-  parts.push('--session-dir', sdir)
+  // 引号保护（审计 LOW）：sdir 非法定值（默认路径无空格）但含空格/元字符的目录名
+  // 会破坏远端命令；JSON.stringify 输出带引号的 DFS 字符串（转义安全）。
+  parts.push('--session-dir', JSON.stringify(sdir))
   const args = parts.join(' ')
   // 会话连续性：continue 时先找上次会话文件（非 JSON 行输出，本机解析），
   // 超过 1MB 视为旧会话（开新），fresh 策略跳过

@@ -987,11 +987,12 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
         clearInterval(timer)
         timer = null
       }
-      if (child && child.exitCode === null) {
-        child.kill('SIGTERM')
-        // 兜底：2s 内未退出则强杀
+      const c = child
+      if (c && c.exitCode === null) {
+        c.kill('SIGTERM')
+        // 兜底：2s 内未退出则强杀（c 为局部快照，避免 stop() 末尾 child=null 使闭包恒空、SIGKILL 永不成死代码）
         setTimeout(() => {
-          if (child && child.exitCode === null) child.kill('SIGKILL')
+          if (c && c.exitCode === null && !c.killed) c.kill('SIGKILL')
         }, 2000).unref()
       }
       running = false

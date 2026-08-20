@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { hostname } from 'node:os'
 
@@ -58,7 +58,9 @@ export function writeActive(state: Partial<ActiveState>, file = activeFilePath()
   try {
     mkdirSync(join(file, '..'), { recursive: true })
     const cur = readActive(file)
-    writeFileSync(file, JSON.stringify({ ...(cur ?? {}), ...state, device: state.device ?? cur?.device ?? '' }, null, 2), 'utf-8')
+    const tmp = file + '.tmp.' + process.pid
+    writeFileSync(tmp, JSON.stringify({ ...(cur ?? {}), ...state, device: state.device ?? cur?.device ?? '' }, null, 2), 'utf-8')
+    renameSync(tmp, file)
   } catch {
     // 写失败不影响主流程
   }
