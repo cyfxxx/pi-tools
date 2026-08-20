@@ -1,0 +1,19 @@
+{
+  "_说明": "复制为 ~/.pi/agent/notify.json 并设置 enabled=true 启用。notify.json 含 token 不入库（已在 gitignore）。template 占位: {{subject}}/{{body}}（URL 编码）、{{subject_json}}/{{body_json}}（JSON 转义）。channel.enabled=false 可单独停用。rateLimitMinutes 内同 subject 只发一次。",
+  "enabled": false,
+  "rateLimitMinutes": 60,
+  "channels": [
+    {
+      "id": "default",
+      "type": "cmd",
+      "enabled": false,
+      "template": "curl -fsS -X POST 'https://api.day.app/BARK-KEY/{{subject}}/{{body}}'"
+    },
+    {
+      "id": "server-chan",
+      "type": "cmd",
+      "enabled": false,
+      "template": "curl -fsS -X POST 'https://sctapi.ftqq.com/SENDKEY.send' -H 'Content-Type: application/json' -d '{\"title\":{{subject_json}},\"desp\":{{body_json}}}'"
+    }
+  ]
+}

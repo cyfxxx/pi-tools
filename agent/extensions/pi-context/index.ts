@@ -117,6 +117,8 @@ export function truncateToolContent(
 // fallback 链：内核 usage(contextWindow+tokens) → 最近 turn_end 的 provider
 // contextTokens（input+cacheRead，每轮有效）+ 配置窗口。窗口来源：
 // PI_CONTEXT_WINDOW_FALLBACK 环境变量（默认 1M，deepseek-v4 系列）。
+// 2026-08-20 曾误改 160K（误判“网关 130-155K 硬裁”——后被证伪：会话内无
+// compaction 事件，MISS 轮为缓存 TTL 过期/跨会话边界，上下文 1M 健康增长）。已回滚。
 const FALLBACK_CONTEXT_WINDOW = 1_000_000
 let fallbackContextWindow = (() => {
   const raw = process.env.PI_CONTEXT_WINDOW_FALLBACK
