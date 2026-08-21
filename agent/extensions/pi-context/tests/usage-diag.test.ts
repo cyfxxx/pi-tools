@@ -5,12 +5,14 @@ import { tmpdir } from 'node:os'
 import {
   recordUsage,
   recordAutoCompact,
+  recordThinkingMeter,
   loadDiagLines,
   summarizeRecords,
   formatUsageSummary,
   getDiagFile,
   trimDiagContent,
   type UsageRecord,
+  type ThinkingMeterEvent,
 } from '../../../lib/usage-diag.ts'
 
 let dir: string
@@ -117,5 +119,15 @@ describe('usage-diag: 汇总', () => {
 
   it('无记录时给出提示', () => {
     expect(formatUsageSummary([])).toContain('暂无用量记录')
+  })
+
+  it('recordThinkingMeter 写入 thinking-meter 事件', () => {
+    recordThinkingMeter(12_345)
+    const ev = loadDiagLines().find(
+      (l) => (l as { type?: string }).type === 'thinking-meter',
+    ) as unknown as ThinkingMeterEvent | undefined
+    expect(ev).toBeTruthy()
+    expect(ev!.tokens).toBe(12_345)
+    expect(ev!.type).toBe('thinking-meter')
   })
 })

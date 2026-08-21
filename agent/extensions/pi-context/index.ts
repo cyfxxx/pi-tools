@@ -7,6 +7,7 @@ import {
 	setContextWindow,
 	setUsedTokens,
 	recordCacheUsage,
+	estimateTokens,
 } from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
 import { pruneThinkingBudget, pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
 import {
@@ -14,6 +15,7 @@ import {
 	loadDiagLines,
 	recordAutoCompact,
 	recordPrune,
+	recordThinkingMeter,
 	recordToolEnable,
 	recordToolUsage,
 	recordUsage,
@@ -422,6 +424,19 @@ export default function (pi: ExtensionAPI) {
 			// 类型 prune-think 供 A 类断裂归因区分于工具结果擦除
 			recordPrune(thinking.prunedTokens, thinking.prunedChars, thinking.prunedCount, "thinking");
 		}
+		// 思考量记账（task #14 量化）：provider（opencode-go）不返回 reasoning，
+		// 须从消息层统计当轮上下文内 assistant thinking 块 token 总量（改写后=实际携带）。
+		// 写 usage-diag thinking-meter，供 usage-stats --thinking 按会话聚合对照档位变化。
+		let thinkingTokens = 0;
+		for (const m of messages as unknown as PruneMessage[]) {
+			if (m.role !== "assistant" || !Array.isArray(m.content)) continue;
+			for (const b of m.content as { type?: string; thinking?: string }[]) {
+				if (b && b.type === "thinking" && typeof b.thinking === "string") {
+					thinkingTokens += estimateTokens(b.thinking);
+				}
+			}
+		}
+		recordThinkingMeter(thinkingTokens);
 		if (modified) return { messages };
 	});
 

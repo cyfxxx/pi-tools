@@ -112,6 +112,25 @@ export function recordPrune(
   }
 }
 
+// ── thinking 思考量记账（2026-08-21，task #14 量化思考量）──
+// provider（opencode-go）不返回 reasoning，量化思考量须从消息层 assistant thinking 块统计。
+// pi-context context hook 每轮统计上下文内的 thinking token 总量，写一条 thinking-meter。
+// 供 usage-stats --thinking 按会话聚合，对照档位（max→high）思考量变化。
+// 仅数据文件、不进注入路径（缓存友好）；失败静默。
+export interface ThinkingMeterEvent {
+  type: "thinking-meter";
+  ts: number;
+  tokens: number;
+}
+export function recordThinkingMeter(tokens: number): void {
+  try {
+    const event: ThinkingMeterEvent = { type: "thinking-meter", ts: Date.now(), tokens };
+    appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
+  } catch {
+    // ignore
+  }
+}
+
 // ── 工具启用事件台账（2026-08-19）──
 // enable_tool 是唯一改变运行时工具集的入口（pi-context 分层，改 setActiveTools）。
 // 启用事件落到独立台账 agent/stats/tool-events.jsonl（非 usage-diag，避免污染用量统计），
