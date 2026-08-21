@@ -203,7 +203,10 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           if (!confirmed) break
           ctx.ui.notify('正在重启...', 'info')
           writeRestartRequest('restart', { reason })
-          try { ctx.shutdown() } catch { process.exit(0) }
+          try { ctx.shutdown() } catch { /* ignore */ }
+          // 兜底（对齐 tools.ts）：TUI 环境 shutdown 不退出进程，强制 1.5s 退出
+          // 让 wrapper 检测到 restart 请求 --continue 重载新代码
+          setTimeout(() => process.exit(0), 1500)
           break
         }
         case 'help':

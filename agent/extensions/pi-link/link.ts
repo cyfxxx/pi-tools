@@ -111,12 +111,16 @@ export function buildRemoteCommand(d: DeviceConfig, opts: SendOptions): string {
   // （无展开/命令替换），并存 shell 变量后以 "$VAR" 引用阻断 `$()`/反引号类注入。
   parts.push('--session-dir', shellSingleQuote(sdir))
   const args = parts.join(' ')
+  // 本机 shell 探测路径用（--session-dir 传 pi 原样解析；此处 ~ 需展开成 $HOME 才能 ls）
+  const sdirAssign = sdir.startsWith('~')
+    ? `$HOME${shellSingleQuote(sdir.slice(1))}`
+    : shellSingleQuote(sdir)
   // 会话连续性：continue 时先找上次会话文件（非 JSON 行输出，本机解析），
   // 超过 1MB 视为旧会话（开新），fresh 策略跳过
   const policy = opts.sessionPolicy ?? d.sessionPolicy ?? 'continue'
   const resumeProbe = policy === 'fresh'
     ? ''
-    : `SDIR=${shellSingleQuote(sdir)}; ` +
+    : `SDIR=${sdirAssign}; ` +
       `F=$(ls -t "$SDIR"/*.jsonl 2>/dev/null | head -1); ` +
       `if [ -n "$F" ]; then SZ=$(stat -c%s "$F" 2>/dev/null || stat -f%z "$F" 2>/dev/null || echo 1048577); ` +
       `if [ "$SZ" -lt 1048576 ]; then echo "PI_LINK_LAST_SESSION=$F"; fi; fi; `

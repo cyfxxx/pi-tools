@@ -78,20 +78,23 @@ export async function decideMerge(
 
   // 矛盾检测：同一主体的对立表达（喜欢→不喜欢）→ 取代而非合并
   // 先于相似度合并判断，避免"用户喜欢咖啡"被并入"用户不喜欢咖啡"
-  if (detectContradiction(best.entry, candidate)) {
+  // 审计 MEDIUM 修复：矛盾判定扩展到 top-N 相似条目——原仅对 top-1 判定，
+  // 若矛盾条目的相似度排在第二（第一是别名条目），矛盾会漏检、两对立记忆并存
+  for (const { entry } of similar) {
+    if (!detectContradiction(entry, candidate)) continue
     // manual 条目（用户明确存入）不被低置信度提取候选静默取代：噪声提取与
     // 用户明确记录冲突时保留 manual（审计发现：source!=='manual' 仅保护标签路径）
-    if (best.entry.source === 'manual' && (candidate.confidence ?? 0) < 0.8) {
-      return { action: 'NOOP', note: `矛盾候选置信度不足，保留 manual 条目 ${best.entry.title}` }
+    if (entry.source === 'manual' && (candidate.confidence ?? 0) < 0.8) {
+      return { action: 'NOOP', note: `矛盾候选置信度不足，保留 manual 条目 ${entry.title}` }
     }
-    best.entry.supersededBy = candidate.id
-    best.entry.deleted = true
+    entry.supersededBy = candidate.id
+    entry.deleted = true
     // v5: 记录失效时点（bi-temporal；供 asOf 回溯查询旧事实）
-    best.entry.validUntil = new Date().toISOString()
-    best.entry.updatedAt = new Date().toISOString()
+    entry.validUntil = new Date().toISOString()
+    entry.updatedAt = new Date().toISOString()
     return {
       action: 'ADD',
-      note: `矛盾取代 ${best.entry.title}（语义反转，已标记 superseded）`,
+      note: `矛盾取代 ${entry.title}（语义反转，已标记 superseded）`,
     }
   }
 
