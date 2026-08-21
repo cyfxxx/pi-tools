@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+colab_exec —— pi 侧 CLI：把 Google Colab（免费 GPU）当成远程 Python/GPU 执行后端。
+
+配合 packs/colab-bridge/colab/colab-bridge.ipynb 使用：
+notebook 启动桥接服务 + 隧道后，把打印的 {"url","token"} 存进配置，即可：
+
+  colab_exec status                    # GPU/健康自检
+  colab_exec run 'print(1+1)'          # 提交 Python 代码（多行可用 -f 文件）
+  colab_exec sh 'nvidia-smi'           # 提交 bash 命令
+  colab_exec up local.py /content/a.py # 上传文件
+  colab_exec down /content/out.txt     # 下载文件
+
+配置优先级：命令行 -b/--token > 环境变量 COLAB_BRIDGE_URL/TOKEN > ~/.config/colab-bridge/config.json
+"""
+
+import argparse
+import base64
+import json
+import os
+import sys
+import urllib.request
+import urllib.error
+
+CONFIG = os.environ.get("COLAB_BRIDGE_CONFIG") or os.path.expanduser("~/.config/colab-bridge/config.json")
+
+
+def load_conn(args):
+    cfg = {}
+    if os.path.exists(CONFIG):
+        try:
+            cfg = json.load(open(CONFIG))
+        except Exception:
+            cfg = {}
+    url = args.base or os.environ.get("COLAB_BRIDGE_URL") or cfg.get("url", "")
+    token = args.token or os.environ.get("COLAB_BRIDGE_TOKEN") or cfg.get("token", "")
+    if not url:
+        die("未配置连接。先跑 notebook 拿到 url/token 后执行:\n"
+            "  colab_exec conf <url> <token>\n"
+            f"（写入 {CONFIG}）")
+    return url.rstrip("/"), token
+
+
+def http(method, url, payload=None, token="", timeout=60):
+    req = urllib.request.Request(url, method=method)
+    if token:
+        req.add_header("X-Token", token)
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, data=data, timeout=timeout) as r:
+            return r.read()
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")[:500]
+        die(f"HTTP {e.code}: {body or e.reason}")
+    except urllib.error.URLError as e:
+        die(f"连接失败: {e.reason}\n  检查隧道 URL 是否仍有效（cloudflared 每次会话 URL 会变）")
+
+
+# ---------------- 子命令 ----------------
+def cmd_conf(args):
+    data = {"url": args.url, "token": args.token}
+    os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+    json.dump(data, open(CONFIG, "w"), indent=2)
+    print(f"已写入 {CONFIG}")
+
+
+def cmd_status(args):
+    url, token = load_conn(args)
+    r = json.loads(http("GET", f"{url}/", token=token))
+    print(json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_run(args, mode):
+    url, token = load_conn(args)
+    if args.file:
+        code = open(args.file, "r", encoding="utf-8").read()
+    elif args.code:
+        code = args.code
+    else:
+        code = sys.stdin.read()
+    payload = {"mode": mode, "code": code, "timeout": args.timeout}
+    if args.cwd:
+        payload["cwd"] = args.cwd
+    r = json.loads(http("POST", f"{url}/exec", payload, token=token, timeout=args.timeout + 30))
+    if args.json:
+        print(json.dumps(r, ensure_ascii=False))
+    else:
+        if r.get("stdout"):
+            print(r["stdout"], end="" if r["stdout"].endswith("\n") else "\n")
+        if r.get("stderr"):
+            print("[stderr]", r["stderr"], file=sys.stderr)
+        print(f"[exit={r.get('exit')} elapsed={r.get('elapsed')}s]", file=sys.stderr)
+    if r.get("exit"):
+        sys.exit(r["exit"] if isinstance(r["exit"], int) else 1)
+
+
+def cmd_up(args):
+    url, token = load_conn(args)
+    data = open(args.local, "rb").read()
+    remote = args.remote or os.path.basename(args.local)
+    r = json.loads(http("POST", f"{url}/upload",
+                        {"path": remote, "data": base64.b64encode(data).decode()},
+                        token=token, timeout=args.timeout))
+    print(json.dumps(r, ensure_ascii=False))
+
+
+def cmd_down(args):
+    url, token = load_conn(args)
+    raw = http("GET", f"{url}/download?path={urllib.parse.quote(args.remote)}", token=token)
+    if args.local:
+        open(args.local, "wb").write(raw)
+        print(f"已保存 {args.local} ({len(raw)} bytes)")
+    else:
+        sys.stdout.buffer.write(raw)
+
+
+# ---------------- main ----------------
+def build():
+    p = argparse.ArgumentParser(prog="colab_exec", description="pi ↔ Google Colab 远程执行桥（免费 GPU 后端）")
+    p.add_argument("-b", "--base", help="桥接 URL（含 https://）")
+    p.add_argument("--token", help="访问 token")
+    p.add_argument("--json", action="store_true", help="run 时 JSON 输出")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sp = sub.add_parser("conf", help="保存连接配置 <url> <token>")
+    sp.add_argument("url"); sp.add_argument("token")
+    sp.set_defaults(func=cmd_conf)
+
+    sp = sub.add_parser("status", help="GPU/健康自检")
+    sp.set_defaults(func=cmd_status)
+
+    for name, mode in (("run", "python"), ("sh", "bash")):
+        sp = sub.add_parser(name, help=f"提交{ 'Python代码' if mode=='python' else 'bash命令'}到 Colab 执行")
+        sp.add_argument("code", nargs="?", default=None, help="代码/命令（缺省读 stdin）")
+        sp.add_argument("-f", "--file", help="从文件读代码")
+        sp.add_argument("--cwd", help="远端工作目录")
+        sp.add_argument("-t", "--timeout", type=float, default=120)
+        sp.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="JSON 输出")
+        sp.set_defaults(func=lambda a, m=mode: cmd_run(a, m))
+
+    sp = sub.add_parser("up", help="上传文件 <本地> [远端路径]")
+    sp.add_argument("local"); sp.add_argument("remote", nargs="?", default=None)
+    sp.add_argument("-t", "--timeout", type=float, default=300)
+    sp.set_defaults(func=cmd_up)
+
+    sp = sub.add_parser("down", help="下载文件 <远端路径> [本地路径](缺省输出到 stdout)")
+    sp.add_argument("remote"); sp.add_argument("local", nargs="?", default=None)
+    sp.set_defaults(func=cmd_down)
+    return p
+
+
+def die(msg):
+    print(f"[colab_exec] {msg}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    import urllib.parse  # noqa: E402
+    args = build().parse_args()
+    args.func(args)

@@ -1,0 +1,6 @@
+{
+  "comment": "复制为 ~/.config/comfyui-agent/config.json 后编辑。servers 下每个条目 = 一台运行 ComfyUI 的设备（远程 GPU 机通常需 --listen 0.0.0.0 启动，建议配合 tailscale/ssh 隧道使用，勿直接暴露公网）。",
+  "servers": {
+    "default": "http://192.168.1.100:8188"
+  }
+}
