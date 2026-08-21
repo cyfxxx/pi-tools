@@ -141,6 +141,8 @@ export interface LevelChangeEvent {
   to: string;
   reason: string;
   pressure: string;
+  /** 2026-08-21 混合方案：auto=规则自动切档 / model=模型提议经规则审批 */
+  source?: "auto" | "model";
 }
 export function recordLevelChange(e: Omit<LevelChangeEvent, "type" | "ts">): void {
   try {

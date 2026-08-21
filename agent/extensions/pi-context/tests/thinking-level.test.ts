@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import {
   createState,
   tickThinkingLevel,
+  proposeThinkingLevel,
   clampToLadder,
   lower,
   upper,
@@ -156,6 +157,57 @@ describe('tickThinkingLevel', () => {
     expect(tickThinkingLevel(s, 0.9, setLevel, clk.now())).toBeNull()
     expect(s.criticalStreak).toBe(0)
     expect(s.lowStreak).toBe(0)
+    expect(calls).toEqual([])
+  })
+})
+
+describe('proposeThinkingLevel（混合方案）', () => {
+  it('放行：合法档位经规则审批后切换并记账 source=model', () => {
+    const s = createState('high')
+    const { calls, setLevel } = recordEvents()
+    const clk = makeNow()
+    const r = proposeThinkingLevel(s, 'medium', '长代码审查降思考省 token', setLevel, clk.now())
+    expect(r.ok).toBe(true)
+    expect(r.level).toBe('medium')
+    expect(calls).toEqual(['medium'])
+    const ev = loadDiagLines().find((l) => (l as { type?: string }).type === 'level-change')
+    expect((ev as { source?: string }).source).toBe('model')
+    expect((ev as { reason?: string }).reason).toContain('model-proposal')
+  })
+
+  it('拒绝：死区内模型提议不生效', () => {
+    const s = createState('high')
+    const { setLevel } = recordEvents()
+    const clk = makeNow()
+    expect(proposeThinkingLevel(s, 'medium', 'x', setLevel, clk.now()).ok).toBe(true)
+    const r = proposeThinkingLevel(s, 'low', '再降', setLevel, clk.now() + 1000)
+    expect(r.ok).toBe(false)
+    expect(r.message).toContain('死区')
+    expect(s.current).toBe('medium')
+  })
+
+  it('拒绝：目标 clamp（low/medium/high，off/max 归位）', () => {
+    const s = createState('medium')
+    const { setLevel } = recordEvents()
+    const clk = makeNow()
+    // max → high（高于 high 归位到顶档）；off/minimal → low（下限保护）
+    const rHigh = proposeThinkingLevel(s, 'max', 'up', setLevel, clk.now())
+    expect(rHigh.ok).toBe(true)
+    expect(rHigh.level).toBe('high')
+    clk.advance(MIN_INTERVAL_MS + 1)
+    const rLow = proposeThinkingLevel(s, 'off', 'down', setLevel, clk.now())
+    expect(rLow.ok).toBe(true)
+    expect(rLow.level).toBe('low')
+    expect(s.current).toBe('low')
+  })
+
+  it('同档协调：目标与当前一致时 ok 不切换', () => {
+    const s = createState('high')
+    const { calls, setLevel } = recordEvents()
+    const clk = makeNow()
+    const r = proposeThinkingLevel(s, 'high', 'noop', setLevel, clk.now())
+    expect(r.ok).toBe(true)
+    expect(r.message).toContain('无需切换')
     expect(calls).toEqual([])
   })
 })

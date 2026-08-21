@@ -119,6 +119,7 @@ async function main() {
     }
     const expected = [
       'enable_tool', // pi-context 工具分层（2026-08-18）
+      'thinking_level', // pi-context 混合切档（2026-08-21，模型提议·规则审批）
       'admin_status', 'admin_list_models', 'admin_set_model', 'admin_get_config',
       'admin_set_config', 'admin_list_sessions', 'admin_switch_session', 'admin_restart',
       'autopilot_status', 'autopilot_stats', 'autopilot_policy', 'autopilot_failover',

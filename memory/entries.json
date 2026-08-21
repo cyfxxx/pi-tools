@@ -10992,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 68,
+      "recurrence": 72,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-21T07:03:57.476Z",
-      "accessedAt": "2026-08-21T07:03:57.476Z",
+      "updatedAt": "2026-08-21T07:37:19.934Z",
+      "accessedAt": "2026-08-21T07:37:19.934Z",
       "environments": [
         "all"
       ],
@@ -12396,6 +12396,29 @@
         "all"
       ],
       "observedAt": "2026-08-21T06:57:20.074Z",
+      "deleted": false
+    },
+    {
+      "id": "232e40af-e3fa-4f0e-9ce3-b80fc2348791",
+      "category": "procedure",
+      "title": "自我优化三件套（task #25/26/27 落地记录）",
+      "content": "2026-08-21 完成三项自我优化机制：(1) thinking 档位自适应（pi-context/thinking-level.ts）：agent_settled 按真实 tokens/window 比例驱动 setThinkingLevel——critical≥95% 连2次降档、low<70% 连3次升回至基准、90s 防抖。关键坑：不可用 context-budget.getBudgetReport().pressure（usedTotal 单调不回退导致升回永不触发），必须用每轮真实比例。每次切换强制 recordLevelChange 落盘（usage-stats --levels）。内核 THINKING_LEVELS=[off,minimal,low,medium,high] 无 max；setThinkingLevel 变化会持久化 settings.defaultThinkingLevel。(2) 任务自动总结（lib/task-record.ts + scripts/task-summarizer.mjs）：agent_settled 零 LLM 写确定性任务记录到 logs/task-records.jsonl，总结层游标去重 spawn 隔离 pi 批量总结→memory_store。坑：后台总结 pi 会自己写 task-record 造成递归，需 PI_DISABLE_TASK_RECORD=1 抑制。已接 daily-health 3.5.5。(3) skill 外置库 /root/.pi/skill-store/（drafts/active，不入 agent/skills/ 防提示词膨胀；总结层写草稿→人工确认→按需激活≤3 个）。验证：usage-stats --thinking/--levels/--tools；push 用 SSH over 443 偶发 hung up 需重试。",
+      "tags": [
+        "self-optimize",
+        "thinking",
+        "task-summary",
+        "skill-store"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T07:06:26.551Z",
+      "updatedAt": "2026-08-21T07:06:26.551Z",
+      "accessedAt": "2026-08-21T07:06:26.551Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T07:06:26.551Z",
       "deleted": false
     }
   ]

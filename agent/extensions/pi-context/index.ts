@@ -13,6 +13,8 @@ import { pruneThinkingBudget, pruneToolResults, type PruneMessage } from "../../
 import {
 	createState,
 	tickThinkingLevel,
+	proposeThinkingLevel,
+	LEVEL_LADDER,
 	type ThinkLevelState,
 } from "./thinking-level.ts";
 import { recordTaskRecord } from "../../lib/task-record.ts";
@@ -775,6 +777,58 @@ export default function (pi: ExtensionAPI) {
 						text: `已启用工具组 ${g.name}: ${g.tools.join(", ")}。本会话内保持可用；重启 pi 后恢复默认分层（如需常驻可后续调整工具分组配置）。`,
 					},
 				],
+				details: null,
+			};
+		},
+	});
+
+	// 混合方案（task #25 扩展）：模型主动切档，经 thinking-level 规则审批（死区+方向），
+	// 通过后强制 recordLevelChange(source=model) 落盘。供特殊任务（复杂推理/长代码审查等）
+	// 模型申请升降档；常规自动切档仍由 agent_settled 规则驱动。
+	pi.registerTool({
+		name: "thinking_level",
+		label: "调整思考档位（模型建议·规则审批）",
+		description:
+			"建议切换 thinking 档位（low/medium/high）。程序会做防抖死区与压力方向审批：死区内或与当前上下文压力冲突时会拒绝；通过后强制记账 level-change(source=model)。默认由程序自动切档，本工具供模型在需要更强/更省推理时主动申请升降档。",
+		parameters: {
+			type: "object",
+			properties: {
+				level: {
+					type: "string",
+					enum: LEVEL_LADDER as unknown as string[],
+					description: "目标档位（low/medium/high）",
+				},
+				reason: {
+					type: "string",
+					description: "切换理由（将记入审计日志）",
+				},
+			},
+			required: ["level", "reason"],
+		},
+		execute: async (_toolCallId, params, _signal, _onUpdate, _ctx) => {
+			if (!thinkState && typeof pi.getThinkingLevel === "function") {
+				thinkState = createState(pi.getThinkingLevel());
+			}
+			if (!thinkState || typeof pi.setThinkingLevel !== "function") {
+				return {
+					content: [{ type: "text", text: "档位状态未就绪或内核不支持 setThinkingLevel。" }],
+					isError: true,
+					details: null,
+				};
+			}
+			const level = params?.level as string | undefined;
+			const reason = typeof params?.reason === "string" ? params.reason : "";
+			if (!level) {
+				return {
+					content: [{ type: "text", text: "缺少 level 参数（low/medium/high）" }],
+					isError: true,
+					details: null,
+				};
+			}
+			const r = proposeThinkingLevel(thinkState, level, reason, (l) => pi.setThinkingLevel(l));
+			return {
+				content: [{ type: "text", text: r.message }],
+				isError: !r.ok,
 				details: null,
 			};
 		},

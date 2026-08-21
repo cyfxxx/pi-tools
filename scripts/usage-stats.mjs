@@ -261,10 +261,10 @@ if (LEVELS) {
     console.log('  暂无切换记录（自动切档 task #25 启用后积累；切换后思考量看 --thinking）')
   } else {
     evs.sort((a, b) => a.ts - b.ts)
-    console.log('时间            | 从 → 到     | 压力      | 原因')
+    console.log('时间            | 来源   | 从 → 到     | 压力      | 原因')
     for (const e of evs) {
       const t = new Date(e.ts).toISOString().slice(5, 16).replace('T', ' ')
-      console.log(`${t}  | ${String(e.from).padEnd(4)} → ${String(e.to).padEnd(4)}   | ${String(e.pressure).padEnd(9)} | ${e.reason}`)
+      console.log(`${t}  | ${String(e.source || 'auto').padEnd(6)} | ${String(e.from).padEnd(4)} → ${String(e.to).padEnd(4)}   | ${String(e.pressure).padEnd(9)} | ${e.reason}`)
     }
   }
 }
