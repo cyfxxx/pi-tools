@@ -23,6 +23,7 @@
  * 属预期（自适应档位取代人工固定档）。
  */
 import { recordLevelChange } from "../../lib/usage-diag.ts";
+import { getBudgetReport } from "../../lib/context-budget.ts";
 
 /** 自动控制使用的档位阶梯（minimal/low 之间保护接口下限 = low，不落到 minimal/off） */
 export const LEVEL_LADDER = ["low", "medium", "high"] as const;
@@ -147,6 +148,61 @@ function apply(
   setLevel(next);
   state.current = next;
   state.lastSwitchTs = now;
-  recordLevelChange({ from, to: next, reason, pressure });
+  recordLevelChange({ from, to: next, reason, pressure, source: "auto" });
   return next;
+}
+
+// ── 混合方案（2026-08-21）：模型提议、规则审批 ──
+// 暴露 thinking_level 工具给模型，但模型只可"建议"：
+//   - 目标档位 clamp 进阶梯（low/medium/high，防模型关到 off/minimal）；
+//   - 死区外才放行（防模型高频反复切档）；
+//   - 与压力信号冲突拒绝：critical 时升档、low 时降档均拒绝（尊重上下文现实）；
+//   - 全部经 recordLevelChange(source=model) 强制落盘审计。
+export interface ProposalResult {
+  ok: boolean;
+  message: string;
+  level?: AutoThinkLevel;
+}
+
+export function proposeThinkingLevel(
+  state: ThinkLevelState,
+  target: string,
+  reason: string,
+  setLevel: (l: AutoThinkLevel) => void,
+  now: number = Date.now(),
+): ProposalResult {
+  const level = clampToLadder(target);
+  const from = state.current;
+  if (level === from) {
+    return { ok: true, message: `已是 ${level} 档，无需切换。` };
+  }
+  const elapsed = now - state.lastSwitchTs;
+  if (elapsed < MIN_INTERVAL_MS) {
+    return {
+      ok: false,
+      message: `防抖死区内（还需 ${Math.ceil((MIN_INTERVAL_MS - elapsed) / 1000)}s）不切档，请稍后再试。当前 ${from} 档。`,
+    };
+  }
+  // 方向与压力一致性（用预算报告作定性信号）：仅拒绝明确有害的
+  // "critical 时升档"（高压升档会加剧 thinking 剪枝/断裂）；其余方向（含
+  // 压力较小时降档省 token）由模型理由驱动、靠死区+clamp 兜底防滥用。
+  const pressure = getBudgetReport().pressure;
+  if (pressure === "critical" && idx(level) > idx(from)) {
+    return {
+      ok: false,
+      message: `当前上下文压力 critical（极高），升档只会加剧 thinking 剪枝/断裂，已拒绝升到 ${level}。建议保持 ${from} 或降档缓解。`,
+    };
+  }
+  // 放行：模型主动切档强记账
+  setLevel(level);
+  state.current = level;
+  state.lastSwitchTs = now;
+  recordLevelChange({
+    from,
+    to: level,
+    reason: `model-proposal: ${reason || "(未注明理由)"}`.slice(0, 120),
+    pressure,
+    source: "model",
+  });
+  return { ok: true, message: `已按模型提议切换到 ${level} 档（reason: ${reason || "未注明"}）。`, level };
 }
