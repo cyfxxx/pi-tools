@@ -131,6 +131,26 @@ export function recordThinkingMeter(tokens: number): void {
   }
 }
 
+// ── thinking 档位切换记账（2026-08-21，task #25 档位自适应）──
+// 每次档位切换强制落一条 level-change（来自/去/原因/压力），供 usage-stats --levels 审计。
+// 切换后思考变化由 thinking-meter 持续记账天然关联（切点前后对照）。零注入、缓存友好。
+export interface LevelChangeEvent {
+  type: "level-change";
+  ts: number;
+  from: string;
+  to: string;
+  reason: string;
+  pressure: string;
+}
+export function recordLevelChange(e: Omit<LevelChangeEvent, "type" | "ts">): void {
+  try {
+    const event: LevelChangeEvent = { type: "level-change", ts: Date.now(), ...e };
+    appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
+  } catch {
+    // ignore
+  }
+}
+
 // ── 工具启用事件台账（2026-08-19）──
 // enable_tool 是唯一改变运行时工具集的入口（pi-context 分层，改 setActiveTools）。
 // 启用事件落到独立台账 agent/stats/tool-events.jsonl（非 usage-diag，避免污染用量统计），
