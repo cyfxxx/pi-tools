@@ -66,6 +66,8 @@
 - **真实用量校准（2026-08 审计）**：`before_agent_start` 用 `ctx.getContextUsage()` 的真实 tokens 调 `setUsedTokens` 覆盖共享库上报值（recordToolUsage 只统计工具输出，与真实上下文用量口径不一致）——plan-mode 等共享 context-budget 的消费者压力提示随之准确
 - **缓存友好**：所有变换均为确定性（判定只依赖消息内容）；system prompt 注入不含时间戳与精确数值。**注意：确定性 ≠ 缓存安全**——任何变换（擦除/剪枝/过滤）只要改变消息序列就会破坏前缀缓存，确定性只保证同输入同输出，不保证与上一轮序列一致。
 - **compactionSummary 去重**（R2）：context 阶段只保留最新一份，省 500-1500 token/turn。
+- **压缩可逆快照（2.6）**：auto-compact 触发前把当前消息全文落盘 `logs/compact-snapshots/compact-<ts>.json`（保留 8 个/7 天，`snapshotBeforeCompact`，失败静默）。压缩属不可逆改写早期消息的 A 类断裂主因，快照使其可追溯、可对照 A 类断裂归因。纯落盘、不进注入/上下文（零缓存影响）。
+- **工具用量账单（2.5）**：`recordToolUsage`（`lib/usage-diag.ts`）在 `tool_result` 按工具累加 per-call usage（input/cacheRead/cacheWrite）到 `stats/tool-usage.json`；`node scripts/usage-stats.mjs --tools` 输出按 input 降序 top20 账单。另：`recordPrune` 支持 `prune-think` 类型（thinking 剪枝记账，补 A 类断裂归因盲点），`formatUsageSummary` 已计入。仅数据文件、不进注入路径（缓存友好）。
 
 ## 注意
 
