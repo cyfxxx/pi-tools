@@ -61,6 +61,7 @@ const SHOW_ALL = args.includes('--all')
 const JSON_ONLY = args.includes('--json')
 const TOOLS = args.includes('--tools')
 const THINKING = args.includes('--thinking')
+const LEVELS = args.includes('--levels')
 
 if (!existsSync(DIAG)) {
   console.error(`usage-diag 不存在: ${DIAG}`)
@@ -248,6 +249,22 @@ if (THINKING) {
       const mean = total / seg.length
       const t = new Date(seg[0].ts).toISOString().slice(5, 16).replace('T', ' ')
       console.log(`${t}  ${String(seg.length).padStart(4)}  ${String(Math.round(total / 1000) + 'K').padStart(10)}  ${String(Math.round(mean / 1000) + 'K').padStart(9)}`)
+    }
+  }
+}
+
+// thinking 档位切换记录（--levels，2026-08-21 task #25：每次切换强制落 ledger）
+if (LEVELS) {
+  const evs = lines.filter((l) => l && l.type === 'level-change')
+  console.log('\nthinking 档位切换记录（level-change；自动切档启用后由 pi-context 记账）\n')
+  if (evs.length === 0) {
+    console.log('  暂无切换记录（自动切档 task #25 启用后积累；切换后思考量看 --thinking）')
+  } else {
+    evs.sort((a, b) => a.ts - b.ts)
+    console.log('时间            | 从 → 到     | 压力      | 原因')
+    for (const e of evs) {
+      const t = new Date(e.ts).toISOString().slice(5, 16).replace('T', ' ')
+      console.log(`${t}  | ${String(e.from).padEnd(4)} → ${String(e.to).padEnd(4)}   | ${String(e.pressure).padEnd(9)} | ${e.reason}`)
     }
   }
 }

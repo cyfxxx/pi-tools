@@ -11,6 +11,11 @@ import {
 } from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
 import { pruneThinkingBudget, pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
 import {
+	createState,
+	tickThinkingLevel,
+	type ThinkLevelState,
+} from "./thinking-level.ts";
+import {
 	formatUsageSummary,
 	loadDiagLines,
 	recordAutoCompact,
@@ -85,6 +90,8 @@ const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
 
 /** context hook 最近一次拿到的 messages（引用，不拷贝——会话内本就持有） */
 let lastContextMessages: unknown[] | null = null;
+// thinking 档位自适应状态（会话内单例；首次 agent_settled 初始化基准档位）
+let thinkState: ThinkLevelState | null = null;
 
 function snapshotBeforeCompact(contextTokens: number, threshold: number): void {
   try {
@@ -499,6 +506,22 @@ export default function (pi: ExtensionAPI) {
 	// （agent-session.js _emitAgentSettled），此点压缩不会打断任何内核后续动作。
 	pi.on("agent_settled", (_event, ctx) => {
 		const resolved = resolveContext(ctx);
+		if (resolved) {
+			// thinking 档位自适应（task #25）：按真实 tokens/window 比例自动升降档，
+			// 每次切换强制 recordLevelChange 记账；切换后思考量变化由 thinking-meter 持续关联。
+			// 用真实比例（不用 context-budget 的单调 used）：压缩后回落才能触发升回。
+			const ratio = resolved.tokens / resolved.window;
+			if (!thinkState && typeof pi.getThinkingLevel === "function") {
+				thinkState = createState(pi.getThinkingLevel());
+			}
+			if (thinkState && typeof pi.setThinkingLevel === "function") {
+				try {
+					tickThinkingLevel(thinkState, ratio, (l) => pi.setThinkingLevel(l));
+				} catch {
+					// 切档失败不阻塞主流程
+				}
+			}
+		}
 		if (!resolved) return;
 		const { tokens, window: contextWindow } = resolved;
 
