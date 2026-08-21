@@ -68,9 +68,12 @@ export default function (pi: ExtensionAPI): void {
   // 全部消息历史（~72K）每轮重发。改为消息注入（追加在消息末尾）：变化时
   // 仅重发注入块本身（≤500 token），历史全命中。context hook 过滤旧注入防累积。
   pi.on('before_agent_start', async (_event, _ctx) => {
-    const entries = loadEntries()
+    let entries = loadEntries()
     // 自动回收 deleted 软删条目（条目数超阈值时；无界增长审计修复）
-    autoReclaim(entries)
+    // 2026-08 审计：autoReclaim 返回清理后的数组，须承接——否则后续调用方若沿用
+    // 含 deleted 的原数组再 saveEntries 会把已回收条目标记合并回磁盘（防复活）
+    const kept = autoReclaim(entries)
+    if (kept) entries = kept
     const summaries = loadSummaries()
     const { block, entries: n, summaries: m } = buildInjectionBlock(entries, summaries)
     if (n === 0 && m === 0) return undefined

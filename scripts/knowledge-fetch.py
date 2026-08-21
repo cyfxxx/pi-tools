@@ -27,7 +27,10 @@ def fetch(q, limit):
     url = f'{SEARX}?q={urllib.parse.quote(q)}&format=json'
     try:
         with urllib.request.urlopen(url, timeout=20) as r:
-            return json.loads(r.read().decode('utf-8', 'ignore')).get('results', [])[:limit]
+            # 响应体上限 1MB（防恶意引擎超大返回 OOM；超限截断会导致解析失败→上层
+            # 返回空，不影响其余主题）
+            raw = r.read(1024 * 1024)
+            return json.loads(raw.decode('utf-8', 'ignore')).get('results', [])[:limit]
     except Exception:
         return []
 
@@ -39,7 +42,12 @@ def load_seen():
 def main():
     limit = DEFAULT_LIMIT
     if '--limit' in sys.argv:
-        limit = int(sys.argv[sys.argv.index('--limit') + 1])
+        try:
+            limit = int(sys.argv[sys.argv.index('--limit') + 1])
+        except (ValueError, IndexError):
+            # 非数字/缺值 → 回退默认并警告（审计：原先 int() 直接抛崩溃）
+            print(f'警告: --limit 参数无效，使用默认 {DEFAULT_LIMIT}', file=sys.stderr)
+            limit = DEFAULT_LIMIT
     os.makedirs(KLOG, exist_ok=True)
     seen = load_seen()
     date = datetime.now().strftime('%Y-%m-%d')

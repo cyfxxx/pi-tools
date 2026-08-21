@@ -181,6 +181,10 @@ for (const s of list) {
   }
 }
 // 当前会话 vs 目标
+if (all.length === 0) {
+  console.log("\n尚无用量会话（.usage-diag.jsonl 无数据或为空）。")
+  process.exit(0)
+}
 const curS = all[all.length - 1]
 const target = 0.97
 const gap = curS.hitRate - target

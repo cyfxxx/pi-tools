@@ -221,3 +221,24 @@
 - 注入面判定: thinking 档位不入 system prompt → 切换不额外断缓存、不污染前缀
 - 预期: 每轮 thinking 下降 → 剪枝触发间隔拉长 → A 类断裂减少 → 命中率回升
 - 观测: 每日 daily-health-check 命中率 vs Before；本 LOG 后续追加对比行
+
+---
+
+## 2026-08-20 HIGH 修复：pi-link 远程命令注入（buildRemoteCommand）
+- 状态: 修复完成（pi-full-audit 组1 scout 发现 + 主会话终审确认 + 回归）
+
+### 漏洞（Before）
+- link.ts buildRemoteCommand：sessionDir/cwd 经 JSON.stringify 后拼入**双引号** shell
+  上下文（`--session-dir "..."` / `cd "${cwd}"` / `ls -t "${sdir}"/*.jsonl`）。
+  JSON.stringify 不转义 `$()`/反引号/分号 → 配置含元字符即在远端双引号内被命令替换
+  执行（任意命令注入）。
+
+### 修复（Change）
+- 新增 shellSingleQuote(s)：shell 单引号包裹（转义 `'`→`'\''`），单引号内无展开/命令替换。
+- sdir → `SDIR='...'` 存变量 + `"$SDIR"` 引用；--session-dir 参数用单引号包裹。
+- cwd → `CDIR=$HOME'/...'`（~ 展开拼 $HOME 前缀）或 `CDIR='...'`，`cd "$CDIR"`。
+- 原理：单引号不做命令替换 + 变量展开不二次解析，阻断 `$()`/反引号类注入。
+
+### 验证（After）
+- 新增注入拒绝测试（sessionDir `$(touch ...)`、cwd 反引号+分号 → 均单引号字面）。
+- pi-link vitest 59 通过（构造变了，更新既有 4 断言）；tsc 通过；全量回归待跑。

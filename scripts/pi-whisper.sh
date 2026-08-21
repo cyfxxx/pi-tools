@@ -16,7 +16,7 @@ mkdir -p "$(dirname "$LOG")"
 read_token() {
   local cfg="$PI_HOME/agent/pi-voice.json"
   if [ -f "$cfg" ]; then
-    python3 -c "import json,sys; v=json.load(open('$cfg')).get('whisperToken',''); print(v)" 2>/dev/null
+    CFG_PATH="$cfg" python3 -c "import json,os; v=json.load(open(os.environ['CFG_PATH'])).get('whisperToken',''); print(v)" 2>/dev/null
   fi
 }
 
@@ -24,14 +24,14 @@ read_token() {
 read_model() {
   local cfg="$PI_HOME/agent/pi-voice.json"
   if [ -f "$cfg" ]; then
-    python3 -c "import json,sys; v=json.load(open('$cfg')).get('whisperModel',''); print(v)" 2>/dev/null
+    CFG_PATH="$cfg" python3 -c "import json,os; v=json.load(open(os.environ['CFG_PATH'])).get('whisperModel',''); print(v)" 2>/dev/null
   fi
 }
 
 read_device() {
   local cfg="$PI_HOME/agent/pi-voice.json"
   if [ -f "$cfg" ]; then
-    python3 -c "import json,sys; v=json.load(open('$cfg')).get('whisperDevice',''); print(v)" 2>/dev/null
+    CFG_PATH="$cfg" python3 -c "import json,os; v=json.load(open(os.environ['CFG_PATH'])).get('whisperDevice',''); print(v)" 2>/dev/null
   fi
 }
 

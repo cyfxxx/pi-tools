@@ -210,7 +210,7 @@ export function recordToolUsage(
     all[toolName] = cur
     const f = getToolUsageFile()
     mkdirSync(dirname(f), { recursive: true })
-    const tmp = f + ".tmp"
+    const tmp = f + ".tmp." + process.pid
     writeFileSync(tmp, JSON.stringify(all), "utf8")
     renameSync(tmp, f)
   } catch {
@@ -271,7 +271,9 @@ export function formatUsageSummary(lines: DiagLine[]): string {
         )} @ 阈值 ${fmt((compactEvents[compactEvents.length - 1] as AutoCompactEvent).threshold)}）`
       : "  自动压缩触发: 0 次";
 
-  const pruneEvents = lines.filter((l) => "type" in l && l.type === "prune") as PruneEvent[];
+  const pruneEvents = lines.filter(
+    (l) => "type" in l && (l.type === "prune" || l.type === "prune-think"),
+  ) as PruneEvent[];
   const prunedTotal = pruneEvents.reduce((s, e) => s + e.prunedTokens, 0);
   const pruneLine =
     pruneEvents.length > 0
