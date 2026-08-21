@@ -120,7 +120,7 @@ describe('pi-link: buildRemoteCommand', () => {
   it('默认 --no-extensions + 默认 session dir + LD_PRELOAD 清除', () => {
     const cmd = buildRemoteCommand(DEV, {})
     expect(cmd.startsWith('unset LD_PRELOAD 2>/dev/null;')).toBe(true)
-    expect(cmd).toContain('--mode rpc --no-extensions --session-dir "~/.pi/agent/sessions/pi-link"')
+    expect(cmd).toContain('--mode rpc --no-extensions --session-dir \'~/.pi/agent/sessions/pi-link\'')
     // 绕过 wrapper：node + 真实 cli.js 优先
     expect(cmd).toContain('readlink -f')
     expect(cmd).toContain('command -v pi-original')
@@ -129,7 +129,8 @@ describe('pi-link: buildRemoteCommand', () => {
   it('会话连续性：continue 策略含上次会话探测，fresh 策略无', () => {
     const cont = buildRemoteCommand(DEV, {})
     expect(cont).toContain('PI_LINK_LAST_SESSION')
-    expect(cont).toContain('ls -t "~/.pi/agent/sessions/pi-link"/*.jsonl')
+    expect(cont).toContain("SDIR='~/.pi/agent/sessions/pi-link'")
+    expect(cont).toContain('ls -t "$SDIR"/*.jsonl')
     const fresh = buildRemoteCommand(DEV, { sessionPolicy: 'fresh' })
     expect(fresh).not.toContain('PI_LINK_LAST_SESSION')
   })
@@ -138,12 +139,22 @@ describe('pi-link: buildRemoteCommand', () => {
     expect(buildRemoteCommand(DEV, { extensions: true })).not.toContain('--no-extensions')
   })
   it('cwd 包装为 cd 前缀', () => {
-    // ~ 展开为 $HOME（修复：引号包裹不再阻止展开）
-    expect(buildRemoteCommand(DEV, { cwd: '~/work' })).toContain('cd "$HOME/work" && unset LD_PRELOAD')
+    // ~ 展开为 $HOME（修复：经 CDIR 变量 + 单引号包裹）
+    expect(buildRemoteCommand(DEV, { cwd: '~/work' })).toContain("CDIR=$HOME'/work'; cd \"$CDIR\" && unset LD_PRELOAD")
   })
   it('自定义 sessionDir', () => {
-    // 引号保护（审计 LOW）：sessionDir 含空格/元字符时防远端注入
-    expect(buildRemoteCommand(DEV, { sessionDir: '/tmp/x' })).toContain('--session-dir "/tmp/x"')
+    // 引号保护：sessionDir 含空格/元字符时单引号包裹防远端注入
+    expect(buildRemoteCommand(DEV, { sessionDir: '/tmp/x' })).toContain("--session-dir '/tmp/x'")
+  })
+  it('审计 HIGH 修复：sessionDir/cwd 注入向量被单引号包裹（不落地可执行）', () => {
+    const evil = `$(touch /tmp/pi-link-pwned)`
+    const c1 = buildRemoteCommand(DEV, { sessionDir: evil })
+    // 单引号包裹：$(...) 为字面量，不被命令替换
+    expect(c1).toContain(`--session-dir '$(touch /tmp/pi-link-pwned)'`)
+    expect(c1).toContain(`SDIR='$(touch /tmp/pi-link-pwned)'`)
+    // 反引号 + 分号向量：cwd 原会在双引号内被命令替换，现单引号字面
+    const c2 = buildRemoteCommand(DEV, { cwd: 'x`id`;y' })
+    expect(c2).toContain("CDIR='x`id`;y'")
   })
 })
 

@@ -94,21 +94,30 @@ export function extractReply(events: RpcEvent[]): { text: string; model?: string
   return { text, model }
 }
 
+/** shell 单引号安全包裹（审计 HIGH 修复）：单引号内不做任何展开/命令替换，
+ *  唯一需转义单引号本身 `'`→`'\''`。用于把配置可控值（sessionDir/cwd）拼入远端
+ *  shell —— 双引号内 `$()`/反引号会命令替换造成注入，单引号不展开。
+ *  值经此函数后存入 shell 变量，后续以 `"$VAR"` 引用（变量展开不二次解析命令替换）。 */
+export function shellSingleQuote(s: string): string {
+  return `'` + s.replace(/'/g, `'\''`) + `'`
+}
+
 /** 构建远程命令（cwd 包装 + pi RPC 启动参数 + 会话连续性握手） */
 export function buildRemoteCommand(d: DeviceConfig, opts: SendOptions): string {
   const parts = ['--mode', 'rpc']
   if (!(opts.extensions ?? d.extensions ?? false)) parts.push('--no-extensions')
   const sdir = opts.sessionDir ?? '~/.pi/agent/sessions/pi-link'
-  // 引号保护（审计 LOW）：sdir 非法定值（默认路径无空格）但含空格/元字符的目录名
-  // 会破坏远端命令；JSON.stringify 输出带引号的 DFS 字符串（转义安全）。
-  parts.push('--session-dir', JSON.stringify(sdir))
+  // 审计 HIGH 修复：sdir/cwd 属配置可控值，拼接远端 shell 须经 shell 单引号包裹
+  // （无展开/命令替换），并存 shell 变量后以 "$VAR" 引用阻断 `$()`/反引号类注入。
+  parts.push('--session-dir', shellSingleQuote(sdir))
   const args = parts.join(' ')
   // 会话连续性：continue 时先找上次会话文件（非 JSON 行输出，本机解析），
   // 超过 1MB 视为旧会话（开新），fresh 策略跳过
   const policy = opts.sessionPolicy ?? d.sessionPolicy ?? 'continue'
   const resumeProbe = policy === 'fresh'
     ? ''
-    : `F=$(ls -t "${sdir}"/*.jsonl 2>/dev/null | head -1); ` +
+    : `SDIR=${shellSingleQuote(sdir)}; ` +
+      `F=$(ls -t "$SDIR"/*.jsonl 2>/dev/null | head -1); ` +
       `if [ -n "$F" ]; then SZ=$(stat -c%s "$F" 2>/dev/null || stat -f%z "$F" 2>/dev/null || echo 1048577); ` +
       `if [ "$SZ" -lt 1048576 ]; then echo "PI_LINK_LAST_SESSION=$F"; fi; fi; `
   // 远程启动路径：优先 node + 真实 cli.js（绕过 pi-wrapper 的启动开销，
@@ -122,8 +131,14 @@ export function buildRemoteCommand(d: DeviceConfig, opts: SendOptions): string {
   const cwd = opts.cwd ?? d.cwd
   // Termux sshd 会话带 libtermux-exec LD_PRELOAD，会破坏 proot 内 node 加载——清除
   cmd = `unset LD_PRELOAD 2>/dev/null; ${cmd}`
-  // cwd 支持 ~ 开头（展开为 $HOME，文档示例 "cwd": "~/work"）；其余字符双引号保护
-  if (cwd) cmd = `cd "${cwd.replace(/^~/, '\$HOME')}" && ${cmd}`
+  // cwd 支持 ~ 开头（展开为 $HOME，文档示例 "cwd": "~/work"）；审计 HIGH 修复：
+  // 经 shell 单引号包裹（~ 时拼 $HOME 前缀）存 CDIR 变量，cd "$CDIR" 引用防注入
+  if (cwd) {
+    const cdir = cwd.startsWith('~')
+      ? `$HOME${shellSingleQuote(cwd.slice(1))}`
+      : shellSingleQuote(cwd)
+    cmd = `CDIR=${cdir}; cd "$CDIR" && ${cmd}`
+  }
   return cmd
 }
 
