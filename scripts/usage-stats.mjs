@@ -60,6 +60,7 @@ const args = process.argv.slice(2)
 const SHOW_ALL = args.includes('--all')
 const JSON_ONLY = args.includes('--json')
 const TOOLS = args.includes('--tools')
+const THINKING = args.includes('--thinking')
 
 if (!existsSync(DIAG)) {
   console.error(`usage-diag 不存在: ${DIAG}`)
@@ -223,5 +224,30 @@ if (TOOLS) {
     console.log(`\n合计: ${rows.length} 个工具, ${callTotal} 次调用, input ${Math.round(inputTotal / 1000)}K（按 input 降序 top20）`)
   } catch (e) {
     console.log('  （账单读取失败: ' + e.message + '）')
+  }
+}
+
+// 思考量按会话聚合（--thinking，2026-08-21 task #14：量化档位变化）
+if (THINKING) {
+  const meters = lines.filter(l => l && l.type === 'thinking-meter')
+  console.log('\n思考量按会话聚合（thinking-meter；需重启 pi 后由 pi-context 记账积累）\n')
+  if (meters.length === 0) {
+    console.log('  暂无数据：等待 pi-context thinking-meter 记账（重启后每轮记录）')
+  } else {
+    console.log('会话起时        | 轮数 | thinking总量  | 每轮均值')
+    const segs = []; let cur = []
+    meters.sort((a, b) => a.ts - b.ts)
+    for (const m of meters) {
+      const last = cur[cur.length - 1]
+      if (last && m.ts - last.ts > 8 * 60 * 1000) { segs.push(cur); cur = [] }
+      cur.push(m)
+    }
+    if (cur.length) segs.push(cur)
+    for (const seg of segs.slice(-10)) {
+      const total = seg.reduce((s, x) => s + x.tokens, 0)
+      const mean = total / seg.length
+      const t = new Date(seg[0].ts).toISOString().slice(5, 16).replace('T', ' ')
+      console.log(`${t}  ${String(seg.length).padStart(4)}  ${String(Math.round(total / 1000) + 'K').padStart(10)}  ${String(Math.round(mean / 1000) + 'K').padStart(9)}`)
+    }
   }
 }

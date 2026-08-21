@@ -10992,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 60,
+      "recurrence": 64,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-21T05:19:46.701Z",
-      "accessedAt": "2026-08-21T05:19:46.701Z",
+      "updatedAt": "2026-08-21T05:53:46.268Z",
+      "accessedAt": "2026-08-21T05:53:46.268Z",
       "environments": [
         "all"
       ],
@@ -12325,6 +12325,30 @@
         "all"
       ],
       "observedAt": "2026-08-21T05:07:41.559Z",
+      "deleted": false
+    },
+    {
+      "id": "9572906e-5146-4829-8dae-f616a41598dd",
+      "category": "solutions",
+      "title": "排查需先实测决定性证据（防先验误判）",
+      "content": "归因/排查类工作必须\"断言前先实测决定性证据\"：如 opencode-go max_tokens 限流——曾凭单条 400 错误与模型配置(maxTokens 384000>provider 上限 131072) 断言\"配置错配可稳定复现、需 override\"，实测（轻任务成功/组1重任务成功/组2失败交替）推翻为\"间歇性后端行为\"。教训：固定错误文案可能对应间歇生效的条件（后端负载/实例差异），不能据此下\"稳定 bug\"结论；修复前先做决定性验证（多次重复/构造对照）。同类：pi-notify.sh 报 shell 语法错误实为 Node 脚本 .sh 命名（shell 检查误伤，实际 node 运行正常）；subagent 子代理间歇失败≠永久不可用（重试+主会话兜底，勿据此跳过审计覆盖）。",
+      "tags": [
+        "排查",
+        "实测",
+        "归因",
+        "审计",
+        "误报"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T05:25:33.760Z",
+      "updatedAt": "2026-08-21T05:25:33.760Z",
+      "accessedAt": "2026-08-21T05:25:33.760Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T05:25:33.760Z",
       "deleted": false
     }
   ]
