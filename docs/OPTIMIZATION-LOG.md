@@ -242,3 +242,25 @@
 ### 验证（After）
 - 新增注入拒绝测试（sessionDir `$(touch ...)`、cwd 反引号+分号 → 均单引号字面）。
 - pi-link vitest 59 通过（构造变了，更新既有 4 断言）；tsc 通过；全量回归待跑。
+
+---
+
+## 2026-08-20 MEDIUM 修复批（审计续，pi-link/pi-autopilot/pi-memory）
+- 状态: 修复完成
+
+### #22 pi-link 会话连续性 ~ 未展开（组1 MEDIUM）
+- 问题: resumeProbe 用 SDIR 变量，默认 sdir 以 ~ 开头，双引号变量内不展开 $HOME →
+  ls 查字面 ~ 目录，会话连续性恒 false。
+- 修复: sdirAssign 对 ~ 开头拼 $HOME 前缀（与 cwd 一致），resumeProbe 用展开值；
+  --session-dir 仍原样传 pi（pi 端自解析）。
+
+### #23 pi-autopilot /auto restart 无兜底退出（组1 MEDIUM）
+- 问题: commands.ts restart 仅 try ctx.shutdown catch exit，TUI 环境不退出进程。
+- 修复: 对齐 tools.ts，加 setTimeout(()=>process.exit(0),1500) 兜底。
+
+### #24 pi-memory 矛盾检测仅 top-1（组3 MEDIUM）
+- 问题: decideMerge 矛盾检测只对 findSimilar top 1，矛盾条目排第二时漏检、
+  两对立记忆并存。
+- 修复: 遍历 top-N 相似条目（similar），任一矛盾即取代（保留 manual 低置信保护）。
+- 测试策略: top-N 依赖 BM25 排序难稳定构造"矛盾条目非首"用例，不新增脆测试；
+  现有 3 个 contradiction 测试（104 全过）保障取代核心逻辑不回归。

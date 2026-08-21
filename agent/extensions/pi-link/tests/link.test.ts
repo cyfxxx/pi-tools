@@ -129,7 +129,7 @@ describe('pi-link: buildRemoteCommand', () => {
   it('会话连续性：continue 策略含上次会话探测，fresh 策略无', () => {
     const cont = buildRemoteCommand(DEV, {})
     expect(cont).toContain('PI_LINK_LAST_SESSION')
-    expect(cont).toContain("SDIR='~/.pi/agent/sessions/pi-link'")
+    expect(cont).toContain("SDIR=$HOME'/.pi/agent/sessions/pi-link'")
     expect(cont).toContain('ls -t "$SDIR"/*.jsonl')
     const fresh = buildRemoteCommand(DEV, { sessionPolicy: 'fresh' })
     expect(fresh).not.toContain('PI_LINK_LAST_SESSION')

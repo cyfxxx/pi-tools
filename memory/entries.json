@@ -10992,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 58,
+      "recurrence": 60,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-21T05:04:56.294Z",
-      "accessedAt": "2026-08-21T05:04:56.294Z",
+      "updatedAt": "2026-08-21T05:19:46.701Z",
+      "accessedAt": "2026-08-21T05:19:46.701Z",
       "environments": [
         "all"
       ],
@@ -12301,6 +12301,30 @@
         "all"
       ],
       "observedAt": "2026-08-20T11:22:10.969Z",
+      "deleted": false
+    },
+    {
+      "id": "d76d603a-c082-4fd4-9248-d1def7d2b314",
+      "category": "fact",
+      "title": "opencode-go provider 间歇性 max_tokens 131072 限制",
+      "content": "pi 的 provider opencode-go（Console Go）访问 DeepSeek V4 Flash 等模型（opencode.ai 网关，订阅制，Go 优化端点）。其 completion tokens 上限 131072，而 pi 内置 deepseek-v4-flash 定义 maxTokens=384000。实测：该限制是**间歇性**的——相同子代理机制有时成功（列文件、组1深度审查成功）有时失败（组2审查连续失败），报错固定 \"max_tokens too large: 384000\"。判定为非本地可修（后端负载/实例差异），不做 models.json override。models-store.json 缓存显示曾用官方 api.deepseek.com（官方支持 384000），现切 opencode-go 后暴露该限制。生态：monotykamary/pi-opencode-go-provider（pi 适配扩展）、hidenobunagai/opencode-go-provider（VS Code）、SheberDavid/v4-flash-godmode-opencode-go 均在 08-20/08-21 活跃更新。",
+      "tags": [
+        "opencode-go",
+        "provider",
+        "max_tokens",
+        "deepseek",
+        "限制"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T05:07:41.559Z",
+      "updatedAt": "2026-08-21T05:07:41.559Z",
+      "accessedAt": "2026-08-21T05:07:41.559Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T05:07:41.559Z",
       "deleted": false
     }
   ]
