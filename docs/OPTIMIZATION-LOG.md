@@ -264,3 +264,18 @@
 - 修复: 遍历 top-N 相似条目（similar），任一矛盾即取代（保留 manual 低置信保护）。
 - 测试策略: top-N 依赖 BM25 排序难稳定构造"矛盾条目非首"用例，不新增脆测试；
   现有 3 个 contradiction 测试（104 全过）保障取代核心逻辑不回归。
+
+---
+
+## 2026-08-20 全面检查（pi-full-audit）整体总结
+- 范围: /root/.pi 全仓库（352 源文件）；确定性检查 + 全量基线 + 4 组审查 + 修复批回归
+- 修复落地: HIGH 3 项（pi-link 注入 / usage-stats 崩溃 / autoReclaim）+ MEDIUM 6 项
+  （recordToolUsage / usage-summary 口径 / pi-whisper+knowledge-fetch 插值 / pi-link ~ 展开
+  / autopilot restart 兜底 / 矛盾 top-N）；提交 0e0d393 + db8ee3e，回归全绿
+- 遗留（设计权衡/外部）: policy failover 死值、plan-mode 覆盖序、锁滞留、hook 组合序、
+  telemetry 跨进程、opencode-go 间歇限流（外部）
+- 关键教训（详见"排查需先实测决定性证据"记忆）:
+  ①归因前先实测，勿凭单条错误/先验断言（opencode-go 间歇限流误判为稳定）；
+  ②scout 间歇失败≠永久不可用，重试+主会话兜底保覆盖；
+  ③误报判别先行（pi-notify Node 脚本 .sh 命名、auth.json gitignored=预期）；
+  ④修复前读实际代码确认 anchor，避免 edit 失配回滚。
