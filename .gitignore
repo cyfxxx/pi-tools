@@ -147,10 +147,10 @@ agent/node_modules/
 agent/notify.json
 agent/.notify-state.json
 
-# 第三方技能包（按需加载，不入库）
-packs/
 
 # ntfy-relay 运行时状态（不入库）
 agent/.ntfy-relay-state.json
 agent/.ntfy-relay.pid
 agent/.ntfy-inbox.json
+# packs 历史归档（本地备份，不入库）
+backup/

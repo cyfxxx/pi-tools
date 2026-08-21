@@ -1,0 +1,18 @@
+---
+name: colab-bridge
+description: 把 Google Colab（免费 GPU）作为 pi 的远程 Python/GPU 执行后端。用法：colab_exec status/run/sh/up/down。触发词：Colab、谷歌云笔记本、远程 GPU 执行、在 Colab 里跑代码。
+---
+
+# Colab Bridge（远程 GPU 执行）
+
+本包让 pi 把代码提交到 Google Colab 执行并取结果：`<skill目录>/bin/colab_exec`。
+
+- 连接配置：`colab_exec conf <url> <token>`（首次）
+- 自检：`colab_exec status`
+- 提交 Python：`colab_exec run '<代码>'` 或 `-f 文件`、`--cwd`、`-t` 超时、`--json`
+- 提交 bash：`colab_exec sh '<命令>'`
+- 文件：`colab_exec up <本地> [远端]` / `colab_exec down <远端> [本地]`
+
+Colab 侧需先在 colab.research.google.com 上传运行 `colab/colab-bridge.ipynb`（内嵌服务+隧道，打印 CLOUD_URL 与 TOKEN）。断连后环境重置，需重跑 notebook。
+
+详见 README.md 与 colab/colab-bridge.ipynb 内的说明。

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# comfyui-agent 入口：pi 通过此命令操控远程 ComfyUI
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec python3 "$DIR/lib/comfyui.py" "$@"
