@@ -15,6 +15,7 @@ import {
 	tickThinkingLevel,
 	type ThinkLevelState,
 } from "./thinking-level.ts";
+import { recordTaskRecord } from "../../lib/task-record.ts";
 import {
 	formatUsageSummary,
 	loadDiagLines,
@@ -92,6 +93,31 @@ const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
 let lastContextMessages: unknown[] | null = null;
 // thinking 档位自适应状态（会话内单例；首次 agent_settled 初始化基准档位）
 let thinkState: ThinkLevelState | null = null;
+// 任务完成即时记录（task #26）：整轮工具计数/最近用量快照/累计轮数/本轮切档标志
+let runToolCount = 0;
+let lastUsageSnap: { input: number; cacheRead: number; output: number } = { input: 0, cacheRead: 0, output: 0 };
+let userSeq = 0;
+let lastLevelSwitched = false;
+
+/** 从上下文消息提取最后一条实质 user 请求（截 200 字，供任务记录识别主题） */
+function extractUserRequest(messages: unknown[]): string {
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const m = messages[i] as { role?: string; content?: unknown };
+		if (m.role !== "user") continue;
+		const c = m.content;
+		let text = "";
+		if (typeof c === "string") text = c;
+		else if (Array.isArray(c)) {
+			text = c
+				.map((p) =>
+					typeof p === "string" ? p : (p as { text?: string })?.text ?? "",
+				)
+				.join(" ");
+		}
+		if (text.trim()) return text.trim().slice(0, 200);
+	}
+	return "";
+}
 
 function snapshotBeforeCompact(contextTokens: number, threshold: number): void {
   try {
@@ -465,6 +491,7 @@ export default function (pi: ExtensionAPI) {
 	pi.on("tool_result", (event: ToolResultEvent) => {
 		const usage: Usage | undefined = event.usage;
 		if (!usage) return;
+		runToolCount += 1;
 		recordCacheUsage(
 			typeof usage.cacheRead === "number" ? usage.cacheRead : undefined,
 			typeof usage.cacheWrite === "number" ? usage.cacheWrite : undefined,
@@ -486,6 +513,8 @@ export default function (pi: ExtensionAPI) {
 		const contextTokens = input + cacheRead;
 		// 供 agent_settled/session_start fallback（内核无 contextWindow 时自动压缩用）
 		lastProviderContextTokens = contextTokens;
+		lastUsageSnap = { input, cacheRead, output: usage.output || 0 };
+		userSeq += 1;
 		recordUsage({
 			ts: Date.now(),
 			input,
@@ -505,6 +534,7 @@ export default function (pi: ExtensionAPI) {
 	// 杀掉内核重试轮。agent_settled 语义为"run 完全settled且无重试/压缩/排队续跑"
 	// （agent-session.js _emitAgentSettled），此点压缩不会打断任何内核后续动作。
 	pi.on("agent_settled", (_event, ctx) => {
+		lastLevelSwitched = false;
 		const resolved = resolveContext(ctx);
 		if (resolved) {
 			// thinking 档位自适应（task #25）：按真实 tokens/window 比例自动升降档，
@@ -516,13 +546,36 @@ export default function (pi: ExtensionAPI) {
 			}
 			if (thinkState && typeof pi.setThinkingLevel === "function") {
 				try {
-					tickThinkingLevel(thinkState, ratio, (l) => pi.setThinkingLevel(l));
+					lastLevelSwitched = tickThinkingLevel(thinkState, ratio, (l) => pi.setThinkingLevel(l)) !== null;
 				} catch {
 					// 切档失败不阻塞主流程
 				}
 			}
 		}
-		if (!resolved) return;
+
+		// 任务完成即时记录（task #26）：在进入压缩决策各出口前统一收口，
+		// 零 LLM、确定性写 task-records.jsonl（供总结层 scripts/task-summarizer.mjs 聚合）。
+		const recTask = (compacted: boolean) => {
+			try {
+				recordTaskRecord({
+					userRequest: lastContextMessages ? extractUserRequest(lastContextMessages) : "",
+					contextTokens: lastUsageSnap.cacheRead + lastUsageSnap.input,
+					cacheHit: lastUsageSnap.cacheRead,
+					output: lastUsageSnap.output,
+					tools: runToolCount,
+					compacted,
+					levelChanged: lastLevelSwitched,
+					userSeq,
+				});
+				runToolCount = 0;
+			} catch {
+				// 记录失败不阻塞
+			}
+		};
+		if (!resolved) {
+			recTask(false);
+			return;
+		}
 		const { tokens, window: contextWindow } = resolved;
 
 		// 溢出兜底（对齐 dsh CONTEXT_WINDOW_EXCEEDED 路径）：上下文已超窗口时
@@ -544,11 +597,11 @@ export default function (pi: ExtensionAPI) {
 					console.error("pi-context: overflow compact failed:", err);
 				},
 			});
-			return;
+			return recTask(true);
 		}
 
 		const decision = compactDecider.decide(tokens, contextWindow);
-		if (!decision.shouldCompact) return;
+		if (!decision.shouldCompact) return recTask(false);
 
 		// 压缩前原文快照（可逆追溯，零缓存影响）
 		snapshotBeforeCompact(tokens, decision.threshold);
@@ -566,6 +619,7 @@ export default function (pi: ExtensionAPI) {
 				console.error("pi-context: auto-compact failed:", err);
 			},
 		});
+		recTask(true);
 	});
 
 	// 压缩完成后自动继续（借鉴 opencode compaction.autocontinue）：

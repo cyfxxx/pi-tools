@@ -10992,10 +10992,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 66,
+      "recurrence": 68,
       "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-21T06:45:21.653Z",
-      "accessedAt": "2026-08-21T06:45:21.653Z",
+      "updatedAt": "2026-08-21T07:03:57.476Z",
+      "accessedAt": "2026-08-21T07:03:57.476Z",
       "environments": [
         "all"
       ],
@@ -12349,6 +12349,53 @@
         "all"
       ],
       "observedAt": "2026-08-21T05:25:33.760Z",
+      "deleted": false
+    },
+    {
+      "id": "e3ec1e4f-2fe6-4bf6-b83c-728e979444d2",
+      "category": "solutions",
+      "title": "会话 token 消耗审计：hit/out 读数与处置顺序",
+      "content": "分析高消耗会话时的读数法（实例：7 轮累计 850K tokens，其中一轮 hit=250000、其余轮 tools=0/out=0）：1) 单轮 hit 值≈该轮缓存前缀（系统提示+记忆注入+技能列表+工具 schema）的输入体量，hit=250000 说明注入面约 250K tokens；2) 连续多轮 tools=0/out=0 仍累计数百 K tokens，说明消耗全部在输入侧、与行为无关，单纯限制工具调用无用；3) hit=0 连续出现时优先查前缀变动（时间戳/随机数注入破坏缓存，见 AGENTS.md 缓存友好约定）。处置顺序：先 /usage-diag 看注入/输出分解 → 精简 pi-memory 长条目（全文注入的 solutions 逐轮重复计费，考虑拆分或压缩内容）→ 压缩技能列表描述（避免把超长 README 塞进 description）→ 保持休眠工具组（browser/admin/autopilot/link）不启用，每启用一组注入面增大。",
+      "tags": [
+        "token消耗",
+        "缓存命中",
+        "usage-diag",
+        "注入面",
+        "性能优化"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T06:57:19.951Z",
+      "updatedAt": "2026-08-21T06:57:19.951Z",
+      "accessedAt": "2026-08-21T06:57:19.951Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T06:57:19.951Z",
+      "deleted": false
+    },
+    {
+      "id": "d3fa0a70-c042-4515-b177-4052d323406a",
+      "category": "procedure",
+      "title": "经验沉淀工作流：任务记录→一句话概括+记忆存贮+技能草稿",
+      "content": "处理\"任务记录→经验沉淀\"类请求时遵循此约定：1) 每条任务先用一句话概括完成情况；2) 值得长期保留的经验/踩坑/技巧用 memory_store 存入，category 取 procedure 或 solutions，title 简短、content 精确可复现；3) 仅当任务满足\"成功实现+可复现+有保存价值的长流程\"三条时，用 write 将 SKILL.md 草稿写入 /root/.pi/skill-store/drafts/，文件名 <短名>.SKILL.md，格式为 YAML frontmatter（name/description，description 限 1-2 句且不带时间戳）+ 步骤正文；4) 除 memory_store 与写草稿外不改动其他文件、不执行其他工具；5) 结尾用 3-5 行概述本次沉淀内容。注意：记录清单若只有轮次统计而无任务叙述（如 tools/hit/out 数据+记忆注入转储），不得据此推断\"成功实现\"，不写 SKILL.md 草稿，并指出记录缺失。",
+      "tags": [
+        "经验沉淀",
+        "记忆管理",
+        "技能草稿",
+        "工作流"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T06:57:20.074Z",
+      "updatedAt": "2026-08-21T06:57:20.074Z",
+      "accessedAt": "2026-08-21T06:57:20.074Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T06:57:20.074Z",
       "deleted": false
     }
   ]
