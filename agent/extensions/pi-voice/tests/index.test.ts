@@ -90,6 +90,29 @@ async function loadExt() {
   return { commands, handlers, api }
 }
 
+describe('autoWake 启动时机（防加载期 sendMessage 桩崩溃）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.config.autoWake = false
+  })
+
+  it('autoWake 开启时注册 session_start 启动监听，加载期不调 sendMessage', async () => {
+    mocks.config.autoWake = true
+    const { handlers, api } = await loadExt()
+    // 注册到 session_start（bindCore 后首个事件）而非工厂期直接启动
+    expect(typeof handlers['session_start']).toBe('function')
+    // 加载期零 sendMessage：bindCore 前它是 notInitialized 抛错桩，直接 reply 会崩进程
+    expect(api.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('autoWake 关闭时不注册 session_start 监听', async () => {
+    mocks.config.autoWake = false
+    const { handlers, api } = await loadExt()
+    expect(handlers['session_start']).toBeUndefined()
+    expect(api.sendMessage).not.toHaveBeenCalled()
+  })
+})
+
 describe('deliverResult busy 分支（转写中 stop 不误报失败）', () => {
   beforeEach(() => {
     vi.clearAllMocks()
