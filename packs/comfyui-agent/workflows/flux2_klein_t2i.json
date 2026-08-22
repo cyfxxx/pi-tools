@@ -1,0 +1,136 @@
+{
+ "61": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "62": {
+  "class_type": "Flux2Scheduler",
+  "inputs": {
+   "width": "{{int:width=768}}",
+   "height": "{{int:height=768}}",
+   "steps": 20
+  }
+ },
+ "63": {
+  "class_type": "CFGGuider",
+  "inputs": {
+   "model": [
+    "70",
+    0
+   ],
+   "positive": [
+    "74",
+    0
+   ],
+   "negative": [
+    "fold_neg",
+    0
+   ],
+   "cfg": 5
+  }
+ },
+ "65": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "64",
+    0
+   ],
+   "vae": [
+    "72",
+    0
+   ]
+  }
+ },
+ "70": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "flux2-klein-9b-base-fp8.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "71": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_8b_fp8mixed.safetensors",
+   "type": "flux2",
+   "device": "default"
+  }
+ },
+ "74": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "71",
+    0
+   ],
+   "text": "{{prompt}}"
+  }
+ },
+ "72": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "flux2-vae.safetensors"
+  }
+ },
+ "66": {
+  "class_type": "EmptyFlux2LatentImage",
+  "inputs": {
+   "width": "{{int:width=768}}",
+   "height": "{{int:height=768}}",
+   "batch_size": 1
+  }
+ },
+ "64": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "73",
+    0
+   ],
+   "guider": [
+    "63",
+    0
+   ],
+   "sampler": [
+    "61",
+    0
+   ],
+   "sigmas": [
+    "62",
+    0
+   ],
+   "latent_image": [
+    "66",
+    0
+   ]
+  }
+ },
+ "73": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": 0
+  }
+ },
+ "fold_neg": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "74",
+    0
+   ]
+  }
+ },
+ "75": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "flux2_klein",
+   "images": [
+    "65",
+    0
+   ]
+  }
+ }
+}

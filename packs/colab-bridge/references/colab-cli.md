@@ -1,11 +1,7 @@
----
-name: colab-cli
-description: 用官方 Google Colab CLI 把免费 Colab（T4 GPU）当 pi 的远程执行后端：安装、OAuth 认证、跑脚本与交互式开发。依赖 Google 网络可达。
----
+# colab-cli：官方 Google Colab CLI（推荐方案）
 
-# colab-cli：免费 Colab GPU 当 pi 的执行后端
-
-使用官方 `google-colab-cli`（0.6.0 验证通过），替代自制 colab-bridge 桥成为首选（桥保留为无 Google 网络时的备胎）。
+> 本文档由草稿 colab-cli.SKILL.md 合并而来（2026-08）。用官方 `google-colab-cli` 把免费 Colab（T4 GPU）当 pi 的远程执行后端，**替代自制桥成为首选**（自制 colab-bridge 保留为无 Google 网络时的备胎）。
+> 依赖 Google 网络可达（VPN）。
 
 ## 安装（含版本坑）
 
@@ -13,15 +9,15 @@ description: 用官方 Google Colab CLI 把免费 Colab（T4 GPU）当 pi 的远
 pip install --break-system-packages -i https://pypi.org/simple google-colab-cli
 ```
 
-- PEP668 环境必须 `--break-system-packages`。
-- 国内 pip 镜像在 VPN 下 TLS 中断，走官方源 `-i https://pypi.org/simple`。
+- PEP668 环境必须 `--break-system-packages`
+- 国内 pip 镜像在 VPN 下 TLS 中断，走官方源 `-i https://pypi.org/simple`
 - **版本坑**：jupyter-kernel-client 1.0.1 把 `KernelClient` 改名为 `JupyterKernelClient`，CLI 0.6.0 报 AttributeError；必须降级：
 
   ```bash
   pip install --break-system-packages jupyter-kernel-client==0.15.0
   ```
 
-- 网络前置：VPN 必需，需通 `accounts.google.com`、`colab.research.google.com` 与 sandbox 域名。
+- 网络前置：VPN 必需，需通 `accounts.google.com`、`colab.research.google.com` 与 sandbox 域名
 
 ## 首次认证
 
@@ -54,5 +50,5 @@ colab stop <会话名>                 # 结束
 
 ## pi 集成注意
 
-- tmux_run 后台跑 colab 命令时，命令尾部必须加 `; exec true`，否则 shell 不退出、pi 收不到完成通知。
-- Google 网络不可达时切 colab-bridge 备胎（`~/.pi/packs/colab-bridge`，HTTP 桥 + 隧道）。
+- tmux_run 后台跑 colab 命令时，命令尾部必须加 `; exec true`，否则 shell 不退出、pi 收不到完成通知
+- Google 网络不可达时切自制桥备胎：`bin/colab_exec`（本包，HTTP 桥 + 隧道，见 README.md）

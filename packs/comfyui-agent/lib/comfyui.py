@@ -420,6 +420,36 @@ def cmd_models(args):
         "schedulers": ("KSampler", "scheduler"),
         "upscale": ("UpscaleModelLoader", "model_name"),
     }
+    # ComfyUI 模型目录（GET /models/<dir> 直读，与文件系统一致；对应格式见 WORKFLOWS.md §1）
+    file_dirs = {
+        "unet": "diffusion_models",      # 纯扩散模型权重（fp16/fp8 safetensors）
+        "unet_gguf": "unet_gguf",        # GGUF 量化扩散模型（Q4/Q8）
+        "clip_gguf": "clip_gguf",        # GGUF 量化文本编码器
+        "text_encoders": "text_encoders",  # 文本编码器（qwen/ltx projection 等）
+        "clip_vision": "clip_vision",
+        "diffusers": "diffusers",
+        "controlnet": "controlnet",
+        "latent_upscale": "latent_upscale_models",
+        "upscale_models": "upscale_models",
+        "vae_approx": "vae_approx",
+        "embeddings": "embeddings",
+        "photo": "photomaker",
+        "ipadapter": "ipadapter",
+        "pulid": "pulid",
+        "rembg": "rembg",
+        "inpaint": "inpaint",
+        "llm": "llm",
+        "t5": "t5",
+    }
+    if kind in file_dirs:
+        try:
+            items = http_json("GET", f"{base}/models/{file_dirs[kind]}", die_on_error=False)
+        except Exception:
+            items = []
+        if isinstance(items, list):
+            print("\n".join(items) if items else "(空)")
+            return
+        die(f"目录 {file_dirs[kind]} 读取失败")
     if kind not in collectors:
         # 尝试直接读给定节点类型的候选列表字段
         best = None

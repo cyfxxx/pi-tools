@@ -22,6 +22,8 @@ comfyui servers add default http://<远程机IP>:8188
 comfyui status                            # 自检：版本/显卡/队列
 ```
 
+配置保存在 `~/.config/comfyui-agent/config.json`（git 忽略），可用环境变量 `COMFYUI_AGENT_CONFIG` 覆盖路径。
+
 3. 常见故障：
    - `连接失败` → 检查远程机是否 `--listen 0.0.0.0`、防火墙、地址端口
    - `/view` 404 → 确认图确实生成（见 run 输出）
@@ -33,7 +35,8 @@ comfyui status                            # 自检：版本/显卡/队列
 |---|---|
 | `comfyui status [-s 名称]` | 实例状态：版本、显卡、队列长度 |
 | `comfyui nodes [节点类型]` | 节点目录（object_info），查自定义节点接口 |
-| `comfyui models <checkpoints\|loras\|vaes\|clips\|samplers\|schedulers\|upscale>` | 列出远程可用模型/采样器 |
+| `comfyui models <checkpoints\|loras\|vaes\|clips\|samplers\|schedulers\|upscale>` | 列出远程可用模型/采样器（节点聚合方式） |
+| `comfyui models <unet\|unet_gguf\|clip_gguf\|text_encoders\|clip_vision\|controlnet\|diffusers\|latent_upscale\|llm\|t5\|embeddings\|ipadapter\|pulid\|rembg\|inpaint\|...>` | 按 /models 目录直读模型文件（与磁盘一致；**模型按格式分目录存放**，如 GGUF 量化扩散模型在 unet_gguf/、文本编码器在 text_encoders/、纯扩散权重在 diffusion_models/；无 SD checkpoint 的实例建议用这些） |
 | `comfyui run <源> [-p 参数] [-o 输出目录]` | 提交工作流并等待完成、下载输出（核心） |
 | `comfyui queue list / clear` | 队列状态 / 清空 |
 | `comfyui upload <本地图>` | 上传输入图（img2img 等用），返回 subfolder/type |
@@ -46,7 +49,7 @@ comfyui status                            # 自检：版本/显卡/队列
 
 | 形式 | 示例 | 说明 |
 |---|---|---|
-| 内置模板 | `builtin:txt2img` | 通用文生图（SD/SDXL 均可），占位符参数化 |
+| 内置模板 | `builtin:flux2_klein_t2i` 等 | 本包 `workflows/` 目录下全部 `.json` 均可 `builtin:<文件名>` 引用（默认含 `txt2img`、FLUX.2 系 `flux2_klein_t2i/flux2_klein_edit/flux2_kv_ref`、Z-Image 系 `zit_txt2img/z_anime_txt2img`、LTX 视频系 `ltx23_i2v/ltx23_i2v_noaudio`；完整映射与提示词规范见 `references/WORKFLOWS.md`） |
 | 本地 API 文件 | `./my_workflow.json` | ComfyUI 里导出 "Save (API Format)" 的 JSON |
 | 远程已保存 | `@我的工作流` | 从远程拉取 UI 格式并尽力转换（链接+widget 可转，复杂图建议导出 API 格式） |
 | stdin | `-` | 管道传入 API prompt JSON |
@@ -99,4 +102,5 @@ img2img：`comfyui upload xxx.png` → 得到 `subfolder/type` → 写 workflow 
 ## 7. 参考文档
 
 - [references/API.md](references/API.md)：ComfyUI 原生 HTTP API 端点详解（底层调试用）
+- [references/WORKFLOWS.md](references/WORKFLOWS.md)：**本机实例实测可用的工作流**（UI 保存的 7 个工作流 ↔ 内置 API 模板映射、蓝图/折叠节点机制、各模型提示词规范、低分辨率测试建议、LTX-2.3 待确认项）
 - README.md：架构与设计取舍

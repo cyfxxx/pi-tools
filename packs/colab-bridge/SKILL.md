@@ -5,7 +5,11 @@ description: 把 Google Colab（免费 GPU）作为 pi 的远程 Python/GPU 执�
 
 # Colab Bridge（远程 GPU 执行）
 
-本包让 pi 把代码提交到 Google Colab 执行并取结果：`<skill目录>/bin/colab_exec`。
+两种方案：
+1. **首选**：官方 `google-colab-cli`（0.6.0，需 Google 网络可达）——安装/认证/用法与踩坑见 `references/colab-cli.md`
+2. **备胎**：本包自制桥 `bin/colab_exec`（HTTP 桥+隧道，Google 网络不可达时使用），本文档主体即此方案
+
+自制桥：本包让 pi 把代码提交到 Google Colab 执行并取结果：`<skill目录>/bin/colab_exec`。
 
 - 连接配置：`colab_exec conf <url> <token>`（首次）
 - 自检：`colab_exec status`

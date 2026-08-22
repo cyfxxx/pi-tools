@@ -6,7 +6,7 @@
  * spawn 独立 pi 后台实例做一次性批量总结：
  *   1) 普通任务 → 经验经 memory_store 入库（procedure/solutions）+ 简述
  *   2) 成功、可复现、有保存价值的长任务 → 写 SKILL.md 草稿到
- *      /root/.pi/skill-store/drafts/（功能 3 半自动机制：drafts=待人工确认，不入
+ *      /root/.pi/packs/drafts/（功能 3 半自动机制：drafts=待人工确认，不入
  *      agent/skills/ → 不膨胀系统提示词）
  *
  * 游标：agent/stats/summarize-cursor 记录上次总结的最大 ts，只处理新记录（幂等）。
@@ -23,7 +23,7 @@ import { spawn } from 'node:child_process'
 const HOME = homedir()
 const RECORDS = join(HOME, '.pi', 'logs', 'task-records.jsonl')
 const CURSOR = join(HOME, '.pi', 'agent', 'stats', 'summarize-cursor')
-const SKILL_STORE = join(HOME, '.pi', 'skill-store')
+const SKILL_STORE = join(HOME, '.pi', 'packs')
 const DRAFTS = join(SKILL_STORE, 'drafts')
 // 会话边界：两条记录间隔超此视为新会话（对齐 usage-stats 分段）
 const SESSION_GAP_MS = 8 * 60 * 1000
@@ -112,7 +112,7 @@ function main() {
     '请对每个任务：',
     '1) 用一句话概括完成情况；',
     '2) 如有值得长期保留的经验/踩坑/技巧，用 memory_store 工具存入（category 选 procedure 或 solutions，title 简短，content 精确可复现）；多条经验可逐条存；',
-    '3) 特别标注：若某个任务满足"成功实现、可复现、有保存价值的长流程"三条，请用 write 工具把 SKILL.md 草稿写到 /root/.pi/skill-store/drafts/ 下（文件名 `<短名>.SKILL.md`，格式：YAML frontmatter 的 name/description + 步骤正文，description 控制在 1-2 句且不带时间戳）。',
+    '3) 特别标注：若某个任务满足"成功实现、可复现、有保存价值的长流程"三条，请用 write 工具把 SKILL.md 草稿写到 /root/.pi/packs/drafts/ 下（文件名 `<短名>.SKILL.md`，格式：YAML frontmatter 的 name/description + 步骤正文，description 控制在 1-2 句且不带时间戳）。',
     '注意：除此两项（memory_store / write 草稿）外不要改动任何其他文件，不要执行其他工具。',
     '最后用 3-5 行概述本次沉淀了什么。',
     '',

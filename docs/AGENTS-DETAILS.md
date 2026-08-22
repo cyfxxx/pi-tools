@@ -30,6 +30,12 @@
 - `deploy/systemd/`（unit 模板）、`deploy/tmux/`（tmux.conf 与状态脚本）、`deploy/keys/`（pi-link 公钥合集）
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 
+### packs/（统一外部技能仓库，2026-08 起并入原 skill-store）
+- `packs/<name>/` — 已确认技能包：`SKILL.md` 入口 + `bin/` `lib/` `references/` `workflows/` 等资源（comfyui-agent / colab-bridge / gamedev / reverse-skill）
+- `packs/drafts/` — 草稿：`scripts/task-summarizer.mjs` 自动写 `packs/drafts/*.SKILL.md`（待人工确认，不入 agent/skills/ 防提示词膨胀）
+- 流程约定：草稿确认后直接在 `packs/` 建包，**无 active/ 中间态**；与已有同类型技能重复时合并/优化进现有包（如 colab-cli → colab-bridge，comfyui-agent 旧稿 → comfyui-agent 包）
+- 详见 `packs/README.md`
+
 ## 回归验证细节
 
 单套件：`cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run`（统一依赖根 agent/node_modules）
