@@ -12872,6 +12872,53 @@
       "accessedAt": "2026-08-22T08:29:25.161Z",
       "environments": [
         "wsl2"
+      ],
+      "observedAt": "2026-08-22T08:29:25.161Z",
+      "deleted": false
+    },
+    {
+      "id": "74c81de3-96a2-4199-9ee9-da052d37b501",
+      "category": "fact",
+      "title": "用户决策: ComfyUI 不用 Colab，Colab 仅用于代码测试与微调训练",
+      "content": "用户本机（Windows + RTX 3070 Ti 8GB + ComfyUI 0.33）的 LTX-2.3 视频生成已实测可跑通（unet_gguf 的 LTX-2.3-22B-distilled-1.1-Q4_K_M.gguf 等模型本机可直接生成视频，无需外援）。结论（用户明确拍板）：ComfyUI 图像/视频生成不需要 Colab；Colab 只保留两个用途——代码测试与模型微调/训练。colab-bridge 技能定位：备胎，不用于 ComfyUI 图像管线。模型\"发送/上传\"到 Colab 无意义（官方模型直接从 HuggingFace 拉，且本机已覆盖图像/视频场景）。",
+      "tags": [
+        "comfyui",
+        "colab",
+        "ltx23",
+        "决策"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T08:43:25.425Z",
+      "updatedAt": "2026-08-22T08:43:25.425Z",
+      "accessedAt": "2026-08-22T08:43:25.425Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-22T08:43:25.425Z",
+      "deleted": false
+    },
+    {
+      "id": "bb6a7f9c-6a5d-485c-8777-39eaf3ea3be2",
+      "category": "solutions",
+      "title": "DeepSeek 缓存 TTL 逐出导致偶发 20 倍价格（已实测验证）",
+      "content": "排查结论（2026-08-22 实测验证）：后台 API 价格偶发为正常 20+ 倍的根因是 DeepSeek 服务端 KV 缓存 TTL 逐出（约 5 分钟），非 pi 侧问题。证据：快速连续发送\"测试\"（间隔<1分钟）6 笔全部命中（$0.0034/笔，输入增量仅 25-119 tokens）；间隔 6 分钟后的首笔 217593 tokens 全量未命中 $0.0959（≈输入×$0.44/M）。pi 侧 task-records 显示命中率 99.8%+、无压缩/剪枝/切档、注入稳定不破坏前缀。缓解：接受机制；降低每轮输入基线（长会话定期开新会话）；无法根治。",
+      "tags": [
+        "deepseek",
+        "缓存",
+        "缓存逐出",
+        "ttl",
+        "api成本"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T09:03:13.639Z",
+      "updatedAt": "2026-08-22T09:03:13.639Z",
+      "accessedAt": "2026-08-22T09:03:13.639Z",
+      "environments": [
+        "all"
       ]
     }
   ]
