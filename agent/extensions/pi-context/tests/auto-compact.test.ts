@@ -35,6 +35,13 @@ describe('auto-compact: 阈值计算', () => {
     expect(computeCompactThreshold(100_000, { smallRatio: 0.9 })).toBe(90_000)
     expect(computeCompactThreshold(600_000, { largeWindowSize: 500_000, largeRatio: 0.5 })).toBe(300_000)
   })
+
+  it('absoluteTokens 绝对阈值优先（用户策略 200K，不随窗口比例浮动）', () => {
+    expect(computeCompactThreshold(1_000_000, { absoluteTokens: 200_000 })).toBe(200_000)
+    expect(computeCompactThreshold(131_072, { absoluteTokens: 200_000 })).toBe(200_000)
+    expect(computeCompactThreshold(1_000_000, { absoluteTokens: 0 })).toBe(800_000) // <=0 退回比例
+    expect(computeCompactThreshold(1_000_000, { absoluteTokens: 200_000, largeRatio: 0.5 })).toBe(200_000)
+  })
 })
 
 describe('auto-compact: 判定与防抖', () => {
