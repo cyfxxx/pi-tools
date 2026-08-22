@@ -6,7 +6,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ## 目录结构（概览）
 
 - `agent/` — 配置（settings.json）+ 扩展（extensions/，10 个）+ 共享库（lib/）+ 代理模板/技能/提示模板（agents/ skills/ prompts/）
-- `packs/` — 统一外部技能仓库：`packs/<name>/` 已确认技能包（comfyui-agent/colab-bridge/gamedev/reverse-skill）+ `packs/drafts/` 草稿（草稿确认后直接建包，无 active 中间态；同类型技能合并进现有包）。详见 `packs/README.md`
+- `packs/` — 统一外部技能仓库：`packs/<name>/` 已确认技能包（comfyui/colab/gamedev/...）+ `packs/drafts/` 技能草稿。详见 `packs/README.md`
 - `portable/` — 便携 pi（Windows 原生）种子，完整经验见 `portable/README.md`
 - `scripts/` — 生命周期与工具脚本（rebuild/test-all/pi-bg/pi-whisper 等）
 - `deploy/` — 部署配置（systemd/tmux/keys）；`searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略）
