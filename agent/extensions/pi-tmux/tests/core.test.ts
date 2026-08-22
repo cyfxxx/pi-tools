@@ -184,4 +184,41 @@ describe('pi-tmux 真实 tmux 会话（环境具备 tmux 时）', () => {
     expect(await hasSession(opts, testSession)).toBe(false)
     removeLog(opts, testSession)
   }, 30000)
+
+  it('命令自然结束（成功/失败）会话自动退出；Ctrl-C 中断后保留 shell 可继续交互', async () => {
+    const { runTmux } = await import('../core')
+    const avail = await runTmux(opts, ['-V'], 5000)
+    if (avail.code === 127) return
+
+    const { startSession, readOutput, hasSession, killSession, removeLog } = await import('../core')
+    const probe = `${testSession}-probe`
+    await killSession(opts, probe).catch(() => {})
+
+    // 1) 正常结束 → 会话退出（完成自动唤醒依赖此语义）
+    const s1 = await startSession(opts, probe, 'echo exit-normal', tmpdir())
+    const deadline = Date.now() + 8000
+    while (Date.now() < deadline && (await hasSession(opts, probe))) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
+    expect(await hasSession(opts, probe)).toBe(false)
+    const out = await readOutput(opts, probe, 50)
+    expect(out.text).toContain('exit-normal')
+    removeLog(opts, probe)
+
+    // 2) Ctrl-C 中断 → 退出码 130 → shell 保留，后续 send-keys 仍可交互
+    if (process.platform !== 'win32') {
+      const { sendKeys } = await import('../core')
+      const s2 = await startSession(opts, probe, 'sleep 60', tmpdir())
+      await new Promise((r) => setTimeout(r, 600))
+      await sendKeys(opts, probe, { ctrlKey: 'c' })
+      await new Promise((r) => setTimeout(r, 500))
+      await sendKeys(opts, probe, { text: 'echo after-ctrl-c', enter: true })
+      await new Promise((r) => setTimeout(r, 800))
+      const out2 = await readOutput(opts, probe, 50)
+      expect(out2.text).toContain('after-ctrl-c')
+      expect(await hasSession(opts, probe)).toBe(true)
+      await killSession(opts, probe)
+    }
+    removeLog(opts, probe)
+  }, 30000)
 })

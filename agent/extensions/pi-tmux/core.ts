@@ -419,8 +419,13 @@ export async function startSession(
   await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
 
   // 3. 注入命令并回车（Windows 后端：bash -c 已执行命令——跳过避免 stdin EPIPE）
+  // 命令尾部追加 `; [ $? -ne 130 ] && exit`：命令自然结束（成功或失败）时 shell
+  // 退出、会话结束——完成自动唤醒（watcher 轮询 has-session）依赖此语义触发通知。
+  // 退出码 130（SIGINT 中断，如 tmux_send ctrl-c）时保留 shell，维持"中断后继续
+  // tmux_send 交互"的既有用法（dev server 重启工作流）；长驻命令永不执行到此。
   if (process.platform !== 'win32') {
-    await runTmux(opts, ['send-keys', '-t', name, '-l', command], 10000)
+    const injected = `${command}; [ $? -ne 130 ] && exit`
+    await runTmux(opts, ['send-keys', '-t', name, '-l', injected], 10000)
     await runTmux(opts, ['send-keys', '-t', name, 'Enter'], 10000)
   }
 

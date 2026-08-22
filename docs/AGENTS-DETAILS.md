@@ -84,6 +84,7 @@ pi 启动时可能打印 `Extension shortcut conflict: 'return'/'shift+enter' is
 
 - 2026-08-14：rebuild 任务 tmux_wait 连续阻塞 6 分钟×2
 - 2026-08-15：全量回归 until_exit 阻塞 420 秒（命令尾部 bash 仍存活会话不退出，until_exit 注定等满超时）
+- 2026-08-22 已修复：core.ts 注入命令尾部追加 `; [ $? -ne 130 ] && exit`——命令自然结束（成功/失败）会话自动退出，notify 自动唤醒与 until_exit 均恢复正常；Ctrl-C 中断（退出码 130）保留 shell 供继续交互
 
 ## 旧命令名（已移除，禁止引用）
 
