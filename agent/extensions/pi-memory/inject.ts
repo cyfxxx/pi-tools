@@ -20,7 +20,7 @@ export function truncateContent(text: string): string {
 }
 
 /** 空摘要过滤：fullText 与 decisions 均空，或文案自认无可提取的摘要不注入 */
-const EMPTY_SUMMARY_PATTERN = /无可提取|无实质内容|无需衔接|没有可提取|未提取到内容|无任务执行|无有效信息|无有价值信息/
+const EMPTY_SUMMARY_PATTERN = /无可提取|无实质内容|无需衔接|没有可提取|未提取到内容|无任务执行|无有效信息|无有价值信息|内容极简|无新决策|无事发生|极简会话|没有任务/
 export function isSubstantiveSummary(s: SummaryEntry): boolean {
   const text = (s.fullText || s.decisions?.join('; ') || '').trim()
   if (!text) return false
@@ -91,8 +91,14 @@ export function buildInjectionBlock(
     .filter(isSubstantiveSummary)
     .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
     .slice(0, 2)
+  // 内容策略：结构化段（决策/事实/教训/偏好）优先于流水账全文——fullText 是逐轮
+  // 流水账，前 80 token 常被"会话内容极简/拉取更新"等过程描述占满，决策要点落在
+  // 截断点之后被丢弃（2026-08-22 注入审计：注入块两条摘要均因全文优先而损失要点）。
+  // 无结构化段才回退全文。判定确定性（只依赖摘要内容），缓存前缀稳定。
   for (const s of recent) {
-    const item = `- 会话「${s.title}」: ${truncateContent(s.fullText || s.decisions.join('; '))}`
+    const structured = [...s.decisions, ...s.facts, ...s.lessons, ...s.prefs].filter(Boolean)
+    const text = structured.length > 0 ? structured.join('；') : (s.fullText || '')
+    const item = `- 会话「${s.title}」: ${truncateContent(text)}`
     const cost = estimateTokens(item + '\n')
     if (used + cost > budgetTokens && injectedSummaries > 0) break
     lines.push(item)

@@ -120,6 +120,32 @@ describe('inject: buildInjectionBlock', () => {
     expect(result.block).not.toContain('开场问候')
   })
 
+  it('摘要注入结构化段优先：decisions/facts 呈现，流水账 fullText 不占注入位', async () => {
+    const { buildInjectionBlock } = await import('../inject.ts')
+    const s = makeSummary({
+      title: '语音链路上线',
+      decisions: ['唤醒检测改 ASR 通道，KWS 3.3M 对小模型识别率不足'],
+      facts: ['VAD 预筛 -36dBFS，静音零开销'],
+      lessons: [],
+      prefs: [],
+      fullText: '会话内容极简：用户确认执行方案，随后完成文档更新与推送，本会话无新决策、（大量流水账过程描述……）',
+    })
+    const result = buildInjectionBlock([], [s], 500)
+    expect(result.block).toContain('唤醒检测改 ASR 通道')
+    expect(result.block).not.toContain('本会话无新决策')
+    expect(result.block).not.toContain('大量流水账')
+  })
+
+  it('无结构化段的摘要回退全文；极简全文且新模式命中不注入', async () => {
+    const { buildInjectionBlock } = await import('../inject.ts')
+    const fallback = makeSummary({ title: '过程记录', fullText: '拉取更新并跑回归，全部通过' })
+    const trivial = makeSummary({ title: '重启确认', fullText: '会话内容极简，无事发生，无可提取' })
+    const result = buildInjectionBlock([], [fallback, trivial], 500)
+    expect(result.summaries).toBe(1)
+    expect(result.block).toContain('拉取更新并跑回归')
+    expect(result.block).not.toContain('重启确认')
+  })
+
   it('摘要按 ts 排序取最新而非数组插入序', async () => {
     const { buildInjectionBlock } = await import('../inject.ts')
     const older = makeSummary({ title: '旧摘要-不应出现', ts: '2026-01-01T00:00:00Z', fullText: '旧内容' })

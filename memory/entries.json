@@ -3345,24 +3345,6 @@
       ]
     },
     {
-      "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 98,
-      "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-15T13:38:51.626Z",
-      "observedAt": "2026-08-10T10:02:42.622Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "95406166-e6b6-4097-87c3-bd7e848271bd",
       "category": "fact",
       "title": "patch-plan-tools.mjs 内核补丁",
@@ -4739,30 +4721,6 @@
       "observedAt": "2026-08-11T02:54:32.645Z",
       "deleted": true,
       "supersededBy": "36cb9b7f-6e4e-4336-b782-3328b9eddcd4",
-      "environments": [
-        "termux"
-      ]
-    },
-    {
-      "id": "66e4e698-1753-44f2-83d9-ac1853cb070e",
-      "category": "fact",
-      "title": "Termux:API 连续录音不稳定",
-      "content": "Termux:API MediaRecorder 服务连续录音时不稳定：实测连续 5 次录音仅第 1 次跑满时长，之后进程 1.5-1.9 秒提前退出、偶发 0 字节空文件；-q 清理后可恢复。pi-voice 修复（e1d4320）：exit 回调记录实际时长，自动转写路径实际时长 < 上限 50%（120s→60s）时提示'录音异常提前结束（Xs）'而非误报'到上限'。",
-      "tags": [
-        "pi-voice",
-        "termux",
-        "录音",
-        "故障"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T02:54:32.645Z",
-      "updatedAt": "2026-08-11T04:37:04.732Z",
-      "accessedAt": "2026-08-11T02:54:32.645Z",
-      "observedAt": "2026-08-11T02:54:32.645Z",
-      "deleted": true,
-      "supersededBy": "8e8db840-a743-4727-bb44-1e27128ff39b",
       "environments": [
         "termux"
       ]
@@ -6243,29 +6201,6 @@
       "observedAt": "2026-08-12T04:22:22.547Z",
       "environments": [
         "wsl2"
-      ],
-      "deleted": false
-    },
-    {
-      "id": "a0150a25-a998-4a0e-91c5-b66f37c39b90",
-      "category": "fact",
-      "title": "Termux:API MediaRecorder 连续录音不稳定",
-      "content": "Termux:API 的 MediaRecorder 服务在 Android 端连续录音时表现不稳定：第一次录音通常正常跑满设定上限，之后进程常提前退出（1.5-1.9 秒），偶发空输出 0 字节文件；手动 termux-microphone-record -q 清理后可恢复。此问题在 pi-voice 连续多次录音场景下复现。",
-      "tags": [
-        "pi-voice",
-        "termux",
-        "bug",
-        "media-recorder"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T04:30:08.118Z",
-      "updatedAt": "2026-08-12T04:30:08.118Z",
-      "accessedAt": "2026-08-12T04:30:08.118Z",
-      "observedAt": "2026-08-12T04:30:08.118Z",
-      "environments": [
-        "termux"
       ],
       "deleted": false
     },
@@ -9235,24 +9170,6 @@
       "deleted": false
     },
     {
-      "id": "0e173073-7b57-40e9-bb1c-8183f5e3b3fb",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 9,
-      "createdAt": "2026-08-14T03:29:32.815Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-15T03:05:09.472Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-14T03:29:32.815Z",
-      "deleted": true
-    },
-    {
       "id": "060a8aac-810b-4b00-8da4-c840cb361957",
       "category": "fact",
       "title": "pi 仓库 4 条 HIGH bug 待修复",
@@ -10984,24 +10901,6 @@
         "all"
       ],
       "observedAt": "2026-08-15T14:43:19.109Z",
-      "deleted": false
-    },
-    {
-      "id": "d1a578e7-4ab2-4507-86a4-134aa40811cf",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 75,
-      "createdAt": "2026-08-15T14:46:15.151Z",
-      "updatedAt": "2026-08-22T07:00:37.387Z",
-      "accessedAt": "2026-08-22T07:00:37.387Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-15T14:46:15.151Z",
       "deleted": false
     },
     {
@@ -12882,6 +12781,29 @@
         "linux"
       ],
       "observedAt": "2026-08-22T06:48:45.195Z",
+      "deleted": false
+    },
+    {
+      "id": "70cea90f-12ed-4420-9b47-94706a14d103",
+      "category": "fact",
+      "title": "Termux:API MediaRecorder 连续录音不稳定（合并重条目）",
+      "content": "Termux:API MediaRecorder 服务连续录音时不稳定（2026-08-11/12 两次观测合并）：第一次录音通常正常跑满设定时长上限，之后进程常提前退出（实测 1.5-1.9 秒即退，连续 5 次录音仅第 1 次跑满），偶发空输出 0 字节文件；手动 termux-microphone-record -q 清理后可恢复。此问题在 pi-voice 连续多次录音场景下复现。",
+      "tags": [
+        "Termux",
+        "pi-voice",
+        "MediaRecorder",
+        "录音"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T07:12:14.170Z",
+      "updatedAt": "2026-08-22T07:12:14.170Z",
+      "accessedAt": "2026-08-22T07:12:14.170Z",
+      "environments": [
+        "termux"
+      ],
+      "observedAt": "2026-08-22T07:12:14.170Z",
       "deleted": false
     }
   ]
