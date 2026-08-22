@@ -80,10 +80,17 @@ python3 -m venv /opt/pi-sherpa/venv
 /voice backend sherpa   # 依赖 sherpa 后端
 /voice wake on          # 进入监听；命中“开启语音输入”自动开始录音
 /voice wake off         # 停止监听
+/voice wake auto on     # 开启“启动 pi 后自动后台监听”（持久化到配置，重启 pi 生效）
+/voice wake auto off    # 关闭自动监听（持久）；后续手动 /voice wake on 仍可用
+/voice wake auto        # 查看自动监听开关状态
 ```
+
+- **自动监听（autoWake）**：`/voice wake auto on` 后每次启动 pi 会自动开启监听，无需手动操作；`sherpa` 服务未运行时会自动拉起。前提：Linux 平台 + sherpa 后端（条件不满足时自动跳过并提示）。手动关闭用 `/voice wake off`（仅本次）或 `/voice wake auto off`（持久）。环境变量 `PI_VOICE_AUTO_WAKE=1` 亦可开启
 
 - KWS 模型：`sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01`（4.9MB，拼音建模、自定唤醒词）。服务端首次监听时若 `/opt/pi-sherpa/models/wakeup_keywords.txt` 不存在会自动生成（默认词“开启语音输入”），可手工编辑自定义（格式：拼音序列 + `@` 中文，一行一词）
 - 唤醒词拼音约束：声母为单 token（`sh` 不可拆成 `s h`），韵母带声调
+- **唤醒检测通道**：默认 ASR 通道（`PI_SHERPA_WAKE_MODE=asr`）——SenseVoice 转写窗口后匹配“@ 后中文词”，对真实人声可靠（KWS 3.3M 拼音模型对弱信号/口音召回差，实测同段语音转写正确而 KWS 恒不命中，阈值/增益无效）；VAD 预筛（RMS < `PI_SHERPA_WAKE_VAD_RMS` 默认 -36dBFS）滤掉静音窗口，日常 0 开销，活跃窗口转写 ~100ms。KWS 通道可 `PI_SHERPA_WAKE_MODE=kws` 回退（服务端环境变量，重启 sherpa 生效）
+- **采集停滞看门狗**：WSLg 的 RDP 麦克风源会挂起长时间未活动的采集 stream（常驻 parec 无数据而新建录音正常）。监听进程 8s 无数据自动 kill+重启采集（最多 3 次）；且 pi 扩展沙箱下 spawn 的 stdout 为 IPC socket 不可做长流数据，采集固定走文件模式（`--file-format=wav`，poll 读文件尾部）
 
 ## 平台适配
 

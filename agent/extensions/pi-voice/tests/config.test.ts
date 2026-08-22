@@ -56,6 +56,19 @@ describe('config 持久化', () => {
     expect(loadConfig({ PI_VOICE_WHISPER_MODEL: 'tiny' }).whisperModel).toBe('tiny')
   })
 
+  it('autoWake 默认关闭，可持久化，env 优先（启动自动监听开关）', async () => {
+    const { loadConfig, persistConfig } = await import('../config')
+    expect(loadConfig({}).autoWake).toBe(false)
+    persistConfig({ autoWake: true })
+    expect(loadConfig({}).autoWake).toBe(true)
+    // env 优先
+    expect(loadConfig({ PI_VOICE_AUTO_WAKE: '0' }).autoWake).toBe(false)
+    expect(loadConfig({ PI_VOICE_AUTO_WAKE: '1' }).autoWake).toBe(true)
+    // env 定义后不落盘
+    const written = persistConfig({ autoWake: false }, { PI_VOICE_AUTO_WAKE: '1' })
+    expect(written).not.toContain('autoWake')
+  })
+
   it('ttsEnabled 默认关闭（非语音状态不朗读）', async () => {
     const { loadConfig } = await import('../config')
     expect(loadConfig({}).ttsEnabled).toBe(false)
