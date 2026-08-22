@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { loadDiagLines } from '../../../lib/usage-diag.ts'
@@ -22,6 +22,8 @@ const ORIG_ENV = { ...process.env }
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'index-compact-'))
   process.env.PI_USAGE_DIAG_FILE = join(dir, 'diag.jsonl')
+  // 任务门隔离：指向空目录（真实 ~/.pi/plans 残留 in_progress 会干扰断言）
+  process.env.PI_CONTEXT_PLANS_DIR = join(dir, 'plans')
 })
 
 afterEach(() => {
@@ -182,8 +184,68 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
       { reason: 'resume' },
       { getContextUsage: () => undefined, compact },
     )
-    // 850K ≥ 1M×0.4 恢复阈值 → 触发
+    // 850K ≥ 绝对阈值 200K（用户策略；此前为 1M×0.4 恢复阈值）→ 触发
     expect(compact).toHaveBeenCalledTimes(1)
+  })
+
+  it('三重门限：最近有用户消息（离开不足 10 分钟）→ 不压缩（空闲门）', async () => {
+    const { handlers } = await loadIndex()
+    // context 事件：最后 user 消息是刚刚 → 空闲门不满足
+    const compact = vi.fn()
+    handlers.get('context')![0](
+      { messages: [{ role: 'user', timestamp: Date.now() }] },
+      {},
+    )
+    handlers.get('agent_settled')![0](
+      undefined,
+      overThresholdCtx(compact as never),
+    )
+    expect(compact).not.toHaveBeenCalled()
+    // 离开 11 分钟后再触发 → 空闲门满足，压缩
+    const compact2 = vi.fn()
+    handlers.get('context')![0](
+      { messages: [{ role: 'user', timestamp: Date.now() - 11 * 60_000 }] },
+      {},
+    )
+    handlers.get('agent_settled')![0](
+      undefined,
+      overThresholdCtx(compact2 as never),
+    )
+    expect(compact2).toHaveBeenCalledTimes(1)
+  })
+
+  it('三重门限：计划文件中存在 in_progress 任务（plan.md [~]）→ 不压缩（任务门）', async () => {
+    const { handlers } = await loadIndex()
+    const planDir = join(dir, 'plans', 'plan-1787200000000')
+    mkdirSync(planDir, { recursive: true })
+    writeFileSync(
+      join(planDir, 'plan.md'),
+      '# 计划\n- [~] 1. 进行中任务 (正在测试)\n\n<!-- nextId: 2 -->',
+      'utf8',
+    )
+    const compact = vi.fn()
+    handlers.get('agent_settled')![0](
+      undefined,
+      overThresholdCtx(compact as never),
+    )
+    expect(compact).not.toHaveBeenCalled()
+  })
+
+  it('重启场景阈值：resume 时上下文 <100K（重启阈值）→ 不压缩', async () => {
+    const { handlers } = await loadIndex()
+    const compact = vi.fn()
+    handlers.get('session_start')![0](
+      { reason: 'resume' },
+      { getContextUsage: () => ({ tokens: 90_000, contextWindow: 1_000_000 }), compact },
+    )
+    expect(compact).not.toHaveBeenCalled()
+    // 100K≤tokens<200K：重启场景触发（agent_settled 常规 200K 不触发）
+    const compact2 = vi.fn()
+    handlers.get('session_start')![0](
+      { reason: 'resume' },
+      { getContextUsage: () => ({ tokens: 120_000, contextWindow: 1_000_000 }), compact: compact2 },
+    )
+    expect(compact2).toHaveBeenCalledTimes(1)
   })
 
   it('溢出兜底：tokens ≥ window 时绕过阈值/cooldown 强制压缩（对齐 dsh CONTEXT_WINDOW_EXCEEDED）', async () => {
