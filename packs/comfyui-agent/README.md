@@ -23,8 +23,11 @@ comfyui-agent/
 ├── SKILL.md              # pi 集成入口（skill frontmatter + 完整用法）
 ├── bin/comfyui           # 入口脚本（→ python3 lib/comfyui.py）
 ├── lib/comfyui.py        # 单文件 CLI：stdlib only
-├── workflows/txt2img.json# 内置参数化文生图模板
+├── workflows/            # 内置 API 模板（builtin:<文件名> 引用）：
+│                         #   txt2img(SD) / flux2_klein_t2i|edit / flux2_kv_ref
+│                         #   / zit_txt2img / z_anime_txt2img / ltx23_i2v(_noaudio)
 ├── references/API.md     # ComfyUI HTTP API 参考
+├── references/WORKFLOWS.md # 实例实测工作流映射、提示词规范、模型目录速查
 └── config.example.json   # 多实例配置示例
 ```
 
@@ -33,8 +36,11 @@ comfyui-agent/
 ```bash
 bin/comfyui servers add default http://<GPU机IP>:8188
 bin/comfyui status
-bin/comfyui run builtin:txt2img -p '{"prompt":"a cat"}' -o ./out
+bin/comfyui models unet        # 按 /models 目录直读模型（先看实例有什么模型）
+bin/comfyui run builtin:flux2_klein_t2i -p '{"prompt":"a cat","width":512,"height":512}' -o ./out
 ```
+
+> 本机（FLUX.2 klein/Z-Image/LTX-2.3 环境，无 SD checkpoint）的可用内置模板与提示词规范：见 `references/WORKFLOWS.md`；`builtin:txt2img` 仅适用 SD 系实例。
 
 作为 pi skill：在 `~/.pi/agent/settings.json` 的 `skills` 数组加入 `"+../packs/comfyui-agent/SKILL.md"`，重启 pi 后生效，对话中自然触发。
 

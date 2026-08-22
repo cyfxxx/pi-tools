@@ -12805,6 +12805,74 @@
       ],
       "observedAt": "2026-08-22T07:12:14.170Z",
       "deleted": false
+    },
+    {
+      "id": "8359b8dc-4ac5-4eba-acf5-f950ab3dc73f",
+      "category": "fact",
+      "title": "ComfyUI 环境: FLUX.2 klein 系列 + 匹配约束",
+      "content": "Windows 宿主机 ComfyUI 0.33.0 (localhost:8188，WSL2 镜像网络可直连 127.0.0.1)，GPU RTX 3070 Ti Laptop 8GB。模型为 FLUX.2 klein 系：UNET 有 flux2-klein-9b-base-fp8 / z-anime-distill-8step-fp8 / z_image_turbo_bf16 等；CLIP 有 qwen_3_4b / qwen_3_8b_fp8mixed。关键约束：flux2-klein-9b 的 KSampler 需要 qwen_3_8b_fp8mixed 作为 CLIP（matmul 维度 12288），用 qwen_3_4b 会报 'mat1 and mat2 shapes cannot be multiplied (512x7680 and 12288x4096)'；UNETLoader 必须传 weight_dtype=default；FLUX.2 用 EmptySD3LatentImage + FluxGuidance(3.5) + cfg=1.0 + euler/sgm_uniform，latent 用 flux2-vae。832x1216 20 步约 66 秒。comfyui-agent 内置 txt2img 模板是 SD 系（CheckpointLoaderSimple），该环境不可用。",
+      "tags": [
+        "comfyui",
+        "flux2",
+        "packs",
+        "图像生成"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T07:21:58.969Z",
+      "updatedAt": "2026-08-22T07:21:58.969Z",
+      "accessedAt": "2026-08-22T07:21:58.969Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-22T07:21:58.969Z",
+      "deleted": false
+    },
+    {
+      "id": "bdd31342-59e5-4704-bc4d-de8ea092ee44",
+      "category": "procedure",
+      "title": "ComfyUI 蓝图折叠节点展开与内置模板清单",
+      "content": "ComfyUI 0.33 前端\"折叠节点\"（UUID 类型，如 7b34ab90-/f2fdebf6-/27eacb9f-）是子图蓝图节点，API 直提报 missing_node_type；展开定义可经 GET /global_subgraphs（列表）与 /global_subgraphs/<64位hash>（.data 含 definitions.subgraphs 完整子图）获取，也已展开为标准 API 模板内置到 packs/comfyui-agent/workflows/（zit_txt2img/z_anime_txt2img/flux2_klein_t2i/flux2_klein_edit/flux2_kv_ref/ltx23_i2v/ltx23_i2v_noaudio，用法与提示词规范见 references/WORKFLOWS.md）。官方模板源 github.com/Comfy-Org/workflow_templates，官方文档 docs.comfy.org 页面加 .md 后缀可取 Markdown。UI 工作流枚举用 /api/userdata?dir=workflows，取文件用 /api/userdata/workflows%2F<文件名>（encodeURIComponent）。KV 工作流 megapixels 默认 0.26（≈512²）否则放大到 1024² 耗时增 14 倍。",
+      "tags": [
+        "comfyui",
+        "蓝图",
+        "subgraph",
+        "packs",
+        "工作流"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T08:08:56.710Z",
+      "updatedAt": "2026-08-22T08:08:56.710Z",
+      "accessedAt": "2026-08-22T08:08:56.710Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-22T08:08:56.710Z",
+      "deleted": false
+    },
+    {
+      "id": "7faa114b-f06c-4f81-a8d8-a4cfce59c6fe",
+      "category": "fact",
+      "title": "ComfyUI 模型多目录机制与本机分布",
+      "content": "ComfyUI 模型按格式分目录存放，模型不在 checkpoints 也能被识别：GET /models 列 50+ 分类，GET /models/<目录> 列文件。本机 8188 实例：checkpoints 为空；diffusion_models/ 有 flux2-klein-9b-base/fp8/kv-fp8、z-anime-distill-8step-fp8、z_image_turbo_bf16、MelBandRoformer；unet_gguf/ 有 LTX-2.3-22B-distilled-1.1-Q4_K_M.gguf（LTX23 视频主模型）与 sulphur_dev-Q4_K_M.gguf；clip_gguf/ 有 flux2-klein uncensored、qwen3 abliterated 等 4 个；text_encoders/ 有 qwen_3_4b/8b、ltx-2.3_text_projection；vae/ 有 LTX23_audio/video_vae、flux2-vae/kv-vae、zit-vae；latent_upscale_models/ 有 ltx-2.3-spatial-upscaler-x2-1.1。comfyui-agent CLI 的 models 子命令已支持 unet/unet_gguf/clip_gguf/text_encoders 等目录直读。",
+      "tags": [
+        "comfyui",
+        "模型目录",
+        "gguf",
+        "ltx23"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T08:29:25.161Z",
+      "updatedAt": "2026-08-22T08:29:25.161Z",
+      "accessedAt": "2026-08-22T08:29:25.161Z",
+      "environments": [
+        "wsl2"
+      ]
     }
   ]
 }

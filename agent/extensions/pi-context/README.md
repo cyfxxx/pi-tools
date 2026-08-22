@@ -70,7 +70,7 @@
 - **工具用量账单（2.5）**：`recordToolUsage`（`lib/usage-diag.ts`）在 `tool_result` 按工具累加 per-call usage（input/cacheRead/cacheWrite）到 `stats/tool-usage.json`；`node scripts/usage-stats.mjs --tools` 输出按 input 降序 top20 账单。另：`recordPrune` 支持 `prune-think` 类型（thinking 剪枝记账，补 A 类断裂归因盲点），`formatUsageSummary` 已计入。仅数据文件、不进注入路径（缓存友好）。
 - **思考量记账（2.7，task #14/25 量化档位）**：provider 不返回 reasoning，`thinking-meter` 在 context 阶段统计上下文内 assistant thinking 块 token 总量（`estimateTokens`）逐轮落盘；`node scripts/usage-stats.mjs --thinking` 按会话聚合 thinking 总量/每轮均值，直接对照 thinking 档位（max→high）思考量变化。仅数据文件、不进注入路径。
 - **thinking 档位自适应（task #25）**：`thinking-level.ts` 在 `agent_settled` 按真实 tokens/window 比例驱动 `setThinkingLevel` 升降档（critical≥95% 连 2 次降档、low<70% 连 3 次升回至基准、90s 防抖死区，阶梯 low/medium/high）。不用 context-budget 压力接口（其 used 单调不回退→升回永不触发，改用真实比例）。每次切换强制 `recordLevelChange` 落盘（`usage-stats.mjs --levels` 审计），切换后思考量由 thinking-meter 关联。档位属运行时设置不进注入面→不额外破坏缓存；副作用：内核 setThinkingLevel 实际变化会持久化 settings.defaultThinkingLevel。
-- **任务完成即时记录（task #26）**：`agent_settled` 确定性写结构化任务记录到 `logs/task-records.jsonl`（用户请求摘要/用量/工具数/是否压缩/是否切档），零 LLM；批量总结层 `scripts/task-summarizer.mjs` 按游标聚合新任务 → spawn 隔离 pi 后台总结 → memory_store 沉淀经验 + 有价值的可复现长任务写 `skill-store/drafts/` 草稿（功能 3，不入 agent/skills/ 防提示词膨胀）。后台总结 pi 经 `PI_DISABLE_TASK_RECORD=1` 抑制自身记录防递归。已接入 daily-health 3.5.5 步每日自动触发。
+- **任务完成即时记录（task #26）**：`agent_settled` 确定性写结构化任务记录到 `logs/task-records.jsonl`（用户请求摘要/用量/工具数/是否压缩/是否切档），零 LLM；批量总结层 `scripts/task-summarizer.mjs` 按游标聚合新任务 → spawn 隔离 pi 后台总结 → memory_store 沉淀经验 + 有价值的可复现长任务写 `packs/drafts/` 草稿（packs 为统一外部技能仓库，功能 3，不入 agent/skills/ 防提示词膨胀）。后台总结 pi 经 `PI_DISABLE_TASK_RECORD=1` 抑制自身记录防递归。已接入 daily-health 3.5.5 步每日自动触发。
 
 ## 注意
 
