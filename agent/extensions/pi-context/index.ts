@@ -9,7 +9,7 @@ import {
 	recordCacheUsage,
 	estimateTokens,
 } from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
-import { pruneThinkingBudget, pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
+import { pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
 import {
 	createState,
 	tickThinkingLevel,
@@ -447,18 +447,12 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 
-		// thinking 保留按 token 预算（早期按"保留最近 2 轮"数量规则，max 推理级别
-		// 下单轮 reasoning 可达 5-10K，2 轮上限不可控）。改为保留最近
-		// KEEP_THINKING_TOKENS token 的 thinking：预算耗尽处及更早的全部删除。
-		// 确定性：判定只依赖消息内容，内容不变结果不变 → 缓存前缀稳定。
-		const thinking = pruneThinkingBudget(messages as unknown as PruneMessage[]);
-		if (thinking.modified) {
-			messages = thinking.messages as unknown as typeof messages;
-			modified = true;
-			// 记账（2026-08-20 补盲点）：thinking 剪枝是唯一无事件的 post-hoc 改写，
-			// 类型 prune-think 供 A 类断裂归因区分于工具结果擦除
-			recordPrune(thinking.prunedTokens, thinking.prunedChars, thinking.prunedCount, "thinking");
-		}
+		// thinking 保留：不再每轮剪枝（2026-08-22 实测根因：max 档位单轮 thinking
+		// 18-20K，64K 预算仅容 ~3 轮 → 每轮必剪最老 thinking 块 → 前缀每轮改写 →
+		// A 类全断重发（会话 63% 命中、浪费 ~590 万 tokens）。对齐 append-only
+		// 原则：清理职责让给 auto-compact（一次性断裂），thinking 由 compact 摘要化，
+		// 无需 post-hoc 剪枝。pruneThinkingBudget 保留在 lib/prune.ts（含测试），
+		// 仅作未来 compact 后可选兜底，context 阶段不再调用。
 		// 思考量记账（task #14 量化）：provider（opencode-go）不返回 reasoning，
 		// 须从消息层统计当轮上下文内 assistant thinking 块 token 总量（改写后=实际携带）。
 		// 写 usage-diag thinking-meter，供 usage-stats --thinking 按会话聚合对照档位变化。
