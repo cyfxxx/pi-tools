@@ -58,6 +58,8 @@ export interface VoiceConfig {
   whisperScript: string
   /** 转写后端：whisper（faster-whisper，默认，行为不変）或 sherpa（SenseVoice 独立服务） */
   sttBackend: 'whisper' | 'sherpa'
+  /** 自动唤醒：启动 pi 后后台运行唤醒监听（仅 linux + sherpa 后端；/voice wake off 本次退出，/voice wake auto off 持久关闭） */
+  autoWake: boolean
   /** sherpa 转写服务地址（SenseVoice 独立进程，端口 18768 错开 whisper） */
   sherpaEndpoint: string
   /** sherpa 服务 Bearer token（服务端读 sherpaToken 优先、回退 whisperToken；空 = 不鉴权） */
@@ -105,6 +107,7 @@ export const DEFAULTS: VoiceConfig = {
   whisperDevice: 'auto',
   whisperScript: join(homedir(), '.pi', 'scripts', 'pi-whisper.sh'),
   sttBackend: 'whisper',
+  autoWake: false,
   sherpaEndpoint: 'http://127.0.0.1:18768',
   sherpaToken: '',
   sherpaScript: join(homedir(), '.pi', 'scripts', 'pi-sherpa.sh'),
@@ -159,6 +162,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, configPath: str
     whisperDevice: (env.PI_VOICE_WHISPER_DEVICE ?? file.whisperDevice ?? DEFAULTS.whisperDevice) as 'auto' | 'cpu' | 'cuda',
     whisperScript: env.PI_VOICE_WHISPER_SCRIPT ?? file.whisperScript ?? DEFAULTS.whisperScript,
     sttBackend: (env.PI_VOICE_STT_BACKEND ?? file.sttBackend ?? DEFAULTS.sttBackend) as VoiceConfig['sttBackend'],
+    autoWake: envBool(env.PI_VOICE_AUTO_WAKE, file.autoWake ?? DEFAULTS.autoWake),
     sherpaEndpoint: env.PI_VOICE_SHERPA_ENDPOINT ?? file.sherpaEndpoint ?? DEFAULTS.sherpaEndpoint,
     sherpaToken: env.PI_VOICE_SHERPA_TOKEN ?? file.sherpaToken ?? file.whisperToken ?? DEFAULTS.sherpaToken,
     sherpaScript: env.PI_VOICE_SHERPA_SCRIPT ?? file.sherpaScript ?? DEFAULTS.sherpaScript,
@@ -220,6 +224,7 @@ function envKeyOf(key: keyof VoiceConfig): string | null {
     whisperDevice: 'PI_VOICE_WHISPER_DEVICE',
     whisperScript: 'PI_VOICE_WHISPER_SCRIPT',
     sttBackend: 'PI_VOICE_STT_BACKEND',
+    autoWake: 'PI_VOICE_AUTO_WAKE',
     sherpaEndpoint: 'PI_VOICE_SHERPA_ENDPOINT',
     sherpaToken: 'PI_VOICE_SHERPA_TOKEN',
     sherpaScript: 'PI_VOICE_SHERPA_SCRIPT',

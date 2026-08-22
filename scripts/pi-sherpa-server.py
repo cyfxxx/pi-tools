@@ -23,6 +23,7 @@
 
 import io
 import json
+import math
 import os
 import re
 import threading
@@ -87,6 +88,11 @@ def _strip_tags(s):
 PI_SHERPA_KWS_DIR = os.environ.get("PI_SHERPA_KWS_DIR", "sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01")
 KWS_DIR = os.path.join(MODELS_DIR, PI_SHERPA_KWS_DIR)
 KWS_KEYWORDS_FILE = os.environ.get("PI_SHERPA_KWS_KEYWORDS", os.path.join(MODELS_DIR, "wakeup_keywords.txt"))
+PI_SHERPA_KWS_THRESHOLD = float(os.environ.get("PI_SHERPA_KWS_THRESHOLD", "0.12"))  # 默认 0.25 对弱信号/带噪人声召回不足；调低提高召回，误唤醒风险上升
+# 唤醒检测模式：asr = SenseVoice 转写匹配（对真实人声可靠，VAD 静音窗口 0 开销）；
+# kws = 原生 3.3M 拼音模型（合成/标准音色强，弱信号/口音召回差）。PROD 默认 asr。
+PI_SHERPA_WAKE_MODE = os.environ.get("PI_SHERPA_WAKE_MODE", "asr")
+PI_SHERPA_WAKE_VAD_RMS = float(os.environ.get("PI_SHERPA_WAKE_VAD_RMS", "-36"))  # dBFS；低于视为静音（底噪 ~-37，人声 -33~-26）
 # 默认唤醒词（见扩展 /voice wake 文档）：可自定义同格式拼音序列，每行一个
 DEFAULT_WAKEUP_KEYWORDS = "k āi q ǐ y ǔ y īn sh ū r ù @开启语音输入\n"
 
@@ -117,23 +123,35 @@ def _load_kws():
             _kws = sherpa_onnx.KeywordSpotter(
                 tokens=tokens, encoder=encoder, decoder=decoder, joiner=joiner,
                 keywords_file=KWS_KEYWORDS_FILE, num_threads=2,
+                keywords_threshold=PI_SHERPA_KWS_THRESHOLD,
             )
-            print(f"[sherpa] KWS 就绪 {os.path.basename(KWS_DIR)} ({KWS_KEYWORDS_FILE}) 加载耗时 {time.time() - t0:.2f}s", flush=True)
+            print(f"[sherpa] {time.strftime("%H:%M:%S")} KWS 就绪 {os.path.basename(KWS_DIR)} ({KWS_KEYWORDS_FILE}) 加载耗时 {time.time() - t0:.2f}s", flush=True)
         return _kws
 
 
 def wake_detect(pcm_bytes):
-    """对一段 16k/16bit/单声道裸 PCM 做唤醒词检测（无状态：每次全新 stream）。
-    返回 (hits, 音频秒数)。命中列表 = 检测到的关键词文本。"""
+    """对一段 16k/16bit/单声道裸 PCM 做唤醒检测（ASR 通道优先，KWS 兜底）。
+    返回 (hits, 音频秒数)。命中列表 = 检测到的唤醒词文本。"""
     import numpy as np
 
     if not pcm_bytes or len(pcm_bytes) < 512:
         return [], 0.0
+    x = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32)
+    sec = len(x) / 16000.0
+    # VAD 预筛：静音窗口不检测（省 CPU）。底噪 RMS ~-37dBFS，人声 -33~-26dBFS。
+    rms_db = 20.0 * math.log10(max(float(np.sqrt(np.mean(x**2))), 1e-9) / 32768.0)
+    if rms_db < PI_SHERPA_WAKE_VAD_RMS:
+        return [], sec
+    if PI_SHERPA_WAKE_MODE == "asr":
+        # ASR 唤醒：转写窗口文本匹配唤醒词。SenseVoice 对人声识别远强于 3.3M KWS
+        # （实测同段语音：转写文本正确而 KWS hits=[]，阈值/增益均无效）。
+        text, _, _ = transcribe(pcm_to_wav(pcm_bytes), quiet=True)
+        words = wake_words()
+        return [w for w in words if w in text], sec
     kws = _load_kws()
-    x = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) / 32768.0
     tail = np.zeros(int(0.66 * 16000), dtype=np.float32)
     s = kws.create_stream()
-    s.accept_waveform(16000, x)
+    s.accept_waveform(16000, x / 32768.0)
     s.accept_waveform(16000, tail)
     s.input_finished()
     hits = []
@@ -143,11 +161,44 @@ def wake_detect(pcm_bytes):
         if r != "":
             hits.append(r)
             kws.reset_stream(s)
-    return hits, len(x) / 16000.0
+    return hits, sec
 
 
-def transcribe(wav_bytes):
-    """整段 WAV → (text, rtf, duration)。输入须为 16k/单声道/16bit。"""
+def pcm_to_wav(pcm_bytes: bytes) -> bytes:
+    """16k/16bit/单声道裸 PCM → 标准 wav 字节（44 字节头）。"""
+    import struct
+
+    length = len(pcm_bytes)
+    hdr = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF", 36 + length, b"WAVE",
+        b"fmt ", 16, 1, 1, 16000, 32000, 2, 16,
+        b"data", length,
+    )
+    return hdr + pcm_bytes
+
+
+_wake_words_cache = None
+
+
+def wake_words():
+    """从 wakeup_keywords.txt 解析中文唤醒词（每行 `拼音序列 @ 中文`）。"""
+    global _wake_words_cache
+    if _wake_words_cache is None:
+        words = []
+        if os.path.isfile(KWS_KEYWORDS_FILE):
+            with open(KWS_KEYWORDS_FILE, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or "@" not in line:
+                        continue
+                    words.append(line.rsplit("@", 1)[1].strip())
+        _wake_words_cache = words or ["开启语音输入"]
+    return _wake_words_cache
+
+
+def transcribe(wav_bytes, quiet=False):
+    """整段 WAV → (text, rtf, duration)。输入须为 16k/单声道/16bit。quiet 抑制日志（唤醒内部调用）。"""
     rec = _load_rec()
     wf = wave.open(io.BytesIO(wav_bytes), "rb")
     try:
@@ -172,7 +223,8 @@ def transcribe(wav_bytes):
     with _decode_lock:  # onnxruntime 解码串行
         rec.decode_stream(s)
     dt = time.time() - t0
-    print(f"[sherpa] decode {dt:.3f}s frames={len(x)} threads={NUM_THREADS}", flush=True)
+    if not quiet:
+        print(f"[sherpa] {time.strftime("%H:%M:%S")} decode {dt:.3f}s frames={len(x)} threads={NUM_THREADS}", flush=True)
     dur = nf / sr
     return _strip_tags(s.result.text), (dt / dur if dur else 0.0), dur
 
@@ -218,6 +270,7 @@ class Handler(BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             try:
                 hits, sec = wake_detect(body)
+                print(f"[sherpa] {time.strftime('%H:%M:%S')} /wake body={length}B hits={hits}", flush=True)
                 self._send_json(200, {"ok": True, "hits": hits, "seconds": round(sec, 3)})
             except Exception as e:  # noqa: BLE001
                 self._send_json(500, {"ok": False, "error": f"wake error: {e}"})
@@ -240,7 +293,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    print(f"[sherpa] listening on 127.0.0.1:{PORT} (model {MODEL_DIRNAME}, token {'on' if TOKEN else 'off'})", flush=True)
+    print(f"[sherpa] {time.strftime("%H:%M:%S")} listening on 127.0.0.1:{PORT} (model {MODEL_DIRNAME}, token {'on' if TOKEN else 'off'})", flush=True)
     httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     httpd.serve_forever()
 

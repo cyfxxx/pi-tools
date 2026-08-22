@@ -66,6 +66,9 @@ import {
 
 /** 听写回车防抖窗口（ms）：连击只处理一次 */
 const ENTER_DEBOUNCE_MS = 800
+/** reply 兜底重试：加载期/会话替换窗口 runtime 未绑定，sendMessage 抛桩错——延迟补发，超限丢弃 */
+const REPLY_RETRY_DELAY_MS = 1000
+const REPLY_RETRY_LIMIT = 10
 
 let config: VoiceConfig
 let lastAssistantText = ''
@@ -214,7 +217,7 @@ export default function (pi: ExtensionAPI): void {
     '/voice tts status         查看朗读/转写状态',
     '/voice tts speak [文本]   手动朗读（缺省朗读最近回复）',
     '/voice backend [whisper|sherpa]  查看/切换转写后端（sherpa = SenseVoice 端侧模型）',
-    '/voice wake <on|off|status>  唤醒监听（Linux：说“开启语音输入”自动开始录音；需 sherpa 后端）',
+    '/voice wake <on|off|status|auto>  唤醒监听（说“开启语音输入”开始录音；auto 控制启动自动监听）',
     '/voice model [名称]      查看/切换 whisper 模型',
     '/voice device [cpu|gpu|auto]  查看/切换推理设备（GPU 被占用时切 cpu）',
     '/voice doctor             诊断录音/转写/朗读依赖',
@@ -275,6 +278,9 @@ export default function (pi: ExtensionAPI): void {
           { value: 'wake on', label: 'wake on', description: '开启唤醒监听（Linux）' },
           { value: 'wake off', label: 'wake off', description: '停止监听' },
           { value: 'wake status', label: 'wake status', description: '查看监听状态' },
+          { value: 'wake auto', label: 'wake auto', description: '自动监听开关（启动 pi 后后台监听）' },
+          { value: 'wake auto on', label: 'wake auto on', description: '开启自动监听（持久）' },
+          { value: 'wake auto off', label: 'wake auto off', description: '关闭自动监听（持久）' },
         ])
       }
       return pick([
@@ -516,6 +522,19 @@ export default function (pi: ExtensionAPI): void {
     wakeSession = null
     cleanupStaleAudio(config, 0)
   })
+
+  // 自动唤醒：配置 autoWake=true 时启动即后台监听（无需手动 /voice wake on）。
+  // 前置：linux + sherpa 后端；sherpa 服务若未运行会自动拉起。
+  // 关闭：/voice wake off（本次退出）或 /voice wake auto off（持久关闭）。
+  // 不能加载期直接启动：bindCore 前 sendMessage 是抛错桩，launchWakeSession 的
+  // onStatus/onHit 与错误分支里的 reply 会崩整个进程（实测 "Extension runtime
+  // not initialized"）。session_start 是绑定后首个事件（startup/reload 均触发，
+  // reload 前先 session_shutdown 清理，语义正确）。
+  if (config.autoWake) {
+    pi.on('session_start', () => {
+      void launchWakeSession(pi, null, config)
+    })
+  }
 }
 
 const OUTPUT_CUSTOM_TYPE = 'cmd-output'
@@ -529,7 +548,22 @@ function maybeWarnEnterPatch(api: ExtensionAPI): void {
 }
 
 function reply(api: ExtensionAPI, text: string): void {
-  api.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: text, display: true })
+  const send = (): boolean => {
+    try {
+      api.sendMessage({ customType: OUTPUT_CUSTOM_TYPE, content: text, display: true })
+      return true
+    } catch {
+      return false
+    }
+  }
+  if (send()) return
+  // sendMessage 抛桩错/stale ctx 错时不崩进程：延迟补发，超限丢弃（提示消息非关键路径）
+  let attempts = 0
+  const timer = setInterval(() => {
+    attempts++
+    if (send() || attempts >= REPLY_RETRY_LIMIT) clearInterval(timer)
+  }, REPLY_RETRY_DELAY_MS)
+  timer.unref()
 }
 
 function withStatus(api: ExtensionAPI, ctx: ExtensionContext, message: string): void {
@@ -657,59 +691,110 @@ async function cmdBackend(api: ExtensionAPI, ctx: ExtensionCommandContext, confi
   )
 }
 
-/** /voice wake <on|off|status>：唤醒监听（Linux）。
+/** /voice wake <on|off|status|auto>：唤醒监听（Linux）。
  *  on：持续采麦克风 PCM → 轮询 sherpa /wake；命中唤醒词自动开始录音。
+ *  auto：控制“启动 pi 后后台自动监听”（持久化到配置）。
  *  需 { sttBackend: 'sherpa' }（SenseVoice 后端）。Termux 录音 API 无实时流，不支持。 */
 async function cmdWake(api: ExtensionAPI, ctx: ExtensionCommandContext, config: VoiceConfig, want: string): Promise<void> {
   const arg = want.trim().toLowerCase()
+  if (arg === 'auto' || arg.startsWith('auto ')) {
+    const sub = arg === 'auto' ? '' : arg.slice(5).trim()
+    if (sub === '') {
+      reply(api, `自动监听（启动 pi 后在后台运行唤醒）：${config.autoWake ? '已开启' : '已关闭'}；${wakeSession?.isRunning() ? '当前正在监听' : '当前未监听'}\n开启：/voice wake auto on；关闭：/voice wake auto off（持久）或 /voice wake off（仅本次）`)
+      return
+    }
+    if (sub === 'on') {
+      persistConfig({ autoWake: true }, process.env)
+      if (wakeSession?.isRunning()) {
+        reply(api, '自动监听已开启（已在监听中）')
+      } else {
+        reply(api, '自动监听已开启，正在启动监听…')
+        await launchWakeSession(api, ctx, config)
+      }
+      return
+    }
+    if (sub === 'off') {
+      persistConfig({ autoWake: false }, process.env)
+      stopWakeSession(api, ctx)
+      reply(api, '自动监听已关闭（下次启动 pi 不再自动监听）')
+      return
+    }
+    reply(api, `用法：/voice wake auto <on|off>`)
+    return
+  }
   if (arg === 'off') {
-    const msg = wakeSession?.stop() ?? '唤醒监听未启用'
-    wakeSession = null
-    ctx.ui.setStatus('pi-voice', undefined)
-    reply(api, msg)
+    stopWakeSession(api, ctx)
     return
   }
   if (arg === 'status' || arg === '') {
     reply(api, wakeSession?.isRunning()
       ? `唤醒监听中，已命中唤醒词 ${wakeSession.hits()} 次（说“开启语音输入”开始录音；/voice wake off 停止）`
-      : '唤醒监听未启用（可用 /voice wake on）')
+      : `唤醒监听未启用（可用 /voice wake on）${config.autoWake ? '；自动监听已开启（下次启动生效，/voice wake auto off 关闭）' : ''}`)
     return
   }
   if (arg === 'on') {
-    if (wakeSession?.isRunning()) {
-      reply(api, '已在监听中')
-      return
-    }
-    if (config.sttBackend !== 'sherpa') {
-      reply(api, '唤醒监听依赖 sherpa 转写后端（SenseVoice），请先切换：/voice backend sherpa')
-      return
-    }
-    try {
-      wakeSession = createWakeSession(config, {
-        onHit: (kw) => {
-          wakeSession?.stop()
-          wakeSession = null
-          ctx.ui.setStatus('pi-voice', undefined)
-          ctx.ui.notify(`已唤醒：${kw}`, 'warning')
-          reply(api, `已唤醒「${kw}」，开始录音（/voice wake on 可再次进入监听）`)
-          if (!dictation.isRecording() && !dictation.isTranscribing()) {
-            void prewarmStt(config).catch(() => {})
-            withStatus(api, ctx, dictation.start())
-          }
-        },
-        onStatus: (s) => {
-          ctx.ui.setStatus('pi-voice', s.startsWith('🎧') ? s : undefined)
-          reply(api, s)
-        },
-      })
-      await wakeSession.start()
-    } catch (e) {
-      wakeSession = null
-      reply(api, `唤醒监听不可用：${(e as Error).message}`)
-    }
+    await launchWakeSession(api, ctx, config)
     return
   }
-  reply(api, `未知参数：${want}。用法：/voice wake <on|off|status>`)
+  reply(api, `未知参数：${want}。用法：/voice wake <on|off|status|auto>`)
+}
+
+/** 启动唤醒监听（命令与激活 autoWake 共用；ctx null = 激活场景，状态条/通知降级为 sendMessage）。
+ *  前置校验 sherpa 后端；服务未运行自动拉起（脚本幂等，已在运行直接返回）。 */
+async function launchWakeSession(api: ExtensionAPI, ctx: ExtensionCommandContext | null, cfg: VoiceConfig): Promise<void> {
+  if (wakeSession?.isRunning()) {
+    reply(api, '已在监听中')
+    return
+  }
+  if (cfg.sttBackend !== 'sherpa') {
+    reply(api, '唤醒监听依赖 sherpa 转写后端（SenseVoice），请先切换：/voice backend sherpa')
+    return
+  }
+  // 确保 sherpa 服务在线（激活场景服务可能未起；脚本幂等）
+  const svc = await runCommand('bash', [cfg.sherpaScript, 'start'], { timeoutMs: 60000 }).catch((e: unknown) => ({ code: 1, stdout: '', stderr: (e as Error).message }))
+  if (svc.code !== 0) {
+    reply(api, `sherpa 服务不可用：${svc.stderr || svc.stdout}（可手动 bash ${cfg.sherpaScript} start）`)
+    return
+  }
+  try {
+    wakeSession = createWakeSession(cfg, {
+      onHit: (kw) => {
+        wakeSession?.stop()
+        wakeSession = null
+        if (ctx) {
+          ctx.ui.setStatus('pi-voice', undefined)
+          ctx.ui.notify(`已唤醒：${kw}`, 'warning')
+        }
+        reply(api, `已唤醒「${kw}」，开始录音（/voice wake on 可再次进入监听）`)
+        if (!dictation.isRecording() && !dictation.isTranscribing()) {
+          void prewarmStt(cfg).catch(() => {})
+          if (ctx) {
+            withStatus(api, ctx, dictation.start())
+          } else {
+            const m = dictation.start()
+            if (!m.startsWith('🎤')) reply(api, m)
+          }
+        }
+      },
+      onStatus: (s) => {
+        if (ctx) ctx.ui.setStatus('pi-voice', s.startsWith('🎧') ? s : undefined)
+        reply(api, s)
+      },
+    })
+    await wakeSession.start()
+  } catch (e) {
+    wakeSession = null
+    reply(api, `唤醒监听不可用：${(e as Error).message}`)
+  }
+}
+
+/** 停止监听并返回消息（命令与 auto 关闭共用；ctx null = 激活场景降级展示）。 */
+function stopWakeSession(api: ExtensionAPI, ctx: ExtensionCommandContext | null): string {
+  const msg = wakeSession?.stop() ?? '唤醒监听未启用'
+  wakeSession = null
+  if (ctx) ctx.ui.setStatus('pi-voice', undefined)
+  reply(api, msg)
+  return msg
 }
 
 /** /voice model [name]：列出或切换 whisper 模型（切换需重启服务，加载耗时）。 */

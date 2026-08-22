@@ -8993,14 +8993,16 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T01:44:50.414Z",
-      "updatedAt": "2026-08-14T01:44:50.414Z",
+      "updatedAt": "2026-08-22T04:15:50.268Z",
       "accessedAt": "2026-08-14T01:44:50.414Z",
       "observedAt": "2026-08-14T01:44:50.414Z",
       "environments": [
         "all"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "48625f41-3440-4b62-a64f-91ae2bc4f88f",
+      "validUntil": "2026-08-22T04:15:50.268Z"
     },
     {
       "id": "f6324c0f-4fcc-46e8-801a-227e6c947afb",
@@ -12565,6 +12567,295 @@
       ],
       "observedAt": "2026-08-22T03:21:54.993Z",
       "deleted": false
+    },
+    {
+      "id": "48625f41-3440-4b62-a64f-91ae2bc4f88f",
+      "category": "solutions",
+      "title": "tmux_run 完成唤醒修复方案",
+      "content": "pi-tmux 的完成通知靠 watcher.ts 轮询 tmux has-session；命令执行完 bash 残留交互 shell 时会话永不退出，notify 永不触发、until_exit 阻塞。修复（提交 41aeb9e）：工具实现命令尾部追加 `; [ $? -ne 130 ] && exit`——正常结束（成功/失败）会话退出触发通知，Ctrl-C 中断（退出码 130）保留 shell 供 tmux_send 继续交互，长驻命令（dev server）不受影响。新增集成测试，pi-tmux 全套 26 passed。",
+      "tags": [
+        "pi-tmux",
+        "tmux_run",
+        "notify",
+        "唤醒"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "observedAt": "2026-08-22T04:15:50.184Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
+      "deleted": false
+    },
+    {
+      "id": "99cff44b-e117-4fc5-b771-7a68b8030a69",
+      "category": "solutions",
+      "title": "git stash 冲突 --theirs 取到旧版",
+      "content": "stash pop 合并冲突时 `git checkout --theirs` 取到的是 stash 里的旧版本（entries.json 495 条）而非 HEAD 版本，需用 `git checkout HEAD -- <file>` 显式取 HEAD（548 条）。本仓库约定 memory/entries.json 等运行时数据冲突一律以远程/HEAD 为准，本地修改丢弃。",
+      "tags": [
+        "git",
+        "冲突",
+        "entries.json",
+        "--theirs"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "observedAt": "2026-08-22T04:15:50.184Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
+      "deleted": false
+    },
+    {
+      "id": "e510e3ff-4eb1-4105-a22b-d3cf8bdad750",
+      "category": "procedure",
+      "title": "git pull 后先 rebuild 再回归",
+      "content": "仓库引入统一依赖根 agent/node_modules（依赖安装由 rebuild.sh 完成）。git pull 后直接跑 test-all 会 12 项全挂——这是依赖未装所致，属预期现象而非代码问题。正确顺序：先 `bash scripts/rebuild.sh`（装依赖+8 补丁+packs 同步，REBUILD_EXIT=0 为成功标志），再跑 `scripts/test-all.sh` 全量回归。",
+      "tags": [
+        "rebuild",
+        "test-all",
+        "依赖",
+        "工作流"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "observedAt": "2026-08-22T04:15:50.184Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
+      "deleted": false
+    },
+    {
+      "id": "4ff28639-2ed3-4051-a9ff-c4f9576e333e",
+      "category": "fact",
+      "title": "2026-08 远程更新新增组件",
+      "content": "一次 51 提交的大更新为 /root/.pi 仓库新增：packs 技能包体系（gamedev 24 个入库，colab-cli/comfyui-agent/reverse-skill 纳入主仓库，packs-sync.sh 由 rebuild Phase 2-F4 自动执行）、thinking 档位自动/混合切换与思考量记账（task #14/25/26）、ntfy-relay 手机远程 RPC 注入+守护管理脚本+tmux-fix 修复脚本、sherpa-onnx 语音后端（SenseVoice/KWS 唤醒词）、verify-patches.mjs/usage-stats.mjs/task-summarizer.mjs/pi-notify.sh 等新脚本。",
+      "tags": [
+        "packs",
+        "ntfy-relay",
+        "sherpa-onnx",
+        "thinking档位"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "observedAt": "2026-08-22T04:15:50.184Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
+      "deleted": false
+    },
+    {
+      "id": "f9913ef8-3624-48e6-94d2-a43ba08258bd",
+      "category": "fact",
+      "title": "tmux 完成检测已知坑已修复",
+      "content": "AGENTS.md 记载的『tmux_run 命令尾部 bash 残留导致 has-session 恒真、until_exit 阻塞 420s、notify 不触发』已知坑，已于 2026-08 通过命令尾部追加 `; [ $? -ne 130 ] && exit` 修复（提交 41aeb9e），pi-tmux README 与 AGENTS.md/AGENTS-DETAILS.md 已同步更新并标注修复日期。今后 notify 不触发不要再按旧坑排查，且 kill 会话会正常触发唤醒通知。",
+      "tags": [
+        "known-issue",
+        "pi-tmux",
+        "notify"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "observedAt": "2026-08-22T04:15:50.184Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
+      "deleted": false
+    },
+    {
+      "id": "fa284b41-3fd2-49e1-a5a7-9cf53799858b",
+      "category": "habit",
+      "title": "用户拉取更新后默认执行重建回归",
+      "content": "用户 git pull 收到较多更新时（如一次 51 提交），习惯直接让助手执行 rebuild.sh + test-all.sh 全量回归验证，通过后推送；后台任务跑完须自动汇报结果，用户会在未收到汇报时追问原因，在意任务完成通知是否触发。",
+      "tags": [
+        "习惯",
+        "工作流",
+        "回归",
+        "git pull"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "observedAt": "2026-08-22T04:15:50.184Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
+      "deleted": false
+    },
+    {
+      "id": "0403846a-47f6-4d5f-95c9-5922c008a932",
+      "category": "procedure",
+      "title": "pi-voice sherpa 后端搭建流程与模型下载源",
+      "content": "pi-voice sherpa 后端（SenseVoice）首次搭建流程（WSL2）：① python3 -m venv /opt/pi-sherpa/venv && pip install sherpa-onnx numpy（国内用清华镜像）；② 模型放 /opt/pi-sherpa/models/：SenseVoice 包 sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17（GitHub release tag asr-models，1GB tar.bz2，解压后 model.int8.onnx 239MB），KWS 包 sherpa-onnx-kws-zipformer-wenetspeech-3.3M-2024-01-01（tag 是 kws-models 不是 asr-models）；③ 系统需 apt install bzip2（tar xjf 依赖外部命令）；④ bash ~/.pi/scripts/pi-sherpa.sh start，/health 等 loaded:true。验证：POST /transcribe（16k mono wav）返回 text/rtf；POST /wake（16k s16le PCM）返回 hits。实测 RTF 0.078（CPU），唤醒词命中正常。",
+      "tags": [
+        "pi-voice",
+        "sherpa",
+        "SenseVoice",
+        "KWS",
+        "安装"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:42:25.472Z",
+      "updatedAt": "2026-08-22T04:42:25.472Z",
+      "accessedAt": "2026-08-22T04:42:25.472Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-08-22T04:42:25.472Z",
+      "deleted": false
+    },
+    {
+      "id": "4f3b593b-f62e-4ff9-8f17-6c36f7c1cd78",
+      "category": "fact",
+      "title": "WSL2 无 RDP 会话时麦克风无真实输入（唤醒/录音测不到语音）",
+      "content": "WSL2（MYPC）上 pi-voice 唤醒监听与录音测不到真实人声：RDPSource 源持续输出 -31~-35dBFS 底噪但无语音特征（whisper medium 对 30s 含活跃段录音转写为空、增益滤波后 KWS 仍 0 命中），而合成音频三个链路（whisper/sherpa 转写、KWS 唤醒）全部命中正常。判断根因：WSLg 的 module-rdp-source 需要 RDP 会话才有 Windows 麦克风重定向，ssh/本地终端接入时无音频输入通道。解法：mstsc 远程桌面进 WSL 终端（勾选远程音频录制），或在 Windows 上用 pi-portable（windows spec: ffmpeg dshow + SAPI）。",
+      "tags": [
+        "pi-voice",
+        "WSL2",
+        "麦克风",
+        "RDPSource",
+        "唤醒"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T04:49:55.356Z",
+      "updatedAt": "2026-08-22T04:49:55.356Z",
+      "accessedAt": "2026-08-22T04:49:55.356Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-08-22T04:49:55.356Z",
+      "deleted": false
+    },
+    {
+      "id": "3100ffc7-0267-4e22-b989-98a85ca4aadf",
+      "category": "solutions",
+      "title": "pi-voice 唤醒 0 命中根因：扩展沙箱 stdout 管道不可靠 → 改文件模式采集",
+      "content": "pi-voice 唤醒监听（/voice wake）在 WSL2 上持续 0 命中的根因与修复（2026-08-22）：① pi 扩展沙箱下 spawn 的 stdout 被替换为 IPC socket，长流数据不达（实测 parec stdout 0 字节，bash/独立 Node 进程正常，dictation 因走 --file-format=wav 文件模式不受影响）；② 即便 file 模式解决，WSLg RDP 源对长挂采集 stream 有挂起问题。修复：唤醒采集改文件模式（parec --file-format=wav 写 tmpDir/wake-listen.wav，Node 每 500ms poll 读文件尾部跳 44 字节 wav 头）+ 8s 无数据自动 kill+respawn 看门狗（最多 3 次，仍无数据提示停机）。症状线索：唤醒 0 命中但手动录音转写正常、服务端 sherpa 日志无 /wake decode、strace 无 connect；修复后唤醒词命中自动开始录音。单测注意：vitest fake timers 下 async poll 的 inFlight 在同批次 advance 内不释放，需每 500ms 小步 advance + await 冲刷微任务。",
+      "tags": [
+        "pi-voice",
+        "唤醒",
+        "WSL2",
+        "stdout",
+        "看门狗",
+        "修复"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T05:46:27.679Z",
+      "updatedAt": "2026-08-22T05:46:27.679Z",
+      "accessedAt": "2026-08-22T05:46:27.679Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-08-22T05:46:27.679Z",
+      "deleted": false
+    },
+    {
+      "id": "0f576741-a713-478a-87ed-feb5b5469559",
+      "category": "solutions",
+      "title": "KWS 对真实人声识别失败 → 唤醒改用 SenseVoice ASR 通道（VAD 预筛）",
+      "content": "pi-voice 唤醒词检测（KWS 3.3M zipformer 拼音模型）对真实人声识别率差：WSL2 RDP 麦克风下用户语音（RMS -26~-33dBFS、SNR~11dB）KWS 完全不命中，而合成 TTS 音频命中；调 keywords_threshold 0.25→0.03、keywords_score 1→4、增益+9dB 均无效（score 为 0，非阈值问题）。可靠方案（已实现于 pi-sherpa-server.py）：唤醒走 ASR 通道——/wake 请求先 VAD 预筛（RMS<−36dBFS 直接返回，底噪 −37dB 被滤掉、人声 −33~−26 通过），活跃窗口用 SenseVoice 转写（RTF~0.04，2.5s 窗口≈100ms CPU）后匹配 wakeup_keywords.txt 的 @ 后中文词。实测：用户真实语音段 hits=['开启语音输入']、底噪段 hits=[]。KWS 保留为 env PI_SHERPA_WAKE_MODE=kws 回退。另：KWS 接口在询唤醒请求不打印日志（debug 需在 do_POST /wake 加日志）；服务端日志加时间戳的 print 用 f-string 双引号内联转义会 SyntaxError，sed 替换需避免 \\”。",
+      "tags": [
+        "pi-voice",
+        "唤醒",
+        "ASR",
+        "SenseVoice",
+        "KWS",
+        "识别率"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T06:15:46.919Z",
+      "updatedAt": "2026-08-22T06:15:46.919Z",
+      "accessedAt": "2026-08-22T06:15:46.919Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-08-22T06:15:46.919Z",
+      "deleted": false
+    },
+    {
+      "id": "67d06fd6-ed8f-46c9-bc57-4e6c7bc1dfe2",
+      "category": "fact",
+      "title": "pi重启后autoWake与ASR唤醒生效",
+      "content": "2026-08-22 用户要求重启 pi，重启前完成的 autoWake 自动监听（空闲自动唤醒）与 ASR 语音唤醒通道改动在重启后自动生效，无需额外配置。唤醒监听运行正常，说\"开启语音输入\"即可触发录音。",
+      "tags": [
+        "pi-voice",
+        "autoWake",
+        "ASR",
+        "语音唤醒",
+        "重启"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T06:37:26.366Z",
+      "updatedAt": "2026-08-22T06:37:26.366Z",
+      "accessedAt": "2026-08-22T06:37:26.366Z",
+      "observedAt": "2026-08-22T06:37:26.366Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0282f-4ac2-7e64-8494-008fd374e81f",
+      "deleted": false
+    },
+    {
+      "id": "791e05c7-2790-42e9-b7e0-2f26d0de8d42",
+      "category": "solutions",
+      "title": "pi 重启姿势（避免 admin_restart 与 wrapper 冲突）与 whisper 双实例/空转循环排查",
+      "content": "pi 重启姿势与基础设施坑（2026-08-22 排查）：① admin_restart（pi 内部重启工具）与 pi-wrapper.sh（外部 supervisor，检测到退出立即拉起）双重管理竞争会崩溃/残留孤儿——重启优先用 wrapper 方式（退出 pi 让 wrapper 拉起），避免 admin_restart。② whisper systemd 空转循环特征：NRestarts 计数暴涨 + journal 有 whisper-server.py bind 崩溃 + 但 18766 仍健康——说明有更早的手动/孤儿实例占端口（ps 查 PPID=/init 或 733 的老进程），修法：kill 旧实例让 systemd 接管，杜绝\"服务可用但 systemd 一直崩\"的假象。③ systemd 环境拉起的 whisper 可能 device=cpu（auto 探测环境差异），显式 pi-voice.json whisperDevice=cuda 可恢复 GPU。④ 崩溃后会残留旧唤醒 parec 孤儿（多个 parec 同时写同一采集文件会互相截断），清理后看门狗/数据流自动恢复。",
+      "tags": [
+        "pi",
+        "重启",
+        "wrapper",
+        "whisper",
+        "systemd",
+        "排障"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T06:43:48.118Z",
+      "updatedAt": "2026-08-22T06:43:48.118Z",
+      "accessedAt": "2026-08-22T06:43:48.118Z",
+      "environments": [
+        "linux"
+      ]
     }
   ]
 }

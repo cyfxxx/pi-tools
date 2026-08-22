@@ -4,7 +4,7 @@
  */
 
 import { execFile, spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync, writeFileSync, openSync, readSync, closeSync } from 'node:fs'
 import { join } from 'node:path'
 import type { VoiceConfig } from './config'
 import { resolvePlatform, platformInstallGuide, TTS_STAGE_FILE, type PlatformSpec } from './platform'
@@ -894,6 +894,15 @@ export async function benchmark(cfg: VoiceConfig): Promise<BenchResult> {
 const WAKE_RING_MS = 3000 // 环形缓冲保留最近 3s 音频
 const WAKE_UPLOAD_MS = 2500 // 每次检测上传最近 2.5s
 const WAKE_POLL_MS = 500 // 检测间隔
+// 采集停滞看门狗：WSLg 的 RDP 麦克风源会挂起长时间未活动 client 的 stream（新建 stream
+// 正常、常驻 stream 无数据），导致 ring 恒空、poll 永不发请求。连续 N ms 无新数据则
+// 重启 parec（kill+respawn 会拿到新 stream）；连续重启仍无数据说明无真实输入，停止并提示。
+const WAKE_STALL_MS = 8000 // ring 停滞判定阈值
+const WAKE_MIN_ALIVE_MS = 8000 // spawn 后 8s 内不判定（启动窗口，与停滞阈值同长，避免重启后紧接着再判定）
+const WAKE_MAX_RESTARTS = 3 // 连续停滞重启上限
+const WAV_HEADER_LEN = 44 // 标准 PCM wav 头长度（parec --file-format=wav 直出）
+// 采集走文件而非 stdout：pi 扩展沙箱下 spawn 的 stdout 被替换为 IPC socket，长时间
+// 流式数据不达（实测 0 字节），而文件模式（dictation 同款参数）稳定可靠。
 
 /** 唤醒监听器：持续从麦克风采 PCM，轮询 sherpa 服务 /wake 检测唤醒词。 */
 export interface WakeSession {
@@ -921,15 +930,50 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
   let running = false
   let hitCount = 0
   let inFlight = false
+  let lastDataAt = 0 // 最近一次收到 PCM 的时间（0 = 从未）
+  let spawnAt = 0 // 当前 parec 的 spawn 时间
+  let restartCount = 0 // 连续停滞重启次数（拿到数据后清零）
+  let lastReadPos = 0 // wakeFile 已读取字节偏移（跳过 wav 头）
+  const wakeFile = join(cfg.tmpDir, 'wake-listen.wav')
 
   const appender = (buf: Buffer): void => {
+    lastDataAt = Date.now()
+    restartCount = 0 // 有数据流入即认为采集健康
     ring = Buffer.concat([ring, buf])
     const cap = WAKE_RING_MS * 16 * 2 // 16kHz×2字节×秒数 = 3s≈96KB
     if (ring.length > cap) ring = ring.subarray(ring.length - cap)
   }
 
+  // 从采集文件读取新增字节（poll 前调用）。首读只定位到数据区起点（跳过 wav 头）。
+  const fileRead = (): void => {
+    try {
+      const st = statSync(wakeFile)
+      if (st.size <= WAV_HEADER_LEN) return
+      if (lastReadPos === 0) {
+        lastReadPos = WAV_HEADER_LEN
+        return
+      }
+      if (st.size <= lastReadPos) return
+      const fd = openSync(wakeFile, 'r')
+      try {
+        const len = Math.min(st.size - lastReadPos, 64 * 1024)
+        const b = Buffer.alloc(len)
+        const n = readSync(fd, b, 0, len, lastReadPos)
+        if (n > 0) {
+          lastReadPos += n
+          appender(b.subarray(0, n))
+        }
+      } finally {
+        closeSync(fd)
+      }
+    } catch {
+      // 文件暂不存在/不可读：静默，等下一轮（重启流程删除文件后窗口期属正常）
+    }
+  }
+
   const poll = async (): Promise<void> => {
     if (!running || inFlight) return
+    fileRead()
     if (ring.length < 16000) return // 不足 1s 不上传，避免反复空检测
     const upLen = WAKE_UPLOAD_MS * 16 * 2
     const seg = ring.length > upLen ? ring.subarray(ring.length - upLen) : ring
@@ -958,29 +1002,68 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
     }
   }
 
+  // spawn parec 采集进程（start 与看门狗重启共用）。采集写入 wav 文件（pi 扩展沙箱
+  // 下 stdout pipe 不可靠——实测 IPC socket 化后流式数据不达），Node 侧周期读文件尾部。
+  const spawnRecorder = (): void => {
+    const args: string[] = []
+    if (cfg.linuxMicDevice) args.push('--device', cfg.linuxMicDevice)
+    args.push('--format=s16le', '--rate=16000', '--channels=1', '--file-format=wav', wakeFile)
+    child = spawn(cfg.micBin === 'termux-microphone-record' ? 'parec' : cfg.micBin, args, { stdio: ['ignore', 'pipe', 'ignore'] })
+    spawnAt = Date.now()
+    lastReadPos = 0
+    child.on('error', (e) => {
+      running = false
+      opts.onStatus(`唤醒监听启动失败：${(e as Error).message}`)
+    })
+    child.on('exit', (code) => {
+      if (running) {
+        running = false
+        opts.onStatus(code === 0 ? '唤醒监听已停止' : `唤醒监听异常退出（${code ?? '?'}）`)
+      }
+    })
+  }
+
+  // 采集停滞看门狗：parec 存活但长时间无数据 → 判定 stream 挂起，重启采集进程。
+  const guard = (): void => {
+    if (!running || !child || child.exitCode !== null) return
+    if (Date.now() - spawnAt < WAKE_MIN_ALIVE_MS) return // 启动窗口内不判定
+    if (lastDataAt !== 0 && Date.now() - lastDataAt < WAKE_STALL_MS) return // 数据正常
+    if (restartCount >= WAKE_MAX_RESTARTS) {
+      // 连续重启仍无数据：大概率无真实麦克风输入（如 WSL 无 RDP 会话），停止并提示
+      running = false
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
+      opts.onStatus('唤醒采集多次重启仍无数据（可能无麦克风输入），请确认麦克风后 /voice wake off 再开启')
+      return
+    }
+    restartCount++
+    const stale = child
+    stale.removeAllListeners('exit')
+    stale.removeAllListeners('error')
+    child = null
+    ring = Buffer.alloc(0)
+    lastDataAt = 0
+    lastReadPos = 0
+    stale.kill('SIGKILL')
+    rmSync(wakeFile, { force: true })
+    spawnRecorder()
+  }
+
   return {
     async start() {
       if (running) return
       running = true
       hitCount = 0
-      // parec 持续输出 s16le 到 stdout（同录音参数，但不写文件、不加 --file-format）
-      const args: string[] = []
-      if (cfg.linuxMicDevice) args.push('--device', cfg.linuxMicDevice)
-      args.push('--format=s16le', '--rate=16000', '--channels=1')
-      child = spawn(cfg.micBin === 'termux-microphone-record' ? 'parec' : cfg.micBin, args, { stdio: ['ignore', 'pipe', 'ignore'] })
+      restartCount = 0
+      rmSync(wakeFile, { force: true })
+      spawnRecorder()
       opts.onStatus('🎧 唤醒监听中（说“开启语音输入”开始录音）')
-      child.stdout?.on('data', appender)
-      child.on('error', (e) => {
-        running = false
-        opts.onStatus(`唤醒监听启动失败：${(e as Error).message}`)
-      })
-      child.on('exit', (code) => {
-        if (running) {
-          running = false
-          opts.onStatus(code === 0 ? '唤醒监听已停止' : `唤醒监听异常退出（${code ?? '?'}）`)
-        }
-      })
-      timer = setInterval(() => void poll(), WAKE_POLL_MS)
+      timer = setInterval(() => {
+        void poll()
+        guard()
+      }, WAKE_POLL_MS)
     },
     stop() {
       if (timer) {

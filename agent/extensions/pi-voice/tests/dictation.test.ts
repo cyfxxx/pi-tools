@@ -28,6 +28,7 @@ const cfg = {
   whisperDevice: 'auto',
   whisperScript: '/root/.pi/scripts/pi-whisper.sh',
   sttBackend: 'whisper',
+  autoWake: false,
   sherpaEndpoint: 'http://127.0.0.1:18768',
   sherpaToken: '',
   sherpaScript: '/root/.pi/scripts/pi-sherpa.sh',
