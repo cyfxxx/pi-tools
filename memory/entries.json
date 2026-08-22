@@ -12855,6 +12855,31 @@
       "accessedAt": "2026-08-22T06:43:48.118Z",
       "environments": [
         "linux"
+      ],
+      "observedAt": "2026-08-22T06:43:48.118Z",
+      "deleted": false
+    },
+    {
+      "id": "971040a5-063a-4623-93c5-2dcb745d8864",
+      "category": "solutions",
+      "title": "pi 启动崩溃根因更正：autoWake 加载期调用 sendMessage 桩 → 改 session_start 启动",
+      "content": "【更正】pi 启动崩溃真实根因（2026-08-22，此前条目误判为 admin_restart 与 wrapper 竞争）：pi-voice autoWake 在扩展工厂加载期直接 launchWakeSession，其 onStatus/onHit 及 catch 内的 reply() 调用 api.sendMessage——而 bindCore() 之前 sendMessage 是 loader.js 的 notInitialized 抛错桩（报 \"Extension runtime not initialized\"），catch 里的补发再次抛桩错 → 未处理 rejection → 整个 pi 进程崩溃。正确姿势：autoWake 启动注册到 pi.on('session_start')（绑定后首个事件；reload 前先 session_shutdown 清理，语义正确），回归测试断言加载期零 sendMessage。经验：所有扩展里\"加载期能与 runtime 交互\"的假设都要检查 sendMessage/setStatus 等 API 在 bindCore 前的桩行为；enter 补丁检测路径早有此防护（只置标志不 reply），新路径需同样防护。",
+      "tags": [
+        "pi",
+        "扩展",
+        "sendMessage",
+        "桩",
+        "崩溃",
+        "autoWake"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T06:48:45.195Z",
+      "updatedAt": "2026-08-22T06:48:45.195Z",
+      "accessedAt": "2026-08-22T06:48:45.195Z",
+      "environments": [
+        "linux"
       ]
     }
   ]
