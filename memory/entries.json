@@ -12420,6 +12420,149 @@
       ],
       "observedAt": "2026-08-21T07:06:26.551Z",
       "deleted": false
+    },
+    {
+      "id": "0e2a3b5d-3056-4b36-b772-97bcaae7fbdf",
+      "category": "procedure",
+      "title": "pi skills 注册语义：packs 目录用无前缀相对路径",
+      "content": "pi 的 settings.json `skills` 数组条目语义（v0.84 实测源码）：(1) 带前缀的条目（+/!/-）只是\"自动发现集合\"的覆盖模式，不能独立加载新 skill；(2) 不带前缀的条目按相对 agent 目录（~/.pi/agent）解析为具体文件/目录直接加载（支持 ../ 进入上级目录）。因此 packs 目录（~/.pi/packs/）下的 skill 包注册方式：在 skills 数组加一行 `\"../packs/<包名>/SKILL.md\"`。自动发现覆盖默认扫描 ~/.pi/agent/skills/、~/.agents/skills/、.pi/skills/ 等。",
+      "tags": [
+        "pi",
+        "skill",
+        "settings",
+        "packs",
+        "配置"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T09:06:43.971Z",
+      "updatedAt": "2026-08-21T09:06:43.971Z",
+      "accessedAt": "2026-08-21T09:06:43.971Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T09:06:43.971Z",
+      "deleted": false
+    },
+    {
+      "id": "7d25ac74-04e7-44a8-9d01-6f5d2a9f5971",
+      "category": "reference",
+      "title": "comfyui-agent 整合包：位置、命令面、用法",
+      "content": "comfyui-agent：pi 整合包（~/.pi/packs/comfyui-agent，git 仓库），把远程 ComfyUI 作为 pi 工具。CLI 入口 bin/comfyui（python3 单文件 stdlib only，lib/comfyui.py），直连 ComfyUI 原生 HTTP API（/prompt+/history 轮询+/view）。命令：servers add/list、status、models、nodes、run（src=本地API格式json|builtin:txt2img|@远程UI工作流|-）、queue、upload、workflows list/get/save；--json 输出。参数化占位符 {{prompt}} {{int:steps=20}} {{float:cfg}} {{seed:seed}} {{ckpt=默认.safetensors}}，缺必填报错、seed 缺省随机。配置 ~/.config/comfyui-agent/config.json（COMFYUI_AGENT_CONFIG 覆盖）。mock 端到端测试通过（/tmp/mock_comfyui.py 可复用）。**重要：用户要求不注册进 settings.json skills 数组**（防止提示词膨胀），需要时手动加载：pi --skill /root/.pi/packs/comfyui-agent/SKILL.md 启动，或直接 read SKILL.md 按指令执行。无 GPU 本机 + 远程 GPU 机（--listen 0.0.0.0，建议 tailscale/ssh 隧道）。",
+      "tags": [
+        "comfyui",
+        "skill",
+        "pi",
+        "图像生成",
+        "packs"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-08-21T09:06:44.080Z",
+      "updatedAt": "2026-08-21T09:31:14.119Z",
+      "accessedAt": "2026-08-21T09:31:14.119Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T09:06:44.080Z",
+      "deleted": false
+    },
+    {
+      "id": "521d0ee6-1e05-4412-b9c5-62916b84c8ed",
+      "category": "reference",
+      "title": "colab-bridge 整合包：用法与限制",
+      "content": "colab-bridge：pi 整合包（~/.pi/packs/colab-bridge，git 仓库，未注册 skill 保持零注入）。把免费 Google Colab 变 pi 的远程 GPU 执行后端：Colab 上传运行 colab/colab-bridge.ipynb（内嵌桥接服务 HTTP :8787 + cloudflared 隧道/tailscale 备用 + 自检，打印 CLOUD_URL 和随机 TOKEN）；pi 侧 bin/colab_exec（python3 stdlib only）：conf <url> <token> 存 ~/.config/colab-bridge/config.json、status、run '<python码>'/sh '<bash>'（-f 文件、-t 超时、--cwd、--json、退出码透传）、up/down 文件传输。认证 X-Token 头。免费层限制：12h 会话、90min 空闲断、断后环境重置、GPU 配额动态（多为 T4）、cloudflared URL 每次变化。已本地联调全通过（无 GPU 环境 GPU 显示 -）。",
+      "tags": [
+        "colab",
+        "GPU",
+        "远程执行",
+        "pi",
+        "packs",
+        "桥接"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T09:54:37.960Z",
+      "updatedAt": "2026-08-21T09:54:37.961Z",
+      "accessedAt": "2026-08-21T09:54:37.961Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T09:54:37.960Z",
+      "deleted": false
+    },
+    {
+      "id": "633b56dd-376f-4931-aaf3-a95c84551fe8",
+      "category": "solutions",
+      "title": "Colab CLI 0.6.0 跑通：认证、版本坑、可用命令链",
+      "content": "Google Colab CLI（google-colab-cli 0.6.0，官方）在本机已跑通，替代 colab-bridge 自制桥成为首选（自制桥保留为无 Google 网络时备胎）。要点：pip install --break-system-packages -i https://pypi.org/simple google-colab-cli（PEP668 环境需 --break-system-packages；国内镜像 tuna 在 VPN 下 TLS 中断需走官方源）。首次认证 colab --auth=oauth2 sessions 触发浏览器授权（默认 oauth2，内置 Google 官方 client id，code 粘贴回终端，token 缓存 ~/.config/colab-cli/token.json）。**版本坑：jupyter-kernel-client 1.0.1 把 KernelClient 改名 JupyterKernelClient 导致 CLI 0.6.0 报 AttributeError，必须降级 jupyter-kernel-client==0.15.0**。免费账号 T4 可用（Tesla T4 15360MiB）。命令链路验证：colab run --gpu T4 script.py（一次性+自动释放）/ new -s 名 --gpu T4 + exec（stdin/-f）+ upload/download/stop 全通过。依赖 Google 网络（VPN 必需，accounts+colab.research 需通，sandbox 域名 assign 亦通）。tmux_run 后台跑 colab 命令尾部必须加 \"; exec true\" 否则 shell 不退出无完成通知。",
+      "tags": [
+        "colab",
+        "CLI",
+        "GPU",
+        "T4",
+        "VPN",
+        "版本坑"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-21T13:28:05.570Z",
+      "updatedAt": "2026-08-21T13:28:05.570Z",
+      "accessedAt": "2026-08-21T13:28:05.570Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-21T13:28:05.570Z",
+      "deleted": false
+    },
+    {
+      "id": "c2c8949c-6ccf-4511-a442-eff83488d02d",
+      "category": "fact",
+      "title": "health-alert 2026-08-21",
+      "content": "08-21 每日健康检查：最近会话 10:37（28 轮）命中率 82.1%（<90%）、断裂 4 次（>3）、浪费 1.4M tokens；10:11 会话 79.4%/2 断。当日多会话呈 A 类断裂（断前前缀 141-187K → 命中 0 → 全量重发），且每轮无工具启用/compaction 事件。已定位可疑方向：provider 侧（opencode-go 网关 → deepseek-v4-flash）缓存键按会话隔离——每用户消息轮首请求整段 0 命中、同轮内后续请求 100% 命中、与轮间间隔无关（24 秒也断）。本地已排除：pi-memory 注入块（18 轮 hash 恒定）、compaction、消息历史改写（413 条 id 无重复）。存储 0.26MB 正常。建议：向 opencode-go 反馈跨轮会话缓存键复用，或直连 deepseek API 对照实验。",
+      "tags": [
+        "health-alert",
+        "缓存断裂",
+        "A类",
+        "provider"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T03:20:07.370Z",
+      "updatedAt": "2026-08-22T03:20:07.370Z",
+      "accessedAt": "2026-08-22T03:20:07.370Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-22T03:20:07.370Z",
+      "deleted": false
+    },
+    {
+      "id": "fab3816a-2541-48fe-b657-a10a041aa64c",
+      "category": "solutions",
+      "title": "packs 整合包入库策略（剥离内嵌 .git，保持零注入）",
+      "content": "packs/ 入库策略（2026-08-21 提交 cba5fca）：三个整合包 comfyui-agent / colab-bridge / reverse-skill 从 .gitignore 移除并纳入主仓库同步。操作：剥离子目录内嵌 .git（独立仓库净文件直接入库），旧 git 历史归档到 backup/。配套原则：packs 内包不注册进 settings.json skills 数组（防提示词膨胀、零注入），需要时手动加载（pi --skill .../SKILL.md 或 read SKILL.md）。注意：.gitignore 第 155 行注释仍写\"packs 历史归档（本地备份，不入库）\"，已过时待清理；packs 子目录各自 .gitignore 仍需保持（如 colab-bridge 排除运行时产物）。",
+      "tags": [
+        "packs",
+        "git",
+        "整合包",
+        "comfyui-agent",
+        "colab-bridge"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T03:21:54.993Z",
+      "updatedAt": "2026-08-22T03:21:54.993Z",
+      "accessedAt": "2026-08-22T03:21:54.993Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
