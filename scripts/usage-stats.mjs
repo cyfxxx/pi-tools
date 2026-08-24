@@ -12,20 +12,26 @@
  *   断裂次数（cacheRead 较上轮突降 >100 且 input 暴增）/ 断裂零命中浪费 /
  *   断裂明细（breakList：轮序/类别/前后上下文/compacted）/ 起始与结束上下文 / 起止时间
  *
- * 断裂类别判读（2026-08-19 加入）：
+ * 断裂类别判读（2026-08-19 加入；TTL 归因 2026-08-24 加入）：
  *   [A] 全段重放  cacheRead≈0 且 input≈前轮上下文 → 前缀整体失效。挂钩：
- *       工具 schema 运行时变化（enable_tool 启用休眠组会新增注册工具，system prompt 变）、
- *       compaction/裁剪改写早期消息、provider 侧缓存键变化（模型切换/failover）。
+ *       ①服务端缓存 TTL 逐出（轮间空闲 >6min，DeepSeek 实测 6-8 分钟浮动——
+ *         2026-08-24 审计：全天无事件断裂几乎全属此类，曾误当本地问题排查），
+ *       ②工具 schema 运行时变化（enable_tool 启用休眠组会新增注册工具，system prompt 变）、
+ *       ③compaction/裁剪改写早期消息、④provider 侧缓存键变化（模型切换/failover）。
+ *       归因顺序：先看轮间间隔 gapMin（>6min → TTL），再看工具启用事件（±2min），
+ *       最后才查本地消息改写（compact/剪枝/擦除）。
  *   [B] 尾部重写  cacheRead 有值但较上轮突降输入暴增 → 前缀命中、尾段重建。挂钩：
  *       注入块字节变化（pi-memory 注入/压力档位切换）、keepRecentTokens 保留块重建。
  *   [C] 起步重建  断裂发生在会话前 5 轮内 → 上下文初始化，正常开销，不计入修复目标。
  *
  * 诊断指引（对照 stats/tool-fingerprint.jsonl 与 agent/sessions/ 会话文件）：
- *   A 类 → 全重放（cacheRead≈0）。2026-08-20 实证（agent-session.js:902 + 会话文件查验）：
+ *   A 类 → 全重放（cacheRead≈0）。2026-08-20/24 实证（agent-session.js:902 + 会话文件查验）：
  *           pi-memory 注入块位于消息序列尾部（紧贴对应 user 消息之后，buildInjectionBlock
  *           确定性重建，无写入时恒定），其变化只重发注入块自身（≤500 token），不可能造成
- *           数百 K 浪费。大浪费应优先查：compaction 改写 / 早期消息改写（thinking 剪枝等
- *           post-hoc 修改）/ provider 缓存键变化 / 大工具输出改写 / steering/follow-up 注入。
+ *           数百 K 浪费。大浪费应先查断裂轮轮间间隔（gapMin >6min → 服务端 TTL 逐出，
+ *           与本地序列无关，08-24 已确认是全天 A 类断裂主因），再查：compaction 改写 /
+ *           早期消息改写（thinking 剪枝等 post-hoc 修改）/ provider 缓存键变化 /
+ *           大工具输出改写 / steering/follow-up 注入。
  *   B 类 → 查 pi-memory/inject.ts 注入块与上下文压力档位（cache-guard 已锁定其注入面基线）。
  *   C 类 → 无需处理。
  *
@@ -55,6 +61,10 @@ const toolEvents = existsSync(TOOL_EVENTS)
       .filter(e => e && e.type === 'tool-enable')
   : []
 const TOOL_EVENT_WINDOW_MS = 120_000 // 断裂轮前后 2 分钟内的启用事件视为可能归因
+// 服务端缓存 TTL 归因阈值（分钟）：轮间间隔超过即判定为 TTL 逐出候选。
+// 2026-08-24 实测 DeepSeek 缓存逐出在 6-8 分钟间浮动（6.6min 仍命中、7.7min 全断），
+// 取 6 分钟为保守下界；TTL 逐出与本地序列无关，不应继续查本地改写。
+const TTL_GAP_MIN = 6
 
 const args = process.argv.slice(2)
 const SHOW_ALL = args.includes('--all')
@@ -92,6 +102,7 @@ for (const r of turns) {
     }
     sessions.push(cur)
   }
+  const prevTs = cur.lastTs
   cur.lastTs = ts
   cur.lastCtx = ctx
   cur.rounds++
@@ -111,6 +122,7 @@ for (const r of turns) {
       i: cur.rounds,
       cls,
       ts,
+      gapMin: Math.round((ts - prevTs) / 60000), // 距上一请求分钟数：>TTL_GAP_MIN → TTL 逐出候选
       prevCacheK,               // 断前命中前缀长度（疑似丢失起点）
       cacheReadK: Math.round(r.cacheRead / 1000),
       inputK: Math.round(r.input / 1000),
@@ -169,14 +181,18 @@ for (const s of list) {
   // 断裂明细（2026-08-19：命中 <90% 或有断裂时展示分类，供跨会话归因）
   if ((s.breakList && s.breakList.length) && (rate < 90 || SHOW_ALL)) {
     for (const b of s.breakList) {
-      console.log(`      └ [${b.cls}] 轮#${b.i} @${fmtMin(b.ts)} 断前前缀${b.prevCacheK}K→命中${b.cacheReadK}K 重发${b.inputK}K 浪费${b.wasteK}K${b.compacted ? ' (compacted)' : ''}`)
-      // A 类归因：关联工具启用事件台账（±2 分钟窗口）
+      console.log(`      └ [${b.cls}] 轮#${b.i} @${fmtMin(b.ts)} 间隔${b.gapMin}min 断前前缀${b.prevCacheK}K→命中${b.cacheReadK}K 重发${b.inputK}K 浪费${b.wasteK}K${b.compacted ? ' (compacted)' : ''}`)
+      // A 类归因顺序：①TTL 逐出（间隔 >6min，服务端缓存过期，与本地序列无关）→ ②工具启用事件（±2 分钟）→ ③本地消息改写候选
       if (b.cls === 'A') {
-        const nearby = toolEvents.filter(e => Math.abs(e.ts - b.ts) < TOOL_EVENT_WINDOW_MS)
-        if (nearby.length) {
-          for (const e of nearby) console.log(`            ⚑ 归因: ${e.group} 组启用（via ${e.via}）@${fmtMin(e.ts)} → 工具 schema 变化致前缀全断`)
+        if (b.gapMin > TTL_GAP_MIN) {
+          console.log(`            ⚑ 归因: 服务端缓存 TTL 逐出（距上一请求 ${b.gapMin} 分钟 > ${TTL_GAP_MIN}min 阈值，实测逐出区间 6-8min）→ 缓存过期全量重发，与本地序列/注入无关，无需排查本地改动`)
         } else {
-          console.log(`            ○ 该轮无工具启用事件 → 注入块(≤500 token,尾部)不是大浪费来源；优先查 compaction 改写/早期消息改写/大工具输出改写/provider 缓存键（用法见 usage-diag 会话细分）`)
+          const nearby = toolEvents.filter(e => Math.abs(e.ts - b.ts) < TOOL_EVENT_WINDOW_MS)
+          if (nearby.length) {
+            for (const e of nearby) console.log(`            ⚑ 归因: ${e.group} 组启用（via ${e.via}）@${fmtMin(e.ts)} → 工具 schema 变化致前缀全断`)
+          } else {
+            console.log(`            ○ 间隔仅 ${b.gapMin}min 且无工具启用事件 → 注入块(≤500 token,尾部)不是大浪费来源；优先查 compaction 改写/早期消息改写（thinking 剪枝等）/provider 缓存键变化/大工具输出改写（08-24 审计：此分支现存断裂案例均已排除本地原因，属 provider 侧偶发）`)
+          }
         }
       }
     }
@@ -195,15 +211,16 @@ console.log(`\n当前会话: 命中 ${(curS.hitRate * 100).toFixed(1)}%（目标
 if (curS.breakList && curS.breakList.length) {
   const agg = curS.breakList.reduce((m, b) => { m[b.cls] = (m[b.cls] || 0) + 1; return m }, {})
   const hint = Object.entries(agg).map(([c, n]) => `${c}×${n}`).join(' ')
-  console.log(`  断裂分类: ${hint}${agg.A ? ' — A 类查：compaction 改写/早期消息改写（thinking 剪枝等）/大工具输出改写/provider 缓存键（注入块仅尾部≤500 token 非主因）' : ''}${agg.B ? ' — B 类查：压力档位切换/keepRecentTokens 重建/注入块尾部变化' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
+  const ttlA = (curS.breakList || []).filter(b => b.cls === 'A' && b.gapMin > TTL_GAP_MIN).length
+  console.log(`  断裂分类: ${hint}${agg.A ? ` — A 类查：先看断裂轮间隔（${ttlA} 次间隔 >${TTL_GAP_MIN}min 属 TTL 逐出，与本地无关），再查 compaction 改写/早期消息改写/provider 缓存键（注入块仅尾部≤500 token 非主因）` : ''}${agg.B ? ' — B 类查：压力档位切换/keepRecentTokens 重建/注入块尾部变化' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
 }
 if (curS.hitRate < 0.90 || curS.breaks > 3) {
   console.log('  ⚠ 低于健康线 — 定位流程：')
   console.log('    1) node scripts/usage-stats.mjs --json 看当前会话细分')
   console.log('    2) 找断裂轮（usage-diag 中 cacheRead 突降 + input 暴增）→ 断裂点 ≈ cacheRead')
-  console.log('    3) 对照该轮事件（大工具输出/注入变化/消息修改机制）；运行 node agent/extensions/tests/cache-guard.mjs 查注入面')
-  console.log('    4) A 类断裂先查 compaction/早期消息改写（对照 usage-diag 该轮前后 cacheRead 细分）；pi-memory 注入在尾部（≤500 token）非主因，勿再归因记忆操作')
-  console.log('    5) 2026-08-18 已知根因参考：thinking 剪枝/擦除等 post-hoc 修改历史 → 已调阈值（64K/120K/80K）')
+  console.log('    3) 对照断裂轮间隔：>6min 为 TTL 逐出（服务端缓存过期，无需本地排查）；<6min 再对照该轮事件（工具启用/大工具输出/注入变化）；运行 node agent/extensions/tests/cache-guard.mjs 查注入面')
+  console.log('    4) A 类断裂（间隔 <6min）查 compaction/早期消息改写/provider 缓存键；pi-memory 注入在尾部（≤500 token）非主因，勿再归因记忆操作')
+  console.log('    5) 2026-08-18 已知根因参考：thinking 剪枝/擦除等 post-hoc 修改历史 → 已调阈值（64K/120K/80K）；2026-08-24 起 TTL 逐出已可自动归因')
 }
 // 工具用量账单（--tools，2026-08-20 2.5 阶段）
 if (TOOLS) {

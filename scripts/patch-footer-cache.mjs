@@ -7,11 +7,12 @@
  * 循环覆盖），`/session`/`/usage-diag` 的命中率口径又各不相同，易混淆。
  * 本补丁：
  *   1) CH 区改为实时/会话双命中率：`CH92.1/85.3%`（左=最近一轮，右=会话累计）
- *   2) context 区去掉括号百分比：`442.0K/1M (44.2%)` → `442.0K/1M`
- *      （上下文压力仍靠颜色提示：>70% 黄、>90% 红）
+ *   2) context 区去掉括号百分比：`442.0K/200k (221%)` → `442.0K/200k`
+ *      （上下文压力靠颜色提示——live-context V2 已把着色阈值改为压缩临界，
+ *      >70% 黄、>90% 红、>100% 加 !!；分母 effWindow = min(窗口, 200K 压缩线)）
  * ↑↓RW$ 累计口径保留（账单信息），不受影响。
  *
- * 依赖：须在 patch-footer-live-context.mjs 之后应用（part 2 匹配其实时
+ * 依赖：须在 patch-footer-live-context.mjs（V1 或 V2）之后应用（part 2 匹配其实时
  * context 形态；未应用时报错提示）。
  *
  * 用法：node patch-footer-cache.mjs [dist 目录]
@@ -84,15 +85,16 @@ ${indent}}`,
 )
 
 // Part 2: context 区去百分比（依赖 patch-footer-live-context.mjs 已应用，
-// 其实时 context 形态 `442.0K/1M (44.2%)`；未应用时此处原文无括号百分比，跳过即可）。
+// 其实时 context 形态 `442.0K/200k (221%)`；V1 形态 contextPercent / V2 形态 effPercent
+// 均可；未应用时此处原文无括号百分比，跳过即可）。
 const reCtxPct =
-  /: `\$\{liveTokensStr\}\$\{formatTokens\(contextWindow\)\} \(\$\{contextPercent\}%\)\$\{autoIndicator\}`;/
+  /: `\$\{liveTokensStr\}\$\{formatTokens\((?:contextWindow|effWindow)\)\} \(\$\{(?:contextPercent|effPercent)\}%\)\$\{autoIndicator\}`;/
 const m2 = chPatched.match(reCtxPct)
 let patched = chPatched
 if (m2) {
   patched = chPatched.replace(
     reCtxPct,
-    `: \`\${liveTokensStr}\${formatTokens(contextWindow)}\${autoIndicator}\`;`,
+    `: \`\${liveTokensStr}\${formatTokens(effWindow)}\${autoIndicator}\`;`,
   )
 } else {
   console.warn('未匹配到 context 百分比行（live-context 补丁未应用或 pi 版本已改动），跳过去百分比。')

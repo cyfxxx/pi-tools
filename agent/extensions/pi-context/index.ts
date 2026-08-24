@@ -483,8 +483,11 @@ export default function (pi: ExtensionAPI) {
 		if (modified) messages = filteredMessages;
 
 		// Prune：工具输出分层擦除（借鉴 opencode，零 LLM 成本）。
-		// 最近 2 轮 + 40K 保护带内保留，更早的旧工具输出替换为占位；
-		// 回收 <20K 不应用。判定确定性、擦除点单调后移 → 缓存前缀稳定。
+		// 保护带：最近 2 轮 + 120K token 内保留（PRUNE_PROTECT_TOKENS），更早的旧工具输出替换为占位；
+		// 回收 <80K 不应用（PRUNE_MINIMUM_TOKENS）。⚠ 机制真相（2026-08-15 实测）：
+		// 擦除本身改变消息序列 → 发送序列 ≠ 上一轮 → DeepSeek 前缀缓存从擦除点断裂全量重发，
+		// 不存在"缓存前缀稳定"。故保护带调至 120K（对齐 append-only 不动老消息哲学）：
+		// 普通会话全程不触发、清理职责让给 auto-compact（一次性断裂），擦除仅作极长会话底线保障。
 		const pruned = pruneToolResults(messages as unknown as PruneMessage[]);
 		if (pruned.modified) {
 			messages = pruned.messages as unknown as typeof messages;

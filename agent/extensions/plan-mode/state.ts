@@ -32,6 +32,24 @@ export function isTransitionValid(from: TaskStatus, to: TaskStatus): boolean {
   return VALID_TRANSITIONS[from].has(to);
 }
 
+/**
+ * 清理提醒判定（2026-08-24）：completed 任务滞留未 delete/clear 的连续轮数计数。
+ * 每轮 agent_end 调用：有 completed 任务则计数 +1，无则归零；计满 3 轮且本轮未
+ * 调用 todo 工具时 remind=true（提示模型归档 completed 任务），提醒后计数归零
+ * 防刷屏（用户忽略则 3 轮后再提醒）。todo delete/clear 的归零由调用方处理。
+ * 纯函数，便于单测。
+ */
+export function cleanupReminderCheck(
+  turns: number,
+  touchedTodoThisTurn: boolean,
+  tasks: Pick<Task, "status">[],
+): { turns: number; remind: boolean; done: number } {
+  const done = tasks.filter((t) => t.status === "completed").length;
+  const next = done > 0 ? turns + 1 : 0;
+  const remind = done > 0 && !touchedTodoThisTurn && next >= 3;
+  return { turns: remind ? 0 : next, remind, done };
+}
+
 export type Op =
   | { kind: "create"; taskId: number }
   | { kind: "update"; id: number; fromStatus: TaskStatus; toStatus: TaskStatus; failure?: string }

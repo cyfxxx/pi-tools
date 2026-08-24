@@ -10,7 +10,7 @@
  * （>70% 已有黄色 / >90% 红色，无需再加标记）。
  *
  * 依赖：须在 patch-footer-cache.mjs 之后应用（匹配其去掉百分比的实时
- * context 形态；未应用时报错提示）。
+ * context 形态——live-context V2 后分母为 effWindow；未应用时报错提示）。
  *
  * 用法：node patch-footer-restart-hint.mjs [dist 目录]
  *   - 不传参数：自动探测（默认 /root/.local/share/pi-node/...）
@@ -59,9 +59,10 @@ if (src.includes(MARKER)) {
   process.exit(0)
 }
 
-// 匹配 patch-footer-cache 后的 contextPercentDisplay 拼接（?/200k 与 34.5k/200k 两分支）
+// 匹配 patch-footer-cache 后的 contextPercentDisplay 拼接（?/effWindow 与 34.5k/effWindow 两分支），
+// 兼容 V1（分母 contextWindow）与 V2（分母 effWindow）形态
 const re =
-  /const contextPercentDisplay = contextPercent === "\?"\n(\s*)\? `\?\/\$\{formatTokens\(contextWindow\)\}\$\{autoIndicator\}`\n\s*: `\$\{liveTokensStr\}\$\{formatTokens\(contextWindow\)\}\$\{autoIndicator\}`;/
+  /const contextPercentDisplay = contextPercent === "\?"\n(\s*)\? `\?\/\$\{formatTokens\((?:contextWindow|effWindow)\)\}\$\{autoIndicator\}`\n\s*: `\$\{liveTokensStr\}\$\{formatTokens\((?:contextWindow|effWindow)\)\}\$\{autoIndicator\}`;/
 const m = src.match(re)
 if (!m) {
   console.error('未匹配到 footer.js contextPercentDisplay 实时形态（patch-footer-cache 未应用或 pi 版本已改动），需人工核对。')
@@ -73,8 +74,8 @@ const patched = src.replace(
   `// ${MARKER}: 上下文 >40% 窗口时在 context 区追加 "⚠"（重启后首轮必全量重发，建议先 /compact；>70% 已有黄/红着色）。
 ${indent}const restartHint = contextPercent !== "?" && contextPercentValue > ${RESTART_HINT_RATIO * 100} && contextPercentValue <= 70 ? " ⚠" : "";
 ${indent}const contextPercentDisplay = contextPercent === "?"
-${indent}    ? \`?/\${formatTokens(contextWindow)}\${autoIndicator}\`
-${indent}    : \`\${liveTokensStr}\${formatTokens(contextWindow)}\${autoIndicator}\${restartHint}\`;`,
+${indent}    ? \`?/\${formatTokens(effWindow)}\${autoIndicator}\`
+${indent}    : \`\${liveTokensStr}\${formatTokens(effWindow)}\${autoIndicator}\${restartHint}\`;`,
 )
 
 writeFileSync(target, patched, 'utf-8')

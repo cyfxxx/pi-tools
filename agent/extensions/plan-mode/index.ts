@@ -18,7 +18,7 @@ import {
 import { getTokenPressureTag, getUrgencyHint, getBudgetReport, resetBudget } from "../../lib/token-budget.ts";
 import { loadNotes, clearCompactionFlag } from "../../lib/note-store.ts";
 
-import { type Task, type TaskState } from "./state.ts";
+import { type Task, type TaskState, cleanupReminderCheck } from "./state.ts";
 import { getState, replaceState, resetState } from "./store.ts";
 import { selectTodoCounts, selectVisibleTasks } from "./selectors.ts";
 import { formatPlanMessageLine, parsePlanFile, renderPlanFile } from "./view.ts";
@@ -905,12 +905,35 @@ ${todoList}
   // todo 则不打扰）。
   let lastTurnToolActivity = false;
   let lastTurnTodoActivity = false;
+  // 清理提醒计数：存在 completed 任务但连续 N 轮未 delete/clear（agent_end 时
+  // 累计；todo delete/clear 或无 completed 任务时重置）。提醒阈值见 agent_end 分支。
+  let turnsSinceCleanup = 0;
   pi.on("tool_execution_end", async (event) => {
     if (event.toolName === "todo") lastTurnTodoActivity = true;
     else lastTurnToolActivity = true;
   });
 
   pi.on("agent_end", async (event, ctx) => {
+    // 清理提醒计数（所有模式累计）：存在 completed 任务则轮数 +1，无则归零。
+    // 普通模式 ≥3 轮且本轮未碰 todo 时注入温和提醒（执行模式有 planComplete
+    // 通知、计划模式有 overlay 呈现，不重复打扰）。
+    const curState = getState();
+    const curVisible = curState.tasks.filter((t) => t.status !== "deleted");
+    const cleanup = cleanupReminderCheck(turnsSinceCleanup, lastTurnTodoActivity, curVisible);
+    turnsSinceCleanup = cleanup.turns;
+    if (cleanup.remind && !planModeEnabled && !executionMode) {
+      // 任务清理提醒：completed 任务滞留 ≥3 轮未 delete/clear（模型可能完成后
+      // 忘记归档）。温和提醒，不主动改状态；提醒后计数归零（忽略则 3 轮后再提醒）。
+      pi.sendMessage(
+        {
+          customType: "plan-mode-recovery",
+          content: `[任务清理提醒] ${cleanup.done} 个任务已完成但连续 ≥3 轮未清理。已完成任务用 todo delete id=N 归档，或 /plan clear 一键清空。`,
+          display: false,
+        },
+        { triggerTurn: false },
+      );
+    }
+
     // 执行模式：检测计划修订——修订意图必须来自用户消息（assistant 汇报/总结含"修订"等词不触发）
     if (executionMode) {
       const lastUser = [...event.messages].reverse().find((m) => m.role === "user");
@@ -1227,6 +1250,9 @@ ${todoList}
 
   pi.on("tool_execution_end", async (event, ctx) => {
     if (event.toolName !== "todo" || event.isError) return;
+    // 清理动作（delete/clear）重置清理提醒计数（action 不在 arguments 时可选链兜底）
+    const action = (event as { arguments?: { action?: string } }).arguments?.action;
+    if (action === "delete" || action === "clear") turnsSinceCleanup = 0;
     // 普通模式直接 todo 创建/更新时确保 overlay 存在（首次创建于 updateStatus）
     if (ctx.hasUI) {
       todoOverlay ??= new TodoOverlay();

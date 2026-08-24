@@ -3,7 +3,7 @@
   "pi-context/tool-groups.ts（休眠简介/核心分组）": "31063f4e57dd12f99cad37f8d5ecb87308c3478baa2153cc5ae7b49c73270e5c",
   "pi-memory/inject.ts（注入头文案）": "8fc3f2f7d04efeba3df210f18e1ad45d2daec8a9db844ac9984975c2efa1d276",
   "lib/prune.ts（擦除/剪枝阈值）": "d8d217856fc6a4911b75d78850edc8e6957bfad4df8f6a90e58313d67188c8ea",
-  "pi-context/index.ts（注入逻辑/文案）": "bb44292831d37327123f269a4c013e7940cc162541e7065fcbe3939feb80cae0",
+  "pi-context/index.ts（注入逻辑/文案）": "917d540392cb24bc39b65aae2f2530656d09cc8bf5c9b4eb8e0b37a4ae3da686",
   "lib/context-budget.ts（截断标记等）": "b977314ed8528ddc818d1983008d814fa954ad0e0dcb76e0e1dba27251f416ea",
   "subagent/index.ts（delegation 描述）": "2413bbce40c318b05f08329a189520ee981b5244904e0dbe44018ba7089882b3",
   "pi-context/context-budget.ts（分档注入文案）": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

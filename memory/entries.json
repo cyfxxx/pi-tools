@@ -13308,10 +13308,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 11,
+      "recurrence": 15,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-24T04:00:35.865Z",
-      "accessedAt": "2026-08-24T04:00:35.865Z",
+      "updatedAt": "2026-08-24T05:43:53.739Z",
+      "accessedAt": "2026-08-24T05:43:53.739Z",
       "environments": [
         "all"
       ],
@@ -13638,7 +13638,103 @@
       "accessedAt": "2026-08-24T04:10:12.706Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-24T04:10:12.706Z",
+      "deleted": false
+    },
+    {
+      "id": "da1fbcc7-fc25-45b9-b407-01af701b8f94",
+      "category": "fact",
+      "title": "pi-memory 注入在请求序列尾部，memory 操作几乎不破坏缓存（修正旧条目）",
+      "content": "修正 2026-08-19 旧条目（\"memory_store 每次写入会重放整段前缀缓存\"）：该结论已过时/误关联。2026-08-14 起 pi-memory 注入已从 systemPrompt 尾部改为消息注入（before_agent_start 返回 customType=pi-memory-injection 消息，追加在消息末尾，display:false），context 钩子 filterInjectedMessages 仅保留最新一条防累积。DeepSeek 前缀缓存从头匹配，注入块位于序列末尾 → memory 操作导致的注入内容变化只重发注入块本身（≤500 token 全价），system prompt + 全部消息历史依然命中。实际缓存断裂大头是：①重启/新会话首轮全量未命中 ②DeepSeek 服务端 TTL 逐出（约 5 分钟不活跃）③compact 全量重发。",
+      "tags": [
+        "缓存",
+        "pi-memory",
+        "注入",
+        "DeepSeek"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T05:02:11.177Z",
+      "updatedAt": "2026-08-24T05:02:11.177Z",
+      "accessedAt": "2026-08-24T05:02:11.177Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T05:02:11.177Z",
+      "deleted": false
+    },
+    {
+      "id": "65fdf4ca-6634-466c-9e5a-0eb105b74da7",
+      "category": "fact",
+      "title": "DeepSeek TTL 实测 6-8 分钟浮动；08-24 断裂归因：TTL 逐出为主、1 例 81 秒断裂根因未定",
+      "content": "2026-08-24 深度审计补充：①DeepSeek 缓存 TTL 实测并非固定 5 分钟：08-24 04:50 会话内 05:04:06 断裂轮后 6.6 分钟（05:10:46）命中 40960 token，说明间隔 6.6 分钟仍可命中；而 12:51:32→12:59:18（7.7 分钟间隔）全断。TTL 逐出阈值在 6-8 分钟间浮动，与模型负载/网关有关，旧条目\"约 5 分钟\"仅作下限参考。②usage-diag A 类断裂归因提示（\"优先查 compaction 改写/早期消息改写\"）在日间数据中误导：08-24 全天绝大多数无事件 A 类断裂实为轮间空闲 >TTL 的逐出（01:55/02:03/04:29/04:36/04:59 各间隔 6-8 分钟），仅 1 例（05:04:06，间隔 81 秒）根因未定：序列仅追加 user+注入块，前缀应命中却 cacheRead=0，候选为打断/abort 残留消息序列修改或 provider 缓存键抖动，待定向复现。③同日 enable_tool（browser 组）2 例断裂已确认归因：工具 schema 变化致前缀全断，属设计内成本（低频）。",
+      "tags": [
+        "缓存",
+        "TTL",
+        "usage-diag",
+        "断裂归因"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T05:16:00.872Z",
+      "updatedAt": "2026-08-24T05:16:00.872Z",
+      "accessedAt": "2026-08-24T05:16:00.872Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T05:16:00.872Z",
+      "deleted": false
+    },
+    {
+      "id": "2a1e2e54-96d0-4f2f-ae6c-c4b7ef1e73ee",
+      "category": "solutions",
+      "title": "08-24 上下文管理四修复：TTL 归因/断裂取证/注释修正/footer 压缩线语义",
+      "content": "2026-08-24 上下文管理系统四项修复（全部落地+回归通过）：①usage-stats.mjs 断裂归因新增 gapMin 字段（距上一请求分钟数），A 类归因顺序改为：间隔 >6min → TTL 逐出（与本地无关）；再查工具启用事件（±2min）；最后才查本地改写。08-24 实测 02:03 轮 7min 间隔自动归因 TTL。②05:04:06 断裂取证结论：消息序列干净（parentId 链完整、05:02:45 stopReason=stop、user 正常挂接），排除 abort/改写假设，判为 provider 侧偶发（缓存键抖动），无本地可修项，交持续监控。③pi-context/index.ts Prune 注释修正：删除\"判定确定性→缓存前缀稳定\"错误表述（实测擦除即断裂），参数改为实际值 120K/80K 保护带。④footer 补丁链 V2：patch-footer-live-context.mjs 分母与百分比改为压缩临界 effWindow=min(窗口, PI_CONTEXT_ABSOLUTE_TOKENS 默认 200K)，显示 34.5k/200k (17.3%)；着色阈值同步基于 effWindow（>100% 显示 !! 标记）；patch-footer-cache.mjs Part2 与 patch-footer-restart-hint.mjs 匹配形态同步支持 effWindow（三者须成对升级，rebuild.sh 顺序保证）。cache-guard 基线已更新。当前 dist 已就地升级。",
+      "tags": [
+        "缓存",
+        "usage-stats",
+        "footer",
+        "补丁链",
+        "TTL",
+        "审计"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T05:30:28.310Z",
+      "updatedAt": "2026-08-24T05:30:28.310Z",
+      "accessedAt": "2026-08-24T05:30:28.310Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T05:30:28.310Z",
+      "deleted": false
+    },
+    {
+      "id": "97ea9142-a53e-4785-a8e6-0a770def712f",
+      "category": "procedure",
+      "title": "plan-mode 任务清理提醒机制（普通模式 ≥3 轮未清理提醒）",
+      "content": "plan-mode 任务清理提醒机制（2026-08-24 添加）：普通模式下存在 completed 任务且连续 ≥3 轮未 delete/clear（本轮未碰 todo）时，agent_end 注入 display:false 温和提醒\"[任务清理提醒] N 个任务已完成但连续 ≥3 轮未清理\"，提醒后计数归零防刷屏（忽略则 3 轮后再提醒）。核心计数逻辑在 state.ts 纯函数 cleanupReminderCheck(turns, touchedTodoThisTurn, tasks)，todo delete/clear 在 tool_execution_end 即时归零。触发条件注意：仅普通模式（执行模式有 planComplete、计划模式有 overlay，不重复打扰）。背景动因：任务完成后模型常漏回写 completed/漏清理（todo 无自动判定，全靠显式调用）。",
+      "tags": [
+        "plan-mode",
+        "todo",
+        "任务清理",
+        "提醒"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T05:40:47.172Z",
+      "updatedAt": "2026-08-24T05:40:47.172Z",
+      "accessedAt": "2026-08-24T05:40:47.172Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T05:40:47.172Z",
+      "deleted": false
     }
   ]
 }
