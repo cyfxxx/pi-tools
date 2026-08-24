@@ -1,6 +1,7 @@
 import { truncateHead, truncateTail, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
 import type { Usage } from "@earendil-works/pi-ai";
-import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
@@ -345,18 +346,20 @@ let fallbackContextWindow = (() => {
 /** 最近一轮 provider 报告的 contextTokens（turn_end 时更新） */
 let lastProviderContextTokens = 0
 
-// ── 压缩三重门限（2026-08-22 用户策略）：上下文长度 >200K 且 离开 >10 分钟
-// 且 无进行中任务 → 才压缩会话。环境变量可覆盖：
-//   PI_CONTEXT_ABSOLUTE_TOKENS（默认 200000；<=0 退回窗口比例）
+// ── 压缩三重门限（2026-08-24 用户策略修订）：上下文长度 >256K 且 任务已完成/
+// 阶段性完成 且 本会话无后台任务 且 任务完成后/最后操作后连续 10 分钟无用户操作
+// → 才压缩会话。环境变量可覆盖：
+//   PI_CONTEXT_ABSOLUTE_TOKENS（默认 256000；<=0 退回窗口比例）
 //   PI_CONTEXT_RESTART_TOKENS（重启/恢复场景阈值，默认 100000；
 //     看门狗 3 小时自动重启后首轮全量重发，>100K 即提前压缩省钱）
-//   PI_CONTEXT_IDLE_MS（默认 600000=10 分钟；<=0 禁用空闲门）
+//   PI_CONTEXT_IDLE_MS（默认 600000=10 分钟；<=0 禁用空闲窗门）
 //   PI_CONTEXT_TASK_GATE（默认 on；off 禁用任务门）
 //   PI_CONTEXT_PLANS_DIR（默认 ~/.pi/plans，测试注入用）
+//   PI_CONTEXT_TMUX_REGISTRY（默认 ~/.pi/agent/.pi-tmux-registry.json，测试注入用）
 const ABSOLUTE_TOKENS = (() => {
   const raw = process.env.PI_CONTEXT_ABSOLUTE_TOKENS
   const n = raw ? Number(raw) : NaN
-  return Number.isFinite(n) && n > 0 ? n : 200_000
+  return Number.isFinite(n) && n > 0 ? n : 256_000
 })()
 const RESTART_TOKENS = (() => {
   const raw = process.env.PI_CONTEXT_RESTART_TOKENS
@@ -377,10 +380,66 @@ let lastUserTs = 0
 let lastCompactTs = 0
 /** 恢复路径压缩冷却窗：距上次压缩小于该值时 session_start 不再立即二次压缩 */
 const COMPACT_COOLDOWN_MS = 10 * 60_000
-/** 离开时间门：距最后用户消息超过 IDLE_MS（无消息记录视为已离开） */
-function idleElapsed(): boolean {
+// ── 空闲/任务门（2026-08-24 用户策略）──
+// 门2a：任务已完成或阶段性完成（无 in_progress）；门2b：本会话（PI_SESSION_ID）
+// 发起的 pi-tmux 后台会话已全部退出；门3：距「任务完成点」或「最后一次用户操作」
+// 较晚者连续 IDLE_MS 无用户操作。
+/** 上次任务门判定是否有进行中任务（null=本进程首次，不产生完成点） */
+let taskBusyPrev: boolean | null = null
+/** 最近一次「有任务 → 无任务」切换时刻（0=未发生，空闲窗退化到用户消息窗） */
+let taskDoneAt = 0
+/** 本会话后台任务 registry 路径（pi-tmux 持久化；测试经 PI_CONTEXT_TMUX_REGISTRY 注入） */
+function tmuxRegistryPath(): string {
+  return (
+    process.env.PI_CONTEXT_TMUX_REGISTRY ||
+    join(process.env.PI_HOME || homedir(), ".pi", "agent", ".pi-tmux-registry.json")
+  )
+}
+/** 门2b：本会话产生的后台任务（registry 中 owner=本会话 id 的条目，tmux 仍存活）。
+ *  tmux 缺失/无匹配条目/进程无 PI_SESSION_ID 时宽容返回 false（不阻塞压缩）。 */
+function hasBackgroundTask(): boolean {
+  try {
+    const regPath = tmuxRegistryPath()
+    if (!existsSync(regPath)) return false
+    const reg = JSON.parse(readFileSync(regPath, "utf8")) as {
+      sessions?: Record<string, { owner?: string; name?: string }>
+    }
+    const owner = process.env.PI_SESSION_ID || ""
+    if (!owner) return false
+    const names: string[] = []
+    for (const e of Object.values(reg.sessions ?? {})) {
+      if (e.owner === owner && e.name) names.push(e.name)
+    }
+    if (names.length === 0) return false
+    let out = ""
+    try {
+      const r = spawnSync("tmux", ["list-sessions"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      })
+      // tmux 命令缺失/无 server（exit≠0）→ 视为无存活后台任务，宽容放行
+      if (r.error || r.status !== 0) return false
+      out = String(r.stdout)
+    } catch {
+      return false
+    }
+    return names.some((n) => out.split("\n").some((l) => l.startsWith(`${n}:`)))
+  } catch {
+    return false
+  }
+}
+/** 门2+门3 合并判定（2026-08-24 用户策略）：任务未完成/有后台任务/空闲窗未到 → false */
+function taskAndIdleClear(): boolean {
+  const busy = hasInProgressTask()
+  // 先记 prev 消除忙碌窗口：有→无切换打点须在任何提前 return 前完成
+  if (taskBusyPrev === true && !busy) taskDoneAt = Date.now()
+  taskBusyPrev = busy
+  if (busy) return false // 门2a：任务进行中
+  if (hasBackgroundTask()) return false // 门2b：本会话后台任务在跑
   if (IDLE_MS <= 0) return true
-  return lastUserTs <= 0 || Date.now() - lastUserTs >= IDLE_MS
+  const ref = Math.max(lastUserTs, taskDoneAt)
+  if (ref <= 0) return true
+  return Date.now() - ref >= IDLE_MS // 门3：任务完成后/最后操作后 10 分钟内无操作
 }
 /** 任务门：最新（7 天内）计划文件存在 in_progress（`- [~]`）即视为有进行中任务 */
 function hasInProgressTask(): boolean {
@@ -449,7 +508,7 @@ export default function (pi: ExtensionAPI) {
 	const compactDecider = makeCompactDecider(undefined, {
 		largeRatio: readEnvRatio("PI_CONTEXT_COMPACT_LARGE_RATIO"),
 		smallRatio: readEnvRatio("PI_CONTEXT_COMPACT_SMALL_RATIO"),
-		// 用户策略：绝对阈值 200K（覆盖窗口比例）
+		// 用户策略：绝对阈值 256K（覆盖窗口比例）
 		absoluteTokens: ABSOLUTE_TOKENS,
 	});
 
@@ -632,7 +691,7 @@ export default function (pi: ExtensionAPI) {
 			// thinking 档位自适应（task #25）：按真实 tokens/window 比例自动升降档，
 			// 每次切换强制 recordLevelChange 记账；切换后思考量变化由 thinking-meter 持续关联。
 			// 用真实比例（不用 context-budget 的单调 used）：压缩后回落才能触发升回。
-			// 档位压力基准对齐自动压缩阈值（~200K）而非模型窗口（1M）：对 1M 窗口，
+			// 档位压力基准对齐自动压缩阈值（~256K）而非模型窗口（1M）：对 1M 窗口，
 			// 0.95 降档需 950K 永不可达，自动降档（防 thinking 剪枝核心）会成死代码（审计 M2）。
 			// 改按压缩阈值比例后，接近压缩点前即可触发降档，压缩后回落自然触发升回。
 			const compactT = computeCompactThreshold(resolved.window, { absoluteTokens: ABSOLUTE_TOKENS });
@@ -700,9 +759,10 @@ export default function (pi: ExtensionAPI) {
 
 		const decision = compactDecider.decide(tokens, contextWindow);
 		if (!decision.shouldCompact) return recTask(false);
-		// 三重门限（用户策略 2026-08-22）：tokens>绝对阈值已由 decide 判定，
-		// 再要求 离开>10 分钟 且 无进行中任务，三者同时满足才压缩。
-		if (!idleElapsed() || hasInProgressTask()) return recTask(false);
+		// 三重门限（用户策略 2026-08-24）：tokens>绝对阈值已由 decide 判定，
+		// 再要求 任务已完成/阶段性完成 + 本会话无后台任务 + 任务完成后/最后操作后
+		// 连续 10 分钟无用户操作，全部满足才压缩。
+		if (!taskAndIdleClear()) return recTask(false);
 
 		// 压缩前原文快照（可逆追溯，零缓存影响）
 		snapshotBeforeCompact(tokens, decision.threshold);
@@ -763,15 +823,16 @@ export default function (pi: ExtensionAPI) {
 
 		// 重启/恢复阈值：100K（PI_CONTEXT_RESTART_TOKENS 覆盖）——看门狗 3 小时
 		// 自动重启后首轮必然全量重发且未命中按全价，>100K 即提前压缩（2026-08-22 用户追加）；
-		// 常规 agent_settled 仍按绝对 200K + 三重门
+		// 常规 agent_settled 仍按绝对 256K + 三重门
 		const startThreshold = RESTART_TOKENS;
 		if (tokens < startThreshold) return;
 		// 冷却（审计 LOW）：距上次压缩 <10min 的恢复不再立即二次压缩，
 		// 避免恢复/重启流程连续触发两轮压缩的开销
 		if (Date.now() - lastCompactTs < COMPACT_COOLDOWN_MS) return;
-		// 离开>10 分钟且无进行中任务才压缩（与 agent_settled 同策略；resume 场景
+		// 任务已完成/阶段性完成且无后台任务、完成后超空闲窗才压缩（与 agent_settled
+		// 同策略；resume 场景
 		// 用户历史消息时间通常已远超空闲门；有进行中任务时不打扰）
-		if (!idleElapsed() || hasInProgressTask()) {
+		if (!taskAndIdleClear()) {
 			// resume 不满足门限：留给首轮 agent_settled 再判定（tokens 仍大时等待）
 			return;
 		}

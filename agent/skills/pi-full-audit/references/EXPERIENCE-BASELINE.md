@@ -23,3 +23,9 @@
 - **修复回归测试姿势**：H1 损坏备份用 readdirSync 找 .corrupt-* 断言备份存在；M3 pressure 基准用 setCompactThreshold+setUsedTokens 直接可单测；pi-link config 校验新建独立 test 文件即可（loadConfig 可传 path）。
 - **审计排查路径**：admin_set_config 白名单接入应先看 safeConfigKeys 定义/quote（config.ts:108），复用不新写。
 - 未处理项如实标注：finalizeInjected 竞态无完美信号（window 窄），留守以 roundId 确认的后续优化；pi-voice termux stopRecording 全局 -q 属设备单实例设计，维持现状。
+
+### 2026-08-24（续）压缩策略修订（200K→256K + 完成/后台/空闲三重门）
+- **绝对阈值联动破坏面远大于触发点**：改 PI_CONTEXT_ABSOLUTE_TOKENS 不只改压缩触发，还联动 ①压力提示档位 75%/90%（阈值比例）、②thinking 档位基准（computeCompactThreshold 同源）、③plan-mode/context-budget pressure 消费者、④**跨扩展集成测试里写死的档位 tokens**（pi-web-search/tests/extensions.test.ts 将 190K/196K 视为高/临界，256K 下 190K 仅 74% 变低压力）——改阈值必须全仓 grep `200K|200_000|ABSOLUTE_TOKENS` 并把集成测试数据一并重算。
+- **tmux 派生子进程可能不带 PI_SESSION_ID 等 env**：依赖该 env 的代码路径，测试若要走"有值"分支必须显式 set 环境变量，否则 tmux 运行与本地 bash 行为不一致（本案例：后台任务门 owner 缺省→宽容放行→断言 flaky）。用 `PI_SESSION_ID=` 清空模拟验证「无 env 分支」，两方向都测。
+- **vi.mock('node:child_process')**：整模块 mock 需在 beforeEach 复位（mockReset），且 mockReturnValue 属性（status/stdout/error）要齐全，缺 error 键时 `r.error` 为 undefined 视为成功——两方向断言都覆盖。
+- 产品自洽性：pi-tmux 写 owner 与 pi-context 读 owner 同进程同 env，缺省时两边同时缺（宽容放行）不会误判；测试环境单边缺才会 flaky。

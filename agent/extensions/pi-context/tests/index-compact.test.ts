@@ -4,6 +4,11 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { loadDiagLines } from '../../../lib/usage-diag.ts'
 
+// 后台任务门（2026-08-24）：mock node:child_process 的 spawnSync，供 tmux
+// list-sessions 的存在性断言；默认 PI_CONTEXT_TMUX_REGISTRY 指向空文件，不触发
+const childMock = vi.hoisted(() => ({ spawnSync: vi.fn() }))
+vi.mock('node:child_process', () => ({ spawnSync: childMock.spawnSync }))
+
 // 回归：auto-compact 触发挂载点（agent_settled vs agent_end）与
 // recordAutoCompact/markCompact 时机（压缩成功回调后，而非发起前）。
 
@@ -24,6 +29,9 @@ beforeEach(() => {
   process.env.PI_USAGE_DIAG_FILE = join(dir, 'diag.jsonl')
   // 任务门隔离：指向空目录（真实 ~/.pi/plans 残留 in_progress 会干扰断言）
   process.env.PI_CONTEXT_PLANS_DIR = join(dir, 'plans')
+  // 后台任务门隔离：registry 指向不存在的临时文件（真实 ~/.pi 下 registry 会干扰）
+  process.env.PI_CONTEXT_TMUX_REGISTRY = join(dir, 'tmux-reg.json')
+  childMock.spawnSync.mockReset()
 })
 
 afterEach(() => {
@@ -294,4 +302,89 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
     const compact = vi.fn()
     handlers.get('agent_settled')![0](undefined, overThresholdCtx(compact as never))
     expect(compact).not.toHaveBeenCalled()
+  })
+
+  it('阈值默认 256K（2026-08-24 用户策略）：255K 不压、260K 任务/空闲满足即压', async () => {
+    const { handlers } = await loadIndex()
+    // 255K < 256K 默认绝对阈值 → under-threshold
+    const compact = vi.fn()
+    handlers.get('agent_settled')![0](
+      undefined,
+      { getContextUsage: () => ({ tokens: 255_000, contextWindow: 1_000_000 }), compact } as never,
+    )
+    expect(compact).not.toHaveBeenCalled()
+    // 260K > 256K，plans 空（无任务）+ registry 空（无后台任务）+ lastUserTs=0 → 压
+    const compact2 = vi.fn()
+    handlers.get('agent_settled')![0](
+      undefined,
+      { getContextUsage: () => ({ tokens: 260_000, contextWindow: 1_000_000 }), compact: compact2 } as never,
+    )
+    expect(compact2).toHaveBeenCalledTimes(1)
+  })
+
+  it('后台任务门：本会话 registry 有存活 tmux 会话 → 阻塞压缩；会话退出 → 恢复（2026-08-24）', async () => {
+    // 显式固定会话 id：tmux 等派生子进程可能不带 PI_SESSION_ID，缺省时后台检测宽容放行会
+    // 破坏断言（产品中 pi-tmux 写 owner 与 pi-context 读 owner 同一进程同 env，缺省同时缺失、自洽）
+    process.env.PI_SESSION_ID = 'test-session'
+    const owner = 'test-session'
+    writeFileSync(
+      join(dir, 'tmux-reg.json'),
+      JSON.stringify({
+        sessions: {
+          'pi-bgtest': {
+            name: 'pi-bgtest',
+            logPath: '/tmp/x.log',
+            command: 'sleep 300',
+            createdAt: new Date().toISOString(),
+            owner,
+          },
+        },
+      }),
+      'utf8',
+    )
+    const { handlers } = await loadIndex()
+    // tmux 报告该会话存活 → 有后台任务 → 不压
+    childMock.spawnSync.mockReturnValue({
+      status: 0,
+      stdout: 'pi-bgtest: 1 windows (created ...) (detached)\n',
+      stderr: '',
+    })
+    const c1 = vi.fn()
+    handlers.get('agent_settled')![0](undefined, overThresholdCtx(c1 as never))
+    expect(c1).not.toHaveBeenCalled()
+    // tmux 已无该会话（仅他会话）→ 无后台任务 → 压
+    childMock.spawnSync.mockReturnValue({
+      status: 0,
+      stdout: 'pi-other: 1 windows (created ...)\n',
+      stderr: '',
+    })
+    const c2 = vi.fn()
+    handlers.get('agent_settled')![0](undefined, overThresholdCtx(c2 as never))
+    expect(c2).toHaveBeenCalledTimes(1)
+  })
+
+  it('任务完成窗：in_progress→全部完成 后 10 分钟内不压，满 10 分钟压（2026-08-24）', async () => {
+    vi.useFakeTimers()
+    try {
+      const { handlers } = await loadIndex()
+      const planDir = join(dir, 'plans', 'plan-1787400000000')
+      mkdirSync(planDir, { recursive: true })
+      // 阶段1：有 in_progress → 任务门阻塞
+      writeFileSync(join(planDir, 'plan.md'), '# 计划\n- [~] 1. 进行中 (跑)\n', 'utf8')
+      const c1 = vi.fn()
+      handlers.get('agent_settled')![0](undefined, overThresholdCtx(c1 as never))
+      expect(c1).not.toHaveBeenCalled()
+      // 阶段2：任务全部完成 → 打点 taskDoneAt，10min 内不压
+      writeFileSync(join(planDir, 'plan.md'), '# 计划\n- [x] 1. 完成\n', 'utf8')
+      const c2 = vi.fn()
+      handlers.get('agent_settled')![0](undefined, overThresholdCtx(c2 as never))
+      expect(c2).not.toHaveBeenCalled()
+      // 阶段3：推进 11 分钟 → 空闲窗满足 → 压
+      vi.advanceTimersByTime(11 * 60_000)
+      const c3 = vi.fn()
+      handlers.get('agent_settled')![0](undefined, overThresholdCtx(c3 as never))
+      expect(c3).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })

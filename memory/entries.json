@@ -2604,13 +2604,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-10T10:18:01.558Z",
-      "updatedAt": "2026-08-10T10:18:01.558Z",
+      "updatedAt": "2026-08-24T07:23:29.281Z",
       "accessedAt": "2026-08-10T10:18:01.558Z",
       "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "da7d8a01-6a25-4e9e-bbd0-e5b9c252e181",
+      "validUntil": "2026-08-24T07:23:29.281Z"
     },
     {
       "id": "20420458-34ed-43d9-a516-45d6aa90c142",
@@ -10304,10 +10306,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 21,
+      "recurrence": 35,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-24T07:20:38.820Z",
-      "accessedAt": "2026-08-24T07:20:38.820Z",
+      "updatedAt": "2026-08-24T08:07:21.019Z",
+      "accessedAt": "2026-08-24T08:07:21.019Z",
       "environments": [
         "all"
       ],
@@ -11078,6 +11080,222 @@
       "deleted": false
     },
     {
+      "id": "d5ff8e58-8c98-4428-a120-a9c6fa06c526",
+      "category": "solutions",
+      "title": "pi-memory entries.json 损坏保护修复",
+      "content": "pi-memory/storage.ts 原实现：entries.json 解析失败（git 冲突标记/半截 checkout）时 readJSON catch 返回 null、loadEntries 返回 []，saveEntries 随后 writeJSONAtomic 全量覆盖磁盘，全库记忆静默清空且无日志（H1 高危数据丢失面）。修复：解析失败先备份为 .corrupt-<ts> 并显式告警，满足 recovery 前拒绝覆盖；用专门 readJSON 变体区分\"文件不存在\"与\"解析失败\"；补回归测试（备份存在+原文件可恢复）。残留：多机 entries.json 冲突建议后续加 post-merge 自动合并收口。",
+      "tags": [
+        "pi-memory",
+        "entries.json",
+        "数据安全",
+        "H1"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "a400114b-f044-4167-b882-3fcbea75e531",
+      "category": "solutions",
+      "title": "压力注入基准改距压缩阈值200K",
+      "content": "pi-context/plan-mode 压力注入在 1M 窗口哑火：pressure 基准原为\"距窗口 850K\"（0.85×1M），与 pi-context 200K 绝对压缩阈值不一致，P2/P3 注入与 thinking 自动降档（CRITICAL_RATIO 0.95/LOW_RATIO 0.7）均为死代码。修复：context-budget 注册 compactThreshold 回调，基准改\"距压缩阈值 200K\"，压缩后 markCompacted 回落；thinking 档位 ratio 对齐压缩阈值；hasInProgressTask 只扫最新 plan 目录；恢复压缩加 10min 冷却。",
+      "tags": [
+        "pi-context",
+        "plan-mode",
+        "context-budget",
+        "压力注入"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "86714532-926b-452c-8466-054618161534",
+      "category": "solutions",
+      "title": "pi-voice wake wav 64MB 滚动修复",
+      "content": "pi-voice core.ts wake 监听时 parec 持续追加写 wake-listen.wav 从不截断（约 110MB/小时），是唯一数百 MB 级磁盘资源隐患。修复：wav 超 64MB 滚动重启文件。另两项修复：cleanupStaleAudio 改 5s 小窗口避免误删并发进程进行中录音；启动 pkill 改 -x 精确匹配避免误杀同宿主 paplay/espeak-ng。termux stopRecording 全局 -q 维持现状（设备单实例设计，改动需真机验证）。",
+      "tags": [
+        "pi-voice",
+        "wav",
+        "磁盘",
+        "修复"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "ccdbfce0-1116-406a-a77a-866eef127963",
+      "category": "solutions",
+      "title": "pi-link ssh 参数注入面修复",
+      "content": "pi-link config loadConfig 原仅校验 host，user 以 '-' 开头可注入 ssh 选项（ProxyCommand→本机执行面）；import-card 有校验但手工编辑可绕过。修复：仅校验 user/port（'-' 开头/空白丢弃），sshArgs 不做白名单——会破坏 -i/-o ConnectTimeout 等合法用法，只做数组形态兜底。补 config 校验回归测试。",
+      "tags": [
+        "pi-link",
+        "安全",
+        "ssh",
+        "注入"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "fff6370e-c6c1-4563-8219-42be35f1d759",
+      "category": "fact",
+      "title": "审计修复收尾状态与明确残留",
+      "content": "2026-08 全项目审计修复完成：提交 1372766（代码）+5fc08e1（memory 增量）已推送 master，工作区干净，全量回归 EXIT=0。明确未处理：1) finalizeInjected 竞态——无关 agent_settled 提前把未执行注入任务 finalize 为 success、once 被 splice 删除，无\"注入消息已被消费\"可靠信号，需 pi 事件层配合（可引入 roundId 确认机制立项）；2) pi-voice termux stopRecording 全局 -q（设备单实例设计）。审计中修复未触碰任何注入文案，cache-guard baseline 已同步。",
+      "tags": [
+        "审计",
+        "残留",
+        "提交",
+        "pi-autopilot"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "da7d8a01-6a25-4e9e-bbd0-e5b9c252e181",
+      "category": "fact",
+      "title": "vitest fake timers 伪造 Date 影响守卫测试",
+      "content": "pi-voice wake rollover 回归测试失败根因：vitest fake timers 会伪造 Date，watchdog guard 在新进程无数据时也重启（属正常设计行为），spawn 计数比预期多一次。修正：测试断言改为\"窗口内稳定\"而非精确调用次数。教训：用 fake timers 测含时间守卫的逻辑时，断言应关注窗口行为而非精确计数。另：测试误追加到 describe 块外也会导致诡异失败。",
+      "tags": [
+        "vitest",
+        "测试",
+        "fake timers",
+        "watchdog"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "c07420cf-dc32-4e81-887e-8990229654e7",
+      "category": "fact",
+      "title": "运行健康巡检禁用 admin/autopilot 工具组",
+      "content": "pi-full-audit 的会话运行健康巡检不应启用 admin/autopilot 工具组：启用会使工具列表更新（前缀缓存重算），污染要测的缓存命中率。改用只读文件检查+usage 统计。2026-08 巡检结果：deepseek-v4-flash/opencode-go，命中 89.6% 断裂 0 次浪费 0 token，低命中归因 run 边界+轮数少+provider TTL 逐出（>6min），无本地注入漂移，会话体积 3.4MB 正常。",
+      "tags": [
+        "审计",
+        "缓存命中",
+        "工具组",
+        "巡检"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "be6182c0-9c7f-4a51-bd53-0a43c20edb9d",
+      "category": "fact",
+      "title": "多文件并行编辑与转写测试易错点",
+      "content": "本次修复踩坑汇总：1) 简化替换误放进相邻文件（retrieval.ts 内容进 merge.ts 且丢失计算行）——大段编辑后须立即读回验证；2) tsc 需在 agent 根目录跑；3) truncateSync 接收 fd 而非 path；4) translateSync 需文件已存在，先 openSync 创建后 close 再扩展；5) cache-guard 整文件指纹对注释/逻辑改动敏感，注入文案未变时固化 baseline 即可；6) 项目约定：改动业务代码前须先获用户批准。",
+      "tags": [
+        "教训",
+        "编辑",
+        "tsc",
+        "cache-guard"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:23:28.875Z",
+      "updatedAt": "2026-08-24T07:23:28.875Z",
+      "accessedAt": "2026-08-24T07:23:28.875Z",
+      "observedAt": "2026-08-24T07:23:28.875Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "77e6fbdb-0d88-4e74-a17f-dade9593f151",
+      "category": "fact",
+      "title": "pi-context 压缩策略修订：阈值256K + 完成/后台/空闲三重门（2026-08-24）",
+      "content": "pi-context 自动压缩阈值默认 256K（2026-08-24 由 200K 上调；PI_CONTEXT_ABSOLUTE_TOKENS 覆盖，≤0 退回窗口比例）。新三重门（index.ts taskAndIdleClear）：1) 上下文>256K；2) 任务已完成/阶段性完成（plan.md 无 - [~]）且本会话无后台任务（pi-tmux registry 中 owner=本会话 PI_SESSION_ID 的 tmux 会话全部退出；tmux 缺失/无匹配条宽容放行；PI_CONTEXT_TMUX_REGISTRY 测试注入）；3) 距「任务完成点（有→无 in_progress 切换打点 taskDoneAt）」或「最后一次用户操作」较晚者连续 IDLE_MS(600s=10min) 无操作。全新/无任务会话退化为最后用户消息窗（兼容旧行为）。重启/恢复场景仍用 RESTART_TOKENS=100K 独立阈值走 session_start。压力提示档位同步 256K：75%=192K、90%≈230K。跨扩展集成测试（pi-web-search/tests/extensions.test.ts）压力档值已同步。若再搜到\"压缩阈值200K\"均为旧值/历史摘要。",
+      "tags": [
+        "pi-context",
+        "自动压缩",
+        "256K",
+        "三重门",
+        "后台任务"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T07:58:02.735Z",
+      "updatedAt": "2026-08-24T07:58:02.735Z",
+      "accessedAt": "2026-08-24T07:58:02.735Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T07:58:02.735Z",
+      "deleted": false
+    },
+    {
       "id": "76145496-f2fe-4325-9b3b-bdbf73a2cadc",
       "category": "preference",
       "title": "用户偏好: 游戏技能整合方向（网页游戏优先）",
@@ -11096,7 +11314,9 @@
       "accessedAt": "2026-08-24T07:52:45.841Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-24T07:52:45.841Z",
+      "deleted": false
     }
   ]
 }

@@ -114,25 +114,25 @@ describe('pi-context extension', () => {
     )
     expect(low.systemPrompt).not.toContain('上下文接近自动压缩阈值')
 
-    // 压力提示基于绝对阈值 200K（PI_CONTEXT_ABSOLUTE_TOKENS，absoluteTokens>0 优先于窗口比例）：
-    // 90% 档 = 180K；75% 档 = 150K。110K（旧窗口比例语义）不再触发。
+    // 压力提示基于绝对阈值 256K（PI_CONTEXT_ABSOLUTE_TOKENS，absoluteTokens>0 优先于窗口比例）：
+    // 90% 档 ≈ 230K；75% 档 = 192K。210K = 82%（≥75% 且 <90% → 高压力档）。
     const high = await handler(
       { systemPrompt: 'BASE' },
-      { getContextUsage: () => ({ tokens: 190_000, contextWindow: 128_000, percent: 86 }) },
+      { getContextUsage: () => ({ tokens: 210_000, contextWindow: 128_000, percent: 86 }) },
     )
     expect(high.systemPrompt).toContain('上下文接近自动压缩阈值')
 
     // 档位文案固定：同一状态两次调用逐字节一致（无轮次动态数值）
     const high2 = await handler(
       { systemPrompt: 'BASE' },
-      { getContextUsage: () => ({ tokens: 190_000, contextWindow: 128_000, percent: 86 }) },
+      { getContextUsage: () => ({ tokens: 210_000, contextWindow: 128_000, percent: 86 }) },
     )
     expect(high2.systemPrompt).toBe(high.systemPrompt)
     expect(high.systemPrompt).not.toMatch(/toLocaleString|当前占用/)
 
     const crit = await handler(
       { systemPrompt: 'BASE' },
-      { getContextUsage: () => ({ tokens: 196_000, contextWindow: 128_000, percent: 96 }) },
+      { getContextUsage: () => ({ tokens: 240_000, contextWindow: 128_000, percent: 96 }) },
     )
     expect(crit.systemPrompt).toContain('上下文接近自动压缩阈值')
   })
