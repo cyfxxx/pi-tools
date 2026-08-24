@@ -35,9 +35,9 @@ $hasLocalEntries = Test-Path "$Repo\memory\entries.json"
 if ($hasLocalEntries) { git stash push -q -- memory/entries.json 2>$null | Out-Null }
 
 # 3. Pull latest first (avoid conflicts with other devices)
-# 分支动态取当前分支（便携包约定 portable-win；master 已停更）
+# 分支动态取当前分支（portable-win 已并入 master，统一走 master）
 $branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
-if (-not $branch) { $branch = 'portable-win' }
+if (-not $branch) { $branch = 'master' }
 Write-Host "-- Pull latest ($branch, gh-proxy mirror):" -ForegroundColor Yellow
 git pull --rebase https://gh-proxy.com/https://github.com/cyfxxx/pi-tools.git $branch 2>&1 | Out-String | Write-Host
 if ($LASTEXITCODE -ne 0) {

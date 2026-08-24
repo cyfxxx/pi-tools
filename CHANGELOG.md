@@ -1,7 +1,18 @@
 # 版本发布记录
 
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
-`git checkout <tag>` 回退，或从该 tag 拉分支修复（便携版开发走 portable-win 分支，见下）。
+`git checkout <tag>` 回退，或从该 tag 拉分支修复。
+
+## 2026-08-24 portable-win 并入 master
+
+Windows 便携版专用分支 `portable-win` 的修复已全部并入主线（此前经测试分支合并 + 移植提交落地
+master，含 pi-tmux Windows 原生后端、whisper/searxng 脱离 WSL、pi-browser 定制版适配、start.bat
+junction 自愈等）。
+
+- 远端分支 `portable-win` / `test/portable-win-merge` 已删除，便携版统一走 master
+- `portable/bin/update-portable.ps1`：gh-proxy clone 分支 portable-win → master
+- `portable/bin/sync.ps1`：分支 fallback 改为 master
+- 便携包更新方式：代码 `git pull origin master`（SSH 443），本体 `bin/update-pi.ps1`（npm+npmmirror）
 
 ## stable-20260814（主线 v1 稳定版）
 
