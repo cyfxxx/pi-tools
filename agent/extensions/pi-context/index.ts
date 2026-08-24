@@ -97,6 +97,21 @@ const SNAPSHOT_DIR = join(homedir(), ".pi", "logs", "compact-snapshots");
 const SNAPSHOT_MAX_FILES = 8; // 文件数上限（保最新，防磁盘膨胀）
 const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 天
 
+// 重启来源判定（2026-08-24 用户修正）：恢复压缩只对看门狗挂死重启生效，
+// 手动 /auto restart 不触发。读取 pi-autopilot 的 state 文件 action 字段——
+// consumeRestartLog 只清 restartLog，顶层 action 保留到下一次请求写入，无竞态。
+const ADMIN_STATE_FILE =
+	process.env.PI_CONTEXT_ADMIN_STATE || join(homedir(), ".pi", "agent", ".pi-admin-state.json");
+function readAdminStateAction(): string {
+	try {
+		const raw = readFileSync(ADMIN_STATE_FILE, "utf-8");
+		const s = JSON.parse(raw) as { action?: string };
+		return typeof s.action === "string" ? s.action : "none";
+	} catch {
+		return "none"; // 文件缺失/损坏 → 视为非看门狗重启，不触发恢复压缩
+	}
+}
+
 /** context hook 最近一次拿到的 messages（引用，不拷贝——会话内本就持有） */
 let lastContextMessages: unknown[] | null = null;
 // thinking 档位自适应状态（会话内单例；首次 agent_settled 初始化基准档位）
@@ -619,6 +634,16 @@ export default function (pi: ExtensionAPI) {
 
 	// 缓存命中统计：聚合每次调用的 cacheRead/cacheWrite（仅记录，不注入上下文）
 	// + 工具用量账单（2.5）：按工具累加 per-call usage 到 stats/tool-usage.json
+	// ContentBlock[] / string 双形态正文提取（审计 MEDIUM 2026-08-25：块数组此前被
+	// typeof === "string" 判为非字符串 → estimateTokens("") = 0，工具输出量统计恒 0）
+	function toolContentText(content: unknown): string {
+		if (typeof content === "string") return content;
+		if (Array.isArray(content)) {
+			return content.map((b) => (b && typeof b === "object" && typeof (b as { text?: unknown }).text === "string" ? (b as { text: string }).text : "")).join("\n");
+		}
+		return "";
+	}
+
 	pi.on("tool_result", (event: ToolResultEvent) => {
 		const usage: Usage | undefined = event.usage;
 		// 无条件记录工具调用（跨设备事件日志）：provider 无 per-call usage 回传也能记。
@@ -626,7 +651,9 @@ export default function (pi: ExtensionAPI) {
 		runToolCount += 1;
 		recordToolCall({
 			tool: event.toolName,
-			outputTokens: estimateTokens(typeof event.content === "string" ? event.content : ""),
+			// 审计 MEDIUM（2026-08-25）：content 常为 ContentBlock[]，typeof === "string"
+			// 恒假 → outputTokens 恒 0。提取 text 块拼接后估算
+			outputTokens: estimateTokens(toolContentText(event.content)),
 			input: typeof usage?.input === "number" ? usage.input : undefined,
 			cacheRead: typeof usage?.cacheRead === "number" ? usage.cacheRead : undefined,
 		});
@@ -821,11 +848,12 @@ export default function (pi: ExtensionAPI) {
 		if (!resolved) return;
 		const { tokens, window: contextWindow } = resolved;
 
-		// 重启/恢复阈值：100K（PI_CONTEXT_RESTART_TOKENS 覆盖）——看门狗 3 小时
-		// 自动重启后首轮必然全量重发且未命中按全价，>100K 即提前压缩（2026-08-22 用户追加）；
-		// 常规 agent_settled 仍按绝对 256K + 三重门
+		// 重启/恢复阈值：100K（PI_CONTEXT_RESTART_TOKENS 覆盖）——仅看门狗 3 小时
+		// 挂死自动重启（pi-autopilot state action=restart_hang）后首轮必然全量重发且
+		// 未命中按全价，>100K 即提前压缩（2026-08-22 用户追加；2026-08-24 用户修正：
+		// 手动 /auto restart 等正常重启不走此路径，交给 agent_settled 常规 256K 三重门限）
 		const startThreshold = RESTART_TOKENS;
-		if (tokens < startThreshold) return;
+		if (tokens < startThreshold || readAdminStateAction() !== "restart_hang") return;
 		// 冷却（审计 LOW）：距上次压缩 <10min 的恢复不再立即二次压缩，
 		// 避免恢复/重启流程连续触发两轮压缩的开销
 		if (Date.now() - lastCompactTs < COMPACT_COOLDOWN_MS) return;

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -32,7 +32,12 @@ export function appendOutbox(device: string, text: string): void {
     const entries = readOutbox()
     entries.push({ ts: Date.now(), text })
     while (entries.length > OUTBOX_MAX) entries.shift()
-    writeFileSync(outboxFilePath(), JSON.stringify({ device, entries }, null, 2))
+    const p = outboxFilePath()
+    // 审计 LOW：read-modify-write 原地写非原子——并发 append/读取方可能读到半截 JSON；
+    // tmp+rename 原子替换（随机后缀防同进程重入/多实例互踩）
+    const tmp = `${p}.${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.tmp`
+    writeFileSync(tmp, JSON.stringify({ device, entries }, null, 2))
+    renameSync(tmp, p)
   } catch {
     // 静默失败
   }

@@ -38,6 +38,12 @@ const DESTRUCTIVE_PATTERNS = [
   /\bservice\s+\S+\s+(start|stop|restart)/i,
   // sed w 命令写文件：地址+[0-9,$,/]w file 或独立 w file（GNU sed 仅 -n 只读放行）
   /\bsed\b[^\n;|&]*([0-9,$/]+w\s|\bw\s)\S/i,
+  // rg --pre 执行预处理命令（任意进程执行；审计 HIGH：白名单含 rg 但未拦执行类 flag）
+  /\brg\b[^\n;|&]*\s(--pre|--pre-glob)(\s|=)/i,
+  // fd -x/-X/--exec/--exec-batch 对每个结果执行命令（任意进程执行，同上）
+  /\bfd\b[^\n;|&]*\s(-x|-X|--exec|--exec-batch)(\s|=)/i,
+  // tree --infofile <f> 可落盘写文件
+  /\btree\b[^\n;|&]*\s--infofile(\s|=)/i,
   /\b(vim?|nano|emacs|code|subl)\b/i,
 ];
 
@@ -140,7 +146,10 @@ export function isSafeCommand(command: string): boolean {
   if (singlePipe) {
     const lhs = core.slice(0, pipeIdx);
     const rhs = core.slice(pipeIdx + 1);
-    readOnlyPipe = isReadOnlyCmd(lhs) && PIPE_TAIL_RE.test(rhs.trim()) && !rhs.includes(">");
+    // 审计 HIGH：RHS 仅匹配 PIPE_TAIL_RE 时尾参任意——`ls | grep $(bash x)` 命中 grep
+    // 且无 > 即放行并跳过分隔符拒绝。RHS 追加 isReadOnlyCmd 全量检查（拒 $()/反引号/
+    // 分号/换行），PIPE_TAIL_RE 保留为"右侧限无写切片命令"的语义约束。
+    readOnlyPipe = isReadOnlyCmd(lhs) && PIPE_TAIL_RE.test(rhs.trim()) && isReadOnlyCmd(rhs);
   }
   if (!readOnlyPipe) {
     // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()、换行）

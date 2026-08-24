@@ -133,7 +133,9 @@ export function loadEntries(): MemoryEntry[] {
   ensureDir()
   const store = readEntriesFile()
   if (!store || !Array.isArray(store.entries)) return []
-  return store.entries.map(migrateEntry)
+  // 审计 MEDIUM（2026-08-25）：scrubSecrets 仅写路径生效，旧版本或手工编辑的条目
+  // 可能未经脱敏——读时统一重洗（幂等，对已脱敏文本无害），防密钥经注入进入上下文
+  return store.entries.map(migrateEntry).map(sanitizeEntry)
 }
 
 // v1 → v2：补充 observedAt；兼容旧 source 取值

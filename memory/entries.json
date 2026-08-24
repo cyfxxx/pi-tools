@@ -10257,10 +10257,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 37,
+      "recurrence": 58,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-24T08:26:45.558Z",
-      "accessedAt": "2026-08-24T08:26:45.558Z",
+      "updatedAt": "2026-08-24T23:40:52.517Z",
+      "accessedAt": "2026-08-24T23:40:52.517Z",
       "environments": [
         "all"
       ],
@@ -11402,7 +11402,9 @@
       "accessedAt": "2026-08-24T09:04:10.130Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-24T09:04:10.130Z",
+      "deleted": false
     },
     {
       "id": "a7f51144-29cd-4b1c-82b1-0a7d80a385c7",
@@ -11425,7 +11427,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
+      "deleted": false
     },
     {
       "id": "c6d0c73d-922e-48a3-9231-5b2c238f22ce",
@@ -11448,7 +11451,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
+      "deleted": false
     },
     {
       "id": "631684e2-6ffd-4d42-bad4-19784283b4a4",
@@ -11471,7 +11475,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
+      "deleted": false
     },
     {
       "id": "36cdaf85-4825-48c9-95c8-da9c8817e5a5",
@@ -11494,7 +11499,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
+      "deleted": false
     },
     {
       "id": "599901e8-4f02-4fd1-a445-4ebe305791a3",
@@ -11517,7 +11523,820 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
+      "deleted": false
+    },
+    {
+      "id": "02c252d1-04e3-4e79-b46a-0b400c200102",
+      "category": "fact",
+      "title": "pi 环境资产清单",
+      "content": "2026-08-24 确认的 pi 环境全貌：扩展 10 个（pi-autopilot/pi-browser/pi-context/pi-link/pi-memory/pi-tmux/pi-voice/pi-web-search/plan-mode/subagent）；技能 5 个（pi-backup/pi-bug-diagnosis/pi-code-review/pi-full-audit/pi-translate-zh）；技能包 6 个（comfyui-agent/colab-bridge/gamedev/dg-piagent/mattpocock-skills/reverse-skill），packs/drafts/ 为空。",
+      "tags": [
+        "pi环境",
+        "扩展",
+        "技能",
+        "清单"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T10:38:11.770Z",
+      "updatedAt": "2026-08-24T10:38:11.770Z",
+      "accessedAt": "2026-08-24T10:38:11.770Z",
+      "observedAt": "2026-08-24T10:38:11.770Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
+      "deleted": false
+    },
+    {
+      "id": "5bd05245-bf81-466f-91b4-3398a0d90755",
+      "category": "fact",
+      "title": "记忆库规模统计（2026-08-24）",
+      "content": "pi 记忆库（~/.pi/memory/）2026-08-24 时点：总条目 499（活跃 472，被取代 25），占用 0.25MB/2MB，冷数据 0；分类分布 fact 243、solutions 89、procedure 72、preference 34、reference 25、habit 9；会话摘要 5 条，时间跨度 2026-07-31~2026-08-24；备份文件 entries.json.bak-20260818 与 summaries.json.bak-20260820 各一份。",
+      "tags": [
+        "记忆库",
+        "统计",
+        "pi-memory"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T10:38:11.771Z",
+      "updatedAt": "2026-08-24T10:38:11.771Z",
+      "accessedAt": "2026-08-24T10:38:11.771Z",
+      "observedAt": "2026-08-24T10:38:11.771Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
+      "deleted": false
+    },
+    {
+      "id": "217d2ea5-e845-48d7-af32-bd6a2eff42f9",
+      "category": "preference",
+      "title": "用户用极简词探查环境",
+      "content": "用户习惯用单个极简词（如 skills、list、重启、翻译）发指令探查 pi 环境或触发操作，期望助手直接输出结构化清单或自主完成调研-修改-验证全流程后一次性汇报，不打断询问；重启类操作前需先确认机制可行性（proot 无自动拉起）。",
+      "tags": [
+        "用户偏好",
+        "指令风格"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T10:38:11.771Z",
+      "updatedAt": "2026-08-24T10:38:11.771Z",
+      "accessedAt": "2026-08-24T10:38:11.771Z",
+      "observedAt": "2026-08-24T10:38:11.771Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
+      "deleted": false
+    },
+    {
+      "id": "4c54c2a2-c587-4062-b92a-42dfcd7316fd",
+      "category": "solutions",
+      "title": "零LLM知识订阅脚本架构（knowledge-fetch.py v2）",
+      "content": "/root/.pi/scripts/knowledge-fetch.py v2 采用官方源直连（官方 API + RSS + 轻量 HTML 抓取），彻底弃用本地 SearXNG 搜索（依赖引擎可用性且结果质量差）。核心设计：1) SOURCES 列表按 5 个 section 组织（安全/漏洞、人工智能、科技数码、生活热点、重要新闻），每个源是独立 fetcher 函数，单源失败不影响其余；2) 标题 sha1 前16位 hash 去重，已见写 logs/knowledge/.seen.txt，增量追加写 logs/knowledge/<日期>.md；3) LOW_VALUE 正则统一过滤低价值标题（教程/百科/广告/行情/开奖等）；4) 每源默认上限 6 条（--limit 可调）；5) 零 LLM 纯抓取，20s 超时、2MB 上限；6) 接入 scheduled-tasks.json 的 daily-health-check 任务第 4 步，由 Python 而非 LLM 抓取。排查\"新闻功能未触发\"时先看 .seen.txt 是否全部命中去重、当日 md 是否为空、单源 fetch 失败静默返回 ''（fetch 函数吞异常，需手动 curl 验证源可达性）。",
+      "tags": [
+        "knowledge-fetch",
+        "rss",
+        "知识订阅",
+        "定时任务",
+        "pi-autopilot"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T11:43:32.593Z",
+      "updatedAt": "2026-08-24T11:43:32.593Z",
+      "accessedAt": "2026-08-24T11:43:32.593Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T11:43:32.593Z",
+      "deleted": false
+    },
+    {
+      "id": "21ad96de-1b06-4a7d-afd4-90fc6e61141e",
+      "category": "procedure",
+      "title": "外部技能包整合规范（novel-writing/mattpocock 实例）",
+      "content": "从 GitHub 收集外部技能包整合进 /root/.pi/packs/ 的标准流程（novel-writing 整合 3 仓库、mattpocock-skills 收纳 8 技能两个实例验证）：1) 调研：GitHub 搜索候选仓库，看 star/许可/活跃度，选 2-3 个互补的；2) 许可：取最严格许可作为整合版许可（如三仓库中 CC BY-NC-SA 4.0 最严则全包用该许可），包内 README 附来源-许可-贡献对照表；3) 平台适配：删除 Anthropic/Codex 专属字段（allowed-tools、CODEX_HOME、sync_skill_mirror）、PowerShell 脚本、作者个人蒸馏文件，frontmatter 仅留 name/description（pi 技能格式，缓存友好无时间戳）；4) 引用体系简化：上游 [REF:xxx]/[KERNEL_REF:xxx] 全局 ID 索引改为按文件名扁平引用；5) 命名平实化：去掉修辞化命名（天命/法典/铁律等）保留执行语义；6) 参数可配置：上游写死常数（字数/缓冲比/配额）收敛为\"可调参数\"表标注默认值；7) 补强工程层：新增 engineering.md（分批/事实锁/状态回证/追踪）、templates/、README（上游往往只讲初始化不讲建库迁移）；8) 脚本独立：依赖仓库内共享模块的脚本重写为无外部依赖单文件；9) 产物放入 packs/<name>/（drafts 只放草稿），README.md 表格登记。",
+      "tags": [
+        "packs",
+        "技能包",
+        "novel-writing",
+        "开源整合",
+        "skill"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T11:43:32.793Z",
+      "updatedAt": "2026-08-24T11:43:32.793Z",
+      "accessedAt": "2026-08-24T11:43:32.793Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T11:43:32.793Z",
+      "deleted": false
+    },
+    {
+      "id": "8025e01a-bdd1-414a-8861-e20a046dc78b",
+      "category": "solutions",
+      "title": "pi-voice 转写后端选择：whisper vs sherpa(SenseVoice)",
+      "content": "pi-voice 扩展两个转写后端（/voice backend 切换，默认 whisper）：whisper=通用但中文无标点/速度慢；sherpa=SenseVoice int8 模型（229MB 端侧），中文保标点含数字 ITN，RTF≈0.04 极快，中文为主场景选它。sherpa 是独立 Python 进程（pi-sherpa-server.py，端口 18768，HTTP 通信），原生模型不加载进 pi 的 Node 进程——独立进程崩溃不影响 pi，这是防崩溃关键设计。启动：python3 -m venv /opt/pi-sherpa/venv + pip install sherpa-onnx numpy（清华镜像）+ 下载 SenseVoice 模型（hf-mirror）+ ~/.pi/scripts/pi-sherpa.sh start；扩展侧 /voice backend sherpa 写入 pi-voice.json。懒加载：录音开始 prewarmStt 自动拉起服务并预载模型，消除首次等待；服务不可达时返回明确错误不阻塞 pi，/voice doctor 查两后端就绪。唤醒词：KWS 3.3M 拼音模型对弱信号/口音召回差（实测同段语音转写正确而 KWS 恒不命中，阈值/增益无效），默认 PI_SHERPA_WAKE_MODE=asr 用 ASR 通道匹配更可靠，VAD 预筛滤静音（RMS<-36dBFS 默认）。",
+      "tags": [
+        "pi-voice",
+        "sherpa",
+        "SenseVoice",
+        "语音",
+        "whisper"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T11:43:32.892Z",
+      "updatedAt": "2026-08-24T11:43:32.892Z",
+      "accessedAt": "2026-08-24T11:43:32.892Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T11:43:32.892Z",
+      "deleted": false
+    },
+    {
+      "id": "43fa80ec-94ec-4a27-a055-eee5414d64a3",
+      "category": "fact",
+      "title": "knowledge 重要新闻 拼多多Q2财报 2026-08-24",
+      "content": "拼多多发布 2026 年 Q2 财报（截至 6 月 30 日）：营收 1124 亿元，利润 272 亿元；Non-GAAP 研发投入 43 亿元，同比增长 40%。受益于\"千亿扶持\"惠商战略与平台治理体系升级，进入\"新十年高质量发展\"阶段。URL: https://www.chinanews.com.cn/cj/2026/08-24/10683373.shtml",
+      "tags": [
+        "拼多多",
+        "财报",
+        "知识订阅"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:10:01.373Z",
+      "updatedAt": "2026-08-24T12:10:01.373Z",
+      "accessedAt": "2026-08-24T12:10:01.373Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:10:01.373Z",
+      "deleted": false
+    },
+    {
+      "id": "5011d1fb-601e-459c-b5ec-05e4ccf7ceab",
+      "category": "reference",
+      "title": "knowledge 安全 Linux应急排查 2026-08-24",
+      "content": "FreeBuf 文章《Linux应急基础排查技巧》：面向安全运营/运维/应急响应人员，覆盖 Linux 服务器失陷后的排查方法：网络（连接/监听）、进程、权限维持、文件、用户、日志等维度。URL: https://www.freebuf.com/articles/system/496888.html",
+      "tags": [
+        "安全",
+        "Linux",
+        "应急响应",
+        "知识订阅"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:10:01.481Z",
+      "updatedAt": "2026-08-24T12:10:01.481Z",
+      "accessedAt": "2026-08-24T12:10:01.481Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:10:01.481Z",
+      "deleted": false
+    },
+    {
+      "id": "80a1d43a-0e18-4331-a358-1a006964b746",
+      "category": "fact",
+      "title": "knowledge 生活热点 12306无座票同价 2026-08-24",
+      "content": "\"无座票为何与二等座同价\"登上热搜（知乎热度 187 万）。铁路 12306 客服回应：无座票全称\"无固定座位票\"，与二等座属同一席别、同一等级，因此价格一致。网友质疑定价合理性（无座票不提供固定座位）。URL: https://www.zhihu.com/question/1942490264934528525",
+      "tags": [
+        "12306",
+        "高铁",
+        "热点",
+        "知识订阅"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:10:01.569Z",
+      "updatedAt": "2026-08-24T12:10:01.569Z",
+      "accessedAt": "2026-08-24T12:10:01.569Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:10:01.569Z",
+      "deleted": false
+    },
+    {
+      "id": "a56b7d37-6c36-4e0e-9b9c-d5d5764769bf",
+      "category": "fact",
+      "title": "knowledge 重要新闻 中约联合声明 2026-08-24",
+      "content": "8 月 24 日新华社发布《中华人民共和国和约旦哈希姆王国关于深化中约战略伙伴关系的联合声明》，两国宣布深化战略伙伴关系。URL: https://www.chinanews.com.cn/gn/2026/08-24/10683385.shtml",
+      "tags": [
+        "外交",
+        "约旦",
+        "联合声明",
+        "知识订阅"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:10:01.646Z",
+      "updatedAt": "2026-08-24T12:10:01.646Z",
+      "accessedAt": "2026-08-24T12:10:01.646Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:10:01.646Z",
+      "deleted": false
+    },
+    {
+      "id": "56705305-96c3-41c0-bbee-f0401f1a41bd",
+      "category": "fact",
+      "title": "knowledge 科技数码 零跑海外销量目标 2026-08-24",
+      "content": "零跑汽车 2026 中期业绩会：预计今年海外销量约 20 万辆，2027 年海外销量目标 35 万-40 万辆（挑战 40 万辆）。7 月全球交付量创单月新纪录（超 10 万辆级）。URL: https://www.ithome.com/0/993/717.htm",
+      "tags": [
+        "零跑",
+        "新能源车",
+        "出海",
+        "知识订阅"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:10:01.726Z",
+      "updatedAt": "2026-08-24T12:10:01.726Z",
+      "accessedAt": "2026-08-24T12:10:01.726Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:10:01.726Z",
+      "deleted": false
+    },
+    {
+      "id": "8a69a059-ef3b-400f-9a6e-ced3411cc91d",
+      "category": "procedure",
+      "title": "每日知识订阅例行流程",
+      "content": "每日后台会话执行：1) cd /root/.pi && python3 scripts/knowledge-fetch.py 2>&1 | tail -8 聚合5主题（安全/人工智能/科技数码/生活热点/重要新闻）新增；2) 无新增则直接收尾不store；3) 有新增先ls logs/knowledge/确认当日文件名再read；4) memory_search查重后精选3-5条高价值（漏洞/投毒/勒索/重大事件/时效强）逐条memory_store fact，标题「knowledge <子主题> <日期>」，content含要点+URL，环境all；5) 收尾输出分主题条数+精选清单，同时追加写入logs/knowledge/summary-<日期>.md（格式：日期/各主题条数/精选）。",
+      "tags": [
+        "知识订阅",
+        "例行任务",
+        "knowledge-fetch",
+        "pi-memory"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:16:03.384Z",
+      "updatedAt": "2026-08-24T12:16:03.384Z",
+      "accessedAt": "2026-08-24T12:16:03.384Z",
+      "observedAt": "2026-08-24T12:16:03.384Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a033ac-be6d-774b-9b91-30d0e42b48cb",
+      "deleted": false
+    },
+    {
+      "id": "d0cbdd9e-a3bb-4af6-bc60-44f06fc248da",
+      "category": "fact",
+      "title": "知识订阅渠道清单（v2 官方源直连，2026-08-24）",
+      "content": "knowledge-fetch.py v2 已从 SearXNG 搜索改为官方源直连订阅（12 源，按主题路由）。每个主题的渠道：安全与漏洞=CISA KEV JSON（官方已利用清单）+ GitHub Security Advisories API（无 token 限 60/h）+ 安全客 anquanke JSON + FreeBuf RSS；人工智能=arXiv cs.AI RSS；科技数码=TechCrunch/Ars Technica RSS+IT之家 RSS；生活热点=少数派 RSS+知乎热榜 API（target.url 换 www.zhihu.com/question/<id>）；重要新闻=中新网滚动 RSS + 新华网科技频道 HTML（日期从 URL /20xxxxxx/ 提取）。已验证不可用：BBC 系/NYT/AP/RSSHub.app（网络不通）、36kr/机器之心 rss/cnBeta（状态 200 实为反爬壳）、The Hacker News(404)/BleepingComputer(403)/CNVD(521 Cloudflare 盾)、天气 API（参数不通）。产物 logs/knowledge/<日期>.md，标题 hash 去重 .seen.txt，各源独立容错。渠道可达性会漂移，失效时按此清单排查。",
+      "tags": [
+        "knowledge",
+        "渠道",
+        "新闻订阅"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:16:42.021Z",
+      "updatedAt": "2026-08-24T12:16:42.021Z",
+      "accessedAt": "2026-08-24T12:16:42.021Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:16:42.021Z",
+      "deleted": false
+    },
+    {
+      "id": "166bc5fb-3f89-41bc-a100-ffae2728ab53",
+      "category": "fact",
+      "title": "pi-autopilot 每日任务架构重构（拆分+后台会话+通知）",
+      "content": "pi-autopilot 每日任务架构重构（2026-08-24）：原 daily-health-check 拆分为两个后台会话任务（useSubagent=true，spawn pi -p 独立进程执行）——knowledge-subscribe（cron 0 8 * * *，抓取+筛 3-5 条入库+写 logs/knowledge/summary-<日期>.md 收尾）与 daily-review（cron 5 9 * * *，整体层面轻量复检：usage-stats/会话数/memory_stats/昨日知识统计/lesson-miner，新格式写入 daily-health.log，含会话数与知识数）。扩展新能力：① Task.notifyMain——后台任务成功后将 stdout 收尾摘要注入主会话；② Task.waitForUserOnLocal——本地模型（provider/model 名匹配 ollama|vllm|llamacpp|lmstudio|local|本地|localhost|127.0.0.1，policy.ts isLocalModel）时不自动执行只注入提示；③ /schedule run <name> 手动触发（force 跳过本地提示分支）；④ 任务成功完成即后台跑 task-summarizer.mjs 沉淀经验（15min 节流戳 logs/scheduler/summarizer.last，游标幂等）。旧任务配置备份 scheduled-tasks.json.bak-20260824。端到端验证通过（2026-08-24 两任务均 success）。新代码需重启 pi 生效（旧代码下 useSubagent 链路已可用）。",
+      "tags": [
+        "pi-autopilot",
+        "调度",
+        "每日任务",
+        "架构"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:16:42.142Z",
+      "updatedAt": "2026-08-24T12:16:42.142Z",
+      "accessedAt": "2026-08-24T12:16:42.142Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T12:16:42.142Z",
+      "deleted": false
+    },
+    {
+      "id": "3dea0b56-81ed-43b2-b63a-5872e75421cb",
+      "category": "solutions",
+      "title": "外部技能包整合 9 步规范",
+      "content": "从 GitHub 找技能包→分析→优化→整合放入 packs/ 的流程：任务 4 将 tianming-skill、chinese-longnovel-skill、ani-book-skill 三个小说写作包整合为 packs/novel-writing（六大协议+工程化补强，许可证 CC BY-NC-SA 4.0）。满足'成功实现、可复现、有保存价值'三条的流程另写 SKILL.md 草稿至 /root/.pi/packs/drafts/。",
+      "tags": [
+        "技能包",
+        "packs",
+        "novel-writing",
+        "整合规范"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:20:40.412Z",
+      "updatedAt": "2026-08-24T12:20:40.412Z",
+      "accessedAt": "2026-08-24T12:20:40.412Z",
+      "observedAt": "2026-08-24T12:20:40.412Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
+      "deleted": false
+    },
+    {
+      "id": "4b579ecb-afb0-45a4-911b-b9422230e843",
+      "category": "solutions",
+      "title": "knowledge-fetch.py v2 架构与排查",
+      "content": "2026-08-24 落地：零 LLM 依赖、5 大 section（安全/人工智能/科技数码/生活热点/重要新闻）、hash 去重、独立容错。起因：'自动查新闻从未触发'，排查发现知识订阅链路依赖 SearXNG 搜索不稳，渠道策略改为官方 API/RSS 直连。SKILL.md 草稿见 /root/.pi/packs/drafts/knowledge-fetch-setup.SKILL.md。",
+      "tags": [
+        "知识订阅",
+        "knowledge-fetch",
+        "RSS",
+        "API"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:20:40.413Z",
+      "updatedAt": "2026-08-24T12:20:40.413Z",
+      "accessedAt": "2026-08-24T12:20:40.413Z",
+      "observedAt": "2026-08-24T12:20:40.413Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
+      "deleted": false
+    },
+    {
+      "id": "8cd01fdc-ea9c-4d1a-8665-5d5b52b40ecd",
+      "category": "fact",
+      "title": "语音转写 whisper/sherpa 双后端",
+      "content": "pi 语音扩展（pi-voice）支持 whisper 与 sherpa 两种转写后端，2026-08-24 已启动 pi-sherpa 服务（~/.pi/scripts/pi-sherpa.sh start）并厘清两者差异。sherpa 为本地轻量后端，whisper 为原 OpenAI 开源转写后端；选型经验已入记忆。",
+      "tags": [
+        "pi-voice",
+        "sherpa",
+        "whisper",
+        "语音转写"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:20:40.413Z",
+      "updatedAt": "2026-08-24T12:20:40.413Z",
+      "accessedAt": "2026-08-24T12:20:40.413Z",
+      "observedAt": "2026-08-24T12:20:40.413Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
+      "deleted": false
+    },
+    {
+      "id": "6e1aed3c-8c5c-4169-82e9-46f87e3b0565",
+      "category": "fact",
+      "title": "daily-health-check 定时任务状态",
+      "content": "pi-autopilot 的每日联合任务 daily-health-check 于 2026-08-24 第 4 次成功执行（failCount=0），内容含健康数据、记忆库与知识订阅，只读为主、不打扰用户；执行时工作目录一律先 cd /root/.pi。",
+      "tags": [
+        "pi-autopilot",
+        "daily-health-check",
+        "定时任务"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:20:40.413Z",
+      "updatedAt": "2026-08-24T12:20:40.413Z",
+      "accessedAt": "2026-08-24T12:20:40.413Z",
+      "observedAt": "2026-08-24T12:20:40.413Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
+      "deleted": false
+    },
+    {
+      "id": "fdeba475-fcd9-4a95-a5aa-05f5eecebac0",
+      "category": "procedure",
+      "title": "SKILL.md 草稿写入规范",
+      "content": "对满足'成功实现、可复现、有保存价值'三条的流程，用 write 工具写草稿到 /root/.pi/packs/drafts/<短名>.SKILL.md，格式为 YAML frontmatter（name/description）+ 步骤正文，description 控制在 1-2 句且不带时间戳；除 memory_store 与写草稿外不得改动其他文件。",
+      "tags": [
+        "SKILL.md",
+        "packs/drafts",
+        "技能草稿"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:20:40.413Z",
+      "updatedAt": "2026-08-24T12:20:40.413Z",
+      "accessedAt": "2026-08-24T12:20:40.414Z",
+      "observedAt": "2026-08-24T12:20:40.414Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
+      "deleted": false
+    },
+    {
+      "id": "e88c9c4b-71c1-497e-9ea9-27bdfefd593b",
+      "category": "procedure",
+      "title": "每日整体复检流程与健康阈值",
+      "content": "每日复检在后台独立会话执行，工作目录 cd /root/.pi，只读为主防浪费 token。步骤：1) node scripts/usage-stats.mjs 看缓存健康；2) 统计 logs/task-records.jsonl 任务记录总数与近 24h 条数；3) memory_stats 看存储；4) ls logs/knowledge/ 聚合昨日知识订阅条数与主题分布；5) node scripts/lesson-miner.mjs --limit 2 轻量失败学习；6) 追加一行 ~/.pi/logs/daily-health.log（格式：时间 命中= 断裂= 存储= 会话= 知识= 结论=）；7) 详细收尾报告。alert 条件：命中<90%/断裂>3/存储>0.8MB/昨日知识任务失败，alert 时存 fact「health-alert <日期>」并调用 scripts/pi-notify.sh。",
+      "tags": [
+        "复检",
+        "健康检查",
+        "daily-health",
+        "流程"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:21:36.168Z",
+      "updatedAt": "2026-08-24T12:21:36.168Z",
+      "accessedAt": "2026-08-24T12:21:36.168Z",
+      "observedAt": "2026-08-24T12:21:36.168Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
+      "deleted": false
+    },
+    {
+      "id": "05b85a5e-b12d-40c6-9a1c-458ba0ed32c6",
+      "category": "fact",
+      "title": "2026-08-24 系统健康指标基线",
+      "content": "2026-08-24 20:14 复检基线：缓存命中 96.9%（目标 97%），断裂 1 次（A 类，provider 缓存键/模型切换类），浪费 36K tokens；历史累计 254 异常会话、661 断裂点（A×129/B×532）、浪费 101MB。任务记录 167 条（近 24h 100 条）。记忆存储 0.26MB/2MB、条目 514（活跃 489）、冷数据 0。当日知识订阅新增 14 条（重要新闻 6、科技数码 6、安全 1、生活热点 1），亮点：拼多多 Q2 财报（营收 1124 亿、研发+40%）、Linux 应急基础排查技巧。",
+      "tags": [
+        "复检",
+        "指标",
+        "缓存命中",
+        "知识订阅"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:21:36.168Z",
+      "updatedAt": "2026-08-24T12:21:36.168Z",
+      "accessedAt": "2026-08-24T12:21:36.168Z",
+      "observedAt": "2026-08-24T12:21:36.168Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
+      "deleted": false
+    },
+    {
+      "id": "74f00cee-06c5-4edb-b931-3c31a8623dee",
+      "category": "solutions",
+      "title": "知识订阅空档期判断方法",
+      "content": "知识订阅 08-21/22/23 连续三日无 md 产出，logs/knowledge/ 目录仅 08-20 与 08-24 有文件，且 scheduler 日志无对应任务记录——据此判断为任务未运行而非执行失败（失败应有报错记录）。排查方法：对照 scheduler 日志查任务记录，目录文件日期反推执行情况。遗留待办：确认知识订阅触发机制（调度/手动）是否按预期执行，避免连续空档期。",
+      "tags": [
+        "知识订阅",
+        "scheduler",
+        "排查",
+        "空档"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:21:36.168Z",
+      "updatedAt": "2026-08-24T12:21:36.168Z",
+      "accessedAt": "2026-08-24T12:21:36.168Z",
+      "observedAt": "2026-08-24T12:21:36.168Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
+      "deleted": false
+    },
+    {
+      "id": "5ed2a5ee-b367-4bab-97a5-dd6fa57f0127",
+      "category": "habit",
+      "title": "失败学习存储克制原则",
+      "content": "每日复检的失败学习环节：lesson-miner 输出若仅为断裂归因建议（如 A 类带排查方向）且属已知类别，视为无新线索，跳过 solutions 记忆存储；仅当有明显昨日异常线索时才存 ≤1 条 solutions 教训，标题格式「lesson <主题> <日期>」，环境 all。避免重复存储已知类别的低价值教训。",
+      "tags": [
+        "lesson-miner",
+        "失败学习",
+        "solutions"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T12:21:36.168Z",
+      "updatedAt": "2026-08-24T12:21:36.168Z",
+      "accessedAt": "2026-08-24T12:21:36.168Z",
+      "observedAt": "2026-08-24T12:21:36.168Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
+      "deleted": false
+    },
+    {
+      "id": "1f2bb0fe-192e-4d4f-ae46-4c1acebf3f2d",
+      "category": "procedure",
+      "title": "每日例行检查设计边界：整体层面+后台独立会话+防 token 浪费",
+      "content": "每日检查（知识订阅/整体复检）的正确设计：1) 在后台独立会话执行（tmux_run），只读为主，勿改配置；2) 检查应是整体层面：缓存健康（usage-stats.mjs 命中率/断裂次数/浪费 tokens）、健康日志 alert 条件、知识订阅产出、lesson-miner 异常线索、任务记录数与存储水位（memory_stats）；3) 严禁深入探索单点问题防 token 浪费（参考值：轮 tokens ~475-486，tools 6-12 个）；4) 检查项用一条 bash 聚合命令完成（如 `node scripts/usage-stats.mjs 2>&1 | tail -6`），避免碎调用；5) 当日结论只有 ok / 异常项清单两种，异常项创建后续任务处理，不在当轮深挖。2026-08-24 实测缓存命中 96.9%、断裂 1 次 A 类、浪费 36K tokens 属正常范围。",
+      "tags": [
+        "pi维护",
+        "每日检查",
+        "token优化",
+        "例行任务"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T14:28:20.235Z",
+      "updatedAt": "2026-08-24T14:28:20.235Z",
+      "accessedAt": "2026-08-24T14:28:20.235Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T14:28:20.235Z",
+      "deleted": false
+    },
+    {
+      "id": "f3d19ff3-9fa8-4140-a34b-e11e3481dd9b",
+      "category": "procedure",
+      "title": "任务经验沉淀时机：任务结束后立即进行，不拖到第二天",
+      "content": "任务经验沉淀必须在任务结束的当轮/当会话立即执行，原因：1) 第二天可能开新会话（上下文丢失），也可能继续别的任务；2) 一天内可切换多个任务，事后难回溯细节。沉淀动作：用 memory_store 存 procedure/solutions 类条目；满足\"成功实现、可复现、有保存价值的长流程\"三条件的任务，额外用 write 写 SKILL.md 草稿到 /root/.pi/packs/drafts/<短名>.SKILL.md。注意：沉淀本身也要控制在低 token 消耗（只做 store/write 两项，不改其他文件）。",
+      "tags": [
+        "经验沉淀",
+        "工作流",
+        "memory_store",
+        "SKILL草稿"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T14:28:20.351Z",
+      "updatedAt": "2026-08-24T14:28:20.351Z",
+      "accessedAt": "2026-08-24T14:28:20.351Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T14:28:20.351Z",
+      "deleted": false
+    },
+    {
+      "id": "e3c164d4-62e8-4542-a075-0b205e4b3321",
+      "category": "solutions",
+      "title": "定时任务连续多日无产出：先查触发机制再查脚本",
+      "content": "后台定时任务（如每日知识订阅 knowledge-fetch.py）连续多日无产出时，排查顺序：1) 先确认任务是否真的被触发运行——检查触发机制（cron/autopilot 调度/生命周期钩子）与运行日志，而不是默认脚本坏了；2026-08-24 实例：知识订阅 08-21/22/23 无产出，判断为任务未运行、需查触发机制，而非脚本本身问题；2) 触发机制确认正常后再查脚本（依赖、网络、输出路径）；3) 可对照 usage-stats.mjs 的任务记录确认当日任务是否执行。",
+      "tags": [
+        "定时任务",
+        "排障",
+        "知识订阅"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T14:28:20.430Z",
+      "updatedAt": "2026-08-24T14:28:20.430Z",
+      "accessedAt": "2026-08-24T14:28:20.430Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T14:28:20.430Z",
+      "deleted": false
+    },
+    {
+      "id": "d76d113e-83d2-4093-b617-5761f26870a3",
+      "category": "fact",
+      "title": "恢复压缩仅看门狗触发（手动重启不压缩）",
+      "content": "pi-context 恢复压缩策略（2026-08-24 用户修正）：session_start 恢复场景的 100K 提前压缩（PI_CONTEXT_RESTART_TOKENS）仅在看门狗挂死自动重启时生效——pi-context 读取 ~/.pi/agent/.pi-admin-state.json 的顶层 action 字段，仅 action=restart_hang（watchdog.ts 写入）才压缩；手动 /auto restart（action=restart）等正常重启不压缩，交给首轮 agent_settled 常规 256K 绝对阈值+三重门限。实现：index.ts readAdminStateAction()，测试注入用 PI_CONTEXT_ADMIN_STATE 环境变量。pi-autopilot 的 consumeRestartLog 只清 restartLog 不清顶层 action，因此无读写竞态。",
+      "tags": [
+        "pi-context",
+        "自动压缩",
+        "重启",
+        "看门狗"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T14:30:24.557Z",
+      "updatedAt": "2026-08-24T14:30:24.557Z",
+      "accessedAt": "2026-08-24T14:30:24.557Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T14:30:24.557Z",
+      "deleted": false
+    },
+    {
+      "id": "0a293a69-e190-4fbe-bf60-fb169e9e43dd",
+      "category": "solutions",
+      "title": "全项目分析会话的缓存健康基线样本",
+      "content": "2026-08-24 全项目全面分析会话实测：单轮 21 次工具调用，输入约 54K tokens 中缓存命中 53696（≈98%），模型输出仅 1590 tokens，无断裂记录。可作为「只读分析类任务」的健康基线：多工具并行批调用 + 少输出模式可把增量成本压到输出 token 量级。对比手段：node scripts/usage-stats.mjs（历史对比）与每日复检的命中率/断裂/浪费三指标；若同类任务命中率显著低于此基线或出现断裂，优先排查 system prompt 注入时间戳/精确数值等缓存污染源（见 extensions/pi-context/README.md）。",
+      "tags": [
+        "cache",
+        "性能基线",
+        "token成本",
+        "审计"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T15:08:48.705Z",
+      "updatedAt": "2026-08-24T15:08:48.705Z",
+      "accessedAt": "2026-08-24T15:08:48.705Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T15:08:48.705Z",
+      "deleted": false
+    },
+    {
+      "id": "8064ab20-145c-45c0-b996-0662ce179164",
+      "category": "procedure",
+      "title": "全项目分析类任务的路由与成本基线",
+      "content": "用户提出\"全面(地)分析当前项目\"类需求时的执行路径：(1) 匹配 pi-full-audit 技能触发词（全面检查/深度审计/体检等），直接建议 /skill:pi-full-audit；(2) 探索阶段将独立的 read/grep/find 合并为单轮并行调用，重读盘工作交给 subagent(scout) 隔离上下文；(3) 结论以摘要汇报，不做全文倾倒。实测成本基线（2026-08-24 会话记录）：单轮 21 次工具调用完成全项目分析，输入约 55K tokens 中缓存命中 53.7K（≈97%），输出仅 1.6K——批量并行是压低成本的关键因素。",
+      "tags": [
+        "任务路由",
+        "pi-full-audit",
+        "subagent",
+        "token成本",
+        "并行调用"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T15:23:31.278Z",
+      "updatedAt": "2026-08-24T15:23:31.278Z",
+      "accessedAt": "2026-08-24T15:23:31.278Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T15:23:31.278Z",
+      "deleted": false
+    },
+    {
+      "id": "f2d6cb40-4ce1-4841-8de4-d502abd1a229",
+      "category": "solutions",
+      "title": "全项目分析的单轮批量探索模式（实测高缓存命中）",
+      "content": "触发场景：用户要求\"全面的（深度）分析当前项目\"这类开放式全量调研。\n可复现做法：不进入多轮碎片化探索，在单个回合内把全部只读探查调用一次性并行批量发出（本次实例：ls/find/grep/read/bash 聚合等共 21 次调用合并为一轮），汇总后一次性输出结论。\n实测数据（2026-08-24 会话）：累计 54K tokens，其中前缀缓存命中 53696（≈99%），模型输出仅 1590 tokens，全程 1 轮完成。\n要点：探索期每多一轮对话就重算一次前缀缓存并按轮次重发上下文；批量合并是命中率接近满值的直接原因。与系统约定\"独立工具调用必须单轮批量发出\"一致，此条为该约定的量化证据。",
+      "tags": [
+        "cache",
+        "efficiency",
+        "exploration",
+        "batching"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T15:26:49.069Z",
+      "updatedAt": "2026-08-24T15:26:49.069Z",
+      "accessedAt": "2026-08-24T15:26:49.069Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T15:26:49.069Z",
+      "deleted": false
+    },
+    {
+      "id": "4064fdf3-617d-4a66-8650-4e37bd040147",
+      "category": "solutions",
+      "title": "知识订阅无产出根因: 截断先于去重（已修复）",
+      "content": "2026-08-25 全项目审计查明根因并修复：knowledge-fetch.py 原 `for ... in items[:limit]` 在去重与 LOW_VALUE 过滤之前截断——RSS 源头部条目多为已见内容时，新条目永不进入候选，表现为假性\"无新增\"（08-21~23 连续三日无产出并非任务未运行，08-24 有产出是因源头部恰好有新条目）。修复：截断条件移入循环尾部（added >= limit 时 break），去重/过滤先行。此前\"任务未运行需查触发机制\"的判断不准确；scheduled-tasks.json 显示任务 08-24 success 正常触发。",
+      "tags": [
+        "knowledge-fetch",
+        "知识订阅",
+        "审计",
+        "根因"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T16:23:01.514Z",
+      "updatedAt": "2026-08-24T16:23:01.514Z",
+      "accessedAt": "2026-08-24T16:23:01.514Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T16:23:01.514Z",
+      "deleted": false
+    },
+    {
+      "id": "73d4ec28-cf0e-492d-8af3-d08a3d3645e5",
+      "category": "solutions",
+      "title": "调度任务零输出与空转异常的识别信号",
+      "content": "从 [Scheduler] 任务记录识别两类异常：信号① 某轮 tools>0 且 out=0 —— 工具执行了但没有文本产出，疑似静默失败或结果被丢弃（案例：2026-08-24 dup-name 任务首轮 10 次调用/0 输出，成败不明，需人工查日志）；信号② 连续多轮 tools=0 且 hit 很高（如 250000）而 out=0 —— 纯空转轮次，白烧上下文预算（keep/dup-name 两任务各有约 6 轮如此，合计浪费可观）。改进方向：autopilot 调度任务可加\"连续 N 轮无输出即提前结束\"护栏；经验沉淀的上游生成记录时应附带一句任务摘要，否则下游无法判断成败、沉淀只能停留在元层面。",
+      "tags": [
+        "pi-autopilot",
+        "scheduler",
+        "异常检测",
+        "token 浪费"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T23:35:05.937Z",
+      "updatedAt": "2026-08-24T23:35:05.937Z",
+      "accessedAt": "2026-08-24T23:35:05.937Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T23:35:05.937Z",
+      "deleted": false
+    },
+    {
+      "id": "43596fda-ba62-4e0c-8b8f-42559be128b8",
+      "category": "procedure",
+      "title": "[Scheduler] 任务记录格式与沉淀解读流程",
+      "content": "经验沉淀工作流收到的调度任务记录格式为 `[Scheduler] <任务名>: p`（后缀 \"p\" 含义未确认），每轮字段：tools=当轮工具调用数、hit=缓存命中 tokens、out=输出 tokens。解读规则：心跳/巡检类任务名（如 keep）低 tools 低 out 属正常形态，判\"已执行\"即可；业务类任务名（如 dup-name、check-*）应出现非零 out，若 tools>0 而 out=0 视为异常转 solutions 流程；连续多轮 hit 高但 out=0 为空转。任务记录无正文时不得虚构完成情况，如实标注信息不足。",
+      "tags": [
+        "经验沉淀",
+        "scheduler",
+        "日志解读",
+        "pi-autopilot"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T23:35:16.895Z",
+      "updatedAt": "2026-08-24T23:35:16.895Z",
+      "accessedAt": "2026-08-24T23:35:16.895Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T23:35:16.895Z",
+      "deleted": false
+    },
+    {
+      "id": "5b2de145-a34a-4241-a017-5a1fe9353716",
+      "category": "solutions",
+      "title": "调度会话轮级 token 记录解读：首轮 miss 正常、空轮近零成本",
+      "content": "Scheduler 新建会话首轮 hit=0 属正常——独立前缀不继承旧缓存，即使当轮批量调用多个工具（实测 tools=10 hit=0 out=0）任务照常执行完；上下文稳定后会出现单轮 250K 级大块命中；中间大量空轮（tools=0 hit=0 out=0）成本近零。分析 usage-stats / 轮级记录时勿把调度会话首轮 miss 误判为缓存故障，其高累计 token 主要来自少数大命中轮而非逐轮消耗。",
+      "tags": [
+        "cache",
+        "usage-stats",
+        "scheduler",
+        "pi-context"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T23:38:08.871Z",
+      "updatedAt": "2026-08-24T23:38:08.871Z",
+      "accessedAt": "2026-08-24T23:38:08.871Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T23:38:08.871Z",
+      "deleted": false
+    },
+    {
+      "id": "a7f26ba1-1d47-496d-b75b-f1b66c4e2ed7",
+      "category": "fact",
+      "title": "pi-autopilot Scheduler 会话 keep/dup-name 标记含义",
+      "content": "调度触发的会话记录带 [Scheduler] 前缀决策标记：\"keep: <名>\" 表示该定时任务通过重名检查、正常保留执行；\"dup-name: <名>\" 表示检测到与其他任务重名、按去重策略处理（推断为拒绝重复执行，未读源码确认）。排查\"定时任务没跑\"时先查会话记录里是否出现 dup-name 标记。",
+      "tags": [
+        "pi-autopilot",
+        "scheduler",
+        "usage-stats"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T23:38:21.983Z",
+      "updatedAt": "2026-08-24T23:38:21.983Z",
+      "accessedAt": "2026-08-24T23:38:21.983Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T23:38:21.983Z",
+      "deleted": false
     }
   ]
 }

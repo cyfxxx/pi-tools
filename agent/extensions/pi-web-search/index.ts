@@ -17,19 +17,26 @@ export default async function (pi: ExtensionAPI) {
     const reader = res.body.getReader()
     const chunks: Uint8Array[] = []
     let total = 0
+    let truncated = false
     while (total < cap) {
       const { done, value } = await reader.read()
       if (done) break
       if (!value) continue
-      const take = Math.min(value.length, cap - total)
-      chunks.push(value.subarray(0, take))
-      total += take
-      if (take < value.length) {
-        await reader.cancel()
-        return { text: Buffer.concat(chunks).toString('utf-8'), truncated: true }
-      }
+      chunks.push(value.subarray(0, Math.min(value.length, cap - total)))
+      total += Math.min(value.length, cap - total)
     }
-    return { text: Buffer.concat(chunks).toString('utf-8'), truncated: false }
+    if (total >= cap) {
+      // 恰好读满 cap：再读一块判断是否真有剩余（防 truncated 标记误报）；
+      // 无论是否有剩余都 cancel()，避免连接悬挂
+      try {
+        const { done } = await reader.read()
+        truncated = !done
+      } catch {
+        truncated = true
+      }
+      try { await reader.cancel() } catch { /* 流已结束 */ }
+    }
+    return { text: Buffer.concat(chunks).toString('utf-8'), truncated }
   }
 
   // Register feature tools
@@ -63,6 +70,8 @@ export default async function (pi: ExtensionAPI) {
           headers: { "User-Agent": "Mozilla/5.0 (compatible; PiBot/1.0)" },
         })
         if (!res.ok) {
+          // 取消未消费的响应体，避免连接悬挂
+          try { await res.body?.cancel() } catch { /* 已释放 */ }
           return { content: [{ type: "text", text: `HTTP ${res.status}: ${res.statusText}` }], details: {} }
         }
         const { text, truncated: bodyTruncated } = await readBodyLimited(res, 512 * 1024)

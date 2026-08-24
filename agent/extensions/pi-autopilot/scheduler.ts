@@ -5,7 +5,7 @@ import {
 } from './storage.ts'
 import type { Task } from './types.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
-import { decide, classifyError, currentModel } from './policy.ts'
+import { decide, classifyError, currentModel, isLocalModel } from './policy.ts'
 import { planFailover, executeFailover } from './failover.ts'
 import { appendRun, estimateCost } from './telemetry.ts'
 import { checkBudget } from './budget.ts'
@@ -13,7 +13,7 @@ import { triggerHangRecovery, touchActivity } from './watchdog.ts'
 import { markPendingInjected, clearPending } from './queue.ts'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, openSync, closeSync } from 'node:fs'
 
 
 /**
@@ -41,6 +41,31 @@ function resolvePiSpawn(): { cmd: string; args: string[] } {
   return { cmd: node, args: [cli] }
 }
 
+/**
+ * 任务经验沉淀触发器（2026-08-24 用户需求）：任务成功完成 → 立即在后台跑
+ * task-summarizer.mjs（游标去重幂等，无新任务快速退出不耗 LLM），不再等每日任务。
+ * 节流：距上次触发 ≥15min 才跑（防高频 interval 任务反复拉起总结进程）。
+ */
+const SUMMARIZER_GATE_MS = 15 * 60 * 1000
+export async function maybeTriggerSummarizer(): Promise<void> {
+  const stamp = join(homedir(), '.pi', 'logs', 'scheduler', 'summarizer.last')
+  try {
+    const now = Date.now()
+    const last = existsSync(stamp) ? Number(readFileSync(stamp, 'utf8')) || 0 : 0
+    if (now - last < SUMMARIZER_GATE_MS) return
+    writeFileSync(stamp, String(now))
+    const logFd = openSync(join(homedir(), '.pi', 'logs', 'scheduler', 'summarizer.log'), 'a')
+    const proc = spawn(process.execPath, [join(homedir(), '.pi', 'scripts', 'task-summarizer.mjs')], {
+      detached: true,
+      stdio: ['ignore', logFd, logFd],
+    })
+    proc.unref()
+    // 审计 LOW：detached+stdio 已让子进程接管 fd 副本，父进程句柄不再需要——
+    // 不关闭则每次触发泄漏一个 fd，长期运行累积耗尽描述符
+    closeSync(logFd)
+  } catch { /* 失败静默：下次任务完成再试 */ }
+}
+
 export class SessionScheduler {
   private pi: ExtensionAPI
   private timer: ReturnType<typeof setInterval> | null = null
@@ -65,10 +90,10 @@ export class SessionScheduler {
     this.firing.clear()
   }
 
-  /** 立即执行任务（/loop 创建后首次触发用） */
-  async runNow(task: Task): Promise<void> {
+  /** 立即执行任务（/loop 创建后首次触发用；force=用户手动触发，跳过本地模型提示分支） */
+  async runNow(task: Task, force = false): Promise<void> {
     if (this.firing.has(task.id)) return
-    await this.fireTask(task)
+    await this.fireTask(task, force)
   }
 
   private async tick(): Promise<void> {
@@ -76,6 +101,10 @@ export class SessionScheduler {
       const config = await readAutopilotConfig()
       const store = await readTasks()
       if (store.settings.paused) return
+      // enabled=false = 自主运行关闭：到期任务不自动执行（含 waitForUserOnLocal 提示注入）。
+      // 审计 HIGH：预算拦截整体包在 fireTask 的 if (config.enabled) 内，若 tick 不门控，
+      // 关闭状态下任务照常执行且预算检查完全跳过。手动 /schedule run（force）不受影响。
+      if (!config.enabled) return
 
       // 看门狗：挂死检测
       if (config.enabled && (await triggerHangRecovery(config.maxIdleMinutes))) {
@@ -94,13 +123,34 @@ export class SessionScheduler {
     } catch { /* suppress tick errors */ }
   }
 
-  private async fireTask(task: Task): Promise<void> {
+  private async fireTask(task: Task, force = false): Promise<void> {
     this.firing.add(task.id)
     const startedAt = Date.now()
     const config = await readAutopilotConfig()
     const { provider, model } = currentModel()
 
     try {
+      // 本地模型（串行推理）提示分支（2026-08-24 用户需求）：waitForUserOnLocal 任务
+      // 到期时不自动执行（后台会话会与主会话串行排队阻塞），仅注入提示由用户决定；
+      // 用户手动触发（/schedule run，force=true）时跳过此分支正常执行。
+      if (!force && task.waitForUserOnLocal && isLocalModel()) {
+        try {
+          await this.pi.sendUserMessage?.(
+            `[Scheduler] ${task.name} 已到点。当前为本地模型（串行推理），为避免阻塞主会话，未自动执行。` +
+            `可回复「/schedule run ${task.name}」或直接说「执行 ${task.name}」后台运行。`)
+        } catch { /* 注入失败静默：下次 tick 再提示 */ }
+        // 推进 nextRun（+1h）防止每 30s tick 重复催
+        await withStoreLock(async () => {
+          const store = await readTasks()
+          const t = store.tasks.find(x => x.id === task.id)
+          if (t) {
+            t.nextRun = new Date(Date.now() + 3600 * 1000).toISOString()
+            await writeTasks(store)
+          }
+        })
+        return
+      }
+
       // 预算检查
       if (config.enabled) {
         const b = await checkBudget(config.budget, model)
@@ -130,6 +180,7 @@ export class SessionScheduler {
       if (task.useSubagent) {
         await this.fireViaSubagent(task, provider, model)
         await updateTaskAfterRun(task.id, 'success', '', Date.now() - startedAt)
+        await maybeTriggerSummarizer()
         await appendRun({
           ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
           model, provider, result: 'success', durationMs: Date.now() - startedAt,
@@ -168,7 +219,15 @@ export class SessionScheduler {
         errClass,
       })
 
-      const action = decide(task, errClass, config.policy, config.fallbackModels, {
+      // 审计 LOW：decide 此前用 fireTask 入参的 failCount 快照，与 updateTaskAfterRun
+      // 递增后的存储值差一档（suspendAfter/failoverAfter 阈值晚一拍触发）。决策前从
+      // store 重读最新任务；本次失败即将由 updateTaskAfterRun 记账，failCount 预 +1 对齐
+      let latest = task
+      try {
+        const fresh = (await readTasks()).tasks.find(x => x.id === task.id)
+        if (fresh) latest = fresh
+      } catch { /* 重读失败退回入参快照 */ }
+      const action = decide({ ...latest, failCount: (latest.failCount ?? 0) + 1 }, errClass, config.policy, config.fallbackModels, {
         stderr: message,
         exitCode,
         promptLen: task.prompt.length,
@@ -256,6 +315,7 @@ export class SessionScheduler {
         const t = (await readTasks()).tasks.find((x) => x.id === id)
         if (!t || !t.enabled) continue
         await updateTaskAfterRun(id, 'success', '注入式任务完成（主会话回合结束回写）', 0)
+        await maybeTriggerSummarizer()
         // 审计 MEDIUM：注入式成功此前不写 telemetry——todayRuns/成本预算只统计
         // subagent 与失败运行，注入任务日预算被系统性低估。交付完成即补记成功。
         const { provider, model } = currentModel()
@@ -323,6 +383,15 @@ export class SessionScheduler {
         if (code === 0) {
           if (task.notifyOnCompletion) {
             await sendWebhook(task, 'success', stdout.slice(0, 1000))
+          }
+          // 后台会话任务完成 → 把 stdout 尾部（任务收尾报告）注入主会话（2026-08-24）
+          if (task.notifyMain) {
+            const tail = stdout.trim().slice(-1500)
+            if (tail) {
+              try {
+                await this.pi.sendUserMessage?.(`[Scheduler] ${task.name} 已完成\n\n${tail}`)
+              } catch { /* 主会话不可用时静默 */ }
+            }
           }
           resolve()
         } else {

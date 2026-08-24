@@ -33,6 +33,7 @@ vi.mock('cloakbrowser', () => ({
       content: vi.fn().mockResolvedValue('<html></html>'),
       evaluate: vi.fn().mockResolvedValue({ text: '', headings: [], paragraphs: [] }),
       screenshot: vi.fn().mockResolvedValue('/tmp/test-screenshot.png'),
+      pdf: vi.fn().mockResolvedValue(undefined),
       close: vi.fn(),
       mouse: { click: vi.fn() },
       fill: vi.fn(),
@@ -165,5 +166,48 @@ describe('pi-browser (entry point)', () => {
     expect(files.length).toBeLessThanOrEqual(20)
 
     await Promise.all(files.map(f => fs.unlink(join(shotDir, f))))
+  })
+
+  // 审计 LOW：PDF 目录对齐截图模式——含 pid 隔离 + shutdown 全目录清理
+  it('pdfDir 含进程 pid，与旧固定 /tmp/pi-browser-pdf 隔离', async () => {
+    const { pdfDir } = await import('../browser/impl')
+    expect(pdfDir()).toBe(join(tmpdir(), `pi-browser-pdf-${process.pid}`))
+    expect(pdfDir()).not.toBe(join(tmpdir(), 'pi-browser-pdf'))
+  })
+
+  it('session_shutdown 清理本进程 PDF 目录（含文件），不触碰其他进程目录', async () => {
+    const fs = await import('fs/promises')
+    const ownPdf = join(tmpdir(), `pi-browser-pdf-${process.pid}`)
+    const otherPdf = join(tmpdir(), 'pi-browser-pdf-otherproc')
+    await fs.mkdir(ownPdf, { recursive: true })
+    await fs.mkdir(otherPdf, { recursive: true })
+    await fs.writeFile(join(ownPdf, 'pi-page-1.pdf'), 'test')
+    await fs.writeFile(join(otherPdf, 'pi-page-1.pdf'), 'test')
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    await lifecycleHandlers['session_shutdown']()
+
+    expect(await fs.access(ownPdf).then(() => true).catch(() => false)).toBe(false)
+    expect(await fs.access(join(otherPdf, 'pi-page-1.pdf')).then(() => true).catch(() => false)).toBe(true)
+
+    await fs.rm(otherPdf, { recursive: true, force: true })
+  })
+
+  it('browser_pdf 默认保存路径落在含 pid 的 PDF 目录', async () => {
+    const fs = await import('fs/promises')
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const navTool = registeredTools.find(t => t.name === 'browser_navigate')!
+    await navTool.execute('id', { url: 'https://example.com' }, undefined, undefined, {} as any)
+
+    const pdfTool = registeredTools.find(t => t.name === 'browser_pdf')!
+    const result = await pdfTool.execute('id', {}, undefined, undefined, {} as any)
+    expect(result.content[0].text).toContain(`pi-browser-pdf-${process.pid}`)
+    expect(result.content[0].text).not.toContain('tmp/pi-browser-pdf/')
+
+    await fs.rm(join(tmpdir(), `pi-browser-pdf-${process.pid}`), { recursive: true, force: true })
   })
 })

@@ -289,6 +289,8 @@ export function createTask(params: {
   enabled?: boolean
   useSubagent?: boolean
   notifyOnCompletion?: boolean
+  notifyMain?: boolean
+  waitForUserOnLocal?: boolean
   maxRunTime?: number
   tags?: string[]
   retries?: number
@@ -306,6 +308,8 @@ export function createTask(params: {
     nextRun: null,
     useSubagent: params.useSubagent ?? false,
     notifyOnCompletion: params.notifyOnCompletion ?? false,
+    notifyMain: params.notifyMain ?? false,
+    waitForUserOnLocal: params.waitForUserOnLocal ?? false,
     maxRunTime: params.maxRunTime ?? DEFAULT_MAX_RUN_TIME,
     runCount: 0,
     history: [],
@@ -342,7 +346,7 @@ export async function addTask(params: Parameters<typeof createTask>[0]): Promise
 
 export async function updateTask(
   idOrName: string,
-  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'maxRunTime' | 'name' | 'tags' | 'retries' | 'recoveryCount' | 'failCount' | 'failoverCount'>>
+  updates: Partial<Pick<Task, 'enabled' | 'prompt' | 'schedule' | 'type' | 'useSubagent' | 'notifyOnCompletion' | 'notifyMain' | 'waitForUserOnLocal' | 'maxRunTime' | 'name' | 'tags' | 'retries' | 'recoveryCount' | 'failCount' | 'failoverCount'>>
 ): Promise<Task | null> {
   return withStoreLock(async () => {
   const store = await readTasks()

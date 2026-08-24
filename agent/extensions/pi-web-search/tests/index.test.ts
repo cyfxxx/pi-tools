@@ -79,4 +79,56 @@ describe('pi-web-search (entry point)', () => {
 
     expect(result.content[0].text).toContain('"status":"ok"')
   })
+
+  it('fetch_url !ok should cancel response body (no hanging connection)', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined)
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: 'Service Unavailable', body: { cancel } }) as any
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const tool = registeredTools.find(t => t.name === 'fetch_url')!
+    const result = await tool.execute('id', { url: 'https://api.example.com/x' }, undefined, undefined, {} as any)
+    expect(result.content[0].text).toContain('HTTP 503')
+    expect(cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('readBodyLimited should cancel reader when body exceeds cap and flag truncated', async () => {
+    let cancelled = false
+    let pulls = 0
+    // pull 式流且永不 close：模拟服务器持续发大响应（真实场景下 cancel 才会真正触发）
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) { pulls++; c.enqueue(new Uint8Array(512 * 1024).fill(65)) },
+      cancel() { cancelled = true },
+    })
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, body: stream }) as any
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const tool = registeredTools.find(t => t.name === 'fetch_url')!
+    // max_length 调小，避免整体被 pruneToolOutput 裁剪吞掉截断标记
+    const result = await tool.execute('id', { url: 'https://api.example.com/big', max_length: 200 }, undefined, undefined, {} as any)
+    expect(pulls).toBeGreaterThanOrEqual(2)   // 确实读满了 cap 并多读了一块
+    expect(cancelled).toBe(true)              // 读满后必须 cancel，避免连接悬挂
+    expect(result.content[0].text).toContain('已截断读取')
+  })
+
+  it('readBodyLimited should not falsely flag truncated when body exactly reaches cap', async () => {
+    let sent = false
+    // 恰好读满 cap 且流正常结束 → 不应误报 truncated；
+    // （此时流已被 peek-read 关闭，按规范 reader.cancel() 为合法 no-op，不触发 source.cancel）
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) { if (!sent) { sent = true; c.enqueue(new Uint8Array(512 * 1024).fill(65)) } else { c.close() } },
+    })
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, body: stream }) as any
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const tool = registeredTools.find(t => t.name === 'fetch_url')!
+    const result = await tool.execute('id', { url: 'https://api.example.com/exact' }, undefined, undefined, {} as any)
+    expect(result.content[0].text).toContain('AAAA')
+    expect(result.content[0].text).not.toContain('已截断读取')
+  })
 })

@@ -207,3 +207,93 @@ describe('scheduler: 预算拦截（防自锁）', () => {
     })
   })
 })
+
+describe('scheduler: 本地模型提示分支（2026-08-24）', () => {
+  it('waitForUserOnLocal + 本地模型：只发提示不自动执行，nextRun 推 1h', async () => {
+    await writeFile(join(TEST_DIR, 'settings.json'), JSON.stringify({ defaultProvider: 'ollama', defaultModel: 'qwen2' }), 'utf-8')
+    const task = makeTask({ id: 'local1', waitForUserOnLocal: true })
+    await writeTasksFile([task])
+    await fillTelemetry(0)
+    const sent: string[] = []
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async (m: string) => { sent.push(m) }, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    await (sched as unknown as { fireTask: (t: unknown) => Promise<void> }).fireTask(task)
+
+    // 提示注入：含任务名与"未自动执行"，不含原始 prompt（不执行任务）
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toContain('test-task')
+    expect(sent[0]).toContain('未自动执行')
+    expect(sent[0]).not.toContain('do something')
+    // 不记执行：lastResult 保持 null、无遥测
+    const saved = await readTasksFile()
+    const after = saved.tasks[0] as { nextRun: string; lastResult: string | null }
+    expect(new Date(after.nextRun).getTime()).toBeGreaterThan(Date.now() + 30 * 60_000)
+    expect(after.lastResult).toBeNull()
+    expect(await readTelemetryFile()).toHaveLength(0)
+  })
+
+  it('waitForUserOnLocal + 云端模型：正常注入执行', async () => {
+    await writeFile(join(TEST_DIR, 'settings.json'), JSON.stringify({ defaultProvider: 'opencode-go', defaultModel: 'deepseek-v4-flash' }), 'utf-8')
+    const task = makeTask({ id: 'local2', waitForUserOnLocal: true })
+    await writeTasksFile([task])
+    await fillTelemetry(0)
+    const sent: string[] = []
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async (m: string) => { sent.push(m) }, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    await (sched as unknown as { fireTask: (t: unknown) => Promise<void> }).fireTask(task)
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toContain('do something')
+  })
+
+  it('force=true（/schedule run 手动触发）跳过本地分支直接执行', async () => {
+    await writeFile(join(TEST_DIR, 'settings.json'), JSON.stringify({ defaultProvider: 'ollama', defaultModel: 'qwen2' }), 'utf-8')
+    const task = makeTask({ id: 'local3', waitForUserOnLocal: true })
+    await writeTasksFile([task])
+    await fillTelemetry(0)
+    const sent: string[] = []
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async (m: string) => { sent.push(m) }, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    await (sched as unknown as { fireTask: (t: unknown, f: boolean) => Promise<void> }).fireTask(task, true)
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toContain('do something')
+  })
+})
+
+describe('scheduler: enabled 门控（2026-08-25 审计 HIGH 修复）', () => {
+  it('enabled=false 时 tick 不触发到期任务（修复前任务照跑且预算检查被跳过）', async () => {
+    const task = makeTask({ id: 'gated1' })
+    await writeTasksFile([task])
+    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: false }), 'utf-8')
+    await fillTelemetry(0)
+    const sent: string[] = []
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async (m: string) => { sent.push(m) }, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    await (sched as unknown as { tick: () => Promise<void> }).tick()
+
+    expect(sent).toHaveLength(0)
+    const saved = await readTasksFile()
+    const after = saved.tasks[0] as { nextRun: string; history: unknown[] }
+    // 未执行：nextRun 保持到期时刻（enabled 恢复后可正常触发）、无遥测
+    expect(new Date(after.nextRun).getTime()).toBeLessThanOrEqual(Date.now())
+    expect(after.history).toHaveLength(0)
+    expect(await readTelemetryFile()).toHaveLength(0)
+  })
+
+  it('enabled=true（缺省）时 tick 正常注入到期任务', async () => {
+    const task = makeTask({ id: 'gated2' })
+    await writeTasksFile([task])
+    // 前一用例残留 enabled=false，显式写 true 隔离
+    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: true }), 'utf-8')
+    await fillTelemetry(0)
+    const sent: string[] = []
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async (m: string) => { sent.push(m) }, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    await (sched as unknown as { tick: () => Promise<void> }).tick()
+    expect(sent).toHaveLength(1)
+  })
+})

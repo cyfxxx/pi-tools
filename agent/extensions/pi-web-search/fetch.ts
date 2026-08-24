@@ -7,7 +7,11 @@ export async function searchDirect(query: string, maxResults = 5): Promise<strin
     signal: controller.signal,
   }).finally(() => clearTimeout(timeout))
   // fetch 失败必抛异常（网络/DNS/超时 abort），不会返回 null——此分支为死代码，已移除
-  if (!res.ok) return `搜索失败: HTTP ${res.status}`
+  if (!res.ok) {
+    // 取消未消费的响应体，避免连接悬挂（socket 无法复用/泄漏）
+    try { await res.body?.cancel() } catch { /* 已释放 */ }
+    return `搜索失败: HTTP ${res.status}`
+  }
   const html = await res.text()
   const results: string[] = []
   const linkRe = /<h2><a href="(https?:\/\/[^"]+)"[^>]*>(.+?)<\/a>/g

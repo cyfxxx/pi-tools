@@ -164,12 +164,19 @@ export async function sendToDevice(
   if (!guard.ok) {
     return { ok: false, error: guard.detail ?? '发送被拒绝', turns: 0, tools: 0, durationSec: 0, elapsedMs: Date.now() - started }
   }
-  markSendStart(key, message)
+  markSendStart(key)
   // done 在 try 外定义：正常路径与 catch 路径共用（catch 内也要释放 in-flight 锁）
   const done = (r: LinkResult): LinkResult => {
+    // 审计 MEDIUM（2026-08-25）：去重指纹仅在成功后写入——此前发送前即写，失败/超时
+    // 同样占满 5 分钟窗口，重发同消息被误拒
+    if (r.ok) markSendSuccess(key, message)
     markSendEnd(key)
     return r
   }
+  // 审计 LOW：握手/switch 定时器在异常/提前返回路径不清空——fresh 策略无 lastSession 时
+  // switchTimer 空挂 20s 拖住事件循环。声明提升到 try 外，finally 统一清理
+  let handshakeTimer: ReturnType<typeof setTimeout> | undefined
+  let switchTimer: ReturnType<typeof setTimeout> | undefined
   try {
     // 多地址 failover：仅配置了 altHosts 时按序探测选可达地址（单地址零开销，行为与旧版一致）；
   // 全部不可达时退回主地址（让 ssh 报真实连接错误，避免误报）
@@ -214,12 +221,12 @@ export async function sendToDevice(
   // 握手完成：收到会话文件行（continue 策略）或 3s 超时
   let handshakeResolve: () => void
   const handshakeP = new Promise<void>((resolve) => { handshakeResolve = resolve })
-  const handshakeTimer = setTimeout(() => handshakeResolve(), 3000)
+  handshakeTimer = setTimeout(() => handshakeResolve(), 3000)
   // switch_session 完成（response 到达）或 20s 超时
   let switchResolve: () => void
   let switchFailed = false
   const switchP = new Promise<void>((resolve) => { switchResolve = resolve })
-  const switchTimer = setTimeout(() => switchResolve(), 20000)
+  switchTimer = setTimeout(() => switchResolve(), 20000)
 
   const rl = createInterface({ input: proc.stdout })
   const settledP = new Promise<void>((resolve) => {
@@ -326,6 +333,9 @@ export async function sendToDevice(
       error: `pi-link 内部异常: ${e instanceof Error ? e.message : String(e)}`, resumed: false,
     })
   } finally {
+    // 审计 LOW：settledP 完成/异常/提前 return 的所有路径统一清两个 timer
+    if (handshakeTimer) clearTimeout(handshakeTimer)
+    if (switchTimer) clearTimeout(switchTimer)
     markSendEnd(key)  // 幂等：正常路径 done() 已释放；异常路径兜底释放，防 in-flight 锁泄漏
   }
 }
@@ -538,8 +548,11 @@ export function checkConcurrentAndDedup(deviceKey: string, message: string): { o
   return { ok: true }
 }
 
-export function markSendStart(deviceKey: string, message: string): void {
+export function markSendStart(deviceKey: string): void {
   inflight.set(deviceKey, true)
+}
+/** 发送成功后写去重指纹（审计 MEDIUM：失败/超时不写，避免误拒重发） */
+export function markSendSuccess(deviceKey: string, message: string): void {
   lastSends.set(deviceKey, { hash: simpleHash(message), ts: Date.now() })
 }
 

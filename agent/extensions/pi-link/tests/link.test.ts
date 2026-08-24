@@ -41,7 +41,7 @@ describe('pi-link: 并发与去重（T2-4）', () => {
     const { checkConcurrentAndDedup, markSendStart, markSendEnd } = await import('../link.ts')
     const key = 'a@b:22'
     expect(checkConcurrentAndDedup(key, 'm1').ok).toBe(true)
-    markSendStart(key, 'm1')
+    markSendStart(key)
     const r = checkConcurrentAndDedup(key, 'm2')
     expect(r.ok).toBe(false)
     expect(r.detail).toContain('已有进行中')
@@ -49,10 +49,16 @@ describe('pi-link: 并发与去重（T2-4）', () => {
     expect(checkConcurrentAndDedup(key, 'm2').ok).toBe(true)
   })
 
-  it('窗口内相同消息去重；不同消息放行', async () => {
-    const { checkConcurrentAndDedup, markSendStart, markSendEnd } = await import('../link.ts')
+  it('窗口内相同消息去重；不同消息放行（指纹仅在成功后写入，2026-08-25 审计 MEDIUM）', async () => {
+    const { checkConcurrentAndDedup, markSendStart, markSendSuccess, markSendEnd } = await import('../link.ts')
     const key = 'a@b:22'
-    markSendStart(key, '重复消息')
+    // 失败路径：start→end 无 success——不写指纹，重发同消息应放行（回归：修复前被误拒）
+    markSendStart(key)
+    markSendEnd(key)
+    expect(checkConcurrentAndDedup(key, '重复消息').ok).toBe(true)
+    // 成功路径：写指纹后同消息去重、不同消息放行
+    markSendStart(key)
+    markSendSuccess(key, '重复消息')
     markSendEnd(key) // 发送完成：in-flight 清除，hash 记录保留
     const r1 = checkConcurrentAndDedup(key, '重复消息')
     expect(r1.ok).toBe(false)
@@ -63,9 +69,10 @@ describe('pi-link: 并发与去重（T2-4）', () => {
   it('窗口过期后同消息放行', async () => {
     vi.useFakeTimers()
     try {
-      const { checkConcurrentAndDedup, markSendStart, markSendEnd } = await import('../link.ts')
+      const { checkConcurrentAndDedup, markSendStart, markSendSuccess, markSendEnd } = await import('../link.ts')
       const key = 'a@b:22'
-      markSendStart(key, 'x')
+      markSendStart(key)
+      markSendSuccess(key, 'x')
       markSendEnd(key)
       vi.advanceTimersByTime(5 * 60 * 1000 + 1000)
       expect(checkConcurrentAndDedup(key, 'x').ok).toBe(true)
@@ -105,7 +112,7 @@ describe('pi-link: 并发与去重（T2-4）', () => {
     spawnMock.mockImplementation(() => { throw new Error('不应 spawn') })
     const { sendToDevice } = await import('../link.ts')
     const key = 'testuser@100.64.0.1:2222'
-    markSendStartFor(key, '')
+    markSendStartFor(key)
     const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
     expect(r.ok).toBe(false)
     expect(r.error).toContain('已有进行中')
@@ -114,7 +121,6 @@ describe('pi-link: 并发与去重（T2-4）', () => {
 
 // 辅助：直接置 in-flight（sendToDevice 内部函数不可直接调用时用）
 import { markSendStart as markSendStartFor } from '../link.ts'
-// markSendStart 的 message 仅用于去重记录，测试置空即可
 
 describe('pi-link: buildRemoteCommand', () => {
   it('默认 --no-extensions + 默认 session dir + LD_PRELOAD 清除', () => {

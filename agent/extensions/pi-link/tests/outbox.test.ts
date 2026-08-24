@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest'
-import { readFileSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -45,6 +45,20 @@ describe('pi-link: outbox 信箱', () => {
     mkdirSync(dirname(outboxFilePath()), { recursive: true })
     writeFileSync(outboxFilePath(), 'not-json{{{')
     expect(readOutbox()).toEqual([])
+  })
+
+  it('原子写：tmp+rename 落盘，无 .tmp 残留且文件始终完整 JSON（审计 LOW）', () => {
+    appendOutbox('devA', '原子写一')
+    appendOutbox('devA', '原子写二')
+    // rename 后无残留 tmp（原地 writeFileSync 实现不会产生 tmp，但此断言同时守护
+    // “rename 失败/异常中断不留垃圾文件”）
+    const leftovers = readdirSync(dirname(outboxFilePath())).filter(f => f.endsWith('.tmp'))
+    expect(leftovers).toEqual([])
+    // 主文件为完整 JSON 且内容正确
+    const raw = JSON.parse(readFileSync(outboxFilePath(), 'utf8')) as { device: string; entries: unknown[] }
+    expect(raw.device).toBe('devA')
+    expect(raw.entries).toHaveLength(2)
+    expect(readOutbox()[1].text).toBe('原子写二')
   })
 
   it('extractFinalReply: 取最后一条 assistant 文本', () => {

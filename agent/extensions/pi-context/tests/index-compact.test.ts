@@ -27,6 +27,8 @@ const ORIG_ENV = { ...process.env }
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'index-compact-'))
   process.env.PI_USAGE_DIAG_FILE = join(dir, 'diag.jsonl')
+  // 重启来源判定隔离：admin state 指向临时文件（真实 ~/.pi state 的残留 action 会干扰）
+  process.env.PI_CONTEXT_ADMIN_STATE = join(dir, 'admin-state.json')
   // 任务门隔离：指向空目录（真实 ~/.pi/plans 残留 in_progress 会干扰断言）
   process.env.PI_CONTEXT_PLANS_DIR = join(dir, 'plans')
   // 后台任务门隔离：registry 指向不存在的临时文件（真实 ~/.pi 下 registry 会干扰）
@@ -64,6 +66,15 @@ function overThresholdCtx(compact: (opts: { onComplete?: () => void; onError?: (
     getContextUsage: () => ({ tokens: 850_000, contextWindow: 1_000_000 }),
     compact,
   }
+}
+
+/** 模拟 pi-autopilot state 文件（恢复压缩只认 restart_hang） */
+function writeAdminState(action: string): void {
+  writeFileSync(
+    join(dir, 'admin-state.json'),
+    JSON.stringify({ action, timestamp: Date.now(), restartLog: null }),
+    'utf8',
+  )
 }
 
 describe('pi-context: 压缩触发挂载点与记账时机', () => {
@@ -183,6 +194,8 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
 
   it('恢复会话（reason=resume）保留 provider contextTokens fallback（断链恢复仍可压缩）', async () => {
     const { handlers } = await loadIndex()
+    // 看门狗挂死重启（restart_hang）才走恢复压缩路径
+    writeAdminState('restart_hang')
     handlers.get('turn_end')![0](
       { message: { usage: { input: 600_000, cacheRead: 250_000 } } },
       {},
@@ -241,6 +254,7 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
 
   it('重启场景阈值：resume 时上下文 <100K（重启阈值）→ 不压缩', async () => {
     const { handlers } = await loadIndex()
+    writeAdminState('restart_hang')
     const compact = vi.fn()
     handlers.get('session_start')![0](
       { reason: 'resume' },
@@ -254,6 +268,26 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
       { getContextUsage: () => ({ tokens: 120_000, contextWindow: 1_000_000 }), compact: compact2 },
     )
     expect(compact2).toHaveBeenCalledTimes(1)
+  })
+
+  it('手动重启（action=restart）与无 state：resume 超阈值也不压缩（2026-08-24 用户修正）', async () => {
+    const { handlers } = await loadIndex()
+    // /auto restart 写 action=restart（非看门狗）→ 恢复压缩不生效，留给 agent_settled 常规门限
+    writeAdminState('restart')
+    let compact = vi.fn()
+    handlers.get('session_start')![0](
+      { reason: 'resume' },
+      { getContextUsage: () => ({ tokens: 120_000, contextWindow: 1_000_000 }), compact },
+    )
+    expect(compact).not.toHaveBeenCalled()
+    // 无 state 文件（冷启动异常/文件损坏同此路径）→ 同样不压缩
+    rmSync(join(dir, 'admin-state.json'), { force: true })
+    const compact2 = vi.fn()
+    handlers.get('session_start')![0](
+      { reason: 'resume' },
+      { getContextUsage: () => ({ tokens: 850_000, contextWindow: 1_000_000 }), compact: compact2 },
+    )
+    expect(compact2).not.toHaveBeenCalled()
   })
 
   it('溢出兜底：tokens ≥ window 时绕过阈值/cooldown 强制压缩（对齐 dsh CONTEXT_WINDOW_EXCEEDED）', async () => {

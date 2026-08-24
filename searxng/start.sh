@@ -9,7 +9,15 @@ if [ ! -d "$DIR/venv" ]; then
   exit 1
 fi
 
+# mkdir 锁包住「检查 PID → 启动」段：防并发双启均通过 kill -0 的 check-then-act 竞态
 PID_FILE="$DIR/searxng.pid"
+LOCK_DIR="$DIR/.start.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  echo "另一个 start.sh 正在启动（锁 $LOCK_DIR 被占用），退出"
+  exit 0
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
   echo "SearXNG 已在运行 (PID $(cat "$PID_FILE"))"
   exit 0

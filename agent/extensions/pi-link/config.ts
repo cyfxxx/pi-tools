@@ -1,5 +1,5 @@
 import { homedir } from 'node:os'
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { readFileSync, existsSync, mkdirSync, writeFileSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 
 /**
@@ -120,7 +120,11 @@ export function saveDevice(path: string, name: string, d: DeviceConfig): { ok: b
   cfg.devices[name] = { ...d }
   try {
     mkdirSync(dirname(path), { recursive: true })
-    writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n', 'utf-8')
+    // 审计 MEDIUM（2026-08-25）：tmp+rename 原子写（同 autoconfig 先例）——直接
+    // writeFileSync 中断留截断 JSON 时 loadConfig 静默回退默认，全部设备配置丢失
+    const tmp = `${path}.${process.pid}.tmp`
+    writeFileSync(tmp, JSON.stringify(cfg, null, 2) + '\n', 'utf-8')
+    renameSync(tmp, path)
   } catch (e) {
     return { ok: false, detail: `写入失败: ${(e as Error).message}` }
   }

@@ -698,7 +698,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
   pi.registerTool({
     name: 'browser_pdf',
     label: '导出 PDF',
-    description: '将当前页面打印为 PDF 并保存到本地路径（默认 /tmp/pi-browser-pdf/），返回文件路径。适用于导出页面为离线文档。',
+    description: '将当前页面打印为 PDF 并保存到本地路径（默认 /tmp/pi-browser-pdf-<pid>/），返回文件路径。适用于导出页面为离线文档。',
     promptSnippet: '把当前页导出为 PDF',
     parameters: {
       type: 'object',

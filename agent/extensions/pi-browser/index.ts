@@ -1,9 +1,9 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { loadConfig } from './config'
 import type { BrowserOnlyConfig } from './types'
-import { BrowserManager, shotDir } from './browser/impl'
+import { BrowserManager, shotDir, pdfDir } from './browser/impl'
 import { registerBrowserTools } from './browser/index'
-import { unlink, readdir } from 'fs/promises'
+import { unlink, readdir, rm } from 'fs/promises'
 import { join } from 'path'
 import { recordToolUsage, resetBudget } from '../../lib/token-budget.ts'
 import { resetOutputBudget } from '../../lib/prune.ts'
@@ -20,6 +20,13 @@ async function cleanScreenshots(): Promise<void> {
         .filter(f => f.startsWith(SCREENSHOT_PREFIX))
         .map(f => unlink(join(dir, f)).catch(() => {}))
     )
+  } catch { /* ignore */ }
+}
+
+/** PDF 暂存目录整目录清理（含 pid 子目录本身；rm force：不存在时静默）。 */
+async function cleanPdf(): Promise<void> {
+  try {
+    await rm(pdfDir(), { recursive: true, force: true })
   } catch { /* ignore */ }
 }
 
@@ -51,6 +58,7 @@ export default async function (pi: ExtensionAPI) {
   pi.on('session_shutdown', async () => {
     await browser.close()
     await cleanScreenshots()
+    await cleanPdf()
   })
 
   pi.on('session_compact', async () => {

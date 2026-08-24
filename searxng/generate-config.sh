@@ -135,9 +135,9 @@ $(for entry in "${ENGINE_PROBES[@]}"; do
 done)
 CONFIGEOF
 
-chmod 644 "$CONFIG"
-echo "已生成 $CONFIG"
-echo "secret_key: ${SECRET_KEY}"
+# 含 secret_key，仅 owner 可读（防全局可读泄露）；不回显密钥
+chmod 600 "$CONFIG"
+echo "已生成 $CONFIG（secret_key 已写入文件，不回显）"
 
 # 自动重启 SearXNG（如果正在运行）
 PID_FILE="$DIR/searxng.pid"

@@ -126,3 +126,24 @@ describe('currentModel', () => {
     expect(currentModel()).toEqual({ provider: 'deepseek', model: 'deepseek-v4-flash' })
   })
 })
+
+describe('isLocalModel（2026-08-24 每日任务本地模型判据）', () => {
+  const cases: Array<[Record<string, string>, boolean]> = [
+    [{ defaultProvider: 'ollama', defaultModel: 'qwen2' }, true],
+    [{ defaultProvider: 'vllm', defaultModel: 'qwen2' }, true],
+    [{ defaultProvider: 'lmstudio', defaultModel: 'gpt-oss-120b' }, true],
+    [{ defaultProvider: 'opencode-go', defaultModel: 'deepseek-v4-flash' }, false],
+    [{ defaultProvider: 'openrouter', defaultModel: 'llama-3.1-8b' }, false],
+    [{ defaultProvider: 'openrouter', defaultModel: 'llamacpp-8b' }, true],
+    [{ defaultProvider: 'github', defaultModel: 'gpt-4o' }, false],
+    [{ defaultProvider: 'http://127.0.0.1:11434', defaultModel: 'qwen2' }, true],
+    [{ defaultProvider: 'myproxy', defaultModel: 'Qwen2.5-7B-Instruct' }, false],
+  ]
+  for (const [cfg, want] of cases) {
+    it(`${cfg.defaultProvider}/${cfg.defaultModel} → ${want}`, async () => {
+      const { isLocalModel } = await import('../policy')
+      await writeFile(join(TEST_DIR, 'settings.json'), JSON.stringify(cfg), 'utf-8')
+      expect(isLocalModel()).toBe(want)
+    })
+  }
+})

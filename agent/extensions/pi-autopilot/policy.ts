@@ -97,4 +97,12 @@ export function currentModel(): { provider: string; model: string } {
   return { provider: s.defaultProvider || 'unknown', model: s.defaultModel || 'unknown' }
 }
 
+/** 本地模型（串行推理）启发式判定：provider/model 名含本地引擎标识即视为本地（2026-08-24） */
+const LOCAL_HINTS = /ollama|vllm|llamacpp|lmstudio|\blocal\b|本地|localhost|127\.0\.0\.1/i
+
+export function isLocalModel(): boolean {
+  const { provider, model } = currentModel()
+  return LOCAL_HINTS.test(provider) || LOCAL_HINTS.test(model)
+}
+
 export { estimateCost }

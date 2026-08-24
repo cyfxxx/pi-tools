@@ -274,6 +274,7 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
         { value: 'enable', label: 'enable', description: '启用任务' },
         { value: 'disable', label: 'disable', description: '禁用任务' },
         { value: 'test', label: 'test', description: '预览 cron 触发时间' },
+        { value: 'run', label: 'run', description: '立即执行任务（后台会话）' },
         { value: 'history', label: 'history', description: '任务执行历史' },
         { value: 'export', label: 'export', description: '导出全部任务' },
         { value: 'import', label: 'import', description: '从文件导入任务' },
@@ -437,6 +438,28 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           reply(pi, `未来 ${times.length} 次触发时间:\n${times.map(t => `  ${new Date(t).toLocaleString('zh-CN')}`).join('\n')}`)
         } catch (err) {
           reply(pi, (err as Error).message)
+        }
+      }
+
+      if (subcmd === 'run') {
+        // 用户手动触发（2026-08-24）：force=true 跳过本地模型提示分支；
+        // useSubagent 任务在后台独立会话执行，不阻塞主会话
+        const name = parts.slice(1).join(' ').trim()
+        if (!name) {
+          reply(pi, '用法: /schedule run <name|id>\n示例: /schedule run daily-review')
+          return
+        }
+        try {
+          const store = await readTasks()
+          const task = store.tasks.find(t => t.name === name || t.id === name)
+          if (!task) {
+            reply(pi, `未找到任务: ${name}`)
+            return
+          }
+          await scheduler.runNow(task, true)
+          reply(pi, `已触发任务 "${task.name}" 立即执行（${task.useSubagent ? '后台独立会话' : '注入主会话'}）`)
+        } catch (err) {
+          reply(pi, `触发失败: ${(err as Error).message}`)
         }
       }
 

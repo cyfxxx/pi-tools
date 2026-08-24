@@ -22,6 +22,10 @@ export interface Task {
   nextRun: string | null
   useSubagent: boolean
   notifyOnCompletion: boolean
+  /** 后台会话（useSubagent）任务成功完成后，把 stdout 收尾摘要注入主会话提醒（2026-08-24） */
+  notifyMain?: boolean
+  /** 本地模型（串行推理）时不自动执行，改为注入提示由用户决定（2026-08-24） */
+  waitForUserOnLocal?: boolean
   maxRunTime: number
   runCount: number
   history: ExecHistoryEntry[]

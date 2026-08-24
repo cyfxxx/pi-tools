@@ -32,14 +32,18 @@ describe('searchDirect (fetch.ts)', () => {
   })
 
   it('should handle non-ok HTTP response', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined)
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 503,
+      body: { cancel },
     })
 
     const { searchDirect } = await import('../fetch')
     const result = await searchDirect('test')
     expect(result).toContain('搜索失败: HTTP 503')
+    // 提前 return 前必须取消响应体，避免连接悬挂
+    expect(cancel).toHaveBeenCalledTimes(1)
   })
 
   it('should return empty message when no results found', async () => {

@@ -232,7 +232,8 @@ fi
 # ---------- 阶段 A2: 密钥扫描（脱敏） ----------
 say ""
 say "== 阶段 A2: 疑似密钥扫描（仅报告位置） =="
-SECRET_PAT='(sk-[A-Za-z0-9]{10,}|ghp_[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}|gho_[A-Za-z0-9]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|password[[:space:]]*[:=][[:space:]]*[^[:space:]]+|api[_-]?key[[:space:]]*[:=][[:space:]]*[^[:space:]]+|secret[[:space:]]*[:=][[:space:]]*[^[:space:]]+)'
+# sk- 加左边界（^|非字母数字前缀）：避免 task-summarizer/task-records 等 sk- 子串误报
+SECRET_PAT='((^|[^A-Za-z0-9])sk-[A-Za-z0-9]{10,}|ghp_[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}|gho_[A-Za-z0-9]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|password[[:space:]]*[:=][[:space:]]*[^[:space:]]+|api[_-]?key[[:space:]]*[:=][[:space:]]*[^[:space:]]+|secret[[:space:]]*[:=][[:space:]]*[^[:space:]]+)'
 found=0
 for f in "${FILES[@]:-}"; do
   case "$f" in
@@ -249,7 +250,7 @@ for f in "${FILES[@]:-}"; do
       num=${line%%:*}
       content=${line#*:}
       # 脱敏：只显示匹配关键字位置，不显示值
-      hit=$(echo "$content" | grep -oE 'sk-[A-Za-z0-9]+|ghp_[A-Za-z0-9]+|AKIA[A-Z0-9]+|gho_[A-Za-z0-9]+|BEGIN [A-Z ]*PRIVATE KEY|password|api[_-]?key|secret' | head -1)
+      hit=$(echo "$content" | grep -oE '(^|[^A-Za-z0-9])sk-[A-Za-z0-9]+|ghp_[A-Za-z0-9]+|AKIA[A-Z0-9]+|gho_[A-Za-z0-9]+|BEGIN [A-Z ]*PRIVATE KEY|password|api[_-]?key|secret' | head -1 | sed -E 's/^([^A-Za-z0-9])?sk-/sk-/')
       fail "$f:$num: [已脱敏] 疑似密钥/凭据（$hit********）"
     done < <(grep -nE "$SECRET_PAT" "$f" 2>/dev/null | head -5)
   fi
@@ -281,7 +282,9 @@ for f in "${FILES[@]:-}"; do
   case "$f" in
     *.py)
       if command -v python3 >/dev/null 2>&1; then
-        if ! python3 -m py_compile "$f" >/dev/null 2>&1; then
+        # 仅检测不应产生 __pycache__ 写副作用：py_compile 即使加
+        # PYTHONDONTWRITEBYTECODE=1 仍会写 .pyc（实测），改用 ast.parse 纯解析
+        if ! python3 -c "import ast,sys; ast.parse(open(sys.argv[1],encoding='utf-8').read())" "$f" >/dev/null 2>&1; then
           py_err=1
           fail "Python 语法错误: $f"
         fi

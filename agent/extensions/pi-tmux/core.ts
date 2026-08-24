@@ -447,8 +447,9 @@ export async function readOutput(opts: TmuxOpts, name: string, lines = 100, maxC
   if (existsSync(logPath)) {
     // 只读文件末尾（最多 TAIL_BYTES）：长任务日志数十 MB 时避免每轮 O(n) 全量读 + 阻塞事件循环
     const TAIL_BYTES = 512 * 1024
-    let content: string
+    let content = ''
     let size = 0
+    let logOk = false
     try {
       const fd = openSync(logPath, 'r')
       size = statSync(logPath).size
@@ -457,16 +458,25 @@ export async function readOutput(opts: TmuxOpts, name: string, lines = 100, maxC
       readSync(fd, buf, 0, len, size - len)
       closeSync(fd)
       content = buf.toString('utf-8')
+      logOk = true
     } catch {
-      content = readFileSync(logPath, 'utf-8')  // 兜底：文件不可读时回退全量读
-      size = content.length
+      // 兜底全量读也包 try：existsSync 与 open/read 之间文件被删（竞态，如会话退出
+      // 清理日志）时 readFileSync 会再抛 ENOENT——吞掉并走下方 capture-pane 回退，
+      // 而非让 tmux_read 直接报错（审计 LOW）。
+      try {
+        content = readFileSync(logPath, 'utf-8')
+        size = content.length
+        logOk = true
+      } catch { /* 日志确实不可得 → capture-pane 回退 */ }
     }
-    const sliced = content.split('\n').slice(-lines).join('\n')
-    const truncated = size > maxChars
-    return {
-      text: truncated ? sliced.slice(-maxChars) : sliced,
-      source: 'log',
-      truncated: truncated || content.length > sliced.length,
+    if (logOk) {
+      const sliced = content.split('\n').slice(-lines).join('\n')
+      const truncated = size > maxChars
+      return {
+        text: truncated ? sliced.slice(-maxChars) : sliced,
+        source: 'log',
+        truncated: truncated || content.length > sliced.length,
+      }
     }
   }
   const r = await runTmux(opts, ['capture-pane', '-t', name, '-p', '-S', String(-lines)])
@@ -520,7 +530,13 @@ export async function waitSession(
   let lastOutput = ''
   while (Date.now() < deadline) {
     const alive = await hasSession(opts, name)
-    if (!alive) return { outcome: 'exited', lastOutput }
+    if (!alive) {
+      // pattern 恰在会话退出前写入日志时，循环可能从未进入 pattern 读取分支——
+      // 返回前补读一次日志尾部，避免 lastOutput 为空导致调用方拿不到完成标志（审计 LOW）
+      const out = await readOutput(opts, name, 500, 20000)
+      lastOutput = lastOutput.length >= out.text.length ? lastOutput : out.text
+      return { outcome: 'exited', lastOutput }
+    }
     if (pattern) {
       const out = await readOutput(opts, name, 500, 20000)
       lastOutput = out.text

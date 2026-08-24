@@ -2,7 +2,7 @@ import type { Browser, Page } from 'playwright-core'
 import type { BrowserConfig, PageInfo, NetworkEntry, DialogMode, DownloadFile } from './types'
 import { existsSync, readdirSync } from 'fs'
 import { mkdir } from 'fs/promises'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { tmpdir, homedir } from 'os'
 
 /**
@@ -12,6 +12,11 @@ import { tmpdir, homedir } from 'os'
  */
 export function shotDir(): string {
   return join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
+}
+
+/** 当前进程专属 PDF 暂存目录（同 shotDir：含 pid 防多进程共享目录冲突）。 */
+export function pdfDir(): string {
+  return join(tmpdir(), `pi-browser-pdf-${process.pid}`)
 }
 
 /** 当前进程专属下载目录默认值（同 shotDir：含 pid 防多进程共享目录冲突）。 */
@@ -474,9 +479,10 @@ export class BrowserManager {
   /** 打印当前页为 PDF，返回保存路径。仅 Chromium 支持。 */
   async exportPdf(path?: string): Promise<string> {
     const page = await this.ensurePage()
-    const dir = join(tmpdir(), 'pi-browser-pdf')
-    await mkdir(dir, { recursive: true })
-    const target = path ?? join(dir, `pi-page-${Date.now()}.pdf`)
+    // 审计 LOW：默认目录对齐截图模式含 pid（多进程隔离），全生命周期无残留——
+    // shutdown 时 index.ts cleanPdf 整目录递归删除
+    const target = path ?? join(pdfDir(), `pi-page-${Date.now()}.pdf`)
+    await mkdir(dirname(target), { recursive: true })
     await page.pdf({ path: target, printBackground: true })
     return target
   }

@@ -1,9 +1,9 @@
 {
   "AGENTS.md": "b43661e92eff55099b6c1310fbe39ef2542e66e84a2bc354c2816739c27929d3",
   "pi-context/tool-groups.ts（休眠简介/核心分组）": "31063f4e57dd12f99cad37f8d5ecb87308c3478baa2153cc5ae7b49c73270e5c",
-  "pi-memory/inject.ts（注入头文案）": "8fc3f2f7d04efeba3df210f18e1ad45d2daec8a9db844ac9984975c2efa1d276",
+  "pi-memory/inject.ts（注入头文案）": "8de22d16e788167608b534efaf7ee094dc30cfdc873138f6f0e430ca9f6a1aff",
   "lib/prune.ts（擦除/剪枝阈值）": "d8d217856fc6a4911b75d78850edc8e6957bfad4df8f6a90e58313d67188c8ea",
-  "pi-context/index.ts（注入逻辑/文案）": "145e240f3d5fd259d3a11fe6a4cb69d24068e8e710a4c6f2188fd335317af301",
+  "pi-context/index.ts（注入逻辑/文案）": "ebe63184f7dd430458be4a8c1012318e7ae159fa1b0a3a170ad552c6415c562f",
   "lib/context-budget.ts（截断标记等）": "80bf654abc853daaff27d2d5522de8dad9ad8ec5c4e99eddadc7304dfec6e870",
   "subagent/index.ts（delegation 描述）": "2413bbce40c318b05f08329a189520ee981b5244904e0dbe44018ba7089882b3",
   "pi-context/context-budget.ts（分档注入文案）": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

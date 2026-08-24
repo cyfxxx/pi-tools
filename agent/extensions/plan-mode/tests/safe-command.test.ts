@@ -72,6 +72,21 @@ describe('isSafeCommand 复合命令解析（③放宽）', () => {
     expect(isSafeCommand('curl -s https://api.github.com/repos/a/b')).toBe(true)
   })
 
+  it('拒绝管道 RHS 命令替换与执行类 flag（2026-08-25 审计 HIGH：ls | grep $(bash x) 曾放行）', () => {
+    expect(isSafeCommand('ls | grep $(bash /tmp/x.sh)')).toBe(false)
+    expect(isSafeCommand('cat f | head `id`')).toBe(false)
+    expect(isSafeCommand('ls | grep foo')).toBe(true)
+    expect(isSafeCommand('cat a.txt | head -20')).toBe(true)
+    expect(isSafeCommand("rg --pre 'bash /tmp/x.sh' pattern")).toBe(false)
+    expect(isSafeCommand('rg --pre=bash pattern')).toBe(false)
+    expect(isSafeCommand('fd -x rm {}')).toBe(false)
+    expect(isSafeCommand('fd -X rm')).toBe(false)
+    expect(isSafeCommand('fd --exec-batch ls')).toBe(false)
+    expect(isSafeCommand('fd -e ts pattern')).toBe(true)
+    expect(isSafeCommand('tree /tmp')).toBe(true)
+    expect(isSafeCommand('tree --infofile /tmp/x /')).toBe(false)
+  })
+
   it('拒绝进程替换与 sort -o 写文件（审计实测：白名单命令 + 子进程任意执行）', () => {
     expect(isSafeCommand('diff <(echo x) <(echo y)')).toBe(false)
     expect(isSafeCommand('diff <(python3 -c \'open("/tmp/x","w").write("p")\' ) <(echo x)')).toBe(false)

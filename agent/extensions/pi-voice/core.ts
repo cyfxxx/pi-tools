@@ -749,10 +749,16 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
       lines.push(`✓ 麦克风可用（${spec.recorder.micLabel}）`)
     }
   }
-  // 2. ffmpeg（仅 termux 需要；linux 直出 wav）
+  // 2. ffmpeg（termux 转码必需；linux 录音直出 wav，但 detectAudioLevel 的
+  // volumedetect 音量检测仍依赖 ffmpeg——缺失仅 info 提示，不判失败）
   if (spec.recorder.needsConvert) {
     const ff = await runCommand(cfg.ffmpegBin, ['-version'], { timeoutMs: 10000 })
     lines.push(ff.code === 0 ? '✓ ffmpeg 可用' : '✗ ffmpeg 缺失：请 apt-get install ffmpeg')
+  } else if (spec.kind === 'linux') {
+    const ff = await runCommand('ffmpeg', ['-version'], { timeoutMs: 10000 })
+    if (ff.code !== 0) {
+      lines.push('ℹ ffmpeg 缺失（可选）：录音/转写不受影响，但音量检测不可用，无法区分「麦克风无声」与「有声音未识别」。可选安装：apt-get install ffmpeg')
+    }
   }
   // 3. whisper 服务（带 token，与服务端鉴权一致；否则配置 token 后必误报不可达）
   let actualDevice: string | null = null
@@ -1026,6 +1032,12 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
     child.on('exit', (code) => {
       if (running) {
         running = false
+        // 审计 LOW（2026-08-25）：意外退出后 500ms poll/guard 定时器永久空转——顺手清理
+        // （stop() 路径 running 已 false，不受影响）
+        if (timer) {
+          clearInterval(timer)
+          timer = null
+        }
         opts.onStatus(code === 0 ? '唤醒监听已停止' : `唤醒监听异常退出（${code ?? '?'}）`)
       }
     })
@@ -1059,6 +1071,15 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
       if (timer) {
         clearInterval(timer)
         timer = null
+      }
+      // 审计 MEDIUM（2026-08-25）：耗尽分支此前不杀仍存活的采集进程——麦克风持续被占，
+      // rolloverFile 随 poll 停转永不执行，wav 无界增长（~110MB/h）
+      if (child) {
+        const staleProc = child
+        staleProc.removeAllListeners('exit')
+        staleProc.removeAllListeners('error')
+        child = null
+        staleProc.kill('SIGKILL')
       }
       opts.onStatus('唤醒采集多次重启仍无数据（可能无麦克风输入），请确认麦克风后 /voice wake off 再开启')
       return
