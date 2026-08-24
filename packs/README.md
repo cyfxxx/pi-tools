@@ -39,6 +39,7 @@ packs/
 | `reverse-skill/` | 逆向/CTF 技能包（含 burp-mcp 等） |
 | `dg-piagent/` | pi-agent SDK 开发助手（教程同步维护，API 基线 v0.83.0，含 sdk_doc/场景 references） |
 | `mattpocock-skills/` | 外部工程技能包（收纳 mattpocock/skills @5b15a47，MIT）：8 技能（grilling/tdd/prototype/research/setup-pre-commit/writing-for-agents/resolving-merge-conflicts/codebase-design），原文不动按需引用 |
+| `novel-writing/` | 长篇网文工程化写作系统：六大协议（大纲/规划目录/草案/正文/体检/存档）+ 一致性/叙事/输出条例 + 文风溯源/去AI指纹 + 50章分批/事实锁/状态回证/伏笔追踪/双重审查。整合 tianming-skill 等 3 个开源仓库并优化（CC BY-NC-SA 4.0，来源见包内 README） |
 
 ## 与 pi-backup 的关系
 
