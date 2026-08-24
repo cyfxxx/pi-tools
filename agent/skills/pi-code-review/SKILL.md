@@ -31,6 +31,8 @@ version: v1.3
 | 指定目录全量扫描（无需 git） | `bash ~/.pi/agent/skills/pi-code-review/review.sh --all <dir>` |
 | 查看用法 | `bash ~/.pi/agent/skills/pi-code-review/review.sh --help` |
 
+**意图对齐（Spec 轴，参考 mattpocock/code-review 双轴法）**：先明确变更的「发起意图」——issue/用户需求/commit message 中的原始诉求，一句话写出来。逐文件核对时回答两个独立问题：改动**是否实现该意图**（Spec 轴）？是否符合仓库标准（Standards 轴 = 本清单）？大 diff 时两轴可用 subagent 并行审查再汇总，避免互相污染上下文。
+
 ### 第 2 步：运行确定性检查
 
 运行 `review.sh` 获取：git 卫生（空白错误/密钥扫描/大文件）、语法检查（JS/Python/Shell/JSON/YAML）、可疑模式标记、可用的测试命令清单。
@@ -105,6 +107,8 @@ version: v1.3
 - **LOW**：疑似误报、缺乏上下文、吹毛求疵
 
 无问题时明确说明："审查完成，N 个文件未发现问题。"
+
+**双轴结论**（报告必含）：`Standards 符合度：X/N 项违规 | Spec 满足度：改动是否实现发起意图（是/部分/否，附一句依据）`。两轴结论独立，互不替代。
 
 ## 约定
 

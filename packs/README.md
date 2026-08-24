@@ -38,6 +38,7 @@ packs/
 | `gamedev/` | 游戏开发技能组（skills/design、web、workflow） |
 | `reverse-skill/` | 逆向/CTF 技能包（含 burp-mcp 等） |
 | `dg-piagent/` | pi-agent SDK 开发助手（教程同步维护，API 基线 v0.83.0，含 sdk_doc/场景 references） |
+| `mattpocock-skills/` | 外部工程技能包（收纳 mattpocock/skills @5b15a47，MIT）：8 技能（grilling/tdd/prototype/research/setup-pre-commit/writing-for-agents/resolving-merge-conflicts/codebase-design），原文不动按需引用 |
 
 ## 与 pi-backup 的关系
 
