@@ -54,7 +54,7 @@ interface SharedBudgetState {
   usedTotal: number
   totalBudget: number
   // 压缩阈值基准（pi-context 注册）：pressure/ratio 以距自动压缩阈值计算而非窗口，
-  // 使 plan-mode 等消费者在 1M 窗口 + 200K 压缩配置下不会哑火（审计 M3）
+  // 使 plan-mode 等消费者在 1M 窗口 + 256K 压缩配置下不会哑火（审计 M3）
   compactThreshold: number | null
   // 压缩已发生标记：下一轮 setUsedTokens 直接覆盖为新基线（允许 usedTotal 回落）
   justCompacted: boolean

@@ -545,6 +545,8 @@ export interface RegistryEntry {
   logPath: string
   command: string
   createdAt: string
+  /** 发起会话 id（PI_SESSION_ID）——pi-context 借此识别“本会话产生的后台任务”压缩门。owner 缺失的旧条目不匹配任何会话，不受影响 */
+  owner?: string
 }
 
 export interface Registry {

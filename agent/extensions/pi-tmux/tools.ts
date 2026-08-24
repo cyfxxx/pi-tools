@@ -119,7 +119,15 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         // 仅新启动的会话登记注册表；已存在同名会话（started=false）不登记，
         // 避免 pi 退出时 session_shutdown 误杀用户手动创建的会话
         if (started) {
-          registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
+          registerSession({
+            name,
+            logPath,
+            command: String(params.command),
+            createdAt: new Date().toISOString(),
+            // 审计（2026-08-24）：记录发起会话 id，供 pi-context“本会话后台任务”
+            // 压缩门识别本会话发起的后台任务；owner 为空/缺失视为无主条目不匹配
+            owner: process.env.PI_SESSION_ID || "",
+          })
           // 完成自动唤醒（默认开；沿用已有会话不注册，防误报用户会话）。
           // 审计 LOW：仅通知启用的会话登记句柄——notify=false 无监听定时器、
           // 永不触发 onDone，登记只会残留无法回收的句柄引用。
