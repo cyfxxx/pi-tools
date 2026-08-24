@@ -163,9 +163,12 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
     // 审计 LOW：原实现丢弃 '-' 开头参数（'ls -la' 的命令参数被删）且只取最后
     // 一个位置参数（多词命令丢参）——收集剩余参数 join 保留完整命令
     let launchArgs: string[] = []
-    for (let i = 0; i < args.length; i++) {
+    // 跳过 args[0]（子命令名 new-session 本身），后续按 flag 类型收集启动命令：
+    // -d 无值布尔；-s/-c 消费下一个参数；其余位置参数并入命令（多词命令完整保留）
+    for (let i = 1; i < args.length; i++) {
       const a = args[i]
-      if (['-d', '-s', '-c'].includes(a)) { i++; continue }
+      if (a === '-d') continue
+      if (a === '-s' || a === '-c') { i++; continue }
       launchArgs.push(a)
     }
     const launchCmd = launchArgs.join(' ')

@@ -31,8 +31,8 @@ Write-Host "版本: $Old -> $New"
 # ---- 3. 重跑补丁（升级 dist 后补丁失效；只跑存在的） ----
 foreach ($patch in @('patch-footer-live-context.mjs', 'patch-footer-cache.mjs', 'patch-footer-format.mjs', 'patch-footer-restart-hint.mjs', 'patch-voice-enter.mjs', 'patch-plan-tools.mjs')) {
   # 优先 bin/（种子自带），兜底 scripts/（仓库内）
-  $candidates = @((Join-Path $PSScriptRoot $patch), (Join-Path $Root 'scripts' $patch))
-  $p = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+  # PS 5.1 的 Join-Path 仅接受 2 个位置参数（pwsh7 的 -AdditionalChildPath 不兼容），嵌套拼接
+  $candidates = @((Join-Path $PSScriptRoot $patch), (Join-Path (Join-Path $Root 'scripts') $patch))
   if ($p) {
     Write-Host "-- 重跑补丁 $patch"
     & "$Root\node\node.exe" $p "$Root\pi-global\node_modules\@earendil-works\pi-coding-agent\dist"

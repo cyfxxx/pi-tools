@@ -18,7 +18,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - 本仓库在 Termux/Android、WSL2、Linux 等环境间同步使用（GitHub）。**配置层（settings.json/models.json/auth.json）每环境独立**，不跨机覆盖
 - **例外：`.pi-autopilot-config.json` 入库共享**（无密钥）。某环境需独立值时本地直接改（不入库），或明确是共享变更时改后推送
 - **记忆带环境标签**（`environments` 字段）：`all` 通用 / `termux` / `wsl2` / `linux` / `macos` / `windows`，注入与检索自动按当前环境过滤；知识本身与环境相关才打标
-- **运行时数据隔离**：notes.json / summaries.json / checkpoints / sessions / logs 不入库；entries.json（长期记忆）入库共享，冲突以最新 push 为准（`git checkout --theirs`）
+- **运行时数据隔离**：notes.json / summaries.json / checkpoints / sessions / logs 不入库；entries.json（长期记忆）入库共享，发生冲突时先检查在合并
 - 环境识别/差异表/切换流程：见 `docs/ENVIRONMENTS.md`
 
 ## 验证命令
@@ -35,7 +35,7 @@ node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输�
 ## 关键约定
 
 - **扩展注册**：pi 0.83+ 自动发现 `extensions/` 下含 index.ts 的子目录；settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制包含 / `-` 强制排除）。新扩展须同步：目录 index.ts、extensions/tsconfig.json include、conflict-check.mjs 监听者清单、extensions.test.ts
-- **扩展命令整合规范**：同一扩展 slash 命令 ≤2 个，子命令参数实现，支持 help/-h/--help；子命令补全用 getArgumentCompletions。当前命令面：/voice、/auto、/schedule、/plan、/memory、/usage-diag、/link、/tools。旧命令名与旧扩展名（pi-web-toolkit / pi-router / pi-admin / pi-scheduler）禁止引用
+- **扩展命令整合规范**：同一扩展 slash 命令 ≤2 个，子命令参数实现，支持 help/-h/--help；子命令补全用 getArgumentCompletions。
 - **缓存友好（跨扩展）**：system prompt 注入禁止时间戳/精确数值；压力提示按档位（<75% 不注入、≥75%/≥90% 固定文案）；估算统一用 lib/context-budget.ts 的 estimateTokens；停止生成用 ctx.abort()；细节见 pi-context README / docs/PI-EXT-DEV-NOTES.md
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **后台任务（禁止阻塞前台）**：tmux_run 启动后**立即结束回合**（notify 默认自动唤醒：命令自然结束会话自动退出触发通知；Ctrl-C 中断/长驻命令会话保留，供 tmux_send 交互）；同轮内禁止 tmux_wait；确需等待只用 pattern= 匹配完成标志且 timeout≤60s；until_exit 仅限会自然退出的命令（2026-08-22 起 tmux_run 默认自动退出，until_exit 可直接用）；仅用户明确要求"等它完成"时例外；无 tmux 环境用 nohup 记 PID
