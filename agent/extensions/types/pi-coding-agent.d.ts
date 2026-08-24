@@ -32,9 +32,9 @@ declare module '@earendil-works/pi-coding-agent' {
       signal: AbortSignal | undefined,
       onUpdate: AgentToolUpdateCallback<unknown> | undefined,
       ctx: ExtensionContext,
-    ) => Promise<ToolResult>
+    ) => Promise<AgentToolResult<unknown>>
     renderCall?: (args: Record<string, unknown>, theme: Theme, context: unknown) => unknown
-    renderResult?: (result: ToolResult, options: { expanded?: boolean }, theme: Theme, context: unknown) => unknown
+    renderResult?: (result: AgentToolResult<unknown>, options: { expanded?: boolean }, theme: Theme, context: unknown) => unknown
   }
 
   export type ExtensionMode = 'tui' | 'rpc' | 'json' | 'print'

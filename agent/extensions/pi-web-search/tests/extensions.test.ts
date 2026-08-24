@@ -261,15 +261,18 @@ describe('pi-web-search extension', () => {
 
 // ─── pi-browser (unregistered extension) ─────────────────────
 describe('pi-browser extension', () => {
-  it('registers 8 browser tools', async () => {
+  it('registers 18 browser tools', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-browser/index')).default
     await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(8)
+    expect(pi.registerTool).toHaveBeenCalledTimes(18)
     const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name).sort()
     expect(toolNames).toEqual([
-      'browser_click', 'browser_close', 'browser_evaluate', 'browser_extract',
-      'browser_navigate', 'browser_screenshot', 'browser_scroll', 'browser_type',
+      'browser_click', 'browser_close', 'browser_cookies', 'browser_dialog',
+      'browser_download', 'browser_evaluate', 'browser_extract', 'browser_find',
+      'browser_help', 'browser_navigate', 'browser_network', 'browser_pdf',
+      'browser_screenshot', 'browser_scroll', 'browser_select_option',
+      'browser_type', 'browser_upload', 'browser_wait_for',
     ])
   })
 

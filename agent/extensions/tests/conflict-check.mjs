@@ -129,6 +129,9 @@ async function main() {
       'web_search', 'fetch_url', 'web_fetch',
       'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
       'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
+      'browser_wait_for', 'browser_network', 'browser_select_option', 'browser_dialog',
+      'browser_download', 'browser_upload', 'browser_cookies', 'browser_find',
+      'browser_pdf', 'browser_help',
       'tmux_run', 'tmux_status', 'tmux_read', 'tmux_send', 'tmux_stop', 'tmux_wait',
       'link_send', 'link_status',
     ]
