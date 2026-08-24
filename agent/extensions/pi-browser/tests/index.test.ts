@@ -108,7 +108,8 @@ describe('pi-browser (entry point)', () => {
 
   it('should clean screenshots on session_shutdown', async () => {
     const fs = await import('fs/promises')
-    const shotDir = join(tmpdir(), 'pi-browser-screenshots')
+    // 审计 LOW：截图目录进程专属（含 pid）——cleanScreenshots 只清本进程子目录
+    const shotDir = join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
     await fs.mkdir(shotDir, { recursive: true })
     const testFile = join(shotDir, 'pi-screenshot-test-clean.png')
     await fs.writeFile(testFile, 'test')
@@ -122,9 +123,33 @@ describe('pi-browser (entry point)', () => {
     expect(exists).toBe(false)
   })
 
+  it('cleanScreenshots 只清本进程子目录，不触碰其他进程目录（审计 LOW：跨进程误删防护）', async () => {
+    const fs = await import('fs/promises')
+    const ownDir = join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
+    const otherDir = join(tmpdir(), 'pi-browser-screenshots-otherproc')
+    await fs.mkdir(ownDir, { recursive: true })
+    await fs.mkdir(otherDir, { recursive: true })
+    const ownFile = join(ownDir, 'pi-screenshot-own.png')
+    const otherFile = join(otherDir, 'pi-screenshot-other.png')
+    await fs.writeFile(ownFile, 'test')
+    await fs.writeFile(otherFile, 'test')
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    await lifecycleHandlers['session_shutdown']()
+
+    // 本进程文件被清，其他进程目录文件保留
+    expect(await fs.access(ownFile).then(() => true).catch(() => false)).toBe(false)
+    expect(await fs.access(otherFile).then(() => true).catch(() => false)).toBe(true)
+
+    await fs.unlink(otherFile).catch(() => {})
+    await fs.rmdir(otherDir).catch(() => {})
+  })
+
   it('should trim screenshots on session_compact', async () => {
     const fs = await import('fs/promises')
-    const shotDir = join(tmpdir(), 'pi-browser-screenshots')
+    const shotDir = join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
     await fs.mkdir(shotDir, { recursive: true })
     for (let i = 0; i < 25; i++) {
       await fs.writeFile(join(shotDir, `pi-screenshot-test-compact-${i}.png`), 'test')

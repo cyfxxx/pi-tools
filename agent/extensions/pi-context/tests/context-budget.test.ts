@@ -124,3 +124,30 @@ describe('context-budget: truncateByTokens 边界感知与标记预算 (2026-08-
     expect(out).toContain('[截断]')
   })
 })
+
+describe('context-budget: 压缩阈值基准（审计 M3 修复）', () => {
+  beforeEach(() => resetAllBudgets())
+
+  it('getBudgetReport 以 compactThreshold 为分母，1M 窗口不哑火', async () => {
+    const mod = await import('../../../lib/context-budget.ts')
+    mod.setContextWindow(1_000_000)
+    mod.setCompactThreshold(200_000)
+    mod.setUsedTokens(180_000)
+    const report = mod.getBudgetReport()
+    // 距压缩阈值 90% → high；若按 1M 窗口比例（0.18）会是 low（旧行为哑火）
+    expect(report.ratio).toBeCloseTo(0.9)
+    expect(report.pressure).toBe('high')
+  })
+
+  it('markCompacted 后 setUsedTokens 回落为新基线（压缩后不再误报 critical）', async () => {
+    const mod = await import('../../../lib/context-budget.ts')
+    mod.setCompactThreshold(200_000)
+    mod.setUsedTokens(180_000)
+    expect(mod.getBudgetReport().pressure).toBe('high')
+    mod.markCompacted()
+    mod.setUsedTokens(60_000)
+    const r2 = mod.getBudgetReport()
+    expect(r2.ratio).toBeCloseTo(0.3)
+    expect(r2.pressure).toBe('low')
+  })
+})

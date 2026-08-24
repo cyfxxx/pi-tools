@@ -28,6 +28,11 @@ describe('config', () => {
     delete process.env.PI_WEB_TOOLKIT_HEADLESS
     delete process.env.PI_WEB_TOOLKIT_PROXY
     delete process.env.PI_WEB_TOOLKIT_FINGERPRINT_SEED
+    delete process.env.PI_BROWSER_VIEWPORT_WIDTH
+    delete process.env.PI_BROWSER_VIEWPORT_HEIGHT
+    delete process.env.PI_BROWSER_HEADLESS
+    delete process.env.PI_BROWSER_PROXY
+    delete process.env.PI_BROWSER_FINGERPRINT_SEED
   })
 
   it('should use defaults when no config file or env', async () => {
@@ -67,6 +72,42 @@ describe('config', () => {
     const { loadConfig } = await import('../config')
     const cfg = loadConfig()
     expect(cfg.browser.headless).toBe(false)
+  })
+
+  // ── 审计 LOW：新增 PI_BROWSER_* 前缀优先，保留 PI_WEB_TOOLKIT_* 向后兼容 ──
+  it('should read new PI_BROWSER_* env prefix', async () => {
+    process.env.PI_BROWSER_HEADLESS = 'true'
+    process.env.PI_BROWSER_VIEWPORT_WIDTH = '1920'
+    process.env.PI_BROWSER_VIEWPORT_HEIGHT = '1080'
+    process.env.PI_BROWSER_FINGERPRINT_SEED = 'new-seed'
+    process.env.PI_BROWSER_PROXY = 'http://5.6.7.8:8080'
+    const { loadConfig } = await import('../config')
+    const cfg = loadConfig()
+    expect(cfg.browser.headless).toBe(true)
+    expect(cfg.browser.viewport_width).toBe(1920)
+    expect(cfg.browser.viewport_height).toBe(1080)
+    expect(cfg.browser.fingerprint_seed).toBe('new-seed')
+    expect(cfg.browser.proxy).toBe('http://5.6.7.8:8080')
+  })
+
+  it('should fall back to legacy PI_WEB_TOOLKIT_* when PI_BROWSER_* unset（向后兼容）', async () => {
+    process.env.PI_WEB_TOOLKIT_HEADLESS = 'true'
+    process.env.PI_WEB_TOOLKIT_VIEWPORT_WIDTH = '1600'
+    const { loadConfig } = await import('../config')
+    const cfg = loadConfig()
+    expect(cfg.browser.headless).toBe(true)
+    expect(cfg.browser.viewport_width).toBe(1600)
+  })
+
+  it('should prefer PI_BROWSER_* over PI_WEB_TOOLKIT_*（新前缀优先）', async () => {
+    process.env.PI_WEB_TOOLKIT_HEADLESS = 'true'
+    process.env.PI_BROWSER_HEADLESS = 'false'
+    process.env.PI_WEB_TOOLKIT_VIEWPORT_WIDTH = '800'
+    process.env.PI_BROWSER_VIEWPORT_WIDTH = '1024'
+    const { loadConfig } = await import('../config')
+    const cfg = loadConfig()
+    expect(cfg.browser.headless).toBe(false)
+    expect(cfg.browser.viewport_width).toBe(1024)
   })
 
   it('should read settings from pi-browser section', async () => {

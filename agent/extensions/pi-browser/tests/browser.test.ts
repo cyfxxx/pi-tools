@@ -43,6 +43,11 @@ async function getBrowserManager() {
   return bm
 }
 
+// 审计 LOW：截图目录按进程专属（含 pid），多进程不共享同名目录
+function currentShotDir(): string {
+  return join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
+}
+
 describe('BrowserManager', () => {
   beforeEach(async () => {
     vi.restoreAllMocks()
@@ -178,9 +183,9 @@ describe('BrowserManager', () => {
     await bm.navigate('https://example.com')
 
     const path = await bm.screenshot()
-    // 截图目录 = tmpdir()/pi-browser-screenshots（兼容 Termux 无 /tmp）
-    // Windows 路径含反斜杠，不能拼进 RegExp 字面量，改用 toContain + 尾部模式
-    const shotsDir = join(tmpdir(), 'pi-browser-screenshots')
+    // 审计 LOW：截图目录 = 进程专属 tmpdir()/pi-browser-screenshots-<pid>
+    //（多进程共享同名目录会导致 cleanScreenshots 跨进程误删）
+    const shotsDir = currentShotDir()
     expect(path).toContain(shotsDir)
     expect(path).toMatch(/pi-screenshot-\d+-[a-z0-9]{6}\.png$/)
   })

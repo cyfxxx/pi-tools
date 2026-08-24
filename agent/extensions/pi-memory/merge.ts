@@ -62,22 +62,8 @@ export async function decideMerge(
 
   const best = similar[0]
   const j = best.jaccard
-  const live = activeEntries(entries)
-  const titleMatch = live.find(
-    e => e.title.toLowerCase() === candidate.title.toLowerCase(),
-  )
-
-  // 标题精确匹配 → 更新
-  if (titleMatch) {
-    return {
-      action: 'UPDATE',
-      targetId: titleMatch.id,
-      note: `标题匹配: ${titleMatch.title}`,
-    }
-  }
-
-  // 矛盾检测：同一主体的对立表达（喜欢→不喜欢）→ 取代而非合并
-  // 先于相似度合并判断，避免"用户喜欢咖啡"被并入"用户不喜欢咖啡"
+  // 矛盾检测（语义反转）先于标题精确匹配：标题相同但语义反转的候选
+  // （喜欢X→不喜欢X）必须走 superseded 取代，而非被 UPDATE 直覆盖。
   // 审计 MEDIUM 修复：矛盾判定扩展到 top-N 相似条目——原仅对 top-1 判定，
   // 若矛盾条目的相似度排在第二（第一是别名条目），矛盾会漏检、两对立记忆并存
   for (const { entry } of similar) {
@@ -95,6 +81,20 @@ export async function decideMerge(
     return {
       action: 'ADD',
       note: `矛盾取代 ${entry.title}（语义反转，已标记 superseded）`,
+    }
+  }
+
+  const live = activeEntries(entries)
+  const titleMatch = live.find(
+    e => e.title.toLowerCase() === candidate.title.toLowerCase(),
+  )
+
+  // 标题精确匹配 → 更新（矛盾检测已先行，此处仅同标题非反转情形）
+  if (titleMatch) {
+    return {
+      action: 'UPDATE',
+      targetId: titleMatch.id,
+      note: `标题匹配: ${titleMatch.title}`,
     }
   }
 

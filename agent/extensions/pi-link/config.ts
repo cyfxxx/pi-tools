@@ -80,6 +80,19 @@ export function loadConfig(path = configPath()): LinkConfig {
         if (Array.isArray(dev.altHosts)) {
           dev.altHosts = dev.altHosts.filter(a => a && typeof a.host === 'string' && a.host)
         }
+        // 审计 MEDIUM：仅校验 host 时手工编辑 pi-link.json 可绕过 import-card 加固——
+        // user 以 `-` 开头/含空白会被 ssh 解析为选项（如 -o ProxyCommand → 本机执行面）。
+        // 加载时同规则校验，非法字段丢弃回退默认（与 saveDevice 名称规则对齐）。
+        if (dev.user !== undefined && (typeof dev.user !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(dev.user) || dev.user.startsWith('-'))) {
+          delete dev.user
+        }
+        if (dev.port !== undefined && (typeof dev.port !== 'number' || !Number.isInteger(dev.port) || dev.port < 1 || dev.port > 65535)) {
+          delete dev.port
+        }
+        // sshArgs 仅做形态校验（应为字符串数组）；内容为本地显式配置、非远端进入面，不做白名单限制
+        if (dev.sshArgs !== undefined && !Array.isArray(dev.sshArgs)) {
+          delete dev.sshArgs
+        }
         cfg.devices[name] = dev
       }
     }

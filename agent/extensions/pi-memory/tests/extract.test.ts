@@ -351,3 +351,17 @@ describe('extract: extractTextFromEntries', () => {
     expect(messages[1].content).toBe('plain text')
   })
 })
+
+describe('extract: pending 落盘净化（审计 L4 修复）', () => {
+  it('含密钥消息落盘前被 scrub，不落明文', async () => {
+    const { queuePendingExtract, PENDING_DIR } = await import('../extract.ts')
+    const { readFileSync, readdirSync } = await import('node:fs')
+    const secret = 'sk-abc12345def67890ghi'
+    queuePendingExtract([{ role: 'user', content: `token=${secret}` }], 'sess-scrub')
+    const files = readdirSync(PENDING_DIR).filter((f) => f.endsWith('.json'))
+    expect(files).toHaveLength(1)
+    const raw = readFileSync(PENDING_DIR + '/' + files[0], 'utf-8')
+    expect(raw).not.toContain(secret)
+    expect(raw).toContain('[REDACTED:api-key]')
+  })
+})

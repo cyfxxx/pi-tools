@@ -16,6 +16,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawnSync } from 'node:child_process'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const SCRIPTS_DIR = resolve(__dirname)
@@ -57,11 +58,39 @@ for (const f of patchFiles) {
 
 if (mismatched.length === 0) {
   console.log(`✓ 补丁版本匹配（${patchFiles.length} 个全部声明 @target-version ${currentMinor}，当前 pi ${currentVersion}）`)
-  process.exit(0)
+} else {
+  console.error(`✗ ${mismatched.length} 个补丁与当前 pi ${currentVersion}（期望 @target-version ${currentMinor}）失配:`)
+  for (const { f, declared } of mismatched) {
+    console.error(`   - ${f}: 声明 ${declared}`)
+  }
+  console.error('处理：更新这些文件头部的 @target-version 声明并核对补丁逻辑仍适用（pi update 后原代码可能移位），然后重跑 rebuild')
 }
-console.error(`✗ ${mismatched.length} 个补丁与当前 pi ${currentVersion}（期望 @target-version ${currentMinor}）失配:`)
-for (const { f, declared } of mismatched) {
-  console.error(`   - ${f}: 声明 ${declared}`)
+
+// ── dry-run 命中检查（同 minor 模式漂移检测）──
+// 版本声明匹配≠正则仍能命中真实代码：pi update 后代码片段可能移位但 minor 未变。
+// 以 PATCH_DRY_RUN=1 spawn 各 dist 补丁（只校验不落盘），非 0 退出即模式失效——
+// 显式 warn 而非静默跳过。playwright-core 作用于 agent 依赖而非 dist，不在此列。
+const dryFailures = []
+const drySet = new Set(patchFiles.filter((f) => f !== 'patch-playwright-core.mjs' && !mismatched.some((m) => m.f === f)))
+for (const f of drySet) {
+  const r = spawnSync(process.execPath, [join(SCRIPTS_DIR, f), piDist], {
+    env: { ...process.env, PATCH_DRY_RUN: '1' },
+    encoding: 'utf8',
+    timeout: 30000,
+  })
+  if (r.status !== 0) {
+    dryFailures.push({ f, detail: (r.stderr || r.stdout || '').trim().split('\n').slice(0, 2).join(' | ') })
+  }
 }
-console.error('处理：更新这些文件头部的 @target-version 声明并核对补丁逻辑仍适用（pi update 后原代码可能移位），然后重跑 rebuild')
-process.exit(1)
+if (dryFailures.length === 0) {
+  console.log(`✓ 补丁 dry-run 命中（${drySet.size} 个 dist 补丁均能匹配当前代码）`)
+} else {
+  console.warn(`⚠ ${dryFailures.length} 个补丁 dry-run 未命中（同 minor 但正则/原文已失效，仅提示不阻断）:`)
+  for (const { f, detail } of dryFailures) {
+    console.warn(`   - ${f}: ${detail}`)
+  }
+  console.warn('处理：人工核对这些补丁的匹配片段并更新（否则该补丁在 rebuild 中会静默失效）。')
+}
+
+if (mismatched.length > 0) process.exit(1)
+process.exit(0)

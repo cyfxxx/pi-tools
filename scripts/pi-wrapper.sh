@@ -198,8 +198,8 @@ init_state_file
 
 # L3: pi update 后自动重跑 rebuild.sh 恢复补丁。
 # pi update 是 CLI 一次性命令（经 wrapper 执行 node cli.js update），升级会覆盖 dist，
-# Phase 3 的 7 个补丁（footer 实时token/CH/格式、回车拦截、工具schema、tab 补全、playwright）
-# 全部失效。此处拦截 update：执行成功后自动 rebuild，避免用户遗忘重跑。
+# Phase 3 的 8 个补丁（footer 实时token/CH/格式/重启提示⚠、回车拦截、工具schema、
+# tab 补全、playwright-core）全部失效。此处拦截 update：执行成功后自动 rebuild，避免用户遗忘重跑。
 # 失败不 rebuild（避免在坏状态下改 dist）；rebuild 自身幂等。
 if [ "$1" = "update" ]; then
   echo "[pi-wrapper] 执行 pi update..." >&2

@@ -53,6 +53,11 @@ interface SharedBudgetState {
   // 会话累计使用总量：窗口逐出旧条目不回退（修复"滚动窗口求和 vs 全量窗口比对"语义失真）
   usedTotal: number
   totalBudget: number
+  // 压缩阈值基准（pi-context 注册）：pressure/ratio 以距自动压缩阈值计算而非窗口，
+  // 使 plan-mode 等消费者在 1M 窗口 + 200K 压缩配置下不会哑火（审计 M3）
+  compactThreshold: number | null
+  // 压缩已发生标记：下一轮 setUsedTokens 直接覆盖为新基线（允许 usedTotal 回落）
+  justCompacted: boolean
   outputEntries: OutputEntry[]
   outputTotalTokens: number
   cacheReadTotal: number
@@ -70,6 +75,8 @@ function getState(): SharedBudgetState {
       tokenUsageLog: [],
       usedTotal: 0,
       totalBudget: DEFAULT_TOTAL,
+      compactThreshold: null,
+      justCompacted: false,
       outputEntries: [],
       outputTotalTokens: 0,
       cacheReadTotal: 0,
@@ -98,14 +105,33 @@ export function setContextWindow(contextWindow: number): void {
   }
 }
 
+// 压缩阈值注册（pi-context 在 before_agent_start 报真实阈值）：getBudgetReport 的
+// ratio/pressure 改以它为分母，使压力提示与实际会发生压缩的点对齐，而不是距模型窗口
+// 比例（1M 窗口下 850K critical 阈值不可达 → plan-mode P2/P3 注入整体哑火，审计 M3）。
+export function setCompactThreshold(t: number): void {
+  if (Number.isFinite(t) && t > 0) getState().compactThreshold = t
+}
+
+// 压缩已发生标记：下一轮 setUsedTokens 直接覆盖为新基线（允许 usedTotal 回落），
+// 否则单调不回退会让 plan-mode 在压缩后仍按旧用量注入 critical 压力（审计 M3）。
+export function markCompacted(): void {
+  getState().justCompacted = true
+}
+
 // 真实用量校准（审计 MEDIUM：plan-mode/pi-web-search 的压力提示依赖 usedTotal，
 // 但 recordToolUsage 只统计上报过的工具输出——与真实上下文用量口径不一致）。
 // pi-context 在 before_agent_start 用 ctx.getContextUsage() 拿到真实 tokens 后调用本函数覆盖。
 export function setUsedTokens(used: number): void {
   const s = getState()
   if (Number.isFinite(used) && used >= 0) {
-    // 取 max：report 制累计不回退（会话内单调），真实校准只升不降
-    s.usedTotal = Math.max(s.usedTotal, used)
+    if (s.justCompacted) {
+      // 压缩后回落为真实新基线（替代单调 max）
+      s.usedTotal = used
+      s.justCompacted = false
+    } else {
+      // 取 max：report 制累计不回退（会话内单调），真实校准只升不降
+      s.usedTotal = Math.max(s.usedTotal, used)
+    }
   }
 }
 
@@ -123,7 +149,8 @@ export function recordToolUsage(tool: string, tokens: number): void {
 export function getBudgetReport(): BudgetReport {
   const s = getState()
   const used = s.usedTotal
-  const ratio = s.totalBudget > 0 ? Math.min(1, used / s.totalBudget) : 0
+  const base = s.compactThreshold && s.compactThreshold > 0 ? s.compactThreshold : s.totalBudget
+  const ratio = base > 0 ? Math.min(1, used / base) : 0
 
   let pressure: BudgetReport["pressure"] = "low"
   if (ratio >= CRITICAL_THRESHOLD) pressure = "critical"

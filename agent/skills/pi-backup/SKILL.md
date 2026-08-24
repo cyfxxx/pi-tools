@@ -243,7 +243,7 @@ GitHub 同步完成
 
 **执行方式与进度报告（重要——防止长时间无反馈误判卡死）：**
 
-1. 后台执行二选一（**先探测 `command -v tmux`**；重建场景可能恰好没有 tmux——它是 Phase 3 的重建项）：
+1. 后台执行二选一（**先探测 `command -v tmux`**；重建场景可能恰好没有 tmux——它是 Phase 2-F2 的重建项）：
    - **有 tmux**：`tmux_run` 后台执行，输出落盘 `~/.pi/logs/tmux/<会话>.log`，轮询用 `tmux_read`。
    - **无 tmux**：用 `nohup` 后台执行并重定向日志：`mkdir -p ~/.pi/logs && nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &`；轮询用 `tail -n 30 ~/.pi/logs/rebuild.log`（bash 直跑，不依赖 tmux）。记录 PID（`echo $!`）供卡死判定时 `kill -0` 探活。
    - 单条短命令（如 `mkdir`）可前台执行，但 npm/pip/git clone/模型下载必须后台。
@@ -337,7 +337,7 @@ GitHub 同步完成
 | 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
 | 8d | pi-link 互连公钥 | `scripts/pi-link-keys.sh` 与 `deploy/keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
 
-**Phase 3 — tmux 环境（跨系统兼容，单独一组）：**
+**Phase 2-F2 — tmux 配置同步（跨系统兼容，单独一组）：**
 
 tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不同，重建命令需按发行版选择：
 
@@ -508,7 +508,7 @@ pi-backup verify
 6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
 7. **调度任务文件**：`agent/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
 8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
-9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 Phase 3 自动按系统包管理器安装；若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `docs/alacritty-tmux-setup.md`。
+9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 rebuild Phase 2-F2 自动同步 tmux 配置（tmux 命令本身不随 rebuild 自动安装，缺失时按系统包管理器手动安装）。若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `docs/alacritty-tmux-setup.md`。
 10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
 11. **多机 memory 冲突（P1）**：`memory/entries.json` 入库共享（已带环境标签，pi-memory 注入/检索自动过滤）；`notes.json`/`summaries.json` 已 git 忽略（会话级/环境特定，不入库）。多机交替 push/pull 时 entries.json 冲突处理：`git checkout --theirs memory/entries.json` 保留远程 → 本地重要新增从 stash/备份手工合并（pi-memory 会自动重新提取会话，一般无需手工）。详见 `docs/ENVIRONMENTS.md`。
 12. **配置类文件跨机边界**：`settings.json`（主配置）、`models.json`（模型/密钥，pi ≥0.84 为 `models-store.json`）、`pi-voice.json`（whisper 令牌）均不在 git 同步范围内且默认不进归档。跨机迁移三选一：① `pi-backup create --with-auth` 打包 → restore；② scp 直接传；③ 新设备手动重建。`rebuild` 的验证阶段会探测缺失并给出对应指引（注意：旧脚本探测的是 `models.json`，pi ≥0.84 实际使用 `models-store.json`，以 `pi -p` 冒烟测试为准）。

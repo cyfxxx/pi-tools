@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
-import { readSettings, readModels, listAvailableModels, updateModelConfig, updateSettings, isSensitiveKey } from './config.ts'
+import { readSettings, readModels, listAvailableModels, updateModelConfig, updateSettings, isSensitiveKey, safeConfigKeys } from './config.ts'
 import { listSessions, resolveSession } from './sessions.ts'
 import { writeRestartRequest } from './state.ts'
 import { addTask, deleteTask, listTasks, updateTask, setSettings, readTasks } from './storage.ts'
@@ -251,6 +251,12 @@ export function registerTools(pi: ExtensionAPI): void {
           // 与 admin_set_model/admin_switch_session 的 headless 硬拒绝一致（防无人值守误改凭据）
           return { content: [{ type: 'text', text: `headless 模式拒绝修改敏感配置 "${key}"（无确认通道，请在 TUI 会话中操作）` }], details: null, isError: true }
         }
+      } else if (!safeConfigKeys().includes(key)) {
+        // 审计 MEDIUM：非敏感键也只允许显式白名单内的 settings 键。此前
+        // safeConfigKeys() 定义后从未使用，admin_set_config 可写任意键、绕过
+        // admin_set_model 的 UI 确认 + 重启守卫（如直接改 defaultProvider/extensions）。
+        const whitelist = safeConfigKeys()
+        return { content: [{ type: 'text', text: `键 "${key}" 不在可写白名单（允许: ${whitelist.join(', ')}；敏感键走确认流程）。` }], details: null, isError: true }
       }
       const result = updateSettings(key, parsedValue)
       if (!result.success) return { content: [{ type: 'text', text: result.error || '写入失败' }], details: null, isError: true }

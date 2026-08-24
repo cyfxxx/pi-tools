@@ -582,6 +582,28 @@ export function unregisterSession(name: string): void {
   saveRegistry(reg)
 }
 
+/**
+ * 清理注册表中已死亡会话的陈旧条目（会话自然退出/崩溃后残留，长期累积）。
+ * 审计 LOW 修复：load + 每条目的存活校验（hasSession），不存活则移除并落盘。
+ * tmux 不可用（-V 探测失败）时跳过——避免 tmux 临时故障导致误清全部条目。
+ * 幂等：空表/无需清理均安全返回 0。
+ */
+export async function pruneRegistry(opts: TmuxOpts): Promise<number> {
+  const probe = await runTmux(opts, ['-V'], 5000)
+  if (probe.code !== 0) return 0
+  const reg = loadRegistry()
+  let removed = 0
+  for (const name of Object.keys(reg.sessions)) {
+    const alive = await hasSession(opts, name)
+    if (!alive) {
+      delete reg.sessions[name]
+      removed++
+    }
+  }
+  if (removed > 0) saveRegistry(reg)
+  return removed
+}
+
 export function removeLog(opts: TmuxOpts, name: string): void {
   const p = logPathFor(opts, name)
   try {

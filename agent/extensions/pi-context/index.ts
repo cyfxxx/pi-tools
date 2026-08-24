@@ -6,6 +6,8 @@ import { join } from "node:path";
 import {
 	setContextWindow,
 	setUsedTokens,
+	setCompactThreshold,
+	markCompacted,
 	recordCacheUsage,
 	estimateTokens,
 } from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
@@ -371,6 +373,10 @@ const PLANS_DIR =
   process.env.PI_CONTEXT_PLANS_DIR ?? join(homedir(), ".pi", "plans")
 /** 最近一条用户消息时间戳（context 事件捕获；0=尚无用户消息） */
 let lastUserTs = 0
+/** 最近一次自动压缩时间戳（session_start 恢复二次压缩冷却用，审计 LOW） */
+let lastCompactTs = 0
+/** 恢复路径压缩冷却窗：距上次压缩小于该值时 session_start 不再立即二次压缩 */
+const COMPACT_COOLDOWN_MS = 10 * 60_000
 /** 离开时间门：距最后用户消息超过 IDLE_MS（无消息记录视为已离开） */
 function idleElapsed(): boolean {
   if (IDLE_MS <= 0) return true
@@ -385,10 +391,13 @@ function hasInProgressTask(): boolean {
       .map((d) => ({ name: d.name, ts: Number(d.name.replace("plan-", "")) }))
       .filter((d) => Number.isFinite(d.ts) && Date.now() - d.ts < 7 * 24 * 3600e3)
       .sort((a, b) => b.ts - a.ts)
-    for (const d of dirs) {
-      const content = readFileSync(join(PLANS_DIR, d.name, "plan.md"), "utf8")
-      if (/^\- \[~\]/m.test(content)) return true
-    }
+    // 任务门：最新（7 天内）计划文件存在 in_progress（`- [~]`）即视为有进行中任务。
+    // 审计 M4（2026-08-24）：只以最新计划目录判定——原实现遍历全部 plan-* 目录，
+    // 任一历史项目/旧会话遗留的 in_progress 标记即永久阻塞当前会话自动压缩。
+    const latest = dirs.length > 0 ? dirs[0] : null
+    if (!latest) return false
+    const content = readFileSync(join(PLANS_DIR, latest.name, "plan.md"), "utf8")
+    return /^\- \[~\]/m.test(content)
   } catch (e) {
     // 无计划文件/解析失败 → 视为无进行中任务
     console.error("pi-context: task-gate read failed:", (e as Error).message);
@@ -623,7 +632,11 @@ export default function (pi: ExtensionAPI) {
 			// thinking 档位自适应（task #25）：按真实 tokens/window 比例自动升降档，
 			// 每次切换强制 recordLevelChange 记账；切换后思考量变化由 thinking-meter 持续关联。
 			// 用真实比例（不用 context-budget 的单调 used）：压缩后回落才能触发升回。
-			const ratio = resolved.tokens / resolved.window;
+			// 档位压力基准对齐自动压缩阈值（~200K）而非模型窗口（1M）：对 1M 窗口，
+			// 0.95 降档需 950K 永不可达，自动降档（防 thinking 剪枝核心）会成死代码（审计 M2）。
+			// 改按压缩阈值比例后，接近压缩点前即可触发降档，压缩后回落自然触发升回。
+			const compactT = computeCompactThreshold(resolved.window, { absoluteTokens: ABSOLUTE_TOKENS });
+			const ratio = compactT && compactT > 0 ? resolved.tokens / compactT : resolved.tokens / resolved.window;
 			if (!thinkState && typeof pi.getThinkingLevel === "function") {
 				thinkState = createState(pi.getThinkingLevel());
 			}
@@ -674,6 +687,8 @@ export default function (pi: ExtensionAPI) {
 				onComplete: () => {
 					recordAutoCompact(tokens, contextWindow);
 					compactDecider.markCompact();
+					lastCompactTs = Date.now();
+					markCompacted();
 				},
 				onError: (err) => {
 					autoContinueGate.disarm();
@@ -698,6 +713,8 @@ export default function (pi: ExtensionAPI) {
 			onComplete: () => {
 				recordAutoCompact(tokens, decision.threshold);
 				compactDecider.markCompact();
+				lastCompactTs = Date.now();
+				markCompacted();
 			},
 			onError: (err) => {
 				autoContinueGate.disarm();
@@ -749,6 +766,9 @@ export default function (pi: ExtensionAPI) {
 		// 常规 agent_settled 仍按绝对 200K + 三重门
 		const startThreshold = RESTART_TOKENS;
 		if (tokens < startThreshold) return;
+		// 冷却（审计 LOW）：距上次压缩 <10min 的恢复不再立即二次压缩，
+		// 避免恢复/重启流程连续触发两轮压缩的开销
+		if (Date.now() - lastCompactTs < COMPACT_COOLDOWN_MS) return;
 		// 离开>10 分钟且无进行中任务才压缩（与 agent_settled 同策略；resume 场景
 		// 用户历史消息时间通常已远超空闲门；有进行中任务时不打扰）
 		if (!idleElapsed() || hasInProgressTask()) {
@@ -761,6 +781,8 @@ export default function (pi: ExtensionAPI) {
 			onComplete: () => {
 				recordAutoCompact(tokens, startThreshold);
 				// session_start 压缩不参与日常 decider 的 cooldown（两者独立）
+				lastCompactTs = Date.now();
+				markCompacted();
 			},
 			onError: (err) => {
 				// 恢复时压缩失败不致命：首轮 agent_settled 会再判定
@@ -984,9 +1006,10 @@ export default function (pi: ExtensionAPI) {
 		const resolved = resolveContext(ctx);
 		let pressureLine = "";
 		if (resolved) {
+			const threshold = computeCompactThreshold(resolved.window, { absoluteTokens: ABSOLUTE_TOKENS });
 			setContextWindow(resolved.window);
 			setUsedTokens(resolved.tokens); // 真实用量校准：plan-mode 等共享库消费者压力提示随之准确
-			const threshold = computeCompactThreshold(resolved.window, { absoluteTokens: ABSOLUTE_TOKENS });
+			setCompactThreshold(threshold ?? 0); // 压缩阈值为 pressure 分母（审计 M3：1M 窗口下 850K 不可达会哑火）
 			if (threshold !== null && threshold > 0) {
 				const near = resolved.tokens / threshold;
 				if (near >= 0.9) {

@@ -700,6 +700,12 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   // Inject plan/execution context before agent starts
   pi.on("before_agent_start", async () => {
     if (planModeEnabled) {
+      // 计划模式压缩恢复标记（审计 L3）：本分支提前 return，后面的
+      // compaction-recovery（P1）不可达 → 这里补消费，否则 _ctx.just_compacted 常驻
+      {
+        const n = loadNotes();
+        if (n["_ctx.just_compacted"] === "true") clearCompactionFlag();
+      }
       const pressureTag = getTokenPressureTag() || "";
       const preamble = pressureTag ? `${pressureTag}\n` : "";
       const content = planModeFullInjected

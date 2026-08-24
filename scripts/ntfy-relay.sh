@@ -3,7 +3,19 @@
 # 用法: bash scripts/ntfy-relay.sh {start|stop|restart|status}
 set -uo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-NODE=/root/.local/share/pi-node/node-v22.23.1-linux-arm64/bin/node
+# node 动态解析：优先 PATH，其次 current 软链，再次 glob 最近版本目录（node 随 pi
+# 安装于 ~/.local/share/pi-node/，版本目录随升级变化——硬编码路径已过期）
+NODE="$(command -v node 2>/dev/null || true)"
+if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
+  NODE="$(ls -d ~/.local/share/pi-node/current/bin/node 2>/dev/null || true)"
+fi
+if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
+  NODE="$(ls ~/.local/share/pi-node/node-v*/bin/node 2>/dev/null | sort -V | tail -1 || true)"
+fi
+if [ -z "$NODE" ] || [ ! -x "$NODE" ]; then
+  echo "错误：找不到 node——请先安装 pi（node 随 pi 装入 ~/.local/share/pi-node/），或将 node 加入 PATH" >&2
+  exit 1
+fi
 PID_FILE="$DIR/agent/.ntfy-relay.pid"
 LOG="$DIR/logs/ntfy-relay.log"
 

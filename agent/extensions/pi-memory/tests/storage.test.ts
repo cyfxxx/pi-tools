@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { MemoryEntry, SummaryEntry } from '../types.ts'
@@ -394,5 +394,31 @@ describe('storage: secret scrubbing', () => {
     const { scrubSecrets } = await import('../storage.ts')
     const once = scrubSecrets('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
     expect(scrubSecrets(once)).toBe(once)
+  })
+})
+
+describe('storage: corruption 防护与并发合并（审计 HIGH/MEDIUM 修复）', () => {
+  it('loadEntries 遇损坏 JSON：备份 .corrupt-* 且返回 []（不静默覆盖清空）', async () => {
+    const { loadEntries } = await import('../storage.ts')
+    const file = join(dir, 'entries.json')
+    writeFileSync(file, 'garbage {{{ not json <<<<<<< HEAD conflict')
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const loaded = loadEntries()
+    logSpy.mockRestore()
+    expect(loaded).toEqual([])
+    expect(existsSync(file)).toBe(false) // 损坏原文件已改名备份，不被后续覆盖
+    const backups = readdirSync(dir).filter((f) => f.startsWith('entries.json.corrupt-'))
+    expect(backups).toHaveLength(1)
+    expect(readFileSync(join(dir, backups[0]), 'utf-8')).toContain('<<<<<<<')
+  })
+
+  it('saveEntries 返回合并后数组，吸收磁盘并发新增（L5）', async () => {
+    const { saveEntries } = await import('../storage.ts')
+    const a = makeEntry({ id: 'a1', title: 'A' })
+    const b = makeEntry({ id: 'b1', title: 'B' })
+    saveEntries([a, b])
+    // 调用方内存只剩 a（旧快照），磁盘另有 b；saveEntries 应返回合并两者
+    const merged = saveEntries([a])
+    expect(merged.map((e) => e.id).sort()).toEqual(['a1', 'b1'])
   })
 })

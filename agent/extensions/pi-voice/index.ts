@@ -149,11 +149,15 @@ export default function (pi: ExtensionAPI): void {
   // 启动即清理残留：进程重启后必然无进行中录音，tmpDir 全部残留（m4a/wav）立即删除；
   // 另清理重启/崩溃遗留的孤儿录音进程（幂等：无录音时 -q 输出 No recording to stop 且 exit 0），
   // 否则 termux-microphone-record 单实例占用会导致“只能开不能关”
-  cleanupStaleAudio(config, 0)
+  // 审计 MEDIUM（2026-08-24）：staleMs 用 5s 小窗口而非 0——单进程重启语义不变
+  // （重启后无进行中，旧残留 mtime 必远超 5s），但同宿主其它 pi 进程刚写入的文件不会被误删
+  cleanupStaleAudio(config, 5_000)
   void stopRecording(config).catch(() => undefined)
   // 清理 TTS 僵尸进程（平台相关：termux 为 termux-tts-speak / termux-api TextToSpeech；linux 为 espeak-ng / paplay）
   for (const pat of platformOf(config).tts.zombiePatterns()) {
-    void runCommand('pkill', ['-f', pat], { timeoutMs: 5000 }).catch(() => undefined)
+    // pkill -x 精确进程名，收敛误杀面（-f 全命令行匹配会误杀同宿主其它用途的
+    // espeak-ng/paplay 进程，审计 MEDIUM/2026-08-24）
+    void runCommand('pkill', ['-x', pat], { timeoutMs: 5000 }).catch(() => undefined)
   }
 
   ttsQueue = createTtsDispatcher({
@@ -520,7 +524,8 @@ export default function (pi: ExtensionAPI): void {
     dictation.cleanup()
     wakeSession?.stop()
     wakeSession = null
-    cleanupStaleAudio(config, 0)
+    // 与启动清理一致用 5s 小窗口，避免并发进程刚写入的数据被全量删除（审计 MEDIUM）
+    cleanupStaleAudio(config, 5_000)
   })
 
   // 自动唤醒：配置 autoWake=true 时启动即后台监听（无需手动 /voice wake on）。

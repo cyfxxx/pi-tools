@@ -269,3 +269,29 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
     expect(compact2).not.toHaveBeenCalled()
   })
 })
+
+  it('M4：历史/旧会话遗留 in_progress（非最新目录）不再阻塞压缩', async () => {
+    const { handlers } = await loadIndex()
+    // 旧目录（ts 较小）含进行中步骤——修复前的遍历会因它阻塞
+    const oldDir = join(dir, 'plans', 'plan-1787200000000')
+    mkdirSync(oldDir, { recursive: true })
+    writeFileSync(join(oldDir, 'plan.md'), '# 计划\n- [~] 1. 旧任务 (正在跑)\n', 'utf8')
+    // 最新目录无进行中任务
+    const newDir = join(dir, 'plans', 'plan-1787300000000')
+    mkdirSync(newDir, { recursive: true })
+    writeFileSync(join(newDir, 'plan.md'), '# 计划\n- [ ] 1. 待办\n', 'utf8')
+    const compact = vi.fn()
+    handlers.get('agent_settled')![0](undefined, overThresholdCtx(compact as never))
+    expect(compact).toHaveBeenCalled()
+  })
+
+  it('M4：最新目录含 in_progress → 仍阻塞压缩', async () => {
+    const { handlers } = await loadIndex()
+    // 最新目录含进行中任务（应阻塞，与单一目录旧行为一致）
+    const newDir = join(dir, 'plans', 'plan-1787300000000')
+    mkdirSync(newDir, { recursive: true })
+    writeFileSync(join(newDir, 'plan.md'), '# 计划\n- [~] 1. 新任务 (正在跑)\n', 'utf8')
+    const compact = vi.fn()
+    handlers.get('agent_settled')![0](undefined, overThresholdCtx(compact as never))
+    expect(compact).not.toHaveBeenCalled()
+  })

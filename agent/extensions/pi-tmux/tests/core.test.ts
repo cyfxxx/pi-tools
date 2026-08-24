@@ -222,3 +222,78 @@ describe('pi-tmux 真实 tmux 会话（环境具备 tmux 时）', () => {
     removeLog(opts, probe)
   }, 30000)
 })
+
+// 审计 LOW：注册表陈旧条目清理（会话自然退出/崩溃后残留）。
+// 用临时 PI_HOME 隔离真实注册表，绝不触碰 ~/.pi/agent/.pi-tmux-registry.json
+const pruneRealHome = process.env.PI_HOME
+
+describe('pi-tmux registry 清理（pruneRegistry）', () => {
+  const opts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-prune-test'), prefix: 'pi-' }
+  const testHome = join(tmpdir(), 'pi-tmux-prune-home')
+
+  beforeEach(() => {
+    process.env.PI_HOME = testHome
+  })
+  afterEach(() => {
+    if (pruneRealHome === undefined) delete process.env.PI_HOME
+    else process.env.PI_HOME = pruneRealHome
+  })
+
+  it('会话自然退出后移除陈旧条目，存活会话保留（集成；无 tmux 环境验证幂等安全）', async () => {
+    const { runTmux } = await import('../core')
+    const avail = await runTmux(opts, ['-V'], 5000)
+    if (avail.code === 127) {
+      // 无 tmux：tmux 不可用守卫 → 返回 0 且不误清
+      const { pruneRegistry, loadRegistry } = await import('../core')
+      expect(await pruneRegistry(opts)).toBe(0)
+      expect(Object.keys(loadRegistry().sessions).length).toBe(0)
+      return
+    }
+    const core = await import('../core')
+    const { hasSession, killSession, removeLog, unregisterSession } = core
+    const shortName = 'pi-prune-short'
+    const liveName = 'pi-prune-live'
+    await killSession(opts, shortName).catch(() => {})
+    await killSession(opts, liveName).catch(() => {})
+    unregisterSession(shortName)
+    unregisterSession(liveName)
+
+    // 短命令会话：自然退出 → 注册表应被清理
+    await core.startSession(opts, 'prune-short', 'echo prune-done', tmpdir())
+    core.registerSession({
+      name: shortName,
+      logPath: core.logPathFor(opts, shortName),
+      command: 'echo prune-done',
+      createdAt: new Date().toISOString(),
+    })
+    // 长驻会话：存活 → 注册表保留
+    await core.startSession(opts, 'prune-live', 'sleep 60', tmpdir())
+    core.registerSession({
+      name: liveName,
+      logPath: core.logPathFor(opts, liveName),
+      command: 'sleep 60',
+      createdAt: new Date().toISOString(),
+    })
+
+    // 等短会话自然结束
+    const deadline = Date.now() + 8000
+    while (Date.now() < deadline && (await hasSession(opts, shortName))) {
+      await new Promise((r) => setTimeout(r, 200))
+    }
+
+    const removed = await core.pruneRegistry(opts)
+    expect(removed).toBe(1)
+    const reg = core.loadRegistry()
+    expect(reg.sessions[shortName]).toBeUndefined()
+    expect(reg.sessions[liveName]).toBeDefined()
+
+    // 幂等：再次清理无变化
+    expect(await core.pruneRegistry(opts)).toBe(0)
+
+    await killSession(opts, liveName).catch(() => {})
+    unregisterSession(shortName)
+    unregisterSession(liveName)
+    removeLog(opts, shortName)
+    removeLog(opts, liveName)
+  }, 30000)
+})

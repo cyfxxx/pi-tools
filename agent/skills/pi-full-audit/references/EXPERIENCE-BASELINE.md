@@ -13,3 +13,13 @@
 - 同轮并行 edit+bash 执行顺序不保证，验证性 grep 可能读到编辑前快照——改动验证放独立轮。
 - SECRET_PATTERNS 键值形态模式排除集须含 `[`（\x5b），否则二次匹配 `[REDACTED:xxx]` 覆盖强模式结果（storage.test 捕获此回归）。
 - 安全修复改命令输出格式（如 session-dir 加引号）会使测试断言失配——先判实现 vs 测试谁对，行为变化同步更新断言。
+
+### 2026-08-24 全项目体检 + 修复闭环
+- **多 edit 工具整批原子失败教训**：一次 edit 调用里多个 edits 若其中一个 oldText 不匹配，**整批都不应用**——把 retrieval 的 qualityScore 替换误放进 merge.ts 的调用即因此失败，且拼接出来的 newText 丢了 daysOld 计算行，先读回文件修复再重排。
+- **vitest fake timers 默认伪造 Date**：useFakeTimers 下 advanceTimersByTime 会同步推进 Date.now()——pi-voice 看门狗守卫（`Date.now()-spawnAt<8s`）因此在新进程 9s 后照常判定停滞重启，导致 rollover 测试断言 spawn 次数多 1。写 timing 相关断言先想 fake Date 有无参与。
+- **append 测试到 describe 之外**：cat >> 追加 it() 到文件尾会落在 describe 闭括号后（顶层），引用不到 describe 局部变量（statuses is not defined）——追加到测试文件必须先看末尾是否 describe 闭合。
+- **cache-guard 整文件指纹对注释/逻辑改动敏感**：pi-context/index.ts、lib/context-budget.ts 仅改逻辑/注释即触发基线漂移；确认注入文案未变后 --update-baseline 固化（文案本身与 sleep 阈值/压力提示文本均未触碰）。
+- **entries.json 运行时回收 vs 审计误毁**：git diff 出现大量条目删除先 parse 对比可用性——消失条目全带 deleted/superseded 标记即为良性回收，非数据丢失；改善判断脚本（git show HEAD 解析对比活跃 id 集合）值得沉淀。
+- **修复回归测试姿势**：H1 损坏备份用 readdirSync 找 .corrupt-* 断言备份存在；M3 pressure 基准用 setCompactThreshold+setUsedTokens 直接可单测；pi-link config 校验新建独立 test 文件即可（loadConfig 可传 path）。
+- **审计排查路径**：admin_set_config 白名单接入应先看 safeConfigKeys 定义/quote（config.ts:108），复用不新写。
+- 未处理项如实标注：finalizeInjected 竞态无完美信号（window 窄），留守以 roundId 确认的后续优化；pi-voice termux stopRecording 全局 -q 属设备单实例设计，维持现状。

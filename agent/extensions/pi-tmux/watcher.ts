@@ -30,6 +30,11 @@ export interface WatcherDeps {
   hasSession: (name: string) => Promise<boolean>
   /** 触发新回合的通知（闭包注入 pi.sendMessage） */
   notify: (text: string) => Promise<void>
+  /**
+   * 会话自然完成（watch 轮询探测到 !alive）时回调——供外部同步清理句柄/注册表引用。
+   * 主动停止（stop()/stopAll()）不走此回调（tmux_stop 由调用方自行清理）。
+   */
+  onDone?: (name: string) => void
 }
 
 export interface WatcherHandle {
@@ -121,6 +126,10 @@ export function createCompletionWatcher(deps: WatcherDeps): CompletionWatcher {
       if (alive) return
 
       clear(name)
+      // 审计 LOW 修复：会话自然完成（非 tmux_stop）——同步通知外部（tools.ts 借
+      // 此从 watcherHandles Map 删除句柄、清理注册表陈旧条目），防长时间累积。
+      // clear 后定时器已停，本回调恰好触发一次。
+      deps.onDone?.(name)
       if (notified.has(name)) return // 已通知过（防并发轮询重复触发）
       notified.add(name)
       if (acked.has(name)) return // 已被 tmux_read 消费：不再通知（不打扰）

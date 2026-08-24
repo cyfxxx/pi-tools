@@ -133,14 +133,15 @@ set_mirrors() {
       ok "GitHub 直连最快（${best_speed}B/s）"
     fi
 
-    # pip
+    # pip（写入前备份已有配置，避免无备份覆盖；回滚: mv ~/.pip/pip.conf.pi.bak ~/.pip/pip.conf）
     mkdir -p ~/.pip
+    if [ -f ~/.pip/pip.conf ]; then cp -p ~/.pip/pip.conf ~/.pip/pip.conf.pi.bak; fi
     cat > ~/.pip/pip.conf <<'EOF'
 [global]
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 trusted-host = pypi.tuna.tsinghua.edu.cn
 EOF
-    ok "pip mirror → tuna.tsinghua"
+    ok "pip mirror → tuna.tsinghua（旧配置已备份 ~/.pip/pip.conf.pi.bak，回滚: mv pip.conf.pi.bak pip.conf）"
 
     # apt (Ubuntu ports for arm64)
     # 先确保 ca-certificates，否则 HTTPS 镜像会因证书验证失败
@@ -1355,7 +1356,7 @@ echo ""
 echo "  启动 SearXNG:    $PI_HOME/searxng/start.sh"
 echo "  停止 SearXNG:    $PI_HOME/searxng/stop.sh"
 echo "  重新生成配置:    $PI_HOME/searxng/generate-config.sh --force"
-echo "  安装浏览器:      cd $PI_HOME && npx cloakbrowser install"
+echo "  安装浏览器:      cd $PI_HOME/agent && npx cloakbrowser install"
 echo "  安装定时调度:    $PI_HOME/scripts/install-cron.sh"
 echo "  Whisper 转写:    $PI_HOME/scripts/pi-whisper.sh {start|stop|status}"
 echo "  wrapper 自愈:    $PI_HOME/scripts/install-wrapper.sh --ensure"

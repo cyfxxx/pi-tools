@@ -212,3 +212,14 @@ describe('retrieval: bi-temporal asOf（2026-08-20，graphiti 时间窗本地化
     expect(results.map(e => e.id)).toEqual([live.id])
   })
 })
+
+describe('retrieval: qualityScore recency（审计 L2 修复）', () => {
+  it('同 createdAt 但 updatedAt 新者分更高', async () => {
+    const { qualityScore } = await import('../retrieval.ts')
+    const oldTs = '2026-01-01T00:00:00.000Z'
+    const freshTs = new Date().toISOString()
+    const stale = makeEntry({ id: 'stale', createdAt: oldTs, updatedAt: oldTs, recurrence: 1, confidence: 0.8 })
+    const fresh = makeEntry({ id: 'fresh', createdAt: oldTs, updatedAt: freshTs, recurrence: 1, confidence: 0.8 })
+    expect(qualityScore(fresh)).toBeGreaterThan(qualityScore(stale))
+  })
+})

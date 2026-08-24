@@ -42,6 +42,32 @@ function readJSON<T>(file: string): T | null {
   }
 }
 
+// 健壮读取 entries 存储：区分「文件不存在」（首次/重建，正常返回 null）与
+// 「解析失败」（git 冲突标记/半截 checkout/损坏）——后者是 HIGH 数据丢失面：
+// 原实现静默返回 []，且 saveEntries 读盘合并同样得 [] 后 writeJSONAtomic 全量覆盖，
+// 全库记忆在无感知下被清空。修复：解析失败先备份原文件到 .corrupt-<ts>（保留
+// 可人工恢复，不被后续覆盖）+ 显式告警，绝不静默。
+function readEntriesFile(): MemoryStore | null {
+  try {
+    return JSON.parse(readFileSync(ENTRIES_FILE, 'utf-8')) as MemoryStore
+  } catch {
+    if (!existsSync(ENTRIES_FILE)) return null
+    backupCorruptFile(ENTRIES_FILE, 'entries')
+    return null
+  }
+}
+
+function backupCorruptFile(file: string, kind: string): void {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const backup = `${file}.corrupt-${stamp}`
+    renameSync(file, backup)
+    console.error(`[pi-memory] ${kind} 存储损坏或含 git 冲突标记（${file}）：已备份到 ${backup} 避免覆盖丢失，请人工检查恢复后再移除该备份。`)
+  } catch (e) {
+    console.error(`[pi-memory] ${kind} 存储损坏（${file}）且自动备份失败，原文件保持原位：`, e)
+  }
+}
+
 export function writeJSONAtomic(file: string, data: unknown) {
   ensureDir()
   // pid 后缀：主进程与提取子进程并发写同文件时互不踩踏 tmp 文件
@@ -105,7 +131,7 @@ function sanitizeSummary(s: SummaryEntry): SummaryEntry {
 
 export function loadEntries(): MemoryEntry[] {
   ensureDir()
-  const store = readJSON<MemoryStore>(ENTRIES_FILE)
+  const store = readEntriesFile()
   if (!store || !Array.isArray(store.entries)) return []
   return store.entries.map(migrateEntry)
 }
@@ -118,7 +144,7 @@ function migrateEntry(e: MemoryEntry): MemoryEntry {
   return e
 }
 
-export function saveEntries(entries: MemoryEntry[], opts: { excludeIds?: Set<string> } = {}) {
+export function saveEntries(entries: MemoryEntry[], opts: { excludeIds?: Set<string> } = {}): MemoryEntry[] {
   // 写前重读合并（审计 MEDIUM）：提取子进程（LLM 分钟级）写回前主进程可能已写入
   // 新条目，全量覆盖会丢更新——重读磁盘按 id 合并（传入快照优先），补上并发新增
   let merged = entries
@@ -137,11 +163,13 @@ export function saveEntries(entries: MemoryEntry[], opts: { excludeIds?: Set<str
     /* 读失败（文件不存在/损坏）用传入快照 */
   }
   writeJSONAtomic(ENTRIES_FILE, { version: STORE_VERSION, entries: merged.map(sanitizeEntry) } satisfies MemoryStore)
+  // LOW 修复：返回合并后数组（含磁盘并发新增），调用方吸收避免内存态与磁盘脱节
+  return merged
 }
 
 function readEntriesRaw(): MemoryEntry[] {
   ensureDir()
-  const store = readJSON<MemoryStore>(ENTRIES_FILE)
+  const store = readEntriesFile()
   if (!store || !Array.isArray(store.entries)) return []
   return store.entries
 }
@@ -276,8 +304,8 @@ export function storeEntry(
     e.updatedAt = entry.updatedAt
     e.accessedAt = entry.accessedAt
     if (entry.lastSessionId) e.lastSessionId = entry.lastSessionId
-    saveEntries(entries)
-    return { entries, action: 'updated' }
+    const merged = saveEntries(entries)
+    return { entries: merged, action: 'updated' }
   }
 
   const contentTokens = tokenize(entry.content)
@@ -297,13 +325,13 @@ export function storeEntry(
     e.updatedAt = entry.updatedAt
     e.accessedAt = entry.accessedAt
     if (entry.lastSessionId) e.lastSessionId = entry.lastSessionId
-    saveEntries(entries)
-    return { entries, action: 'merged' }
+    const merged = saveEntries(entries)
+    return { entries: merged, action: 'merged' }
   }
 
   entries.push(entry)
-  saveEntries(entries)
-  return { entries, action: 'created' }
+  const merged2 = saveEntries(entries)
+  return { entries: merged2, action: 'created' }
 }
 
 // Mem0 式四操作应用（决策由 merge.ts 生成）
@@ -316,8 +344,8 @@ export function applyMem0Action(
   switch (action) {
     case 'ADD': {
       entries.push(candidate)
-      saveEntries(entries)
-      return { entries, applied: true }
+      const merged = saveEntries(entries)
+      return { entries: merged, applied: true }
     }
     case 'UPDATE': {
       const idx = entries.findIndex(e => e.id === targetId)
@@ -332,16 +360,16 @@ export function applyMem0Action(
       if (candidate.observedAt) e.observedAt = candidate.observedAt
       // 与手动路径（storeEntry）一致：合并环境并集，跨环境提取不丢标签
       e.environments = mergeEnvironments(e.environments, candidate.environments)
-      saveEntries(entries)
-      return { entries, applied: true }
+      const merged = saveEntries(entries)
+      return { entries: merged, applied: true }
     }
     case 'DELETE': {
       const idx = entries.findIndex(e => e.id === targetId)
       if (idx === -1) return { entries, applied: false }
       entries[idx].deleted = true
       entries[idx].updatedAt = new Date().toISOString()
-      saveEntries(entries)
-      return { entries, applied: true }
+      const merged = saveEntries(entries)
+      return { entries: merged, applied: true }
     }
     case 'NOOP':
       return { entries, applied: false }

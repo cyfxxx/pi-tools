@@ -108,13 +108,21 @@ export function statsByTask(runs: TelemetryEntry[]): TaskStats[] {
 }
 
 export function todayRuns(runs: TelemetryEntry[]): number {
-  const today = new Date().toISOString().slice(0, 10)
-  return runs.filter(r => r.ts.slice(0, 10) === today).length
+  const today = localDay(new Date())
+  return runs.filter(r => localDay(r.ts) === today).length
 }
 
 export function todayCost(runs: TelemetryEntry[]): number {
-  const today = new Date().toISOString().slice(0, 10)
-  return runs.filter(r => r.ts.slice(0, 10) === today).reduce((s, r) => s + (r.estCost || 0), 0)
+  const today = localDay(new Date())
+  return runs.filter(r => localDay(r.ts) === today).reduce((s, r) => s + (r.estCost || 0), 0)
+}
+
+// 本地时区日界（审计 LOW）：toISOString().slice(0,10) 是 UTC 日界，东八区 0-8 点
+// 的任务被归到前一日，预算与报告错位。统一按本地日期切分。
+function localDay(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d
+  const off = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - off).toISOString().slice(0, 10)
 }
 
 // 估算成本：读 models.json 可选 pricePer1kIn/pricePer1kOut 字段

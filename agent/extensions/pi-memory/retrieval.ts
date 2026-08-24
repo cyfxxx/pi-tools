@@ -55,7 +55,10 @@ export function bm25Score(
 // 质量分：置信度 + 时效（指数衰减，半衰期约 62 天）+ 引用频率（归一化 0-1）
 export function qualityScore(e: MemoryEntry): number {
   const now = Date.now()
-  const daysOld = (now - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+  // recency 用最近一次内容更新时间（updatedAt），而非 createdAt——频繁 UPDATE 的
+  // 记忆 recency 才真实反映活跃度（审计 LOW）。没有 updatedAt 的旧条目回退 createdAt。
+  const ts = e.updatedAt || e.createdAt
+  const daysOld = (now - new Date(ts).getTime()) / (1000 * 60 * 60 * 24)
   const recency = Math.exp(-daysOld / 90)
   const recurrence = Math.min(e.recurrence / 10, 1)
   return e.confidence * 0.5 + recency * 0.25 + recurrence * 0.25

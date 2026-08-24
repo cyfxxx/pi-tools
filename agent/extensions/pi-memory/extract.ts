@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import type { MemoryCategory, MemoryEntry, SummaryEntry } from './types.ts'
-import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR, writeJSONAtomic } from './storage.ts'
+import { loadEntries, saveEntries, appendSummary, tokenize, DATA_DIR, writeJSONAtomic, scrubSecrets } from './storage.ts'
 import { mergeCandidates } from './merge.ts'
 import { detectEnvironment } from './env.ts'
 
@@ -398,7 +398,9 @@ export function queuePendingExtract(messages: ExtractMessage[], sessionId: strin
       createdAt: Date.now(),
       messages,
     }
-    writeFileSync(file, JSON.stringify(job))
+    // 审计 LOW：pending 落盘 raw transcript 未经 scrub，与落库层净化口径不一致——
+    // 写盘前对 JSON 序列化结果脱敏（占位符替换不破坏 JSON 结构）
+    writeFileSync(file, scrubSecrets(JSON.stringify(job)))
     return file
   } catch {
     return null
@@ -476,7 +478,8 @@ export async function processPendingExtracts(opts: ExtractOptions = {}): Promise
         removePendingExtract(file)
       } else {
         try {
-          writeFileSync(join(PENDING_DIR, file), JSON.stringify(job))
+          // 失败计数写回同样过 scrub（对象与 401 同源，保持一致）
+          writeFileSync(join(PENDING_DIR, file), scrubSecrets(JSON.stringify(job)))
         } catch { /* 写回失败保留原文件 */ }
       }
       failed++

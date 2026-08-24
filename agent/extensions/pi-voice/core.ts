@@ -900,6 +900,7 @@ const WAKE_POLL_MS = 500 // 检测间隔
 const WAKE_STALL_MS = 8000 // ring 停滞判定阈值
 const WAKE_MIN_ALIVE_MS = 8000 // spawn 后 8s 内不判定（启动窗口，与停滞阈值同长，避免重启后紧接着再判定）
 const WAKE_MAX_RESTARTS = 3 // 连续停滞重启上限
+const WAKE_FILE_MAX_BYTES = 64 * 1024 * 1024 // 采集 wav 文件上限（~35min）；超限滚动重启，防无限增长
 const WAV_HEADER_LEN = 44 // 标准 PCM wav 头长度（parec --file-format=wav 直出）
 // 采集走文件而非 stdout：pi 扩展沙箱下 spawn 的 stdout 被替换为 IPC socket，长时间
 // 流式数据不达（实测 0 字节），而文件模式（dictation 同款参数）稳定可靠。
@@ -974,6 +975,13 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
   const poll = async (): Promise<void> => {
     if (!running || inFlight) return
     fileRead()
+    // 审计 MEDIUM：文件超上限滚动重启，保证采集文件体长有界
+    try {
+      if (statSync(wakeFile).size > WAKE_FILE_MAX_BYTES) {
+        rolloverFile()
+        return
+      }
+    } catch { /* 文件暂不可读：下轮再判 */ }
     if (ring.length < 16000) return // 不足 1s 不上传，避免反复空检测
     const upLen = WAKE_UPLOAD_MS * 16 * 2
     const seg = ring.length > upLen ? ring.subarray(ring.length - upLen) : ring
@@ -1021,6 +1029,23 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
         opts.onStatus(code === 0 ? '唤醒监听已停止' : `唤醒监听异常退出（${code ?? '?'}）`)
       }
     })
+  }
+
+  // 采集文件滚动重启（审计 MEDIUM/2026-08-24）：wav 只读尾不截断，长时间监听
+  // 文件无界增长（16kHz×2B≈31KB/s≈110MB/h）。文件超上限时滚动采集进程让文件有界
+  // （数据健康滚动，不计数停滞重启）。
+  const rolloverFile = (): void => {
+    if (!child) return
+    const stale = child
+    stale.removeAllListeners('exit')
+    stale.removeAllListeners('error')
+    child = null
+    ring = Buffer.alloc(0)
+    lastDataAt = 0
+    lastReadPos = 0
+    stale.kill('SIGKILL')
+    rmSync(wakeFile, { force: true })
+    spawnRecorder()
   }
 
   // 采集停滞看门狗：parec 存活但长时间无数据 → 判定 stream 挂起，重启采集进程。

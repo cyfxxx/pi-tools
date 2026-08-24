@@ -140,7 +140,9 @@ function extractReply(events) {
 function rpcReply(text, timeoutMs = 90000) {
   return new Promise((resolve) => {
     if (!CLI.cli) return resolve({ ok: false, text: '', error: '未解析到 pi cli 路径' })
-    const sdir = path.join(AGENT, 'sessions', 'pi-relay')
+    // 每指令独立 session-dir：固定复用 pi-relay 目录会把上一指令的对话历史带进本次
+    // RPC 调用（跨指令上下文累积），故新建唯一目录并在调用结束后删除。
+    const sdir = path.join(AGENT, 'sessions', `pi-relay-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
     const proc = spawn(CLI.node || 'node', [CLI.cli, '--mode', 'rpc', '--session-dir', sdir], { stdio: ['pipe', 'pipe', 'pipe'] })
     const events = []
     let settled = false
@@ -148,7 +150,7 @@ function rpcReply(text, timeoutMs = 90000) {
     const rl = createInterface({ input: proc.stdout })
     proc.stderr.setEncoding('utf-8')
     proc.stderr.on('data', (c) => { stderr = (stderr + c).slice(-600) })
-    const finish = (r) => { try { proc.stdin.end() } catch { } try { proc.kill() } catch { } clearTimeout(timer); rl.close(); resolve(r) }
+    const finish = (r) => { try { proc.stdin.end() } catch { } try { proc.kill() } catch { } clearTimeout(timer); rl.close(); fs.rmSync(sdir, { recursive: true, force: true }); resolve(r) }
     const timer = setTimeout(() => finish({ ok: false, text: '', error: `RPC 超时(${Math.round(timeoutMs / 1000)}s)` }), timeoutMs)
     rl.on('line', (line) => {
       let ev; try { ev = JSON.parse(line) } catch { return }

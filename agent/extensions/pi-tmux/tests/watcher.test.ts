@@ -68,6 +68,39 @@ describe('pi-tmux completion watcher（完成自动唤醒）', () => {
     expect(notify).not.toHaveBeenCalled()
   })
 
+  // ── 审计 LOW：会话自然完成时清理外部句柄引用 ────────────────
+  it('会话自然完成（watch 探测到 !alive）→ onDone 回调触发一次（tools.ts 借以删 watcherHandles/registry 条目）', async () => {
+    const notify = vi.fn().mockResolvedValue(undefined)
+    const onDone = vi.fn()
+    let i = 0
+    const w = createCompletionWatcher({
+      hasSession: vi.fn(async () => (i++ < 1 ? true : false)), // 存活一次后消失
+      notify,
+      onDone,
+    })
+    w.watch('pi-done', '/logs/pi-done.log', true)
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2 + MERGE_WINDOW_MS)
+    expect(onDone).toHaveBeenCalledTimes(1)
+    expect(onDone).toHaveBeenCalledWith('pi-done')
+    // 定时器已停：后续轮询不再重复回调
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('stop()（tmux_stop 主动停止）不触发 onDone——主动停止路径由调用方自清理', async () => {
+    const notify = vi.fn().mockResolvedValue(undefined)
+    const onDone = vi.fn()
+    const w = createCompletionWatcher({
+      hasSession: vi.fn(async () => true), // 一直在存活
+      notify,
+      onDone,
+    })
+    const h = w.watch('pi-stop2', '/logs/pi-stop2.log', true)
+    h.stop()
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
   it('同名重复注册：旧监听器停止，只留一个', async () => {
     const { w, notify } = makeWatcher([false, false])
     w.watch('pi-dup', '/logs/pi-dup.log', true)

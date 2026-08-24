@@ -209,4 +209,24 @@ describe('createWakeSession 采集看门狗', () => {
     // 旧进程的 exit 回调不应触发"异常退出"状态（监听已移除）
     expect(statuses.some((s) => s.includes('异常退出'))).toBe(false)
   })
+
+  it('采集文件超上限（64MB sparse）→ 滚动重启但保持监听（审计 MEDIUM/2026-08-24）', async () => {
+    const { openSync, closeSync, truncateSync } = await import('node:fs')
+    const ws2 = createWakeSession({ ...BASE, tmpDir }, { onHit: () => {}, onStatus: (s) => statuses.push(s) })
+    await ws2.start()
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    // sparse 大文件模拟采集文件超限（不占实盘）
+    const f = wakeFile()
+    // 先创建空文件（truncateSync 不创建新文件），再以路径扩展为 sparse 大文件
+    closeSync(openSync(f, 'w'))
+    truncateSync(f, 64 * 1024 * 1024 + 1)
+    // 一轮 poll（timer 500ms）检测超限 → 滚动：kill 旧进程 + 删文件 + 重 spawn
+    vi.advanceTimersByTime(1000)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+    expect(existsSync(f)).toBe(false)
+    // 仍处于监听：启动窗口（<8s，fake Date 已推进）内无额外 spawn，且无停机提示
+    vi.advanceTimersByTime(6000)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+    expect(statuses.some(s => s.includes('停止'))).toBe(false)
+  })
 })

@@ -12,6 +12,7 @@ import {
   loadRegistry,
   registerSession,
   unregisterSession,
+  pruneRegistry,
   removeLog,
   isPiSession,
   tmuxMissingError,
@@ -80,6 +81,13 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         { triggerTurn: true },
       )
     },
+    // 审计 LOW 修复：会话自然完成（watch 探测到 !alive，非 tmux_stop）后同步
+    // 从 watcherHandles Map 删除句柄、卸载注册表条目——避免长工作时长下 Map/
+    // registry 累积已结束会话的引用（会话已死，无需再查 tmux 存活）。
+    onDone: (name) => {
+      watcherHandles.delete(name)
+      unregisterSession(name)
+    },
   })
   // ── tmux_run ────────────────────────────────────────────────
   pi.registerTool({
@@ -112,8 +120,12 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         // 避免 pi 退出时 session_shutdown 误杀用户手动创建的会话
         if (started) {
           registerSession({ name, logPath, command: String(params.command), createdAt: new Date().toISOString() })
-          // 完成自动唤醒（默认开；沿用已有会话不注册，防误报用户会话）
-          watcherHandles.set(name, watcher.watch(name, logPath, params.notify !== false))
+          // 完成自动唤醒（默认开；沿用已有会话不注册，防误报用户会话）。
+          // 审计 LOW：仅通知启用的会话登记句柄——notify=false 无监听定时器、
+          // 永不触发 onDone，登记只会残留无法回收的句柄引用。
+          if (params.notify !== false) {
+            watcherHandles.set(name, watcher.watch(name, logPath, true))
+          }
         }
         const note = started ? '已启动' : '已存在同名会话（沿用）'
         return ok(`tmux 会话 ${name} ${note}\n命令: ${params.command}\n日志: ${logPath}\n\n查看: tmux_read(name=${name})\n交互: tmux_send(name=${name})\n等待: tmux_wait(name=${name})`)
@@ -146,6 +158,9 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
           return ok(`会话 ${name}: ${alive ? '存活' : '不存在/已结束'}`)
         }
         const sessions = await listSessions(opts)
+        // 审计 LOW 修复：查看状态时同步清理注册表陈旧条目（会话自然退出/崩溃后残留），
+        // 防 registry.sessions 长期累积；tmux 不可用时 pruneRegistry 内部自跳。
+        await pruneRegistry(opts)
         const reg = loadRegistry()
         const piSessions = sessions.filter((s) => isPiSession(s.name, cfg.prefix))
         const userSessions = sessions.filter((s) => !isPiSession(s.name, cfg.prefix))

@@ -60,6 +60,16 @@ export async function isHanging(maxIdleMinutes: number, now: number = Date.now()
 }
 
 async function latestSessionFile(): Promise<string | null> {
+  // 审计 MEDIUM：优先本会话文件（process.env.PI_SESSION_FILE 同进程可读）——
+  // 全局扫描会把同机其他 pi 实例/cron 的会话文件当「本会话仍活跃」佐证，
+  // 掩盖本会话真实挂死（第二信号永久新鲜）。本会话文件不存在才回退全局扫描。
+  const own = process.env.PI_SESSION_FILE
+  if (own) {
+    try {
+      await stat(own)
+      return own
+    } catch { /* 本会话文件尚未创建/不可读 → 回退 */ }
+  }
   const base = join(AGENT_DIR, 'sessions')
   const { readdir } = await import('node:fs/promises')
   let dirs: string[]

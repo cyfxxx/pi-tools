@@ -121,15 +121,43 @@ function main() {
   ].join('\n')
 
   const logFile = join(HOME, '.pi', 'logs', 'task-summarizer-out.log')
+  // 后台 pi 真正跑完（exit 0）确认后才推进游标；失败/超时则保留游标，下次重跑不丢该批记录
+  // （原先 spawn 后立即 saveCursor，后台失败时该批记录会被游标跳过而永久丢失）。
+  const freshTs = fresh[fresh.length - 1].ts
   const proc = spawn('pi', ['--no-session', '-p', prompt], {
-    stdio: 'ignore', detached: true, cwd: HOME,
+    stdio: ['ignore', 'pipe', 'pipe'], cwd: HOME,
     env: { ...process.env, PI_DISABLE_TASK_RECORD: '1' },
   })
-  proc.unref()
   appendFileSync(logFile, `\n=== ${new Date().toISOString()} 总结启动（${substantive.length} 会话待总结）===\n`)
-  saveCursor(fresh[fresh.length - 1].ts)
-  console.log(`思考总结: 已启动 ${substantive.length} 个会话的批量总结（后台 pi，日志 ${logFile}）`)
-  console.log(`游标已推进到 ${new Date(fresh[fresh.length - 1].ts).toISOString()}，下次只处理新记录`)
+  let errBuf = ''
+  proc.stdout.setEncoding('utf8')
+  proc.stdout.on('data', (c) => appendFileSync(logFile, c))
+  proc.stderr.setEncoding('utf8')
+  proc.stderr.on('data', (c) => { errBuf = (errBuf + c).slice(-2000); appendFileSync(logFile, c) })
+  const SUMMARY_TIMEOUT_MS = 30 * 60 * 1000 // 30 分钟：超时视为未完成，游标不推进
+  const timer = setTimeout(() => {
+    try { proc.kill('SIGKILL') } catch { /* 已退出 */ }
+    console.error(`思考总结: 后台 pi 超过 ${SUMMARY_TIMEOUT_MS / 60000} 分钟未完成，已终止——游标不推进，该批记录保留待下轮重试`)
+    appendFileSync(logFile, `提示：超时终止（${SUMMARY_TIMEOUT_MS / 60000}min），游标未推进，记录保留\n`)
+  }, SUMMARY_TIMEOUT_MS)
+  proc.on('error', (e) => {
+    clearTimeout(timer)
+    console.error(`思考总结: 后台 pi 启动失败：${e.message}——游标不推进，该批记录不丢失`)
+    appendFileSync(logFile, `启动失败：${e.message}，游标未推进\n`)
+  })
+  proc.on('exit', (code) => {
+    clearTimeout(timer)
+    if (code === 0) {
+      saveCursor(freshTs)
+      appendFileSync(logFile, `完成 exit=0 游标=${freshTs}\n`)
+      console.log(`思考总结: 后台 pi 已完成（exit 0，${substantive.length} 会话）`)
+      console.log(`游标已推进到 ${new Date(freshTs).toISOString()}，下次只处理新记录；输出见 ${logFile}`)
+    } else {
+      appendFileSync(logFile, `失败 exit=${code}，游标未推进，记录保留\n`)
+      console.error(`思考总结: 后台 pi 失败（exit=${code}）——游标不推进，该批记录保留待下轮重试`)
+      if (errBuf) console.error('stderr 尾部: ' + errBuf.trim().slice(-400))
+    }
+  })
 }
 
 main()

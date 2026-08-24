@@ -52,8 +52,8 @@ pi update 后可能新增或修改界面文字。以下排查步骤定位需要�
 ### 1. 查找未翻译的 description/label
 
 ```bash
-# pi 核心命令
-PI=/usr/lib/node_modules/@earendil-works/pi-coding-agent
+# pi 核心命令（node 随 pi 安装于 ~/.local/share/pi-node/，版本目录随升级变化——用 current 软链；无软链时按实际版本目录替换）
+PI="$HOME/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent"
 grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' "$PI/dist/" --include='*.js' | grep -v node_modules
 
 # 扩展命令（agent/extensions/ 下各扩展入口）
@@ -74,7 +74,7 @@ find /root/.pi/agent/extensions -name SKILL.md -exec sh -c 'grep -q "^descriptio
 
 ```bash
 # 设置菜单选择器
-PI=/usr/lib/node_modules/@earendil-works/pi-coding-agent
+PI="$HOME/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent"
 grep -n 'label:\s*"[A-Z]\|description:\s*"[A-Z]' "$PI/dist/modes/interactive/components/settings-selector.js"
 
 # 会话选择器排序/筛选
@@ -93,7 +93,7 @@ sed -n '11,16p' "$PI/dist/modes/interactive/components/config-selector.js"
 ### 4. 查找扩展命令注册
 
 ```bash
-PI=/usr/lib/node_modules/@earendil-works/pi-coding-agent
+PI="$HOME/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent"
 grep -n 'registerCommand' "$PI/dist/core/slash-commands.js"
 grep -rn 'commands: \|registerCommand\|name: "/' /root/.pi/agent/extensions/*/index.ts | head -50
 ```

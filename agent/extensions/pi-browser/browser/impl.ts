@@ -5,9 +5,18 @@ import { mkdir } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir, homedir } from 'os'
 
-/** 截图暂存目录（os.tmpdir()：Linux=/tmp，Termux=$PREFIX/tmp；cleanScreenshots 同名清理） */
+/**
+ * 当前进程专属截图暂存目录（os.tmpdir()：Linux=/tmp，Termux=$PREFIX/tmp）。
+ * 审计 LOW：子目录含 process.pid——多进程共享同名前缀目录时互不干扰，
+ * cleanScreenshots（index.ts）经本函数也只清本进程子目录，避免跨进程误删。
+ */
 export function shotDir(): string {
-  return join(tmpdir(), 'pi-browser-screenshots')
+  return join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
+}
+
+/** 当前进程专属下载目录默认值（同 shotDir：含 pid 防多进程共享目录冲突）。 */
+export function downloadsDirDefault(): string {
+  return join(tmpdir(), `pi-browser-downloads-${process.pid}`)
 }
 
 /**
@@ -54,7 +63,7 @@ export class BrowserManager {
   private dialogText: string | null = null
   private lastDialog: string | null = null
   private readonly MAX_NETWORK = 1000
-  private downloadsDir = join(tmpdir(), 'pi-browser-downloads')
+  private downloadsDir = downloadsDirDefault()
   private downloadedFiles: DownloadFile[] = []
 
   constructor(config: BrowserConfig, getProxyUrl?: () => string | null) {

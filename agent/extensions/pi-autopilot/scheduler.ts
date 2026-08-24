@@ -10,9 +10,10 @@ import { planFailover, executeFailover } from './failover.ts'
 import { appendRun, estimateCost } from './telemetry.ts'
 import { checkBudget } from './budget.ts'
 import { triggerHangRecovery, touchActivity } from './watchdog.ts'
-import { markPendingInjected } from './queue.ts'
+import { markPendingInjected, clearPending } from './queue.ts'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
+import { existsSync } from 'node:fs'
 
 
 /**
@@ -21,7 +22,19 @@ import { homedir } from 'node:os'
  * Windows 便携版：USERPROFILE=包根，spawn 不解析 .cmd——用包内 node + cli.js。
  */
 function resolvePiSpawn(): { cmd: string; args: string[] } {
-  if (process.platform !== 'win32') return { cmd: 'pi', args: [] }
+  if (process.platform !== 'win32') {
+    // 审计 MEDIUM：headless/cron（PATH 精简）下 `pi` 可能 ENOENT。
+    // 优先显式 PI_BIN（wrapper 会设置），否则探测 pi-node 标准安装位置的绝对路径，
+    // 都没有才退回 PATH 的 pi。
+    const candidates = [
+      process.env.PI_BIN || '',
+      join(homedir(), '.local', 'share', 'pi-node', 'current', 'bin', 'pi'),
+    ]
+    for (const c of candidates) {
+      if (c && existsSync(c)) return { cmd: c, args: [] }
+    }
+    return { cmd: 'pi', args: [] }
+  }
   const root = process.env.USERPROFILE || homedir()
   const node = join(root, 'node', 'node.exe')
   const cli = join(root, 'pi-global', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist', 'cli.js')
@@ -203,9 +216,18 @@ export class SessionScheduler {
     // 注入动作失败（sendUserMessage 不可用/抛错）必须抛错：否则会被记 success 并删除
     // once 任务（updateTaskAfterRun 的 once 分支 splice），提醒任务从未真正交付就消失
     if (!this.pi.sendUserMessage) {
+      await clearPending(task.id)
       throw new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败')
     }
-    await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
+    try {
+      await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
+    } catch (e) {
+      // 审计 MEDIUM：抛错前 markPendingInjected(true) 已置位——失败必须复位，
+      // 否则暂停期 tick 跳过该任务（!pendingInject 过滤）且崩溃恢复会把未交付
+      // 任务重注入，停顿一回合且无恢复提示
+      await clearPending(task.id)
+      throw e
+    }
     // 注：不在此发 success webhook——注入成功 ≠ 执行成功（审计 MEDIUM 修复），
     // 完成回写由 agent_settled → finalizeInjected 统一处理（commit 补闭环）
     this.injectedIds.add(task.id)
@@ -234,6 +256,15 @@ export class SessionScheduler {
         const t = (await readTasks()).tasks.find((x) => x.id === id)
         if (!t || !t.enabled) continue
         await updateTaskAfterRun(id, 'success', '注入式任务完成（主会话回合结束回写）', 0)
+        // 审计 MEDIUM：注入式成功此前不写 telemetry——todayRuns/成本预算只统计
+        // subagent 与失败运行，注入任务日预算被系统性低估。交付完成即补记成功。
+        const { provider, model } = currentModel()
+        await appendRun({
+          ts: new Date().toISOString(), taskId: id, taskName: t.name,
+          model, provider, result: 'success', durationMs: 0,
+          outputLen: 0, estCost: estimateCost(provider, model, t.prompt.length, 0),
+          errClass: null,
+        })
         if (t.notifyOnCompletion) {
           await sendWebhook(t, 'success', '调度任务执行完成（注入式）')
         }
@@ -276,6 +307,10 @@ export class SessionScheduler {
         cwd: process.cwd(),
         detached: process.platform !== 'win32',
       })
+      // 审计 MEDIUM：subagent 长任务心跳——subagent 是独立 pi -p 进程，主会话
+      // 无 turn_start 不置 busy 豁免，超长任务（>maxIdleMinutes）会被 isHanging
+      // 误判挂死触发重启；每 60s 续活直至子进程结束
+      const heartbeat = setInterval(() => touchActivity(), 60_000)
       let stderr = ''
       let stdout = ''
       // 审计 LOW：无界累积——失控子进程输出可耗尽内存；按需截断（与 sendWebhook 1000 对齐）
@@ -284,6 +319,7 @@ export class SessionScheduler {
       proc.stdout.on('data', (data: Buffer) => { if (stdout.length < MAX_CAPTURE) stdout += data.toString().slice(0, MAX_CAPTURE - stdout.length) })
       proc.on('close', async (code) => {
         clearTimeout(timer)
+        clearInterval(heartbeat)
         if (code === 0) {
           if (task.notifyOnCompletion) {
             await sendWebhook(task, 'success', stdout.slice(0, 1000))
@@ -298,6 +334,7 @@ export class SessionScheduler {
       })
       proc.on('error', (err) => {
         clearTimeout(timer)
+        clearInterval(heartbeat)
         reject(err)
       })
     })

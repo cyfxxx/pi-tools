@@ -75,7 +75,7 @@ try {
 " 2>/dev/null | grep -q "^OK"); then
   ok "浏览器可打开页面"
 else
-  fail "浏览器不可用（安装: cd $PI_HOME && npx cloakbrowser install；缺库: apt-get install libnss3 libnspr4）"
+  fail "浏览器不可用（安装: cd $PI_HOME/agent && npx cloakbrowser install；缺库: apt-get install libnss3 libnspr4）"
 fi
 
 echo "[5/8] tmux"

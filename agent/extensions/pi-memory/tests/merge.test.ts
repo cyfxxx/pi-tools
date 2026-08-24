@@ -277,3 +277,26 @@ describe('merge: mergeCandidates', () => {
     expect(entries[0].accessedAt).toBe('2026-01-01T00:00:00.000Z')
   })
 })
+
+describe('merge: 同标题语义反转（审计 M1 修复）', () => {
+  it('同标题但语义反转 → superseded 而非 UPDATE', async () => {
+    const { decideMerge } = await import('../merge.ts')
+    const existing = makeEntry({
+      title: '咖啡偏好',
+      category: 'preference',
+      content: '用户喜欢咖啡，每天一杯',
+      confidence: 0.9,
+    })
+    const candidate = makeEntry({
+      title: '咖啡偏好', // 与既有标题完全相同
+      category: 'preference',
+      content: '用户不喜欢咖啡，改喝茶',
+      confidence: 0.95,
+    })
+    const decision = await decideMerge([existing], candidate)
+    expect(decision.action).toBe('ADD')
+    expect(existing.supersededBy).toBe(candidate.id)
+    expect(existing.deleted).toBe(true)
+    expect(decision.note).toContain('矛盾取代')
+  })
+})

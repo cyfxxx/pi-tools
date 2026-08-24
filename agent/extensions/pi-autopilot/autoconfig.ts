@@ -18,13 +18,41 @@ export async function readAutopilotConfig(): Promise<AutopilotConfig> {
     return {
       ...def,
       ...data,
+      // 审计 MEDIUM：.pi-autopilot-config.json 为共享入库文件、可被手改——
+      // 数值字段不校验时手改成字符串会让 decide() 内比较 NaN 恒 false、
+      // failoverAfter/suspendAfter/maxFailovers 静默失效。按类型过滤，非法回退默认。
+      enabled: typeof data.enabled === 'boolean' ? data.enabled : def.enabled,
+      maxIdleMinutes: positiveNum(data.maxIdleMinutes, def.maxIdleMinutes),
+      requeueOnRestart: typeof data.requeueOnRestart === 'boolean' ? data.requeueOnRestart : def.requeueOnRestart,
       fallbackModels: Array.isArray(data.fallbackModels) ? data.fallbackModels : def.fallbackModels,
-      budget: { ...def.budget, ...(data.budget || {}) },
-      policy: { ...def.policy, ...(data.policy || {}) },
+      budget: {
+        ...def.budget,
+        ...numericFields(data.budget, ['maxRunsPerDay', 'maxCostPerDay']),
+        allowedModels: Array.isArray(data.budget?.allowedModels) ? data.budget!.allowedModels : def.budget.allowedModels,
+      },
+      policy: {
+        ...def.policy,
+        ...numericFields(data.policy, ['failoverAfter', 'suspendAfter', 'timeoutFactor', 'maxFailovers']),
+      },
     }
   } catch {
     return def
   }
+}
+
+function positiveNum(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : fallback
+}
+
+function numericFields<T>(src: T | undefined, keys: (keyof T)[]): Partial<T> {
+  const out: Partial<T> = {}
+  if (!src) return out
+  const source = src as Record<string, unknown>
+  for (const k of keys) {
+    const v = source[k as string]
+    if (typeof v === 'number' && Number.isFinite(v) && v > 0) out[k] = v as T[keyof T]
+  }
+  return out
 }
 
 export async function writeAutopilotConfig(config: AutopilotConfig): Promise<void> {

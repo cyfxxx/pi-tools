@@ -21,11 +21,13 @@
  *
  * pi update 后需重新执行本脚本。
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
 const MARKER = 'Patch (patch-footer-format.mjs)'
+// dry-run 校验模式（verify-patches.mjs 调用）：只做模式命中检测，不写盘
+const DRY_RUN = process.env.PATCH_DRY_RUN === '1'
 // USD→CNY 参考汇率（2026-08 近 90 天中位数 6.77：近 3 个月区间 6.74-6.81、波动 <1%，
 // 全年趋势 7.18→6.74 缓贬但近段最稳；改此值后重跑脚本即同步更新 dist，幂等兼容）
 const CNY_PER_USD = 6.77
@@ -45,9 +47,23 @@ function detectDist() {
   } catch {
     // fall through
   }
-  const known = '/root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist'
-  if (existsSync(known)) return known
-  throw new Error('无法定位 pi dist 目录：请传入参数或设置 PI_DIST')
+  // 兑底：在 pi-node 安装根下检测 current 软链或最近 node-v* 版本目录（node 随 pi
+  // 安装，版本目录随升级变化——硬编码 v22.23.1-linux-arm64 已过期）
+  const root = join(process.env.HOME || '', '.local', 'share', 'pi-node')
+  const candidates = []
+  const cur = join(root, 'current', 'lib', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist')
+  if (existsSync(cur)) candidates.push(cur)
+  try {
+    readdirSync(root)
+      .filter((d) => d.startsWith('node-v'))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      .forEach((d) => {
+        const p = join(root, d, 'lib', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist')
+        if (existsSync(p)) candidates.push(p)
+      })
+  } catch { /* pi-node 目录不存在 */ }
+  if (candidates.length) return candidates[candidates.length - 1]
+  throw new Error('无法定位 pi dist 目录：请先安装 pi（node 随 pi 装入 ~/.local/share/pi-node/），或传入参数/设置 PI_DIST')
 }
 
 const target = join(detectDist(), 'modes', 'interactive', 'components', 'footer.js')
@@ -83,7 +99,7 @@ if (hasMarker) {
     if (rateNeedsUpdate) {
       out = out.replace(rateRe, `$1const CNY_PER_USD = ${CNY_PER_USD};`)
     }
-    writeFileSync(target, out, 'utf-8')
+    if (!DRY_RUN) writeFileSync(target, out, 'utf-8')
     console.log(`已更新：${target}（${hasOldLabels ? '迁移符号版；' : ''}${rateNeedsUpdate ? `汇率 ${rateM[1] ? '' : ''}→${CNY_PER_USD}` : ''}）`)
     process.exit(0)
   }
@@ -142,6 +158,7 @@ lines.splice(
   `${ic}const costStr = \`¥\${(usageTotals.cost * CNY_PER_USD).toFixed(2)}\${usingSubscription ? " (sub)" : ""}\`;`,
 )
 
+if (DRY_RUN) { console.log(`dry-run：${target} 模式命中，未写盘`); process.exit(0) }
 writeFileSync(target, lines.join('\n'), 'utf-8')
 console.log(`补丁已应用：${target}`)
 console.log(`汇率 CNY_PER_USD=${CNY_PER_USD}（改汇率请编辑脚本顶部常量）`)
