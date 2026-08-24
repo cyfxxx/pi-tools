@@ -251,6 +251,44 @@ JSON.stringify({title: document.title, url: location.href})
 → LLM 调用: browser_click(x=500, y=300)
 ```
 
+### 场景 3：抓取页面调用的 API 数据
+
+```
+用户: 看下这个页面的接口返回了什么
+
+→ LLM: browser_network(clear=true)        // 清空旧日志，隔离本次请求
+→ LLM: browser_click(selector=".load-btn") // 触发页面操作
+→ LLM: browser_network(url_pattern="api/") // 只筛接口请求
+```
+
+> 日志自页面打开即持续记录；`url_pattern` 支持正则（如 `"api/"` 或 `"\\/users\\/\\d+"`）。
+
+### 场景 4：加载慢 / 弹窗 / 表单
+
+```
+用户: 打开商品页，选择尺码，加入购物车
+
+→ LLM:  browser_navigate(url="...")
+→ LLM:  browser_wait_for(selector=".sku-select")         // 等元素就绪再操作
+→ LLM:  browser_dialog(mode="accept")                   // 预先确认弹窗
+→ LLM:  browser_select_option(selector=".sku-select", value="L")
+→ LLM:  browser_click(selector="#add-cart")
+```
+
+### 场景 5：下载文件 / 上传表单
+
+```
+用户: 下载这个页面的 PDF
+
+→ LLM:  browser_click(selector=".download-btn")   // 触发下载（事件自动监听保存）
+→ LLM:  browser_download()                        // 拿到保存路径
+
+用户: 把这个文件传到表单
+→ LLM:  browser_upload(selector="input[type=file]", path="/tmp/xx.pdf")
+```
+
+> 下载默认存 `~/.pi-browser-downloads/`（重名自动加时间戳）；上传需先确知文件输入框选择器。
+
 ## 故障排查
 
 | 问题 | 原因 | 解决方法 |

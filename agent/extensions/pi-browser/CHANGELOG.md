@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [1.1.0] - 2026-08-24
+
+### 新增
+
+- **交互能力补齐（源自 browser-harness 参考）**：新增 4 个 `browser_*` 工具——`browser_wait_for`（等待元素/网络空闲，超时不抛错）、`browser_network`（网络请求日志，URL/方法/类型过滤 + clear 重记）、`browser_select_option`（下拉框按 value/文本选择）、`browser_dialog`（JS 弹窗策略 accept/dismiss/input + 最近弹窗文本）。
+- **文件与登录态**：`browser_download`（下载自动监听/保存/查询，可换目录）、`browser_upload`（`setInputFiles` 上传）、`browser_cookies`（get/set）、`browser_pdf`（打印当前页为 PDF）。
+- **Shadow DOM 定位**：`browser_find`（深层穿透所有 shadow-root 查元素，返回中心坐标供 browser_click 坐标模式使用）。
+- **交互手册**：`references/interaction.md`（从 browser-harness interaction-skills 提炼的 Web 交互要领：坐标/DPR 陷阱、shadow、下拉、弹窗、下载上传、网络、滚动、iframe、等待、cookie）+ `browser_help(topic)` 工具按需查询对应章节（不注入系统提示词）。
+- **网络监听**：`BrowserManager` 从页面打开即持续记录请求（保留最近 1000 条），响应状态码自动回填。
+- **下载监听**：`download` 事件自动保存到 `~/.pi-browser-downloads`（可改），重名自动加时间戳后缀。
+- **弹窗默认策略**：默认 dismiss（不阻塞），避免 alert/confirm 卡住流程。
+
 ## [1.0.0] - 2026-08-01
 
 ### 新增

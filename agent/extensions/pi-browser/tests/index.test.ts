@@ -51,19 +51,34 @@ describe('pi-browser (entry point)', () => {
     Object.keys(lifecycleHandlers).forEach(k => delete lifecycleHandlers[k])
   })
 
-  it('should register 8 browser tools and lifecycle hooks', async () => {
+  it('should register browser tools and lifecycle hooks', async () => {
     const main = (await import('../index')).default
     await main(mockPi as any)
 
     const toolNames = registeredTools.map(t => t.name).sort()
     expect(toolNames).toEqual([
-      'browser_click', 'browser_close', 'browser_evaluate', 'browser_extract',
-      'browser_navigate', 'browser_screenshot', 'browser_scroll', 'browser_type',
+      'browser_click', 'browser_close', 'browser_cookies', 'browser_dialog',
+      'browser_download', 'browser_evaluate', 'browser_extract', 'browser_find',
+      'browser_help', 'browser_navigate', 'browser_network', 'browser_pdf',
+      'browser_screenshot', 'browser_scroll', 'browser_select_option',
+      'browser_type', 'browser_upload', 'browser_wait_for',
     ].sort())
 
     expect(lifecycleHandlers['session_shutdown']).toBeDefined()
     expect(lifecycleHandlers['session_compact']).toBeDefined()
     expect(lifecycleHandlers['session_start']).toBeDefined()
+  })
+
+  it('browser_help should return interaction manual section', async () => {
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const tool = registeredTools.find(t => t.name === 'browser_help')!
+    const r = await tool.execute('id', { topic: 'shadow' }, undefined, undefined, {} as any)
+    expect(r.content[0].text).toContain('Shadow DOM')
+
+    const full = await tool.execute('id', {}, undefined, undefined, {} as any)
+    expect(full.content[0].text).toContain('Web 交互操作手册')
   })
 
   it('browser_navigate should return page info', async () => {

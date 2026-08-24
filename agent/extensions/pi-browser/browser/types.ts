@@ -14,3 +14,20 @@ export interface PageInfo {
   textContent: string
   viewport: { width: number; height: number }
 }
+
+export interface NetworkEntry {
+  url: string
+  method: string
+  type: string
+  status?: number
+  timestamp: number
+}
+
+export type DialogMode = 'accept' | 'dismiss' | 'input'
+
+export interface DownloadFile {
+  filename: string
+  path: string
+  url: string
+  timestamp: number
+}

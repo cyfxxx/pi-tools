@@ -37,6 +37,7 @@ packs/
 | `colab-bridge/` | Colab（免费 GPU）远程执行：自研桥 `bin/colab_exec`（备胎）+ 官方 google-colab-cli 方案（首选，`references/colab-cli.md`） |
 | `gamedev/` | 游戏开发技能组（skills/design、web、workflow） |
 | `reverse-skill/` | 逆向/CTF 技能包（含 burp-mcp 等） |
+| `dg-piagent/` | pi-agent SDK 开发助手（教程同步维护，API 基线 v0.83.0，含 sdk_doc/场景 references） |
 
 ## 与 pi-backup 的关系
 

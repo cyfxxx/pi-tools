@@ -2,7 +2,7 @@
   "name": "pi-browser",
   "version": "1.0.0",
   "private": true,
-  "description": "浏览器扩展 - CloakBrowser 隐身浏览器 + browser-harness 交互模式（8 个 browser_* 工具）",
+  "description": "浏览器扩展 - CloakBrowser 隐身浏览器 + browser-harness 交互模式（18 个 browser_* 工具）",
   "type": "module",
   "pi": {
     "extensions": [

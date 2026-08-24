@@ -1,5 +1,5 @@
 import type { Browser, Page } from 'playwright-core'
-import type { BrowserConfig, PageInfo } from './types'
+import type { BrowserConfig, PageInfo, NetworkEntry, DialogMode, DownloadFile } from './types'
 import { existsSync, readdirSync } from 'fs'
 import { mkdir } from 'fs/promises'
 import { join } from 'path'
@@ -49,6 +49,13 @@ export class BrowserManager {
   private config: BrowserConfig
   private getProxyUrl: (() => string | null) | null
   private initializing: Promise<Browser> | null = null
+  private networkLog: NetworkEntry[] = []
+  private dialogMode: DialogMode = 'dismiss'
+  private dialogText: string | null = null
+  private lastDialog: string | null = null
+  private readonly MAX_NETWORK = 1000
+  private downloadsDir = join(tmpdir(), 'pi-browser-downloads')
+  private downloadedFiles: DownloadFile[] = []
 
   constructor(config: BrowserConfig, getProxyUrl?: () => string | null) {
     this.config = config
@@ -121,6 +128,49 @@ export class BrowserManager {
       width: this.config.viewport_width,
       height: this.config.viewport_height,
     })
+
+    // 网络请求监听：持续记录最近 MAX_NETWORK 条，供 browser_network 查询
+    // （特性检测：单测 mock 的 page 可能无 on，真实 playwright Page 必带）
+    const pg = this.page as (Page & { on?: unknown }) | null
+    if (pg && typeof pg.on === 'function') {
+      pg.on('request', (req) => {
+        if (this.networkLog.length >= this.MAX_NETWORK) this.networkLog.shift()
+        this.networkLog.push({
+          url: req.url(),
+          method: req.method(),
+          type: req.resourceType(),
+          timestamp: Date.now(),
+        })
+      })
+      pg.on('response', (res) => {
+        // 回填最近一条相同 url 且尚未有 status 的条目（倒序避免覆盖同名后续请求）
+        for (let i = this.networkLog.length - 1; i >= 0; i--) {
+          if (this.networkLog[i].url === res.url() && this.networkLog[i].status === undefined) {
+            this.networkLog[i].status = res.status()
+            break
+          }
+        }
+      })
+      // 弹窗策略：默认 dismiss（避免阻塞），可经 browser_dialog 改为 accept/input。
+      pg.on('dialog', async (dialog) => {
+        this.lastDialog = dialog.message()
+        if (this.dialogMode === 'accept') {
+          await dialog.accept()
+        } else if (this.dialogMode === 'input') {
+          await dialog.accept(this.dialogText ?? '')
+        } else {
+          await dialog.dismiss()
+        }
+      })
+      // 下载监听：保存到 downloadsDir，记录到 downloadedFiles
+      pg.on('download', (download) => {
+        const filename = download.suggestedFilename()
+        this.saveDownload(download, filename).catch(err => {
+          console.warn('[browser] download save error:', (err as Error)?.message)
+        })
+      })
+    }
+
     return this.page
   }
 
@@ -272,6 +322,157 @@ export class BrowserManager {
     return true
   }
 
+  /** 等待：selector 到位或网络空闲。命中返回 true，超时返回 false（不抛错）。 */
+  async waitFor(
+    selector?: string,
+    opts: { state?: 'visible' | 'attached' | 'hidden' | 'detached'; timeout?: number } = {},
+  ): Promise<{ found: boolean; marker?: string }> {
+    const page = await this.ensurePage()
+    const timeout = opts.timeout ?? 10000
+    if (selector) {
+      const state = opts.state ?? 'visible'
+      try {
+        await page.waitForSelector(selector, { state, timeout })
+        return { found: true }
+      } catch {
+        return { found: false }
+      }
+    }
+    try {
+      await page.waitForLoadState('networkidle', { timeout })
+      return { found: true, marker: 'networkidle' }
+    } catch {
+      return { found: false }
+    }
+  }
+
+  /** 下拉框选择。byLabel=true 时按可见文本匹配，否则按 value。 */
+  async selectOption(selector: string, value: string, byLabel: boolean = false): Promise<void> {
+    const page = await this.ensurePage()
+    const el = await page.$(selector)
+    if (!el) throw new Error(`未找到下拉框: ${selector}`)
+    await page.selectOption(selector, byLabel ? { label: value } : value)
+  }
+
+  /** 设置弹窗处理策略：accept 自动确认 / dismiss 自动取消 / input 以文本填入 prompt。 */
+  setDialogMode(mode: DialogMode, text?: string): void {
+    this.dialogMode = mode
+    this.dialogText = mode === 'input' ? (text ?? '') : (text ?? null)
+  }
+
+  /** 最近一次弹窗文本（无弹窗则 null）。 */
+  getLastDialog(): string | null {
+    return this.lastDialog
+  }
+
+  /** 查询网络日志，支持 URL/方法/资源类型过滤，倒序返回最近 limit 条。 */
+  getNetwork(
+    filter?: { urlPattern?: string; method?: string; type?: string },
+    limit: number = 100,
+  ): NetworkEntry[] {
+    let entries = this.networkLog
+    if (filter?.urlPattern && filter.urlPattern) {
+      try {
+        entries = entries.filter(e => new RegExp(filter.urlPattern!).test(e.url))
+      } catch {
+        entries = entries.filter(e => e.url.includes(filter.urlPattern!))
+      }
+    }
+    if (filter?.method) entries = entries.filter(e => e.method.toUpperCase() === filter.method!.toUpperCase())
+    if (filter?.type) entries = entries.filter(e => e.type === filter.type)
+    return entries.slice(-limit).reverse()
+  }
+
+  /** 清空网络日志（browser_network 设置 clear=true 时调用）。 */
+  clearNetwork(): void {
+    this.networkLog = []
+  }
+
+  /** 设置下载目录（可选）；返回已记录的所有下载文件。 */
+  downloads(dir?: string): DownloadFile[] {
+    if (dir) this.downloadsDir = dir
+    return this.downloadedFiles.map(f => ({ ...f }))
+  }
+
+  private async saveDownload(download: import('playwright-core').Download, filename: string): Promise<void> {
+    await mkdir(this.downloadsDir, { recursive: true })
+    // 避免重名覆盖
+    let target = join(this.downloadsDir, filename)
+    const stamp = Date.now()
+    const existing = this.downloadedFiles.find(f => f.filename === filename)
+    if (existing) {
+      const dot = filename.lastIndexOf('.')
+      const base = dot > 0 ? filename.slice(0, dot) : filename
+      const ext = dot > 0 ? filename.slice(dot) : ''
+      target = join(this.downloadsDir, `${base}-${stamp}${ext}`)
+      filename = `${base}-${stamp}${ext}`
+    }
+    await download.saveAs(target)
+    this.downloadedFiles.push({ filename, path: target, url: download.url(), timestamp: Date.now() })
+  }
+
+  /** 上传文件到 <input type=file>。 */
+  async uploadFile(selector: string, path: string): Promise<void> {
+    const page = await this.ensurePage()
+    await page.setInputFiles(selector, path)
+  }
+
+  /** 读取当前页面域（或给定 url）的 cookies。 */
+  async getCookies(url?: string): Promise<{ name: string; value: string; domain: string }[]> {
+    const page = await this.ensurePage()
+    const cs = await page.context().cookies(url)
+    return cs.map(c => ({ name: c.name, value: c.value, domain: c.domain }))
+  }
+
+  /** 为给定 url 添加一个 cookie。 */
+  async setCookie(url: string, name: string, value: string): Promise<void> {
+    const page = await this.ensurePage()
+    await page.context().addCookies([{ name, value, url }])
+  }
+
+  /**
+   * Shadow DOM 穿透定位：深层查找首个匹配 selector 的元素，
+   * 返回其中心坐标（视口像素，可直接用于 browser_click）与文本摘要。
+   * 找不到返回 null。
+   */
+  async findElement(selector: string): Promise<{ x: number; y: number; text: string } | null> {
+    const page = await this.ensurePage()
+    const found = await page.evaluate((sel: string) => {
+      const hasText = (el: Element): boolean => el.id === sel || el.className === sel || el.nodeName.toLowerCase() === sel
+      // 收集所有 shadow 根内与文档内的元素
+      const candidates: Element[] = []
+      const walk = (root: Document | ShadowRoot) => {
+        for (const el of Array.from(root.querySelectorAll(sel))) candidates.push(el)
+        // 遍历各层 shadow 根
+        for (const el of Array.from(root.querySelectorAll('*'))) {
+          const sr = (el as HTMLElement).shadowRoot
+          if (sr) walk(sr)
+        }
+      }
+      walk(document)
+      if (candidates.length === 0) return null
+      const el = candidates[0] as HTMLElement
+      const r = el.getBoundingClientRect()
+      return {
+        x: Math.round(r.left + r.width / 2),
+        y: Math.round(r.top + r.height / 2),
+        text: (el.textContent ?? '').trim().slice(0, 200),
+      }
+    }, selector)
+    return (found as { x: number; y: number; text: string } | null) ?? null
+  }
+
+  /** 打印当前页为 PDF，返回保存路径。仅 Chromium 支持。 */
+  async exportPdf(path?: string): Promise<string> {
+    const page = await this.ensurePage()
+    const dir = join(tmpdir(), 'pi-browser-pdf')
+    await mkdir(dir, { recursive: true })
+    const target = path ?? join(dir, `pi-page-${Date.now()}.pdf`)
+    await page.pdf({ path: target, printBackground: true })
+    return target
+  }
+
+
   async close(): Promise<void> {
     // 竞态修复：launch 进行中时 close 必须等待其完成，否则 close 返回后
     // launch 才完成并赋值 this.browser，浏览器进程泄漏。
@@ -295,5 +496,10 @@ export class BrowserManager {
     }
     this.page = null
     this.browser = null
+    this.networkLog = []
+    this.lastDialog = null
+    this.dialogMode = 'dismiss'
+    this.dialogText = null
+    this.downloadedFiles = []
   }
 }
