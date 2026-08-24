@@ -17,9 +17,9 @@
 │  │  browser_click()        │   (定制 Chromium)                     │  │
 │  │  browser_type()        ─┘    │                                  │  │
 │  │  browser_scroll()             │                                  │  │
-│  │  browser_extract()  ──── CDP Runtime.evaluate                   │  │
-│  │  browser_evaluate() ──── CDP Runtime.evaluate                   │  │
-│  │  browser_close()    ──── 生命周期管理                           │  │
+│  │  …等 18 个 browser_* 工具      │                                  │  │
+│  │  （wait_for/network/select_option/dialog/download/upload/       │  │
+│  │   cookies/find/pdf/help——详见下方工具参考）                      │  │
 │  │                                                                 │  │
 │  │  交互模式参考: browser-harness (坐标点击 + 截图驱动)            │  │
 │  └────────────────────────────────────────────────────────────────┘  │

@@ -481,13 +481,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-03T13:33:21.832Z",
-      "updatedAt": "2026-08-03T13:33:21.832Z",
+      "updatedAt": "2026-08-24T02:47:18.901Z",
       "accessedAt": "2026-08-03T13:33:21.832Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
-      ]
+      ],
+      "supersededBy": "ea08dc33-2c57-42ad-be94-12cf8c79fd34",
+      "validUntil": "2026-08-24T02:47:18.901Z"
     },
     {
       "id": "a2cdcd62-e7c4-4d74-97e0-69f918616d09",
@@ -5992,13 +5994,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:40:46.287Z",
-      "updatedAt": "2026-08-12T00:40:46.287Z",
+      "updatedAt": "2026-08-24T02:47:19.034Z",
       "accessedAt": "2026-08-12T00:40:46.287Z",
       "observedAt": "2026-08-12T00:40:46.287Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "f4d58641-07d9-4030-995f-24ef00e769a0",
+      "validUntil": "2026-08-24T02:47:19.033Z"
     },
     {
       "id": "d8258fef-c0dc-4417-8837-fb8cbcaa70e2",
@@ -13304,10 +13308,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 2,
+      "recurrence": 11,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-24T02:33:13.012Z",
-      "accessedAt": "2026-08-24T02:33:13.012Z",
+      "updatedAt": "2026-08-24T04:00:35.865Z",
+      "accessedAt": "2026-08-24T04:00:35.865Z",
       "environments": [
         "all"
       ],
@@ -13331,6 +13335,307 @@
       "createdAt": "2026-08-24T02:34:07.354Z",
       "updatedAt": "2026-08-24T02:34:07.354Z",
       "accessedAt": "2026-08-24T02:34:07.354Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T02:34:07.354Z",
+      "deleted": false
+    },
+    {
+      "id": "43893676-e2c7-46cd-ab56-a9da9dd73511",
+      "category": "solutions",
+      "title": "工具账单为空修复：无条件事件日志",
+      "content": "pi-context 的 tool_result 钩子原写死 if(!usage) return，而 deepseek-v4-flash（opencode-go）不回传 per-call usage，导致 stats/tool-usage.json 永远为空。修复：改为无条件追加事件日志 memory/stats/tool-use-<device>.jsonl（eid=hostname:pid:seq 跨设备唯一），outputTokens 用 context-budget.ts 的 estimateTokens 兜底，agent_settled 节流（≥60s）重算聚合并清理超窗事件。",
+      "tags": [
+        "pi-context",
+        "工具统计",
+        "usage",
+        "deepseek-v4-flash"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "dd940e73-6b53-4506-9a70-8bfc0f710735",
+      "category": "procedure",
+      "title": "工具统计跨设备同步机制",
+      "content": "工具事件按设备分文件（memory/stats/tool-use-<device>.jsonl）入库共享，规避 Git 合并冲突。推送：pi-backup sync 的 git add -A 自动带本机事件。拉取：git pull 触发 post-merge hook（install-tool-sync-hooks.sh 部署）后台合并全设备事件、重算聚合、清理本机 30 天前事件。查看报告 node scripts/tool-stats-sync.mjs；设备标识默认 hostname，PI_DEVICE_ID 可覆盖。",
+      "tags": [
+        "工具统计",
+        "同步",
+        "git-hooks",
+        "pi-backup"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "65723f7e-fadc-4890-a14c-2c86977eefbc",
+      "category": "fact",
+      "title": "休眠工具组清单与启用方式",
+      "content": "pi 有 4 个休眠工具组默认不注入 schema：browser（网页浏览 8 工具）、admin（Agent 管理 8 工具）、autopilot（自主运行 5 工具）、link（多设备互联 2 工具）。用 enable_tool('<组名>') 启用，本会话内保持，重启恢复默认隐藏。",
+      "tags": [
+        "工具",
+        "enable_tool",
+        "休眠组"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "ea08dc33-2c57-42ad-be94-12cf8c79fd34",
+      "category": "fact",
+      "title": "pi 扩展代码改动需重启生效",
+      "content": "pi 的扩展代码在启动时加载，修改 index.ts 等扩展源码后当前会话仍运行旧代码。验证改动效果必须重启 pi（或下次启动），重启前看到的现象（如事件数为 0）是预期行为，非改动失败。",
+      "tags": [
+        "pi",
+        "扩展开发",
+        "重启生效"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "8942d2e9-64c9-4f10-a70d-a89d8c9defdc",
+      "category": "solutions",
+      "title": "静默异常定位：临时暴露异常",
+      "content": "函数内 try/catch 会静默吞掉异常导致现象不明。本次 usage-diag.ts 头部缺 readdirSync import，跨设备合并函数静默失败。定位方法：临时去掉 catch 或显式 console.error 暴露异常，定位根因后修复并还原调试补丁。教训：脚本头部 import 需核对（readdirSync 与 readdir 区分）。",
+      "tags": [
+        "调试",
+        "异常定位",
+        "usage-diag"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "f4d58641-07d9-4030-995f-24ef00e769a0",
+      "category": "fact",
+      "title": "工具使用画像：bash 占 57%",
+      "content": "对保留历史会话（612 条消息、280 条 assistant 消息、305 次工具调用）解析统计：bash 175 次占 57.4%，read 30 次，write/edit 各 16/15 次，文件类工具合计约 22%，browser 系列在启用过 browser 组的会话中出现。反映用户操作以 bash 合并碎命令为主。",
+      "tags": [
+        "工具统计",
+        "使用画像",
+        "bash"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "4cbce568-686e-4898-91ce-d90cad89ec0d",
+      "category": "preference",
+      "title": "用户偏好：先给方案再实施",
+      "content": "用户对重要改动偏好先给完整方案：说明现状根因、改动文件清单、实施步骤，并列出需要用户确认的点（如同步触发方式、数据量接受度），用户明确确认后才动手实施。",
+      "tags": [
+        "偏好",
+        "工作流程",
+        "方案先行"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "02cb3449-4f7f-4d7f-ba2c-ec1ceb6f80b5",
+      "category": "fact",
+      "title": "工具统计改动推送记录",
+      "content": "工具统计优化改动已提交推送 bbb4b60..4201f80 → master，共 9 个文件（含远端他人提交的 merge，无冲突）。推送前检查 SSH remote 无凭证问题、敏感文件边界干净；pull 过程中 post-merge hook 已实际触发；工作区干净。",
+      "tags": [
+        "git",
+        "推送",
+        "工具统计",
+        "post-merge"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:47:18.579Z",
+      "updatedAt": "2026-08-24T02:47:18.579Z",
+      "accessedAt": "2026-08-24T02:47:18.579Z",
+      "observedAt": "2026-08-24T02:47:18.579Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
+      "deleted": false
+    },
+    {
+      "id": "22520d0d-0b0f-48bf-8316-051c8db58d03",
+      "category": "fact",
+      "title": "WSL2 网络栈：hosts 劫持 + v2ray 10808 代理方案",
+      "content": "WSL2 环境的网络栈：Windows hosts 被加速软件（v2ray 类）批量把 github/google 等域名指向 127.0.0.1（#S302 标记），软件在 Windows 的 127.0.0.1:10808 起 SOCKS5 转发。WSL2 经 DNS 网关继承这些 hosts 条目（github 解析为 127.0.0.1），但 WSL 的 127.0.0.1 是隔离回环连不到 Windows 代理 → WSL 内直连 GitHub 全挂（curl 000 / 证书错误）。已落地方案：git 域名限定代理 http.https://github.com/.proxy=socks5h://127.0.0.1:10808（含 raw/gist/api/codeload）；~/.bashrc 端口探测开关（探测 127.0.0.1:10808 存活才 export http_proxy/https_proxy，软件关闭自动降级直连）；未设 all_proxy。镜像 gh-proxy.com 可作备胎。browser(Playwright) 不受 env 代理影响。",
+      "tags": [
+        "网络",
+        "v2ray",
+        "wsl2",
+        "github",
+        "代理"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T03:45:43.646Z",
+      "updatedAt": "2026-08-24T03:45:43.646Z",
+      "accessedAt": "2026-08-24T03:45:43.646Z",
+      "environments": [
+        "wsl2"
+      ],
+      "observedAt": "2026-08-24T03:45:43.646Z",
+      "deleted": false
+    },
+    {
+      "id": "1f203fb9-563a-4599-814a-a9cb6e825dd9",
+      "category": "procedure",
+      "title": "pi-browser 新增工具的四处同步流程与权威门禁",
+      "content": "pi-browser 扩展新增工具的四步同步流程（2026-08-24 实证）：① browser/impl.ts 加 BrowserManager 方法 + browser/index.ts 注册（registerTool）。② 权威门禁是根 typecheck（extensions/tsconfig.local.json，真实 SDK d.ts），不是各扩展的本地 tsconfig.json（后者用 mock 类型，有历史偏差）。③ 三处工具清单必须同步：extensions/tests/conflict-check.mjs 的 expected 数组（工具总数台账）、pi-web-search/tests/extensions.test.ts 跨扩展注册面断言、pi-browser/tests/index.test.ts 工具名单。④ 跑 scripts/test-all.sh 全量回归。新增方法的监听器（page.on）要加特性检测兼容无 on 的测试 mock page。",
+      "tags": [
+        "pi-browser",
+        "扩展开发",
+        "测试",
+        "流程"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T04:09:59.369Z",
+      "updatedAt": "2026-08-24T04:09:59.369Z",
+      "accessedAt": "2026-08-24T04:09:59.369Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T04:09:59.369Z",
+      "deleted": false
+    },
+    {
+      "id": "304dae1b-bf8e-43f7-98ba-8c49f5b6c1de",
+      "category": "fact",
+      "title": "pi-browser 18 工具清单（2026-08-24）",
+      "content": "pi-browser 扩展共 18 个 browser_* 工具（2026-08-24 扩充自 browser-harness 参考）：基础 8（navigate/screenshot/click/type/scroll/extract/evaluate/close）+ wait_for（等待元素/网络空闲）+ network（网络日志，URL/方法/类型过滤+clear）+ select_option（下拉框）+ dialog（弹窗 accept/dismiss/input）+ download（自动监听保存 ~/.pi-browser-downloads）+ upload + cookies + find（Shadow DOM 深层穿透定位返回坐标）+ pdf + help（按需读 references/interaction.md 交互手册）。浏览器底座是 CloakBrowser（playwright-core），单 tab。",
+      "tags": [
+        "pi-browser",
+        "工具清单",
+        "扩展"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T04:09:59.400Z",
+      "updatedAt": "2026-08-24T04:09:59.400Z",
+      "accessedAt": "2026-08-24T04:09:59.400Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T04:09:59.400Z",
+      "deleted": false
+    },
+    {
+      "id": "8b27903d-d422-4911-b8e8-a275611ae159",
+      "category": "procedure",
+      "title": "扩展类型门禁：mock/真实 SDK 偏差与 cache-guard 基线流程",
+      "content": "扩展类型检查门禁的层叠结构（2026-08-24 排查实证）：各扩展 tsconfig.json 的 paths 指向本地 mock（extensions/types/pi-coding-agent.d.ts），根 tsconfig.local.json 指向真实 SDK。mock 曾把 ToolDefinition.execute 返回类型写成 ToolResult（窄 content），而真实 SDK 是 AgentToolResult —— 导致所有扩展本地 mock tsc 报同类类型错误但真实门禁通过。修复：mock 的 execute/renderResult 对齐真实 SDK 用 AgentToolResult（ToolResult 接口保留）。cache-guard 漂移处理：先 git status 确认注入面文件无未提交改动 + 内容合理（AGENTS.md 运行时更新/代码已提交），再 node tests/cache-guard.mjs --update-baseline 固化基线。",
+      "tags": [
+        "类型检查",
+        "mock",
+        "cache-guard",
+        "扩展开发"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T04:10:12.676Z",
+      "updatedAt": "2026-08-24T04:10:12.676Z",
+      "accessedAt": "2026-08-24T04:10:12.676Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T04:10:12.676Z",
+      "deleted": false
+    },
+    {
+      "id": "d4d1bc97-9604-4e56-9a65-36458c05c965",
+      "category": "fact",
+      "title": "memory/stats/ 工具统计日志语义与可提交性",
+      "content": "memory/stats/tool-use-<device>.jsonl 是 pi-context usage-diag 的工具使用统计事件日志（JSONL：type=tool-use, eid, device, ts/iso, tool, outputTokens），按设备分文件、30 天保留、随 git 入库共享（本机 device=MYPC）。仅含工具名与 token 计数，无密钥敏感字段，可安全提交。",
+      "tags": [
+        "memory",
+        "统计",
+        "工具日志"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T04:10:12.706Z",
+      "updatedAt": "2026-08-24T04:10:12.706Z",
+      "accessedAt": "2026-08-24T04:10:12.706Z",
       "environments": [
         "all"
       ]
