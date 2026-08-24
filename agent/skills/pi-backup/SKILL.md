@@ -517,3 +517,10 @@ pi-backup verify
 14. **端到端冒烟测试**：重建/恢复后必须跑 `timeout 90 pi -p "回复 OK"`——它验证扩展加载（最易出错的一环）与模型链路，比单项检查更能暴露 wrapper/PI_DIST/扩展兼容问题。
 15. **`pi-backup verify`**：同步前先跑体检（git 卫生/密钥泄漏/`.gitignore` 完整性），防止 `rsync` 式同步丢了 `.gitignore` 后把密钥提交进仓库（本次重建曾遇到，靠事后 `git rm --cached` 才救回）。
 
+
+---
+
+## 使用后改进（必做）
+
+任务收尾时清点：执行过程与本文步骤/路径/结论的偏差。有 → 追加一条到 `improvements.md`（证据导向：命令、路径、现象，不直接改正文）。未合并条目 ≥3 条或用户要求时，合并进正文并清日志。机制全文见 `agent/skills/SKILLS-MAINTENANCE.md`。
+

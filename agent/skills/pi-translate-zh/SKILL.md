@@ -109,3 +109,10 @@ grep -rn 'commands: \|registerCommand\|name: "/' /root/.pi/agent/extensions/*/in
 ## 验证
 
 运行后重启 pi，输入 `/`、`/settings`，并检查扩展命令（`/voice`、`/memory`、`/plan`、`/link` 等）的 help 输出与提示词是否显示中文。
+
+---
+
+## 使用后改进（必做）
+
+任务收尾时清点：执行过程与本文步骤/路径/结论的偏差。有 → 追加一条到 `improvements.md`（证据导向：命令、路径、现象，不直接改正文）。未合并条目 ≥3 条或用户要求时，合并进正文并清日志。机制全文见 `agent/skills/SKILLS-MAINTENANCE.md`。
+
