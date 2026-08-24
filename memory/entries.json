@@ -10257,10 +10257,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 35,
+      "recurrence": 37,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-24T08:07:21.019Z",
-      "accessedAt": "2026-08-24T08:07:21.019Z",
+      "updatedAt": "2026-08-24T08:26:45.558Z",
+      "accessedAt": "2026-08-24T08:26:45.558Z",
       "environments": [
         "all"
       ],
@@ -11403,6 +11403,121 @@
       "environments": [
         "all"
       ]
+    },
+    {
+      "id": "a7f51144-29cd-4b1c-82b1-0a7d80a385c7",
+      "category": "solutions",
+      "title": "entries.json 冲突合并流程",
+      "content": "pi 配置仓库 git merge 时 memory/entries.json 冲突（本地新增条目+远程改相邻格式）的标准解法：以远程版本为基准，从本地提交提取独有条目回插，用 node 校验 JSON 语法（node -e 'JSON.parse(...)'）确认合法后提交，删除冲突残留的 .corrupt 备份文件，再 push 回推保持两端一致。",
+      "tags": [
+        "git",
+        "entries.json",
+        "冲突合并",
+        "memory"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T09:27:25.423Z",
+      "updatedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "observedAt": "2026-08-24T09:27:25.423Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+    },
+    {
+      "id": "c6d0c73d-922e-48a3-9231-5b2c238f22ce",
+      "category": "fact",
+      "title": "pi-context 压缩策略新基线 256K",
+      "content": "2026-08-22 拉取远程更新后，pi-context 自动压缩阈值上调至 256K，新增「任务完成/无后台任务/无操作」三重门才触发压缩；压力提示档位同步：75%=192K、90%=230K。涉及 auto-compact.ts、context-budget.ts、pi-tmux、cache-guard baseline 等 12 个文件，后续补丁重建需按此新基线。",
+      "tags": [
+        "pi-context",
+        "压缩策略",
+        "256K",
+        "基线"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T09:27:25.423Z",
+      "updatedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "observedAt": "2026-08-24T09:27:25.423Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+    },
+    {
+      "id": "631684e2-6ffd-4d42-bad4-19784283b4a4",
+      "category": "fact",
+      "title": "tool-use-localhost.jsonl 未跟踪属正常",
+      "content": "memory/stats/tool-use-localhost.jsonl 是本机运行时工具统计文件（hostname 识别为 localhost），未入库（git 未跟踪）属正常状态，非更新内容，巡检时勿误判为遗漏。",
+      "tags": [
+        "memory",
+        "stats",
+        "gitignore",
+        "运行数据"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T09:27:25.423Z",
+      "updatedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "observedAt": "2026-08-24T09:27:25.423Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+    },
+    {
+      "id": "36cdaf85-4825-48c9-95c8-da9c8817e5a5",
+      "category": "fact",
+      "title": "拉取合并后全量回归全绿",
+      "content": "2026-08-22 合并 pi-context 压缩策略修订（256K 阈值+三重门）及配套改动后，scripts/test-all.sh 全量回归全部通过：9 个扩展 vitest、根 tsc、subagent 63 用例、extensions.test.ts 25 用例、conflict-check 9 项、cache-guard 注入面契约、扩展自动发现 10 目录齐备，仓库健康无需额外处理。",
+      "tags": [
+        "回归测试",
+        "test-all",
+        "pi-context",
+        "仓库状态"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T09:27:25.423Z",
+      "updatedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "observedAt": "2026-08-24T09:27:25.423Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
+    },
+    {
+      "id": "599901e8-4f02-4fd1-a445-4ebe305791a3",
+      "category": "preference",
+      "title": "用户偏好：同步后主动提示后续动作",
+      "content": "用户处理仓库同步/更新类任务后，助手会汇总处理过程、远程引入的更新内容与遗留说明，并主动提示可执行 scripts/rebuild.sh（补丁重建）或 scripts/test-all.sh（回归）；用户说「测试一下」即指后台跑全量回归并汇报结果。",
+      "tags": [
+        "用户偏好",
+        "git同步",
+        "回归测试",
+        "汇报风格"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T09:27:25.423Z",
+      "updatedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "observedAt": "2026-08-24T09:27:25.423Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a"
     }
   ]
 }
