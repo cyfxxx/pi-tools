@@ -1,5 +1,6 @@
 ﻿# Portable pi updater (Windows PowerShell)
 # Cleanup useless files + pull latest code + sync + verify
+# 注意：portable-win 已于 2026-08 并入 master（Windows 修复已移植），同步目标为 master；勿再指向旧分支
 # Usage: powershell -ExecutionPolicy Bypass -File E:\pi-portable\update-portable.ps1
 $ErrorActionPreference = 'Continue'
 $Root = Split-Path $PSScriptRoot
@@ -20,7 +21,7 @@ Write-Host '  removed scheduler.lock'
 # ---- 2. Clone latest (gh-proxy mirror) ----
 Write-Host '-- Pull latest (gh-proxy mirror)' -ForegroundColor Yellow
 if (Test-Path $Tmp) { Remove-Item $Tmp -Recurse -Force }
-git clone --depth 1 -b portable-win https://gh-proxy.com/https://github.com/cyfxxx/pi-tools.git $Tmp 2>&1 | Out-Null
+git clone --depth 1 -b master https://gh-proxy.com/https://github.com/cyfxxx/pi-tools.git $Tmp 2>&1 | Out-Null
 if (-not (Test-Path "$Tmp\agent")) { Write-Host 'CLONE FAILED - check network' -ForegroundColor Red; exit 1 }
 Write-Host '  clone ok'
 
