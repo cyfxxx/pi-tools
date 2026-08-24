@@ -1063,13 +1063,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-09T12:35:28.505Z",
-      "updatedAt": "2026-08-09T12:35:28.505Z",
+      "updatedAt": "2026-08-24T02:05:26.937Z",
       "accessedAt": "2026-08-09T12:35:28.505Z",
       "observedAt": "2026-08-09T12:35:28.505Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
-      ]
+      ],
+      "supersededBy": "31e3a149-172e-4db0-9add-0640a1d3668a",
+      "validUntil": "2026-08-24T02:05:26.937Z"
     },
     {
       "id": "78e533fd-b990-4520-aadb-41d70d6bd628",
@@ -9691,14 +9693,16 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-14T09:28:18.758Z",
-      "updatedAt": "2026-08-14T09:28:18.758Z",
+      "updatedAt": "2026-08-24T02:04:29.061Z",
       "accessedAt": "2026-08-14T09:28:18.758Z",
       "observedAt": "2026-08-14T09:28:18.758Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "2579f689-6ec0-41c6-9c33-3ce40fef7f96",
+      "validUntil": "2026-08-24T02:04:29.061Z"
     },
     {
       "id": "bd472edf-268a-40a0-bf26-74993cfae2e4",
@@ -12917,6 +12921,416 @@
       "createdAt": "2026-08-22T09:03:13.639Z",
       "updatedAt": "2026-08-22T09:03:13.639Z",
       "accessedAt": "2026-08-22T09:03:13.639Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-22T09:03:13.639Z",
+      "deleted": false
+    },
+    {
+      "id": "9d420121-c1df-4f2d-9556-c42c22b0168d",
+      "category": "procedure",
+      "title": "Phaser 3 浏览器游戏开发要点（tetris 项目实战）",
+      "content": "/root/tetris-game 俄罗斯方块项目经验：1) phaser 3.90 ESM 无 default export，须 `import * as Phaser from 'phaser'`；2) Canvas 必须 `parent: 'game-container'` 否则 append 到 body，flex 居中失效会被推出视口；3) DAS/ARR 计时必须统一用 `this.time.now`（game clock），keydown 事件里用 Date.now() 与 update 的 time.now 不同源会导致永远不触发；4) 渲染不要每帧 `this.add.graphics()`（内存泄漏），用持久实例 + clear() + dirty 标记；5) 浏览器验证可用 window.dispatchEvent(new KeyboardEvent('keydown', {code})) 模拟按键，注意 keyup 需手动补发；6) 纯逻辑游戏（无碰撞/重力物理）不要启用 arcade physics，白占包体。",
+      "tags": [
+        "phaser",
+        "gamedev",
+        "tetris",
+        "web-game"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T01:51:37.745Z",
+      "updatedAt": "2026-08-24T01:51:37.745Z",
+      "accessedAt": "2026-08-24T01:51:37.745Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-08-24T01:51:37.745Z",
+      "deleted": false
+    },
+    {
+      "id": "2579f689-6ec0-41c6-9c33-3ce40fef7f96",
+      "category": "fact",
+      "title": "用户本地模型部署：Windows llama.cpp + Qwen3.6-35B",
+      "content": "用户环境：pi 运行在 WSL2（x86_64、node v22.23.2），本地模型由 Windows 主机 llama.cpp server 提供（Qwen3.6-35B，启动脚本 D:\\Desktop\\Desktop\\Qwen3.6-35B-test.bat，参数 -c 128000、--reasoning on --jinja、--mmproj 多模态、--host 0.0.0.0 --port 8080）。pi 通过 models.json 的 llama-cpp provider 连接。",
+      "tags": [
+        "环境",
+        "llama.cpp",
+        "Qwen3.6-35B",
+        "WSL2"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "d1577909-b3de-4871-9c75-a35bf2a2b162",
+      "category": "solutions",
+      "title": "llama.cpp 上下文显示不准确修复",
+      "content": "根因：models.json llama-cpp provider 设 supportsUsageInStreaming:false，pi 不发送 stream_options.include_usage，llama.cpp 流式默认不返回 usage，TUI 恒走 chars/4 估算；且 contextWindow 65536 与实际 server -c 128000 不符。修复：改 supportsUsageInStreaming:true、contextWindow:128000、input 加 \"image\"（对应 --mmproj）。改后每轮响应返回真实 usage（prompt_tokens），压缩阈值对齐。",
+      "tags": [
+        "llama.cpp",
+        "models.json",
+        "上下文",
+        "usage"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "3439f7a2-1d31-416d-a0f0-2cc08db0f4eb",
+      "category": "fact",
+      "title": "pi token 估算机制与压缩阈值",
+      "content": "pi 内核 estimateTokens 对一切文本按 chars/4 估算 token；中文实际约 1.5-2 chars/token，低估约 2 倍。压缩阈值 shouldCompact = contextWindow - 16384（65536 窗口时为 49152）；usage 缺失时对全部消息回退估算。压缩后无有效 assistant usage 时 getContextUsage 返回 null，TUI 显示 ?/65k 属设计行为。",
+      "tags": [
+        "pi内核",
+        "token估算",
+        "压缩",
+        "compaction"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "7e91008b-243a-4113-9358-2c48d5e4fdd9",
+      "category": "fact",
+      "title": "llama.cpp 流式 usage 返回机制",
+      "content": "llama.cpp OpenAI 兼容端点流式响应默认不返回 usage，仅当请求带 stream_options.include_usage 时在最终 chunk 返回（含 prompt_tokens/completion_tokens）。pi-ai 的 openai-completions.js 在 compat.supportsUsageInStreaming !== false 时才附加 include_usage（529 行），收到 usage chunk 会正确解析（315 行）。",
+      "tags": [
+        "llama.cpp",
+        "usage",
+        "OpenAI兼容"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "3411e2d8-e589-4aec-8551-1bee90e6ed0f",
+      "category": "fact",
+      "title": "待办：记忆条目 11b49a61 环境标签错误",
+      "content": "记忆条目 id 11b49a61「extensions/node_modules symlink 断裂修复」内容为 Termux/Android arm64 环境经验（node-v22.23.1-linux-arm64），但 environments 误标 [\"all\"]，导致每轮注入 WSL2 x64 会话造成误导。应改为 [\"termux\"] 并 git push（entries.json 入库共享）。本会话已识别但未执行。",
+      "tags": [
+        "记忆库",
+        "环境标签",
+        "待办"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "2f6de9e0-84fc-4d8f-bc05-8bdf528e8cbe",
+      "category": "fact",
+      "title": "models.json 每环境独立配置约定",
+      "content": "settings.json/models.json/auth.json 为每环境独立配置，gitignore 不入库、不跨机覆盖。本地模型 provider 修改仅影响本机。llama-cpp 的 supportsDeveloperRole:false 保留正确（llama.cpp 不支持 developer role）。",
+      "tags": [
+        "models.json",
+        "配置约定",
+        "多环境"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "995e77b8-e80b-4034-9863-da5fee8a4005",
+      "category": "preference",
+      "title": "排查以当前实测与源码验证为准",
+      "content": "用户要求分析/排查问题以当前实测与源码链路验证为准，不要被历史会话记忆注入内容误导；曾明确纠正\"检查的是记忆注入块而非分析过程\"。本地模型场景注入块中文占比高会放大 chars/4 估算偏差。",
+      "tags": [
+        "用户习惯",
+        "分析方法"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "accessedAt": "2026-08-24T02:04:28.970Z",
+      "observedAt": "2026-08-24T02:04:28.970Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
+      "deleted": false
+    },
+    {
+      "id": "91686fbd-449c-413e-b70b-dd9004f3366a",
+      "category": "solutions",
+      "title": "Phaser 3 ESM 导入与输入 API 踩坑",
+      "content": "用 Phaser 4 教程代码 + npm 装的 Phaser 3.90 做 Tetris：①Phaser 3 ESM 是命名导出，需 `import * as Phaser from 'phaser'`（默认导入会 undefined 报错）；②`this.input.keyboard.list` 在 Phaser 3 不存在，需改用 this.input.keyboard.on('keydown') 处理输入。写 Phaser 项目前应先确认 npm 实际安装版本，按版本核对 API。",
+      "tags": [
+        "phaser",
+        "gamedev",
+        "踩坑"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "f6224bb8-12bd-40f0-840f-facfc25e2a3e",
+      "category": "solutions",
+      "title": "Phaser Canvas 必须指定 parent 容器",
+      "content": "Phaser 游戏配置不写 `parent: 'game-container'` 时 Canvas 直接 append 到 body，CSS flex 居中失效，元素被推到视口外（案例：scale.fit 放大到 800px 后 top=800px，视口仅 800px 高，画面完全不可见且 Console 无报错）。指定 parent 后 Canvas 正确居中（top=0）。排查'页面无画面但无 JS 错误'时优先检查此点。",
+      "tags": [
+        "phaser",
+        "渲染",
+        "布局"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "c115ef76-9d0d-4e0a-b8c6-bf79ccdaae8d",
+      "category": "solutions",
+      "title": "Phaser DAS 输入两大坑：e.repeat 与时间基准",
+      "content": "①Phaser 全局 keyboard.on('keydown') 会收到 OS 层按键重复事件（e.repeat=true，按住约 500ms 后每约 30ms 触发），不过滤则与 DAS/ARR 叠加成三倍速度，须只保留首次按下；②keydown 回调用 Date.now() 而 update 循环用 game clock，两时间源不同导致 DAS 永不触发，必须统一基准。修复后参数：DAS 180ms 初始延迟 + ARR 40ms。",
+      "tags": [
+        "phaser",
+        "输入",
+        "DAS"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "c321f0dc-08ce-4b50-a2a5-02d47803b6a8",
+      "category": "solutions",
+      "title": "Phaser 每帧 add.graphics() 内存泄漏修复",
+      "content": "Tetris 棋盘渲染原实现每帧 this.add.graphics() 新建 Graphics 对象且旧对象永不销毁（每帧泄漏 5 个对象，长时间运行会卡死）。修复：启动时创建持久 Graphics 实例，每帧 clear() 后重画，加 dirty 标记按需重绘；HUD 文本用 setText 增量更新而非销毁重建 Text 对象。",
+      "tags": [
+        "phaser",
+        "性能",
+        "内存"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "994802d2-6fb0-4035-84d9-db266b04b218",
+      "category": "fact",
+      "title": "Tetris 游戏项目 /root/tetris-game",
+      "content": "2026-08-23 完成，Phaser 3.90 + Vite，dev 端口 3456（cd /root/tetris-game && npm run dev）。功能：标准 DAS/ARR 输入、7-bag 随机、踢墙旋转、Hold、幽灵方块、Web Audio 合成音效（零外部资源）、localStorage 最高分、HTML 触摸按钮。结构：src/{main,constants,physics,PlayScene}.js，物理层有 Node 单元测试。",
+      "tags": [
+        "tetris",
+        "phaser",
+        "项目"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "6a5fbeed-866d-4cd2-b59c-5bbc8ce4831e",
+      "category": "fact",
+      "title": "用户浏览器与模型能力限制",
+      "content": "用户浏览器装有 KISS-Translator 扩展（Console 有 content.js 翻译日志噪音，勿误判为游戏错误）；当前本地模型不支持看图，浏览器 UI 验证需用 browser_evaluate 执行 JS 断言（检查场景对象、读内部状态），截图无法判断画面。用户习惯自己打开 localhost 页面测试并向助手反馈报错。",
+      "tags": [
+        "环境",
+        "浏览器",
+        "验证"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "31e3a149-172e-4db0-9add-0640a1d3668a",
+      "category": "preference",
+      "title": "用户对 Tetris 移动手感的要求",
+      "content": "用户要求点按方向键必须精确移动一格（短按不能连移多个位置，曾因移动过快投诉）；按住时才连续移动。最终参数：按下立即 1 格、DAS 180ms 初始延迟、ARR 40ms 每格；若仍觉快可把 ARR 调至 60ms 更稳。",
+      "tags": [
+        "偏好",
+        "手感",
+        "tetris"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "7ff93bde-1326-4180-8ce5-6a8574bfc9d2",
+      "category": "habit",
+      "title": "用户用完后台服务要求清理",
+      "content": "用户说'先这样吧，清理后台'时，要求停止并清理任务启动的所有后台服务（dev server 会话 pi-tetris-dev、浏览器实例），保留项目代码与主终端会话，并说明重启方式与入口。",
+      "tags": [
+        "习惯",
+        "后台"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:05:26.489Z",
+      "updatedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "observedAt": "2026-08-24T02:05:26.489Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
+      "deleted": false
+    },
+    {
+      "id": "c2db3298-7af9-4bd5-bdc7-183f41f89d7c",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-08-24T02:30:52.368Z",
+      "updatedAt": "2026-08-24T02:33:13.012Z",
+      "accessedAt": "2026-08-24T02:33:13.012Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T02:30:52.368Z",
+      "deleted": false
+    },
+    {
+      "id": "2e7452f7-4b93-44bb-801e-2d99013e6af0",
+      "category": "procedure",
+      "title": "工具使用统计：事件日志+跨设备同步+30天保留机制",
+      "content": "工具使用统计机制（2026-08-24 重构）：pi-context 的 tool_result 钩子无条件写 memory/stats/tool-use-<device>.jsonl 事件日志（每设备一文件，eid=device:pid:seq 全局唯一，带 ts/iso，outputTokens 用 estimateTokens 兜底——不再依赖 provider per-call usage，deepseek-flash 缺失时旧账单曾为空）。agent_settled 节流（≥60s）重算聚合 agent/stats/tool-usage.json（firstTs/lastTs + byDevice 分桶）并清理本机 30 天前事件。跨设备同步：git pull 触发 post-merge hook → scripts/tool-stats-sync.mjs 合并全部设备+重算；push 侧由 pi-backup sync 的 git add -A 自动带上事件文件（memory/stats/ 入库，聚合仍 gitignored）。hook 安装：scripts/install-tool-sync-hooks.sh（rebuild Phase 2-E2 与 install-wrapper --ensure 自动部署）。查看：node scripts/tool-stats-sync.mjs（跨设备报告）、usage-stats.mjs --tools（top20）。PI_DEVICE_ID 可覆盖设备标识、PI_TOOL_EVENTS_DIR 覆盖事件目录。",
+      "tags": [
+        "pi-context",
+        "工具统计",
+        "跨设备同步",
+        "usage-diag"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T02:34:07.354Z",
+      "updatedAt": "2026-08-24T02:34:07.354Z",
+      "accessedAt": "2026-08-24T02:34:07.354Z",
       "environments": [
         "all"
       ]

@@ -6,8 +6,8 @@
  * 目标：量化每轮请求发送量（平台统计的核心），定位 token 消耗大头。
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { homedir, hostname } from "node:os";
 import { dirname, join } from "node:path";
 
 export interface UsageRecord {
@@ -223,6 +223,9 @@ export interface ToolUsage {
   input: number
   cacheRead: number
   cacheWrite: number
+  firstTs: number
+  lastTs: number
+  byDevice: Record<string, { calls: number; input: number; lastTs: number }>
 }
 export const TOOL_USAGE_FILE = join(homedir(), ".pi", "agent", "stats", "tool-usage.json")
 export function getToolUsageFile(): string {
@@ -243,7 +246,7 @@ export function recordToolUsage(
 ): void {
   try {
     const all = loadToolUsage()
-    const cur: ToolUsage = all[toolName] ?? { calls: 0, input: 0, cacheRead: 0, cacheWrite: 0 }
+    const cur: ToolUsage = all[toolName] ?? { calls: 0, input: 0, cacheRead: 0, cacheWrite: 0, firstTs: Date.now(), lastTs: Date.now(), byDevice: {} }
     cur.calls += 1
     cur.input += usage.input ?? 0
     cur.cacheRead += usage.cacheRead ?? 0
@@ -257,6 +260,161 @@ export function recordToolUsage(
   } catch {
     /* 记录失败静默 */
   }
+}
+
+// ── 工具调用事件日志（2026-08-24 重构：跨设备合并 + 30 天保留）──
+// 旧 recordToolUsage 依赖 tool_result 的 per-call usage 回传，provider 缺失时
+// （deepseek-flash 实证）导致 tool-usage.json 长期为空。改为无条件 append 事件日志：
+//   · 每设备独立文件 memory/stats/tool-use-<device>.jsonl（Git 按文件合并，无冲突）
+//   · eid = device:pid:seq 全局唯一 → 跨设备归并零歧义
+//   · 每条带 ts/iso 时间戳；outputTokens 由调用方用 estimateTokens 兜底（usage 缺失也有量）
+//   · append-only、O_APPEND 原子追加，崩溃/重启不丢
+// 事件日志入库共享（memory/stats/，git pull 即合并）；聚合 tool-usage.json 仍本地重算（gitignored）。
+export interface ToolUseEvent {
+  type: "tool-use";
+  eid: string;
+  device: string;
+  ts: number;
+  iso: string;
+  tool: string;
+  outputTokens: number;
+  input?: number;
+  cacheRead?: number;
+}
+
+export const TOOL_RETENTION_DAYS = 30;
+const TOOL_EVENTS_DIR_DEFAULT = join(homedir(), ".pi", "memory", "stats");
+
+/** 设备标识：默认 hostname，可被 PI_DEVICE_ID 覆盖（避免不同设备 hostname 重名冲突） */
+export function getDeviceId(): string {
+  return process.env.PI_DEVICE_ID || hostname() || "host";
+}
+export function getToolEventsDir(): string {
+  return process.env.PI_TOOL_EVENTS_DIR || TOOL_EVENTS_DIR_DEFAULT;
+}
+export function toolUseFile(device = getDeviceId()): string {
+  return join(getToolEventsDir(), `tool-use-${device.replace(/[^A-Za-z0-9._-]/g, "_")}.jsonl`);
+}
+
+let toolCallSeq = 0;
+export function recordToolCall(ev: {
+  tool: string;
+  outputTokens: number;
+  input?: number;
+  cacheRead?: number;
+}): void {
+  try {
+    const device = getDeviceId();
+    toolCallSeq += 1;
+    const ts = Date.now();
+    const record: ToolUseEvent = {
+      type: "tool-use",
+      eid: `${device}:${process.pid}:${toolCallSeq}`,
+      device,
+      ts,
+      iso: new Date(ts).toISOString(),
+      tool: ev.tool,
+      outputTokens: ev.outputTokens,
+      ...(ev.input !== undefined ? { input: ev.input } : {}),
+      ...(ev.cacheRead !== undefined ? { cacheRead: ev.cacheRead } : {}),
+    };
+    const f = toolUseFile(device);
+    mkdirSync(dirname(f), { recursive: true });
+    appendFileSync(f, JSON.stringify(record) + "\n", "utf8");
+  } catch {
+    // 记录失败静默
+  }
+}
+
+/** 读取全部设备（或仅本机）maxDays 窗口内的工具调用事件，按 ts 升序。 */
+export function loadToolUseEvents(allDevices = true, maxDays = TOOL_RETENTION_DAYS): ToolUseEvent[] {
+  const dir = getToolEventsDir();
+  const cutoff = Date.now() - maxDays * 24 * 60 * 60 * 1000;
+  const out: ToolUseEvent[] = [];
+  try {
+    if (!existsSync(dir)) return out;
+    for (const name of readdirSync(dir)) {
+      if (!name.startsWith("tool-use-") || !name.endsWith(".jsonl")) continue;
+      if (!allDevices && !name.includes(getDeviceId().replace(/[^A-Za-z0-9._-]/g, "_"))) continue;
+      for (const line of readFileSync(join(dir, name), "utf8").split("\n")) {
+        if (!line) continue;
+        try {
+          const e = JSON.parse(line) as ToolUseEvent;
+          if (e && e.type === "tool-use" && e.ts >= cutoff) out.push(e);
+        } catch {
+          /* 损坏行跳过 */
+        }
+      }
+    }
+    out.sort((a, b) => a.ts - b.ts);
+  } catch {
+    /* 静默 */
+  }
+  return out;
+}
+
+/** 清理指定设备事件中超过 maxDays 天的记录，返回删除条数（默认只动本机文件，避免误删他人）。 */
+export function pruneToolEvents(maxDays = TOOL_RETENTION_DAYS, device = getDeviceId()): number {
+  const f = toolUseFile(device);
+  try {
+    if (!existsSync(f)) return 0;
+    const cutoff = Date.now() - maxDays * 24 * 60 * 60 * 1000;
+    const lines = readFileSync(f, "utf8").split("\n").filter(Boolean);
+    const kept = lines.filter((l) => {
+      try {
+        return (JSON.parse(l) as ToolUseEvent).ts >= cutoff;
+      } catch {
+        return true;
+      }
+    });
+    const removed = lines.length - kept.length;
+    if (removed > 0) {
+      const tmp = f + ".tmp." + process.pid;
+      writeFileSync(tmp, kept.join("\n") + (kept.length ? "\n" : ""), "utf8");
+      renameSync(tmp, f);
+    }
+    return removed;
+  } catch {
+    return 0;
+  }
+}
+
+/** 从事件日志按 maxDays 窗口重算聚合，写回 tool-usage.json（含每设备分桶与首末时间）。 */
+export function recomputeToolUsage(maxDays = TOOL_RETENTION_DAYS): Record<string, ToolUsage> {
+  const events = loadToolUseEvents(true, maxDays);
+  const acc = new Map<string, ToolUsage>();
+  const seen = new Set<string>();
+  for (const e of events) {
+    // eid 去重（防 pull 竞态/重复行导致重复计数）
+    if (seen.has(e.eid)) continue;
+    seen.add(e.eid);
+    let cur = acc.get(e.tool);
+    if (!cur) {
+      cur = { calls: 0, input: 0, cacheRead: 0, cacheWrite: 0, firstTs: e.ts, lastTs: e.ts, byDevice: {} };
+      acc.set(e.tool, cur);
+    }
+    cur.calls += 1;
+    cur.input += e.input ?? 0;
+    cur.cacheRead += e.cacheRead ?? 0;
+    cur.firstTs = Math.min(cur.firstTs, e.ts);
+    cur.lastTs = Math.max(cur.lastTs, e.ts);
+    const d = cur.byDevice[e.device] ?? { calls: 0, input: 0, lastTs: e.ts };
+    d.calls += 1;
+    d.input += e.input ?? 0;
+    d.lastTs = Math.max(d.lastTs, e.ts);
+    cur.byDevice[e.device] = d;
+  }
+  const all = Object.fromEntries(acc);
+  try {
+    const f = getToolUsageFile();
+    mkdirSync(dirname(f), { recursive: true });
+    const tmp = f + ".tmp." + process.pid;
+    writeFileSync(tmp, JSON.stringify(all, null, 2), "utf8");
+    renameSync(tmp, f);
+  } catch {
+    /* 静默 */
+  }
+  return all;
 }
 
 export interface UsageSummary {

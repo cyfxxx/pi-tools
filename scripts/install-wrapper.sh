@@ -128,6 +128,11 @@ for PI_BIN in $(list_pi_bins); do
   fi
 done
 
+# tool-stats 同步 hooks（幂等；各环境 cron 自愈时自动部署）
+if [ -f "$HOME/.pi/scripts/install-tool-sync-hooks.sh" ]; then
+  bash "$HOME/.pi/scripts/install-tool-sync-hooks.sh" --quiet || true
+fi
+
 if [ "$FOUND" -eq 0 ]; then
   if [ "$ENSURE" -eq 1 ]; then
     exit 0

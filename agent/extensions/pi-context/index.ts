@@ -24,9 +24,12 @@ import {
 	recordAutoCompact,
 	recordPrune,
 	recordThinkingMeter,
+	recordToolCall,
 	recordToolEnable,
 	recordToolUsage,
 	recordUsage,
+	pruneToolEvents,
+	recomputeToolUsage,
 	type UsageRecord,
 } from "../../lib/usage-diag.ts";
 import {
@@ -97,6 +100,7 @@ let lastContextMessages: unknown[] | null = null;
 let thinkState: ThinkLevelState | null = null;
 // 任务完成即时记录（task #26）：整轮工具计数/最近用量快照/累计轮数/本轮切档标志
 let runToolCount = 0;
+let lastToolRecomputeTs = 0;
 let lastUsageSnap: { input: number; cacheRead: number; output: number } = { input: 0, cacheRead: 0, output: 0 };
 let userSeq = 0;
 let lastLevelSwitched = false;
@@ -546,8 +550,16 @@ export default function (pi: ExtensionAPI) {
 	// + 工具用量账单（2.5）：按工具累加 per-call usage 到 stats/tool-usage.json
 	pi.on("tool_result", (event: ToolResultEvent) => {
 		const usage: Usage | undefined = event.usage;
-		if (!usage) return;
+		// 无条件记录工具调用（跨设备事件日志）：provider 无 per-call usage 回传也能记。
+		// outputTokens 用 estimateTokens 对输出正文估算兜底，保证始终有量。
 		runToolCount += 1;
+		recordToolCall({
+			tool: event.toolName,
+			outputTokens: estimateTokens(typeof event.content === "string" ? event.content : ""),
+			input: typeof usage?.input === "number" ? usage.input : undefined,
+			cacheRead: typeof usage?.cacheRead === "number" ? usage.cacheRead : undefined,
+		});
+		if (!usage) return;
 		recordCacheUsage(
 			typeof usage.cacheRead === "number" ? usage.cacheRead : undefined,
 			typeof usage.cacheWrite === "number" ? usage.cacheWrite : undefined,
@@ -591,6 +603,18 @@ export default function (pi: ExtensionAPI) {
 	// （agent-session.js _emitAgentSettled），此点压缩不会打断任何内核后续动作。
 	pi.on("agent_settled", (_event, ctx) => {
 		lastLevelSwitched = false;
+		// 工具事件聚合 + 30 天保留（节流 ≥60s 一次；prune 无删除不写盘，开销低）：
+		// 拉取远端事件文件后（git pull）这里会自然合并进聚合，不依赖单独同步步骤。
+		try {
+			const now = Date.now();
+			if (now - lastToolRecomputeTs > 60_000) {
+				lastToolRecomputeTs = now;
+				pruneToolEvents();
+				recomputeToolUsage();
+			}
+		} catch {
+			// 统计失败不阻塞主流程
+		}
 		const resolved = resolveContext(ctx);
 		if (resolved) {
 			// thinking 档位自适应（task #25）：按真实 tokens/window 比例自动升降档，

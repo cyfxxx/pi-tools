@@ -741,6 +741,21 @@ phase2_wrapper() {
   fi
 }
 
+# ---- Phase 2-E2: tool-stats 同步 git hooks（post-merge 自动合并跨设备统计） ----
+phase2_tool_sync_hooks() {
+  title "Phase 2-E2" "工具统计同步 hooks"
+  local hs="$PI_HOME/scripts/install-tool-sync-hooks.sh"
+  if [ ! -f "$hs" ]; then
+    warn "install-tool-sync-hooks.sh 缺失"
+    return 0
+  fi
+  if bash "$hs" --quiet; then
+    ok "post-merge hook 已就绪（git pull 后自动合并 tool 统计）"
+  else
+    warn "hook 安装失败，请手动运行: bash $hs"
+  fi
+}
+
 # ---- Phase 2-F2: tmux 配置同步（仓库 deploy/tmux/tmux.conf → ~/.tmux.conf） ----
 # git 同步边界只覆盖 ~/.pi/，~/.tmux.conf 在主目录需手动安装（README「git 模式边界」表）。
 # 本阶段自动补上：diff 幂等 → cp 同步 → server 运行中时 source-file 热加载（不 kill-server，
@@ -1208,6 +1223,7 @@ phase2_browser
 # 类型链接需要 pi 已安装；wrapper/whisper 均为幂等
 phase2_types
 phase2_wrapper
+phase2_tool_sync_hooks
 phase2_tmux
 phase2_link_keys
 phase2_packs
