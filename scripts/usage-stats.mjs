@@ -213,6 +213,17 @@ if (curS.breakList && curS.breakList.length) {
   const hint = Object.entries(agg).map(([c, n]) => `${c}×${n}`).join(' ')
   const ttlA = (curS.breakList || []).filter(b => b.cls === 'A' && b.gapMin > TTL_GAP_MIN).length
   console.log(`  断裂分类: ${hint}${agg.A ? ` — A 类查：先看断裂轮间隔（${ttlA} 次间隔 >${TTL_GAP_MIN}min 属 TTL 逐出，与本地无关），再查 compaction 改写/早期消息改写/provider 缓存键（注入块仅尾部≤500 token 非主因）` : ''}${agg.B ? ' — B 类查：压力档位切换/keepRecentTokens 重建/注入块尾部变化' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
+  // 密集断裂异常检测（2026-08-24）：同会话内 ≥3 次"非 TTL（gapMin≤6）且无工具
+  // 启用事件"的 A 类全断 → 疑似 provider 网关出站缓存异常。实测案例：08-24 会话
+  // 05:34-05:46 连续 6 次间隔仅 2-4 分钟的全断（无事件、无本地改写，含纯 bash/tmux
+  // 轮），与 DeepSeek 服务端 TTL（6-8min）不符，本地无法修复，只能持续观测。
+  const nonTtlNoEvent = (curS.breakList || []).filter(
+    (b) => b.cls === 'A' && b.gapMin <= TTL_GAP_MIN &&
+      !toolEvents.some((e) => Math.abs(e.ts - b.ts) < TOOL_EVENT_WINDOW_MS),
+  )
+  if (nonTtlNoEvent.length >= 3) {
+    console.log(`  ⚠ 疑似网关缓存异常：${nonTtlNoEvent.length} 次非 TTL 无事件 A 类全断（间隔≤${TTL_GAP_MIN}min）——本地序列/注入已排除，疑似 provider 网关出站缓存不稳定，建议核查 opencode-go 缓存配置并持续观测`)
+  }
 }
 if (curS.hitRate < 0.90 || curS.breaks > 3) {
   console.log('  ⚠ 低于健康线 — 定位流程：')
