@@ -24,24 +24,26 @@
 | 服务不可用 | provider/api/connection/network/429/503/502 等 | `failoverAfter`(2) 次后切换 fallback 链 |
 | 逻辑错误 | Error:/invalid 等 | 直接失败（不烧重启成本） |
 | 连续失败 | failCount ≥ `suspendAfter`(5) | 暂停任务 + Webhook 告警 |
-| failover 熔断 | failoverCount ≥ `maxFailovers`(1) | 暂停任务——连续切换模型已达上限，防双模型链 ping-pong 无限重启（2026-08 审计修复） |
+| failover 熔断 | failoverCount ≥ `maxFailovers`(1) | 暂停任务——连续切换模型已达上限，防双模型链 ping-pong 无限重启 |
 | 鉴权错误 | 401/403/unauthorized/invalid api key | 直接失败（重试无意义，不烧额度） |
 
 - **模型 failover**：`fallbackModels` 硬白名单（AI 不可自由选模型），结合历史成功率选目标，写 wrapper 状态后重启带 `--model`
-- **重试退避（A1，2026-08）**：失败重试延迟固定 60s 改为**指数退避 + 抖动**——`base 30s × 2^(failCount−1)`，上限 5min，±50% 抖动（下限 base/2）；连续瞬时故障（provider_down/超时）递增延迟避免自撞，抖动防共振
-- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；默认 **180（3 小时）**——长思考/长时间等待场景不再误判；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免，2026-08 审计修复）
+- **重试退避（A1）**：失败重试延迟固定 60s 改为**指数退避 + 抖动**——`base 30s × 2^(failCount−1)`，上限 5min，±50% 抖动（下限 base/2）；连续瞬时故障（provider_down/超时）递增延迟避免自撞，抖动防共振
+- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；默认 **180（3 小时）**——长思考/长时间等待场景不再误判；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免）
 - **崩溃回滚**：pi-wrapper 连续 3 次崩溃 → 回滚 lastGood 模型（5 分钟防抖）
 - **任务超时钳位**：调度任务 `maxRunTime` 钳位到 [5, 86400] 秒（负值/0 → 5s，≥2³¹ 溢出 → 86400），防极端值导致任务被立即误杀 / `maxCostPerDay`(0=不限) / `allowedModels`，超限自动跳过并通知（跳过时推进下次调度时间，预算恢复后自动补跑；不记 failed 遥测，避免 todayRuns 越拦越满锁到次日零点）
-- **恢复队列（A2/A3，2026-08）**：
+- **恢复队列（A2/A3）**：
   - `pendingInject` 语义改为**运行中标记**——fireViaMessage 非阻塞（sendUserMessage 立即返回），tick 过滤 pendingInject=true 的任务防 interval 长任务重叠触发；`agent_settled`（主会话空闲）统一清除
   - 附带修复：旧实现注入后从不清除，崩溃恢复会重放全部历史注入任务；现只恢复真正"注入后未完成"的任务
-  - **注入式任务最终化（finalizeInjected，2026-08-17 补闭环）**：agent_settled 时对本轮注入的 message 任务回写 `updateTaskAfterRun('success')`——once 任务自动删除（修复前 nextRun 推 +1h 而 computeNextRun 对 once 返回过期时间 → 每小时重复注入、永不删除）、interval/cron 推进 nextRun 并重置 failCount/failoverCount、`notifyOnCompletion` 补发 success webhook（与 subagent 路径对齐）、任务已删/改型安全跳过；`/schedule enable` 清零熔断计数（suspend 恢复后不一次失败即再熔断）
+  - **注入式任务最终化（finalizeInjected）**：agent_settled 时对本轮注入的 message 任务回写 `updateTaskAfterRun('success')`——once 任务自动删除（修复前 nextRun 推 +1h 而 computeNextRun 对 once 返回过期时间 → 每小时重复注入、永不删除）、interval/cron 推进 nextRun 并重置 failCount/failoverCount、`notifyOnCompletion` 补发 success webhook（与 subagent 路径对齐）、交付完成即补记一条 telemetry 成功运行（此前只统计 subagent 与失败运行，注入任务日预算被系统性低估）、任务已删/改型安全跳过。**abort 回合甄别**：宿主 finally 无条件发 agent_settled，中止回合也会到达此处——index.ts 在 agent_end 检查尾部 assistant `stopReason==='aborted'` 回写标记后，中止回合仅推进 nextRun 防 tick 重复注入（不记 success、不删 once、不发 webhook、不消耗重试次数）；`/schedule enable` 清零熔断计数（suspend 恢复后不一次失败即再熔断）
   - **恢复次数上限**：`recoveryCount` 超 3 次转 dead-letter——暂停任务 + Webhook 告警，需人工介入（`/schedule enable` 恢复），防连续崩溃无限重注入
 
 ### 3. 自管理
 
 命令：`/auto restart`（重启需确认）
 工具：`admin_status` `admin_list_models` `admin_set_model` `admin_list_sessions` `admin_switch_session` `admin_get_config` `admin_set_config` `admin_restart`
+
+休眠组 `autopilot`（默认不注入，`enable_tool("autopilot")` 启用）：`autopilot_status`（运行状态/遥测）`autopilot_stats`（调度统计）`autopilot_failover`（failover 策略查看）。
 
 状态/统计：`/auto status [--stats]`（--stats 附加遥测统计） `/auto policy` `/auto failover [--exec]` `/auto pause` `/auto resume`（`/auto help` 查看全部用法）
 
@@ -64,13 +66,15 @@
 }
 ```
 
-## admin_restart 上下文提示（2026-08-17）
+**enabled 门控语义**：`enabled=false`（自主运行关闭）时 30s tick 直接返回——到期任务不自动触发（含 waitForUserOnLocal 提示注入），预算检查也不执行（`fireTask` 内预算拦截整体包在 `if (config.enabled)` 分支中）；手动 `/schedule run`（含 force）不经 tick 门控，不受影响。
+
+## admin_restart 上下文提示
 
 调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（对齐 pi-context 的 `PI_CONTEXT_RESTART_RATIO=0.4`），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。重启照常执行（提示不阻断），避免用户毫不知情地烧掉一次全量重新计费。
 
 运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/` 下）。
 
-**调度锁**：`agent/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用，2026-08 审计修复）。
+**调度锁**：`agent/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用）。
 
 ## 数据流
 
@@ -100,9 +104,15 @@
 
 ```bash
 npm install
-npx vitest run        # 106 用例：storage/notifications + scheduler + policy/failover/budget/telemetry/queue/watchdog
+npx vitest run        # 覆盖：storage/notifications + scheduler + policy/failover/budget/telemetry/queue/watchdog
 ```
 
 ## 升级说明
 
 替换 `settings.json` 中 `extensions/pi-admin/index.ts` 与 `extensions/pi-scheduler/index.ts` 两条目为 `extensions/pi-autopilot/index.ts`（rebuild.sh 已自动处理）。工具 `admin_*`、`schedule_task` 全部保留；命令已精简（见上文）：仅保留 `/auto` 与 `/schedule`（`/loop` `/remind` 并入其子命令）。
+
+## CHANGELOG
+
+- 2026-08：重试改指数退避+抖动（A1）；恢复队列 pendingInject 重语义与崩溃恢复修复（A2/A3）；failover 熔断上限防 ping-pong、调度锁 24h 租约 TTL、看门狗 busy 豁免上限等审计修复
+- 2026-08-17：admin_restart 高上下文压缩建议；finalizeInjected 注入式任务闭环（once 删除 / notifyOnCompletion webhook / telemetry 补记）
+- 2026-08-25：中止回合甄别——宿主 finally 无条件发 agent_settled，agent_end 尾部 stopReason==='aborted' 回写后仅推 nextRun，不记 success

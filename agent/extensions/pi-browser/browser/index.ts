@@ -540,7 +540,7 @@ export function registerBrowserTools(pi: ExtensionAPI, browser: BrowserManager, 
     promptGuidelines: [
       '点击下载按钮前无需预先调用，下载事件自动监听并保存',
       '触发下载后调用本工具（不带 dir）查看已保存的文件路径',
-      '下载目录默认 ~/.pi-browser-downloads，可传 dir 自定义',
+      '下载目录默认为系统临时目录下 pi-browser-downloads-<pid>（会话隔离，shutdown 自动清理），可传 dir 自定义',
     ],
     parameters: {
       type: 'object',

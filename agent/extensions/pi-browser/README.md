@@ -82,11 +82,13 @@ Windows 便携探测（2026-08-17 合入，源自 portable-win）：`CLOAKBROWSE
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `PI_WEB_TOOLKIT_HEADLESS` | 无头模式 | `false` |
-| `PI_WEB_TOOLKIT_VIEWPORT_WIDTH` | 浏览器视口宽度 | `1280` |
-| `PI_WEB_TOOLKIT_VIEWPORT_HEIGHT` | 浏览器视口高度 | `800` |
-| `PI_WEB_TOOLKIT_FINGERPRINT_SEED` | 浏览器指纹种子 | （随机） |
-| `PI_WEB_TOOLKIT_PROXY` | 代理地址 | （无） |
+| `PI_BROWSER_HEADLESS`（回退 `PI_WEB_TOOLKIT_HEADLESS`） | 无头模式 | `false` |
+| `PI_BROWSER_VIEWPORT_WIDTH`（回退 `PI_WEB_TOOLKIT_VIEWPORT_WIDTH`） | 浏览器视口宽度 | `1280` |
+| `PI_BROWSER_VIEWPORT_HEIGHT`（回退 `PI_WEB_TOOLKIT_VIEWPORT_HEIGHT`） | 浏览器视口高度 | `800` |
+| `PI_BROWSER_FINGERPRINT_SEED`（回退 `PI_WEB_TOOLKIT_FINGERPRINT_SEED`） | 浏览器指纹种子 | （随机） |
+| `PI_BROWSER_PROXY`（回退 `PI_WEB_TOOLKIT_PROXY`） | 代理地址 | （无） |
+
+> 新前缀 `PI_BROWSER_*` 优先读取；旧前缀 `PI_WEB_TOOLKIT_*` 仅作向后兼容回退，同名变量新前缀生效。
 
 ### 配置优先级
 
@@ -114,6 +116,8 @@ Windows 便携探测（2026-08-17 合入，源自 portable-win）：`CLOAKBROWSE
 ```
 
 ## 工具参考
+
+辅助工具（详见工具 schema）：`browser_cookies`（查看/设置 Cookie，登录态检查）、`browser_find`(穿透 Shadow DOM 定位元素坐标)、`browser_pdf`(当前页导出 PDF)、`browser_help`(交互机制手册：shadow/dropdown/dialog/download/network/scroll/iframe/wait/cookie/screenshot)。
 
 ### browser_navigate
 
@@ -287,7 +291,7 @@ JSON.stringify({title: document.title, url: location.href})
 → LLM:  browser_upload(selector="input[type=file]", path="/tmp/xx.pdf")
 ```
 
-> 下载默认存 `~/.pi-browser-downloads/`（重名自动加时间戳）；上传需先确知文件输入框选择器。
+> 下载默认存系统临时目录下 `pi-browser-downloads-<pid>`（会话隔离，shutdown 自动清理；重名自动加时间戳）；上传需先确知文件输入框选择器。
 
 ## 故障排查
 

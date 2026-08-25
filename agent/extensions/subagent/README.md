@@ -38,12 +38,12 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 ┌──────────────────────────────────────────────────────────────────┐
 │                      subagent 扩展                               │
 │                                                                  │
-│  index.ts (1100 行)                   agents.ts (126 行)        │
+│  index.ts                             agents.ts                 │
 │  ┌────────────────────────────┐       ┌──────────────────────┐  │
 │  │ 1 个 LLM 工具: subagent    │       │ 核心函数:             │  │
 │  │   ├─ execute() 主逻辑      │       │ discoverAgents()     │  │
 │  │   ├─ renderCall() TUI 渲染  │       │ loadAgentsFromDir()   │  │
-│  │   └─ renderResult() 结果渲染│       │ + 发现缓存 (TTL 5s)   │  │
+│  │   └─ renderResult() 结果渲染│       │ formatAgentList()    │  │
 │  │                            │       └──────────────────────┘  │
 │  │ 三种执行模式:               │                                  │
 │  │   ├─ single (同步)         │  agent 定义目录                   │
@@ -57,6 +57,24 @@ LLM 上下文窗口是有限的。主 agent 在做侦察、计划、编写、审
 │  └─ reviewer.md                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+### 模块与关键函数
+
+| 文件 | 函数 | 职责 |
+|------|------|------|
+| `index.ts` | `runSubprocessAgent` | spawn 子进程（JSON 模式）、stdout 流解析、usage 累计、30min 兜底超时 |
+| | `scheduleKillChain` | SIGTERM→SIGKILL 终止链（5s 升级，close 事件清除定时器） |
+| | `mapWithConcurrencyLimit` | 并发调度 + 孤儿防护（任一失败/外部 abort 停止出队并中止已 spawn 子进程） |
+| | `resolveAgentTools` / `buildAgentPrompt` | readonly 工具过滤与系统提示只读声明注入 |
+| | `isLocalProvider` / `getMaxParallelTasks` / `getMaxConcurrency` | 本地推理判定 + 环境自适应并发上限 |
+| | `runSingleAgent` | agent 查找（缺省回退内置通用提示）+ 子进程调用 |
+| | `getFinalOutput` / `getResultOutput` / `isFailedResult` | 最终输出提取、失败判定（exitCode/stopReason）、错误输出兜底链 |
+| | `applyPreviousPlaceholder` / `taskPreview` / `agentLabel` | `{previous}` 安全替换、TUI 渲染兜底 |
+| | `truncateParallelOutput` | 每任务输出截断（50 KB cap） |
+| | `formatTokens` / `formatUsageStats` | usage 格式化（渲染用） |
+| `agents.ts` | `discoverAgents` | 双目录扫描按 scope 合并（同名项目级覆盖用户级） |
+| | `loadAgentsFromDir` | frontmatter 解析（name/description/tools/model/readonly） |
+| | `formatAgentList` | agent 清单文本格式化（maxItems 截断） |
 
 ### 子进程通信协议
 
@@ -120,6 +138,7 @@ subagent({
 - 本地模型（provider 名匹配 ollama/localhost/127.0.0.1/lmstudio/vllm 等）：串行 `LOCAL_CONCURRENCY = 1`，避免多进程竞争 GPU 内存
 - **环境限制（Termux/Android）**：资源受限（移动端内存/电池），任务上限降为 2、云端并发降为 2（`TERMUX_MAX_PARALLEL`/`TERMUX_CONCURRENCY`，识别：platform=android 或 `TERMUX_VERSION` 环境变量）；本地模型任何环境均串行 1。WSL/Windows/Linux/macOS 无环境限制
 - 每任务输出截断到 **50 KB**（完整结果在 tool details 中）
+- **孤儿防护**：任一任务失败（如子进程 30min 超时）或外部 abort 后立即停止出队新任务；internal `AbortController` 沿既有 signal→`scheduleKillChain` 链路向已 spawn 的子进程发 SIGTERM（5s 未退出升级 SIGKILL），避免结果无人消费的孤儿子进程
 
 **结果格式**：
 
@@ -203,6 +222,7 @@ You are a specialized agent. Your system prompt goes here.
 | `description` | 是 | 用途描述 |
 | `tools` | 否 | 工具白名单（逗号分隔，默认全部） |
 | `model` | 否 | 指定模型 ID。省略则继承当前会话模型 |
+| `readonly` | 否 | `true`（或字符串 `"true"`）启用只读模式：spawn 强制过滤写入类工具 bash/edit/write（过滤后为空回退 `read,ls` 最小只读集），并在系统提示前置强制只读声明（双保险） |
 
 > ⚠️ `fallback_models`（备用模型自动降级）**未实现**，请勿在 frontmatter 中使用。
 
@@ -210,9 +230,9 @@ You are a specialized agent. Your system prompt goes here.
 
 | Agent | 角色 | 工具 |
 |-------|------|------|
-| **scout** | 侦察兵 | read, grep, find, ls, bash |
+| **scout** | 侦察兵（frontmatter `readonly: true`） | read, grep, find, ls（声明的 bash 被强制过滤） |
 | **worker** | 执行者 | 全部（默认） |
-| **reviewer** | 质检员 | read, grep, find, ls, bash |
+| **reviewer** | 质检员 | read, grep, find, ls, bash（提示词约定只读用法，非机制强制） |
 
 所有 agent 默认继承当前会话模型。如需指定模型，在 agent YAML 前加 `model:` 字段。
 
@@ -257,17 +277,25 @@ You are a specialized agent. Your system prompt goes here.
 node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs
 ```
 
-63 项测试覆盖：
+测试覆盖（按模块，具体计数以 tests/test.mjs 为准）：
 
-| 模块 | 测试数 | 覆盖内容 |
+| 模块 | 用例规模 | 覆盖内容 |
 |------|--------|----------|
 | `formatTokens` | 9 | 零、千以下、1k、1.5k、10k、999k、1M、1.5M |
 | `formatUsageStats` | 2 | 空、完整 |
 | `isFailedResult` | 6 | exitCode、stopReason error/aborted/end/stop |
 | `getFinalOutput` | 4 | 空、单消息、最后消息、toolCall 内容 |
 | `getResultOutput` | 5 | 成功、errorMessage、stderr、fallback、无输出 |
-| `truncateParallelOutput` | 4 | 小文本不截断、大文本截断、截断标识、多字节字符安全 |
-| `mapWithConcurrencyLimit` | 4 | 空输入、全量映射、并发控制、超限 |
+| `applyPreviousPlaceholder` | 4 | 普通替换、多占位符、$&/$'/$` 不被当作替换模式 |
+| `truncateParallelOutput` | 4 | 小文本不截断、大文本截断、边界值、多字节字符安全 |
+| `mapWithConcurrencyLimit` | 6 | 空输入、全量映射保序、并发控制峰值、乱序完成保序、失败停出队+内部 abort 信号、外部 abort 停出队 |
+| `isLocalProvider` | 4 | 本地判真、云端判假、大小写不敏感、local 词边界不误伤子串 |
+| `discoverAgents` | 4 | both 项目覆盖用户、user/project 单侧、readonly 解析 |
+| `resolveAgentTools` | 3 | 非 readonly 原样、过滤写入类、全写入类回退最小只读集 |
+| `buildAgentPrompt` | 2 | readonly 前置只读声明、非 readonly 原样 |
+| `scheduleKillChain` | 3 | 升级 SIGKILL、close 清除定时器、kill 抛错不安排升级 |
+| `taskPreview` / `agentLabel` | 5 | 缺 task 空串兜底、{previous} 清理、超长截断、缺名占位、有名原样 |
+| 并发环境上限 | 4 | 桌面默认 8/4/1、Termux 降档 2/2、TERMUX_VERSION 变量单独生效 |
 
 ---
 

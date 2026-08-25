@@ -65,8 +65,9 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 
 ## 并发保护与去重（T2-4）
 
-- 同设备并发：进程内锁，已有进行中的调用时拒绝新调用（提示等完成）
-- 同设备同消息：5 分钟内相同消息自动去重（防模型重复调用），确需重发请改动内容或稍等
+- 同设备并发：进程内锁（inflight），已有进行中的调用时拒绝新调用（提示等完成）
+- 宿主取消信号（AbortSignal）：工具中止时 SIGKILL ssh 子进程，返回“调用已被取消”，并释放 inflight 锁
+- 同设备同消息：5 分钟窗口去重，指纹**仅发送成功后写入**——失败/超时不占窗口，同消息可直接重发
 
 ## 设备卡片交换（T2-5）
 
@@ -157,7 +158,7 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 - **远程能力**：A 可驱动 B 的 pi 执行 B 用户权限内的任何命令——默认 `--no-extensions`（不加载 B 的扩展：不暴露 B 的记忆库、不触发 plan-mode 三选一/autopilot 调度/voice 等）；需要远程扩展能力时显式 `"extensions": true`
 - **交互请求**：远程 agent 若调用 ask_user/UI 交互（`extension_ui_request` 事件），调用立即失败返回错误（避免挂起），由 B 侧用户手动处理该会话
 - **上下文**：默认独立会话，A 无法读取 B 的其他会话内容（会话文件在 B 侧本地）
-- **注入防护**：远程可控字段（`tmuxSession`/`sessionFile`）经 shell 单引号转义后才拼入命令（`'`→`'''`），防远程恶意值注入本地 shell
+- **注入防护**：远程可控字段（`tmuxSession`/`sessionFile`）经 shell 单引号转义后才拼入命令（`'`→`'\''`），防远程恶意值注入本地 shell
 
 ## 测试
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-all.sh — pi-tools 一键全量回归（Termux/Linux + Windows 便携双环境）
-# 9 套 vitest + subagent mjs 测试 + 扩展注册面测试 + 根 typecheck + 扩展冲突检查 + 缓存注入面守门（cache-guard）
+# 9 套 vitest + subagent mjs 测试 + 扩展注册面测试 + 根 typecheck + 扩展冲突检查 + 缓存注入面守门（cache-guard）+ 文档一致性守门（doc-lint）
 # 任一失败以非零码退出并汇总失败清单
 #
 # 用法（dsh 借鉴：证据面匹配分层，2026-08-14）：
@@ -140,6 +140,11 @@ report $? "conflict-check (9 项, 含工具指纹入账)"
 cyn "== 缓存注入面守门（cache-guard） =="
 (cd "$EXTS" && "$NODE" tests/cache-guard.mjs >/dev/null 2>&1)
 report $? "cache-guard (注入面指纹/阈值契约/动态源)"
+
+
+cyn "== 文档一致性守门（doc-lint） =="
+"$NODE" "$PI_HOME/scripts/doc-lint.mjs" >/dev/null 2>&1
+report $? "doc-lint (README 工具/slash 命令清单一致)"
 
 cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载） =="
 "$NODE" -e "

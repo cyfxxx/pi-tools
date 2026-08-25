@@ -50,7 +50,7 @@
 |------|------|
 | **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），5 状态机（pending→in_progress→completed→deleted，blocked 阻塞可回退） |
 | **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓/⏸）、删除线、溢出折叠、标题行高亮当前执行步骤 |
-| **只读工具集** | 限制可用工具为 read、bash、grep、glob、todo、web_search、fetch_url、subagent、plan_exit（共 9 个，`PLAN_MODE_TOOLS`） |
+| **只读工具集** | 限制可用工具为 read、bash、grep、find、ls、todo、web_search、fetch_url、subagent、plan_exit（共 10 个，`PLAN_MODE_TOOLS`，`index.ts:28`） |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
 | **`[DONE:n]` 标记（已移除）** | 统一使用 `todo update status=completed` 完成步骤 |
@@ -89,10 +89,10 @@
               │          Plan Mode                   │
               │         (只读探索阶段)                 │
               │                                      │
-              │  可用工具 (9 个):                      │
-              │    read / bash / grep / glob / todo   │
-              │    web_search / fetch_url / subagent  │
-              │    plan_exit                           │
+              │  可用工具 (10 个):                     │
+              │    read / bash / grep / find / ls     │
+              │    todo / web_search / fetch_url      │
+              │    subagent / plan_exit               │
               │                                      │
               │  Bash 受 allowlist 限制               │
               │  (cat、grep、ls 等只读命令)            │
@@ -274,7 +274,7 @@ let planDir: string | null = null; // 当前计划的 git 版本库路径
 let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 ```
 
-`lastPersistedHash`（`index.ts:261`，定义于 `persistState()` 内）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
+`lastPersistedHash`（模块级 let，`index.ts:261`）记录最近一次持久化状态的内容哈希，状态未变化时跳过 `appendEntry`，避免冗余写入。
 
 ### 5.3 事件处理器详解
 
@@ -356,51 +356,20 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 
 ## 六、安全模型：Bash Allowlist
 
-安全模型位于 `utils.ts:103`（`isSafeCommand()`），采用**先规范化、再双重检查**的机制：
+安全模型位于 `utils.ts:122-178`（`isSafeCommand()`），采用**先规范化、再逐层过检**的机制。完整实现以 `utils.ts` 为准，此处仅列规则要点：
 
-```typescript
-export function isSafeCommand(command: string): boolean {
-  const trimmed = command.trim();
-  if (!trimmed) return false;
+1. **重定向保护**：仅允许尾部 `2>/dev/null` 这一种形态；其余任何重定向（`>`、`>>`、`2>` 非 /dev/null、`2>&1`）一律拒绝，剥离后再次出现的重定向同样拒绝
+2. **cd 前缀**：仅放行 `cd <dir> && <单条白名单命令>` 前缀，核心命令不得再含 `&&`
+3. **单一只读管道**：仅放行单一 `LHS | RHS` 形态——LHS 须为白名单内只读单命令；RHS 须属无写切片命令（head/tail/less/more/wc/uniq/cat/grep），且作为整条命令**全量过检**（拒 `$()`/反引号/换行）；多级管道一律拒绝
+4. **分隔符与注入拦截**：`;`、多重 `&&`、反引号、`$()` 命令替换、换行（`\n`/`\r`）一律拒绝
+5. **进程替换拦截**：`<(...)` 一律拒绝（`>(` 已由重定向规则覆盖）
+6. **专项收紧**：`awk` 禁 `system`/`getline`（任意执行/读文件）；`curl` 仅 GET-only 查询（拒 `-T/--upload-file/--data*`/`--form` 等上传/POST 形态）；`sort` 禁 `-o/--output`（落盘写文件）
 
-  // 尾部 2>/dev/null：允许且仅允许这一种重定向形态
-  const withStderrDiscard = /\s*2\s*>\s*\/dev\/null\s*$/.test(trimmed);
-  const core0 = withStderrDiscard ? trimmed.replace(/\s*2\s*>\s*\/dev\/null\s*$/, "").trimEnd() : trimmed;
-  if (!withStderrDiscard) {
-    // 未剥离的其它重定向一律拒绝（> / >> / 2> 非 /dev/null / 2>&1 等）
-    if (/>|>>/.test(core0)) return false;
-  }
-  // 剥离后不得再出现重定向（如 `ls 2>/dev/null > out`）
-  if (withStderrDiscard && />|>>/.test(core0)) return false;
-
-  // cd 前缀：cd <dir> && <核心命令>（核心命令仍须整体单条白名单）
-  const cdMatch = /^\s*cd\s+("[^"]*"|'[^']*'|\S+)\s*&&\s*/.exec(core0);
-  const core = /* cd 前缀剥离 */ cdMatch ? core0.slice(cdMatch[0].length).trim() : core0;
-  if (cdMatch && core.includes("&&")) return false;
-
-  // 核心不得出现分隔符/命令替换（管道、分号、多个 &&、反引号、$()）
-  if (/[;&|&]|`|\$\(/.test(core)) return false;
-
-  return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
-}
-```
-
-**规则**：命令必须同时满足 **不在黑名单** 且 **在白名单中** 才放行。
-
-### 黑名单（DESTRUCTIVE_PATTERNS）
-
-覆盖以下类别：
-
-| 类别 | 条目 |
-|------|------|
-| 文件操作 | `rm` `rmdir` `mv` `cp` `mkdir` `touch` `chmod` `chown` `ln` `tee` `dd` `shred` `truncate` |
-| 重定向 | `>` `>>` |
-| 包管理器 | `npm install/uninstall` `yarn add/remove` `pnpm add/remove` `pip install` `apt install` `brew install` |
-| Git 写操作 | `git add/commit/push/pull/merge/reset/checkout` 等 |
-| 系统 | `sudo` `su` `kill` `reboot` `shutdown` `systemctl start` `service start` |
-| 编辑器 | `vim` `nano` `emacs` `code` `subl` |
+最终判定：命令必须同时满足 **不在黑名单** 且 **在白名单中** 才放行。
 
 ### 白名单（SAFE_PATTERNS）
+
+> 例外限制：`sort` 禁 `-o/--output`；`awk` 禁 `system`/`getline` 及重定向；`curl` 仅 GET-only（详见上文规则要点 6）。
 
 | 类别 | 条目 |
 |------|------|
@@ -419,7 +388,7 @@ export function isSafeCommand(command: string): boolean {
 2. **正则精确性**：`^\s*cat\b` 使用行首锚定 + 词边界，防止 `cat foo | something_dangerous` 中的误判
 3. **Git 读/写分离**：`git status` 允许，`git push` 禁止
 4. **重定向保护**：仅允许尾部 `2>/dev/null` 这一种形态；其余任何重定向（`>`、`>>`、`2>` 非 /dev/null、`2>&1`）一律拒绝
-5. **复合命令限制**：仅放行 `cd <dir> && <单条白名单命令>` 前缀；管道、分号、多重 `&&`、反引号、`$()` 命令替换一律拒绝
+5. **复合命令限制**：仅放行 `cd <dir> && <单条白名单命令>` 前缀与**单一只读管道**（LHS 只读单命令，RHS 无写切片且全量过检）；分号、多重 `&&`、反引号、`$()`、换行、多级管道一律拒绝
 6. **前缀空格处理**：所有白名单正则以 `^\s*` 开头，兼容前导空格
 
 ---
@@ -536,7 +505,7 @@ function persistState(): void {
 
 ### 恢复
 
-在 `session_start` 事件中恢复（`index.ts:1114`）：
+在 `session_start` 事件中恢复（`index.ts:1144`）：
 
 1. 从 `ctx.sessionManager.getEntries()` 中找到最后一个 `customType === "plan-mode"` 的 entry
 2. 恢复所有状态变量（模式、执行状态、计划目录、QA 历史、任务列表）
@@ -787,12 +756,11 @@ pi.on("agent_end", async (event, ctx) => {
 | `isPlanRevisionIntent` | 无 | 有 |
 | Q&A 历史捕获 | 无 | 有 (`qaMessages`) |
 | `planPresented` 追踪 | 无 | 有 |
-| Q&A 历史捕获 | 无 | 有 (`qaMessages`) |
 | 分级注入 | 无 | 有 (首轮 full/后续 short) |
 | 条件触发选择 | 无 | 有 (todoHash 变化时弹出) |
 | Q&A 自动清理 | 无 | 有 (max 6 条) |
 | Token-budget 集成 | 无 | 有 (压力标签 + 用量记录) |
-| 工具管理策略 | 保存/恢复自定义工具 (toolsBeforePlanMode) | 硬编码工具列表 (PLAN_MODE_TOOLS) |
+| 工具管理策略 | 保存/恢复自定义工具 (toolsBeforePlanMode) | 进入 plan 用 PLAN_MODE_TOOLS；resume/exit/plan_exit/完成路径已改 restoreAllTools 全量恢复（硬编码仅存于进入 plan 及 session_start 部分分支） |
 | CLI flag 描述 | 英文 | 中文 |
 | 语言 | 英文 | 中文 |
 
@@ -824,7 +792,11 @@ pi.on("agent_end", async (event, ctx) => {
 
 ## 十五、附录：安全命令白名单
 
+> 完整定义以 `utils.ts` 的 `DESTRUCTIVE_PATTERNS` / `SAFE_PATTERNS` 为准（本表为摘要）。
+
 ### 允许的命令（安全）
+
+> 例外限制：`sort` 禁 `-o/--output`；`awk` 禁 `system`/`getline` 及重定向；`curl` 仅 GET-only（拒上传/POST 数据类参数）。
 
 | 类别 | 命令 |
 |------|------|
@@ -848,3 +820,4 @@ pi.on("agent_end", async (event, ctx) => {
 | 系统操作 | `sudo` `su` `kill` `pkill` `killall` `reboot` `shutdown` `systemctl start/stop/restart/enable/disable` `service start/stop/restart` |
 | 编辑器 | `vim` `nano` `emacs` `code` `subl` |
 | 重定向 | `>` `>>` |
+| 参数级执行/落盘 | `rg --pre/--pre-glob` `fd -x/-X/--exec/--exec-batch` `tree --infofile` `find -delete/-exec/-execdir/-ok/-fprint/-fprintf` `sed w <file>`（写文件）`curl -o/-O/--output`（落盘）；`wget` 非 `-O -` 形态整体拒绝 |

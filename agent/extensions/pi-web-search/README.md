@@ -14,8 +14,8 @@
 │  │                                                                 │  │
 │  │  fetch_url()     ──── 纯 HTTP GET（15s 超时）                   │  │
 │  │  web_fetch()     ──── Bing HTML 解析（无 SearXNG 依赖）         │  │
-│  │  web_search()    ──── HTTP JSON API ─────── SearXNG             │
-  │                     └─ 多引擎结果 URL 去重（W1，2026-08）       │  │
+│  │  web_search()    ──── HTTP JSON API ─────── SearXNG            │  │
+│  │               └─ 多引擎结果 URL 去重（W1，2026-08）            │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -276,7 +276,7 @@ pi --no-extensions -e ~/.pi/agent/extensions/pi-web-search/index.ts "搜索网�
 
 ### fetch_url
 
-轻量 HTTP GET 工具，无需启动浏览器即可获取 URL 内容。适用于纯文本、API 响应、JSON、Markdown 文档。
+轻量 HTTP GET 工具，无需启动浏览器即可获取 URL 内容。适用于纯文本、API 响应、JSON、Markdown 文档。协议白名单：仅允许 http:/https: URL（file:/ftp: 等一律拒绝；内网地址不拦）。
 
 **参数：**
 
@@ -475,4 +475,4 @@ pi-web-search 集成了 Token 预算管理模块 (`lib/token-budget.ts`、`lib/p
 | `fetch_url` | `max_length` 默认 8000，无浏览器开销 | ~50% vs browser |
 | `web_fetch` | 纯标题+URL，无摘要 | ~80% vs web_search |
 
-每次工具调用结束后自动调用 `recordToolUsage()` 记录工具使用计数（按工具累计 token 估算，仅供诊断统计，不注入 LLM 上下文）。上下文压力提示由 pi-context 扩展统一承担，本扩展不注入。
+每次工具调用结束后自动调用 `recordToolUsage()` 记录工具使用计数（按工具累计 token 估算）；累计用量计入上下文预算的 usedTotal，参与压力档位计算，供 pi-context 按档位注入上下文压力提示（本扩展自身不注入提示）。
