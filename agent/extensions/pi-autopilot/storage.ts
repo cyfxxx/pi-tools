@@ -155,11 +155,30 @@ export function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
   return run
 }
 
-export async function writeTasks(store: TaskStore): Promise<void> {
+export async function writeTasks(store: TaskStore, opts: { excludeIds?: Set<string>; skipMerge?: boolean } = {}): Promise<void> {
   const p = tasksPath()
+  // 实测根因修复（2026-08-25）：scheduled-tasks.json 有三个全量覆盖写者
+  // （主会话 autopilot / summarizer 后台会话 autopilot / pi-cron.sh headless），
+  // 任一方基于旧内存态 writeTasks 都会把其它写者刚建的任务抹掉——
+  // 08-24 建的 knowledge-subscribe/daily-review 即被后台会话旧快照覆盖丢失。
+  // 对齐 saveEntries 写前重读合并：磁盘有而快照无的活跃任务补回；快照同 id 优先
+  //（保留最新状态推进）；deleted 不补（保留回收语义）。
+  let merged = store
+  try {
+    // skipMerge：全量替换型写入（import 权威恢复/测试种子）不走合并
+    const onDisk = opts.skipMerge ? null : await readTasks()
+    if (onDisk && onDisk.tasks.length > 0) {
+      const byId = new Map(store.tasks.map(t => [t.id, t]))
+      for (const t of onDisk.tasks) {
+        // excludeIds（物理移除的墓碑）不补——防删除被合并复活（对齐 saveEntries）
+        if (t.id && !byId.has(t.id) && !t.deleted && !opts.excludeIds?.has(t.id)) byId.set(t.id, t)
+      }
+      merged = { ...store, tasks: [...byId.values()] }
+    }
+  } catch { /* 读失败用传入快照 */ }
   const tmp = p + '.tmp.' + process.pid
   await mkdir(dirname(p), { recursive: true })
-  await writeFile(tmp, JSON.stringify(store, null, 2), 'utf-8')
+  await writeFile(tmp, JSON.stringify(merged, null, 2), 'utf-8')
   await rename(tmp, p)
 }
 
@@ -380,15 +399,17 @@ export async function deleteTask(idOrName: string): Promise<boolean> {
   const store = await readTasks()
   const idx = store.tasks.findIndex(t => t.id === idOrName || t.name === idOrName)
   if (idx === -1) return false
-  store.tasks.splice(idx, 1)
-  await writeTasks(store)
+  const [removed] = store.tasks.splice(idx, 1)
+  await writeTasks(store, { excludeIds: new Set([removed.id]) })
   return true
   })
 }
 
 export async function listTasks(): Promise<Task[]> {
   const store = await readTasks()
-  return store.tasks.sort((a, b) => {
+  return store.tasks
+    .filter(t => !t.deleted)
+    .sort((a, b) => {
     if (!a.nextRun) return 1
     if (!b.nextRun) return -1
     return a.nextRun.localeCompare(b.nextRun)
@@ -428,7 +449,7 @@ export async function updateTaskAfterRun(
     // once 任务完成后自动清理
     if (task.type === 'once') {
       store.tasks.splice(idx, 1)
-      await writeTasks(store)
+      await writeTasks(store, { excludeIds: new Set([task.id]) })
       return
     }
     task.nextRun = computeNextRun(task)
@@ -442,7 +463,7 @@ export async function updateTaskAfterRun(
       // once 任务重试耗尽：与成功分支一致直接移除，避免 nextRun=null 永久滞留列表
       if (task.type === 'once') {
         store.tasks.splice(idx, 1)
-        await writeTasks(store)
+        await writeTasks(store, { excludeIds: new Set([task.id]) })
         return
       }
       task.runCount++

@@ -329,6 +329,19 @@ for i, t in enumerate(data.get('tasks', [])):
                 t['nextRun'] = next_run if next_run else None
     break
 
+# 写前重读合并（2026-08-25 实测根因修复）：本进程从读到写回期间，主会话 autopilot
+# 或 summarizer 后台会话可能已写入新任务；全量覆盖会把它们抹掉（08-24 每日任务
+# 丢失根因）。磁盘有而本次快照无的活跃任务补回；同 id 以本次快照优先。
+try:
+    with open(tasks_file) as f:
+        disk = json.load(f)
+    have = {t.get('id') for t in data['tasks']}
+    for t in disk.get('tasks', []):
+        if t.get('id') and t['id'] not in have and not t.get('deleted'):
+            data['tasks'].append(t)
+except Exception:
+    pass
+
 tmp = tasks_file + '.tmp.' + str(os.getpid())
 with open(tmp, 'w') as f:
     json.dump(data, f, indent=2)
