@@ -40,7 +40,7 @@
 
 - `plans/` — plan-mode 生成的计划目录（每计划独立 .git 仓库，供计划内 git 操作）；git 忽略
 - `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/ntfy-relay/pi-voice（通知与语音配置）、scheduled-tasks.json（调度数据）、`.pi-autopilot-*.json`（看门狗状态）、`.pi-tmux-registry.json`、`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、pi-crash.log
-- `memory/stats/` — 跨会话工具统计（tool-use-<host>.jsonl，主机名分裂，不入库；历史已跟踪条目保留）
+- `memory/stats/` — 跨设备工具使用统计（tool-use-<device>.jsonl）：【入库同步】工具默认启用决策依据；按主机名分文件无冲突，合并视图 tool-stats-sync.mjs
 - `pi-link*.json` — pi-link 设备清单（pi-link.json 入库）与运行时状态（pi-link-active/state/outbox，每次连接刷新，不入库）
 - ctx-lite/ 与 skill-store/ 已清理（分别并入 pi-memory 与 packs/）
 
