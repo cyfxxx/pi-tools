@@ -8,12 +8,14 @@
  * V1 把实时上下文 token 数并入 context 显示：`34.5k/1M (3.4%) (auto)`。
  *
  * V2（2026-08-24 审计修复）：分母与百分比改为**压缩临界窗口**
- * `effWindow = min(contextWindow, PI_CONTEXT_ABSOLUTE_TOKENS 默认 200K)`——
- * 1M 窗口下原显示 `34.5k/1M (3.4%)` 读起来"还很空"，实际 200K 压缩线已用 17%；
- * V2 显示 `34.5k/200k (17.2%)`，直观反映距自动压缩的距离。
+ * `effWindow = min(contextWindow, PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K)`——
+ * 1M 窗口下原显示 `34.5k/1M (3.4%)` 读起来"还很空"，实际 256K 参考线已用 13%；
+ * V2 显示 `34.5k/256k (13.5%)`，直观反映距自动压缩的距离。
+ * 注意：该分母是压缩条件之一的参考线（普通压缩还受三重门限约束），非硬上限；
+ * 仅模型真实窗口溢出才强制压缩。
  * 着色阈值同步改为基于压缩线（1M 窗口下旧逻辑 >70%×1M 永不触发，黄/红失效），
- * 超过压缩线（>100%）追加 " !!" 标记。
- * 压缩后 contextUsage.tokens 为 null，保持 `?/200k (auto)`。
+ * 超过参考线（>100%）追加 " !!" 标记。
+ * 压缩后 contextUsage.tokens 为 null，保持 `?/256k (auto)`。
  * ↑↓RW$ 累计口径保留（账单信息），不受影响。
  *
  * 依赖链（rebuild.sh 顺序）：live-context(V2) → cache(Part2 去百分比，支持 effWindow
@@ -79,7 +81,18 @@ if (!existsSync(target)) {
 
 const src = readFileSync(target, 'utf-8')
 if (src.includes(MARKER_V2)) {
-  console.log(`已打 V2 补丁，跳过：${target}`)
+  // 2026-08-25 修正：08-24 压缩策略修订 200K→256K 时本补丁 fallback 漏同步，
+  // 导致 footer 显示 /200k 而 pi-context 实际压缩线为 256K——对旧 V2 就地改值
+  if (src.includes(': 200000;')) {
+    const fixed = src
+      .replaceAll('PI_CONTEXT_ABSOLUTE_TOKENS 默认 200K', 'PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K')
+      .replaceAll('实际 200K 线已用 17%', '实际 256K 线已用 13%')
+      .replaceAll(': 200000;', ': 256000;')
+    if (!DRY_RUN) writeFileSync(target, fixed, 'utf-8')
+    console.log(`V2 fallback 已修正 200K→256K：${target}`)
+  } else {
+    console.log(`已打 V2 补丁，跳过：${target}`)
+  }
   process.exit(0)
 }
 
@@ -87,13 +100,14 @@ if (src.includes(MARKER_V2)) {
 // V1 计算段 = "// Patch (patch-footer-live-context.mjs):" 注释 + liveTokens/liveTokensStr 定义
 const CALC_RE =
   /\/\/ Patch \(patch-footer-live-context\.mjs\):[\s\S]*?const liveTokensStr =\n\s+liveTokens !== null && liveTokens !== undefined && contextWindow > 0\n\s+\? `\$\{formatTokens\(liveTokens\)\}\/`\n\s+: "";/
-const CALC_V2 = `// ${MARKER_V2}: 实时上下文显示——分母与百分比改为"压缩临界"min(窗口, PI_CONTEXT_ABSOLUTE_TOKENS 默认 200K)，
-// 直观反映距自动压缩的距离（1M 窗口下旧显示 34.5k/1M (3.4%) 误读为还很空，实际 200K 线已用 17%）。
+const CALC_V2 = `// ${MARKER_V2}: 实时上下文显示——分母与百分比改为"压缩临界"min(窗口, PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K)，
+// 直观反映距自动压缩的距离（1M 窗口下旧显示 34.5k/1M (3.4%) 误读为还很空，实际 256K 参考线已用 13%）。
+// 分母为压缩条件之一的参考线（普通压缩还受完成/后台/空闲三重门限约束），非硬上限。
 // 压缩后 tokens=null 显示 "?"；↑↓RW$ 累计口径不受影响。
     const compactLine = (() => {
         const raw = process.env.PI_CONTEXT_ABSOLUTE_TOKENS;
         const n = raw ? parseInt(raw, 10) : 0;
-        return Number.isFinite(n) && n > 0 ? n : 200000;
+        return Number.isFinite(n) && n > 0 ? n : 256000;
     })();
     const effWindow = contextWindow > 0 ? Math.min(contextWindow, compactLine) : contextWindow;
     const liveTokens = contextUsage?.tokens;
