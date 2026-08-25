@@ -348,6 +348,29 @@ sections.push(() => {
 		['label: "Tree filter mode"', "label: `树过滤器模式`"],
 		['label: "Warnings"', "label: `警告`"],
 		['label: "Thinking level"', "label: `思考深度`"],
+		[
+			'label: "Default thinking level per model"',
+			"label: `按模型默认思考深度`",
+		],
+		[
+			'description: `Override the default thinking level for specific models. ${cycleThinkingKey} cycles in-session.`',
+			"description: `为特定模型覆盖默认思考深度。会话内按 ${cycleThinkingKey} 循环切换。`",
+		],
+		[
+			'description: `Revert to global default (${config.thinkingLevel})`',
+			"description: `恢复全局默认（${config.thinkingLevel}）`",
+		],
+		[
+			'description: "Show transcript notices for significant prompt-cache misses and compaction costs"',
+			"description: `显示显著缓存未命中与压缩成本的通知`",
+		],
+		['description: "Select a model to configure"', "description: `选择要配置的模型`"],
+		['description: "Log in to a provider or configure an API key first"', "description: `请先登录提供商或配置 API 密钥`"],
+		['description: "Select default thinking level for this model"', "description: `选择此模型的默认思考深度`"],
+		[
+			'description: "Print the transcript or only a session resume hint when exiting fullscreen mode"',
+			"description: `退出全屏模式时输出完整对话记录或仅会话恢复提示`",
+		],
 		['label: "Theme"', "label: `主题`"],
 		['label: "Automatic"', "label: `自动`"],
 		[
