@@ -10257,10 +10257,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 58,
+      "recurrence": 67,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-24T23:40:52.517Z",
-      "accessedAt": "2026-08-24T23:40:52.517Z",
+      "updatedAt": "2026-08-25T01:28:36.440Z",
+      "accessedAt": "2026-08-25T01:28:36.440Z",
       "environments": [
         "all"
       ],
@@ -12336,6 +12336,73 @@
         "all"
       ],
       "observedAt": "2026-08-24T23:38:21.983Z",
+      "deleted": false
+    },
+    {
+      "id": "c366b21c-3cfa-4d18-8922-f25b32af0ab8",
+      "category": "solutions",
+      "title": "单轮批量探索模式在 123K 长上下文验证",
+      "content": "复现数据（08-24 会话，3 轮）：用户极简指令\"继续\"，单个回合内 21 次并行批量工具调用完成全部探索/执行工作；累计上下文约 123K，cache hit=123392（近全量命中），输出仅 1421 tokens，无报错。首尾两轮零工具调用不影响前缀缓存连续性。结论：单轮并行批量探索模式的近全量缓存命中在 >100K 长上下文依然成立（此前仅在 54K 规模验证过），可作为大型审计/分析任务的默认执行形态；配合极简指令无需中间确认轮。",
+      "tags": [
+        "token效率",
+        "缓存命中",
+        "批量调用",
+        "长上下文"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-24T23:55:35.164Z",
+      "updatedAt": "2026-08-24T23:55:35.164Z",
+      "accessedAt": "2026-08-24T23:55:35.164Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-24T23:55:35.164Z",
+      "deleted": false
+    },
+    {
+      "id": "afa4e57d-49be-4633-a94d-2b90f1aec5a4",
+      "category": "solutions",
+      "title": "会话巡检：tools=0 多轮大会话判空转",
+      "content": "会话记录健康巡检判据：某会话 39 轮全部 tools=0 且 out=0（仅一轮 hit=250000），累计高达 1845K tokens。「多轮零工具调用 + 高 token 累计」是空转/纯注入型会话的典型特征，无实际产出。pi-full-audit 做运行健康巡检时按此模式识别，标记为低价值/异常会话，不计入有效工作量统计。",
+      "tags": [
+        "会话巡检",
+        "usage-stats",
+        "健康检查"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:23:56.671Z",
+      "updatedAt": "2026-08-25T01:23:56.671Z",
+      "accessedAt": "2026-08-25T01:23:56.671Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T01:23:56.671Z",
+      "deleted": false
+    },
+    {
+      "id": "e8784b63-84f8-4ae2-ad84-10475ead9365",
+      "category": "solutions",
+      "title": "单轮批量探索再验证：架构分析与文档巡检适用",
+      "content": "2026-08-25 两个只读调研任务复验「单轮并行批量探索」模式：① 10 个扩展架构/功能/实现分析 = 1 轮 5 个工具调用，缓存命中 53.4K/54K tokens；② 扩展文档时效检查 + 整体/细节优化点分析 = 1 轮 6 个调用，命中 60.6K/66K。两例命中率约 99%，输出 2-4K。要点：把全部独立的 read/grep/find 合并进同一个助手轮次一次性发出，适用于架构分析、文档巡检等任意只读调研任务，比逐条调用省约一个数量级 token。",
+      "tags": [
+        "token优化",
+        "缓存命中",
+        "批量探索"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:23:56.791Z",
+      "updatedAt": "2026-08-25T01:23:56.791Z",
+      "accessedAt": "2026-08-25T01:23:56.791Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T01:23:56.791Z",
       "deleted": false
     }
   ]
