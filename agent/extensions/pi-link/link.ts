@@ -52,6 +52,9 @@ export interface SendOptions {
   wrapTask?: boolean
   /** 发起设备名（指令模板标注） */
   fromName?: string
+  /** 取消信号（2026-08-25 实测：宿主 tool.execute 真实下发 AbortSignal）——
+   *  触发后杀 ssh 子进程并以"已取消"返回，释放 inflight 锁 */
+  signal?: AbortSignal
 }
 
 /** 会话文件大小上限（超过则开新会话，防无限增长） */
@@ -291,14 +294,28 @@ export async function sendToDevice(
   // Writable 无需显式 flush（数据即时发送）
 
   // 超时熔断：先置标志再 kill（timedOut 判定优先于 exited，保证 truncated 分支可达）
+  let cancelledBySignal = false
   const timer = setTimeout(() => {
     timedOut = true
     proc.kill('SIGKILL')
   }, timeoutSec * 1000)
 
+  // 工具取消（2026-08-25 审计 MEDIUM：宿主真实下发 AbortSignal，此前被忽略——
+  // ssh 子进程跑到自然超时，期间 inflight 锁占用、同设备后续调用全被拒）
+  const onAbort = () => {
+    cancelledBySignal = true
+    timedOut = true // 复用熔断标志优先级，保证取消分支可达
+    proc.kill('SIGKILL')
+  }
+  if (opts.signal) {
+    if (opts.signal.aborted) onAbort()
+    else opts.signal.addEventListener('abort', onAbort, { once: true })
+  }
+
   await settledP
 
   clearTimeout(timer)
+  if (opts.signal) opts.signal.removeEventListener('abort', onAbort)
   // 完成后关闭通道并结束进程（stdin end 触发 shutdown 是正常收尾路径）
   proc.stdin.end()
   proc.kill()
@@ -314,6 +331,9 @@ export async function sendToDevice(
   }
   if (userInteraction) {
     return done({ ok: false, reply: undefined, turns, tools, model, durationSec, error: '远程 agent 请求用户交互（ask_user/UI），无法自动应答。可在目标设备手动处理该会话。', resumed })
+  }
+  if (cancelledBySignal) {
+    return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: '调用已被取消（工具中止）', resumed })
   }
   if (timedOut) {
     return done({ ok: false, reply: text || undefined, turns, tools, model, durationSec, error: `远程会话未在 ${timeoutSec}s 超时内结束`, truncated: true, resumed })

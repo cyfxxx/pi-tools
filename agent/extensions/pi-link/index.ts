@@ -87,7 +87,7 @@ export default function (pi: ExtensionAPI): void {
       },
       required: ['device', 'message'],
     },
-    async execute(_id, params, _signal, onUpdate) {
+    async execute(_id, params, signal, onUpdate) {
       refreshCfg()
       const name = String((params as Record<string, unknown>).device ?? '')
       const message = String((params as Record<string, unknown>).message ?? '')
@@ -108,7 +108,8 @@ export default function (pi: ExtensionAPI): void {
       // 下限保护：远程 RPC 启动 + LLM 会话通常需 60s+，防止模型传过小值导致必失败
       const opts = typeof t === 'number' && t > 0 ? { timeoutSec: Math.max(60, t) } : {}
       // 流式回传（T1-2）：远程工具执行进度实时转发
-      const sendOpts: SendOptions = { ...opts, fromName: me }
+      // 审计 MEDIUM 修复：把宿主取消信号接入发送链路（中止后杀 ssh、释放 inflight 锁）
+      const sendOpts: SendOptions = { ...opts, fromName: me, signal }
       sendOpts.onEvent = (ev) => {
         let line: string | undefined
         if (ev.type === 'tool_execution_start') {
