@@ -141,7 +141,7 @@ describe('task CRUD (isolated store)', () => {
     const { writeTasks, readTasks } = await import('../storage')
     const store = await readTasks()
     store.tasks = []
-    await writeTasks(store)
+    await writeTasks(store, { skipMerge: true })
   })
 
   it('并发 updateTaskAfterRun 与 deleteTask 不复活已删除任务（写互斥）', async () => {
@@ -388,7 +388,7 @@ describe('export / import', () => {
     const { writeTasks, readTasks } = await import('../storage')
     const store = await readTasks()
     store.tasks = []
-    await writeTasks(store)
+    await writeTasks(store, { skipMerge: true })
   })
 
   it('round-trips tasks and skips duplicates/invalid', async () => {
