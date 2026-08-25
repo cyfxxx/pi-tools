@@ -133,9 +133,9 @@ set_mirrors() {
       ok "GitHub 直连最快（${best_speed}B/s）"
     fi
 
-    # pip（写入前备份已有配置，避免无备份覆盖；回滚: mv ~/.pip/pip.conf.pi.bak ~/.pip/pip.conf）
+    # pip（仅首次覆盖前备份原始配置；重跑不覆盖既有备份，避免用镜像版污染原始备份；回滚: mv ~/.pip/pip.conf.pi.bak ~/.pip/pip.conf）
     mkdir -p ~/.pip
-    if [ -f ~/.pip/pip.conf ]; then cp -p ~/.pip/pip.conf ~/.pip/pip.conf.pi.bak; fi
+    if [ ! -f ~/.pip/pip.conf.pi.bak ] && [ -f ~/.pip/pip.conf ]; then cp -p ~/.pip/pip.conf ~/.pip/pip.conf.pi.bak; fi
     cat > ~/.pip/pip.conf <<'EOF'
 [global]
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
@@ -1057,7 +1057,8 @@ verify() {
     fi
   else
     warn "Pi CLI 未在 PATH 中找到"
-    info "Pi 安装路径: $(find / -name pi -type f 2>/dev/null | head -1 || echo '未找到')"
+    # 限定常见安装目录扫描（全盘 find 耗时分钟级），并加 timeout 兜底
+    info "Pi 安装路径: $(timeout 10 bash -c 'find /usr/local/bin /usr/bin /opt /root/.local /home/*/.local /home/*/bin /root/bin "$HOME/.pi" -maxdepth 4 -name pi -type f 2>/dev/null | head -1' || echo '未找到')"
   fi
 
   # CloakBrowser 检测

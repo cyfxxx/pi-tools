@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 function createMockPage() {
   return {
     isClosed: vi.fn().mockReturnValue(false),
+    on: vi.fn(),
     goto: vi.fn().mockResolvedValue(undefined),
     setViewportSize: vi.fn(),
     url: vi.fn().mockReturnValue('about:blank'),
@@ -37,6 +38,16 @@ vi.mock('cloakbrowser', () => ({
   launch: vi.fn(),
 }))
 
+/** 各 describe 共用：重置共享 mock 并让 launch 返回当前 mockBrowser。 */
+async function setupMocks() {
+  vi.restoreAllMocks()
+  mockPage = createMockPage()
+  mockBrowser = createMockBrowser()
+  mockBrowser.newPage.mockResolvedValue(mockPage)
+  const cloakModule = await import('cloakbrowser')
+  ;(cloakModule.launch as any).mockResolvedValue(mockBrowser)
+}
+
 async function getBrowserManager() {
   const { BrowserManager } = await import('../browser/impl')
   const config = { headless: false, viewport_width: 1280, viewport_height: 800 }
@@ -50,15 +61,7 @@ function currentShotDir(): string {
 }
 
 describe('BrowserManager', () => {
-  beforeEach(async () => {
-    vi.restoreAllMocks()
-    mockPage = createMockPage()
-    mockBrowser = createMockBrowser()
-    mockBrowser.newPage.mockResolvedValue(mockPage)
-
-    const cloakModule = await import('cloakbrowser')
-    ;(cloakModule.launch as any).mockResolvedValue(mockBrowser)
-  })
+  beforeEach(setupMocks)
 
   it('should construct with default config', async () => {
     const bm = await getBrowserManager()
@@ -215,6 +218,150 @@ describe('BrowserManager', () => {
 
     await bm.click(100, 200, 'right')
     expect(mockPage.mouse.click).toHaveBeenCalledWith(100, 200, { button: 'right' })
+  })
+})
+
+// ── 修复回归：win32 下 --no-proxy-server 仅在无显式代理配置时附加 ──
+describe('launchBrowser win32 直连 flag 与显式代理共存', () => {
+  const savedPlatform = process.platform
+  const ENV_KEY = 'CLOAKBROWSER_BINARY_PATH'
+  let savedEnv: string | undefined
+
+  beforeEach(async () => {
+    await setupMocks()
+    savedEnv = process.env[ENV_KEY]
+    delete process.env[ENV_KEY]
+    Object.defineProperty(process, 'platform', { value: 'win32' })
+  })
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', { value: savedPlatform })
+    if (savedEnv === undefined) delete process.env[ENV_KEY]
+    else process.env[ENV_KEY] = savedEnv
+  })
+
+  async function launchOpts(extraConfig: Record<string, unknown> = {}, getProxyUrl?: () => string | null) {
+    const { BrowserManager } = await import('../browser/impl')
+    const config = { headless: false, viewport_width: 1280, viewport_height: 800, ...extraConfig }
+    const bm = new BrowserManager(config as any, getProxyUrl)
+    await bm.ensureBrowser()
+    const cloakModule = await import('cloakbrowser')
+    expect(cloakModule.launch).toHaveBeenCalled()
+    return (cloakModule.launch as any).mock.calls.at(-1)[0] as Record<string, unknown>
+  }
+
+  it('win32 无显式代理 → 附加 --no-proxy-server（默认直连防系统代理墙）', async () => {
+    const opts = await launchOpts()
+    expect(opts.args).toContain('--no-proxy-server')
+    expect(opts.proxy).toBeUndefined()
+  })
+
+  it('win32 有 config.proxy → 不附加 --no-proxy-server 且透传 proxy（修复回归）', async () => {
+    const opts = await launchOpts({ proxy: 'http://127.0.0.1:7890' })
+    expect(opts.args ?? []).not.toContain('--no-proxy-server')
+    expect(opts.proxy).toEqual({ server: 'http://127.0.0.1:7890' })
+  })
+
+  it('win32 有环境代理（getProxyUrl 返回）→ 不附加 --no-proxy-server', async () => {
+    const opts = await launchOpts({}, () => 'socks5://127.0.0.1:1080')
+    expect(opts.args ?? []).not.toContain('--no-proxy-server')
+    expect(opts.proxy).toEqual({ server: 'socks5://127.0.0.1:1080' })
+  })
+})
+
+// ── 修复回归：navigate 协议安全拒绝不被外层 catch 吞掉后重试/降级文案 ──
+describe('navigate 重定向安全拒绝立即终止', () => {
+  beforeEach(setupMocks)
+
+  it('落地 URL 为 file:// → 立即抛出具体文案且不以 load 模式重试', async () => {
+    const bm = await getBrowserManager()
+    mockPage.goto.mockResolvedValue(undefined)
+    mockPage.url.mockReturnValue('file:///etc/passwd')
+
+    await expect(bm.navigate('https://example.com')).rejects.toThrow('重定向到不允许的协议: file://')
+    expect(mockPage.goto).toHaveBeenCalledTimes(1) // 不重试
+  })
+
+  it('落地 URL 为其他非 http(s) 协议同样拒绝且保留具体信息', async () => {
+    const bm = await getBrowserManager()
+    mockPage.goto.mockResolvedValue(undefined)
+    mockPage.url.mockReturnValue('ftp://example.com/file')
+
+    await expect(bm.navigate('https://example.com')).rejects.toThrow('ftp://')
+    expect(mockPage.goto).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ── 修复回归：saveDownload 并发同名词下载互相覆盖 ──
+describe('saveDownload 同名词防覆盖', () => {
+  let tmp: string
+
+  beforeEach(async () => {
+    await setupMocks()
+    tmp = mkdtempSync(join(tmpdir(), 'pi-browser-dl-test-'))
+  })
+  afterEach(() => {
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  function deferred<T>() {
+    let resolve!: (v: T) => void
+    const promise = new Promise<T>(res => { resolve = res })
+    return { promise, resolve }
+  }
+
+  function fakeDownload(name: string, url: string, gate?: ReturnType<typeof deferred<void>>) {
+    return {
+      suggestedFilename: () => name,
+      url: () => url,
+      saveAs: vi.fn(() => (gate ? gate.promise : Promise.resolve())),
+    }
+  }
+
+  async function managerWithDownloadListener() {
+    let downloadHandler!: (d: unknown) => void
+    mockPage.on = vi.fn((event: string, handler: (d: unknown) => void) => {
+      if (event === 'download') downloadHandler = handler
+    }) as any
+    const bm = await getBrowserManager()
+    bm.downloads(tmp)
+    mockPage.url.mockReturnValue('https://example.com')
+    mockPage.title.mockResolvedValue('T')
+    await bm.navigate('https://example.com')
+    expect(downloadHandler).toBeTypeOf('function')
+    return { bm, fire: (d: unknown) => downloadHandler(d) }
+  }
+
+  it('并发同名词下载：先到者独占原名，后者获唯一后缀不覆盖（in-flight 占位）', async () => {
+    const { bm, fire } = await managerWithDownloadListener()
+
+    const g1 = deferred<void>(), g2 = deferred<void>()
+    const d1 = fakeDownload('report.pdf', 'https://a/1', g1)
+    const d2 = fakeDownload('report.pdf', 'https://a/2', g2)
+    fire(d1) // d1 同步占住 report.pdf 后才进入 await
+    fire(d2) // d2 必须看到占位，拿唯一后缀
+    g1.resolve()
+    g2.resolve()
+
+    await vi.waitFor(() => expect(bm.downloads()).toHaveLength(2))
+    const files = bm.downloads()
+    const paths = files.map(f => f.path)
+    expect(new Set(paths).size).toBe(2) // 两份文件路径互不相同，无覆盖
+    expect(files.filter(f => f.filename === 'report.pdf')).toHaveLength(1) // 仅一份用原名
+    expect(files.every(f => /^report(-\d+-\d+)?\.pdf$/.test(f.filename))).toBe(true)
+  })
+
+  it('顺序同名下载仍走后缀去重（原行为保持）', async () => {
+    const { bm, fire } = await managerWithDownloadListener()
+
+    fire(fakeDownload('file.zip', 'https://a/1'))
+    await vi.waitFor(() => expect(bm.downloads()).toHaveLength(1))
+    fire(fakeDownload('file.zip', 'https://a/2'))
+    await vi.waitFor(() => expect(bm.downloads()).toHaveLength(2))
+
+    const files = bm.downloads()
+    expect(files[0].filename).toBe('file.zip')
+    expect(files[1].filename).not.toBe('file.zip')
+    expect(new Set(files.map(f => f.path)).size).toBe(2)
   })
 })
 

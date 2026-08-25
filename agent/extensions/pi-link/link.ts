@@ -201,7 +201,31 @@ export async function sendToDevice(
   ]
 
   const proc = spawn('ssh', sshArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
-  const events: RpcEvent[] = []
+  // 审计：events 全量数组无界累积——长任务（数千轮工具交互）内存膨胀。
+  // 改边收边聚合：增量维护 turns/tools 计数与最后一条 assistant 文本/模型
+  // （与 extractReply 同语义），不再保留事件数组。
+  let turnsCount = 0
+  let toolsCount = 0
+  let replyText = ''
+  let replyModel: string | undefined
+  const observe = (ev: RpcEvent): void => {
+    if (ev.type === 'turn_end') { turnsCount++; return }
+    if (ev.type === 'tool_execution_end') { toolsCount++; return }
+    if (ev.type !== 'message_end') return
+    const m = (ev.message ?? {}) as { role?: string; content?: unknown; model?: string }
+    if (m.role !== 'assistant') return
+    replyModel = m.model ?? replyModel
+    if (Array.isArray(m.content)) {
+      const parts: string[] = []
+      for (const b of m.content as Array<{ type?: string; text?: string }>) {
+        if (b.type === 'text' && typeof b.text === 'string' && b.text) parts.push(b.text)
+      }
+      // 与 extractReply 一致：仅当本条 assistant 含文本块时才覆盖上次回复
+      if (parts.length) replyText = parts.join('\n')
+    } else if (typeof m.content === 'string' && m.content) {
+      replyText = m.content
+    }
+  }
   let settled = false
   let userInteraction = false
   let stderr = ''
@@ -227,8 +251,11 @@ export async function sendToDevice(
   handshakeTimer = setTimeout(() => handshakeResolve(), 3000)
   // switch_session 完成（response 到达）或 20s 超时
   let switchResolve: () => void
-  let switchFailed = false
   const switchP = new Promise<void>((resolve) => { switchResolve = resolve })
+  // switch 是否收到过 response（20s 超时后仍为 false → 按失败处理）；
+  // switchFailed：收到 response 但 success !== true（回退新会话路径）
+  let switchResponded = false
+  let switchFailed = false
   switchTimer = setTimeout(() => switchResolve(), 20000)
 
   const rl = createInterface({ input: proc.stdout })
@@ -247,7 +274,7 @@ export async function sendToDevice(
         }
         return
       }
-      events.push(ev)
+      observe(ev)
       try {
         opts.onEvent?.(ev)
       } catch (e) {
@@ -262,6 +289,7 @@ export async function sendToDevice(
         userInteraction = true
       } else if (ev.type === 'response' && (ev as { id?: unknown }).id === 'pi-link-0') {
         // switch_session 响应：即使失败也继续（回退为新会话），但标记
+        switchResponded = true
         switchFailed = ev.success !== true
         clearTimeout(switchTimer)
         switchResolve()
@@ -287,7 +315,9 @@ export async function sendToDevice(
   if (lastSession) {
     proc.stdin.write(JSON.stringify({ type: 'switch_session', sessionPath: lastSession, id: 'pi-link-0' }) + '\n')
     await switchP
-    if (switchFailed) lastSession = undefined
+    // 审计：switch 20s 超时后照发 prompt 违反上方"必须等其 response"不变量——
+    // 超时（无响应）按失败处理：弃 lastSession 走新会话路径，不向旧会话发 prompt
+    if (!switchResponded || switchFailed) lastSession = undefined
   }
   const prompt = JSON.stringify({ type: 'prompt', message: finalMessage, id: 'pi-link-1' })
   proc.stdin.write(prompt + '\n')
@@ -320,10 +350,12 @@ export async function sendToDevice(
   proc.stdin.end()
   proc.kill()
 
-  const { text, model } = extractReply(events)
+  // 聚合结果（不再有全量数组可回放）：text/model/turns/tools 均为增量维护值
+  const text = replyText
+  const model = replyModel
   const durationSec = Math.round((Date.now() - started) / 1000)
-  const turns = events.filter((e) => e.type === 'turn_end').length
-  const tools = events.filter((e) => e.type === 'tool_execution_end').length
+  const turns = turnsCount
+  const tools = toolsCount
   const resumed = lastSession !== undefined
 
   if (spawnFailed) {

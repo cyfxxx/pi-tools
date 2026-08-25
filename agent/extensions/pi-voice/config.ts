@@ -5,7 +5,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { PlatformKind, TtsEngine } from './platform'
 
@@ -79,7 +79,8 @@ export function defaultTmpDir(): string {
       // 共享存储不可写时回退容器路径
     }
   }
-  return '/tmp/pi-voice'
+  // os.tmpdir() 跨平台：Termux 返回 $PREFIX/tmp、macOS 返回 /var/folders/…、Windows 返回 %TEMP%
+  return join(tmpdir(), 'pi-voice')
 }
 
 export const DEFAULTS: VoiceConfig = {

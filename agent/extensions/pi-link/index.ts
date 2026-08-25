@@ -33,7 +33,10 @@ export default function (pi: ExtensionAPI): void {
   // 配置热更新：工具/命令执行前重读 pi-link.json（编辑文件或 import-card 后无需重启 pi）
   const refreshCfg = (): void => { cfg = loadConfig() }
 
-  // 探测本机 tmux 会话名（其他设备 attach 时定位输入框）
+  // 探测本机 tmux 会话名（其他设备 attach 时定位输入框）。
+  // 审计：启动时一次性捕获——tmux 会话改名（rename-session / resurrect 恢复）后
+  // 快照失效，远程 attach 打错目标。探测廉价（本地 execSync；非 tmux 环境零开销），
+  // 改为惰性重探：每次状态回写时重新执行。
   function detectTmuxSession(): string | undefined {
     try {
       if (process.env.TMUX) {
@@ -45,7 +48,7 @@ export default function (pi: ExtensionAPI): void {
     }
     return undefined
   }
-  const tmuxSession = detectTmuxSession()
+  const tmuxSessionOf = (): string | undefined => detectTmuxSession()
 
   // T2-1 活跃机制：用户输入（消息/命令）刷新本机活跃时间戳
   pi.on('input', async (event: { text?: string }) => {
@@ -60,12 +63,12 @@ export default function (pi: ExtensionAPI): void {
   })
 
   // T2-2 远程状态维护：记录本机 agent 运行状态与 tmux 会话（其他设备 attach/watch 用）
-  writeLocalState({ device: me, status: 'idle', tmuxSession })
+  writeLocalState({ device: me, status: 'idle', tmuxSession: tmuxSessionOf() })
   pi.on('turn_start', async () => {
-    writeLocalState({ device: me, status: 'busy', tmuxSession })
+    writeLocalState({ device: me, status: 'busy', tmuxSession: tmuxSessionOf() })
   })
   pi.on('agent_settled', async () => {
-    writeLocalState({ device: me, status: 'idle', tmuxSession })
+    writeLocalState({ device: me, status: 'idle', tmuxSession: tmuxSessionOf() })
   })
 
   pi.registerTool({

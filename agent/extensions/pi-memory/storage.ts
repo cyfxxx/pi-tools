@@ -143,6 +143,11 @@ function migrateEntry(e: MemoryEntry): MemoryEntry {
   if (!e.observedAt) e.observedAt = e.createdAt
   if (!e.id) e.id = randomUUID()
   if (typeof e.deleted !== 'boolean') e.deleted = false
+  // 审计 LOW 修复：accessedAt 缺失/非法（NaN 天龄）会使剪枝条件恒 false、
+  // qualityScore 排序失效——归一化为 observedAt，仍非法则当前时间
+  if (!e.accessedAt || Number.isNaN(new Date(e.accessedAt).getTime())) {
+    e.accessedAt = (e.observedAt && !Number.isNaN(new Date(e.observedAt).getTime())) ? e.observedAt : new Date().toISOString()
+  }
   return e
 }
 
@@ -208,7 +213,20 @@ export function appendSummary(summary: SummaryEntry): SummaryEntry[] {
   } else {
     all.push(clean)
   }
-  const trimmed = all.length > MAX_SUMMARIES ? all.slice(-MAX_SUMMARIES) : all
+  let trimmed = all.length > MAX_SUMMARIES ? all.slice(-MAX_SUMMARIES) : all
+  // 审计 MEDIUM 修复：写前重读磁盘，按 sessionId 吸收并发新增（同机多实例同时
+  // append 时 last-writer-wins 会丢对方条目；同 sessionId 冲突以本次写入优先），
+  // 对齐 saveEntries 的写前合并策略
+  try {
+    const fresh = readJSON<SummaryStore>(SUMMARIES_FILE)
+    if (fresh && Array.isArray(fresh.summaries)) {
+      const seen = new Set(trimmed.map(s => s.sessionId))
+      for (const d of fresh.summaries) {
+        if (d?.sessionId && !seen.has(d.sessionId)) trimmed.push(d)
+      }
+    }
+  } catch { /* 读失败用内存态 */ }
+  if (trimmed.length > MAX_SUMMARIES) trimmed = trimmed.slice(-MAX_SUMMARIES)
   saveSummaries(trimmed)
   return trimmed
 }
@@ -394,7 +412,9 @@ export function pruneEntries(entries: MemoryEntry[]): { removed: number; titles:
   const kept = entries.filter(e => {
     // 软删除/被取代条目直接回收（保留 superseded 统计用则仅回收 deleted）
     if (e.deleted) return false
-    const age = now - new Date(e.accessedAt).getTime()
+    // 防御：调用方可能传入未过 migrate 的条目，NaN 天龄视为最近访问（不剪枝）
+    const ts = new Date(e.accessedAt).getTime()
+    const age = Number.isNaN(ts) ? 0 : now - ts
     const daysOld = age / (1000 * 60 * 60 * 24)
     if (e.confidence < PRUNE_CONFIDENCE && daysOld > PRUNE_DAYS) return false
     if (e.recurrence < PRUNE_RECURRENCE && daysOld > PRUNE_DAYS_LOW) return false
@@ -452,7 +472,8 @@ export function getStats(entries: MemoryEntry[]): MemoryStats {
     if (!oldest || e.createdAt < oldest) oldest = e.createdAt
     if (!newest || e.createdAt > newest) newest = e.createdAt
 
-    const age = now - new Date(e.accessedAt).getTime()
+    const ts = new Date(e.accessedAt).getTime()
+    const age = Number.isNaN(ts) ? 0 : now - ts
     if (age / (1000 * 60 * 60 * 24) > PRUNE_DAYS) cold++
   }
 

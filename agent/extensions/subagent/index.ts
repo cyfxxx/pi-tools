@@ -118,6 +118,11 @@ export function isLocalProvider(provider?: string): boolean {
 const COLLAPSED_ITEM_COUNT = 10;
 const PER_TASK_OUTPUT_CAP = 50 * 1024;
 
+/** 链式 {previous} 注入安全上限（字节）：Linux 单个 argv 参数上限
+ * MAX_ARG_STRLEN = 32 页 = 128KB，超限时 spawn 抛 E2BIG。96KB 为 previous 预留，
+ * 给任务模板其余部分/路径等留余量；超出尾部截断并附 [truncated] 标记。 */
+const PREVIOUS_OUTPUT_CAP_BYTES = 96 * 1024;
+
 export function formatTokens(count: number): string {
 	if (count < 1000) return count.toString();
 	if (count < 10000) return `${(count / 1000).toFixed(1)}k`;
@@ -274,11 +279,25 @@ export function getResultOutput(result: SingleResult): string {
 }
 
 /**
+ * previous 输出安全上限：超 PREVIOUS_OUTPUT_CAP_BYTES 时按字节截断（保留头部），
+ * 附 [truncated] 标记。防止链式注入超大输出导致 spawn E2BIG 整链静默失败。
+ */
+export function capPreviousOutput(output: string, maxBytes: number = PREVIOUS_OUTPUT_CAP_BYTES): string {
+	if (Buffer.byteLength(output, "utf8") <= maxBytes) return output;
+	let sliced = Buffer.from(output, "utf8").subarray(0, maxBytes).toString("utf8");
+	// 字节边界可能切断多字节字符（toString 产生 U+FFFD）——去掉残字符
+	if (sliced.endsWith("\uFFFD")) sliced = sliced.slice(0, -1);
+	return `${sliced}\n[truncated]`;
+}
+
+/**
  * 链式任务占位符替换。必须用函数替换（String.replace 字符串替换会把
  * previousOutput 中的 $&/$'/$` 当作替换模式导致静默数据损坏）。
+ * 注入的 previous 经 capPreviousOutput 封顶（审计 HIGH：无截断时超过
+ * MAX_ARG_STRLEN(128KB) 即 spawn E2BIG）。
  */
 export function applyPreviousPlaceholder(task: string, previousOutput: string): string {
-	return task.replace(/\{previous\}/g, () => previousOutput);
+	return task.replace(/\{previous\}/g, () => capPreviousOutput(previousOutput));
 }
 
 /**
@@ -582,7 +601,12 @@ async function runSubprocessAgent(
 				resolve(code ?? 0);
 			});
 
-			proc.on("error", () => {
+			proc.on("error", (err: Error) => {
+				// 审计 HIGH：此前静默 resolve(1)——E2BIG（参数超长）/ENOENT 等错误信息丢失，
+				// 链式调用表现为整链无声失败无原因。透传到结果：exitCode=1 + errorMessage，
+				// isFailedResult→getResultOutput 会把原因带回主会话。
+				currentResult.errorMessage = `子进程启动失败: ${err.message}`;
+				currentResult.stderr += `子进程启动失败: ${err.message}\n`;
 				resolve(1);
 			});
 

@@ -151,16 +151,20 @@ GitHub 同步完成
 
 **阶段 2：快照**
 
-5. 创建恢复前快照（含当前机器全部可覆盖配置；文件不存在时自动跳过）：
+5. 创建恢复前快照（先过滤出实际存在的文件再打包；**勿用 GNU 专属的 --ignore-failed-read，macOS bsdtar 遇缺文件会直接失败**）：
    ```
-   SNAPSHOT_PATH="~/.pi/pre-restore-{timestamp}.tar.gz"
-   tar czf "$SNAPSHOT_PATH" --ignore-failed-read \
-     -C ~ .pi/agent/settings.json .pi/agent/models.json .pi/agent/models-store.json .pi/agent/pi-voice.json \
-        .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
-        .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
-        .pi/agent/agents .pi/agent/prompts .pi/agent/package.json \
-        .pi/memory .pi/searxng/settings.yml .pi/scripts \
-        .tmux.conf .config/alacritty/alacritty.toml .termux
+   SNAPSHOT_PATH="$HOME/.pi/pre-restore-{timestamp}.tar.gz"   # {timestamp} 形如 20260701_120000
+   FILES=""
+   for p in .pi/agent/settings.json .pi/agent/models.json .pi/agent/models-store.json .pi/agent/pi-voice.json \
+            .pi/agent/AGENTS.md .pi/agent/APPEND_SYSTEM.md \
+            .pi/agent/trust.json .pi/agent/skills .pi/agent/extensions .pi/agent/lib \
+            .pi/agent/agents .pi/agent/prompts .pi/agent/package.json \
+            .pi/memory .pi/searxng/settings.yml .pi/scripts \
+            .tmux.conf .config/alacritty/alacritty.toml .termux; do
+     [ -e "$HOME/$p" ] && FILES="$FILES $p"   # 只保留存在的路径
+   done
+   # shellcheck disable=SC2086
+   tar czf "$SNAPSHOT_PATH" -C ~ $FILES        # 全部缺失时 tar 报错退出，属预期
    ```
 
 **阶段 3：解压**

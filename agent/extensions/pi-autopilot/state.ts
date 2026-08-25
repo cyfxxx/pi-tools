@@ -40,7 +40,7 @@ export function writeState(state: Partial<AdminState>): void {
   const dir = path.dirname(STATE_FILE)
   fs.mkdirSync(dir, { recursive: true })
   const content = JSON.stringify({ ...defaultState(), ...state }, null, 2)
-  const tmp = STATE_FILE + '.tmp'
+const tmp = `${STATE_FILE}.${process.pid}.tmp`
   fs.writeFileSync(tmp, content, 'utf-8')
   fs.renameSync(tmp, STATE_FILE)
 }

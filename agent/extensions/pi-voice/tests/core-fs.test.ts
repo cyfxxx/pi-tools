@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mkdtempSync, writeFileSync, rmSync, existsSync, mkdirSync, utimesSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { cleanupStaleAudio, deleteAudioPair, waitForFileStable } from '../core'
+import { cleanupStaleAudio, deleteAudioPair, waitForFileStable, startRecording } from '../core'
 import type { VoiceConfig } from '../config'
 
 function tmpCfg(): { cfg: VoiceConfig; dir: string } {
@@ -25,6 +25,36 @@ function tmpCfg(): { cfg: VoiceConfig; dir: string } {
     dir,
   }
 }
+
+describe('startRecording mkdir 失败（友好错误）', () => {
+  it('tmpDir 无法创建时抛带上下文错误，而非裸 ENOTDIR/ENOENT 穿透', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pi-voice-mk-'))
+    try {
+      // 文件占位父级：其子路径 mkdirSync(recursive) 必抛
+      const blocker = join(dir, 'blocker')
+      writeFileSync(blocker, 'x')
+      const cfg = {
+        whisperEndpoint: '',
+        whisperToken: '',
+        platform: 'linux',
+        micBin: 'parec',
+        ffmpegBin: 'ffmpeg',
+        ttsBin: 'espeak-ng',
+        linuxMicDevice: '',
+        linuxTtsSink: '',
+        ttsEngine: 'espeak-ng', // 避免 auto 探测 piper
+        linuxPiperModel: '',
+        linuxTtsVoice: 'cmn',
+        linuxTtsRate: 170,
+        tmpDir: join(blocker, 'sub'),
+      } as VoiceConfig
+      expect(() => startRecording(cfg, () => {})).toThrowError(/录音临时目录/)
+      expect(() => startRecording(cfg, () => {})).toThrowError(new RegExp(blocker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
 
 describe('deleteAudioPair', () => {
   it('删除 m4a 与配对的 wav', () => {

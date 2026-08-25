@@ -62,6 +62,12 @@ export function ensureLocalBinaryEnv(): void {
   }
 }
 
+/** 协议安全拒绝类错误（初始校验 / 重定向落地校验抛出）：不可重试、不可降级为笼统文案。 */
+function isProtocolSecurityError(e: unknown): boolean {
+  return e instanceof Error &&
+    (e.message.startsWith('重定向到不允许的协议') || e.message.startsWith('协议不支持'))
+}
+
 export class BrowserManager {
   private browser: Browser | null = null
   private page: Page | null = null
@@ -75,6 +81,10 @@ export class BrowserManager {
   private readonly MAX_NETWORK = 1000
   private downloadsDir = downloadsDirDefault()
   private downloadedFiles: DownloadFile[] = []
+  /** 进行中下载占位（filename 集合）：与 downloadedFiles 共同参与同名去重，防并发覆盖。 */
+  private readonly activeDownloads = new Set<string>()
+  /** 唯一后缀序号（同毫秒时间戳下仍保证文件名唯一）。 */
+  private downloadSeq = 0
 
   constructor(config: BrowserConfig, getProxyUrl?: () => string | null) {
     this.config = config
@@ -115,16 +125,19 @@ export class BrowserManager {
       throw e
     }
 
+    // 显式代理（config.proxy 或 getProxyUrl() 解析到的环境代理）优先于平台默认策略：
+    // win32 下仅当无显式代理配置时才附加 --no-proxy-server，有则尊重用户配置不覆盖
+    const proxyUrl = this.getProxyUrl?.()
+    const hasExplicitProxy = Boolean(proxyUrl ?? this.config.proxy)
     const opts: Record<string, unknown> = {
       headless: this.config.headless,
-      // Windows 便携版：Chrome 继承系统代理（无效/被墙代理 → ERR_NETWORK_ACCESS_DENIED）——强制直连
-      ...(process.platform === 'win32' ? { args: ['--no-proxy-server'] } : {}),
+      // Windows 便携版默认直连（Chrome 继承系统代理时无效/被墙代理 → ERR_NETWORK_ACCESS_DENIED）
+      ...(process.platform === 'win32' && !hasExplicitProxy ? { args: ['--no-proxy-server'] } : {}),
     }
 
     if (this.config.fingerprint_seed) {
       opts.fingerprint = this.config.fingerprint_seed
     }
-    const proxyUrl = this.getProxyUrl?.()
     if (proxyUrl) {
       opts.proxy = { server: proxyUrl }
     } else if (this.config.proxy) {
@@ -218,18 +231,23 @@ export class BrowserManager {
         // about:blank 是浏览器初始空页（未导航/mock 未同步），排除在拒绝外
         const finalUrl = page.url()
         if (finalUrl && finalUrl !== 'about:blank') {
+          let fp: string
           try {
-            const fp = new URL(finalUrl).protocol
-            if (fp !== 'http:' && fp !== 'https:') {
-              throw new Error(`重定向到不允许的协议: ${fp}//（浏览器已拦截 ${finalUrl.slice(0, 60)}）`)
-            }
+            fp = new URL(finalUrl).protocol
           } catch {
             throw new Error(`导航失败: 无效的最终 URL ${String(finalUrl).slice(0, 80)}`)
+          }
+          // 安全拒绝在 parse 的 try 外抛出：不被改写为笼统文案，
+          // 且经外层 isProtocolSecurityError 识别后立即终止、不以 load 模式重试
+          if (fp !== 'http:' && fp !== 'https:') {
+            throw new Error(`重定向到不允许的协议: ${fp}//（浏览器已拦截 ${finalUrl.slice(0, 60)}）`)
           }
         }
         return this.getPageInfo()
       } catch (e) {
         if (signal?.aborted) throw new Error('导航已取消')
+        // 安全拒绝立即 rethrow：重试只会再次触发同一拒绝，且必须保留具体错误信息
+        if (isProtocolSecurityError(e)) throw e
         errors.push(e as Error)
       }
     }
@@ -414,20 +432,28 @@ export class BrowserManager {
   }
 
   private async saveDownload(download: import('playwright-core').Download, filename: string): Promise<void> {
-    await mkdir(this.downloadsDir, { recursive: true })
-    // 避免重名覆盖
-    let target = join(this.downloadsDir, filename)
-    const stamp = Date.now()
-    const existing = this.downloadedFiles.find(f => f.filename === filename)
-    if (existing) {
+    // 防重名覆盖：去重依据 = 已完成记录（downloadedFiles）+ 进行中占位（activeDownloads）。
+    // 占位在首个 await 前同步登记，并发同名词下载不会双双通过检查而互相覆盖同一文件。
+    const taken = () =>
+      this.activeDownloads.has(filename) || this.downloadedFiles.some(f => f.filename === filename)
+    if (taken()) {
       const dot = filename.lastIndexOf('.')
       const base = dot > 0 ? filename.slice(0, dot) : filename
       const ext = dot > 0 ? filename.slice(dot) : ''
-      target = join(this.downloadsDir, `${base}-${stamp}${ext}`)
-      filename = `${base}-${stamp}${ext}`
+      do {
+        filename = `${base}-${Date.now()}-${++this.downloadSeq}${ext}`
+      } while (taken())
     }
-    await download.saveAs(target)
-    this.downloadedFiles.push({ filename, path: target, url: download.url(), timestamp: Date.now() })
+    this.activeDownloads.add(filename)
+    try {
+      await mkdir(this.downloadsDir, { recursive: true })
+      const target = join(this.downloadsDir, filename)
+      await download.saveAs(target)
+      this.downloadedFiles.push({ filename, path: target, url: download.url(), timestamp: Date.now() })
+    } finally {
+      // 成功/失败均释放占位；失败者不长期占用名字，后续同名下载可正常落盘
+      this.activeDownloads.delete(filename)
+    }
   }
 
   /** 上传文件到 <input type=file>。 */

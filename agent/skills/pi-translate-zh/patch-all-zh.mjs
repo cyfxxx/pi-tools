@@ -34,8 +34,8 @@
  *   - 结构清晰的翻译区段
  */
 
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from "fs";
-import { join, dirname } from "path";
+import { readFileSync, writeFileSync, existsSync, copyFileSync, readdirSync, rmSync } from "fs";
+import { join, dirname, basename } from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
 
@@ -173,11 +173,25 @@ const FIRST_NAMES = [
 // 辅助函数
 // ============================================================
 
-/** 备份文件到 .bak.时间戳 */
+/** 备份文件到 .bak.时间戳（每文件仅保留最近 N=3 份，自动清理更旧备份） */
+const BAK_KEEP = 3;
 function backup(file) {
 	if (!existsSync(file)) return;
 	const bak = `${file}.bak.${Date.now()}`;
 	copyFileSync(file, bak);
+	// 清理同文件更旧的 .bak.* 备份，仅保留最近 BAK_KEEP 份（幂等，重跑安全）
+	try {
+		const dir = dirname(file);
+		const base = basename(file);
+		const baks = readdirSync(dir)
+			.filter((n) => n.startsWith(`${base}.bak.`) && n !== base)
+			.sort(); // 时间戳后缀字典序 = 时间序
+		for (const old of baks.slice(0, Math.max(0, baks.length - BAK_KEEP))) {
+			rmSync(join(dir, old));
+		}
+	} catch {
+		// 清理失败不影响主流程
+	}
 	return bak;
 }
 
@@ -1992,4 +2006,4 @@ if (skipped > 0) {
 	console.log(`\n（${skipped} 节跳过：对应扩展未安装，安装后重跑脚本即可自动翻译）`);
 }
 
-console.log("\n重启 pi 后生效。如需恢复，从 .bak. 文件还原。");
+console.log("\n重启 pi 后生效。如需恢复，从 .bak. 文件还原（每文件保留最近 3 份）。");

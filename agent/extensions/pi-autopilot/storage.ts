@@ -26,6 +26,12 @@ function emptyStore(): TaskStore {
   return { version: STORE_VERSION, settings: {}, tasks: [] }
 }
 
+/** tasklist 输出是否包含指定 PID（按空白 token 精确匹配，避免子串误命中）。
+ * 无匹配时 tasklist 打印 "INFO: No tasks are running..." 且 exit 0——不能用错误码判断。 */
+export function isPidInTasklistOutput(stdout: string, pid: string | number): boolean {
+  return stdout.split(/\s+/).includes(String(pid))
+}
+
 export async function acquireSessionLock(): Promise<boolean> {
   const lockF = lockPath()
   const myPid = String(process.pid)
@@ -47,11 +53,13 @@ export async function acquireSessionLock(): Promise<boolean> {
         if (oldPid && oldPid !== myPid && !staleByAge) {
           let alive = false
           if (process.platform === 'win32') {
-            // Windows 无 /proc——tasklist 探进程存在性（便携版多实例互斥）
+            // Windows 无 /proc——tasklist 探进程存在性（便携版多实例互斥）。
+            // 审计 MEDIUM 修复：tasklist 无匹配时打印 "INFO: No tasks..." 仍 exit 0，
+            // 不能用 !err 判存活——必须解析 stdout 是否含该 PID token。
             const { execFile } = await import('node:child_process')
             alive = await new Promise<boolean>((res) => {
-              execFile('tasklist', ['/FI', `PID eq ${oldPid}`], { windowsHide: true }, (err) => {
-                res(!err) // tasklist 找到进程 → exit 0；找不到 → 非 0
+              execFile('tasklist', ['/FI', `PID eq ${oldPid}`], { windowsHide: true }, (err, stdout) => {
+                res(!err && isPidInTasklistOutput(String(stdout ?? ''), oldPid))
               })
             })
           } else {
@@ -121,7 +129,20 @@ export async function readTasks(): Promise<TaskStore> {
     if ((data.version ?? 1) < STORE_VERSION) migrateTasks(data)
     data.version = STORE_VERSION
     return data
-  } catch {
+  } catch (e: unknown) {
+    // 审计 MEDIUM 修复：损坏不再静默吞掉——文件不存在属首次运行（静默），
+    // 解析失败则留档 .corrupt-<ts> 再返回空，避免下一次任意写用空列表覆盖磁盘后证据消失。
+    const isNotFound = (e as NodeJS.ErrnoException)?.code === 'ENOENT'
+    if (!isNotFound) {
+      try {
+        const raw = await readFile(p, 'utf-8').catch(() => null)
+        if (raw !== null) {
+          const backup = `${p}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`
+          await writeFile(backup, raw, 'utf-8')
+          console.error(`[pi-autopilot] tasks.json 解析失败，已留档 ${backup}：`, e)
+        }
+      } catch { /* 留档失败不阻塞 */ }
+    }
     return emptyStore()
   }
 }
@@ -155,30 +176,11 @@ export function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
   return run
 }
 
-export async function writeTasks(store: TaskStore, opts: { excludeIds?: Set<string>; skipMerge?: boolean } = {}): Promise<void> {
+export async function writeTasks(store: TaskStore): Promise<void> {
   const p = tasksPath()
-  // 实测根因修复（2026-08-25）：scheduled-tasks.json 有三个全量覆盖写者
-  // （主会话 autopilot / summarizer 后台会话 autopilot / pi-cron.sh headless），
-  // 任一方基于旧内存态 writeTasks 都会把其它写者刚建的任务抹掉——
-  // 08-24 建的 knowledge-subscribe/daily-review 即被后台会话旧快照覆盖丢失。
-  // 对齐 saveEntries 写前重读合并：磁盘有而快照无的活跃任务补回；快照同 id 优先
-  //（保留最新状态推进）；deleted 不补（保留回收语义）。
-  let merged = store
-  try {
-    // skipMerge：全量替换型写入（import 权威恢复/测试种子）不走合并
-    const onDisk = opts.skipMerge ? null : await readTasks()
-    if (onDisk && onDisk.tasks.length > 0) {
-      const byId = new Map(store.tasks.map(t => [t.id, t]))
-      for (const t of onDisk.tasks) {
-        // excludeIds（物理移除的墓碑）不补——防删除被合并复活（对齐 saveEntries）
-        if (t.id && !byId.has(t.id) && !t.deleted && !opts.excludeIds?.has(t.id)) byId.set(t.id, t)
-      }
-      merged = { ...store, tasks: [...byId.values()] }
-    }
-  } catch { /* 读失败用传入快照 */ }
   const tmp = p + '.tmp.' + process.pid
   await mkdir(dirname(p), { recursive: true })
-  await writeFile(tmp, JSON.stringify(merged, null, 2), 'utf-8')
+  await writeFile(tmp, JSON.stringify(store, null, 2), 'utf-8')
   await rename(tmp, p)
 }
 
@@ -399,17 +401,15 @@ export async function deleteTask(idOrName: string): Promise<boolean> {
   const store = await readTasks()
   const idx = store.tasks.findIndex(t => t.id === idOrName || t.name === idOrName)
   if (idx === -1) return false
-  const [removed] = store.tasks.splice(idx, 1)
-  await writeTasks(store, { excludeIds: new Set([removed.id]) })
+  store.tasks.splice(idx, 1)
+  await writeTasks(store)
   return true
   })
 }
 
 export async function listTasks(): Promise<Task[]> {
   const store = await readTasks()
-  return store.tasks
-    .filter(t => !t.deleted)
-    .sort((a, b) => {
+  return store.tasks.sort((a, b) => {
     if (!a.nextRun) return 1
     if (!b.nextRun) return -1
     return a.nextRun.localeCompare(b.nextRun)
@@ -449,7 +449,7 @@ export async function updateTaskAfterRun(
     // once 任务完成后自动清理
     if (task.type === 'once') {
       store.tasks.splice(idx, 1)
-      await writeTasks(store, { excludeIds: new Set([task.id]) })
+      await writeTasks(store)
       return
     }
     task.nextRun = computeNextRun(task)
@@ -463,7 +463,7 @@ export async function updateTaskAfterRun(
       // once 任务重试耗尽：与成功分支一致直接移除，避免 nextRun=null 永久滞留列表
       if (task.type === 'once') {
         store.tasks.splice(idx, 1)
-        await writeTasks(store, { excludeIds: new Set([task.id]) })
+        await writeTasks(store)
         return
       }
       task.runCount++

@@ -61,6 +61,23 @@ describe('pendingInject marking', () => {
     expect(await collectPendingTasks()).toHaveLength(0)
   })
 
+  it('clearAllPending exceptIds：正在注入中的任务保留崩溃恢复标记（审计修复）', async () => {
+    const { addTask } = await import('../storage')
+    const { markPendingInjected, clearAllPending, collectPendingTasks } = await import('../queue')
+    const t1 = await addTask({ name: '注入中', type: 'interval', schedule: '5m', prompt: 'X' })
+    const t2 = await addTask({ name: '已完成', type: 'interval', schedule: '5m', prompt: 'Y' })
+    await markPendingInjected(t1.id)
+    await markPendingInjected(t2.id)
+
+    await clearAllPending(new Set([t1.id]))
+    const pending = await collectPendingTasks()
+    expect(pending).toHaveLength(1)
+    expect(pending[0].id).toBe(t1.id)
+
+    // 清理：不污染后续用例（recoveryCount 断言全局无 pending）
+    await clearAllPending()
+  })
+
   it('recoveryCount increments and suspends after MAX_RECOVERY_ATTEMPTS', async () => {
     const { addTask, updateTask, readTasks } = await import('../storage')
     const { markPendingInjected, MAX_RECOVERY_ATTEMPTS } = await import('../queue')

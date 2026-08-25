@@ -119,11 +119,14 @@ fi
 
 cyn "== subagent mjs 测试（63 用例） =="
 if [ -f "$EXTS/subagent/tests/test.mjs" ]; then
-  SDK_ENV=""
-  if [ "$IS_WIN_PORTABLE" -eq 1 ] && [ -f "$PI_GLOBAL/dist/index.d.ts" ]; then
-    SDK_ENV="PI_SDK_PATH=$PI_GLOBAL"
-  fi
-  (cd "$EXTS/subagent" && env $SDK_ENV "$NODE" --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs >/dev/null 2>&1)
+  # Windows 便携环境：改用 export PI_SDK_PATH（原 env $SDK_ENV 未引号，路径含空格时被分词失效）
+  (
+    cd "$EXTS/subagent"
+    if [ "$IS_WIN_PORTABLE" -eq 1 ] && [ -f "$PI_GLOBAL/dist/index.d.ts" ]; then
+      export PI_SDK_PATH="$PI_GLOBAL"
+    fi
+    "$NODE" --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs >/dev/null 2>&1
+  )
   report $? "subagent tests"
 else
   red "✗ subagent/tests/test.mjs 缺失"; FAILED=$((FAILED+1))

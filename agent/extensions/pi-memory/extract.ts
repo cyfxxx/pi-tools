@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -353,6 +353,12 @@ export function markExtracted(sessionId: string, messageCount: number): void {
   tracker.set(key, { sessionId: key, fingerprint: messageCount })
   lastTs.set(key, Date.now())
   const disk = loadDiskTracker()
+  // 审计 LOW 修复：匿名会话的进程级随机 key 永不过期清理，长期无界增长——
+  // 写入时顺带清理超过 7 天未更新的 anon key（真实会话 key 按 sessionId 可追溯不在此列）
+  const ANON_TTL_MS = 7 * 24 * 3600 * 1000
+  for (const k of Object.keys(disk)) {
+    if (k.startsWith('anon:') && Date.now() - (disk[k]?.lastTs ?? 0) > ANON_TTL_MS) delete disk[k]
+  }
   disk[key] = { fingerprint: messageCount, lastTs: Date.now() }
   try {
     writeJSONAtomic(TRACKER_FILE, disk)
@@ -478,9 +484,14 @@ export async function processPendingExtracts(opts: ExtractOptions = {}): Promise
         removePendingExtract(file)
       } else {
         try {
-          // 失败计数写回同样过 scrub（对象与 401 同源，保持一致）
-          writeFileSync(join(PENDING_DIR, file), scrubSecrets(JSON.stringify(job)))
-        } catch { /* 写回失败保留原文件 */ }
+          // 失败计数写回同样过 scrub（对象与 401 同源，保持一致）；
+          // 审计 LOW 修复：改原子写（tmp+rename），崩溃半写会使下轮解析失败
+          // 走 removePendingExtract 静默删除该对话
+          const target = join(PENDING_DIR, file)
+          const tmp = `${target}.${process.pid}.tmp`
+          writeFileSync(tmp, scrubSecrets(JSON.stringify(job)), 'utf-8')
+          renameSync(tmp, target)
+        } catch { /* 写回失败保留原文件（残留 tmp 由系统临时目录语义兜底） */ }
       }
       failed++
     }

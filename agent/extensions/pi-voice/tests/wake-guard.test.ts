@@ -229,4 +229,15 @@ describe('createWakeSession 采集看门狗', () => {
     expect(spawnMock).toHaveBeenCalledTimes(2)
     expect(statuses.some(s => s.includes('停止'))).toBe(false)
   })
+
+  it('stop 删除采集 wav 文件（start/rollover/guard 均有 rm，stop 补齐防残留）', async () => {
+    ws = createWakeSession({ ...BASE, tmpDir }, { onHit: () => {}, onStatus: (s) => statuses.push(s) })
+    await ws.start() // start 先清旧文件
+    writeFileSync(wakeFile(), Buffer.concat([WAV_HEADER, Buffer.alloc(16000, 2)]))
+    expect(existsSync(wakeFile())).toBe(true)
+    ws.stop()
+    expect(existsSync(wakeFile())).toBe(false)
+    // 幂等：文件已不存在时 stop 再调不报错（rmSync force 容错）
+    expect(() => ws.stop()).not.toThrow()
+  })
 })

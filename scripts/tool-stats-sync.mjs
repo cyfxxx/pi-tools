@@ -98,14 +98,32 @@ function pruneDevice(device, tag) {
   const f = join(EVENTS_DIR, `tool-use-${tag}.jsonl`)
   if (!existsSync(f)) return 0
   const cutoff = Date.now() - RETENTION_DAYS * DAY_MS
+  const isStale = (l) => { try { return JSON.parse(l).ts < cutoff } catch { return false } }
   const lines = readFileSync(f, 'utf8').split('\n').filter(Boolean)
-  const kept = lines.filter((l) => {
-    try { return JSON.parse(l).ts >= cutoff } catch { return true }
-  })
-  const removed = lines.length - kept.length
+  const staleEids = new Set()
+  for (const l of lines) {
+    if (!isStale(l)) continue
+    try { const e = JSON.parse(l); if (e.eid) staleEids.add(e.eid) } catch { /* 无法解析的行不剪 */ }
+  }
+  const removed = lines.filter(isStale).length
   if (removed > 0) {
+    // TOCTOU 防护：读文件与 rename 落盘之间存在窗口，pi 进程可能已 append 新事件；
+    // rename 前重读目标文件，把新增行合并进结果再写（按 eid 去重，过期行仍剪除）
+    const seen = new Set()
+    const merged = []
+    for (const l of readFileSync(f, 'utf8').split('\n')) {
+      if (!l) continue
+      let e = null
+      try { e = JSON.parse(l) } catch { merged.push(l); continue }
+      if (e.eid) {
+        if (staleEids.has(e.eid)) continue // 已过期，维持剪除
+        if (seen.has(e.eid)) continue      // 与已保留行重复，丢弃
+        seen.add(e.eid)
+      }
+      merged.push(l)
+    }
     const tmp = f + '.tmp.' + process.pid
-    writeFileSync(tmp, kept.join('\n') + (kept.length ? '\n' : ''), 'utf8')
+    writeFileSync(tmp, merged.join('\n') + (merged.length ? '\n' : ''), 'utf8')
     renameSync(tmp, f)
   }
   return removed

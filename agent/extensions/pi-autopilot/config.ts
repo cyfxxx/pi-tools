@@ -44,7 +44,9 @@ function writeJSON(filePath: string, data: unknown): boolean {
   try {
     const dir = path.dirname(filePath)
     fs.mkdirSync(dir, { recursive: true })
-    const tmp = filePath + '.tmp'
+    // 审计 MEDIUM 修复：tmp 带 pid 隔离，避免并发写互踩（同 autoconfig.ts；
+    // RMW 丢更新需文件锁根治，此处调用频率低先解决互踩半边）
+    const tmp = `${filePath}.${process.pid}.tmp`
     fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
     fs.renameSync(tmp, filePath)
     return true

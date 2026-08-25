@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, mkdirSync, rmSync, readFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -16,6 +16,24 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllEnvs()
+})
+
+describe('defaultTmpDir 回退路径', () => {
+  it('回退基于 os.tmpdir() 而非硬编码 /tmp（Termux 下即 $PREFIX/tmp）', async () => {
+    // 先 stub 再 import：DEFAULTS 在模块求值时调用 defaultTmpDir()，顺序反了则固化旧值
+    if (process.platform !== 'win32') vi.stubEnv('TMPDIR', join(fakeHome, 'custom-tmp'))
+    const { defaultTmpDir, DEFAULTS } = await import('../config')
+    const expected = join(tmpdir(), 'pi-voice')
+    expect(expected).not.toBe('/tmp/pi-voice') // 确保 stub 生效、断言有区分度
+    if (existsSync('/storage/emulated/0')) {
+      // 安卓真机：共享存储可写时允许返回存储路径（源码行为），否则必须回退 os.tmpdir()
+      const d = defaultTmpDir()
+      expect(d === expected || d === '/storage/emulated/0/pi-voice/').toBe(true)
+    } else {
+      expect(defaultTmpDir()).toBe(expected)
+    }
+    expect(DEFAULTS.tmpDir).toBe(defaultTmpDir())
+  })
 })
 
 describe('config 持久化', () => {

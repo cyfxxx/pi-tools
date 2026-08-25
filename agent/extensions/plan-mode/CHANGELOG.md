@@ -1,5 +1,12 @@
 # Changelog — plan-mode
 
+## [2.9.0] - 2026-08-25
+
+### Fixed
+
+- **执行计划分支扩展工具丢失（HIGH，全项目审计）**：弹窗选"执行计划"仍用硬编码 `NORMAL_MODE_TOOLS` 重建工具集，tmux_*/autopilot/admin/browser/memory_store 等扩展工具整会话不可用，且 `agent_start` 自愈检查（只看 plan_enter 是否在集）不会恢复——与 plan_exit/resume/计划完成三处已改 `restoreAllTools` 的路径矛盾。统一改 `restoreAllTools(pi)` 并删除死常量；补弹窗执行分支源码断言测试。
+- **qaMessages 块数组用户消息被跳过（LOW）**：`typeof content === "string"` 判定使 TextContent[] 形态的用户消息取空串——复用已有 `getUserText()`。
+
 ## [2.8.0] - 2026-08-14
 
 ### Fixed

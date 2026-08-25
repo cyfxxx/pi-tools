@@ -122,7 +122,13 @@ export function startRecording(
       // 非 Unix 环境：忽略
     }
   }
-  mkdirSync(cfg.tmpDir, { recursive: true })
+  // 审计：mkdirSync 同步抛穿（如 tmpDir 父级被文件占用 ENOTDIR）难定位——包裹后转
+  // 带上下文的友好错误上抛，由调用方状态机按启动失败分流提示。
+  try {
+    mkdirSync(cfg.tmpDir, { recursive: true })
+  } catch (e) {
+    throw new Error(`创建录音临时目录失败（tmpDir=${cfg.tmpDir}）: ${(e as Error).message}`)
+  }
   const file = join(cfg.tmpDir, `pi-voice-${nowStamp()}-${Math.random().toString(36).slice(2, 8)}.${spec.recorder.ext}`)
   // 时长控制由调用方（dictation）在 Node 侧 setTimeout 到点发停止实现：
   // termux 的 MediaRecorder.setMaxDuration 基于媒体时间戳计时而非墙钟，实际停止
@@ -1126,6 +1132,14 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
       }
       running = false
       ring = Buffer.alloc(0)
+      // 审计：start()/rolloverFile()/guard() 三处均 rm 采集文件，唯 stop() 漏删——
+      // 长期监听后残留最后一次 wake-listen.wav（~110MB/h 增速）。此处补删（容错，
+      // 失败不阻塞停止流程；下次 start() 会再清）。
+      try {
+        rmSync(wakeFile, { force: true })
+      } catch {
+        // 删除失败忽略
+      }
       child = null
       return '唤醒监听已停止'
     },

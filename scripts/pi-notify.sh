@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// ⚠ 本文件虽以 .sh 命名，实为 Node.js 脚本（历史命名保留，外部文档/记忆已引用此路径）。
+// 请勿用 sh/bash 执行！正确用法：node scripts/pi-notify.sh [--dry-run] <subject> [<body>]
 'use strict'
 // pi-notify.sh —— 通用通知脚本（roadmap 阶段 3.3）
 // 模板命令通道 + 去重 + 静默失败。任意推送服务（Bark/Server酱/Telegram/自定义 webhook）只需一条 curl 模板。

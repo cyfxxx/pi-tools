@@ -27,13 +27,15 @@ export async function clearPending(id: string): Promise<void> {
   await markPendingInjected(id, false)
 }
 
-/** 清除所有任务的 pendingInject 标记（主会话空闲=注入任务已完成）。 */
-export async function clearAllPending(): Promise<void> {
+/** 清除所有任务的 pendingInject 标记（主会话空闲=注入任务已完成）。
+ * exceptIds：正在注入中的任务（fireViaMessage 已置位但尚未登记 injectedIds），
+ * 清除会丢失其崩溃恢复保护——跳过。 */
+export async function clearAllPending(exceptIds?: ReadonlySet<string>): Promise<void> {
   await withStoreLock(async () => {
     const store = await readTasks()
     let changed = false
     for (const task of store.tasks) {
-      if (task.pendingInject) {
+      if (task.pendingInject && !exceptIds?.has(task.id)) {
         task.pendingInject = false
         task.updatedAt = new Date().toISOString()
         changed = true

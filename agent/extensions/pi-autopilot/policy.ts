@@ -78,7 +78,7 @@ export function decide(
     if (task.failCount < (task.retries || 0)) {
       return { type: 'retry', note: `provider 故障第 ${task.failCount} 次，重试` }
     }
-    return { type: 'fail', note: `provider 故障（第 ${task.failCount} 次），未达 failoverAfter 阈值` }
+    return { type: 'fail', note: `provider 故障（第 ${task.failCount} 次）：重试额度已用尽（retries=${task.retries || 0}），未达 failoverAfter=${failoverAfter} 阈值，任务失败` }
   }
 
   // 未知错误

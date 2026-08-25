@@ -141,7 +141,7 @@ describe('task CRUD (isolated store)', () => {
     const { writeTasks, readTasks } = await import('../storage')
     const store = await readTasks()
     store.tasks = []
-    await writeTasks(store, { skipMerge: true })
+    await writeTasks(store)
   })
 
   it('并发 updateTaskAfterRun 与 deleteTask 不复活已删除任务（写互斥）', async () => {
@@ -388,7 +388,7 @@ describe('export / import', () => {
     const { writeTasks, readTasks } = await import('../storage')
     const store = await readTasks()
     store.tasks = []
-    await writeTasks(store, { skipMerge: true })
+    await writeTasks(store)
   })
 
   it('round-trips tasks and skips duplicates/invalid', async () => {
@@ -418,6 +418,43 @@ describe('settings', () => {
     expect(s.paused).toBe(true)
     expect(s.webhookUrl).toBe('https://example.com/hook')
     await setSettings({ paused: false })
+  })
+})
+
+describe('审计修复回归', () => {
+  it('isPidInTasklistOutput：无匹配时 INFO 行不误判存活（死 PID 陈旧锁可被清理）', async () => {
+    const { isPidInTasklistOutput } = await import('../storage')
+    // tasklist 命中：映像名行含 PID token
+    expect(isPidInTasklistOutput('chrome.exe  12345 Console 1 102,400 K', 12345)).toBe(true)
+    // 无匹配：INFO 提示仍 exit 0，但不含 PID token → 死进程
+    expect(isPidInTasklistOutput('INFO: No tasks are running which match the specified criteria.', 12345)).toBe(false)
+    // 子串不误命中（1234 ≠ 12345）
+    expect(isPidInTasklistOutput('chrome.exe  12345 Console 1 102,400 K', 1234)).toBe(false)
+    expect(isPidInTasklistOutput('', 1)).toBe(false)
+  })
+
+  it('readTasks 损坏时留档 .corrupt-* 再返回空，而非静默吞掉证据', async () => {
+    const { writeFile, readdir, rm } = await import('fs/promises')
+    // 先清掉其他用例残留的任务文件，隔离本用例
+    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    await writeFile(join(TEST_DIR, 'scheduled-tasks.json'), '{"version":2,"tasks":[{"id":"broken"', 'utf-8') // 截断 JSON
+    const store = await readTasks()
+    expect(store.tasks).toEqual([])
+    const files = await readdir(TEST_DIR)
+    expect(files.some(f => f.includes('scheduled-tasks.json.corrupt-'))).toBe(true)
+  })
+
+  it('readTasks 文件不存在（首次运行）不留档、静默返回空', async () => {
+    const { rm, readdir } = await import('fs/promises')
+    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    // 清理上一用例留档的 .corrupt-*，隔离本用例断言
+    for (const f of await readdir(TEST_DIR)) {
+      if (f.includes('.corrupt-')) await rm(join(TEST_DIR, f), { force: true })
+    }
+    const store = await readTasks()
+    expect(store.tasks).toEqual([])
+    const files = await readdir(TEST_DIR)
+    expect(files.some(f => f.includes('.corrupt-'))).toBe(false)
   })
 })
 

@@ -26,13 +26,12 @@ import { registerTodoTool, runTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
 const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
-const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write", "todo", "web_search", "fetch_url", "subagent", "plan_enter", "memory_search", "memory_recall", "ctx_note"];
 
 /**
- * 退出受限状态时恢复全量工具（方案 1）。
- * NORMAL_MODE_TOOLS 是写死的 9 个内置工具，不含扩展工具（admin、autopilot、
- * memory、ctx、tmux 等系列工具均不在其中）；若退出计划/执行模式时用它重建
- * 工具集，所有扩展工具在本会话内全部不可用（session_start 才恢复全量）。
+ * 退出受限状态时恢复全量工具（唯一正确方式）。
+ * 勿用写死的工具名清单重建非计划模式工具集：清单必然滞后于扩展注册
+ * （admin、autopilot、memory、ctx、tmux 等系列工具均不在静态清单内），
+ * 用它重建会导致扩展工具在本会话内全部不可用（session_start 才恢复全量）。
  * 退出只读/受限状态 = 恢复全量权限。
  */
 function restoreAllTools(pi: ExtensionAPI): void {
@@ -492,7 +491,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
           executionMode = true;
           knownTodoHash = todoHash();
           // 与 plan_exit 路径一致：恢复全量工具（含扩展工具），
-          // 硬编码 NORMAL_MODE_TOOLS 会使扩展工具在本会话内全部不可用。
+          // 硬编码静态清单会使扩展工具在本会话内全部不可用。
           restoreAllTools(pi);
           persistState();
           updateStatus(ctx);
@@ -1063,8 +1062,7 @@ ${todoList}
           .reverse()
           .find((m) => m.role === "user");
         if (lastUser) {
-          const userContent =
-            typeof lastUser.content === "string" ? lastUser.content : "";
+          const userContent = getUserText(lastUser);
           if (userContent.trim()) {
             qaMessages.push({ role: "user", content: userContent });
           }
@@ -1112,7 +1110,7 @@ ${todoList}
       planModeEnabled = false;
       executionMode = visible.length > 0;
       knownTodoHash = todoHash();
-      pi.setActiveTools(NORMAL_MODE_TOOLS);
+      restoreAllTools(pi);
       updateStatus(ctx);
       todoOverlay?.update();
 
@@ -1231,7 +1229,7 @@ ${todoList}
     } else if (!executionMode) {
       // 普通会话工具快照修复：重启/热载后会话 tools 快照不含新注册的扩展工具
       // （如 plan_enter），模型不可见。非计划/非执行模式时用全量工具重建。
-      // 执行模式会话（executionMode=true）保持 NORMAL_MODE_TOOLS 受限不干预。
+      // 执行计划分支已改 restoreAllTools 全量恢复，此处自愈检查仅兑底。
       const active = pi.getActiveTools();
       if (active.length === 0 || !active.includes("plan_enter")) {
         restoreAllTools(pi);

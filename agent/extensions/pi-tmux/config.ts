@@ -18,10 +18,19 @@ export interface TmuxConfig {
   defaultTimeoutSec: number
 }
 
+/**
+ * 默认日志目录：与 core.ts registryPath/defaultOpts 同口径（PI_HOME || ~/.pi）。
+ * 动态读取而非模块常量：PI_HOME 在进程内可变（测试/嵌入场景），固化会失效。
+ */
+export function defaultLogDir(): string {
+  const piHome = process.env.PI_HOME || join(homedir(), '.pi')
+  return join(piHome, TMUX_LOG_DIR_REL)
+}
+
 const DEFAULTS: TmuxConfig = {
   bin: 'tmux',
   prefix: SESSION_PREFIX,
-  logDir: join(homedir(), '.pi', TMUX_LOG_DIR_REL),
+  logDir: defaultLogDir(),
   defaultLines: 100,
   defaultTimeoutSec: 120,
 }
@@ -76,7 +85,8 @@ function readConfigFromEnv(): Partial<TmuxConfig> {
 }
 
 export function loadConfig(): TmuxConfig {
-  return { ...DEFAULTS, ...readConfigFromFile(), ...readConfigFromEnv() }
+  // logDir 每次调用时重算（DEFAULTS 在 import 时已固化 PI_HOME）
+  return { ...DEFAULTS, logDir: defaultLogDir(), ...readConfigFromFile(), ...readConfigFromEnv() }
 }
 
 export function toTmuxOpts(cfg: TmuxConfig): TmuxOpts {

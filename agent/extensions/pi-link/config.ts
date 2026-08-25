@@ -1,6 +1,7 @@
 import { homedir } from 'node:os'
 import { readFileSync, existsSync, mkdirSync, writeFileSync, renameSync } from 'node:fs'
 import { join, dirname } from 'node:path'
+import { isValidUserHost } from './card.ts'
 
 /**
  * pi-link 配置：设备清单（每环境独立，gitignored）
@@ -74,11 +75,23 @@ export function loadConfig(path = configPath()): LinkConfig {
     const raw = JSON.parse(readFileSync(path, 'utf-8')) as Partial<LinkConfig>
     if (raw.devices) {
       for (const [name, d] of Object.entries(raw.devices)) {
-        if (!d || typeof d.host !== 'string' || !d.host) continue
+        // 审计 MEDIUM：host 此前仅判非空——手工编辑 pi-link.json 可绕过 import-card
+        // 加固，`-` 开头/含空白的 host 同样会被 ssh 解析为选项（如 -o ProxyCommand →
+        // 本机执行面）。套用 card.ts 的 isValidUserHost 严格校验，不合格整台设备
+        // 跳过并告警（与 saveDevice/validateCard 规则对齐）。
+        if (!d || !isValidUserHost(d.host)) {
+          console.warn(`[pi-link] 设备 "${name}" 的 host 非法（拒绝 - 开头/空白/超长），已跳过该设备`)
+          continue
+        }
         const dev = { ...d }
-        // altHosts 结构校验：仅保留 host 为字符串的条目（无效条目丢弃）
+        // altHosts 结构校验：逐项 isValidUserHost 严格校验（无效条目丢弃并告警，
+        // 设备本身保留——主地址仍可用）
         if (Array.isArray(dev.altHosts)) {
-          dev.altHosts = dev.altHosts.filter(a => a && typeof a.host === 'string' && a.host)
+          dev.altHosts = dev.altHosts.filter(a => {
+            const ok = !!a && isValidUserHost(a.host)
+            if (!ok) console.warn(`[pi-link] 设备 "${name}" 存在非法 altHosts 条目，已丢弃`)
+            return ok
+          })
         }
         // 审计 MEDIUM：仅校验 host 时手工编辑 pi-link.json 可绕过 import-card 加固——
         // user 以 `-` 开头/含空白会被 ssh 解析为选项（如 -o ProxyCommand → 本机执行面）。

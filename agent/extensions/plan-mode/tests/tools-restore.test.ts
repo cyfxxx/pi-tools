@@ -22,6 +22,14 @@ describe('plan-mode 工具集恢复（resume 分支回归）', () => {
     expect(block).not.toContain('setActiveTools([')
   })
 
+  it('弹窗「执行计划」分支使用 restoreAllTools 全量恢复，不硬编码工具集', () => {
+    const start = src.indexOf('startsWith("执行计划")')
+    expect(start).toBeGreaterThan(-1)
+    const block = src.slice(start, start + 400)
+    expect(block).toContain('restoreAllTools(pi)')
+    expect(block).not.toContain('setActiveTools(NORMAL_MODE_TOOLS)')
+  })
+
   it('restoreAllTools 基于 getAllTools 动态全量恢复（扩展工具可用）', () => {
     const fnStart = src.indexOf('function restoreAllTools')
     expect(fnStart).toBeGreaterThan(-1)

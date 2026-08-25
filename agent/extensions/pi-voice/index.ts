@@ -709,19 +709,30 @@ async function cmdWake(api: ExtensionAPI, ctx: ExtensionCommandContext, config: 
       return
     }
     if (sub === 'on') {
-      persistConfig({ autoWake: true }, process.env)
+      // 对齐其余调用点：持久化失败不阻塞开关，但需明确告知（否则下次启动静默不生效）
+      let warn = ''
+      try {
+        persistConfig({ autoWake: true }, process.env)
+      } catch {
+        warn = '\n⚠ 配置写入失败：本次已开启，但下次启动 pi 不会自动监听'
+      }
       if (wakeSession?.isRunning()) {
-        reply(api, '自动监听已开启（已在监听中）')
+        reply(api, `自动监听已开启（已在监听中）${warn}`)
       } else {
-        reply(api, '自动监听已开启，正在启动监听…')
+        reply(api, `自动监听已开启，正在启动监听…${warn}`)
         await launchWakeSession(api, ctx, config)
       }
       return
     }
     if (sub === 'off') {
-      persistConfig({ autoWake: false }, process.env)
+      let warn = ''
+      try {
+        persistConfig({ autoWake: false }, process.env)
+      } catch {
+        warn = '\n⚠ 配置写入失败：本次已关闭，但下次启动仍按旧配置自动监听'
+      }
       stopWakeSession(api, ctx)
-      reply(api, '自动监听已关闭（下次启动 pi 不再自动监听）')
+      reply(api, `自动监听已关闭（下次启动 pi 不再自动监听）${warn}`)
       return
     }
     reply(api, `用法：/voice wake auto <on|off>`)

@@ -94,13 +94,21 @@ export default function (pi: ExtensionAPI): void {
 
   // ── compaction 前: 快照 + 异步提取 ──
   pi.on('session_before_compact', async (_event, ctx) => {
-    const notes = loadNotes()
-    notes['_ctx.compacted_at'] = new Date().toISOString()
-    saveNotes(notes)
-
+    // 审计 MEDIUM 修复：compacted_at 不再在压缩启动前写入——压缩失败/被中断时
+    // 标记残留，30s 内下次启动会伪判 just_compacted 注入“上下文已压缩”恢复消息；
+    // 改由 session_compact（宿主仅在实际完成 appendCompaction 后 emit）写入。
     writeCompactionSnapshot(ctx)
     // 异步提取，不阻塞 compaction
     void extractFromSession(ctx)
+  })
+
+  // ── compaction 完成: 记录时间戳（session_start 的 just_compacted 判定依据） ──
+  pi.on('session_compact', async () => {
+    try {
+      const notes = loadNotes()
+      notes['_ctx.compacted_at'] = new Date().toISOString()
+      saveNotes(notes)
+    } catch { /* 标记失败不影响主流程 */ }
   })
 
   // ── 会话结束: 提取（入队延迟到下次启动，避免阻塞退出） ──

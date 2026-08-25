@@ -187,6 +187,49 @@ describe('deliverResult busy 分支（转写中 stop 不误报失败）', () => 
   })
 })
 
+describe('wake auto 开关 persistConfig 失败兜底（不崩命令、reply 提示）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.config.autoWake = false
+  })
+
+  function throwOnWrite(pc: unknown): void {
+    ;(pc as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      throw new Error('EACCES: read-only file system')
+    })
+  }
+
+  it('auto off 写配置失败：命令不崩，reply 含写入失败提示', async () => {
+    const { commands, api } = await loadExt()
+    // resetModules 后动态取同一实例（与 index.ts 引用一致）再注入抛错
+    throwOnWrite((await import('../config')).persistConfig)
+    const ctx = mockCtx()
+    await expect(commands['voice'].handler?.('wake auto off', ctx)).resolves.toBeUndefined()
+    const texts = (api.sendMessage as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]?.content ?? ''))
+    expect(texts.some((t) => t.includes('配置写入失败'))).toBe(true)
+  })
+
+  it('auto on 写配置失败：仍走启动流程且提示写入失败', async () => {
+    const { commands, api } = await loadExt()
+    throwOnWrite((await import('../config')).persistConfig)
+    const ctx = mockCtx()
+    await expect(commands['voice'].handler?.('wake auto on', ctx)).resolves.toBeUndefined()
+    const texts = (api.sendMessage as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]?.content ?? ''))
+    expect(texts.some((t) => t.includes('配置写入失败'))).toBe(true)
+  })
+
+  it('写配置成功时无失败提示（对照）', async () => {
+    const { commands, api } = await loadExt()
+    // mock 注册表跨 resetModules 共享：显式恢复成功实现，隔离前序用例的抛错注入
+    ;((await import('../config')).persistConfig as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => [])
+    const ctx = mockCtx()
+    await commands['voice'].handler?.('wake auto off', ctx)
+    const texts = (api.sendMessage as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]?.content ?? ''))
+    expect(texts.some((t) => t.includes('配置写入失败'))).toBe(false)
+    expect(texts.some((t) => t.includes('自动监听已关闭'))).toBe(true)
+  })
+})
+
 describe('message_end 记录最近回复（TTS 关闭期间 /voice tts speak 可朗读）', () => {
   beforeEach(() => {
     vi.clearAllMocks()

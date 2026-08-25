@@ -573,3 +573,123 @@ describe('pi-link: 多地址 failover (altHosts)', () => {
     expect(deviceAddresses({ host: 'x', user: 'u' })).toEqual([{ host: 'x', port: undefined }])
   })
 })
+
+// 审计回归：events 全量数组无界累积致长任务内存膨胀——改边收边聚合后统计语义不变。
+// 注意：本文件所有用例统一走顶部 hoisted 的 spawnMock（beforeEach 里的 vi.doMock
+// 对已缓存模块不生效，历史遗留死代码），此处直接 mockImplementation 即可。
+describe('pi-link: 边收边聚合（events 无界累积回归）', () => {
+  beforeEach(() => {
+    resetSendGuards()
+    spawnMock.mockReset()
+  })
+
+  function fakeStream(lines: Array<Record<string, unknown>>) {
+    const stdout = new PassThrough()
+    const stderr = new PassThrough()
+    const stdin = new PassThrough()
+    const exitCbs: Array<(c: number) => void> = []
+    const proc = {
+      stdin, stdout, stderr,
+      kill: vi.fn(),
+      on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+    }
+    stdin.on('data', () => {
+      setImmediate(() => {
+        for (const l of lines) stdout.emit('data', JSON.stringify(l) + '\n')
+        setImmediate(() => {
+          stdout.emit('end')
+          for (const cb of exitCbs) cb(0)
+        })
+      })
+    })
+    return proc
+  }
+
+  it('数千事件下 turns/tools/reply 统计与旧全量数组语义一致', async () => {
+    const lines: Array<Record<string, unknown>> = []
+    for (let i = 0; i < 3000; i++) {
+      lines.push({ type: 'tool_execution_end' })
+      if (i % 1000 === 0) {
+        lines.push({ type: 'message_end', message: { role: 'assistant', content: [{ type: 'text', text: `中间回复${i}` }] } })
+        lines.push({ type: 'turn_end' })
+      }
+    }
+    // 最后一条 assistant 只含 toolCall+文本块：reply 取其文本、model 更新为 m-final
+    lines.push({ type: 'message_end', message: { role: 'assistant', content: [{ type: 'toolCall', id: 'x' }, { type: 'text', text: '最终回复' }], model: 'm-final' } })
+    lines.push({ type: 'turn_end' })
+    lines.push({ type: 'agent_settled' })
+    spawnMock.mockImplementation(() => fakeStream(lines))
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+    expect(r.ok).toBe(true)
+    expect(r.tools).toBe(3000)
+    expect(r.turns).toBe(4)
+    expect(r.reply).toBe('最终回复')
+    expect(r.model).toBe('m-final')
+  })
+
+  it('无 assistant 文本时 reply 为空（聚合不误报）', async () => {
+    spawnMock.mockImplementation(() => fakeStream([{ type: 'agent_settled' }]))
+    const r = await sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('远程未返回文本回复')
+  })
+})
+
+// 审计回归：switch_session 20s 超时后照发 prompt 违反"必须等 response"不变量——
+// 超时按失败处理（弃 lastSession 走新会话路径），不发 prompt 进旧会话
+describe('pi-link: switch_session 超时按失败处理', () => {
+  const stdinWrites: string[] = []
+  beforeEach(() => {
+    resetSendGuards()
+    spawnMock.mockReset()
+    stdinWrites.length = 0
+  })
+
+  it('switch 20s 超时（无 response）→ 弃旧会话，prompt 延后到超时后才发出且 resumed=false', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const stdout = new PassThrough()
+      const stderr = new PassThrough()
+      const stdin = new PassThrough()
+      const exitCbs: Array<(c: number) => void> = []
+      const proc = {
+        stdin, stdout, stderr,
+        kill: vi.fn(),
+        on: (ev: string, cb: (c: number) => void) => { if (ev === 'exit') exitCbs.push(cb) },
+      }
+      stdin.on('data', (chunk: Buffer) => {
+        stdinWrites.push(chunk.toString())
+        if (chunk.toString().includes('"type":"prompt"')) {
+          // 新会话路径正常完成（assistant 回复 + agent_settled）
+          setImmediate(() => {
+            stdout.emit('data', JSON.stringify({ type: 'message_end', message: { role: 'assistant', content: [{ type: 'text', text: '新会话回复' }] } }) + '\n')
+            stdout.emit('data', JSON.stringify({ type: 'agent_settled' }) + '\n')
+            setImmediate(() => { stdout.emit('end'); for (const cb of exitCbs) cb(0) })
+          })
+        }
+        // switch_session 永不回 response——模拟远程无响应直至 20s 超时
+      })
+      spawnMock.mockImplementation(() => {
+        setImmediate(() => stdout.emit('data', 'PI_LINK_LAST_SESSION=/root/.pi/agent/sessions/pi-link/stale.jsonl\n'))
+        return proc
+      })
+      const pending = sendToDevice(DEV, 'hi', { timeoutSec: 30 })
+      // 握手行已消费、switch 已写出；此刻必须还没有 prompt（等待 response 的不变量）
+      await new Promise((r) => setImmediate(r))
+      await new Promise((r) => setImmediate(r))
+      expect(stdinWrites.join('')).toContain('"type":"switch_session"')
+      expect(stdinWrites.join('')).not.toContain('"type":"prompt"')
+      // 推进 20s 触发 switch 超时 → 按失败处理 → prompt 走新会话路径
+      await vi.advanceTimersByTimeAsync(20000)
+      const r = await pending
+      expect(r.ok).toBe(true)
+      expect(r.reply).toBe('新会话回复')
+      // 关键断言：超时标记为失败——修复前 resumed=true 且不等 response 照发 prompt
+      expect(r.resumed).toBe(false)
+      expect(stdinWrites.join('')).toContain('"type":"prompt"')
+      expect(stdinWrites.filter((w) => w.includes('switch_session'))).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

@@ -143,7 +143,7 @@ function extractUserRequest(messages: unknown[]): string {
 	return "";
 }
 
-function snapshotBeforeCompact(contextTokens: number, threshold: number): void {
+function snapshotBeforeCompact(contextTokens: number, threshold: number, reason: "overflow" | "threshold" = "threshold"): void {
   try {
     if (!lastContextMessages || lastContextMessages.length === 0) return;
     mkdirSync(SNAPSHOT_DIR, { recursive: true });
@@ -153,6 +153,9 @@ function snapshotBeforeCompact(contextTokens: number, threshold: number): void {
       ts,
       contextTokens,
       threshold,
+      // 审计 MEDIUM 修复：区分溢出兑底/阈值触发——overflow 场景 threshold 形参
+      // 记录的是窗口大小（硬限），此前与阈值场景混用致追溯分析误读
+      reason,
       messages: lastContextMessages,
     };
     writeFileSync(file, JSON.stringify(payload), "utf8");
@@ -765,7 +768,7 @@ export default function (pi: ExtensionAPI) {
 		// 且保留 32K reserve 余量给模型响应。
 		if (tokens >= contextWindow) {
 			// 压缩前原文快照（可逆追溯，零缓存影响）
-			snapshotBeforeCompact(tokens, contextWindow);
+			snapshotBeforeCompact(tokens, contextWindow, "overflow"); // threshold 形参此时记录窗口硬限
 			autoContinueGate.arm();
 			ctx.compact({
 				customInstructions:
@@ -775,13 +778,15 @@ export default function (pi: ExtensionAPI) {
 					compactDecider.markCompact();
 					lastCompactTs = Date.now();
 					markCompacted();
+					recTask(true); // 同上：压缩成功才记 compacted
 				},
 				onError: (err) => {
 					autoContinueGate.disarm();
 					console.error("pi-context: overflow compact failed:", err);
+					recTask(false); // 失败仍收口计数/序列，不标 compacted
 				},
 			});
-			return recTask(true);
+			return;
 		}
 
 		const decision = compactDecider.decide(tokens, contextWindow);
@@ -802,14 +807,15 @@ export default function (pi: ExtensionAPI) {
 				compactDecider.markCompact();
 				lastCompactTs = Date.now();
 				markCompacted();
+				recTask(true); // 审计修复：压缩成功才记 compacted（原先无条件预记）
 			},
 			onError: (err) => {
 				autoContinueGate.disarm();
 				// 压缩失败不致命：内置 96.7 万兜底仍在
 				console.error("pi-context: auto-compact failed:", err);
+				recTask(false); // 失败仍收口计数/序列，不标 compacted
 			},
 		});
-		recTask(true);
 	});
 
 	// 压缩完成后自动继续（借鉴 opencode compaction.autocontinue）：

@@ -72,6 +72,8 @@ export class SessionScheduler {
   private firing = new Set<string>()
   /** 本轮已注入主会话的 message 任务 id（agent_settled 时 finalizeInjected 消费） */
   private injectedIds = new Set<string>()
+  /** 正在注入中的任务（同步维护，agent_settled 的 clearAllPending 据此跳过） */
+  readonly injectingIds = new Set<string>()
   /** 本回合是否被用户中止（agent_end 尾部 assistant stopReason==='aborted'，index.ts 回写）
    *  实测（2026-08-25）：宿主 _runAgentPrompt 的 finally 无条件发 agent_settled——
    *  abort 回合也会走到 finalizeInjected，若不区分会把失败闭环为 success */
@@ -275,21 +277,29 @@ export class SessionScheduler {
   private async fireViaMessage(task: Task, _provider: string, _model: string): Promise<void> {
     const label = `[Scheduler] ${task.name}`
     touchActivity()
-    await markPendingInjected(task.id, true)
-    // 注入动作失败（sendUserMessage 不可用/抛错）必须抛错：否则会被记 success 并删除
-    // once 任务（updateTaskAfterRun 的 once 分支 splice），提醒任务从未真正交付就消失
-    if (!this.pi.sendUserMessage) {
-      await clearPending(task.id)
-      throw new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败')
-    }
+    // 审计 MEDIUM 修复：置位到登记 injectedIds 之间若插入 agent_settled 的
+    // clearAllPending，会把刚置位的 pendingInject 清掉（崩溃恢复保护丢失）。
+    // 同步守卫集在任何 await 之前登记，agent_settled 据此跳过正在注入的任务。
+    this.injectingIds.add(task.id)
     try {
-      await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
-    } catch (e) {
-      // 审计 MEDIUM：抛错前 markPendingInjected(true) 已置位——失败必须复位，
-      // 否则暂停期 tick 跳过该任务（!pendingInject 过滤）且崩溃恢复会把未交付
-      // 任务重注入，停顿一回合且无恢复提示
-      await clearPending(task.id)
-      throw e
+      await markPendingInjected(task.id, true)
+      // 注入动作失败（sendUserMessage 不可用/抛错）必须抛错：否则会被记 success 并删除
+      // once 任务（updateTaskAfterRun 的 once 分支 splice），提醒任务从未真正交付就消失
+      if (!this.pi.sendUserMessage) {
+        await clearPending(task.id)
+        throw new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败')
+      }
+      try {
+        await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
+      } catch (e) {
+        // 审计 MEDIUM：抛错前 markPendingInjected(true) 已置位——失败必须复位，
+        // 否则暂停期 tick 跳过该任务（!pendingInject 过滤）且崩溃恢复会把未交付
+        // 任务重注入，停顿一回合且无恢复提示
+        await clearPending(task.id)
+        throw e
+      }
+    } finally {
+      this.injectingIds.delete(task.id)
     }
     // 注：不在此发 success webhook——注入成功 ≠ 执行成功（审计 MEDIUM 修复），
     // 完成回写由 agent_settled → finalizeInjected 统一处理（commit 补闭环）

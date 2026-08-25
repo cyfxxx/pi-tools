@@ -45,6 +45,15 @@ export function resolveName(params: Record<string, unknown>, prefix: string): st
   return normalizeSessionName(raw, prefix)
 }
 
+/** 探测失败退避：30s 基准 × 2^(连续失败次数-1)，封顶 PROBE_BACKOFF_MAX_MS。 */
+export function probeBackoffMs(failCount: number): number {
+  return Math.min(PROBE_BACKOFF_BASE_MS * 2 ** Math.max(0, failCount - 1), PROBE_BACKOFF_MAX_MS)
+}
+/** 首次失败后的重试基准间隔（导出供测试对齐时间轴） */
+export const PROBE_BACKOFF_BASE_MS = 30_000
+/** 连续失败退避上限（tmux 长期不可用时最多每 10min 重试一次解析） */
+export const PROBE_BACKOFF_MAX_MS = 10 * 60_000
+
 async function requireTmux(cfg: TmuxConfig): Promise<TmuxOpts | { error: ReturnType<typeof err> }> {
   const opts = { bin: cfg.bin, prefix: cfg.prefix, logDir: cfg.logDir }
   const { runTmux } = await import('./core')
@@ -64,15 +73,29 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
   // opts 缓存：轮询每 5s 一次，若每次 re-spawn `tmux -V` 检查，长任务（小时级）
   // 会 spawn 数百次子进程；tmux 配置在会话生命周期内不变，首次解析后复用
   let cachedOpts: TmuxOpts | null = null
+  // 负缓存+指数退避：requireTmux 连续失败（tmux 长期不可用/被卸载）时按
+  // 30s→60s→…→10min 退避重试解析，不再每 5s 无限 re-spawn tmux -V。
+  // 退避只限制「opts 解析」频率：窗口内 hasSession 恒返回 true（保守判存活），
+  // 「探测失败≠会话结束」语义不变——绝不把失败缓存成可判 gone 的状态。
+  let probeFailCount = 0
+  let lastProbeFailAt = 0
   // 审计 MEDIUM 修复：tmux_run 的 watcher 句柄按会话名登记——tmux_stop 主动
   // 停止时须同步停监听，否则 ≤5s 内轮询发现会话消失触发 sendMessage 空唤醒新回合
   const watcherHandles = new Map<string, WatcherHandle>()
   const watcher = createCompletionWatcher({
     hasSession: async (name: string) => {
       if (!cachedOpts) {
+        const sinceLastFail = Date.now() - lastProbeFailAt
+        if (lastProbeFailAt !== 0 && sinceLastFail < probeBackoffMs(probeFailCount)) return true // 负缓存窗口内：跳过 re-spawn，保守判存活
         const maybe = await requireTmux(cfg)
-        if ('error' in maybe) return true // tmux 探测失败：保守认为存活，避免误报完成
+        if ('error' in maybe) {
+          probeFailCount++
+          lastProbeFailAt = Date.now()
+          return true // tmux 探测失败：保守认为存活，避免误报完成
+        }
         cachedOpts = maybe
+        probeFailCount = 0
+        lastProbeFailAt = 0
       }
       // 审计 MEDIUM：区分「确认无此会话」与「探测失败」——cachedOpts 缓存生效后
       // 二进制消失/spawn 瞬时故障（exit 127 等）曾一律返回 false 被 watcher 当会话

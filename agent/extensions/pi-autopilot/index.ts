@@ -136,7 +136,7 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
     setTurnBusy(false)
     try {
       await scheduler.finalizeInjected()
-      await clearAllPending()
+      await clearAllPending(scheduler.injectingIds)
     } catch { /* 清理失败不阻塞 */ }
   })
 

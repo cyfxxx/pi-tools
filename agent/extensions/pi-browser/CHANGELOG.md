@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [1.2.0] - 2026-08-25
+
+### 修复（全项目审计）
+
+- **win32 强制直连覆盖显式代理**：`--no-proxy-server` 此前无条件附加，静默忽略 config.proxy 与环境代理——改为仅当无任何显式代理配置时附加。
+- **协议安全拒绝被吞后重试**：navigate 重定向到不允许协议的拒绝错误被外层 catch 吞掉后以 load 模式重试 goto 且错误信息降级——识别安全拒绝立即 rethrow，保留具体文案；网络类错误回退逻辑不变。
+- **并发同名下载互相覆盖**：saveDownload 去重只查已完成的 downloadedFiles 数组——新增 in-flight 占位集合共同去重，冲突生成唯一后缀。
+
 ## [1.1.0] - 2026-08-24
 
 ### 新增

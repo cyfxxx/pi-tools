@@ -286,7 +286,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 // ── 主流程（轮询架构：短连接抗网络断连，默认 5s 一拉）──
 async function main() {
-  console.log(`[relay] topic=${cfg.topic} prefix=${cfg.prefix} session=${cfg.tmuxSession || 'auto'} mode=${CHECK ? 'check' : ONCE ? 'once' : 'daemon'} poll=${(process.env.NTFY_RELAY_POLL_MS || '5000')}`)
+  // topic 即密钥，日志/控制台脱敏（前 4 字符 + ***）
+  const maskTopic = (t) => (t && t.length > 4 ? `${t.slice(0, 4)}***` : '***')
+  console.log(`[relay] topic=${maskTopic(cfg.topic)} prefix=${cfg.prefix} session=${cfg.tmuxSession || 'auto'} mode=${CHECK ? 'check' : ONCE ? 'once' : 'daemon'} poll=${(process.env.NTFY_RELAY_POLL_MS || '5000')}`)
   log(`start mode=${CHECK ? 'check' : ONCE ? 'once' : 'daemon'}`)
   // 启动快照 last=5：处理最近 5 条（含最新一条，避免被当起点跳过），末条自然更新 lastId
   try { const n = await snapshot('last=5&poll=1'); log(`bootstrap snapshot: ${n} 条处理`) } catch (e) { log(`bootstrap fail: ${e.message}`) }
