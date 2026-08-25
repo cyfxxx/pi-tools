@@ -25,7 +25,7 @@ ONLY=""
 FAST=0
 for arg in "$@"; do
   case "$arg" in
-    --only=*) ONLY="${arg#--only=}" ;;
+    --only=*) ONLY="${arg#--only=}"; ONLY="${ONLY//,/ }" ;;
     --fast) FAST=1 ;;
     -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "未知参数: $arg（支持 --only=a,b / --fast）"; exit 2 ;;
@@ -46,7 +46,7 @@ PI_GLOBAL="$PI_HOME/pi-global/node_modules/@earendil-works/pi-coding-agent"
 
 ALL_EXTS="pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode pi-tmux pi-voice pi-link"
 if [ -n "$ONLY" ]; then
-  ALL_EXTS="$ONLY"
+  ALL_EXTS="$ONLY" # 已归一为空格分隔
 fi
 
 red()   { printf '\033[0;31m%s\033[0m\n' "$1"; }
