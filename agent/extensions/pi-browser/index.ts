@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { loadConfig } from './config'
 import type { BrowserOnlyConfig } from './types'
-import { BrowserManager, shotDir, pdfDir } from './browser/impl'
+import { BrowserManager, shotDir, pdfDir, downloadsDirDefault } from './browser/impl'
 import { registerBrowserTools } from './browser/index'
 import { unlink, readdir, rm } from 'fs/promises'
 import { join } from 'path'
@@ -27,6 +27,16 @@ async function cleanScreenshots(): Promise<void> {
 async function cleanPdf(): Promise<void> {
   try {
     await rm(pdfDir(), { recursive: true, force: true })
+  } catch { /* ignore */ }
+}
+
+/**
+ * 下载目录整目录清理（与 pdfDir 同为 pid 隔离的 tmpdir 子目录，进程退出后
+ * 残留会积累——2026-08-25 文档同步时发现文案承诺 shutdown 清理但实现缺失）。
+ */
+async function cleanDownloads(): Promise<void> {
+  try {
+    await rm(downloadsDirDefault(), { recursive: true, force: true })
   } catch { /* ignore */ }
 }
 
@@ -59,6 +69,7 @@ export default async function (pi: ExtensionAPI) {
     await browser.close()
     await cleanScreenshots()
     await cleanPdf()
+    await cleanDownloads()
   })
 
   pi.on('session_compact', async () => {
