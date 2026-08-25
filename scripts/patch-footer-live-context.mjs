@@ -80,7 +80,21 @@ if (!existsSync(target)) {
 
 const src = readFileSync(target, 'utf-8')
 if (src.includes(MARKER_V3)) {
-  console.log(`已打 V3 补丁，跳过：${target}`)
+  // V3.1 修正（2026-08-25 用户反馈）: 参考线进度 >70% 即黄过于敏感——
+  // 改双指标: 黄=达 256K 参考线；红=超真实窗口 80%（优先级更高，超窗加!!）
+  if (!src.includes('linePct')) {
+    let fixed = src.replace(
+      /\/\/ Patch \(patch-footer-live-context\.mjs\) V3 着色:[^\n]*\n[^\n]*\n[\s\S]*?contextPercentStr = contextPercentDisplay;\n    \}/,
+      `// Patch (patch-footer-live-context.mjs) V3.1 着色: 双指标——黄=达自动压缩参考线(256K)；红=超真实窗口 80%（溢出预警，优先级更高，超窗加!!）。\n// 显示分母仍为真实窗口；两指标口径独立（小窗口模型红会先于黄触发，自洽）。\n    const linePct = (liveTokens !== null && liveTokens !== undefined && compactLine > 0)\n        ? (liveTokens / compactLine) * 100\n        : -1;\n    const winPct = (liveTokens !== null && liveTokens !== undefined && contextWindow > 0)\n        ? (liveTokens / contextWindow) * 100\n        : contextPercentValue;\n    if ((winPct > 80 || contextPercentValue > 90)) {\n        if (winPct > 100) {\n            contextPercentStr = theme.fg("error", contextPercentDisplay + " !!");\n        }\n        else {\n            contextPercentStr = theme.fg("error", contextPercentDisplay);\n        }\n    }\n    else if (linePct >= 100) {\n        contextPercentStr = theme.fg("warning", contextPercentDisplay);\n    }\n    else {\n        contextPercentStr = contextPercentDisplay;\n    }`)
+    if (!fixed.includes('linePct')) {
+      console.error('V3→V3.1 着色修正未命中预期形态，需人工核对。')
+      process.exit(1)
+    }
+    if (!DRY_RUN) writeFileSync(target, fixed, 'utf-8')
+    console.log(`${DRY_RUN ? 'dry-run：' : ''}V3 着色已升级 V3.1（双指标阈值）：${target}`)
+  } else {
+    console.log(`已打 V3.1 补丁，跳过：${target}`)
+  }
   process.exit(0)
 }
 if (src.includes(MARKER_V2)) {
@@ -137,18 +151,23 @@ const DISP_RE =
 // ── 着色块（原代码形态 → 基于压缩线 effWindow 的着色）──
 const COLOR_RE =
   /if \(contextPercentValue > 90\) \{\n(\s+)contextPercentStr = theme\.fg\("error", contextPercentDisplay\);\n\s+\}\n\s+else if \(contextPercentValue > 70\) \{\n\s+contextPercentStr = theme\.fg\("warning", contextPercentDisplay\);\n\s+\}\n\s+else \{\n\s+contextPercentStr = contextPercentDisplay;\n\s+\}/
-const COLOR_V3 = `// ${MARKER_V3} 着色: 阈值基于压缩参考线 compactLine（大窗口下按窗口占比着色永不触发）；
-// 百分比显示仍为窗口占比，颜色含义为「距自动压缩参考线的进度」。
-    const colorPct = (liveTokens !== null && liveTokens !== undefined && compactLine > 0)
+const COLOR_V3 = `// Patch (patch-footer-live-context.mjs) V3.1 着色: 双指标——黄=达自动压缩参考线(256K)；红=超真实窗口 80%（溢出预警，优先级更高，超窗加!!）。
+// 显示分母仍为真实窗口；两指标口径独立（小窗口模型红会先于黄触发，自洽）。
+    const linePct = (liveTokens !== null && liveTokens !== undefined && compactLine > 0)
         ? (liveTokens / compactLine) * 100
+        : -1;
+    const winPct = (liveTokens !== null && liveTokens !== undefined && contextWindow > 0)
+        ? (liveTokens / contextWindow) * 100
         : contextPercentValue;
-    if (colorPct > 120) {
-        contextPercentStr = theme.fg("error", contextPercentDisplay + " !!");
+    if ((winPct > 80 || contextPercentValue > 90)) {
+        if (winPct > 100) {
+            contextPercentStr = theme.fg("error", contextPercentDisplay + " !!");
+        }
+        else {
+            contextPercentStr = theme.fg("error", contextPercentDisplay);
+        }
     }
-    else if (colorPct > 90) {
-        contextPercentStr = theme.fg("error", contextPercentDisplay);
-    }
-    else if (colorPct > 70) {
+    else if (linePct >= 100) {
         contextPercentStr = theme.fg("warning", contextPercentDisplay);
     }
     else {
