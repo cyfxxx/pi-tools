@@ -96,7 +96,7 @@
     },
     {
       "id": "1521d1f6-5c35-4884-b447-27953227e074",
-      "category": "reference",
+      "category": "decision",
       "title": "/ 命令精简 30→13（2026-07 重构）",
       "content": "按'保留无需模型参与的确定性命令，模型可代劳的并入/移除'原则精简扩展命令。移除: admin:status/model/session/config（内置 /model /settings /resume 替代）、auto:stats（并入 auto:status --stats）、memory:digest（自动提取）、ctx-lite:* 三命令、ping、plandiff/planqa（并入 planview --diff/--qa）。合并: loop/remind 并入 schedule 子命令; memory:search/stats/prune/summary 与 cleanup（承接 ctx-lite）统一为 /memory。保留 13 个: auto:status/auto:policy/auto:failover/auto:pause/auto:resume/admin:restart/schedule/memory/plan/planclear/planresume/planview/todos。同步更新 conflict-check.mjs、extensions.test.ts、README/SKILL.md，全量回归通过。",
       "tags": [
@@ -117,7 +117,8 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "accessedAt": "2026-08-03T12:32:10.198028+00:00"
     },
     {
       "id": "9ba77085-7fc5-4b36-98e4-17cd230462ae",
@@ -678,7 +679,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ],
@@ -1514,7 +1515,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ],
@@ -1560,7 +1561,7 @@
       "updatedAt": "2026-08-10T02:58:04.175Z",
       "accessedAt": "2026-08-10T02:58:04.175Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -1714,7 +1715,7 @@
       "updatedAt": "2026-08-10T05:59:08.973Z",
       "accessedAt": "2026-08-10T05:59:08.973Z",
       "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -1870,7 +1871,7 @@
       "updatedAt": "2026-08-10T07:05:14.776Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -1957,7 +1958,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "termux"
       ],
@@ -2070,7 +2071,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "termux"
       ],
@@ -2204,7 +2205,7 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -2273,7 +2274,7 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -2495,7 +2496,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "termux"
       ],
@@ -2541,7 +2542,7 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -2589,6 +2590,30 @@
       "environments": [
         "all"
       ]
+    },
+    {
+      "id": "ff0f9df5-a674-43cd-b0a2-d6d6ad5c69ee",
+      "category": "fact",
+      "title": "pi-voice whisper 服务为惰性启动",
+      "content": "pi-voice 扩展设计上会在转写前自动拉起 whisper 服务（127.0.0.1:18766），因此发现 whisper 服务未运行时属正常惰性启动而非故障，无需手动常驻。本次冒烟测试手动启动后 Bearer 鉴权响应正常（pid 18915），配置存在。",
+      "tags": [
+        "pi-voice",
+        "whisper",
+        "惰性启动"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-10T10:18:01.558Z",
+      "updatedAt": "2026-08-24T07:23:29.281Z",
+      "accessedAt": "2026-08-10T10:18:01.558Z",
+      "observedAt": "2026-08-10T10:18:01.558Z",
+      "deleted": true,
+      "environments": [
+        "termux"
+      ],
+      "supersededBy": "da7d8a01-6a25-4e9e-bbd0-e5b9c252e181",
+      "validUntil": "2026-08-24T07:23:29.281Z"
     },
     {
       "id": "20420458-34ed-43d9-a516-45d6aa90c142",
@@ -3002,7 +3027,7 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ]
@@ -3793,13 +3818,15 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T00:33:43.458Z",
-      "updatedAt": "2026-08-12T00:33:43.458Z",
+      "updatedAt": "2026-08-25T01:46:15.219Z",
       "accessedAt": "2026-08-12T00:33:43.458Z",
       "observedAt": "2026-08-12T00:33:43.458Z",
       "environments": [
         "wsl2"
       ],
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "0463bc57-9e84-4ac6-954d-2566bd081542",
+      "validUntil": "2026-08-25T01:46:15.219Z"
     },
     {
       "id": "1f3527a7-89fe-4caf-ba6e-342d5f4f433a",
@@ -4259,7 +4286,7 @@
       "id": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40",
       "category": "preference",
       "title": "用户指令极简",
-      "content": "用户偏好极简指令（如'重启''继续''执行'），期望助手自主完成调研、修改、验证、提交推送全流程后一次性汇报，不打断询问；问二选一问题时只答对应词不加解释；测试类指令先真实执行再讨论并如实汇报结论。重启走 wrapper 拉起流程：写 .pi-admin-state.json(action=restart) 再 SIGTERM 当前 pi，proot 实测可行（2026-08-10 实证，旧结论\"proot 无自动拉起\"已推翻）。",
+      "content": "用户偏好极简指令（如'执行翻译技能''重启'），期望助手自主完成调研、修改、验证全流程后一次性汇报结果，不打断询问。执行重启类操作前需先确认机制可行性（proot 无自动拉起）。",
       "tags": [
         "用户偏好",
         "协作风格",
@@ -4267,7 +4294,7 @@
         "user-preference",
         "workflow"
       ],
-      "confidence": 1,
+      "confidence": 0.95,
       "source": "extract",
       "recurrence": 24,
       "createdAt": "2026-08-02T08:40:02.562Z",
@@ -4431,14 +4458,16 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
+      "updatedAt": "2026-08-25T01:58:11.431Z",
       "accessedAt": "2026-08-12T14:50:07.175Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "59a7243e-b273-461a-a6fc-3e988805f861",
+      "validUntil": "2026-08-25T01:58:11.431Z"
     },
     {
       "id": "047d9ce4-be1a-497d-b4e3-97caf742466d",
@@ -4653,7 +4682,7 @@
         "termux"
       ],
       "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": true,
+      "deleted": false,
       "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
@@ -5315,7 +5344,7 @@
       "createdAt": "2026-08-13T01:09:39.603Z",
       "updatedAt": "2026-08-13T01:09:39.603Z",
       "accessedAt": "2026-08-13T01:09:39.603Z",
-      "deleted": true,
+      "deleted": false,
       "environments": [
         "all"
       ],
@@ -5327,15 +5356,14 @@
       "content": "用户明确要求记住数字 777（2025-06-13 记录）",
       "category": "fact",
       "confidence": 0.9,
+      "environment": "all",
       "observedAt": "2026-08-13T01:13:19.544Z",
       "lastAccessedAt": "2026-08-13T01:13:19.546Z",
       "references": 0,
       "supersededBy": null,
-      "deleted": true,
+      "deleted": false,
       "tags": [],
-      "environments": [
-        "all"
-      ]
+      "accessedAt": "2026-08-13T01:13:19.544Z"
     },
     {
       "id": "f59ef308-b2ec-43b8-91ff-fb1838d88ef0",
@@ -6230,7 +6258,7 @@
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
+      "deleted": false,
       "supersededBy": "e6da85b8-16e1-4f0d-ace8-9669e6535227"
     },
     {
@@ -6532,7 +6560,7 @@
         "wsl2"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "28ed324a-0d1c-4483-81dc-c99ae60237e0",
@@ -6555,7 +6583,7 @@
         "wsl2"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "fb498aca-f628-4cd6-85a6-ab7804d39659",
@@ -6938,7 +6966,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:04:21.284635Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:04:21.284635Z"
     },
     {
       "title": "便携 pi Windows 最终架构（junction 统一运行时）",
@@ -6954,7 +6983,8 @@
         "junction",
         "architecture"
       ],
-      "deleted": true
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:04:40.847Z"
     },
     {
       "id": "mem_planmode_fixhist_20260814",
@@ -6975,7 +7005,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": true
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:04.950439Z"
     },
     {
       "id": "mem_planmode_decisions_20260814",
@@ -6995,7 +7026,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:04.950439Z"
     },
     {
       "id": "mem_rebuild_merged_20260814",
@@ -7016,7 +7048,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
       "id": "mem_tsconfig_merged_20260814",
@@ -7037,7 +7070,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": true
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
       "id": "mem_planexit_confirm_20260814",
@@ -7058,7 +7092,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:08:06.333041Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:08:06.333041Z"
     },
     {
       "title": "pi-tools 仓库目录结构（deploy/ 收拢后）",
@@ -7073,7 +7108,8 @@
         "pi-tools",
         "deploy"
       ],
-      "deleted": true
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:33:24.135Z"
     },
     {
       "title": "Windows 便携 pi 最终架构（2026 重构后）",
@@ -7088,7 +7124,8 @@
         "architecture",
         "pi-portable"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "便携版扩展依赖安装：WSL npm 写 NTFS",
@@ -7103,7 +7140,8 @@
         "npm",
         "setup.ps1"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "pi-tools 仓库 deploy/ 收拢结构",
@@ -7118,7 +7156,8 @@
         "deploy",
         "structure"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "pi 会话目录 cwd 编码规则",
@@ -7133,7 +7172,8 @@
         "cross-platform",
         "cwd"
       ],
-      "deleted": true
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "WSL interop 禁用下的协作模式",
@@ -7148,7 +7188,8 @@
         "junction",
         "mklink"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "依赖检查与解压的排查教训",
@@ -7163,7 +7204,8 @@
         "dependency",
         "troubleshooting"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "Windows 便携版 pi 本体更新流程",
@@ -7178,7 +7220,8 @@
         "update",
         "npm"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "便携版扩展依赖真相与 setup 依赖段",
@@ -7193,7 +7236,8 @@
         "dependencies",
         "setup"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "Windows 可直连 GitHub，cloakbrowser 官方定制版",
@@ -7208,7 +7252,8 @@
         "chromium",
         "github"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "GitHub 镜像失效时用 npmmirror 下载 Chromium",
@@ -7223,7 +7268,8 @@
         "download",
         "cloakbrowser"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "pi 会话目录 cwd 编码与跨平台复制",
@@ -7239,7 +7285,8 @@
       ],
       "deleted": false,
       "supersededBy": "a733e0e8-cc27-459e-a88e-3c457080ad42",
-      "updatedAt": "2026-08-15T21:45:00.000Z"
+      "updatedAt": "2026-08-15T21:45:00.000Z",
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "便携版与 WSL 双环境 git 同步流程",
@@ -7254,7 +7301,8 @@
         "portable",
         "wsl"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "id": "064ee064-3d9c-4142-8e71-4ce531269d4b",
@@ -7370,7 +7418,7 @@
         "windows"
       ],
       "observedAt": "2026-08-15T01:29:49.130Z",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "ffa6f0d0-096f-4ded-b692-b506a6644226",
@@ -8043,14 +8091,16 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-15T14:52:49.701Z",
-      "updatedAt": "2026-08-15T14:52:49.701Z",
+      "updatedAt": "2026-08-25T01:46:15.733Z",
       "accessedAt": "2026-08-15T14:52:49.701Z",
       "observedAt": "2026-08-15T14:52:49.701Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "d0ff8107-6d1b-4867-bc6e-e542165c620f",
+      "validUntil": "2026-08-25T01:46:15.733Z"
     },
     {
       "id": "4ef83153-0c22-447d-9dea-813e376d3efb",
@@ -9403,6 +9453,31 @@
       "deleted": false
     },
     {
+      "id": "c2c8949c-6ccf-4511-a442-eff83488d02d",
+      "category": "fact",
+      "title": "health-alert 2026-08-21",
+      "content": "08-21 每日健康检查：最近会话 10:37（28 轮）命中率 82.1%（<90%）、断裂 4 次（>3）、浪费 1.4M tokens；10:11 会话 79.4%/2 断。当日多会话呈 A 类断裂（断前前缀 141-187K → 命中 0 → 全量重发），且每轮无工具启用/compaction 事件。已定位可疑方向：provider 侧（opencode-go 网关 → deepseek-v4-flash）缓存键按会话隔离——每用户消息轮首请求整段 0 命中、同轮内后续请求 100% 命中、与轮间间隔无关（24 秒也断）。本地已排除：pi-memory 注入块（18 轮 hash 恒定）、compaction、消息历史改写（413 条 id 无重复）。存储 0.26MB 正常。建议：向 opencode-go 反馈跨轮会话缓存键复用，或直连 deepseek API 对照实验。",
+      "tags": [
+        "health-alert",
+        "缓存断裂",
+        "A类",
+        "provider"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-22T03:20:07.370Z",
+      "updatedAt": "2026-08-24T05:58:18.911Z",
+      "accessedAt": "2026-08-22T03:20:07.370Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-22T03:20:07.370Z",
+      "deleted": true,
+      "supersededBy": "cd54ecb3-8644-4041-a410-5a7f500bbcf0",
+      "validUntil": "2026-08-24T05:58:18.911Z"
+    },
+    {
       "id": "fab3816a-2541-48fe-b657-a10a041aa64c",
       "category": "solutions",
       "title": "packs 整合包入库策略（剥离内嵌 .git，保持零注入）",
@@ -9880,7 +9955,7 @@
         "all"
       ],
       "observedAt": "2026-08-22T09:03:13.639Z",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "9d420121-c1df-4f2d-9556-c42c22b0168d",
@@ -9920,14 +9995,16 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-24T02:04:28.970Z",
-      "updatedAt": "2026-08-24T02:04:28.970Z",
+      "updatedAt": "2026-08-25T01:46:15.593Z",
       "accessedAt": "2026-08-24T02:04:28.970Z",
       "observedAt": "2026-08-24T02:04:28.970Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "598a2f17-c935-431a-945b-a0a9157c0c7a",
+      "validUntil": "2026-08-25T01:46:15.593Z"
     },
     {
       "id": "d1577909-b3de-4871-9c75-a35bf2a2b162",
@@ -10259,10 +10336,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 75,
+      "recurrence": 47,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-25T03:05:53.500Z",
-      "accessedAt": "2026-08-25T03:05:53.500Z",
+      "updatedAt": "2026-08-25T04:37:41.000Z",
+      "accessedAt": "2026-08-25T04:37:41.000Z",
       "environments": [
         "all"
       ],
@@ -10591,7 +10668,7 @@
         "all"
       ],
       "observedAt": "2026-08-24T04:10:12.706Z",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "da1fbcc7-fc25-45b9-b407-01af701b8f94",
@@ -10708,7 +10785,7 @@
         "wsl2"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "4940f7ba-ed79-4aa9-8582-43c962043b36",
@@ -10869,7 +10946,7 @@
         "wsl2"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "cccc144b-2448-4346-aa01-4a709e35cc50",
@@ -10985,7 +11062,7 @@
         "wsl2"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
-      "deleted": true
+      "deleted": false
     },
     {
       "id": "2dc7a6c7-348e-49d7-adbf-9082e3e54cb1",
@@ -11249,1231 +11326,673 @@
       "deleted": false
     },
     {
-      "id": "76145496-f2fe-4325-9b3b-bdbf73a2cadc",
-      "category": "preference",
-      "title": "用户偏好: 游戏技能整合方向（网页游戏优先）",
-      "content": "2026-08-22 用户确定游戏技能整合方向：1) 先做简单的网页游戏技能，其他复杂类型暂缓；2) 梳理现有网页游戏相关技能并整合；3) 与游戏开发相关的通用技能（引擎/素材/发布等）一并整合保留；4) 整合时保存原项目地址（上游仓库 URL），便于后续更新。执行整合时按此优先级，且勿丢弃上游引用。",
+      "id": "0463bc57-9e84-4ac6-954d-2566bd081542",
+      "category": "solutions",
+      "title": "opencode usage面板数据导出方案",
+      "content": "opencode.ai usage面板无公开导出API。导出方案：在已登录面板页Chrome控制台hook window.fetch，拦截/_server响应，解析JSON数组（id以'usg'开头），累积到window.__usageAcc，用户翻页收集后Blob导出JSON。注意：裸fetch复刻RPC会500（SolidStart私有序列化body），CLI token走RPC也500（只认浏览器cookie），只能hook页面自身请求。",
       "tags": [
-        "游戏",
-        "技能",
-        "整合",
-        "网页游戏"
+        "opencode",
+        "usage面板",
+        "数据导出",
+        "RPC"
       ],
-      "confidence": 1,
-      "source": "manual",
+      "confidence": 0.95,
+      "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-24T07:52:45.841Z",
-      "updatedAt": "2026-08-24T07:52:45.841Z",
-      "accessedAt": "2026-08-24T07:52:45.841Z",
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:58:11.143Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
-        "all"
+        "wsl2"
       ],
-      "observedAt": "2026-08-24T07:52:45.841Z",
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": true,
+      "supersededBy": "9a9da0d7-34bc-49c4-8630-537b8ef225d2",
+      "validUntil": "2026-08-25T01:58:11.143Z"
+    },
+    {
+      "id": "d0868c72-6cb1-46be-8d99-7f4cd6af70c5",
+      "category": "reference",
+      "title": "opencode usage RPC协议细节",
+      "content": "opencode面板usage数据端点为POST https://opencode.ai/_server，header X-Server-Id: bfd684bfc2e4eed05cd0b518f5e4eafd3f3376e3938abb9e536e7c03df831e5c（usage.list server reference），body为[workspaceID, 页号]，PAGE_SIZE=50，length<50即末页。CLI key（api.opencode.ai认证有效）走RPC返回500，仅浏览器登录cookie可用。记录字段含timeCreated/inputTokens/outputTokens/cacheReadTokens/cost/sessionID/keyID，时间戳为UTC ISO。",
+      "tags": [
+        "opencode",
+        "RPC协议",
+        "_server",
+        "usage"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:46:15.132Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false
     },
     {
-      "id": "1b17db54-acdb-4fe6-b743-d32e7f45e143",
+      "id": "c6aeef40-43ab-49e4-bc8c-580355adc5d9",
+      "category": "solutions",
+      "title": "SolidJS SSR网页数据提取方法",
+      "content": "浏览器'另存为网页'保存的SolidJS SSR HTML，数据内嵌在hydrate载荷$R[]数组与渲染DOM中，首屏显示'无数据'可能只是图表未聚合而列表实际有记录。提取方法：剥离<script>后用node vm执行RPC脚本段直接取$R[N]（如$R[25]）得到完整usage.list，或正则定位usage.list出现形态后解析。2026-08-24用此法从opencode面板网页提取50条usage记录。",
+      "tags": [
+        "SolidJS",
+        "SSR",
+        "数据提取",
+        "hydrate"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:46:15.132Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "991ddf9a-ca93-4f0a-89c7-9db0488e3626",
       "category": "fact",
-      "title": "exit 0 不退出 pi 主进程",
-      "content": "在 bash 工具中执行 exit 0 只退出工具的子 shell，pi 主进程仍在运行旧代码，state 文件 restart 请求不会被消费。必须对 pi 主进程 PID 发 kill -TERM，由 wrapper 完成自动重启。判断主进程方式：wrapper 托管关系或进程树。",
+      "title": "2026-08-24缓存断裂事件结论",
+      "content": "pi主会话（provider inf-go.oa-compat，session 01a03257…）2026-08-24 16:00–16:24发生7次A类缓存全断，间隔0–5min、无本地事件，每次前缀135–162K→cr≈1K，命中率86.5%（健康线97%），浪费约226万token。opencode面板记录与本地usage-stats逐条完全一致（16:24:10 in=153897 cr=9472 cost=7,007,017），双端闭合确认：请求成功计费（output>0），断裂为provider出站缓存未命中而非连接失败或本地回归。",
+      "tags": [
+        "缓存断裂",
+        "DeepSeek",
+        "opencode",
+        "usage-stats"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:46:15.132Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "a6453cc9-64e4-4087-9f58-542280da49b3",
+      "category": "reference",
+      "title": "缓存断裂判别法：账单记录定性与本地无关",
+      "content": "区分连接失败与缓存未命中：面板usage记录只要有output>0和cost即证明请求成功到达并计费，可排除断连/重试失败；断裂轮特征为cr≈0–9K（整段前缀未命中）+in全量重发+cost飙升5–7倍。归因顺序：先查本地jsonl连接事件，再查TTL逐出（DeepSeek TTL实测6–8min），最后查使用间隔与注入尾部变化；本地全部排除后才定性provider出站缓存异常。",
+      "tags": [
+        "缓存分析",
+        "诊断方法",
+        "token成本"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:58:11.225Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": true,
+      "supersededBy": "a6823f58-fa1f-44c1-9423-421279878b3a",
+      "validUntil": "2026-08-25T01:58:11.225Z"
+    },
+    {
+      "id": "598a2f17-c935-431a-945b-a0a9157c0c7a",
+      "category": "fact",
+      "title": "用户Windows环境与WSL互访路径",
+      "content": "用户Windows主机IP为192.168.124.1（WSL2可达）；Windows D盘在WSL挂载为/mnt/d，文件D:\\Desktop\\Download\\usage对应/mnt/d/Desktop/Download/usage。Chrome默认未开远程调试端口（192.168.124.1:9222无响应），WSL无法接管已登录浏览器；如需CDP桥需用户以--remote-debugging-port=9222 --user-data-dir独立profile启动新Chrome实例。",
+      "tags": [
+        "WSL2",
+        "Windows",
+        "CDP",
+        "环境"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:58:11.362Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": true,
+      "supersededBy": "e5458bce-9f19-4e56-ad06-07b617c98ef6",
+      "validUntil": "2026-08-25T01:58:11.362Z"
+    },
+    {
+      "id": "d32c1faf-4864-4cb8-ab3b-365b80925daf",
+      "category": "fact",
+      "title": "opencode面板无公开导出途径",
+      "content": "opencode.ai官方文档648页无usage/API/billing导出文档；面板为OpenAuth登录墙+SolidStart SPA；CLI仅有本地opencode stats（读本机db，2026-08-24时4个会话，非云端面板）；api.opencode.ai接受CLI token（HTTP 200）但/workspace/{id}/usage、/usage、/openapi.json、/docs均Not Found，无公开bearer端点。",
+      "tags": [
+        "opencode",
+        "API",
+        "导出",
+        "文档"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:46:15.132Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "d0ff8107-6d1b-4867-bc6e-e542165c620f",
+      "category": "fact",
+      "title": "Pi环境全量回归状态2026-08-24",
+      "content": "test-all.sh全绿（EXIT=0）：9套vitest（pi-web-search/pi-memory/pi-autopilot/pi-browser/pi-context/plan-mode/pi-tmux/pi-voice/pi-link）+tsc+subagent 63用例+注册面25+conflict-check 9项+cache-guard+10扩展发现；smoke-test.sh 8/8通过含SearXNG API(127.0.0.1:8889)、whisper转写、CloakBrowser、tmux、autopilot crontab、TUI 3补丁。测试只读执行无代码改动。",
+      "tags": [
+        "test-all",
+        "回归测试",
+        "冒烟测试",
+        "扩展"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:46:15.132Z",
+      "updatedAt": "2026-08-25T01:46:15.132Z",
+      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "observedAt": "2026-08-25T01:46:15.132Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "a4166f31-bf55-4407-a0f4-fb08678c1b4c",
+      "category": "solutions",
+      "title": "pi 启动崩溃：undici 不认 socks5h 代理 URL，改 v2ray http inbound 10809",
+      "content": "pi 启动崩溃 InvalidArgumentError UND_ERR_INVALID_ARG（undici EnvHttpProxyAgent 只接受 http/https 协议代理 URL，socks5h:// 直接抛错）的根因与修复（2026-08-24，WSL2）：~/.bashrc 的 v2ray 代理开关导出了 https_proxy=http(s) 协议要求外的 socks5h://127.0.0.1:10808；v2ray 一开 pi 启动即崩。修复：把探活端口与导出协议改为 v2ray 的 http inbound 127.0.0.1:10809（http://127.0.0.1:10809），并加注释警示勿改回 socks。v2rayN/v2ray-core 默认 socks inbound=10808、http inbound=10809。判断依据：探活 10809 开放、10808 未开放；修改后 bash -ic 子 shell 验证导出 http 代理正常。注意：curl/git 等工具支持 socks5h 变量，pi 不支持，二者需求不同时需在 pi 启动 wrapper 处 unset 而非全局改。",
       "tags": [
         "pi",
-        "重启",
-        "踩坑"
+        "启动崩溃",
+        "代理",
+        "v2ray",
+        "undici",
+        "WSL2"
       ],
       "confidence": 1,
-      "source": "extract",
+      "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-03T13:33:21.832Z",
-      "updatedAt": "2026-08-03T13:33:21.832Z",
-      "accessedAt": "2026-08-03T13:33:21.832Z",
-      "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "23397548-0cfc-4fa0-b94d-94688e6db3f9",
-      "category": "procedure",
-      "title": "pi-voice 故障排查流程",
-      "content": "排查'只能开不能关/多个录音中提示'：1) echo $TMUX $TERM 确认运行环境；2) /voice doctor 查依赖；3) 实测录音退出码与文件生成；4) pgrep 查孤儿录音进程；5) 重启 whisper 服务。核心判断：退出码 0 必须结合文件存在性判断。",
-      "tags": [
-        "pi-voice",
-        "故障排查",
-        "流程"
-      ],
-      "confidence": 0.85,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-09T12:35:28.505Z",
-      "updatedAt": "2026-08-09T12:35:28.505Z",
-      "accessedAt": "2026-08-09T12:35:28.505Z",
-      "observedAt": "2026-08-09T12:35:28.505Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ]
-    },
-    {
-      "id": "3ac532df-48ef-4cfd-a36f-279d120da90c",
-      "category": "fact",
-      "title": "plan_enter 只读工具集清单",
-      "content": "plan_enter 进入计划模式后，可用工具缩减为 read、bash、grep、glob、todo、web_search、fetch_url、subagent、plan_exit；edit/write 等写工具被禁用，会话处于只读状态。",
-      "tags": [
-        "plan-mode",
-        "plan_enter",
-        "只读"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T00:40:46.287Z",
-      "updatedAt": "2026-08-12T00:40:46.287Z",
-      "accessedAt": "2026-08-12T00:40:46.287Z",
-      "observedAt": "2026-08-12T00:40:46.287Z",
+      "createdAt": "2026-08-25T01:57:34.023Z",
+      "updatedAt": "2026-08-25T01:57:34.023Z",
+      "accessedAt": "2026-08-25T01:57:34.023Z",
       "environments": [
         "wsl2"
       ],
+      "observedAt": "2026-08-25T01:57:34.023Z",
       "deleted": false
     },
     {
-      "id": "6a4bedff-d9bb-4e7d-aee6-a4e7eddb409b",
-      "category": "fact",
-      "title": "用户 Windows 环境信息",
-      "content": "用户 Windows 机器（PowerShell，便携 pi 位于 E:\\pi-portable）：CUDA v13.2、MinGW（D:\\App_X）、Node（D:\\App_X\\Node）、uv、ollama/llama.cpp（E:\\AI_Chat）、Tailscale、Xshell/Xftp、GnuPG、CMake、usbipd-win。PATH 中无 pi，start.bat 每次打印 which 警告属正常无碍。启动便携 pi 用 .\\start.bat --continue。",
+      "id": "8416dde9-f5ac-40ca-a395-857b09beaf40",
+      "category": "solutions",
+      "title": "pi启动崩溃:socks5h代理UND_ERR_INVALID_ARG",
+      "content": "pi 启动崩溃 InvalidArgumentError: Invalid URL protocol(UND_ERR_INVALID_ARG)。根因:undici EnvHttpProxyAgent 只接受 http://或https://协议代理URL，.bashrc 里的 socks5h://127.0.0.1:10808 直接抛错。启动链:pi-wrapper.sh→tmux内bash读.bashrc→导出socks→cli.js崩。修复(2026-08-24):.bashrc 代理段探活与导出端口由 10808/socks5h 改为 10809/http(当时v2ray http inbound 10809开放、socks 10808关闭)。若v2ray http端口变化仅静默直连不崩溃。curl/git支持socks5h、pi不支持，需求冲突时优先http代理。",
       "tags": [
-        "环境",
-        "windows",
-        "便携pi"
+        "pi",
+        "代理",
+        "undici",
+        "崩溃修复",
+        "wsl2"
       ],
-      "confidence": 0.95,
+      "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-14T09:28:18.758Z",
-      "updatedAt": "2026-08-14T09:28:18.758Z",
-      "accessedAt": "2026-08-14T09:28:18.758Z",
-      "observedAt": "2026-08-14T09:28:18.758Z",
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false
     },
     {
-      "id": "248e7b98-bffb-466f-9227-58b0ec0fb69f",
-      "category": "procedure",
-      "title": "Windows 便携 pi 更新流程与已知坑（update-pi.ps1/依赖/回归）",
-      "content": "Windows 便携 pi（E:\\pi-portable）日常更新流程：1) git pull 配置仓库（仓库根=E:\\pi-portable，agent/ 为配置，.pi/agent 是 junction 指向 agent/）；2) pi 本体用 powershell -File E:\\pi-portable\\bin\\update-pi.ps1（勿用 pi 内置更新命令）；若 pi 正在运行则 npm install 会 EBUSY（clipboard DLL 被进程锁定）——版本不变时跳过重装，直接手动跑 bin/patch-*.mjs（6 个）传 dist 路径 + verify.ps1；3) 扩展依赖 agent/node_modules 缺失时用 ./node/npm.cmd install --prefix .pi/agent --registry=https://registry.npmmirror.com（rebuild.sh 在 Git Bash 下不可靠）；4) 回归 PI_HOME=/e/pi-portable bash scripts/test-all.sh，--only 参数用空格分隔扩展名非逗号。已知坑：本机无 tmux，tmux_run 会话实际不执行（日志 0 字节），长任务直接前台 bash 跑；pi-tmux core.ts launchArgs 已修（Windows 后端起命令解析，跳过命令名+flag 类型区分）。",
-      "tags": [
-        "portable",
-        "update",
-        "pi-tmux",
-        "windows",
-        "npm"
-      ],
-      "confidence": 0.9,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T01:13:22.960Z",
-      "updatedAt": "2026-08-24T01:13:22.960Z",
-      "accessedAt": "2026-08-24T01:13:22.960Z",
-      "environments": [
-        "windows"
-      ],
-      "observedAt": "2026-08-24T01:13:22.960Z",
-      "deleted": false
-    },
-    {
-      "id": "300f1db1-46d4-44d5-a3ab-ee78ab6907ea",
-      "category": "fact",
-      "title": "pi-tools 分支约定变更：portable-win 已并入 master（2026-08-24）",
-      "content": "pi-tools 仓库分支约定变更（2026-08-24）：Windows 便携专用分支 portable-win 的全部修复已并入 master（经测试分支合并 + 移植提交落地，含 pi-tmux Windows 原生后端、whisper/searxng 脱离 WSL、pi-browser 定制版适配、start.bat junction 自愈等）。远端分支 portable-win / test/portable-win-merge 已删除，本地 master 统一为唯一开发线。更新脚本同步修正：portable/bin/update-portable.ps1 的 gh-proxy clone 分支 portable-win→master；bin/sync.ps1 分支 fallback 改 master。此前记忆（2026-08-14/15）中\"便携版提交推 portable-win 禁 master\"等条目作废，现在所有环境统一推 master。",
-      "tags": [
-        "pi-tools",
-        "git",
-        "portable-win",
-        "分支约定",
-        "master"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:04:10.130Z",
-      "updatedAt": "2026-08-24T09:04:10.130Z",
-      "accessedAt": "2026-08-24T09:04:10.130Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T09:04:10.130Z",
-      "deleted": false
-    },
-    {
-      "id": "a7f51144-29cd-4b1c-82b1-0a7d80a385c7",
-      "category": "solutions",
-      "title": "entries.json 冲突合并流程",
-      "content": "pi 配置仓库 git merge 时 memory/entries.json 冲突（本地新增条目+远程改相邻格式）的标准解法：以远程版本为基准，从本地提交提取独有条目回插，用 node 校验 JSON 语法（node -e 'JSON.parse(...)'）确认合法后提交，删除冲突残留的 .corrupt 备份文件，再 push 回推保持两端一致。",
-      "tags": [
-        "git",
-        "entries.json",
-        "冲突合并",
-        "memory"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:27:25.423Z",
-      "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
-      "observedAt": "2026-08-24T09:27:25.423Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": false
-    },
-    {
-      "id": "c6d0c73d-922e-48a3-9231-5b2c238f22ce",
-      "category": "fact",
-      "title": "pi-context 压缩策略新基线 256K",
-      "content": "2026-08-22 拉取远程更新后，pi-context 自动压缩阈值上调至 256K，新增「任务完成/无后台任务/无操作」三重门才触发压缩；压力提示档位同步：75%=192K、90%=230K。涉及 auto-compact.ts、context-budget.ts、pi-tmux、cache-guard baseline 等 12 个文件，后续补丁重建需按此新基线。",
-      "tags": [
-        "pi-context",
-        "压缩策略",
-        "256K",
-        "基线"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:27:25.423Z",
-      "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
-      "observedAt": "2026-08-24T09:27:25.423Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": true
-    },
-    {
-      "id": "631684e2-6ffd-4d42-bad4-19784283b4a4",
-      "category": "fact",
-      "title": "tool-use-localhost.jsonl 未跟踪属正常",
-      "content": "memory/stats/tool-use-localhost.jsonl 是本机运行时工具统计文件（hostname 识别为 localhost），未入库（git 未跟踪）属正常状态，非更新内容，巡检时勿误判为遗漏。",
-      "tags": [
-        "memory",
-        "stats",
-        "gitignore",
-        "运行数据"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:27:25.423Z",
-      "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
-      "observedAt": "2026-08-24T09:27:25.423Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": false
-    },
-    {
-      "id": "36cdaf85-4825-48c9-95c8-da9c8817e5a5",
-      "category": "fact",
-      "title": "拉取合并后全量回归全绿",
-      "content": "2026-08-22 合并 pi-context 压缩策略修订（256K 阈值+三重门）及配套改动后，scripts/test-all.sh 全量回归全部通过：9 个扩展 vitest、根 tsc、subagent 63 用例、extensions.test.ts 25 用例、conflict-check 9 项、cache-guard 注入面契约、扩展自动发现 10 目录齐备，仓库健康无需额外处理。",
-      "tags": [
-        "回归测试",
-        "test-all",
-        "pi-context",
-        "仓库状态"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:27:25.423Z",
-      "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
-      "observedAt": "2026-08-24T09:27:25.423Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": false
-    },
-    {
-      "id": "599901e8-4f02-4fd1-a445-4ebe305791a3",
-      "category": "preference",
-      "title": "用户偏好：同步后主动提示后续动作",
-      "content": "用户处理仓库同步/更新类任务后，助手会汇总处理过程、远程引入的更新内容与遗留说明，并主动提示可执行 scripts/rebuild.sh（补丁重建）或 scripts/test-all.sh（回归）；用户说「测试一下」即指后台跑全量回归并汇报结果。",
-      "tags": [
-        "用户偏好",
-        "git同步",
-        "回归测试",
-        "汇报风格"
-      ],
-      "confidence": 0.85,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:27:25.423Z",
-      "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
-      "observedAt": "2026-08-24T09:27:25.423Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": false
-    },
-    {
-      "id": "02c252d1-04e3-4e79-b46a-0b400c200102",
-      "category": "fact",
-      "title": "pi 环境资产清单",
-      "content": "2026-08-24 确认的 pi 环境全貌：扩展 10 个（pi-autopilot/pi-browser/pi-context/pi-link/pi-memory/pi-tmux/pi-voice/pi-web-search/plan-mode/subagent）；技能 5 个（pi-backup/pi-bug-diagnosis/pi-code-review/pi-full-audit/pi-translate-zh）；技能包 6 个（comfyui-agent/colab-bridge/gamedev/dg-piagent/mattpocock-skills/reverse-skill），packs/drafts/ 为空。",
-      "tags": [
-        "pi环境",
-        "扩展",
-        "技能",
-        "清单"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T10:38:11.770Z",
-      "updatedAt": "2026-08-24T10:38:11.770Z",
-      "accessedAt": "2026-08-24T10:38:11.770Z",
-      "observedAt": "2026-08-24T10:38:11.770Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
-      "deleted": false
-    },
-    {
-      "id": "5bd05245-bf81-466f-91b4-3398a0d90755",
-      "category": "fact",
-      "title": "记忆库规模统计（2026-08-24）",
-      "content": "pi 记忆库（~/.pi/memory/）2026-08-24 时点：总条目 499（活跃 472，被取代 25），占用 0.25MB/2MB，冷数据 0；分类分布 fact 243、solutions 89、procedure 72、preference 34、reference 25、habit 9；会话摘要 5 条，时间跨度 2026-07-31~2026-08-24；备份文件 entries.json.bak-20260818 与 summaries.json.bak-20260820 各一份。",
-      "tags": [
-        "记忆库",
-        "统计",
-        "pi-memory"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T10:38:11.771Z",
-      "updatedAt": "2026-08-24T10:38:11.771Z",
-      "accessedAt": "2026-08-24T10:38:11.771Z",
-      "observedAt": "2026-08-24T10:38:11.771Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
-      "deleted": false
-    },
-    {
-      "id": "217d2ea5-e845-48d7-af32-bd6a2eff42f9",
-      "category": "preference",
-      "title": "用户用极简词探查环境",
-      "content": "用户习惯用单个极简词（如 skills、list、重启、翻译）发指令探查 pi 环境或触发操作，期望助手直接输出结构化清单或自主完成调研-修改-验证全流程后一次性汇报，不打断询问；重启类操作前需先确认机制可行性（proot 无自动拉起）。",
-      "tags": [
-        "用户偏好",
-        "指令风格"
-      ],
-      "confidence": 0.85,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T10:38:11.771Z",
-      "updatedAt": "2026-08-24T10:38:11.771Z",
-      "accessedAt": "2026-08-24T10:38:11.771Z",
-      "observedAt": "2026-08-24T10:38:11.771Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
-      "deleted": true
-    },
-    {
-      "id": "4c54c2a2-c587-4062-b92a-42dfcd7316fd",
-      "category": "solutions",
-      "title": "零LLM知识订阅脚本架构（knowledge-fetch.py v2）",
-      "content": "/root/.pi/scripts/knowledge-fetch.py v2 采用官方源直连（官方 API + RSS + 轻量 HTML 抓取），彻底弃用本地 SearXNG 搜索（依赖引擎可用性且结果质量差）。核心设计：1) SOURCES 列表按 5 个 section 组织（安全/漏洞、人工智能、科技数码、生活热点、重要新闻），每个源是独立 fetcher 函数，单源失败不影响其余；2) 标题 sha1 前16位 hash 去重，已见写 logs/knowledge/.seen.txt，增量追加写 logs/knowledge/<日期>.md；3) LOW_VALUE 正则统一过滤低价值标题（教程/百科/广告/行情/开奖等）；4) 每源默认上限 6 条（--limit 可调）；5) 零 LLM 纯抓取，20s 超时、2MB 上限；6) 接入 scheduled-tasks.json 的 daily-health-check 任务第 4 步，由 Python 而非 LLM 抓取。排查\"新闻功能未触发\"时先看 .seen.txt 是否全部命中去重、当日 md 是否为空、单源 fetch 失败静默返回 ''（fetch 函数吞异常，需手动 curl 验证源可达性）。",
-      "tags": [
-        "knowledge-fetch",
-        "rss",
-        "知识订阅",
-        "定时任务",
-        "pi-autopilot"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T11:43:32.593Z",
-      "updatedAt": "2026-08-24T11:43:32.593Z",
-      "accessedAt": "2026-08-24T11:43:32.593Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T11:43:32.593Z",
-      "deleted": false
-    },
-    {
-      "id": "21ad96de-1b06-4a7d-afd4-90fc6e61141e",
-      "category": "procedure",
-      "title": "外部技能包整合规范（novel-writing/mattpocock 实例）",
-      "content": "从 GitHub 收集外部技能包整合进 /root/.pi/packs/ 的标准流程（novel-writing 整合 3 仓库、mattpocock-skills 收纳 8 技能两个实例验证）：1) 调研：GitHub 搜索候选仓库，看 star/许可/活跃度，选 2-3 个互补的；2) 许可：取最严格许可作为整合版许可（如三仓库中 CC BY-NC-SA 4.0 最严则全包用该许可），包内 README 附来源-许可-贡献对照表；3) 平台适配：删除 Anthropic/Codex 专属字段（allowed-tools、CODEX_HOME、sync_skill_mirror）、PowerShell 脚本、作者个人蒸馏文件，frontmatter 仅留 name/description（pi 技能格式，缓存友好无时间戳）；4) 引用体系简化：上游 [REF:xxx]/[KERNEL_REF:xxx] 全局 ID 索引改为按文件名扁平引用；5) 命名平实化：去掉修辞化命名（天命/法典/铁律等）保留执行语义；6) 参数可配置：上游写死常数（字数/缓冲比/配额）收敛为\"可调参数\"表标注默认值；7) 补强工程层：新增 engineering.md（分批/事实锁/状态回证/追踪）、templates/、README（上游往往只讲初始化不讲建库迁移）；8) 脚本独立：依赖仓库内共享模块的脚本重写为无外部依赖单文件；9) 产物放入 packs/<name>/（drafts 只放草稿），README.md 表格登记。",
-      "tags": [
-        "packs",
-        "技能包",
-        "novel-writing",
-        "开源整合",
-        "skill"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T11:43:32.793Z",
-      "updatedAt": "2026-08-24T11:43:32.793Z",
-      "accessedAt": "2026-08-24T11:43:32.793Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T11:43:32.793Z",
-      "deleted": false
-    },
-    {
-      "id": "8025e01a-bdd1-414a-8861-e20a046dc78b",
-      "category": "solutions",
-      "title": "pi-voice 转写后端选择：whisper vs sherpa(SenseVoice)",
-      "content": "pi-voice 扩展两个转写后端（/voice backend 切换，默认 whisper）：whisper=通用但中文无标点/速度慢；sherpa=SenseVoice int8 模型（229MB 端侧），中文保标点含数字 ITN，RTF≈0.04 极快，中文为主场景选它。sherpa 是独立 Python 进程（pi-sherpa-server.py，端口 18768，HTTP 通信），原生模型不加载进 pi 的 Node 进程——独立进程崩溃不影响 pi，这是防崩溃关键设计。启动：python3 -m venv /opt/pi-sherpa/venv + pip install sherpa-onnx numpy（清华镜像）+ 下载 SenseVoice 模型（hf-mirror）+ ~/.pi/scripts/pi-sherpa.sh start；扩展侧 /voice backend sherpa 写入 pi-voice.json。懒加载：录音开始 prewarmStt 自动拉起服务并预载模型，消除首次等待；服务不可达时返回明确错误不阻塞 pi，/voice doctor 查两后端就绪。唤醒词：KWS 3.3M 拼音模型对弱信号/口音召回差（实测同段语音转写正确而 KWS 恒不命中，阈值/增益无效），默认 PI_SHERPA_WAKE_MODE=asr 用 ASR 通道匹配更可靠，VAD 预筛滤静音（RMS<-36dBFS 默认）。",
-      "tags": [
-        "pi-voice",
-        "sherpa",
-        "SenseVoice",
-        "语音",
-        "whisper"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T11:43:32.892Z",
-      "updatedAt": "2026-08-24T11:43:32.892Z",
-      "accessedAt": "2026-08-24T11:43:32.892Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T11:43:32.892Z",
-      "deleted": false
-    },
-    {
-      "id": "43fa80ec-94ec-4a27-a055-eee5414d64a3",
-      "category": "fact",
-      "title": "knowledge 重要新闻 拼多多Q2财报 2026-08-24",
-      "content": "拼多多发布 2026 年 Q2 财报（截至 6 月 30 日）：营收 1124 亿元，利润 272 亿元；Non-GAAP 研发投入 43 亿元，同比增长 40%。受益于\"千亿扶持\"惠商战略与平台治理体系升级，进入\"新十年高质量发展\"阶段。URL: https://www.chinanews.com.cn/cj/2026/08-24/10683373.shtml",
-      "tags": [
-        "拼多多",
-        "财报",
-        "知识订阅"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:10:01.373Z",
-      "updatedAt": "2026-08-24T12:10:01.373Z",
-      "accessedAt": "2026-08-24T12:10:01.373Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:10:01.373Z",
-      "deleted": false
-    },
-    {
-      "id": "5011d1fb-601e-459c-b5ec-05e4ccf7ceab",
+      "id": "a1e133e4-7f32-4edc-a658-ed7a1ba29ef0",
       "category": "reference",
-      "title": "knowledge 安全 Linux应急排查 2026-08-24",
-      "content": "FreeBuf 文章《Linux应急基础排查技巧》：面向安全运营/运维/应急响应人员，覆盖 Linux 服务器失陷后的排查方法：网络（连接/监听）、进程、权限维持、文件、用户、日志等维度。URL: https://www.freebuf.com/articles/system/496888.html",
+      "title": "opencode usage面板RPC导出协议",
+      "content": "opencode云端usage面板无公开导出文档(官方文档648页无usage/API/billing导出项，CLI只有读本地db的stats)。破译的RPC协议:POST https://opencode.ai/_server，header X-Server-Id(usage.list服务端reference id)+Content-Type application/json，body为[workspaceID, 页号]，每页50条，length<50为末页，按id去重。注意:body需SolidStart私有序列化，裸JSON.stringify复刻会500；CLI token作bearer也500，只能走浏览器会话。",
       "tags": [
-        "安全",
-        "Linux",
-        "应急响应",
-        "知识订阅"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:10:01.481Z",
-      "updatedAt": "2026-08-24T12:10:01.481Z",
-      "accessedAt": "2026-08-24T12:10:01.481Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:10:01.481Z",
-      "deleted": false
-    },
-    {
-      "id": "80a1d43a-0e18-4331-a358-1a006964b746",
-      "category": "fact",
-      "title": "knowledge 生活热点 12306无座票同价 2026-08-24",
-      "content": "\"无座票为何与二等座同价\"登上热搜（知乎热度 187 万）。铁路 12306 客服回应：无座票全称\"无固定座位票\"，与二等座属同一席别、同一等级，因此价格一致。网友质疑定价合理性（无座票不提供固定座位）。URL: https://www.zhihu.com/question/1942490264934528525",
-      "tags": [
-        "12306",
-        "高铁",
-        "热点",
-        "知识订阅"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:10:01.569Z",
-      "updatedAt": "2026-08-24T12:10:01.569Z",
-      "accessedAt": "2026-08-24T12:10:01.569Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:10:01.569Z",
-      "deleted": false
-    },
-    {
-      "id": "a56b7d37-6c36-4e0e-9b9c-d5d5764769bf",
-      "category": "fact",
-      "title": "knowledge 重要新闻 中约联合声明 2026-08-24",
-      "content": "8 月 24 日新华社发布《中华人民共和国和约旦哈希姆王国关于深化中约战略伙伴关系的联合声明》，两国宣布深化战略伙伴关系。URL: https://www.chinanews.com.cn/gn/2026/08-24/10683385.shtml",
-      "tags": [
-        "外交",
-        "约旦",
-        "联合声明",
-        "知识订阅"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:10:01.646Z",
-      "updatedAt": "2026-08-24T12:10:01.646Z",
-      "accessedAt": "2026-08-24T12:10:01.646Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:10:01.646Z",
-      "deleted": false
-    },
-    {
-      "id": "56705305-96c3-41c0-bbee-f0401f1a41bd",
-      "category": "fact",
-      "title": "knowledge 科技数码 零跑海外销量目标 2026-08-24",
-      "content": "零跑汽车 2026 中期业绩会：预计今年海外销量约 20 万辆，2027 年海外销量目标 35 万-40 万辆（挑战 40 万辆）。7 月全球交付量创单月新纪录（超 10 万辆级）。URL: https://www.ithome.com/0/993/717.htm",
-      "tags": [
-        "零跑",
-        "新能源车",
-        "出海",
-        "知识订阅"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:10:01.726Z",
-      "updatedAt": "2026-08-24T12:10:01.726Z",
-      "accessedAt": "2026-08-24T12:10:01.726Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:10:01.726Z",
-      "deleted": false
-    },
-    {
-      "id": "8a69a059-ef3b-400f-9a6e-ced3411cc91d",
-      "category": "procedure",
-      "title": "每日知识订阅例行流程",
-      "content": "每日后台会话执行：1) cd /root/.pi && python3 scripts/knowledge-fetch.py 2>&1 | tail -8 聚合5主题（安全/人工智能/科技数码/生活热点/重要新闻）新增；2) 无新增则直接收尾不store；3) 有新增先ls logs/knowledge/确认当日文件名再read；4) memory_search查重后精选3-5条高价值（漏洞/投毒/勒索/重大事件/时效强）逐条memory_store fact，标题「knowledge <子主题> <日期>」，content含要点+URL，环境all；5) 收尾输出分主题条数+精选清单，同时追加写入logs/knowledge/summary-<日期>.md（格式：日期/各主题条数/精选）。",
-      "tags": [
-        "知识订阅",
-        "例行任务",
-        "knowledge-fetch",
-        "pi-memory"
+        "opencode",
+        "API",
+        "reverse-engineering",
+        "RPC"
       ],
       "confidence": 1,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-24T12:16:03.384Z",
-      "updatedAt": "2026-08-24T12:16:03.384Z",
-      "accessedAt": "2026-08-24T12:16:03.384Z",
-      "observedAt": "2026-08-24T12:16:03.384Z",
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
-        "termux"
+        "wsl2"
       ],
-      "lastSessionId": "01a033ac-be6d-774b-9b91-30d0e42b48cb",
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false
     },
     {
-      "id": "d0cbdd9e-a3bb-4af6-bc60-44f06fc248da",
-      "category": "fact",
-      "title": "知识订阅渠道清单（v2 官方源直连，2026-08-24）",
-      "content": "knowledge-fetch.py v2 已从 SearXNG 搜索改为官方源直连订阅（12 源，按主题路由）。每个主题的渠道：安全与漏洞=CISA KEV JSON（官方已利用清单）+ GitHub Security Advisories API（无 token 限 60/h）+ 安全客 anquanke JSON + FreeBuf RSS；人工智能=arXiv cs.AI RSS；科技数码=TechCrunch/Ars Technica RSS+IT之家 RSS；生活热点=少数派 RSS+知乎热榜 API（target.url 换 www.zhihu.com/question/<id>）；重要新闻=中新网滚动 RSS + 新华网科技频道 HTML（日期从 URL /20xxxxxx/ 提取）。已验证不可用：BBC 系/NYT/AP/RSSHub.app（网络不通）、36kr/机器之心 rss/cnBeta（状态 200 实为反爬壳）、The Hacker News(404)/BleepingComputer(403)/CNVD(521 Cloudflare 盾)、天气 API（参数不通）。产物 logs/knowledge/<日期>.md，标题 hash 去重 .seen.txt，各源独立容错。渠道可达性会漂移，失效时按此清单排查。",
-      "tags": [
-        "knowledge",
-        "渠道",
-        "新闻订阅"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:16:42.021Z",
-      "updatedAt": "2026-08-24T12:16:42.021Z",
-      "accessedAt": "2026-08-24T12:16:42.021Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:16:42.021Z",
-      "deleted": false
-    },
-    {
-      "id": "166bc5fb-3f89-41bc-a100-ffae2728ab53",
-      "category": "fact",
-      "title": "pi-autopilot 每日任务架构重构（拆分+后台会话+通知）",
-      "content": "pi-autopilot 每日任务架构重构（2026-08-24）：原 daily-health-check 拆分为两个后台会话任务（useSubagent=true，spawn pi -p 独立进程执行）——knowledge-subscribe（cron 0 8 * * *，抓取+筛 3-5 条入库+写 logs/knowledge/summary-<日期>.md 收尾）与 daily-review（cron 5 9 * * *，整体层面轻量复检：usage-stats/会话数/memory_stats/昨日知识统计/lesson-miner，新格式写入 daily-health.log，含会话数与知识数）。扩展新能力：① Task.notifyMain——后台任务成功后将 stdout 收尾摘要注入主会话；② Task.waitForUserOnLocal——本地模型（provider/model 名匹配 ollama|vllm|llamacpp|lmstudio|local|本地|localhost|127.0.0.1，policy.ts isLocalModel）时不自动执行只注入提示；③ /schedule run <name> 手动触发（force 跳过本地提示分支）；④ 任务成功完成即后台跑 task-summarizer.mjs 沉淀经验（15min 节流戳 logs/scheduler/summarizer.last，游标幂等）。旧任务配置备份 scheduled-tasks.json.bak-20260824。端到端验证通过（2026-08-24 两任务均 success）。新代码需重启 pi 生效（旧代码下 useSubagent 链路已可用）。",
-      "tags": [
-        "pi-autopilot",
-        "调度",
-        "每日任务",
-        "架构"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:16:42.142Z",
-      "updatedAt": "2026-08-24T12:16:42.142Z",
-      "accessedAt": "2026-08-24T12:16:42.142Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T12:16:42.142Z",
-      "deleted": false
-    },
-    {
-      "id": "3dea0b56-81ed-43b2-b63a-5872e75421cb",
+      "id": "9a9da0d7-34bc-49c4-8630-537b8ef225d2",
       "category": "solutions",
-      "title": "外部技能包整合 9 步规范",
-      "content": "从 GitHub 找技能包→分析→优化→整合放入 packs/ 的流程：任务 4 将 tianming-skill、chinese-longnovel-skill、ani-book-skill 三个小说写作包整合为 packs/novel-writing（六大协议+工程化补强，许可证 CC BY-NC-SA 4.0）。满足'成功实现、可复现、有保存价值'三条的流程另写 SKILL.md 草稿至 /root/.pi/packs/drafts/。",
+      "title": "opencode面板数据导出:浏览器fetch hook方案",
+      "content": "在用户已登录的opencode usage面板页Chrome控制台(非从WSL端)做数据导出:1)覆写window.fetch拦截/_server响应，判断content-type json后clone解析，取id以usg开头的数组累积到window.__usageAcc;2)用户手动往前翻页至最早页每页触发hook;3)用Blob导出opencode-usage-full.json到浏览器下载目录放D:\\Desktop\\Download。此方案绕过5次500(SolidStart私有序列化NServerId不匹配、CLI bearer 500)，也避免开Chrome调试端口(192.168.124.1:9222探测无响应)。",
       "tags": [
-        "技能包",
-        "packs",
-        "novel-writing",
-        "整合规范"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:20:40.412Z",
-      "updatedAt": "2026-08-24T12:20:40.412Z",
-      "accessedAt": "2026-08-24T12:20:40.412Z",
-      "observedAt": "2026-08-24T12:20:40.412Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
-      "deleted": false
-    },
-    {
-      "id": "4b579ecb-afb0-45a4-911b-b9422230e843",
-      "category": "solutions",
-      "title": "knowledge-fetch.py v2 架构与排查",
-      "content": "2026-08-24 落地：零 LLM 依赖、5 大 section（安全/人工智能/科技数码/生活热点/重要新闻）、hash 去重、独立容错。起因：'自动查新闻从未触发'，排查发现知识订阅链路依赖 SearXNG 搜索不稳，渠道策略改为官方 API/RSS 直连。SKILL.md 草稿见 /root/.pi/packs/drafts/knowledge-fetch-setup.SKILL.md。",
-      "tags": [
-        "知识订阅",
-        "knowledge-fetch",
-        "RSS",
-        "API"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:20:40.413Z",
-      "updatedAt": "2026-08-24T12:20:40.413Z",
-      "accessedAt": "2026-08-24T12:20:40.413Z",
-      "observedAt": "2026-08-24T12:20:40.413Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
-      "deleted": false
-    },
-    {
-      "id": "8cd01fdc-ea9c-4d1a-8665-5d5b52b40ecd",
-      "category": "fact",
-      "title": "语音转写 whisper/sherpa 双后端",
-      "content": "pi 语音扩展（pi-voice）支持 whisper 与 sherpa 两种转写后端，2026-08-24 已启动 pi-sherpa 服务（~/.pi/scripts/pi-sherpa.sh start）并厘清两者差异。sherpa 为本地轻量后端，whisper 为原 OpenAI 开源转写后端；选型经验已入记忆。",
-      "tags": [
-        "pi-voice",
-        "sherpa",
-        "whisper",
-        "语音转写"
-      ],
-      "confidence": 0.8,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:20:40.413Z",
-      "updatedAt": "2026-08-24T12:20:40.413Z",
-      "accessedAt": "2026-08-24T12:20:40.413Z",
-      "observedAt": "2026-08-24T12:20:40.413Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
-      "deleted": false
-    },
-    {
-      "id": "6e1aed3c-8c5c-4169-82e9-46f87e3b0565",
-      "category": "fact",
-      "title": "daily-health-check 定时任务状态",
-      "content": "pi-autopilot 的每日联合任务 daily-health-check 于 2026-08-24 第 4 次成功执行（failCount=0），内容含健康数据、记忆库与知识订阅，只读为主、不打扰用户；执行时工作目录一律先 cd /root/.pi。",
-      "tags": [
-        "pi-autopilot",
-        "daily-health-check",
-        "定时任务"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:20:40.413Z",
-      "updatedAt": "2026-08-24T12:20:40.413Z",
-      "accessedAt": "2026-08-24T12:20:40.413Z",
-      "observedAt": "2026-08-24T12:20:40.413Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
-      "deleted": false
-    },
-    {
-      "id": "fdeba475-fcd9-4a95-a5aa-05f5eecebac0",
-      "category": "procedure",
-      "title": "SKILL.md 草稿写入规范",
-      "content": "对满足'成功实现、可复现、有保存价值'三条的流程，用 write 工具写草稿到 /root/.pi/packs/drafts/<短名>.SKILL.md，格式为 YAML frontmatter（name/description）+ 步骤正文，description 控制在 1-2 句且不带时间戳；除 memory_store 与写草稿外不得改动其他文件。",
-      "tags": [
-        "SKILL.md",
-        "packs/drafts",
-        "技能草稿"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:20:40.413Z",
-      "updatedAt": "2026-08-24T12:20:40.413Z",
-      "accessedAt": "2026-08-24T12:20:40.414Z",
-      "observedAt": "2026-08-24T12:20:40.414Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
-      "deleted": false
-    },
-    {
-      "id": "e88c9c4b-71c1-497e-9ea9-27bdfefd593b",
-      "category": "procedure",
-      "title": "每日整体复检流程与健康阈值",
-      "content": "每日复检在后台独立会话执行，工作目录 cd /root/.pi，只读为主防浪费 token。步骤：1) node scripts/usage-stats.mjs 看缓存健康；2) 统计 logs/task-records.jsonl 任务记录总数与近 24h 条数；3) memory_stats 看存储；4) ls logs/knowledge/ 聚合昨日知识订阅条数与主题分布；5) node scripts/lesson-miner.mjs --limit 2 轻量失败学习；6) 追加一行 ~/.pi/logs/daily-health.log（格式：时间 命中= 断裂= 存储= 会话= 知识= 结论=）；7) 详细收尾报告。alert 条件：命中<90%/断裂>3/存储>0.8MB/昨日知识任务失败，alert 时存 fact「health-alert <日期>」并调用 scripts/pi-notify.sh。",
-      "tags": [
-        "复检",
-        "健康检查",
-        "daily-health",
-        "流程"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:21:36.168Z",
-      "updatedAt": "2026-08-24T12:21:36.168Z",
-      "accessedAt": "2026-08-24T12:21:36.168Z",
-      "observedAt": "2026-08-24T12:21:36.168Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
-      "deleted": false
-    },
-    {
-      "id": "05b85a5e-b12d-40c6-9a1c-458ba0ed32c6",
-      "category": "fact",
-      "title": "2026-08-24 系统健康指标基线",
-      "content": "2026-08-24 20:14 复检基线：缓存命中 96.9%（目标 97%），断裂 1 次（A 类，provider 缓存键/模型切换类），浪费 36K tokens；历史累计 254 异常会话、661 断裂点（A×129/B×532）、浪费 101MB。任务记录 167 条（近 24h 100 条）。记忆存储 0.26MB/2MB、条目 514（活跃 489）、冷数据 0。当日知识订阅新增 14 条（重要新闻 6、科技数码 6、安全 1、生活热点 1），亮点：拼多多 Q2 财报（营收 1124 亿、研发+40%）、Linux 应急基础排查技巧。",
-      "tags": [
-        "复检",
-        "指标",
-        "缓存命中",
-        "知识订阅"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:21:36.168Z",
-      "updatedAt": "2026-08-24T12:21:36.168Z",
-      "accessedAt": "2026-08-24T12:21:36.168Z",
-      "observedAt": "2026-08-24T12:21:36.168Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
-      "deleted": false
-    },
-    {
-      "id": "74f00cee-06c5-4edb-b931-3c31a8623dee",
-      "category": "solutions",
-      "title": "知识订阅空档期判断方法",
-      "content": "知识订阅 08-21/22/23 连续三日无 md 产出，logs/knowledge/ 目录仅 08-20 与 08-24 有文件，且 scheduler 日志无对应任务记录——据此判断为任务未运行而非执行失败（失败应有报错记录）。排查方法：对照 scheduler 日志查任务记录，目录文件日期反推执行情况。遗留待办：确认知识订阅触发机制（调度/手动）是否按预期执行，避免连续空档期。",
-      "tags": [
-        "知识订阅",
-        "scheduler",
-        "排查",
-        "空档"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:21:36.168Z",
-      "updatedAt": "2026-08-24T12:21:36.168Z",
-      "accessedAt": "2026-08-24T12:21:36.168Z",
-      "observedAt": "2026-08-24T12:21:36.168Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
-      "deleted": false
-    },
-    {
-      "id": "5ed2a5ee-b367-4bab-97a5-dd6fa57f0127",
-      "category": "habit",
-      "title": "失败学习存储克制原则",
-      "content": "每日复检的失败学习环节：lesson-miner 输出若仅为断裂归因建议（如 A 类带排查方向）且属已知类别，视为无新线索，跳过 solutions 记忆存储；仅当有明显昨日异常线索时才存 ≤1 条 solutions 教训，标题格式「lesson <主题> <日期>」，环境 all。避免重复存储已知类别的低价值教训。",
-      "tags": [
-        "lesson-miner",
-        "失败学习",
+        "opencode",
+        "数据导出",
+        "浏览器",
+        "hook",
         "solutions"
       ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "a6823f58-fa1f-44c1-9423-421279878b3a",
+      "category": "fact",
+      "title": "缓存断裂归因:provider出站缓存未命中",
+      "content": "2026-08-24会话10次缓存断裂(A类7+B类3)，命中86.5%，浪费约226万token。经opencode面板出站记录核对:断裂轮(16:17/16:22/16:24/16:27等)出站记账cacheRead≈0-9K、input全量15.3万token重发、cost飙升5.3-6.6倍，与本地usage-stats逐条完全一致。结论:非连接失败(每轮都有正常output与cost)、非本地测量误差，定性为provider outbound缓存未命中/缓存键失效，集中在16:00-16:24。本地不改动，维持usage-stats监控，网关侧持续A类命中会自动告警。",
+      "tags": [
+        "opencode",
+        "缓存",
+        "usage-stats",
+        "归因"
+      ],
       "confidence": 0.9,
       "source": "extract",
       "recurrence": 1,
-      "createdAt": "2026-08-24T12:21:36.168Z",
-      "updatedAt": "2026-08-24T12:21:36.168Z",
-      "accessedAt": "2026-08-24T12:21:36.168Z",
-      "observedAt": "2026-08-24T12:21:36.168Z",
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "834600a1-da24-4fe8-9af0-f64f053e1ac4",
+      "category": "fact",
+      "title": "v2ray代理端口:10808 socks关/10809 http开",
+      "content": "WSL2环境v2ray代理:127.0.0.1:10808(socks5h)当前关闭，127.0.0.1:10809(http inbound)开放。pi只接受http代理，.bashrc代理段已改探活并导出http://127.0.0.1:10809，带勿改回socks的警示注释。curl/git等工具兼容socks5h与http。若v2ray http端口变更pi静默回直连(不崩溃)。",
+      "tags": [
+        "v2ray",
+        "代理",
+        "wsl2",
+        "环境"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "e5458bce-9f19-4e56-ad06-07b617c98ef6",
+      "category": "fact",
+      "title": "用户跨Windows传递文件经D:\\Desktop\\Download",
+      "content": "用户用Windows Chrome登录opencode等网页面板，需要把页面数据/HTML文件给我时，放在D:\\Desktop\\Download\\，WSL侧挂载为/mnt/d/Desktop/Download/。已用此通道解析过另存为网页的SolidJS SSR HTML(39.5KB)与后续下载的usage JSON。用户浏览器调试端口9222未开，无CDP直读通道。",
+      "tags": [
+        "用户环境",
+        "文件传递",
+        "windows",
+        "wsl"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "59a7243e-b273-461a-a6fc-3e988805f861",
+      "category": "fact",
+      "title": "SolidJS SSR另存网页含hydration载荷$R[]",
+      "content": "网页另存为的SolidJS SSR HTML，数据内嵌在hydrate载荷$R[]与渲染DOM中，用正则提取可见文本常拿不到数据(页面显示'无可用使用数据'是SSR首屏图表聚合问题，记录列表实际存在)。精确定位方式:用node vm执行RPC脚本段直接取$R[index]对象，如$R[25]即usage.list载荷。解析.usage.list前先grep文件中真实出现形态(如usage.list=)再定正则。",
+      "tags": [
+        "SolidJS",
+        "SSR",
+        "逆向",
+        "数据提取"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:58:10.919Z",
+      "updatedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "observedAt": "2026-08-25T01:58:10.919Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
+      "deleted": false
+    },
+    {
+      "id": "f3ae4ce3-4883-467d-b528-e2b7619b70aa",
+      "category": "procedure",
+      "title": "pi-voice autoWake 设计要点与 KWS 3.3M 模型缺陷",
+      "content": "autoWake：pi 启动即在后台跑唤醒监听，支持手动开关；配置在 pi-voice config/index.ts，逻辑在 core.ts，均需重启 pi 生效。注意：KWS 3.3M 拼音模型自身存在误检/漏检问题（实测确认），排查代码前先用换模型或调阈值交叉验证，避免把模型缺陷当代码 bug。",
+      "tags": [
+        "pi-voice",
+        "autoWake",
+        "KWS",
+        "拼音模型"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:05:00.477Z",
+      "updatedAt": "2026-08-25T02:05:00.477Z",
+      "accessedAt": "2026-08-25T02:05:00.477Z",
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
+      "observedAt": "2026-08-25T02:05:00.477Z",
       "deleted": false
     },
     {
-      "id": "1f2bb0fe-192e-4d4f-ae46-4c1acebf3f2d",
-      "category": "procedure",
-      "title": "每日例行检查设计边界：整体层面+后台独立会话+防 token 浪费",
-      "content": "每日检查（知识订阅/整体复检）的正确设计：1) 在后台独立会话执行（tmux_run），只读为主，勿改配置；2) 检查应是整体层面：缓存健康（usage-stats.mjs 命中率/断裂次数/浪费 tokens）、健康日志 alert 条件、知识订阅产出、lesson-miner 异常线索、任务记录数与存储水位（memory_stats）；3) 严禁深入探索单点问题防 token 浪费（参考值：轮 tokens ~475-486，tools 6-12 个）；4) 检查项用一条 bash 聚合命令完成（如 `node scripts/usage-stats.mjs 2>&1 | tail -6`），避免碎调用；5) 当日结论只有 ok / 异常项清单两种，异常项创建后续任务处理，不在当轮深挖。2026-08-24 实测缓存命中 96.9%、断裂 1 次 A 类、浪费 36K tokens 属正常范围。",
-      "tags": [
-        "pi维护",
-        "每日检查",
-        "token优化",
-        "例行任务"
-      ],
-      "confidence": 0.8,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T14:28:20.235Z",
-      "updatedAt": "2026-08-24T14:28:20.235Z",
-      "accessedAt": "2026-08-24T14:28:20.235Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T14:28:20.235Z",
-      "deleted": false
-    },
-    {
-      "id": "f3d19ff3-9fa8-4140-a34b-e11e3481dd9b",
-      "category": "procedure",
-      "title": "任务经验沉淀时机：任务结束后立即进行，不拖到第二天",
-      "content": "任务经验沉淀必须在任务结束的当轮/当会话立即执行，原因：1) 第二天可能开新会话（上下文丢失），也可能继续别的任务；2) 一天内可切换多个任务，事后难回溯细节。沉淀动作：用 memory_store 存 procedure/solutions 类条目；满足\"成功实现、可复现、有保存价值的长流程\"三条件的任务，额外用 write 写 SKILL.md 草稿到 /root/.pi/packs/drafts/<短名>.SKILL.md。注意：沉淀本身也要控制在低 token 消耗（只做 store/write 两项，不改其他文件）。",
-      "tags": [
-        "经验沉淀",
-        "工作流",
-        "memory_store",
-        "SKILL草稿"
-      ],
-      "confidence": 0.8,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T14:28:20.351Z",
-      "updatedAt": "2026-08-24T14:28:20.351Z",
-      "accessedAt": "2026-08-24T14:28:20.351Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T14:28:20.351Z",
-      "deleted": false
-    },
-    {
-      "id": "e3c164d4-62e8-4542-a075-0b205e4b3321",
+      "id": "0ec8100f-402a-4e81-ae28-2d2036828fa9",
       "category": "solutions",
-      "title": "定时任务连续多日无产出：先查触发机制再查脚本",
-      "content": "后台定时任务（如每日知识订阅 knowledge-fetch.py）连续多日无产出时，排查顺序：1) 先确认任务是否真的被触发运行——检查触发机制（cron/autopilot 调度/生命周期钩子）与运行日志，而不是默认脚本坏了；2026-08-24 实例：知识订阅 08-21/22/23 无产出，判断为任务未运行、需查触发机制，而非脚本本身问题；2) 触发机制确认正常后再查脚本（依赖、网络、输出路径）；3) 可对照 usage-stats.mjs 的任务记录确认当日任务是否执行。",
+      "title": "pi 启动崩溃：残留代理环境变量（socks5h 改 http）",
+      "content": ".bashrc 中 socks5h://127.0.0.1:10808 代理段曾导致 pi 启动即崩溃（出站请求打到无效代理失败）。修复：改为可用格式 http://127.0.0.1:10809 或注释清理该段。pi 启动崩溃先查 shell 注入的 HTTP(S)_PROXY/ALL_PROXY 是否指向未运行的本地端口。另：Windows 侧 github 访问依赖加速软件（代理），排查网络问题先查 hosts 文件与代理软件状态；关停加速软件可能连带影响 WSL2 内网络。",
       "tags": [
-        "定时任务",
-        "排障",
-        "知识订阅"
+        "代理",
+        "启动崩溃",
+        "bashrc",
+        "hosts"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:05:00.509Z",
+      "updatedAt": "2026-08-25T02:05:00.509Z",
+      "accessedAt": "2026-08-25T02:05:00.509Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T02:05:00.509Z",
+      "deleted": false
+    },
+    {
+      "id": "84cee90c-643a-4e19-afcd-2b413568ef5c",
+      "category": "procedure",
+      "title": "上下文剪裁与缓存命中的权衡策略",
+      "content": "剪裁历史思考/工具调用可缩短上下文但破坏前缀缓存命中；只保缓存则上下文膨胀推高费用。平衡点取决于价格比：缓存读价相对普通输入越便宜，越应保守剪裁、优先保命中（deepseek 类低价缓存模型以此为主）；剪裁只在接近压缩阈值或会话自然切分点整块执行，避免频繁小剪使每轮前缀失效。（推断性策略，非实测结论）",
+      "tags": [
+        "缓存命中",
+        "上下文剪裁",
+        "token 成本",
+        "pi-context"
       ],
       "confidence": 0.7,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-24T14:28:20.430Z",
-      "updatedAt": "2026-08-24T14:28:20.430Z",
-      "accessedAt": "2026-08-24T14:28:20.430Z",
+      "createdAt": "2026-08-25T02:05:00.538Z",
+      "updatedAt": "2026-08-25T02:05:00.538Z",
+      "accessedAt": "2026-08-25T02:05:00.538Z",
       "environments": [
         "all"
       ],
-      "observedAt": "2026-08-24T14:28:20.430Z",
+      "observedAt": "2026-08-25T02:05:00.538Z",
       "deleted": false
     },
     {
-      "id": "d76d113e-83d2-4093-b617-5761f26870a3",
-      "category": "fact",
-      "title": "恢复压缩仅看门狗触发（手动重启不压缩）",
-      "content": "pi-context 恢复压缩策略（2026-08-24 用户修正）：session_start 恢复场景的 100K 提前压缩（PI_CONTEXT_RESTART_TOKENS）仅在看门狗挂死自动重启时生效——pi-context 读取 ~/.pi/agent/.pi-admin-state.json 的顶层 action 字段，仅 action=restart_hang（watchdog.ts 写入）才压缩；手动 /auto restart（action=restart）等正常重启不压缩，交给首轮 agent_settled 常规 256K 绝对阈值+三重门限。实现：index.ts readAdminStateAction()，测试注入用 PI_CONTEXT_ADMIN_STATE 环境变量。pi-autopilot 的 consumeRestartLog 只清 restartLog 不清顶层 action，因此无读写竞态。",
+      "id": "1d60069e-320e-433a-b1b2-ffb95419cf57",
+      "category": "solutions",
+      "title": "browser-use/browser-harness 评估结论：不引入",
+      "content": "评估 browser-use/browser-harness：helpers 自增强机制对 pi 浏览器扩展无性价比，多标签并行收益不抵成本，暂不引入。日后如再评估浏览器扩展增强，先复核此结论避免重复调研。",
+      "tags": [
+        "browser-harness",
+        "评估结论",
+        "浏览器扩展"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:05:00.580Z",
+      "updatedAt": "2026-08-25T02:05:00.580Z",
+      "accessedAt": "2026-08-25T02:05:00.580Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T02:05:00.580Z",
+      "deleted": false
+    },
+    {
+      "id": "23a65e13-d59f-41c6-9742-80e0a45097f6",
+      "category": "solutions",
+      "title": "pi-voice 唤醒无反应：stdout pipe 不可靠改 wav 文件轮询",
+      "content": "症状：正常录音可转写，但唤醒监听说唤醒词统计恒为 0。根因：sherpa-onnx KWS 子进程经 stdout pipe 上报结果，在 pi 扩展沙箱下 pipe 传输不可靠，事件静默丢失。修复：wake 进程加 --file-format=wav 把检测结果落盘，扩展侧轮询读文件代替解析 stdout。修复后实测成功。注意验证前必须重启 pi（扩展代码不热载）。",
+      "tags": [
+        "pi-voice",
+        "唤醒",
+        "sherpa-onnx",
+        "stdout",
+        "文件轮询"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:05:22.131Z",
+      "updatedAt": "2026-08-25T02:05:22.131Z",
+      "accessedAt": "2026-08-25T02:05:22.131Z",
+      "environments": [
+        "termux"
+      ],
+      "observedAt": "2026-08-25T02:05:22.131Z",
+      "deleted": false
+    },
+    {
+      "id": "18b6510d-4184-47e4-85c8-c7a521b58138",
+      "category": "solutions",
+      "title": "pi 扩展加载期禁调 sendMessage（抛错桩致崩溃）",
+      "content": "pi-voice 曾在扩展加载期直接 launchWakeSession，其回调调用 ctx.sendMessage——此时 runtime 未绑定、sendMessage 为抛错桩，导致整个 pi 启动崩溃。规则：依赖 runtime 绑定后的 API（sendMessage/notify/ui 等）禁止在模块顶层或 load 回调同步触发；延后到首次用户交互或显式开关动作。启动崩溃排查先看栈是否落在扩展加载路径。",
+      "tags": [
+        "扩展生命周期",
+        "sendMessage",
+        "启动崩溃",
+        "runtime"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:05:22.160Z",
+      "updatedAt": "2026-08-25T02:05:22.160Z",
+      "accessedAt": "2026-08-25T02:05:22.160Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T02:05:22.160Z",
+      "deleted": false
+    },
+    {
+      "id": "189f8223-2b70-4232-b47b-ace64af4e4f0",
+      "category": "solutions",
+      "title": "opencode 面板用量导出：浏览器 hook fetch 翻页累积",
+      "content": "导出 opencode 面板用量数据：弃用裸 RPC 复刻（接口不稳定，_server 偶发 500），采用在已登录浏览器 console hook fetch、翻页累积响应数据的方案；不开 Chrome 9222 调试端口，由用户在自己已登录浏览器操作更安全。跨会话缓存命中监控继续用 scripts/usage-stats.mjs。",
+      "tags": [
+        "opencode",
+        "用量导出",
+        "fetch hook"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:05:22.188Z",
+      "updatedAt": "2026-08-25T02:05:22.188Z",
+      "accessedAt": "2026-08-25T02:05:22.188Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T02:05:22.188Z",
+      "deleted": false
+    },
+    {
+      "id": "d89ab815-15c2-490b-8569-a8d922e06cab",
+      "category": "procedure",
+      "title": "pi-context 自动压缩阈值与触发条件调整记录",
+      "content": "pi-context 自动压缩配置调整（用户明确决定）：压缩阈值改为 256k；触发条件合并为一个：任务已完成或阶段性完成 + 无其他后台任务 + 之后 10 分钟用户无操作，三者同时满足才执行自动压缩，避免打断活跃工作。",
       "tags": [
         "pi-context",
         "自动压缩",
-        "重启",
-        "看门狗"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T14:30:24.557Z",
-      "updatedAt": "2026-08-24T14:30:24.557Z",
-      "accessedAt": "2026-08-24T14:30:24.557Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T14:30:24.557Z",
-      "deleted": false
-    },
-    {
-      "id": "0a293a69-e190-4fbe-bf60-fb169e9e43dd",
-      "category": "solutions",
-      "title": "全项目分析会话的缓存健康基线样本",
-      "content": "2026-08-24 全项目全面分析会话实测：单轮 21 次工具调用，输入约 54K tokens 中缓存命中 53696（≈98%），模型输出仅 1590 tokens，无断裂记录。可作为「只读分析类任务」的健康基线：多工具并行批调用 + 少输出模式可把增量成本压到输出 token 量级。对比手段：node scripts/usage-stats.mjs（历史对比）与每日复检的命中率/断裂/浪费三指标；若同类任务命中率显著低于此基线或出现断裂，优先排查 system prompt 注入时间戳/精确数值等缓存污染源（见 extensions/pi-context/README.md）。",
-      "tags": [
-        "cache",
-        "性能基线",
-        "token成本",
-        "审计"
-      ],
-      "confidence": 0.85,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T15:08:48.705Z",
-      "updatedAt": "2026-08-24T15:08:48.705Z",
-      "accessedAt": "2026-08-24T15:08:48.705Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T15:08:48.705Z",
-      "deleted": false
-    },
-    {
-      "id": "8064ab20-145c-45c0-b996-0662ce179164",
-      "category": "procedure",
-      "title": "全项目分析类任务的路由与成本基线",
-      "content": "用户提出\"全面(地)分析当前项目\"类需求时的执行路径：(1) 匹配 pi-full-audit 技能触发词（全面检查/深度审计/体检等），直接建议 /skill:pi-full-audit；(2) 探索阶段将独立的 read/grep/find 合并为单轮并行调用，重读盘工作交给 subagent(scout) 隔离上下文；(3) 结论以摘要汇报，不做全文倾倒。实测成本基线（2026-08-24 会话记录）：单轮 21 次工具调用完成全项目分析，输入约 55K tokens 中缓存命中 53.7K（≈97%），输出仅 1.6K——批量并行是压低成本的关键因素。",
-      "tags": [
-        "任务路由",
-        "pi-full-audit",
-        "subagent",
-        "token成本",
-        "并行调用"
-      ],
-      "confidence": 0.8,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T15:23:31.278Z",
-      "updatedAt": "2026-08-24T15:23:31.278Z",
-      "accessedAt": "2026-08-24T15:23:31.278Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T15:23:31.278Z",
-      "deleted": false
-    },
-    {
-      "id": "f2d6cb40-4ce1-4841-8de4-d502abd1a229",
-      "category": "solutions",
-      "title": "全项目分析的单轮批量探索模式（实测高缓存命中）",
-      "content": "触发场景：用户要求\"全面的（深度）分析当前项目\"这类开放式全量调研。\n可复现做法：不进入多轮碎片化探索，在单个回合内把全部只读探查调用一次性并行批量发出（本次实例：ls/find/grep/read/bash 聚合等共 21 次调用合并为一轮），汇总后一次性输出结论。\n实测数据（2026-08-24 会话）：累计 54K tokens，其中前缀缓存命中 53696（≈99%），模型输出仅 1590 tokens，全程 1 轮完成。\n要点：探索期每多一轮对话就重算一次前缀缓存并按轮次重发上下文；批量合并是命中率接近满值的直接原因。与系统约定\"独立工具调用必须单轮批量发出\"一致，此条为该约定的量化证据。",
-      "tags": [
-        "cache",
-        "efficiency",
-        "exploration",
-        "batching"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T15:26:49.069Z",
-      "updatedAt": "2026-08-24T15:26:49.069Z",
-      "accessedAt": "2026-08-24T15:26:49.069Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T15:26:49.069Z",
-      "deleted": false
-    },
-    {
-      "id": "4064fdf3-617d-4a66-8650-4e37bd040147",
-      "category": "solutions",
-      "title": "知识订阅无产出根因: 截断先于去重（已修复）",
-      "content": "2026-08-25 全项目审计查明根因并修复：knowledge-fetch.py 原 `for ... in items[:limit]` 在去重与 LOW_VALUE 过滤之前截断——RSS 源头部条目多为已见内容时，新条目永不进入候选，表现为假性\"无新增\"（08-21~23 连续三日无产出并非任务未运行，08-24 有产出是因源头部恰好有新条目）。修复：截断条件移入循环尾部（added >= limit 时 break），去重/过滤先行。此前\"任务未运行需查触发机制\"的判断不准确；scheduled-tasks.json 显示任务 08-24 success 正常触发。",
-      "tags": [
-        "knowledge-fetch",
-        "知识订阅",
-        "审计",
-        "根因"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T16:23:01.514Z",
-      "updatedAt": "2026-08-24T16:23:01.514Z",
-      "accessedAt": "2026-08-24T16:23:01.514Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T16:23:01.514Z",
-      "deleted": false
-    },
-    {
-      "id": "73d4ec28-cf0e-492d-8af3-d08a3d3645e5",
-      "category": "solutions",
-      "title": "调度任务零输出与空转异常的识别信号",
-      "content": "从 [Scheduler] 任务记录识别两类异常：信号① 某轮 tools>0 且 out=0 —— 工具执行了但没有文本产出，疑似静默失败或结果被丢弃（案例：2026-08-24 dup-name 任务首轮 10 次调用/0 输出，成败不明，需人工查日志）；信号② 连续多轮 tools=0 且 hit 很高（如 250000）而 out=0 —— 纯空转轮次，白烧上下文预算（keep/dup-name 两任务各有约 6 轮如此，合计浪费可观）。改进方向：autopilot 调度任务可加\"连续 N 轮无输出即提前结束\"护栏；经验沉淀的上游生成记录时应附带一句任务摘要，否则下游无法判断成败、沉淀只能停留在元层面。",
-      "tags": [
-        "pi-autopilot",
-        "scheduler",
-        "异常检测",
-        "token 浪费"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T23:35:05.937Z",
-      "updatedAt": "2026-08-24T23:35:05.937Z",
-      "accessedAt": "2026-08-24T23:35:05.937Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T23:35:05.937Z",
-      "deleted": false
-    },
-    {
-      "id": "43596fda-ba62-4e0c-8b8f-42559be128b8",
-      "category": "procedure",
-      "title": "[Scheduler] 任务记录格式与沉淀解读流程",
-      "content": "经验沉淀工作流收到的调度任务记录格式为 `[Scheduler] <任务名>: p`（后缀 \"p\" 含义未确认），每轮字段：tools=当轮工具调用数、hit=缓存命中 tokens、out=输出 tokens。解读规则：心跳/巡检类任务名（如 keep）低 tools 低 out 属正常形态，判\"已执行\"即可；业务类任务名（如 dup-name、check-*）应出现非零 out，若 tools>0 而 out=0 视为异常转 solutions 流程；连续多轮 hit 高但 out=0 为空转。任务记录无正文时不得虚构完成情况，如实标注信息不足。",
-      "tags": [
-        "经验沉淀",
-        "scheduler",
-        "日志解读",
-        "pi-autopilot"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T23:35:16.895Z",
-      "updatedAt": "2026-08-24T23:35:16.895Z",
-      "accessedAt": "2026-08-24T23:35:16.895Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T23:35:16.895Z",
-      "deleted": false
-    },
-    {
-      "id": "5b2de145-a34a-4241-a017-5a1fe9353716",
-      "category": "solutions",
-      "title": "调度会话轮级 token 记录解读：首轮 miss 正常、空轮近零成本",
-      "content": "Scheduler 新建会话首轮 hit=0 属正常——独立前缀不继承旧缓存，即使当轮批量调用多个工具（实测 tools=10 hit=0 out=0）任务照常执行完；上下文稳定后会出现单轮 250K 级大块命中；中间大量空轮（tools=0 hit=0 out=0）成本近零。分析 usage-stats / 轮级记录时勿把调度会话首轮 miss 误判为缓存故障，其高累计 token 主要来自少数大命中轮而非逐轮消耗。",
-      "tags": [
-        "cache",
-        "usage-stats",
-        "scheduler",
-        "pi-context"
-      ],
-      "confidence": 0.8,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T23:38:08.871Z",
-      "updatedAt": "2026-08-24T23:38:08.871Z",
-      "accessedAt": "2026-08-24T23:38:08.871Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T23:38:08.871Z",
-      "deleted": false
-    },
-    {
-      "id": "a7f26ba1-1d47-496d-b75b-f1b66c4e2ed7",
-      "category": "fact",
-      "title": "pi-autopilot Scheduler 会话 keep/dup-name 标记含义",
-      "content": "调度触发的会话记录带 [Scheduler] 前缀决策标记：\"keep: <名>\" 表示该定时任务通过重名检查、正常保留执行；\"dup-name: <名>\" 表示检测到与其他任务重名、按去重策略处理（推断为拒绝重复执行，未读源码确认）。排查\"定时任务没跑\"时先查会话记录里是否出现 dup-name 标记。",
-      "tags": [
-        "pi-autopilot",
-        "scheduler",
-        "usage-stats"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T23:38:21.983Z",
-      "updatedAt": "2026-08-24T23:38:21.983Z",
-      "accessedAt": "2026-08-24T23:38:21.983Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T23:38:21.983Z",
-      "deleted": false
-    },
-    {
-      "id": "c366b21c-3cfa-4d18-8922-f25b32af0ab8",
-      "category": "solutions",
-      "title": "单轮批量探索模式在 123K 长上下文验证",
-      "content": "复现数据（08-24 会话，3 轮）：用户极简指令\"继续\"，单个回合内 21 次并行批量工具调用完成全部探索/执行工作；累计上下文约 123K，cache hit=123392（近全量命中），输出仅 1421 tokens，无报错。首尾两轮零工具调用不影响前缀缓存连续性。结论：单轮并行批量探索模式的近全量缓存命中在 >100K 长上下文依然成立（此前仅在 54K 规模验证过），可作为大型审计/分析任务的默认执行形态；配合极简指令无需中间确认轮。",
-      "tags": [
-        "token效率",
-        "缓存命中",
-        "批量调用",
-        "长上下文"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T23:55:35.164Z",
-      "updatedAt": "2026-08-24T23:55:35.164Z",
-      "accessedAt": "2026-08-24T23:55:35.164Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T23:55:35.164Z",
-      "deleted": false
-    },
-    {
-      "id": "afa4e57d-49be-4633-a94d-2b90f1aec5a4",
-      "category": "solutions",
-      "title": "会话巡检：tools=0 多轮大会话判空转",
-      "content": "会话记录健康巡检判据：某会话 39 轮全部 tools=0 且 out=0（仅一轮 hit=250000），累计高达 1845K tokens。「多轮零工具调用 + 高 token 累计」是空转/纯注入型会话的典型特征，无实际产出。pi-full-audit 做运行健康巡检时按此模式识别，标记为低价值/异常会话，不计入有效工作量统计。",
-      "tags": [
-        "会话巡检",
-        "usage-stats",
-        "健康检查"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T01:23:56.671Z",
-      "updatedAt": "2026-08-25T01:23:56.671Z",
-      "accessedAt": "2026-08-25T01:23:56.671Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-25T01:23:56.671Z",
-      "deleted": false
-    },
-    {
-      "id": "e8784b63-84f8-4ae2-ad84-10475ead9365",
-      "category": "solutions",
-      "title": "单轮批量探索再验证：架构分析与文档巡检适用",
-      "content": "2026-08-25 两个只读调研任务复验「单轮并行批量探索」模式：① 10 个扩展架构/功能/实现分析 = 1 轮 5 个工具调用，缓存命中 53.4K/54K tokens；② 扩展文档时效检查 + 整体/细节优化点分析 = 1 轮 6 个调用，命中 60.6K/66K。两例命中率约 99%，输出 2-4K。要点：把全部独立的 read/grep/find 合并进同一个助手轮次一次性发出，适用于架构分析、文档巡检等任意只读调研任务，比逐条调用省约一个数量级 token。",
-      "tags": [
-        "token优化",
-        "缓存命中",
-        "批量探索"
-      ],
-      "confidence": 0.95,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T01:23:56.791Z",
-      "updatedAt": "2026-08-25T01:23:56.791Z",
-      "accessedAt": "2026-08-25T01:23:56.791Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-25T01:23:56.791Z",
-      "deleted": false
-    },
-    {
-      "id": "a0263a20-2675-44ea-a33a-f02edd8bf8ae",
-      "category": "solutions",
-      "title": "DeepSeek Harness 上下文管理对比分析（2026-08-25）",
-      "content": "对 /tmp/deepseek-harness 的 packages/compaction + packages/context 及 6 篇架构笔记完成 scout 分析，与 pi-context 对照。dsh 核心机制：①压缩触发在 agent/pre-step（after-call，不杀当前工作流；pi 用 agent_settled+ctx.compact() 会 abort）②阈值 0.8×路由容量、retainRatio=0.16 尾部预算、per-model 覆盖 ③溢出兜底 CONTEXT_WINDOW_EXCEEDED→剪枝+平衡区间摘要+代际证明有界重试(maxOverflowRetries=1) ④摘要调用逐字节重放暖前缀(system+tools+被遮蔽消息)+尾部 user 指令→KV 缓存复用（bug-fix 笔记关键设计）⑤tokenMeter 重放 fold：provider usage 仅当封套精确匹配锚点才复用，否则 4字符/token 启发式重定价 ⑥工具结果剪枝仅在压力触发后生效(8192 chars, head4096+tail1024)，原文留 append-only 日志 ⑦注入统一 inject()→持久 UserMessage(\"付一次钱\"不变量)。pi 借鉴排序：1.摘要调用暖前缀复用形状（需动内核/上游 issue，价值最高）；2.压缩收敛校验——session_compact 后实测前后 tokens 异常告警（低成本低垂果实）；3.retainRatio 尾部保留量观测；4.逐轮封套指纹近似 usage 锚点；5.refreshIntervalMs 周期注入模式。pi 已更优：CJK 感知估算、写入时截断常开、usage-diag 可观测闭环、交互四重门控。完整报告见当日会话。",
-      "tags": [
-        "deepseek-harness",
-        "pi-context",
-        "compaction",
-        "前缀缓存",
-        "对比分析"
+        "阈值",
+        "配置决策"
       ],
       "confidence": 0.9,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-25T01:43:19.567Z",
-      "updatedAt": "2026-08-25T01:43:19.568Z",
-      "accessedAt": "2026-08-25T01:43:19.568Z",
+      "createdAt": "2026-08-25T02:05:22.217Z",
+      "updatedAt": "2026-08-25T02:05:22.217Z",
+      "accessedAt": "2026-08-25T02:05:22.217Z",
       "environments": [
         "all"
       ],
-      "deleted": false,
-      "observedAt": "2026-08-25T01:43:19.567Z"
+      "observedAt": "2026-08-25T02:05:22.217Z",
+      "deleted": false
     },
     {
-      "id": "368d2845-2938-4dda-b0e3-04fdb00d688f",
+      "id": "651e920a-7c12-4438-a72a-7af04a10bbf7",
       "category": "solutions",
-      "title": "长期记忆库全量审查优化:单轮批量模式",
-      "content": "任务「检查整个长期记忆内容、分析过时条目并优化」的最省 token 做法是单回合批量并行执行：先 memory_stats 总览规模与类别分布，再并行发多个 memory_search（按关键词+category 组合）枚举全部条目，集中判定过时/冲突项后收尾——过时内容用 memory_store 以同标题更新触发自动去重合并（勿删除重建），废弃条目用 memory_forget 按 id 精确删或 category+olderThan 批删。实测（2026-08-25）：1 回合 27 次工具调用完成全库审查优化，累计 102K tokens，前缀缓存命中 101312（≈99%），零报错。该模式与既有「单轮批量探索」结论互相印证：批量并行检索比逐条串行省一个数量级 token。",
+      "title": "ComfyUI 多目录模型布局与 colab 使用边界",
+      "content": "ComfyUI 可识别多个目录，分别对应不同格式模型（checkpoints/loras/vae/upscale_models 等），排查\"模型找不到\"时勿只查 checkpoints 目录。测试生成用低分辨率缩短耗时。colab 定位仅限代码测试与微调训练：图像/视频模型体积大，上传存放不现实；视频模型本地可直接生成，无需 colab。packs 合并决策：skill-store 已并入 packs 统一管理。",
       "tags": [
-        "memory",
-        "批量探索",
-        "token优化",
-        "记忆维护"
+        "comfyui",
+        "colab",
+        "模型目录",
+        "packs"
       ],
       "confidence": 0.9,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-25T02:49:31.074Z",
-      "updatedAt": "2026-08-25T02:49:31.074Z",
-      "accessedAt": "2026-08-25T02:49:31.074Z",
+      "createdAt": "2026-08-25T02:05:34.738Z",
+      "updatedAt": "2026-08-25T02:05:34.738Z",
+      "accessedAt": "2026-08-25T02:05:34.738Z",
       "environments": [
         "all"
       ],
-      "observedAt": "2026-08-25T02:49:31.074Z",
+      "observedAt": "2026-08-25T02:05:34.738Z",
       "deleted": false
     },
     {
-      "id": "e57412f8-25e6-4e2e-b0ce-03e9ab4eacee",
-      "category": "solutions",
-      "title": "每日任务丢失根因: scheduled-tasks 多写者全量覆盖",
-      "content": "现象（2026-08-25 实测定位）：08-24 建的 knowledge-subscribe/daily-review 每日任务次日从 agent/scheduled-tasks.json 消失，只剩 keep/dup-name 测试残留。\n\n根因：该文件有三个全量覆盖写者——①主会话 autopilot（30s tick/finalizeInjected 推 nextRun 即写）②summarizer 后台会话的 autopilot 实例（后台 pi 也加载扩展、也跑 tick）③pi-cron.sh headless（crontab 每分钟，bash+python 全量重写）。任一方持旧内存态 writeTasks 全量重写即抹掉其它写者刚建的任务；keep 每 5m 触发使覆盖高频发生。\n\n修复：storage.ts writeTasks 写前重读合并（磁盘活跃任务快照没有的补回，excludeIds 墓碑防删除复活，skipMerge 供 import 等全量替换）；deleteTask/once 移除传墓碑；Task.deleted?: 软删字段 + listTasks 过滤；pi-cron.sh 回写前同步合并。\n\n排查要点：任务丢失先查文件 mtime 与三个写者的写时机（stat -c '%y'），不要先怀疑任务没建成。",
+      "id": "976c2c74-3fbd-4458-9d44-96dd57ea096a",
+      "category": "procedure",
+      "title": "rebuild 残留 node_modules 清理流程（统一根架构）",
+      "content": "rebuild.sh 验证阶段警告\"extensions/*/node_modules 残留真实依赖（统一根架构下应清理回 agent/node_modules）\"时的标准处理：\n1. 确认性质：残留目录内无 @earendil-works/ symlink（核心包靠 Node 向上寻径从 pi 安装目录解析），纯第三方依赖副本即旧架构遗留，可安全删\n2. 先跑基线：bash scripts/test-all.sh --fast（tmux 后台）\n3. 清理：cd /root/.pi/agent && rm -rf extensions/*/node_modules（单次释放约 670MB）\n4. 复测 --fast 对比，全绿即完成\n2026-08-25 WSL2 实测：9 个扩展清理后 vitest+tsc 全绿，pi-voice 测试反而恢复出现（残留可能干扰其解析）。",
       "tags": [
-        "pi-autopilot",
-        "scheduled-tasks",
-        "多写者竞态",
-        "根因"
+        "rebuild",
+        "node_modules",
+        "统一根架构",
+        "清理",
+        "WSL2"
       ],
       "confidence": 0.7,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-25T03:07:05.063Z",
-      "updatedAt": "2026-08-25T03:07:05.063Z",
-      "accessedAt": "2026-08-25T03:07:05.063Z",
+      "createdAt": "2026-08-25T02:05:49.088Z",
+      "updatedAt": "2026-08-25T02:05:49.088Z",
+      "accessedAt": "2026-08-25T02:05:49.088Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-25T02:05:49.088Z",
+      "deleted": false
+    },
+    {
+      "id": "c1937dd0-b3b7-437d-af7e-b0106fc85441",
+      "category": "solutions",
+      "title": "空转高耗会话的识别与处置",
+      "content": "基于会话遥测特征识别\"空转高耗\"会话：轮数很多（例：60 轮）但绝大多数轮 tools=0 且 out=0，仅个别轮出现巨量缓存命中（25 万 token 级），累计消耗达数百万 token（例：2621K）却几乎零产出。此类会话多为模型反复生成但不产生有效工具动作/输出的上下文膨胀空转。处置：(1) 运行中发现该模式应尽早 ctx.abort() 中止，勿放任继续烧 token；(2) 事后可用 usage-stats / 会话遥测按「tools=0 且 out=0 的轮占比 + 累计 token」筛查同类会话；(3) 注意区分：正常待命轮也会 tools=0，需结合累计 token 量级判断。来源：2026-08-25 任务1 遥测（60 轮 / 2621K tokens / 仅 1 轮 hit=250000）。",
+      "tags": [
+        "会话健康",
+        "token消耗",
+        "usage-stats",
+        "abort",
+        "遥测"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T03:56:22.854Z",
+      "updatedAt": "2026-08-25T03:56:22.854Z",
+      "accessedAt": "2026-08-25T03:56:22.854Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T03:56:22.854Z",
+      "deleted": false
+    },
+    {
+      "id": "08dcd96a-b420-427e-93e7-2a26cd9880d6",
+      "category": "procedure",
+      "title": "单轮批量化全项目速览法",
+      "content": "对整个配置仓库（如 ~/.pi）做结构摸底时，可将全部独立的只读探查（ls 列目录、find 找文件、grep 搜关键配置、read 关键文件）合并到同一个会话轮内并行发出，实测单轮 35 个工具调用即可完成整体分析，输入约 50K tokens、汇总输出约 2K tokens。要点：(1) 只合并相互独立的调用，有依赖的留到下一轮；(2) 探查类命令优先合并成一条 bash（; 连接）减少调用数；(3) 结论一次性汇总，不做逐文件流水账。适用：结构摸底、配置盘点。不适用：需要深度审查/回归测试的全项目审计——那类走 pi-full-audit 技能。",
+      "tags": [
+        "执行效率",
+        "并行调用",
+        "项目分析",
+        "bash"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T03:56:22.889Z",
+      "updatedAt": "2026-08-25T03:56:22.889Z",
+      "accessedAt": "2026-08-25T03:56:22.889Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T03:56:22.889Z",
+      "deleted": false
     }
   ]
 }
