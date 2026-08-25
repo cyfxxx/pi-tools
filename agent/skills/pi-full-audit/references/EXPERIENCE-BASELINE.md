@@ -29,3 +29,15 @@
 - **tmux 派生子进程可能不带 PI_SESSION_ID 等 env**：依赖该 env 的代码路径，测试若要走"有值"分支必须显式 set 环境变量，否则 tmux 运行与本地 bash 行为不一致（本案例：后台任务门 owner 缺省→宽容放行→断言 flaky）。用 `PI_SESSION_ID=` 清空模拟验证「无 env 分支」，两方向都测。
 - **vi.mock('node:child_process')**：整模块 mock 需在 beforeEach 复位（mockReset），且 mockReturnValue 属性（status/stdout/error）要齐全，缺 error 键时 `r.error` 为 undefined 视为成功——两方向断言都覆盖。
 - 产品自洽性：pi-tmux 写 owner 与 pi-context 读 owner 同进程同 env，缺省时两边同时缺（宽容放行）不会误判；测试环境单边缺才会 flaky。
+
+### 2026-08-25 全项目审计 + 修复闭环（35 条建议全量复核）
+- **并行会话同仓 git 冲突是最大风险源**：审计中途远端出现另一环境/并行会话的 3 个新提交（含 cache-guard 基线更新），pull --rebase 撞出 entries.json 冲突——根因是首个提交混入了之前已 staged 的 memory 文件（git add 只加 agent/ scripts/ 不会清掉 index 里既有的 staged 内容）。**提交前必查 `git status` 的 staged 区**，或提交前 `git reset -q` 清空 index 再精确 add。
+- **rebase 冲突后的干净恢复路径**：abort → `reset --soft origin/master` → `reset -q`（unstage 全部）→ 按"我的清单"逐文件 add。soft reset 后 status 会把「本机落后于远端的文件」和「并行会话进行中改动」都显示为 M——**逐个看 diff 方向**：工作区比远端新=进行中工作勿动；比远端旧=落后可 checkout 远端版。
+- **cache-guard 基线在多会话下会被互相覆盖**：我 --update-baseline 固化后 checkout 远端 baseline 又把我的指纹覆盖掉，重跑报 3 项漂移。正确顺序：先对齐 AGENTS.md 到远端版 → 再基于当前树 --update-baseline → 验证 ✓ → 一并提交。
+- **复核子代理修正审查描述的价值实证**：H1 "仅 9 内置工具、memory 工具全丢" 被复核修正为 "12 项含 memory_search/recall/ctx_note，真正丢失的是 tmux_*/autopilot/admin/browser/memory_store"——不影响 HIGH 定级但修复描述与测试断言必须按修正后事实写，否则注释与实现再度脱节。
+- **worker 新测试文件的 tsc 类型坑**：vi.fn() 无泛型时类型为宽型 Mock<Procedure|Constructable>，传给带签名的形参报 TS2345；runTmux.mock 直接访问报 TS2339——统一 `vi.fn<(text: string) => Promise<void>>()` 泛型 + `vi.mocked(fn).mock` 访问。主会话收尾必须跑 tsc（test-all 含 tsc 但定位到文件更快）。
+- **新测试用例间的状态污染**：共享 TEST_DIR 的套件里，新用例留下的 pendingInject 标记/.corrupt 文件会让后续既有用例失败——新用例结尾自清理（clearAllPending()/删 .corrupt-*）；写 tasks 文件用 TASKS_FILE 实际常量名（scheduled-tasks.json）而非臆测名。
+- **scrubSecrets 返回 string 与 writeJSONAtomic(data: unknown) 组合陷阱**：writeJSONAtomic 内部 JSON.stringify，传 scrub 后字符串会二次 stringify 成带引号文本——需手动 tmp+rename 写 scrub 后字符串。
+- **session_compact 仅成功路径 emit**（宿主 dist 两处 emit 均在 appendCompaction 之后，cancel/abort 不 emit）：把"压缩完成"类标记从 session_before_compact 移到 session_compact 是通用修复模式，宿主行为已核实。
+- **worker 报告的 git status 描述会互相误指**：3 个 worker 并行改同一仓库，彼此把对方改动当成"工作区已有内容"——抽查 diff 时以文件路径归属判断，不采信 worker 对非自身文件的观察。
+- **push 被拒后 stash -u 有副作用**：会把未跟踪目录（packs/drafts 草稿）一并收走，pop 失败（needs merge）后这些文件滞留 stash——恢复用 `git show stash@{0}^3:<path>` 精确取回；已跟踪文件的 D 状态从 origin/master checkout 恢复。

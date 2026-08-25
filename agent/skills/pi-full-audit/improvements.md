@@ -10,3 +10,8 @@
 # 已合并（保留最近 3 条）
 
 - （空）
+
+## 2026-08-25 全项目审计 + 修复闭环
+- [证据] 第 6 步修复闭环未预警「多会话并行同仓」场景：本次远端中途出现 3 个外部提交 + 工作区存在并行会话进行中改动（types.ts/pi-cron.sh/.gitignore），首个提交混入 staged memory 文件导致 rebase 冲突。建议第 6 步提交前增加「检查 staged 区残留 + pull --rebase 前确认工作区归属」步骤。
+- [证据] 复核子代理对 HIGH 条目的描述修正（NORMAL_MODE_TOOLS 实为 12 项）说明审查 prompt 应要求 scout 对「工具/文件清单类断言」先 cat 实际定义再写结论，减少复核修正成本。
+- [证据] worker 分组按文件边界执行良好（无冲突），但 worker 新建测试文件的 tsc 类型错误（vi.fn 泛型/vi.mocked 访问）需主会话兜底修复——worker prompt 的输出约束可加「tsc -p tsconfig.local.json 无新增报错」自检要求。
