@@ -26,9 +26,12 @@ describe('tool-groups: 分层完整性', () => {
     expect(new Set(all).size).toBe(all.length) // 无重复
     expect(SLEEPING_TOOL_SET.size).toBe(all.length)
     // 关键低频工具都在休眠组
-    for (const t of ['admin_set_config', 'admin_restart', 'autopilot_status', 'schedule_task', 'browser_navigate', 'link_send']) {
+    for (const t of ['admin_set_config', 'admin_status', 'autopilot_status', 'schedule_task', 'browser_navigate', 'link_send']) {
       expect(SLEEPING_TOOL_SET.has(t)).toBe(true)
     }
+    // 高频单工具常驻：admin_restart 重启高频且 schema 极小，不进休眠组
+    expect(CORE_TOOLS).toContain('admin_restart')
+    expect(SLEEPING_TOOL_SET.has('admin_restart')).toBe(false)
   })
 })
 

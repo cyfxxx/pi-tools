@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 /**
  * @target-version 0.84
- * patch-footer-live-context.mjs — footer 实时上下文 token 显示补丁（幂等，V2）。
+ * patch-footer-live-context.mjs — footer 实时上下文 token 显示补丁（幂等，V3）。
  *
  * 背景：pi footer 的 `↑↓RW$` 统计整个会话文件的累计消耗（含已压缩历史与
  * compaction 摘要 usage），压缩后数值不变，易误解为"显示坏了"。
  * V1 把实时上下文 token 数并入 context 显示：`34.5k/1M (3.4%) (auto)`。
  *
- * V2（2026-08-24 审计修复）：分母与百分比改为**压缩临界窗口**
- * `effWindow = min(contextWindow, PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K)`——
- * 1M 窗口下原显示 `34.5k/1M (3.4%)` 读起来"还很空"，实际 256K 参考线已用 13%；
- * V2 显示 `34.5k/256k (13.5%)`，直观反映距自动压缩的距离。
- * 注意：该分母是压缩条件之一的参考线（普通压缩还受三重门限约束），非硬上限；
- * 仅模型真实窗口溢出才强制压缩。
+ * V2（2026-08-24）：分母改为压缩临界 min(窗口, 256K)——后被否决：压缩条件之一
+ * 冒充窗口显示会造成误会（用户反馈 2026-08-25）。
+ * V3（现行）：分母/百分比恒为真实 contextWindow；压缩参考线仅用于着色预警
+ * （大窗口下按窗口占比着色永不触发的问题由「按参考线着色」解决，达线黄/超线红）。
  * 着色阈值同步改为基于压缩线（1M 窗口下旧逻辑 >70%×1M 永不触发，黄/红失效），
  * 超过参考线（>100%）追加 " !!" 标记。
  * 压缩后 contextUsage.tokens 为 null，保持 `?/256k (auto)`。
@@ -36,6 +34,7 @@ import { execFileSync } from 'node:child_process'
 
 const MARKER_V1 = 'Patch (patch-footer-live-context.mjs)'
 const MARKER_V2 = 'Patch (patch-footer-live-context.mjs) V2'
+const MARKER_V3 = 'Patch (patch-footer-live-context.mjs) V3'
 // dry-run 校验模式（verify-patches.mjs 调用）：只做模式命中检测，不写盘
 const DRY_RUN = process.env.PATCH_DRY_RUN === '1'
 
@@ -80,19 +79,36 @@ if (!existsSync(target)) {
 }
 
 const src = readFileSync(target, 'utf-8')
+if (src.includes(MARKER_V3)) {
+  console.log(`已打 V3 补丁，跳过：${target}`)
+  process.exit(0)
+}
 if (src.includes(MARKER_V2)) {
-  // 2026-08-25 修正：08-24 压缩策略修订 200K→256K 时本补丁 fallback 漏同步，
-  // 导致 footer 显示 /200k 而 pi-context 实际压缩线为 256K——对旧 V2 就地改值
-  if (src.includes(': 200000;')) {
-    const fixed = src
-      .replaceAll('PI_CONTEXT_ABSOLUTE_TOKENS 默认 200K', 'PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K')
-      .replaceAll('实际 200K 线已用 17%', '实际 256K 线已用 13%')
-      .replaceAll(': 200000;', ': 256000;')
-    if (!DRY_RUN) writeFileSync(target, fixed, 'utf-8')
-    console.log(`V2 fallback 已修正 200K→256K：${target}`)
-  } else {
-    console.log(`已打 V2 补丁，跳过：${target}`)
+  // V2→V3 升级（2026-08-25 用户反馈）：压缩线不是上下文窗口，分母显示 256k 会误导——
+  // 分母/百分比回归真实 contextWindow；压缩参考线仅用于着色预警（普通压缩受三重门限约束，达线≠必然压缩）。
+  // 兼容更老的 200K 版本：先归一数字再结构替换。
+  let fixed = src
+    .replaceAll(': 200000;', ': 256000;')
+    .replaceAll('PI_CONTEXT_ABSOLUTE_TOKENS 默认 200K', 'PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K')
+    .replace(
+      /\/\/ Patch \(patch-footer-live-context\.mjs\) V2:[\s\S]*?累计口径不受影响。\n/,
+      `// Patch (patch-footer-live-context.mjs) V3: 实时上下文显示——分母恒为真实上下文窗口（压缩线不是窗口，显示 x/256k 会误导）。\n// 自动压缩参考线 PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K 仅用于着色预警：达线黄、超线红+!!（普通压缩受完成/后台/空闲三重门限约束，达线≠必然压缩）。\n// 压缩后 tokens=null 显示 "?"；↑↓RW$ 累计口径不受影响。\n`)
+    .replace(
+      'const effWindow = contextWindow > 0 ? Math.min(contextWindow, compactLine) : contextWindow;',
+      'const effWindow = contextWindow > 0 ? contextWindow : compactLine; // V3: 即真实窗口（历史变量名，压缩线仅用于下方着色）')
+    .replace(
+      `const colorPct = (liveTokens !== null && liveTokens !== undefined && effWindow > 0)\n        ? (liveTokens / effWindow) * 100`,
+      `const colorPct = (liveTokens !== null && liveTokens !== undefined && compactLine > 0)\n        ? (liveTokens / compactLine) * 100`)
+    .replace(
+      /\/\/ Patch \(patch-footer-live-context\.mjs\) V2 着色:[^\n]*\n[^\n]*\n/,
+      `// Patch (patch-footer-live-context.mjs) V3 着色: 阈值基于压缩参考线 compactLine（大窗口下按窗口占比着色永不触发）；\n// 百分比显示仍为窗口占比，颜色含义为「距自动压缩参考线的进度」。\n`)
+  const changed = [': 256000;' !== ': 200000;', fixed.includes(MARKER_V3), fixed.includes('contextWindow : compactLine'), fixed.includes('/ compactLine')].filter(Boolean).length
+  if (!fixed.includes(MARKER_V3)) {
+    console.error('V2→V3 升级未命中预期形态，需人工核对。')
+    process.exit(1)
   }
+  if (!DRY_RUN) writeFileSync(target, fixed, 'utf-8')
+  console.log(`${DRY_RUN ? 'dry-run：' : ''}V2 已升级为 V3（分母回归真实窗口）：${target}`)
   process.exit(0)
 }
 
@@ -100,34 +116,31 @@ if (src.includes(MARKER_V2)) {
 // V1 计算段 = "// Patch (patch-footer-live-context.mjs):" 注释 + liveTokens/liveTokensStr 定义
 const CALC_RE =
   /\/\/ Patch \(patch-footer-live-context\.mjs\):[\s\S]*?const liveTokensStr =\n\s+liveTokens !== null && liveTokens !== undefined && contextWindow > 0\n\s+\? `\$\{formatTokens\(liveTokens\)\}\/`\n\s+: "";/
-const CALC_V2 = `// ${MARKER_V2}: 实时上下文显示——分母与百分比改为"压缩临界"min(窗口, PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K)，
-// 直观反映距自动压缩的距离（1M 窗口下旧显示 34.5k/1M (3.4%) 误读为还很空，实际 256K 参考线已用 13%）。
-// 分母为压缩条件之一的参考线（普通压缩还受完成/后台/空闲三重门限约束），非硬上限。
+const CALC_V3 = `// ${MARKER_V3}: 实时上下文显示——分母恒为真实上下文窗口（压缩线不是窗口，显示 x/256k 会误导）。
+// 自动压缩参考线 PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K 仅用于着色预警：达线黄、超线红+!!（普通压缩受完成/后台/空闲三重门限约束，达线≠必然压缩）。
 // 压缩后 tokens=null 显示 "?"；↑↓RW$ 累计口径不受影响。
     const compactLine = (() => {
         const raw = process.env.PI_CONTEXT_ABSOLUTE_TOKENS;
         const n = raw ? parseInt(raw, 10) : 0;
         return Number.isFinite(n) && n > 0 ? n : 256000;
     })();
-    const effWindow = contextWindow > 0 ? Math.min(contextWindow, compactLine) : contextWindow;
+    const effWindow = contextWindow > 0 ? contextWindow : compactLine; // 即真实窗口（历史变量名，压缩线仅用于下方着色）
     const liveTokens = contextUsage?.tokens;
     const liveTokensStr =
         liveTokens !== null && liveTokens !== undefined && effWindow > 0
             ? \`\${formatTokens(liveTokens)}/\`
             : "";`
 
-// ── display 段（V1/cache/restart-hint 任一形态 → effWindow 形态，保留 restartHint 拼接）──
-// 匹配形式：`?/${formatTokens(contextWindow)}` 与 `${liveTokensStr}${formatTokens(contextWindow)}${autoIndicator}[${restartHint}]`
 const DISP_RE =
   /(const contextPercentDisplay = contextPercent === "\?"\n\s*\? `\?\/\$\{formatTokens\(contextWindow\)\}\$\{autoIndicator\}`\n\s*: `\$\{liveTokensStr\}\$\{formatTokens\(contextWindow\)\}\$\{autoIndicator\}(?:\$\{restartHint\})?`;)/
 
 // ── 着色块（原代码形态 → 基于压缩线 effWindow 的着色）──
 const COLOR_RE =
   /if \(contextPercentValue > 90\) \{\n(\s+)contextPercentStr = theme\.fg\("error", contextPercentDisplay\);\n\s+\}\n\s+else if \(contextPercentValue > 70\) \{\n\s+contextPercentStr = theme\.fg\("warning", contextPercentDisplay\);\n\s+\}\n\s+else \{\n\s+contextPercentStr = contextPercentDisplay;\n\s+\}/
-const COLOR_V2 = `// ${MARKER_V2} 着色: 阈值基于压缩临界 effWindow（1M 窗口下旧逻辑 >70%×1M=700K 永不触发，黄/红失效）；
-// 有实时 token 用 liveTokens/effWindow（可 >100% → 已过压缩线加 " !!"），无实时（压缩后）回退窗口占用率。
-    const colorPct = (liveTokens !== null && liveTokens !== undefined && effWindow > 0)
-        ? (liveTokens / effWindow) * 100
+const COLOR_V3 = `// ${MARKER_V3} 着色: 阈值基于压缩参考线 compactLine（大窗口下按窗口占比着色永不触发）；
+// 百分比显示仍为窗口占比，颜色含义为「距自动压缩参考线的进度」。
+    const colorPct = (liveTokens !== null && liveTokens !== undefined && compactLine > 0)
+        ? (liveTokens / compactLine) * 100
         : contextPercentValue;
     if (colorPct > 120) {
         contextPercentStr = theme.fg("error", contextPercentDisplay + " !!");
@@ -147,7 +160,7 @@ const isV1 = CALC_RE.test(patched) || DISP_RE.test(patched)
 
 if (isV1) {
   // V1 已应用 → 就地升级三段（计算段 / display 分母 / 着色块）
-  patched = patched.replace(CALC_RE, CALC_V2)
+  patched = patched.replace(CALC_RE, CALC_V3)
   if (DISP_RE.test(patched)) {
     patched = patched.replace(DISP_RE, (m) => m.replaceAll('formatTokens(contextWindow)', 'formatTokens(effWindow)'))
   }
@@ -155,7 +168,7 @@ if (isV1) {
 
 // 着色块：两条路径都要替换（原版与 V1 状态下同形态）
 if (COLOR_RE.test(patched)) {
-  patched = patched.replace(COLOR_RE, COLOR_V2)
+  patched = patched.replace(COLOR_RE, COLOR_V3)
 }
 
 // 全新安装（原代码）→ 从 display 定义注入 V2 完整块（含 percent 显示，后续 cache 补丁去百分比）
@@ -170,7 +183,7 @@ if (!isV1) {
   const indent = m[1]
   patched = src.replace(
     re,
-    `${CALC_V2}\n${indent}const effPercent = (liveTokens !== null && liveTokens !== undefined && effWindow > 0)\n${indent}    ? String(Math.round((liveTokens / effWindow) * 1000) / 10)\n${indent}    : contextPercent;\n${indent}const contextPercentDisplay = contextPercent === "?"\n${indent}    ? \`?/\${formatTokens(effWindow)}\${autoIndicator}\`\n${indent}    : \`\${liveTokensStr}\${formatTokens(effWindow)} (\${effPercent}%)\${autoIndicator}\`;`,
+    `${CALC_V3}\n${indent}const effPercent = (liveTokens !== null && liveTokens !== undefined && effWindow > 0)\n${indent}    ? String(Math.round((liveTokens / effWindow) * 1000) / 10)\n${indent}    : contextPercent;\n${indent}const contextPercentDisplay = contextPercent === "?"\n${indent}    ? \`?/\${formatTokens(effWindow)}\${autoIndicator}\`\n${indent}    : \`\${liveTokensStr}\${formatTokens(effWindow)} (\${effPercent}%)\${autoIndicator}\`;`,
   )
   if (!COLOR_RE.test(patched)) {
     console.error('未匹配到 footer.js 着色块（pi 版本可能已改动），需人工核对。')

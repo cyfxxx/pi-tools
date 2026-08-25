@@ -35,6 +35,9 @@ export const CORE_TOOLS: string[] = [
   'web_search', 'fetch_url', 'web_fetch',
   // pi-tmux（后台任务高频）
   'tmux_run', 'tmux_status', 'tmux_read', 'tmux_send', 'tmux_stop', 'tmux_wait',
+  // 高频单工具（2026-08-25）：admin_restart 常驻——重启高频且 schema 极小，
+  // 每次 enable_tool("admin") 只为重启需多一轮交互 + 前缀缓存重算，不划算
+  'admin_restart',
 ]
 
 /** 休眠工具组（schema 不注入；enable_tool("<name>") 启用，本会话内保持） */
@@ -49,10 +52,10 @@ export const SLEEPING_GROUPS: ToolGroup[] = [
   },
   {
     name: 'admin',
-    description: 'Agent 管理：状态/模型/配置/会话/重启（8 工具）',
+    description: 'Agent 管理：状态/模型/配置/会话（7 工具；admin_restart 已提升为核心常驻）',
     tools: [
       'admin_status', 'admin_list_models', 'admin_set_model', 'admin_get_config',
-      'admin_set_config', 'admin_list_sessions', 'admin_switch_session', 'admin_restart',
+      'admin_set_config', 'admin_list_sessions', 'admin_switch_session',
     ],
   },
   {
