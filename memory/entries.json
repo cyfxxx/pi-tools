@@ -96,7 +96,7 @@
     },
     {
       "id": "1521d1f6-5c35-4884-b447-27953227e074",
-      "category": "decision",
+      "category": "reference",
       "title": "/ 命令精简 30→13（2026-07 重构）",
       "content": "按'保留无需模型参与的确定性命令，模型可代劳的并入/移除'原则精简扩展命令。移除: admin:status/model/session/config（内置 /model /settings /resume 替代）、auto:stats（并入 auto:status --stats）、memory:digest（自动提取）、ctx-lite:* 三命令、ping、plandiff/planqa（并入 planview --diff/--qa）。合并: loop/remind 并入 schedule 子命令; memory:search/stats/prune/summary 与 cleanup（承接 ctx-lite）统一为 /memory。保留 13 个: auto:status/auto:policy/auto:failover/auto:pause/auto:resume/admin:restart/schedule/memory/plan/planclear/planresume/planview/todos。同步更新 conflict-check.mjs、extensions.test.ts、README/SKILL.md，全量回归通过。",
       "tags": [
@@ -678,7 +678,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-05T15:04:03.663Z",
       "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ],
@@ -1514,7 +1514,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T02:01:33.439Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ],
@@ -1560,7 +1560,7 @@
       "updatedAt": "2026-08-10T02:58:04.175Z",
       "accessedAt": "2026-08-10T02:58:04.175Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -1714,7 +1714,7 @@
       "updatedAt": "2026-08-10T05:59:08.973Z",
       "accessedAt": "2026-08-10T05:59:08.973Z",
       "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -1870,7 +1870,7 @@
       "updatedAt": "2026-08-10T07:05:14.776Z",
       "accessedAt": "2026-08-10T07:05:14.776Z",
       "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -1957,7 +1957,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T07:20:00.317Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
       ],
@@ -2070,7 +2070,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
       ],
@@ -2204,7 +2204,7 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -2273,7 +2273,7 @@
       "updatedAt": "2026-08-10T10:04:10.970Z",
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -2495,7 +2495,7 @@
       "updatedAt": "2026-08-15T21:45:00.000Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "termux"
       ],
@@ -2541,7 +2541,7 @@
       "updatedAt": "2026-08-10T10:16:05.357Z",
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -3002,7 +3002,7 @@
       "updatedAt": "2026-08-11T02:49:34.877Z",
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ]
@@ -4259,7 +4259,7 @@
       "id": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40",
       "category": "preference",
       "title": "用户指令极简",
-      "content": "用户偏好极简指令（如'执行翻译技能''重启'），期望助手自主完成调研、修改、验证全流程后一次性汇报结果，不打断询问。执行重启类操作前需先确认机制可行性（proot 无自动拉起）。",
+      "content": "用户偏好极简指令（如'重启''继续''执行'），期望助手自主完成调研、修改、验证、提交推送全流程后一次性汇报，不打断询问；问二选一问题时只答对应词不加解释；测试类指令先真实执行再讨论并如实汇报结论。重启走 wrapper 拉起流程：写 .pi-admin-state.json(action=restart) 再 SIGTERM 当前 pi，proot 实测可行（2026-08-10 实证，旧结论\"proot 无自动拉起\"已推翻）。",
       "tags": [
         "用户偏好",
         "协作风格",
@@ -4267,7 +4267,7 @@
         "user-preference",
         "workflow"
       ],
-      "confidence": 0.95,
+      "confidence": 1.0,
       "source": "extract",
       "recurrence": 24,
       "createdAt": "2026-08-02T08:40:02.562Z",
@@ -4653,7 +4653,7 @@
         "termux"
       ],
       "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": false,
+      "deleted": true,
       "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
@@ -5315,7 +5315,7 @@
       "createdAt": "2026-08-13T01:09:39.603Z",
       "updatedAt": "2026-08-13T01:09:39.603Z",
       "accessedAt": "2026-08-13T01:09:39.603Z",
-      "deleted": false,
+      "deleted": true,
       "environments": [
         "all"
       ],
@@ -5327,13 +5327,15 @@
       "content": "用户明确要求记住数字 777（2025-06-13 记录）",
       "category": "fact",
       "confidence": 0.9,
-      "environment": "all",
       "observedAt": "2026-08-13T01:13:19.544Z",
       "lastAccessedAt": "2026-08-13T01:13:19.546Z",
       "references": 0,
       "supersededBy": null,
-      "deleted": false,
-      "tags": []
+      "deleted": true,
+      "tags": [],
+      "environments": [
+        "all"
+      ]
     },
     {
       "id": "f59ef308-b2ec-43b8-91ff-fb1838d88ef0",
@@ -6228,7 +6230,7 @@
         "wsl2"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false,
+      "deleted": true,
       "supersededBy": "e6da85b8-16e1-4f0d-ace8-9669e6535227"
     },
     {
@@ -6530,7 +6532,7 @@
         "wsl2"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "28ed324a-0d1c-4483-81dc-c99ae60237e0",
@@ -6553,7 +6555,7 @@
         "wsl2"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "fb498aca-f628-4cd6-85a6-ab7804d39659",
@@ -6952,7 +6954,7 @@
         "junction",
         "architecture"
       ],
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "mem_planmode_fixhist_20260814",
@@ -6973,7 +6975,7 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "mem_planmode_decisions_20260814",
@@ -7035,7 +7037,7 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "mem_planexit_confirm_20260814",
@@ -7071,7 +7073,7 @@
         "pi-tools",
         "deploy"
       ],
-      "deleted": false
+      "deleted": true
     },
     {
       "title": "Windows 便携 pi 最终架构（2026 重构后）",
@@ -7131,7 +7133,7 @@
         "cross-platform",
         "cwd"
       ],
-      "deleted": false
+      "deleted": true
     },
     {
       "title": "WSL interop 禁用下的协作模式",
@@ -7368,7 +7370,7 @@
         "windows"
       ],
       "observedAt": "2026-08-15T01:29:49.130Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "ffa6f0d0-096f-4ded-b692-b506a6644226",
@@ -9878,7 +9880,7 @@
         "all"
       ],
       "observedAt": "2026-08-22T09:03:13.639Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "9d420121-c1df-4f2d-9556-c42c22b0168d",
@@ -10589,7 +10591,7 @@
         "all"
       ],
       "observedAt": "2026-08-24T04:10:12.706Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "da1fbcc7-fc25-45b9-b407-01af701b8f94",
@@ -10706,7 +10708,7 @@
         "wsl2"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "4940f7ba-ed79-4aa9-8582-43c962043b36",
@@ -10867,7 +10869,7 @@
         "wsl2"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "cccc144b-2448-4346-aa01-4a709e35cc50",
@@ -10983,7 +10985,7 @@
         "wsl2"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "2dc7a6c7-348e-49d7-adbf-9082e3e54cb1",
@@ -11452,7 +11454,7 @@
         "termux"
       ],
       "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "631684e2-6ffd-4d42-bad4-19784283b4a4",
@@ -11593,7 +11595,7 @@
         "termux"
       ],
       "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "4c54c2a2-c587-4062-b92a-42dfcd7316fd",
@@ -12403,6 +12405,29 @@
         "all"
       ],
       "observedAt": "2026-08-25T01:23:56.791Z",
+      "deleted": false
+    },
+    {
+      "id": "a0263a20-2675-44ea-a33a-f02edd8bf8ae",
+      "category": "solutions",
+      "title": "DeepSeek Harness 上下文管理对比分析（2026-08-25）",
+      "content": "对 /tmp/deepseek-harness 的 packages/compaction + packages/context 及 6 篇架构笔记完成 scout 分析，与 pi-context 对照。dsh 核心机制：①压缩触发在 agent/pre-step（after-call，不杀当前工作流；pi 用 agent_settled+ctx.compact() 会 abort）②阈值 0.8×路由容量、retainRatio=0.16 尾部预算、per-model 覆盖 ③溢出兜底 CONTEXT_WINDOW_EXCEEDED→剪枝+平衡区间摘要+代际证明有界重试(maxOverflowRetries=1) ④摘要调用逐字节重放暖前缀(system+tools+被遮蔽消息)+尾部 user 指令→KV 缓存复用（bug-fix 笔记关键设计）⑤tokenMeter 重放 fold：provider usage 仅当封套精确匹配锚点才复用，否则 4字符/token 启发式重定价 ⑥工具结果剪枝仅在压力触发后生效(8192 chars, head4096+tail1024)，原文留 append-only 日志 ⑦注入统一 inject()→持久 UserMessage(\"付一次钱\"不变量)。pi 借鉴排序：1.摘要调用暖前缀复用形状（需动内核/上游 issue，价值最高）；2.压缩收敛校验——session_compact 后实测前后 tokens 异常告警（低成本低垂果实）；3.retainRatio 尾部保留量观测；4.逐轮封套指纹近似 usage 锚点；5.refreshIntervalMs 周期注入模式。pi 已更优：CJK 感知估算、写入时截断常开、usage-diag 可观测闭环、交互四重门控。完整报告见当日会话。",
+      "tags": [
+        "deepseek-harness",
+        "pi-context",
+        "compaction",
+        "前缀缓存",
+        "对比分析"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T01:43:19.567Z",
+      "updatedAt": "2026-08-25T01:43:19.568Z",
+      "accessedAt": "2026-08-25T01:43:19.568Z",
+      "environments": [
+        "all"
+      ],
       "deleted": false
     }
   ]
