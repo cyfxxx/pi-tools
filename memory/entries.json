@@ -4267,7 +4267,7 @@
         "user-preference",
         "workflow"
       ],
-      "confidence": 1.0,
+      "confidence": 1,
       "source": "extract",
       "recurrence": 24,
       "createdAt": "2026-08-02T08:40:02.562Z",
@@ -10259,10 +10259,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 67,
+      "recurrence": 75,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-25T01:28:36.440Z",
-      "accessedAt": "2026-08-25T01:28:36.440Z",
+      "updatedAt": "2026-08-25T03:05:53.500Z",
+      "accessedAt": "2026-08-25T03:05:53.500Z",
       "environments": [
         "all"
       ],
@@ -12428,7 +12428,52 @@
       "environments": [
         "all"
       ],
+      "deleted": false,
+      "observedAt": "2026-08-25T01:43:19.567Z"
+    },
+    {
+      "id": "368d2845-2938-4dda-b0e3-04fdb00d688f",
+      "category": "solutions",
+      "title": "长期记忆库全量审查优化:单轮批量模式",
+      "content": "任务「检查整个长期记忆内容、分析过时条目并优化」的最省 token 做法是单回合批量并行执行：先 memory_stats 总览规模与类别分布，再并行发多个 memory_search（按关键词+category 组合）枚举全部条目，集中判定过时/冲突项后收尾——过时内容用 memory_store 以同标题更新触发自动去重合并（勿删除重建），废弃条目用 memory_forget 按 id 精确删或 category+olderThan 批删。实测（2026-08-25）：1 回合 27 次工具调用完成全库审查优化，累计 102K tokens，前缀缓存命中 101312（≈99%），零报错。该模式与既有「单轮批量探索」结论互相印证：批量并行检索比逐条串行省一个数量级 token。",
+      "tags": [
+        "memory",
+        "批量探索",
+        "token优化",
+        "记忆维护"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T02:49:31.074Z",
+      "updatedAt": "2026-08-25T02:49:31.074Z",
+      "accessedAt": "2026-08-25T02:49:31.074Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T02:49:31.074Z",
       "deleted": false
+    },
+    {
+      "id": "e57412f8-25e6-4e2e-b0ce-03e9ab4eacee",
+      "category": "solutions",
+      "title": "每日任务丢失根因: scheduled-tasks 多写者全量覆盖",
+      "content": "现象（2026-08-25 实测定位）：08-24 建的 knowledge-subscribe/daily-review 每日任务次日从 agent/scheduled-tasks.json 消失，只剩 keep/dup-name 测试残留。\n\n根因：该文件有三个全量覆盖写者——①主会话 autopilot（30s tick/finalizeInjected 推 nextRun 即写）②summarizer 后台会话的 autopilot 实例（后台 pi 也加载扩展、也跑 tick）③pi-cron.sh headless（crontab 每分钟，bash+python 全量重写）。任一方持旧内存态 writeTasks 全量重写即抹掉其它写者刚建的任务；keep 每 5m 触发使覆盖高频发生。\n\n修复：storage.ts writeTasks 写前重读合并（磁盘活跃任务快照没有的补回，excludeIds 墓碑防删除复活，skipMerge 供 import 等全量替换）；deleteTask/once 移除传墓碑；Task.deleted?: 软删字段 + listTasks 过滤；pi-cron.sh 回写前同步合并。\n\n排查要点：任务丢失先查文件 mtime 与三个写者的写时机（stat -c '%y'），不要先怀疑任务没建成。",
+      "tags": [
+        "pi-autopilot",
+        "scheduled-tasks",
+        "多写者竞态",
+        "根因"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T03:07:05.063Z",
+      "updatedAt": "2026-08-25T03:07:05.063Z",
+      "accessedAt": "2026-08-25T03:07:05.063Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
