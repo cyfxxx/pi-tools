@@ -3,13 +3,12 @@ agent/sessions/
 
 # npm 安装的依赖（统一根：agent/package.json → agent/node_modules，10 扩展共享）
 agent/node_modules/
-# agent/package-lock.json 入库：CI（.github/workflows/ci.yml）npm 缓存依赖该文件
+# agent/package-lock.json 入库：CI（.github/workflows/ci.yml:20 cache-dependency-path）依赖该文件，勿忽略
 # 防护：个别扩展若出现独立依赖，不入库（rebuild 时应清理回统一根）
 agent/extensions/*/node_modules/
 agent/extensions/*/package-lock.json
 
 # pi 运行时缓存
-context-mode/
 agent/bin/
 agent/auth.json
 agent/trust.json
@@ -31,7 +30,7 @@ searxng/venv/
 # searxng: 原始开源项目
 searxng/repo/
 
-# pi-admin 运行时状态文件
+# pi-autopilot 运行时状态文件（failover 重启请求，历史文件名沿用 .pi-admin-*）
 agent/.pi-admin-state.json
 
 # 日志文件
@@ -51,24 +50,21 @@ agent/models.json
 .env
 .env.*
 
-# ctx-lite 运行时数据（已并入 pi-memory）
-ctx-lite/
-
-# pi-memory 数据：笔记+记忆+摘要+检查点（已确认无密钥，入库备份）
+# pi-memory 数据：笔记+记忆+摘要+检查点
 # 排除项：原始对话提取/临时提取（含对话全文，可能含敏感内容如 PAT 明文）
 memory/extract-sessions/
 memory/pending-extracts/
 memory/.extract-lock
 memory/extract-tracker.json
-# 跨会话工具统计（tool-use-<host>.jsonl，主机名分裂；历史已跟踪条目保留）
-memory/stats/
 # 多环境隔离（P1）：notes/summaries 为会话级/环境特定数据，不入库（避免多机 pull/push 互相覆盖）
 # entries.json（长期记忆）仍入库共享，冲突时以最新 push 为准
 memory/notes.json
 memory/summaries.json
 agent/models-store.json
 
-
+# ★ 跨设备工具使用统计（tool-use-<device>.jsonl）——【必须同步，勿忽略】
+# 各设备工具调用数据入库共享，是判断扩展工具是否默认启用/休眠的关键依据；
+# 按主机名分文件写入天然无 git 冲突；跨设备合并视图: node scripts/tool-stats-sync.mjs
 
 # pi-scheduler 运行时数据
 agent/scheduled-tasks.json
@@ -84,7 +80,8 @@ agent/.usage-diag.jsonl
 # 跨会话统计（cache-guard/工具指纹/用量聚合，运行时数据不入库）
 agent/stats/
 
-# 运行时日志（pi-tmux/pi-voice/pi-bg/scheduler/wrapper/selfcheck 时间戳等全部运行时数据，不入库）
+# 运行时日志（pi-tmux/pi-voice/pi-bg/scheduler/wrapper/selfcheck 时间戳等全部运行时数据，不入库；
+# 含 logs/scheduler/、logs/*.out 等全部子路径）
 logs/
 agent/.pi-tmux-registry.json
 agent/pi-voice.json
@@ -142,10 +139,7 @@ _recovery-*/
 agent/notify.json
 agent/.notify-state.json
 
-
 # ntfy-relay 运行时状态（不入库）
 agent/.ntfy-relay-state.json
 agent/.ntfy-relay.pid
 agent/.ntfy-inbox.json
-# packs 历史归档（本地备份，不入库）
-backup/
