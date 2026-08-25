@@ -55,7 +55,7 @@ describe('context-budget: pressure tiers are stable', () => {
     const b = getTokenPressureTag()
     expect(a).not.toBeNull()
     expect(a).toBe(b)
-    expect(a!).toContain('压力较高')
+    expect(a!).toContain('已占窗口')
   })
 
   it('critical pressure → fixed stable hint text', () => {
@@ -65,7 +65,7 @@ describe('context-budget: pressure tiers are stable', () => {
     const b = getTokenPressureTag()
     expect(a).not.toBeNull()
     expect(a).toBe(b)
-    expect(a!).toContain('接近满')
+    expect(a!).toContain('即将达到上限')
   })
 
   it('urgency hint is fixed text (no volatile numbers)', () => {

@@ -7,7 +7,6 @@ import { join } from "node:path";
 import {
 	setContextWindow,
 	setUsedTokens,
-	setCompactThreshold,
 	markCompacted,
 	recordCacheUsage,
 	estimateTokens,
@@ -1101,18 +1100,19 @@ export default function (pi: ExtensionAPI) {
 		const resolved = resolveContext(ctx);
 		let pressureLine = "";
 		if (resolved) {
-			const threshold = computeCompactThreshold(resolved.window, { absoluteTokens: ABSOLUTE_TOKENS });
 			setContextWindow(resolved.window);
 			setUsedTokens(resolved.tokens); // 真实用量校准：plan-mode 等共享库消费者压力提示随之准确
-			setCompactThreshold(threshold ?? 0); // 压缩阈值为 pressure 分母（审计 M3：1M 窗口下 850K 不可达会哑火）
-			if (threshold !== null && threshold > 0) {
-				const near = resolved.tokens / threshold;
+			// 2026-08-25 用户修订：压力分母改为真实 contextWindow（原为压缩阈值）——
+			// 压缩线是自动压缩条件之一而非窗口；文案去指令化（压缩摘要本身保留
+			// 关键决策与待办，ctx_note 仅用于需精确保真的细节）
+			if (resolved.window > 0) {
+				const near = resolved.tokens / resolved.window;
 				if (near >= 0.9) {
 					pressureLine =
-						"\n\n[上下文接近自动压缩阈值（90%）。请用 ctx_note 保存关键决策与进度；压缩会自动触发并继续。]";
+						"\n\n[上下文已占窗口 90%；达到压缩条件将自动压缩并生成摘要，关键决策与待办会保留在摘要中；需精确保真的细节可先存 ctx_note。]";
 				} else if (near >= 0.75) {
 					pressureLine =
-						"\n\n[上下文接近自动压缩阈值（75%）。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。]";
+						"\n\n[上下文已占窗口 75%。]";
 				}
 			}
 		}

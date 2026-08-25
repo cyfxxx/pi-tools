@@ -89,10 +89,12 @@ function getState(): SharedBudgetState {
 }
 
 // 档位化提示文案（固定文本，保证 system prompt 稳定 → 缓存前缀稳定）
+// 2026-08-25 用户修订：①分母改为真实 contextWindow（原为压缩阈值）；②文案去指令化——
+// 压缩摘要本身保留关键决策与待办，ctx_note 仅用于需精确保真的细节，不再作为默认指导
 const HIGH_PRESSURE_HINT =
-  "🟡 上下文压力较高。优先将探索/独立任务委托给 subagent，关键信息用 ctx_note 保存。"
+  "🟡 上下文已占窗口 85%。"
 const CRITICAL_PRESSURE_HINT =
-  "🔴 上下文接近满。请立即用 ctx_note 保存关键决策与进度，然后建议用户执行 /compact。"
+  "🔴 上下文已占窗口 95%，即将达到上限。"
 
 export function setTotalBudget(budget: number): void {
   getState().totalBudget = budget
@@ -108,6 +110,7 @@ export function setContextWindow(contextWindow: number): void {
 // 压缩阈值注册（pi-context 在 before_agent_start 报真实阈值）：getBudgetReport 的
 // ratio/pressure 改以它为分母，使压力提示与实际会发生压缩的点对齐，而不是距模型窗口
 // 比例（1M 窗口下 850K critical 阈值不可达 → plan-mode P2/P3 注入整体哑火，审计 M3）。
+/** @deprecated 2026-08-25 起 pressure 分母回归真实窗口，本设置不再参与压力计算（API 保留兼容） */
 export function setCompactThreshold(t: number): void {
   if (Number.isFinite(t) && t > 0) getState().compactThreshold = t
 }
@@ -149,7 +152,10 @@ export function recordToolUsage(tool: string, tokens: number): void {
 export function getBudgetReport(): BudgetReport {
   const s = getState()
   const used = s.usedTotal
-  const base = s.compactThreshold && s.compactThreshold > 0 ? s.compactThreshold : s.totalBudget
+  // 2026-08-25 用户修订：pressure 分母回归真实 contextWindow（totalBudget）——
+  // 压缩线是自动压缩条件之一而非窗口，按它算压力会过早/口径误导；
+  // setCompactThreshold 保留 API 但不再参与 pressure 计算
+  const base = s.totalBudget
   const ratio = base > 0 ? Math.min(1, used / base) : 0
 
   let pressure: BudgetReport["pressure"] = "low"
@@ -194,10 +200,10 @@ export function resetBudget(): void {
 export function getUrgencyHint(): string | null {
   const r = getBudgetReport()
   if (r.pressure === "critical") {
-    return "🔴 上下文即将溢出。请用 ctx_note 保存关键决策、已完成工作和相关文件路径，然后通知用户执行 /compact 压缩上下文。"
+    return "🔴 上下文即将达到窗口上限；压缩会自动触发并生成摘要（关键决策与待办保留在摘要中），需精确保真的细节可先存 ctx_note。"
   }
   if (r.pressure === "high") {
-    return "🟠 上下文压力较大。建议保存关键信息。"
+    return "🟠 上下文已占窗口 85%。"
   }
   return null
 }

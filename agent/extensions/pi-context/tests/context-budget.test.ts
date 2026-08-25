@@ -125,24 +125,34 @@ describe('context-budget: truncateByTokens 边界感知与标记预算 (2026-08-
   })
 })
 
-describe('context-budget: 压缩阈值基准（审计 M3 修复）', () => {
+describe('context-budget: 压力分母为真实窗口（2026-08-25 用户修订，取代 M3 阈值基准）', () => {
   beforeEach(() => resetAllBudgets())
 
-  it('getBudgetReport 以 compactThreshold 为分母，1M 窗口不哑火', async () => {
+  it('getBudgetReport 以真实 contextWindow 为分母；setCompactThreshold 不再参与 pressure 计算', async () => {
     const mod = await import('../../../lib/context-budget.ts')
     mod.setContextWindow(1_000_000)
-    mod.setCompactThreshold(200_000)
+    mod.setCompactThreshold(200_000) // deprecated：设置无效，仅验证不影响 ratio
     mod.setUsedTokens(180_000)
     const report = mod.getBudgetReport()
-    // 距压缩阈值 90% → high；若按 1M 窗口比例（0.18）会是 low（旧行为哑火）
-    expect(report.ratio).toBeCloseTo(0.9)
-    expect(report.pressure).toBe('high')
+    // 180K/1M = 18% → low（大窗口下低压力是正确语义；原 M3「哑火」判定随口径修订废止）
+    expect(report.ratio).toBeCloseTo(0.18)
+    expect(report.pressure).toBe('low')
+  })
+
+  it('高占用仍按窗口比例正确升档（900K/1M=90% → high/critical 区间）', async () => {
+    const mod = await import('../../../lib/context-budget.ts')
+    mod.setContextWindow(1_000_000)
+    mod.setUsedTokens(950_000)
+    const report = mod.getBudgetReport()
+    expect(report.ratio).toBeCloseTo(0.95)
+    expect(report.pressure).toBe('critical')
   })
 
   it('markCompacted 后 setUsedTokens 回落为新基线（压缩后不再误报 critical）', async () => {
     const mod = await import('../../../lib/context-budget.ts')
+    mod.setContextWindow(200_000)
     mod.setCompactThreshold(200_000)
-    mod.setUsedTokens(180_000)
+    mod.setUsedTokens(180_000) // 180K/200K 窗口 = 90% → high
     expect(mod.getBudgetReport().pressure).toBe('high')
     mod.markCompacted()
     mod.setUsedTokens(60_000)
