@@ -10,6 +10,8 @@ TASKS_FILE="$AGENT_DIR/scheduled-tasks.json"
 LOCK_FILE="$AGENT_DIR/scheduler.lock"
 LOG_DIR="$PI_HOME/logs/scheduler"
 MAX_RUN_TIME="${PI_SCHEDULER_TIMEOUT:-300}"
+# 数值校验：PI_SCHEDULER_TIMEOUT 可控，非纯数字回退默认（防直插 Python 字面量位注入）
+case "$MAX_RUN_TIME" in ''|*[!0-9]*) MAX_RUN_TIME=300;; esac
 
 mkdir -p "$LOG_DIR"
 
@@ -465,14 +467,16 @@ with open('$task_meta_file', 'w') as f:
     } < <(python3 -c "
 import json
 d = json.load(open('$task_meta_file'))
-print(d['id'])
-print(d['name'])
-print(d['type'])
-print(d['schedule'])
+# 字段值中的换行会破坏逐行 read 解析 → 替换为字面量 \\n 保证单行语义
+esc = lambda s: str(s).replace(chr(13), '').replace(chr(10), chr(92)+'n')
+print(esc(d['id']))
+print(esc(d['name']))
+print(esc(d['type']))
+print(esc(d['schedule']))
 print(d['timeout'])
 print(d['notify'])
-print(d['last_run'])
-print(d['next_run'], end='')
+print(esc(d['last_run']))
+print(esc(d['next_run']), end='')
 # prompt may contain newlines, print raw after a newline separator
 print()
 print(d['prompt'], end='')

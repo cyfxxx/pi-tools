@@ -297,3 +297,40 @@ describe('scheduler: enabled 门控（2026-08-25 审计 HIGH 修复）', () => {
     expect(sent).toHaveLength(1)
   })
 })
+
+describe('scheduler: abort 回合不闭环 success（2026-08-25 审计实测修复）', () => {
+  it('markRunAborted(true) 后 finalizeInjected 仅推进 nextRun，不记 success/不删 once/不发 webhook', async () => {
+    const task = makeTask({ id: 'abort1', type: 'once', schedule: '+10m', notifyOnCompletion: true })
+    await writeTasksFile([task])
+    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: true }), 'utf-8')
+    await fillTelemetry(0)
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    sched.markInjected('abort1')
+    sched.markRunAborted(true)
+    await (sched as unknown as { finalizeInjected: () => Promise<void> }).finalizeInjected()
+
+    const saved = await readTasksFile()
+    const after = saved.tasks[0] as { nextRun: string; history: unknown[] }
+    // once 任务保留（未删）、nextRun 推进到未来（防 tick 重复注入）、无 history/遥测
+    expect(after).toBeTruthy()
+    expect(new Date(after.nextRun).getTime()).toBeGreaterThan(Date.now())
+    expect(after.history ?? []).toHaveLength(0)
+    expect(await readTelemetryFile()).toHaveLength(0)
+  })
+
+  it('非中止回合后 finalize 行为不变（once 删除 + telemetry 补记）', async () => {
+    const task = makeTask({ id: 'norm1', type: 'once', schedule: '+10m' })
+    await writeTasksFile([task])
+    await fillTelemetry(0)
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
+    const sched = new SessionScheduler(pi as never)
+    sched.markInjected('norm1')
+    await (sched as unknown as { finalizeInjected: () => Promise<void> }).finalizeInjected()
+    const saved = await readTasksFile()
+    expect((saved.tasks as unknown[]).find((t) => (t as { id: string }).id === 'norm1')).toBeUndefined()
+    expect(await readTelemetryFile()).toHaveLength(1)
+  })
+})

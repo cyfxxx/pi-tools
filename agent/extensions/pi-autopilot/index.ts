@@ -140,6 +140,15 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
     } catch { /* 清理失败不阻塞 */ }
   })
 
+  // 实测（2026-08-25）：宿主 _runAgentPrompt 的 finally 无条件发 agent_settled，
+  // abort 回合也会闭环。在 agent_end 检查尾部 assistant stopReason==='aborted'
+  // 回写给 scheduler，finalizeInjected 对中止回合仅推进 nextRun 不记 success。
+  pi.on('agent_end', (event: { messages?: Array<{ role?: string; stopReason?: string }> }) => {
+    const msgs = event?.messages ?? []
+    const last = [...msgs].reverse().find((m) => m?.role === 'assistant')
+    scheduler.markRunAborted(last?.stopReason === 'aborted')
+  })
+
   registerCommands(pi, scheduler)
   registerTools(pi)
 }

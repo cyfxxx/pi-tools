@@ -198,6 +198,58 @@ test("mapWithConcurrencyLimit 结果保序即使完成顺序乱", async () => {
 	assert.deepStrictEqual(out, [1, 2, 3, 4]);
 });
 
+test("mapWithConcurrencyLimit 任务失败后停止出队 + 已运行任务收到 abort 信号", async () => {
+	const started = [];
+	const sawAbort = [];
+	let releaseFirst;
+	const firstGate = new Promise((r) => { releaseFirst = r; });
+	const p = mapWithConcurrencyLimit(
+		[1, 2, 3, 4, 5],
+		2,
+		async (x, _i, signal) => {
+			started.push(x);
+			if (x === 1) {
+				// 模拟子进程超时/abort 抛错（如 runSubprocessAgent 的 'Subagent was aborted'）
+				await firstGate;
+				throw new Error("Subagent was aborted");
+			}
+			// 模拟已 spawn 的子进程：等待 abort 信号（对应 SIGTERM kill 链路）
+			await new Promise((resolve, reject) => {
+				const t = setTimeout(() => reject(new Error("sibling not aborted within 500ms")), 500);
+				signal?.addEventListener("abort", () => { clearTimeout(t); sawAbort.push(x); resolve(); }, { once: true });
+			});
+			return x;
+		},
+	);
+	await new Promise((r) => setTimeout(r, 10)); // 等两个任务启动
+	assert.strictEqual(started.length, 2);
+	releaseFirst();
+	const err = await p.then(() => null, (e) => e);
+	assert.ok(err instanceof Error && err.message === "Subagent was aborted", `应拒绝且保留原始错误，实际: ${err}`);
+	assert.ok(sawAbort.includes(2), "已运行的 sibling 应收到 abort 信号（SIGTERM 链路）");
+	assert.deepStrictEqual([...new Set(started)].sort(), [1, 2], "失败后不得出队新任务（3/4/5 不启动）");
+});
+
+test("mapWithConcurrencyLimit 外部 abort -> 停止出队新任务", async () => {
+	const ac = new AbortController();
+	const started = [];
+	const p = mapWithConcurrencyLimit(
+		[1, 2, 3],
+		1,
+		async (x) => {
+			started.push(x);
+			await new Promise((r) => setTimeout(r, 5));
+			return x;
+		},
+		ac.signal,
+	);
+	await new Promise((r) => setTimeout(r, 8)); // item1 完成、item2 进行中
+	ac.abort();
+	await p.then(() => null, () => {});
+	assert.ok(!started.includes(3), "外部 abort 后不得继续出队（item1 完成后 item2 被放弃后续）");
+	assert.ok(started.includes(1));
+});
+
 // ---------- discoverAgents 覆盖顺序（3） ----------
 // 用临时目录 + PI_CODING_AGENT_DIR 隔离验证 both 模式下项目级覆盖用户级
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";

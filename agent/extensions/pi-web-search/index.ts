@@ -58,6 +58,17 @@ export default async function (pi: ExtensionAPI) {
     },
     async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const url = params.url as string
+      // 协议白名单：仅放行 http/https（纵深防御——单用户本地工具 bash 同样可达内网，
+      // 故不拦内网 host，本地 SearXNG :8890 是合法用途），只收窄协议面
+      let parsed: URL
+      try {
+        parsed = new URL(url)
+      } catch {
+        return { content: [{ type: "text", text: `无效 URL：${url}` }], details: {} }
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { content: [{ type: "text", text: `不支持的协议 "${parsed.protocol}"：fetch_url 仅允许 http:/https: URL` }], details: {} }
+      }
       const maxLength = Math.max(0, Math.min((params.max_length as number) ?? 8000, 200000))
       const controller = new AbortController()
       // 用户停止生成也应中断请求（_signal 转发）；两信号任一触发即 abort

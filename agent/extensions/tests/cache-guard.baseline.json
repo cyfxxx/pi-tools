@@ -5,6 +5,6 @@
   "lib/prune.ts（擦除/剪枝阈值）": "d8d217856fc6a4911b75d78850edc8e6957bfad4df8f6a90e58313d67188c8ea",
   "pi-context/index.ts（注入逻辑/文案）": "ebe63184f7dd430458be4a8c1012318e7ae159fa1b0a3a170ad552c6415c562f",
   "lib/context-budget.ts（截断标记等）": "80bf654abc853daaff27d2d5522de8dad9ad8ec5c4e99eddadc7304dfec6e870",
-  "subagent/index.ts（delegation 描述）": "2413bbce40c318b05f08329a189520ee981b5244904e0dbe44018ba7089882b3",
+  "subagent/index.ts（delegation 描述）": "0a8c6c757eb524a0ca450654f478b79f493dd52d1f8db04f5aaf7351b737d071",
   "pi-context/context-budget.ts（分档注入文案）": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 }

@@ -319,20 +319,46 @@ function getDisplayItems(messages: Message[]): DisplayItem[] {
 export async function mapWithConcurrencyLimit<TIn, TOut>(
 	items: TIn[],
 	concurrency: number,
-	fn: (item: TIn, index: number) => Promise<TOut>,
+	fn: (item: TIn, index: number, signal?: AbortSignal) => Promise<TOut>,
+	externalSignal?: AbortSignal,
 ): Promise<TOut[]> {
 	if (items.length === 0) return [];
 	const limit = Math.max(1, Math.min(concurrency, items.length));
 	const results: TOut[] = new Array(items.length);
 	let nextIndex = 0;
-	const workers = new Array(limit).fill(null).map(async () => {
-		while (true) {
-			const current = nextIndex++;
-			if (current >= items.length) return;
-			results[current] = await fn(items[current], current);
-		}
-	});
-	await Promise.all(workers);
+	// 防孤儿工作：任一任务失败（如子进程 30min 超时/外部 abort 抛 'Subagent was aborted'）
+	// 后 Promise.all 立即拒绝，若分发循环继续出队会 spawn 新子进程且结果无人消费。
+	// aborted 标志让 worker 循环停止出队；internal controller 通过 runSubprocessAgent
+	// 现有 signal→scheduleKillChain 链路向已 spawn 的子进程发 SIGTERM。
+	let aborted = false;
+	const internal = new AbortController();
+	const stop = () => {
+		if (aborted) return;
+		aborted = true;
+		internal.abort(new Error("Subagent dispatch aborted"));
+	};
+	const onExternalAbort = () => stop();
+	if (externalSignal) {
+		if (externalSignal.aborted) stop();
+		else externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+	}
+	try {
+		const workers = new Array(limit).fill(null).map(async () => {
+			while (!aborted) {
+				const current = nextIndex++;
+				if (current >= items.length) return;
+				try {
+					results[current] = await fn(items[current], current, internal.signal);
+				} catch (err) {
+					stop();
+					throw err;
+				}
+			}
+		});
+		await Promise.all(workers);
+	} finally {
+		externalSignal?.removeEventListener("abort", onExternalAbort);
+	}
 	return results;
 }
 
@@ -805,7 +831,7 @@ export default function (pi: ExtensionAPI) {
 				const results = await mapWithConcurrencyLimit(
 					params.tasks,
 					getMaxConcurrency(isLocalProvider(currentModel?.provider)),
-					async (t, index) => {
+					async (t, index, internalSignal) => {
 					const result = await runSingleAgent(
 						ctx.cwd,
 						agents,
@@ -813,7 +839,9 @@ export default function (pi: ExtensionAPI) {
 						t.task,
 						t.cwd,
 						undefined,
-						signal,
+						// 内部信号已由 mapWithConcurrencyLimit 转发外部 abort：任一任务失败/外部中止
+						// 时向所有已 spawn 的子进程发 SIGTERM，避免孤儿
+						internalSignal,
 						// Per-task update callback
 						(partial) => {
 							if (partial.details?.results[0]) {

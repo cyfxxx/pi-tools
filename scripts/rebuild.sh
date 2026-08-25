@@ -320,19 +320,19 @@ PY
 
   # settings.packages（npm 插件依赖）合并进 agent/package.json（统一依赖根）
   if [ -f "$PI_HOME/agent/settings.json" ]; then
-    PACKAGES=$(python3 -c "import json; d=json.load(open('$PI_HOME/agent/settings.json')); print('\n'.join(d.get('packages',[])))" 2>/dev/null || echo "")
+    PACKAGES=$(PI_HOME="$PI_HOME" python3 -c 'import json,os; d=json.load(open(os.environ["PI_HOME"]+"/agent/settings.json")); print("\n".join(d.get("packages",[])))' 2>/dev/null || echo "")
     if [ -n "$PACKAGES" ]; then
       MERGED_ANY=0
       while IFS= read -r pkg; do
         [ -z "$pkg" ] && continue
-        MERGED=$(cd "$PI_HOME/agent" && node -e "
-          const fs=require('fs');
-          const p='package.json';
-          const d=JSON.parse(fs.readFileSync(p,'utf8'));
-          const name='${pkg#npm:}';
+        MERGED=$(cd "$PI_HOME/agent" && PKG_NAME="${pkg#npm:}" node -e '
+          const fs=require("fs");
+          const p="package.json";
+          const d=JSON.parse(fs.readFileSync(p,"utf8"));
+          const name=process.env.PKG_NAME;
           d.dependencies=d.dependencies||{};
-          if(!d.dependencies[name]){ d.dependencies[name]='*'; fs.writeFileSync(p,JSON.stringify(d,null,2)+'\\n'); console.log('  + '+name); }
-        " 2>/dev/null || echo "  merge-failed: $pkg")
+          if(!d.dependencies[name]){ d.dependencies[name]="*"; fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n"); console.log("  + "+name); }
+        ' 2>/dev/null || echo "  merge-failed: $pkg")
         if [ -n "$(echo "$MERGED" | grep '^  +')" ]; then MERGED_ANY=1; fi
         [ -n "$MERGED" ] && echo "$MERGED"
       done <<< "$PACKAGES"
@@ -1024,23 +1024,23 @@ verify() {
   [ -f "$PI_HOME/agent/models.json" ] && mfile="$PI_HOME/agent/models.json"
   [ -f "$PI_HOME/agent/models-store.json" ] && mfile="$PI_HOME/agent/models-store.json"
   if [ -f "$PI_HOME/searxng/venv/bin/python" ]; then
-    "$PI_HOME/searxng/venv/bin/python" -c "import yaml; yaml.safe_load(open('$PI_HOME/searxng/settings.yml'))" 2>/dev/null \
+    PI_HOME="$PI_HOME" "$PI_HOME/searxng/venv/bin/python" -c 'import os,yaml; yaml.safe_load(open(os.environ["PI_HOME"]+"/searxng/settings.yml"))' 2>/dev/null \
       && ok "settings.yml: valid YAML" \
       || warn "settings.yml: YAML 校验失败"
-    "$PI_HOME/searxng/venv/bin/python" -c "import json; json.load(open('$PI_HOME/agent/settings.json'))" 2>/dev/null \
+    PI_HOME="$PI_HOME" "$PI_HOME/searxng/venv/bin/python" -c 'import os,json; json.load(open(os.environ["PI_HOME"]+"/agent/settings.json"))' 2>/dev/null \
       && ok "settings.json: valid JSON" \
       || warn "settings.json: JSON 校验失败"
     if [ -n "$mfile" ]; then
-      "$PI_HOME/searxng/venv/bin/python" -c "import json; json.load(open('$mfile'))" 2>/dev/null \
+      MF_FILE="$mfile" "$PI_HOME/searxng/venv/bin/python" -c 'import os,json; json.load(open(os.environ["MF_FILE"]))' 2>/dev/null \
         && ok "models config: valid JSON ($(basename "$mfile"))" \
         || warn "models config: JSON 校验失败 ($mfile)"
     fi
   else
-    python3 -c "import json; json.load(open('$PI_HOME/agent/settings.json'))" 2>/dev/null \
+    PI_HOME="$PI_HOME" python3 -c 'import os,json; json.load(open(os.environ["PI_HOME"]+"/agent/settings.json"))' 2>/dev/null \
       && ok "settings.json: valid JSON" \
       || warn "settings.json: JSON 校验失败"
     if [ -n "$mfile" ]; then
-      python3 -c "import json; json.load(open('$mfile'))" 2>/dev/null \
+      MF_FILE="$mfile" python3 -c 'import os,json; json.load(open(os.environ["MF_FILE"]))' 2>/dev/null \
         && ok "models config: valid JSON ($(basename "$mfile"))" \
         || warn "models config: JSON 校验失败 ($mfile)"
     fi
@@ -1163,7 +1163,7 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
     info "或原机打包: pi-backup create --with-auth 后 pi-backup restore 恢复"
     info "未提供时 pi 无可用模型，无法启动对话"
   elif [ -f "$PI_HOME/agent/settings.json" ] && [ -n "$mfile" ]; then
-    DEFAULT_PROVIDER=$(python3 -c "import json; print(json.load(open('$PI_HOME/agent/settings.json')).get('defaultProvider',''))" 2>/dev/null)
+    DEFAULT_PROVIDER=$(PI_HOME="$PI_HOME" python3 -c 'import json,os; print(json.load(open(os.environ["PI_HOME"]+"/agent/settings.json")).get("defaultProvider",""))' 2>/dev/null)
     if [ -n "$DEFAULT_PROVIDER" ] && command -v pi &>/dev/null; then
       # 用 pi 自身模型目录判定：内置 provider（如 opencode-go）不在 models-store.json 中，
       # 旧逻辑按 models 配置查找会对内置 provider 误报"未定义"

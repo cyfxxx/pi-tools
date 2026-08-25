@@ -72,6 +72,10 @@ export class SessionScheduler {
   private firing = new Set<string>()
   /** 本轮已注入主会话的 message 任务 id（agent_settled 时 finalizeInjected 消费） */
   private injectedIds = new Set<string>()
+  /** 本回合是否被用户中止（agent_end 尾部 assistant stopReason==='aborted'，index.ts 回写）
+   *  实测（2026-08-25）：宿主 _runAgentPrompt 的 finally 无条件发 agent_settled——
+   *  abort 回合也会走到 finalizeInjected，若不区分会把失败闭环为 success */
+  private lastRunAborted = false
 
   constructor(pi: ExtensionAPI) {
     this.pi = pi
@@ -297,6 +301,11 @@ export class SessionScheduler {
     this.injectedIds.add(taskId)
   }
 
+  /** index.ts 在 agent_end 时回写：尾部 assistant stopReason==='aborted' 即为中止回合 */
+  markRunAborted(v: boolean): void {
+    this.lastRunAborted = v
+  }
+
   /**
    * 注入式任务最终化（主会话回合结束 agent_settled 时调用，补 d323ab9 半闭环）：
    * 注入后 sendUserMessage 返回仅代表消息已发，主会话处理该轮后才视为交付完成。
@@ -310,6 +319,29 @@ export class SessionScheduler {
   async finalizeInjected(): Promise<void> {
     const ids = [...this.injectedIds]
     this.injectedIds.clear()
+    // 实测（2026-08-25）：宿主 finally 无条件发 agent_settled，abort 回合也到达此处。
+    // 中止 ≠ 完成：不记 success、不删 once、不发成功 webhook——仅推进 nextRun 防
+    // 每 tick 重复注入（同预算拦截语义，不消耗重试次数）；once 保留待手动触发。
+    if (this.lastRunAborted) {
+      this.lastRunAborted = false
+      for (const id of ids) {
+        try {
+          await withStoreLock(async () => {
+            const store = await readTasks()
+            const t = store.tasks.find((x) => x.id === id)
+            if (!t || !t.enabled) return
+            let next = computeNextRun(t)
+            if (!next || new Date(next).getTime() <= Date.now()) {
+              next = new Date(Date.now() + 3600 * 1000).toISOString()
+            }
+            t.nextRun = next
+            await writeTasks(store)
+          })
+          if (this.firing.has(id)) this.firing.delete(id)
+        } catch { /* 单任务失败忽略 */ }
+      }
+      return
+    }
     for (const id of ids) {
       try {
         const t = (await readTasks()).tasks.find((x) => x.id === id)

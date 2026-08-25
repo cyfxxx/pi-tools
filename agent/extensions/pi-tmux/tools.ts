@@ -3,6 +3,7 @@ import {
   type TmuxOpts,
   startSession,
   listSessions,
+  probeSession,
   hasSession,
   readOutput,
   sendKeys,
@@ -73,7 +74,11 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
         if ('error' in maybe) return true // tmux 探测失败：保守认为存活，避免误报完成
         cachedOpts = maybe
       }
-      return hasSession(cachedOpts, name)
+      // 审计 MEDIUM：区分「确认无此会话」与「探测失败」——cachedOpts 缓存生效后
+      // 二进制消失/spawn 瞬时故障（exit 127 等）曾一律返回 false 被 watcher 当会话
+      // 结束，触发空唤醒通知并误清注册表。改用三态探测：仅 gone（tmux 正常执行且
+      // 明确报 can't find session）判结束；unknown 保守视为存活跳过本轮。
+      return (await probeSession(cachedOpts, name)) !== 'gone'
     },
     notify: async (text: string) => {
       await pi.sendMessage(

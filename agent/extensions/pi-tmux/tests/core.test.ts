@@ -297,3 +297,58 @@ describe('pi-tmux registry 清理（pruneRegistry）', () => {
     removeLog(opts, liveName)
   }, 30000)
 })
+
+// 审计 MEDIUM：三态探测——区分「确认无此会话」与「探测失败」。
+// watcher 闭包此前用布尔 hasSession：tmux 二进制消失（127）/spawn 瞬时故障
+// 一律 false 被当会话结束，触发空唤醒通知并误清注册表。
+describe('pi-tmux 三态探测（classifySessionProbe/probeSession）', () => {
+  const opts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-probe-test'), prefix: 'pi-' }
+
+  it('classifySessionProbe 纯映射：exit0=alive；exit1+can\'t find session=gone；其余=unknown', async () => {
+    const { classifySessionProbe } = await import('../core')
+    expect(classifySessionProbe({ code: 0, stdout: '', stderr: '' })).toBe('alive')
+    expect(classifySessionProbe({ code: 1, stdout: '', stderr: "can't find session: pi-build" })).toBe('gone')
+    // 探测失败形态（不可作结束依据）
+    expect(classifySessionProbe({ code: 127, stdout: '', stderr: 'tmux: command not found' })).toBe('unknown')
+    expect(classifySessionProbe({ code: 124, stdout: '', stderr: 'tmux timeout after 15000ms' })).toBe('unknown')
+    expect(classifySessionProbe({ code: 1, stdout: '', stderr: 'no server running on /tmp/tmux-0/default' })).toBe('unknown')
+    expect(classifySessionProbe({ code: 1, stdout: '', stderr: '' })).toBe('unknown')
+  })
+
+  it('watcher 闭包契约：仅 gone 判结束，unknown/alive 均视为存活', async () => {
+    const { classifySessionProbe } = await import('../core')
+    const asWatcherBool = (r: { code: number; stdout: string; stderr: string }) =>
+      classifySessionProbe(r) !== 'gone'
+    // 二进制消失/spawn 瞬时故障 → 存活（跳过本轮，不再误触发 onDone/通知）
+    expect(asWatcherBool({ code: 127, stdout: '', stderr: 'command not found' })).toBe(true)
+    expect(asWatcherBool({ code: 1, stdout: '', stderr: 'no server running' })).toBe(true)
+    // tmux 正常执行且明确报无此会话 → 结束
+    expect(asWatcherBool({ code: 1, stdout: '', stderr: "can't find session: x" })).toBe(false)
+    expect(asWatcherBool({ code: 0, stdout: '', stderr: '' })).toBe(true)
+  })
+
+  it('probeSession 集成：存活=gone 前后态；二进制缺失=unknown；hasSession 委托行为不变', async () => {
+    const { runTmux } = await import('../core')
+    const avail = await runTmux(opts, ['-V'], 5000)
+    if (avail.code === 127) return
+
+    const { probeSession, startSession, killSession, removeLog, hasSession } = await import('../core')
+    const name = 'pi-vitest-probe3s'
+    await killSession(opts, name).catch(() => {})
+
+    // 二进制缺失 → unknown（保守判存活，绝不判结束）
+    expect(await probeSession({ ...opts, bin: 'pi-tmux-no-such-bin-xyz' }, name)).toBe('unknown')
+
+    // 不存在的会话 + tmux 正常执行 → gone
+    expect(await probeSession(opts, name)).toBe('gone')
+
+    await startSession(opts, name, 'sleep 30', tmpdir())
+    expect(await probeSession(opts, name)).toBe('alive')
+    expect(await hasSession(opts, name)).toBe(true)
+
+    await killSession(opts, name)
+    expect(await probeSession(opts, name)).toBe('gone')
+    expect(await hasSession(opts, name)).toBe(false)
+    removeLog(opts, name)
+  }, 30000)
+})

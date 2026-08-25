@@ -80,6 +80,42 @@ describe('pi-web-search (entry point)', () => {
     expect(result.content[0].text).toContain('"status":"ok"')
   })
 
+  it('fetch_url should reject non-http(s) protocols (file://, ftp:)', async () => {
+    const fetchSpy = vi.fn()
+    globalThis.fetch = fetchSpy as any
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const tool = registeredTools.find(t => t.name === 'fetch_url')!
+    for (const url of ['file:///etc/passwd', 'ftp://example.com/pub', 'javascript:alert(1)']) {
+      const result = await tool.execute('id', { url }, undefined, undefined, {} as any)
+      expect(result.content[0].text).toContain('http') // 错误说明里指明仅允许 http/https
+      expect(fetchSpy).not.toHaveBeenCalled() // 不得发起请求
+    }
+    // 无效 URL 同样拒绝且不 fetch
+    const bad = await tool.execute('id', { url: 'not a url' }, undefined, undefined, {} as any)
+    expect(bad.content[0].text).toContain('无效 URL')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('fetch_url should allow http and intranet hosts (local SearXNG)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('local'),
+    }) as any
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+
+    const tool = registeredTools.find(t => t.name === 'fetch_url')!
+    // 不拦内网 host：本地 SearXNG :8890 是合法用途（纵深防御只收窄协议面）
+    for (const url of ['http://localhost:8890/search?q=test', 'https://searx.be/search']) {
+      const result = await tool.execute('id', { url }, undefined, undefined, {} as any)
+      expect(result.content[0].text).toContain('local')
+    }
+  })
+
   it('fetch_url !ok should cancel response body (no hanging connection)', async () => {
     const cancel = vi.fn().mockResolvedValue(undefined)
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: 'Service Unavailable', body: { cancel } }) as any

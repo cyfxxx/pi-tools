@@ -363,10 +363,29 @@ export function logPathFor(opts: TmuxOpts, name: string): string {
   return join(opts.logDir, `${name}.log`)
 }
 
+/** 三态探测结果：alive=存活；gone=确认无此会话；unknown=探测失败（不可作结束依据） */
+export type SessionProbe = 'alive' | 'gone' | 'unknown'
+
+/**
+ * has-session 结果分类（纯函数，便于单测）：区分「确认无此会话」与「探测失败」。
+ * tmux 语义：exit 0 存活；exit 1 + stderr "can't find session" 才是明确的无此会话；
+ * 二进制缺失（127）/超时（124）/spawn 瞬时故障等其余情况一律 unknown——调用方
+ * （完成唤醒 watcher）对 unknown 必须保守判存活跳过本轮，防止误报会话结束。
+ */
+export function classifySessionProbe(r: TmuxRunResult): SessionProbe {
+  if (r.code === 0) return 'alive'
+  if (r.code === 1 && /can't find session/i.test(r.stderr)) return 'gone'
+  return 'unknown'
+}
+
+/** 三态探测会话：hasSession 的探错通道版（gone 才可判定结束） */
+export async function probeSession(opts: TmuxOpts, name: string): Promise<SessionProbe> {
+  return classifySessionProbe(await runTmux(opts, ['has-session', '-t', name]))
+}
+
 /** 会话名 → 是否当前存在 */
 export async function hasSession(opts: TmuxOpts, name: string): Promise<boolean> {
-  const r = await runTmux(opts, ['has-session', '-t', name])
-  return r.code === 0
+  return (await probeSession(opts, name)) === 'alive'
 }
 
 export interface SessionInfo {

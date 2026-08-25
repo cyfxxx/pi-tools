@@ -491,7 +491,9 @@ export default function planModeExtension(pi: ExtensionAPI): void {
           planModeEnabled = false;
           executionMode = true;
           knownTodoHash = todoHash();
-          pi.setActiveTools(NORMAL_MODE_TOOLS);
+          // 与 plan_exit 路径一致：恢复全量工具（含扩展工具），
+          // 硬编码 NORMAL_MODE_TOOLS 会使扩展工具在本会话内全部不可用。
+          restoreAllTools(pi);
           persistState();
           updateStatus(ctx);
           const first = remaining[0];

@@ -31,8 +31,13 @@ export function downloadsDirDefault(): string {
  * （wrapper 循环内 set 不重跑）。非 win32 平台直接短路，零副作用。
  */
 export function ensureLocalBinaryEnv(): void {
-  // 环境变量已设且文件存在 → 直接使用；指向不存在的文件（如已删的旧 npmmirror）→ 重新探测
+  // 环境变量已设且文件存在 → 直接使用
   if (process.env.CLOAKBROWSER_BINARY_PATH && existsSync(process.env.CLOAKBROWSER_BINARY_PATH)) return
+  // 审计 MEDIUM：env 残留但指向已删除文件（如旧 npmmirror 被清理）——必须清除变量。
+  // 原先非 win32 平台在此提前 return，既不复探也不清变量，cloakbrowser 读到失效
+  // 路径致 launch 失败难定位；清除后各平台均继续走下方正常探测链（win32 门控保持）
+  if (process.env.CLOAKBROWSER_BINARY_PATH) delete process.env.CLOAKBROWSER_BINARY_PATH
+  // 非 win32 无便携包可探测：清除残留后直接返回
   if (process.platform !== 'win32') return
   const root = process.env.USERPROFILE || homedir()
   // 官方定制版缓存目录（cloakbrowser 结构：.cloakbrowser/chromium-<ver>/chrome.exe）

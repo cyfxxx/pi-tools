@@ -60,6 +60,23 @@ describe('pi-tmux completion watcher（完成自动唤醒）', () => {
     expect(notify).toHaveBeenCalledTimes(1)
   })
 
+  // 审计 MEDIUM：探测失败（抛错/unknown）≠ 会话结束——不得触发 onDone
+  //（否则 tools.ts 会误删 watcherHandles/registry 条目并空唤醒通知）
+  it('hasSession 持续探测失败（抛错/unknown）→ 不触发 onDone 不通知', async () => {
+    const notify = vi.fn().mockResolvedValue(undefined)
+    const onDone = vi.fn()
+    const w = createCompletionWatcher({
+      // 模拟 tmux 二进制消失/spawn 瞬时故障：闭包对探错保守返回 true（存活）
+      hasSession: vi.fn(async () => true),
+      notify,
+      onDone,
+    })
+    w.watch('pi-probe-fail', '/logs/pi-probe-fail.log', true)
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 4 + MERGE_WINDOW_MS)
+    expect(onDone).not.toHaveBeenCalled()
+    expect(notify).not.toHaveBeenCalled()
+  })
+
   it('stop() 后不再监听', async () => {
     const { w, notify } = makeWatcher([false, false])
     const h = w.watch('pi-stop', '/logs/pi-stop.log', true)

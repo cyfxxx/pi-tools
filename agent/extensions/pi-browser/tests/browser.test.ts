@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tmpdir } from 'os'
 import { join } from 'node:path'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 
 function createMockPage() {
   return {
@@ -214,5 +215,56 @@ describe('BrowserManager', () => {
 
     await bm.click(100, 200, 'right')
     expect(mockPage.mouse.click).toHaveBeenCalledWith(100, 200, { button: 'right' })
+  })
+})
+
+// ── 审计 MEDIUM：CLOAKBROWSER_BINARY_PATH 残留指向已删文件 → 必须清除后走探测链 ──
+describe('ensureLocalBinaryEnv（残留 env 清理）', () => {
+  const ENV_KEY = 'CLOAKBROWSER_BINARY_PATH'
+  let savedEnv: string | undefined
+  let tmp: string
+
+  beforeEach(() => {
+    savedEnv = process.env[ENV_KEY]
+    tmp = mkdtempSync(join(tmpdir(), 'pi-browser-env-test-'))
+  })
+  afterEach(() => {
+    if (savedEnv === undefined) delete process.env[ENV_KEY]
+    else process.env[ENV_KEY] = savedEnv
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  it('env 已设且文件存在 → 保持不变', async () => {
+    const realBin = join(tmp, 'chrome.exe')
+    writeFileSync(realBin, 'x')
+    process.env[ENV_KEY] = realBin
+    const { ensureLocalBinaryEnv } = await import('../browser/impl')
+    ensureLocalBinaryEnv()
+    expect(process.env[ENV_KEY]).toBe(realBin)
+  })
+
+  it('env 残留指向已删除文件 → 清除变量（非 win32 不复探，win32 继续探测链）', async () => {
+    // 审计 MEDIUM 回归：原先非 win32 提前 return 既不复探也不清变量，
+    // cloakbrowser 读到失效路径致 launch 失败难定位
+    process.env[ENV_KEY] = join(tmp, 'deleted-chromium', 'chrome.exe')
+    const { ensureLocalBinaryEnv } = await import('../browser/impl')
+    ensureLocalBinaryEnv()
+    expect(process.env[ENV_KEY]).toBeUndefined()
+  })
+
+  it('launch 前清除残留：ensureBrowser 后失效 env 不再存在且 launch 正常发起', async () => {
+    process.env[ENV_KEY] = join(tmp, 'gone', 'chrome.exe')
+    const bm = await getBrowserManager()
+    await bm.ensureBrowser()
+    expect(process.env[ENV_KEY]).toBeUndefined()
+  })
+
+  it('env 未设（非 win32）→ 保持未设不误设；win32 走探测链不抛错', async () => {
+    delete process.env[ENV_KEY]
+    const { ensureLocalBinaryEnv } = await import('../browser/impl')
+    expect(() => ensureLocalBinaryEnv()).not.toThrow()
+    if (process.platform !== 'win32') {
+      expect(process.env[ENV_KEY]).toBeUndefined()
+    }
   })
 })
