@@ -36,6 +36,14 @@
 - 流程约定：草稿确认后直接在 `packs/` 建包，**无 active/ 中间态**；与已有同类型技能重复时合并/优化进现有包（如 colab-cli → colab-bridge，comfyui-agent 旧稿 → comfyui-agent 包）
 - 详见 `packs/README.md`
 
+## 运行时数据与 git 忽略（不入库，多环境隔离）
+
+- `plans/` — plan-mode 生成的计划目录（每计划独立 .git 仓库，供计划内 git 操作）；git 忽略
+- `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/ntfy-relay/pi-voice（通知与语音配置）、scheduled-tasks.json（调度数据）、`.pi-autopilot-*.json`（看门狗状态）、`.pi-tmux-registry.json`、`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、pi-crash.log
+- `memory/stats/` — 跨会话工具统计（tool-use-<host>.jsonl，主机名分裂，不入库；历史已跟踪条目保留）
+- `pi-link*.json` — pi-link 设备清单（pi-link.json 入库）与运行时状态（pi-link-active/state/outbox，每次连接刷新，不入库）
+- ctx-lite/ 与 skill-store/ 已清理（分别并入 pi-memory 与 packs/）
+
 ## 回归验证细节
 
 单套件：`cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run`（统一依赖根 agent/node_modules）

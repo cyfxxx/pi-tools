@@ -3,7 +3,7 @@ agent/sessions/
 
 # npm 安装的依赖（统一根：agent/package.json → agent/node_modules，10 扩展共享）
 agent/node_modules/
-agent/package-lock.json
+# agent/package-lock.json 入库：CI（.github/workflows/ci.yml）npm 缓存依赖该文件
 # 防护：个别扩展若出现独立依赖，不入库（rebuild 时应清理回统一根）
 agent/extensions/*/node_modules/
 agent/extensions/*/package-lock.json
@@ -60,6 +60,8 @@ memory/extract-sessions/
 memory/pending-extracts/
 memory/.extract-lock
 memory/extract-tracker.json
+# 跨会话工具统计（tool-use-<host>.jsonl，主机名分裂；历史已跟踪条目保留）
+memory/stats/
 # 多环境隔离（P1）：notes/summaries 为会话级/环境特定数据，不入库（避免多机 pull/push 互相覆盖）
 # entries.json（长期记忆）仍入库共享，冲突时以最新 push 为准
 memory/notes.json
@@ -81,7 +83,6 @@ agent/.usage-diag.jsonl
 
 # 跨会话统计（cache-guard/工具指纹/用量聚合，运行时数据不入库）
 agent/stats/
-agent/extensions/*/node_modules
 
 # 运行时日志（pi-tmux/pi-voice/pi-bg/scheduler/wrapper/selfcheck 时间戳等全部运行时数据，不入库）
 logs/
@@ -92,8 +93,6 @@ agent/pi-voice.json
 # 类型链接与 wrapper 运行时锚点
 agent/extensions/node_modules/
 scripts/.pi-cli-path
-# pi-cron 运行时日志
-logs/scheduler/
 
 # pi-memory 压缩检查点（瞬时快照，时效性数据，不入库）
 memory/checkpoints/
@@ -105,8 +104,6 @@ pi-link.json
 pi-link-active.json
 pi-link-state.json
 pi-link-outbox.json
-# rebuild 运行日志
-logs/*.out
 deploy/tmux/tmux-status.txt
 agent/extensions/tsconfig.local.json
 # 便携 pi 完整包（含 .pi 密钥内容）不入库；仓库只跟踪 portable/ 下的脚本
@@ -141,8 +138,6 @@ deploy/tmux/*.lock
 # 便携包临时恢复快照（junction 修复备份）
 _recovery-*/
 
-# 根级 node_modules（npm 安装产物，不入库）
-agent/node_modules/
 # 通知配置（可能含 token）
 agent/notify.json
 agent/.notify-state.json

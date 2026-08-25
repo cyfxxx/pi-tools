@@ -11,7 +11,8 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `scripts/` — 生命周期与工具脚本（rebuild/test-all/pi-bg/pi-whisper 等）
 - `deploy/` — 部署配置（systemd/tmux/keys）；`searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略）
 - `docs/` — 开发与部署文档（ENVIRONMENTS.md 等）
-- `memory/` — pi-memory 运行时数据（git 忽略）；`logs/` — 运行时日志
+- `memory/` — pi-memory 运行时数据（entries.json 入库共享，其余 git 忽略）；`logs/` — 运行时日志
+- `plans/` — plan-mode 计划存档（git 忽略，每计划含独立 .git，供计划内 git 操作）
 
 ## 多环境使用约定
 
