@@ -117,7 +117,8 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
+      ],
+      "accessedAt": "2026-08-03T12:32:10.198028+00:00"
     },
     {
       "id": "9ba77085-7fc5-4b36-98e4-17cd230462ae",
@@ -5339,7 +5340,8 @@
       "tags": [],
       "environments": [
         "all"
-      ]
+      ],
+      "accessedAt": "2026-08-13T01:13:19.544Z"
     },
     {
       "id": "f59ef308-b2ec-43b8-91ff-fb1838d88ef0",
@@ -6942,7 +6944,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:04:21.284635Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:04:21.284635Z"
     },
     {
       "title": "便携 pi Windows 最终架构（junction 统一运行时）",
@@ -6958,7 +6961,8 @@
         "junction",
         "architecture"
       ],
-      "deleted": true
+      "deleted": true,
+      "accessedAt": "2026-08-14T11:04:40.847Z"
     },
     {
       "id": "mem_planmode_fixhist_20260814",
@@ -6979,7 +6983,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": true
+      "deleted": true,
+      "accessedAt": "2026-08-14T11:05:04.950439Z"
     },
     {
       "id": "mem_planmode_decisions_20260814",
@@ -6999,7 +7004,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:04.950439Z"
     },
     {
       "id": "mem_rebuild_merged_20260814",
@@ -7020,7 +7026,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
       "id": "mem_tsconfig_merged_20260814",
@@ -7041,7 +7048,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": true
+      "deleted": true,
+      "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
       "id": "mem_planexit_confirm_20260814",
@@ -7062,7 +7070,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:08:06.333041Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:08:06.333041Z"
     },
     {
       "title": "pi-tools 仓库目录结构（deploy/ 收拢后）",
@@ -7077,7 +7086,8 @@
         "pi-tools",
         "deploy"
       ],
-      "deleted": true
+      "deleted": true,
+      "accessedAt": "2026-08-14T11:33:24.135Z"
     },
     {
       "title": "Windows 便携 pi 最终架构（2026 重构后）",
@@ -7092,7 +7102,8 @@
         "architecture",
         "pi-portable"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "便携版扩展依赖安装：WSL npm 写 NTFS",
@@ -7107,7 +7118,8 @@
         "npm",
         "setup.ps1"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "pi-tools 仓库 deploy/ 收拢结构",
@@ -7122,7 +7134,8 @@
         "deploy",
         "structure"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "pi 会话目录 cwd 编码规则",
@@ -7137,7 +7150,8 @@
         "cross-platform",
         "cwd"
       ],
-      "deleted": true
+      "deleted": true,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "WSL interop 禁用下的协作模式",
@@ -7152,7 +7166,8 @@
         "junction",
         "mklink"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "依赖检查与解压的排查教训",
@@ -7167,7 +7182,8 @@
         "dependency",
         "troubleshooting"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
       "title": "Windows 便携版 pi 本体更新流程",
@@ -7182,7 +7198,8 @@
         "update",
         "npm"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "便携版扩展依赖真相与 setup 依赖段",
@@ -7197,7 +7214,8 @@
         "dependencies",
         "setup"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "Windows 可直连 GitHub，cloakbrowser 官方定制版",
@@ -7212,7 +7230,8 @@
         "chromium",
         "github"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "GitHub 镜像失效时用 npmmirror 下载 Chromium",
@@ -7227,7 +7246,8 @@
         "download",
         "cloakbrowser"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "pi 会话目录 cwd 编码与跨平台复制",
@@ -7243,7 +7263,8 @@
       ],
       "deleted": false,
       "supersededBy": "a733e0e8-cc27-459e-a88e-3c457080ad42",
-      "updatedAt": "2026-08-15T21:45:00.000Z"
+      "updatedAt": "2026-08-15T21:45:00.000Z",
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "title": "便携版与 WSL 双环境 git 同步流程",
@@ -7258,7 +7279,8 @@
         "portable",
         "wsl"
       ],
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T14:14:46.196Z"
     },
     {
       "id": "064ee064-3d9c-4142-8e71-4ce531269d4b",
@@ -10267,10 +10289,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 47,
+      "recurrence": 60,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-25T04:37:41.000Z",
-      "accessedAt": "2026-08-25T04:37:41.000Z",
+      "updatedAt": "2026-08-25T13:52:41.734Z",
+      "accessedAt": "2026-08-25T13:52:41.734Z",
       "environments": [
         "all"
       ],
@@ -12481,7 +12503,9 @@
       "accessedAt": "2026-08-25T03:07:05.063Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-25T03:07:05.063Z",
+      "deleted": false
     },
     {
       "id": "0c4c05ad-29e9-4f74-b82b-6f5355c8f2fe",
@@ -12553,7 +12577,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a036d0-189c-7538-bc83-f816475f617a"
+      "lastSessionId": "01a036d0-189c-7538-bc83-f816475f617a",
+      "deleted": false
     },
     {
       "id": "1c9841f2-a2fa-4e82-940d-6b4eaf493d52",
@@ -12576,7 +12601,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a036d0-189c-7538-bc83-f816475f617a"
+      "lastSessionId": "01a036d0-189c-7538-bc83-f816475f617a",
+      "deleted": false
     },
     {
       "id": "ff0f9df5-a674-43cd-b0a2-d6d6ad5c69ee",
@@ -13295,6 +13321,267 @@
       ],
       "observedAt": "2026-08-25T03:56:22.889Z",
       "deleted": false
+    },
+    {
+      "id": "2f2ddbc6-8975-4271-bd4e-00a10d58bcb8",
+      "category": "solutions",
+      "title": "沉淀源空壳轮判定与 hit=250000 封顶疑云",
+      "content": "特征判定：任务记录中同时满足 tools=0、hit=0、out=0 的轮次为空壳轮，说明提取脚本未捕获该轮实际内容；孤立的 hit=250000 且 out=0（数值恰等于 250K 常见上下文上限）同为统计异常，疑似脚本把上限常量当作命中值写入。处理策略：以空壳轮为主的任务记录不入 memory、不写 SKILL 草稿，避免污染记忆库；正确顺序是先修提取脚本（排查 hit 统计的封顶逻辑与轮次抽样/截断），再重跑沉淀。状态：2026-08-25 两批任务记录（约1358K/1803K tokens）在后续一次沉淀运行中仍呈此特征，说明修复尚未落地。",
+      "tags": [
+        "沉淀",
+        "空壳轮",
+        "提取脚本",
+        "数据质量"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T06:45:37.593Z",
+      "updatedAt": "2026-08-25T06:45:37.593Z",
+      "accessedAt": "2026-08-25T06:45:37.593Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T06:45:37.593Z",
+      "deleted": false
+    },
+    {
+      "id": "83a408a6-14f6-4989-baf9-9068fb2b6e84",
+      "category": "solutions",
+      "title": "空壳任务记录判定与处理策略",
+      "content": "pi经验沉淀场景中，任务记录若抽样轮全部呈现tools=0/hit=0/out=0即为空壳，不存memory、不写SKILL草稿，防止污染记忆库；孤立出现的hit=250000恰为常见统计上限值，疑为封顶伪影而非真实缓存命中。处理策略：不强行从空数据提炼经验，先修复记录提取脚本(hit统计/轮次抽样逻辑)再重跑沉淀。2026-08-25任务2/3(累计1358K/1803K tokens)即属此型。",
+      "tags": [
+        "经验沉淀",
+        "空壳记录",
+        "提取脚本",
+        "pi-memory"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T07:18:10.486Z",
+      "updatedAt": "2026-08-25T08:27:24.709Z",
+      "accessedAt": "2026-08-25T07:18:10.486Z",
+      "observedAt": "2026-08-25T07:18:10.486Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
+      "deleted": true,
+      "supersededBy": "f707031c-9c55-45f6-9873-4e3eecfcafcd",
+      "validUntil": "2026-08-25T08:27:24.709Z"
+    },
+    {
+      "id": "16048f83-f713-4845-9edd-8709526d827c",
+      "category": "fact",
+      "title": "提取脚本空壳缺陷修复未落地",
+      "content": "pi任务记录提取脚本存在空壳输出问题：大量轮次显示tools=0/hit=0/out=0但累计token数巨大(如1803K)。前一会话已提出修复建议，2026-08-25的沉淀会话中该现象再次复现，证明修复尚未实施，应作为优先待办项：修正hit统计与轮次抽样逻辑后再重跑经验沉淀。",
+      "tags": [
+        "提取脚本",
+        "bug",
+        "pi",
+        "待办"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T07:18:10.486Z",
+      "updatedAt": "2026-08-25T07:18:10.486Z",
+      "accessedAt": "2026-08-25T07:18:10.486Z",
+      "observedAt": "2026-08-25T07:18:10.486Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
+      "deleted": false
+    },
+    {
+      "id": "02dc7385-7e39-459e-bf77-0f5ec83c064b",
+      "category": "procedure",
+      "title": "SKILL草稿写入规范与三条件",
+      "content": "经验沉淀时仅当任务同时满足三条件才写SKILL草稿：成功实现、可复现、有保存价值的长流程。写入路径/root/.pi/packs/drafts/<短名>.SKILL.md，格式为YAML frontmatter(name/description)+步骤正文；description控制在1-2句且不带时间戳。不达标任务一律不写，避免低质草稿进入packs仓库。",
+      "tags": [
+        "skill",
+        "packs",
+        "drafts",
+        "规范"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T07:18:10.486Z",
+      "updatedAt": "2026-08-25T07:18:10.486Z",
+      "accessedAt": "2026-08-25T07:18:10.486Z",
+      "observedAt": "2026-08-25T07:18:10.486Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
+      "deleted": false
+    },
+    {
+      "id": "f37ab40c-ffdd-4779-8039-35b34c548bce",
+      "category": "preference",
+      "title": "经验沉淀会话工具白名单约束",
+      "content": "用户运行经验沉淀任务时的固定约束：只允许使用memory_store(存经验)和write(写SKILL草稿)两个工具，明确禁止改动其他任何文件、禁止执行其他工具，最后以3-5行概述沉淀结果。后续同类任务应默认遵守此边界。",
+      "tags": [
+        "偏好",
+        "工具限制",
+        "经验沉淀"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T07:18:10.486Z",
+      "updatedAt": "2026-08-25T07:18:10.486Z",
+      "accessedAt": "2026-08-25T07:18:10.486Z",
+      "observedAt": "2026-08-25T07:18:10.486Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
+      "deleted": false
+    },
+    {
+      "id": "96b2c0d2-d858-411e-b911-652a28a36890",
+      "category": "solutions",
+      "title": "经验沉淀：空壳任务记录零沉淀",
+      "content": "更新（第二次复现）：2026-08-25 06:43 的蒸馏输入再次全为空壳——90 轮全部 tools=0 out=0，仅一轮 hit=250000，累计 6015K tokens；与此前记录的 57 轮/3514K 数据高度相似（同样单轮 hit=250000），疑似同一源会话的不同提取窗口或重复投喂。结论维持并强化：空壳记录不存 memory、不写 SKILL 草稿；连续两次出现表明提取脚本的 tools/hit/out 统计面有系统性缺陷。处置顺序：先修提取脚本 → 人工抽查至少一轮真实记录验证非零 → 再重跑沉淀流程，避免反复消耗上下文做无效蒸馏。",
+      "tags": [
+        "经验沉淀",
+        "空壳记录",
+        "提取脚本",
+        "零沉淀"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T07:23:14.529Z",
+      "updatedAt": "2026-08-25T07:23:14.529Z",
+      "accessedAt": "2026-08-25T07:23:14.529Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T07:23:14.529Z",
+      "deleted": false
+    },
+    {
+      "id": "f707031c-9c55-45f6-9873-4e3eecfcafcd",
+      "category": "solutions",
+      "title": "空壳任务记录的判定与处置流程",
+      "content": "经验沉淀输入中若任务轮次统计全零（tools=0、hit=0、out=0）即为空壳记录，无可提炼内容：不存memory、不写SKILL草稿，防止污染记忆库。hit=250000恰为统计上限值，属封顶伪影非真实缓存命中。正确处置顺序：先修提取脚本、人工抽查原始日志确认真实内容，再重跑蒸馏流程。",
+      "tags": [
+        "经验沉淀",
+        "空壳记录",
+        "数据质量",
+        "蒸馏"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T08:27:24.585Z",
+      "updatedAt": "2026-08-25T08:27:24.585Z",
+      "accessedAt": "2026-08-25T08:27:24.585Z",
+      "observedAt": "2026-08-25T08:27:24.585Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
+      "deleted": false
+    },
+    {
+      "id": "2c1482a0-7f54-4097-8318-1867e9e285ae",
+      "category": "fact",
+      "title": "提取脚本连续产出空壳记录的证据",
+      "content": "2026-08-25两次经验沉淀投喂均为空壳：第一次57轮/累计3514K tokens，第二次90轮/累计6015K tokens，全部轮次tools=0/hit=0/out=0且仅单轮hit=250000。两份数据高度相似，疑似同一源会话的不同提取窗口或重复投喂，表明提取脚本存在系统性问题而非偶发故障。",
+      "tags": [
+        "提取脚本",
+        "bug证据",
+        "空壳记录",
+        "2026-08-25"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T08:27:24.585Z",
+      "updatedAt": "2026-08-25T08:27:24.585Z",
+      "accessedAt": "2026-08-25T08:27:24.585Z",
+      "observedAt": "2026-08-25T08:27:24.585Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
+      "deleted": false
+    },
+    {
+      "id": "77da890c-ab8c-42ab-ad6d-ca1f89913ac6",
+      "category": "solutions",
+      "title": "memory_store同标题不合并需手动去重",
+      "content": "memory_store工具不会因标题相同而合并更新既有记忆条目，而是新建一条，导致重复。若想更新既有知识又避免冗余，应在store后检查是否新建了条目，并用memory_forget删除旧条目完成去重；或在批量蒸馏前预先清理旧条目。",
+      "tags": [
+        "memory_store",
+        "去重",
+        "memory_forget",
+        "坑"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T08:27:24.585Z",
+      "updatedAt": "2026-08-25T08:27:24.585Z",
+      "accessedAt": "2026-08-25T08:27:24.585Z",
+      "observedAt": "2026-08-25T08:27:24.585Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
+      "deleted": false
+    },
+    {
+      "id": "7489751c-643b-4a9e-bcf5-60073dc69fd2",
+      "category": "procedure",
+      "title": "pi经验沉淀任务的执行规范",
+      "content": "对任务记录清单做经验沉淀时：每任务一句话概括完成情况；有长期价值的经验用memory_store存入（category选procedure或solutions，title简短，content精确可复现）；仅当任务同时满足'成功实现、可复现、有保存价值的长流程'三条才用write把SKILL.md草稿写到/root/.pi/packs/drafts/<短名>.SKILL.md（YAML frontmatter含name/description，description 1-2句不带时间戳）。除这两个工具外不改其他文件。",
+      "tags": [
+        "经验沉淀",
+        "SKILL草稿",
+        "流程规范",
+        "pi配置"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T08:27:24.585Z",
+      "updatedAt": "2026-08-25T08:27:24.585Z",
+      "accessedAt": "2026-08-25T08:27:24.585Z",
+      "observedAt": "2026-08-25T08:27:24.585Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
+      "deleted": false
+    },
+    {
+      "id": "00535f09-99d6-4cb3-b9bd-6e11d720ee6b",
+      "category": "solutions",
+      "title": "审计修复闭环: autopilot锁死+memory损坏清空+note-store统一",
+      "content": "2026-08-25 全项目审计修复闭环（pi 0.84.3 后）：已修 HIGH×2——① pi-autopilot/storage.ts acquireSessionLock 的 staleByAge 与 oldPid===myPid 分支原先跳过 unlink 直落 O_EXCL 必 EEXIST 致调度永久停摆，修复为两分支均先 unlink 再 wx；② pi-memory/storage.ts 新增 readStoreFile 泛化 entries 的损坏备份防护到 summaries/notes。test-all.sh ALL_EXTS 已补 subagent（subagent-guards.test.ts 此前零执行）。lib/note-store.ts env 键对齐为 PI_MEMORY_DIR || CTX_LITE_DIR 兜底、saveNotes 过 scrubSecrets、损坏备份；与 pi-memory/storage 双实现写同一 ~/.pi/memory/notes.json 是长期漂移源。暂缓待实测项：pi-context provider 缺流式 usage 时扩展层压缩/压力提示全失效（#8328 同类假设，需先加 usage-diag 探针确认触发面）；pi-voice 启动 stopRecording 全局 -q 双开误停（Termux 平台专属，本机无法实测）；plan-mode agent_start 自愈与 before_agent_start 分层时序。教训：审计报告行号普遍漂移（最大 47 行），复核必须按内容定位；types.ts 曾出现\"注释先于实现\"的虚标（deleted 墓碑），本次已补实现。",
+      "tags": [
+        "pi-autopilot",
+        "pi-memory",
+        "note-store",
+        "审计",
+        "0.84.3"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T13:53:26.949Z",
+      "updatedAt": "2026-08-25T13:53:26.949Z",
+      "accessedAt": "2026-08-25T13:53:26.949Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
