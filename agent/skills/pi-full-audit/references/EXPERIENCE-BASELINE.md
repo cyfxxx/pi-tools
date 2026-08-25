@@ -45,3 +45,14 @@
 ### 2026-08-25（续）「并行会话进行中工作」误判修正
 - **diff 方向误判实例**：types.ts/pi-cron.sh 工作区 diff 显示 `- deleted 字段`（HEAD 有、工作区无）——即本机落后于已推送的 7f9a8f0，却被误判为"并行会话进行中工作"而保留在工作区。注释里的当日日期强化了误导。正确读法：`-` 行=HEAD 有工作区无→本机旧；`+` 行=工作区新增→本地新改动。**判断前先 `git log --all -- <file>` 查该文件的最近提交**，日期巧合不构成证据。
 - 后续处置：三文件（types.ts/pi-cron.sh/docs/AGENTS-DETAILS.md）checkout HEAD 恢复，autopilot 131 用例复验绿；AGENTS-DETAILS 的 memory/stats 旧说法（不入库）与新同步约定矛盾，一并更正。
+
+### 2026-08-25（续二）0.84.3 升级后全量审计修复闭环（20 项落地）
+- **上节 types.ts「注释虚标」谜团闭环**：deleted 墓碑注释（带当日日期）确系并行会话只落了注释/字段、未落实现——本会话补齐实现（listTasks 过滤 + importTasks 拒绝导入）并把注释改写为与实现一致。「注释与实现矛盾」时先 `git log --all -- <file>` 追溯来源再决定补实现还是改注释；**注释里的日期不构成已实现的证据**。
+- **tmux_run 长任务禁用管道 tail**：`| tail -80` 吞掉全部中间输出，日志全程空白极易误判脚本失败（本次实战踩坑）。一律 `> /tmp/x.log 2>&1; echo EXIT=$? >>` 直接重定向，tail 仅事后查看。
+- **审计报告行号普遍漂移**（本次最大偏 47 行；scripts 组行号却全精确）——复核必须按内容定位，行号仅作提示；行号精度可作为审查者质量信号。
+- **红灯验证单文件回退法**：`git stash push -q -- <file>` 只回退目标文件 → 跑新测试确认失败 → `stash pop`。比整体 stash 干净，不碰并行改动。
+- **worker 现场修正可优于审计方案**：Windows pidfile 记录的是 spawn 的 shell 进程 → taskkill 映像名白名单应为 node/bash/cmd.exe 而非字面 node.exe（字面版会让 Ctrl-C/taskkill 全失效）。采纳 worker 版并在报告注明理由；抽查 diff 时对"合理化偏离"逐个判断而非要求逐字执行。
+- **探针先于盲修**：不确定真实触发面的缺陷（provider 缺流式 usage → 扩展层压缩/压力提示/thinking 切档全失效，#8328 同类假设），先加观测事件（usage-missing，10min 节流）积累数据，不盲目加兜底逻辑。
+- **聚合测试入口清单完整性属注册面纪律**：test-all.sh ALL_EXTS 漏 subagent 致 subagent-guards.test.ts 在任何入口零执行——新增扩展/套件必须同步聚合清单（同 conflict-check 监听者清单约定）。
+- **edit 工具 oldText/newText 方向纪律**：newText 是完整替换文本，长中文块编辑前先确认方向（本会话写反两次，原子回滚保证了误配不落盘）。
+- **push 微流程**：活进程持续追加的统计文件在提交与推送间隙会再变脏 → pull --rebase 报 unstaged 时对该单文件 stash 即可；SSH remote 无 token 免 set-url 还原。
