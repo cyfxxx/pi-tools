@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [1.2.1] - 2026-08-25
+
+### 修复（全项目审计）
+
+- **CLOAKBROWSER_BINARY_PATH 相对路径依赖 cwd**：ensureLocalBinaryEnv 先 resolve 归一再判断，存在则回写绝对路径（后续 launch 不再受 cwd 变化影响）。
+- **崩溃残留 tmpdir 永久累积**：session_start 后台清扫非本 pid 且进程已死的 `pi-browser-{screenshots,pdf,downloads}-<pid>` 目录（探活防误杀活跃实例）。
+- **下载 filename 越目录写**：suggestedFilename() 统一分隔符后取 basename，滤空/`.`/`..`（回退默认名）再落盘。
+
 ## [1.2.0] - 2026-08-25
 
 ### 修复（全项目审计）

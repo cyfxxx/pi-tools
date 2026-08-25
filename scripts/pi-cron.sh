@@ -495,6 +495,9 @@ print()
 print(d['prompt'], end='')
 ")
     rm -f "$task_meta_file"
+    # 任务级 maxRunTime 从 JSON 直取，非纯数字会使 timeout 用法错误(exit 125)被标 failed；
+    # 同顶层 PI_SCHEDULER_TIMEOUT 校验，非法回退默认值
+    case "$task_timeout" in ''|*[!0-9]*) task_timeout="$MAX_RUN_TIME";; esac
 
     # 使用 Pi print 模式执行
     echo "[pi-cron] 执行: $task_name ($task_type)"

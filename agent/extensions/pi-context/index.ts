@@ -24,6 +24,7 @@ import {
 	formatUsageSummary,
 	loadDiagLines,
 	recordAutoCompact,
+	recordUsageMissing,
 	recordPrune,
 	recordThinkingMeter,
 	recordToolCall,
@@ -674,7 +675,13 @@ export default function (pi: ExtensionAPI) {
 	// 每轮用量记录（compacted 死字段已移除：真实压缩事件由 recordAutoCompact 单独记录）
 	pi.on("turn_end", (event: TurnEndEvent) => {
 		const usage = (event.message as { usage?: Usage } | undefined)?.usage;
-		if (!usage || typeof usage.input !== "number") return;
+		if (!usage || typeof usage.input !== "number") {
+			// 审计 M6 探针（2026-08-25）：缺 usage 时下方全部跳过——lastProviderContextTokens
+			// 不更新 → resolveContext 返 null → 阈值压缩/溢出兑底/压力提示/thinking 切档全失效。
+			// 记录触发事实供 usage-stats 归因（上游 #8328 同类假设）
+			recordUsageMissing();
+			return;
+		}
 
 		const input = usage.input || 0;
 		const cacheRead = usage.cacheRead || 0;

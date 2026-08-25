@@ -72,4 +72,37 @@ describe('searchDirect (fetch.ts)', () => {
     expect(signal).toBeDefined()
     expect(signal!.aborted).toBe(false)
   })
+
+  it('审计回归：用户 abort signal 转发到内部 fetch，触发后请求中断', async () => {
+    // 模拟真实 fetch：监听传入的 signal，abort 时 reject（AbortError）
+    let captured: AbortSignal | undefined
+    globalThis.fetch = vi.fn().mockImplementation((_url: string, opts: any) => {
+      captured = opts?.signal
+      return new Promise((_resolve, reject) => {
+        opts.signal.addEventListener('abort', () => {
+          const err = new Error('This operation was aborted')
+          err.name = 'AbortError'
+          reject(err)
+        })
+      })
+    })
+
+    const { searchDirect } = await import('../fetch')
+    const ac = new AbortController()
+    const p = searchDirect('test', 5, ac.signal)
+    ac.abort()
+    await expect(p).rejects.toThrow(/abort/i)
+    expect(captured!.aborted).toBe(true)
+  })
+
+  it('signal 未触发时正常返回结果（透传不改变成功路径）', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('<html><body><h2><a href="https://example.com/1">R</a></h2></body></html>'),
+    })
+    const { searchDirect } = await import('../fetch')
+    const ac = new AbortController()
+    const result = await searchDirect('q', 5, ac.signal)
+    expect(result).toContain('搜索:')
+  })
 })

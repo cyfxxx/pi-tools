@@ -490,8 +490,10 @@ export function registerTools(pi: ExtensionAPI): void {
         const ratio = Math.round((cap / output.length) * 100)
         output = `${output.slice(0, cap)}\n\n[truncated: ${output.length} chars → ${cap} chars (${ratio}%)]`
       }
-      recordToolUsage('ctx_exec', estimateTokens(output))
       const pruned = pruneToolOutput(output, 'ctx_exec')
+      // 审计 MEDIUM 修复（2026-08-25）：剪枝后记录——原在剪枝前用全文估算，大输出被
+      // 截断后仍按全文计账；usedTotal 单调锁存下峰值虚高 → 压力档误升、误触 P2「立即 /compact」
+      recordToolUsage('ctx_exec', estimateTokens(pruned))
       recordOutput('ctx_exec', pruned.length)
       return { content: [{ type: 'text', text: pruned }], details: { stderr: stderr || undefined } }
     },

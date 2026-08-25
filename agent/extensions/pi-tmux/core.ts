@@ -4,7 +4,7 @@
  */
 
 import { execFile, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, writeSync, closeSync, statSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, writeSync, closeSync, statSync, readdirSync, renameSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, isAbsolute, resolve } from 'node:path'
 
@@ -117,6 +117,32 @@ function winRemovePid(opts: TmuxOpts, name: string): void {
   try { rmSync(winPidPath(opts, name)) } catch { /* ignore */ }
 }
 
+/**
+ * 本后端认属的进程映像名（小写）：pidfile 记录的是 spawn 出的 shell（bash.exe/cmd.exe），
+ * node.exe 覆盖直接派生 node 的场景。审计 MEDIUM 修复：陈旧 pidfile + PID 重用时
+ * process.kill(pid,0) 只证「有进程活着」不证「是我们的」——taskkill/重复判定前须用
+ * tasklist 校验映像名，防止误杀无关进程树。
+ */
+const WIN_OWNED_IMAGES = new Set(['node.exe', 'bash.exe', 'cmd.exe'])
+
+/** tasklist 查询 pid 的进程映像名；查询失败/无此进程返回 null */
+function winQueryImage(pid: number): Promise<string | null> {
+  return new Promise((resolvePromise) => {
+    execFile('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { windowsHide: true }, (err, stdout) => {
+      if (err || typeof stdout !== 'string') return resolvePromise(null)
+      const m = stdout.match(/"([^"]+)"/)
+      resolvePromise(m ? m[1].toLowerCase() : null)
+    })
+  })
+}
+
+/** pid 存活且映像名属于本后端（仅门控破坏性动作 taskkill 与 new-session duplicate 判定；has-session/list 等状态探测仍用 winPidAlive） */
+async function winPidOwned(pid: number | undefined): Promise<boolean> {
+  if (!pid || pid <= 0) return false
+  const img = await winQueryImage(pid)
+  return img !== null && WIN_OWNED_IMAGES.has(img)
+}
+
 /** taskkill 树杀（子进程命令一并终止） */
 function winTaskkill(pid: number): Promise<TmuxRunResult> {
   return new Promise((resolvePromise) => {
@@ -154,8 +180,9 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
     // 审计 LOW：纵深防御——其他子命令均经 winSessionName 的 NAME_RE 校验
     // （防 pidfile/log 路径穿越），new-session 补同款校验
     if (!name || !NAME_RE.test(name)) return { code: 1, stdout: '', stderr: 'new-session: invalid session name' }
-    // 已存在且存活 → duplicate（与 tmux 语义一致）
-    if (winChildren.has(name) || winPidAlive(winReadPid(opts, name))) {
+    // 已存在且存活 → duplicate（与 tmux 语义一致）；存活判定走映像名校验
+    // （陈旧 pidfile + PID 重用时不误判 duplicate，审计 MEDIUM）
+    if (winChildren.has(name) || (await winPidOwned(winReadPid(opts, name)))) {
       return { code: 1, stdout: '', stderr: `duplicate session: ${name}` }
     }
     const cwd = (winArgAt(args, '-c') || homedir()).replace(/\\/g, '/')
@@ -176,6 +203,8 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
     const logPath = logPathFor(opts, name)
     ensureLogDir(opts)
     // 日志 fd 由 Node 侧写入（spawn stdio 用 Node 管道——文件 fd 全缓冲导致输出积压不落盘）
+    // 审计修复：openSync('a') 追加写同样无限增长——开新日志前先单代轮转
+    rotateLogIfLarge(opts, name)
     let logFd: number
     try {
       logFd = openSync(logPath, 'a')
@@ -238,7 +267,7 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
       // bash -c 会话（无 stdin 交互——标记拦截，不静默积压）或跨重启：Ctrl-C 可 taskkill，其余不支持
       if (args.includes('C-c')) {
         const pid = winReadPid(opts, name)
-        if (pid && winPidAlive(pid)) return winTaskkill(pid)
+        if (await winPidOwned(pid)) return winTaskkill(pid)
       }
       return { code: 1, stdout: '', stderr: `send-keys: session ${name} 无 stdin 交互（bash -c 启动或已重启）——仅支持 Ctrl-C/读取/停止` }
     }
@@ -250,7 +279,7 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
     } catch {}
     if (args.includes('C-c')) {
       const pid = winReadPid(opts, name)
-      if (pid && winPidAlive(pid)) return winTaskkill(pid)
+      if (await winPidOwned(pid)) return winTaskkill(pid)
     }
     return { code: 0, stdout: '', stderr: '' }
   }
@@ -303,7 +332,7 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
       try { child.kill() } catch { /* ignore */ }
     }
     winRemovePid(opts, name)
-    if (pid && winPidAlive(pid)) return winTaskkill(pid)
+    if (await winPidOwned(pid)) return winTaskkill(pid)
     return { code: 0, stdout: '', stderr: '' }
   }
 
@@ -361,6 +390,26 @@ export function ensureLogDir(opts: TmuxOpts): string {
 
 export function logPathFor(opts: TmuxOpts, name: string): string {
   return join(opts.logDir, `${name}.log`)
+}
+
+/** 单代日志轮转上限：超过则 rename 为 <log>.old（覆盖旧 .old），新日志从空开始（审计修复：pipe-pane cat >> / Windows openSync('a') 均为追加写、无上限则长驻会话日志无限增长） */
+export const TMUX_LOG_MAX_BYTES = 10 * 1024 * 1024
+
+/**
+ * 日志超限单代轮转：<log> → <log>.old（先删旧 .old 再 rename，只保留一代历史）。
+ * 幂等安全：文件缺失/未超限/任何 fs 错误均静默跳过（轮转失败不阻塞会话启动）。
+ * 返回是否发生轮转。
+ */
+export function rotateLogIfLarge(opts: TmuxOpts, name: string, maxBytes = TMUX_LOG_MAX_BYTES): boolean {
+  const p = logPathFor(opts, name)
+  try {
+    if (!existsSync(p) || statSync(p).size <= maxBytes) return false
+    try { rmSync(p + '.old', { force: true }) } catch { /* ignore */ }
+    renameSync(p, p + '.old')
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** 三态探测结果：alive=存活；gone=确认无此会话；unknown=探测失败（不可作结束依据） */
@@ -436,7 +485,8 @@ export async function startSession(
     throw new Error(`创建 tmux 会话失败: ${create.stderr || create.stdout || `code ${create.code}`}`)
   }
 
-  // 2. pipe-pane 落盘日志（-o 追加）
+  // 2. pipe-pane 落盘日志（-o 追加）；审计修复：cat >> 无限增长——设置前先超限单代轮转
+  rotateLogIfLarge(opts, name)
   const pipeCmd = `cat >> ${JSON.stringify(logPathFor(opts, name))}`
   await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
 

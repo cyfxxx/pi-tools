@@ -117,11 +117,12 @@ export default async function (pi: ExtensionAPI) {
       },
       required: ["query"],
     },
-    async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
+    async execute(_toolCallId, params, signal, _onUpdate, _ctx) {
       const query = params.query as string
       const maxResults = (params.max_results as number) ?? 5
       try {
-        const text = await searchDirect(query, maxResults)
+        // 用户 signal 透传给 searchDirect：停止生成即中断进行中的 Bing 请求
+        const text = await searchDirect(query, maxResults, signal ?? undefined)
         const result = pruneToolOutput(text, "web_fetch")
         recordOutput("web_fetch", result.length)
         recordToolUsage("web_fetch", estimateTokens(result))

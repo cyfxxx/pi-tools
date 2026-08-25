@@ -34,10 +34,15 @@ function ensureDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true })
 }
 
-function readJSON<T>(file: string): T | null {
+// 审计 HIGH 修复（2026-08-25）：summaries/notes 与 entries 对齐同一防护——
+// 解析失败＝损坏面：先备份原文件到 .corrupt-<ts>（保留人工恢复机会、不被后续
+// 全量覆盖清空）＋显式告警；文件不存在＝首次/重建正常路径返 null。
+function readStoreFile<T>(file: string, kind: string): T | null {
   try {
     return JSON.parse(readFileSync(file, 'utf-8')) as T
   } catch {
+    if (!existsSync(file)) return null
+    backupCorruptFile(file, kind)
     return null
   }
 }
@@ -48,13 +53,7 @@ function readJSON<T>(file: string): T | null {
 // 全库记忆在无感知下被清空。修复：解析失败先备份原文件到 .corrupt-<ts>（保留
 // 可人工恢复，不被后续覆盖）+ 显式告警，绝不静默。
 function readEntriesFile(): MemoryStore | null {
-  try {
-    return JSON.parse(readFileSync(ENTRIES_FILE, 'utf-8')) as MemoryStore
-  } catch {
-    if (!existsSync(ENTRIES_FILE)) return null
-    backupCorruptFile(ENTRIES_FILE, 'entries')
-    return null
-  }
+  return readStoreFile<MemoryStore>(ENTRIES_FILE, 'entries')
 }
 
 function backupCorruptFile(file: string, kind: string): void {
@@ -189,7 +188,7 @@ export function activeEntries(entries: MemoryEntry[]): MemoryEntry[] {
 
 export function loadSummaries(): SummaryEntry[] {
   ensureDir()
-  const store = readJSON<SummaryStore>(SUMMARIES_FILE)
+  const store = readStoreFile<SummaryStore>(SUMMARIES_FILE, 'summaries')
   if (!store || !Array.isArray(store.summaries)) return []
   return store.summaries
 }
@@ -218,7 +217,8 @@ export function appendSummary(summary: SummaryEntry): SummaryEntry[] {
   // append 时 last-writer-wins 会丢对方条目；同 sessionId 冲突以本次写入优先），
   // 对齐 saveEntries 的写前合并策略
   try {
-    const fresh = readJSON<SummaryStore>(SUMMARIES_FILE)
+    // 用健壮读：磁盘文件若已损坏，先备份再放弃吸收（内存态照常落盘，原数据可从 .corrupt-* 恢复）
+    const fresh = readStoreFile<SummaryStore>(SUMMARIES_FILE, 'summaries')
     if (fresh && Array.isArray(fresh.summaries)) {
       const seen = new Set(trimmed.map(s => s.sessionId))
       for (const d of fresh.summaries) {
@@ -236,7 +236,7 @@ export function appendSummary(summary: SummaryEntry): SummaryEntry[] {
 export function loadNotes(): Record<string, string> {
   ensureDir()
   migrateFromCtxLite()
-  let notes = readJSON<Record<string, string>>(NOTES_FILE) || {}
+  let notes = readStoreFile<Record<string, string>>(NOTES_FILE, 'notes') || {}
   // 保留 _ctx. 内部键名（plan-mode 等扩展通过 lib/note-store 依赖它）
 
   // TTL 清理

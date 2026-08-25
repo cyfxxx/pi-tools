@@ -235,6 +235,63 @@ describe('session lock', () => {
     expect(await acquireSessionLock()).toBe(true)
     await releaseSessionLock()
   })
+
+  it('接管租约过期的陈旧锁（审计 HIGH 回归：不再 EEXIST 停摆）', async () => {
+    const { writeFile } = await import('fs/promises')
+    // 死进程 PID + 25h 前的时间戳：原实现 staleByAge 分支跳过 unlink，
+    // O_EXCL 永久 EEXIST → acquire 返回 false；修复后必须能接管
+    const deadPid = 999999
+    await writeFile(join(TEST_DIR, 'scheduler.lock'), `${deadPid}:${Date.now() - 25 * 3600 * 1000}`)
+    expect(await acquireSessionLock()).toBe(true)
+    await releaseSessionLock()
+  })
+
+  it('同 PID 残留锁可直接重获（刷新租约，不再停摆）', async () => {
+    const { writeFile } = await import('fs/promises')
+    await writeFile(join(TEST_DIR, 'scheduler.lock'), `${process.pid}:${Date.now() - 3600 * 1000}`)
+    expect(await acquireSessionLock()).toBe(true)
+    await releaseSessionLock()
+  })
+})
+
+describe('软删墓碑与导入防护（2026-08-25 审计修复）', () => {
+  beforeEach(async () => {
+    const { writeTasks, readTasks } = await import('../storage')
+    const store = await readTasks()
+    store.tasks = []
+    await writeTasks(store)
+  })
+
+  it('listTasks 过滤 deleted 任务（对调度器不可见）', async () => {
+    const { writeTasks, readTasks, listTasks } = await import('../storage')
+    const store = await readTasks()
+    store.tasks.push({
+      id: 'ghost', name: 'ghost', type: 'interval', schedule: '5m', prompt: 'p', enabled: true,
+      lastRun: null, lastResult: null, lastOutput: '', nextRun: new Date(Date.now() - 1000).toISOString(),
+      runCount: 0, history: [], tags: [], retries: 0, failCount: 0, pendingInject: false,
+      useSubagent: false, notifyOnCompletion: false, maxRunTime: 300,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), deleted: true,
+    })
+    await writeTasks(store)
+    const visible = await listTasks()
+    expect(visible.find(t => t.id === 'ghost')).toBeUndefined()
+  })
+
+  it('importTasks 跳过 deleted 条目且正常导入在持锁下完成', async () => {
+    const { writeFile } = await import('fs/promises')
+    const { importTasks, listTasks } = await import('../storage')
+    const imp = join(TEST_DIR, `imp-${Date.now()}.json`)
+    await writeFile(imp, JSON.stringify({ tasks: [
+      { name: 'ok-task', type: 'interval', schedule: '5m', prompt: 'p' },
+      { name: 'dead-task', type: 'interval', schedule: '5m', prompt: 'p', deleted: true },
+    ] }))
+    const r = await importTasks(imp)
+    expect(r.imported).toBe(1)
+    expect(r.skipped).toContain('dead-task')
+    const all = await listTasks()
+    expect(all.find(t => t.name === 'ok-task')).toBeDefined()
+    expect(all.find(t => t.name === 'dead-task')).toBeUndefined()
+  })
 })
 
 describe('migration (v1 → v3)', () => {

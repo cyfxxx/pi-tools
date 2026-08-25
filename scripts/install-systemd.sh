@@ -2,6 +2,11 @@
 # install-systemd.sh — 安装 pi-autopilot 的 systemd timer
 set -u
 
+if [ "$(id -u)" -ne 0 ]; then
+  echo "错误: 写入 /etc/systemd/system 需要 root 权限，请用 sudo 运行本脚本"
+  exit 1
+fi
+
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 CRON_SCRIPT="$PI_HOME/scripts/pi-cron.sh"
 SERVICE_NAME="pi-autopilot"

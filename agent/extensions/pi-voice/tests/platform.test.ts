@@ -68,6 +68,13 @@ describe('termux spec 命令构造', () => {
     expect(spec.tts.playArgs('/tmp/x.wav')).toBeNull()
     expect(spec.tts.stageToWav).toBe(false)
   })
+
+  it('zombiePatterns 仅含精确进程名（审计修复：含空格的 termux-api TextToSpeech 被 pkill -x 永不命中恒空转，已删）', () => {
+    const pats = spec.tts.zombiePatterns()
+    expect(pats).toContain('termux-tts-speak')
+    expect(pats).not.toContain('termux-api TextToSpeech')
+    for (const p of pats) expect(p).not.toMatch(/\s/)
+  })
 })
 
 describe('linux spec 命令构造', () => {

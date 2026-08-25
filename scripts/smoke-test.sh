@@ -28,6 +28,7 @@ fi
 
 echo "[3/8] whisper 转写服务"
 TMPWAV=$(mktemp --suffix=.wav)
+trap 'rm -f "${TMPWAV:-}"' EXIT
 # 触发条件：TTS 合成器（piper 优先更准，espeak-ng 兜底）+ whisper 服务（转写）都就绪；
 # 未配置语音（无 agent/pi-voice.json）时 rebuild 不会装 whisper venv，此处跳过属预期
 TTS_BIN=""

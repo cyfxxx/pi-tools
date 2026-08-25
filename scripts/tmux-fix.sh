@@ -32,9 +32,11 @@ fi
 echo "== 清理陈旧 server 与 socket 残留 =="
 # 杀所有 tmux server（-x 精确匹配进程名 tmux；只 kill 连接，不 kill status-loop 等）
 run "pkill -9 -x tmux 2>/dev/null; sleep 1"
-# socket 目录：Termux 默认在 $TMPDIR(=Termux tmp)/tmux-<uid>，proot 映射到 /tmp/tmux-0
-run "rm -rf /tmp/tmux-0 /tmp/tmux-* 2>/dev/null"
-[ -n "$PREFIX" ] && run "rm -rf $PREFIX/tmp/tmux-* 2>/dev/null"
+# socket 目录：Termux 默认在 $TMPDIR(=Termux tmp)/tmux-<uid>，proot 映射到 /tmp/tmux-0。
+# 收窄为本用户目录（对齐 pi-wrapper.sh），不再通配删所有用户的 tmux-*；
+# 保留 /tmp/tmux-0（proot 内 uid=0 的映射位）
+run "rm -rf /tmp/tmux-$(id -u) /tmp/tmux-0 2>/dev/null"
+[ -n "$PREFIX" ] && run "rm -rf $PREFIX/tmp/tmux-$(id -u) 2>/dev/null"
 
 echo
 echo "== 重建 tmux =="

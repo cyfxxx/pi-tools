@@ -187,7 +187,9 @@ function termuxSpec(): PlatformSpec {
       checkArgs: () => ['--help'],
       speakArgs: (text) => [text],
       synthesizeArgs: () => [],
-      zombiePatterns: () => ['termux-tts-speak', 'termux-api TextToSpeech'],
+      // 审计修复：原含 'termux-api TextToSpeech'（带空格）——pkill -x 按精确进程名匹配，
+      // 含空格条目永不命中恒空转，直接删除（保留 termux-tts-speak）
+      zombiePatterns: () => ['termux-tts-speak'],
       playArgs: () => null,
       stageToWav: false,
     },

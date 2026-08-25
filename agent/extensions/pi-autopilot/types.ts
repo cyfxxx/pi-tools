@@ -37,7 +37,8 @@ export interface Task {
   pendingInject: boolean
   /** A2: 崩溃恢复重注入累计次数（≥3 转 dead-letter 暂停，需人工介入） */
   recoveryCount?: number
-  /** 软删墓碑：writeTasks 写前合并不复活 deleted 任务；listTasks 过滤（2026-08-25） */
+  /** 软删墓碑：listTasks 过滤不可见、importTasks 拒绝导入；deleteTask 为物理删除，
+   *  此字段仅防御陈旧外部副本（导出文件）写回复活（实现于 2026-08-25） */
   deleted?: boolean
   createdAt: string
   updatedAt: string

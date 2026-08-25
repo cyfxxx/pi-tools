@@ -587,7 +587,9 @@ export async function speak(cfg: VoiceConfig, text: string): Promise<CommandResu
   mkdirSync(cfg.tmpDir, { recursive: true })
   const stage = join(cfg.tmpDir, TTS_STAGE_FILE.split('/').pop()!)
   // 统一文本文件输入（espeak-ng -f / piper -i），避免 stdin 与特殊字符差异
-  const textFile = join(cfg.tmpDir, 'tts-input.txt')
+  // 审计修复：固定名 tts-input.txt 同机双实例互写——加 pid 后缀隔离；写入与
+  // synthesizeArgs(textFile) 读取同用本变量天然一致，finally 统一清理
+  const textFile = join(cfg.tmpDir, `tts-input-${process.pid}.txt`)
   try {
     writeFileSync(textFile, clean, 'utf-8')
   } catch (e) {

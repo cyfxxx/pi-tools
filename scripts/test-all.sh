@@ -44,7 +44,7 @@ fi
 # 便携 pi 包（自动生成 tsconfig.local.json / subagent SDK 定位）
 PI_GLOBAL="$PI_HOME/pi-global/node_modules/@earendil-works/pi-coding-agent"
 
-ALL_EXTS="pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode pi-tmux pi-voice pi-link"
+ALL_EXTS="pi-web-search pi-memory pi-autopilot pi-browser pi-context plan-mode pi-tmux pi-voice pi-link subagent"
 if [ -n "$ONLY" ]; then
   ALL_EXTS="$ONLY" # 已归一为空格分隔
 fi

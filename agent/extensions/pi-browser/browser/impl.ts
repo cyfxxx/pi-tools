@@ -2,7 +2,7 @@ import type { Browser, Page } from 'playwright-core'
 import type { BrowserConfig, PageInfo, NetworkEntry, DialogMode, DownloadFile } from './types'
 import { existsSync, readdirSync } from 'fs'
 import { mkdir } from 'fs/promises'
-import { dirname, join } from 'path'
+import { basename, dirname, join, resolve } from 'path'
 import { tmpdir, homedir } from 'os'
 
 /**
@@ -31,8 +31,16 @@ export function downloadsDirDefault(): string {
  * （wrapper 循环内 set 不重跑）。非 win32 平台直接短路，零副作用。
  */
 export function ensureLocalBinaryEnv(): void {
-  // 环境变量已设且文件存在 → 直接使用
-  if (process.env.CLOAKBROWSER_BINARY_PATH && existsSync(process.env.CLOAKBROWSER_BINARY_PATH)) return
+  const envBin = process.env.CLOAKBROWSER_BINARY_PATH
+  if (envBin) {
+    // 审计修复：相对路径的 existsSync 依赖 cwd，cwd 变化后判断与使用不一致——
+    // 归一为绝对路径后再判断；存在则回写绝对路径（后续 launch 读 env 不再受 cwd 影响）
+    const abs = resolve(envBin)
+    if (existsSync(abs)) {
+      process.env.CLOAKBROWSER_BINARY_PATH = abs
+      return
+    }
+  }
   // 审计 MEDIUM：env 残留但指向已删除文件（如旧 npmmirror 被清理）——必须清除变量。
   // 原先非 win32 平台在此提前 return，既不复探也不清变量，cloakbrowser 读到失效
   // 路径致 launch 失败难定位；清除后各平台均继续走下方正常探测链（win32 门控保持）
@@ -431,7 +439,11 @@ export class BrowserManager {
     return this.downloadedFiles.map(f => ({ ...f }))
   }
 
-  private async saveDownload(download: import('playwright-core').Download, filename: string): Promise<void> {
+  private async saveDownload(download: import('playwright-core').Download, rawName: string): Promise<void> {
+    // 审计修复：filename 来自远端 suggestedFilename()，可能含路径分隔符/..段——
+    // 越目录写防护：统一分隔符后取 basename，滤掉 '.'/'..' 与空名（回退默认名）
+    let filename = basename(rawName.replace(/\\/g, '/'))
+    if (filename === '' || filename === '.' || filename === '..') filename = 'download'
     // 防重名覆盖：去重依据 = 已完成记录（downloadedFiles）+ 进行中占位（activeDownloads）。
     // 占位在首个 await 前同步登记，并发同名词下载不会双双通过检查而互相覆盖同一文件。
     const taken = () =>

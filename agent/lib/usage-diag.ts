@@ -36,7 +36,13 @@ export interface PruneEvent {
   prunedCount: number;
 }
 
-export type DiagLine = UsageRecord | AutoCompactEvent | PruneEvent;
+/** 审计 M6 探针（2026-08-25）：provider 某轮未回传可用 usage 的事实记录 */
+export interface UsageMissingEvent {
+  type: "usage-missing";
+  ts: number;
+}
+
+export type DiagLine = UsageRecord | AutoCompactEvent | PruneEvent | UsageMissingEvent;
 
 const DIAG_FILE = join(homedir(), ".pi", "agent", ".usage-diag.jsonl");
 const MAX_LINES = 20_000;
@@ -78,6 +84,23 @@ export function recordUsage(record: UsageRecord): void {
   try {
     appendFileSync(getDiagFile(), JSON.stringify(record) + "\n");
     rotateIfNeeded();
+  } catch {
+    // 诊断记录失败不阻塞会话
+  }
+}
+
+// 审计 M6 探针（2026-08-25）：provider 缺 usage 时 turn_end 静默 return，扩展层阈值
+// 压缩/压力提示/thinking 自适应全部跳过却无观测痕迹。此探针记录触发事实，
+// 用于确认「依赖流式 usage 必存在」假设（上游 #8328 同类）的真实触发面。
+let lastUsageMissingLog = 0;
+const USAGE_MISSING_THROTTLE_MS = 10 * 60 * 1000;
+export function recordUsageMissing(): void {
+  const now = Date.now();
+  if (now - lastUsageMissingLog < USAGE_MISSING_THROTTLE_MS) return;
+  lastUsageMissingLog = now;
+  try {
+    const event: UsageMissingEvent = { type: "usage-missing", ts: now };
+    appendFileSync(getDiagFile(), JSON.stringify(event) + "\n");
   } catch {
     // 诊断记录失败不阻塞会话
   }

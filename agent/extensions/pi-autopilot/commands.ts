@@ -161,6 +161,8 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           const config = await readAutopilotConfig()
           const setDeep = (obj: Record<string, unknown>, p: string, v: unknown): boolean => {
             const parts = p.split('.')
+            // 审计 MEDIUM 修复（2026-08-25）：拒绝原型链保留键，防 /auto policy set __proto__.x 污染 Object.prototype
+            if (parts.some(s => s === '__proto__' || s === 'constructor' || s === 'prototype')) return false
             let cur = obj
             for (let i = 0; i < parts.length - 1; i++) {
               if (typeof cur[parts[i]] !== 'object' || cur[parts[i]] === null) cur[parts[i]] = {}
@@ -169,7 +171,10 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
             cur[parts[parts.length - 1]] = v
             return true
           }
-          setDeep(config as unknown as Record<string, unknown>, path, value)
+          if (!setDeep(config as unknown as Record<string, unknown>, path, value)) {
+            reply(pi, `拒绝写入: ${path} 含原型链保留键（__proto__/constructor/prototype）`)
+            break
+          }
           await writeAutopilotConfig(config)
           reply(pi, `已更新策略: ${path} = ${JSON.stringify(value)}`)
           break

@@ -412,6 +412,36 @@ describe('storage: corruption 防护与并发合并（审计 HIGH/MEDIUM 修复�
     expect(readFileSync(join(dir, backups[0]), 'utf-8')).toContain('<<<<<<<')
   })
 
+  it('loadSummaries 遇损坏 JSON：同款备份防护（2026-08-25 HIGH 对齐）', async () => {
+    const { loadSummaries, saveSummaries } = await import('../storage.ts')
+    const file = join(dir, 'summaries.json')
+    writeFileSync(file, '{broken summaries <<< HEAD')
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const loaded = loadSummaries()
+    logSpy.mockRestore()
+    expect(loaded).toEqual([])
+    expect(existsSync(file)).toBe(false)
+    const backups = readdirSync(dir).filter((f) => f.startsWith('summaries.json.corrupt-'))
+    expect(backups).toHaveLength(1)
+    expect(readFileSync(join(dir, backups[0]), 'utf-8')).toContain('<<< HEAD')
+    // 后续保存不清掉备份：原始数据仍可人工恢复
+    saveSummaries([])
+    expect(existsSync(join(dir, backups[0]))).toBe(true)
+  })
+
+  it('loadNotes 遇损坏 JSON：同款备份防护（2026-08-25 HIGH 对齐）', async () => {
+    const { loadNotes } = await import('../storage.ts')
+    const file = join(dir, 'notes.json')
+    writeFileSync(file, 'not json at all {{{')
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const loaded = loadNotes()
+    logSpy.mockRestore()
+    expect(loaded).toEqual({})
+    expect(existsSync(file)).toBe(false)
+    const backups = readdirSync(dir).filter((f) => f.startsWith('notes.json.corrupt-'))
+    expect(backups).toHaveLength(1)
+  })
+
   it('saveEntries 返回合并后数组，吸收磁盘并发新增（L5）', async () => {
     const { saveEntries } = await import('../storage.ts')
     const a = makeEntry({ id: 'a1', title: 'A' })
@@ -420,5 +450,29 @@ describe('storage: corruption 防护与并发合并（审计 HIGH/MEDIUM 修复�
     // 调用方内存只剩 a（旧快照），磁盘另有 b；saveEntries 应返回合并两者
     const merged = saveEntries([a])
     expect(merged.map((e) => e.id).sort()).toEqual(['a1', 'b1'])
+  })
+})
+
+describe('lib/note-store 与 pi-memory 对齐（2026-08-25 审计修复）', () => {
+  it('saveNotes 经 scrubSecrets 净化（封堵脱敏旁路）', async () => {
+    const { saveNotes, loadNotes } = await import('../../../lib/note-store.ts')
+    saveNotes({ 'ctx.key': 'token sk-abcdefghijklmnopqrstuvwxy in note' })
+    const loaded = loadNotes()
+    expect(loaded['ctx.key']).toContain('[REDACTED:api-key]')
+    // 落盘文件本身同样净化
+    const raw = readFileSync(join(dir, 'notes.json'), 'utf-8')
+    expect(raw).not.toContain('sk-abcdefghijklmnopqrstuvwxy')
+  })
+
+  it('loadNotes 遇损坏 JSON：备份 .corrupt-* 且不静默清空（HIGH 对齐）', async () => {
+    const { loadNotes } = await import('../../../lib/note-store.ts')
+    const file = join(dir, 'notes.json')
+    writeFileSync(file, 'garbage {{{ broken')
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const loaded = loadNotes()
+    logSpy.mockRestore()
+    expect(loaded).toEqual({})
+    expect(existsSync(file)).toBe(false)
+    expect(readdirSync(dir).filter((f) => f.startsWith('notes.json.corrupt-'))).toHaveLength(1)
   })
 })

@@ -7,13 +7,14 @@
  * 循环覆盖），`/session`/`/usage-diag` 的命中率口径又各不相同，易混淆。
  * 本补丁：
  *   1) CH 区改为实时/会话双命中率：`CH92.1/85.3%`（左=最近一轮，右=会话累计）
- *   2) context 区去掉括号百分比：`442.0K/256k (172%)` → `442.0K/256k`
- *      （上下文压力靠颜色提示——live-context V2 已把着色阈值改为压缩临界，
- *      >70% 黄、>90% 红、>100% 加 !!；分母 effWindow = min(窗口, 256K 压缩临界参考线)）
+ *   2) context 区去掉括号百分比：`442.0K/1M (44%)` → `442.0K/1M`
+ *      （分母恒为真实 contextWindow——live-context V3 口径；上下文压力靠颜色提示：
+ *      达压缩参考线(默认 256K)黄、超真实窗口 80% 红、超窗加 !!。变量仍名 effWindow，
+ *      但已无旧 V2 的 min(窗口, 256K) 截断语义）
  * ↑↓RW$ 累计口径保留（账单信息），不受影响。
  *
- * 依赖：须在 patch-footer-live-context.mjs（V1 或 V2）之后应用（part 2 匹配其实时
- * context 形态；未应用时报错提示）。
+ * 依赖：须在 patch-footer-live-context.mjs（V3/V3.1）之后应用——part 2 匹配其实时
+ * context 形态（contextWindow/effWindow + 百分比）；未应用时仅告警跳过 part 2。
  *
  * 用法：node patch-footer-cache.mjs [dist 目录]
  *   - 不传参数：自动探测（默认 /root/.local/share/pi-node/...）

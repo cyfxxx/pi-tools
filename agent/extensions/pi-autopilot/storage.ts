@@ -76,6 +76,12 @@ export async function acquireSessionLock(): Promise<boolean> {
           }
           // 进程已死，清理陈旧锁
           await unlink(lockF).catch(() => {})
+        } else {
+          // 审计 HIGH 修复（2026-08-25）：租约过期或同 PID 残留锁也必须先清理——
+          // 原逻辑仅「其他 PID 且未过期」才走存活检测+unlink，过期/同 PID 锁直接落到
+          // 下方 O_EXCL 创建必 EEXIST，5 次重试全败 → 调度永久停摆（上方注释宣称的
+          // 「允许覆盖」与实现相反）。同 PID 说明本进程此前获取后未正常释放，重写刷新租约即可。
+          await unlink(lockF).catch(() => {})
         }
       } catch { /* 读锁文件失败，覆盖之 */ }
     }
@@ -409,7 +415,8 @@ export async function deleteTask(idOrName: string): Promise<boolean> {
 
 export async function listTasks(): Promise<Task[]> {
   const store = await readTasks()
-  return store.tasks.sort((a, b) => {
+  // 软删墓碑过滤：deleted 任务对调度器/列表不可见（防陈旧副本写回复活，2026-08-25）
+  return store.tasks.filter(t => !t.deleted).sort((a, b) => {
     if (!a.nextRun) return 1
     if (!b.nextRun) return -1
     return a.nextRun.localeCompare(b.nextRun)
@@ -557,12 +564,17 @@ export async function importTasks(filePath: string): Promise<{ imported: number;
   const raw = await readFile(filePath, 'utf-8')
   const data = JSON.parse(raw) as { tasks?: unknown[] }
   if (!Array.isArray(data.tasks)) throw new Error(`导入文件无 tasks 数组: ${filePath}`)
+  // 审计 MEDIUM 修复（2026-08-25）：读改写全程持 store 写互斥锁——与 tick 的
+  // updateTaskAfterRun 并发时旧快照覆盖会丢更新（addTask/updateTask/deleteTask 均已持锁）
+  return withStoreLock(async () => {
   const store = await readTasks()
   const existing = new Set(store.tasks.map(t => t.name))
   const skipped: string[] = []
   let imported = 0
   for (const rawTask of data.tasks as Record<string, unknown>[]) {
     if (!rawTask || typeof rawTask !== 'object') continue
+    // 软删墓碑防御：陈旧导出里的 deleted 任务不导入（防复活）
+    if ((rawTask as { deleted?: unknown }).deleted === true) { skipped.push(String((rawTask as { name?: unknown }).name ?? '<未命名>')); continue }
     const name = String(rawTask.name ?? '')
     const type = rawTask.type as Task['type']
     const schedule = String(rawTask.schedule ?? '')
@@ -591,4 +603,5 @@ export async function importTasks(filePath: string): Promise<{ imported: number;
   }
   if (imported > 0) await writeTasks(store)
   return { imported, skipped }
+  })
 }

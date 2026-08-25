@@ -1,12 +1,39 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+
+// 审计 MEDIUM 回归：Windows 后端 taskkill/duplicate 判定需 tasklist 映像名校验。
+// 本文件级 mock 委托真实 child_process（仅拦截 tasklist/taskkill），不影响同文件真实 tmux 集成用例。
+const winMock = vi.hoisted(() => ({ tasklistOut: '', taskkillCalls: [] as string[][] }))
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>()
+  const passthrough = (bin: unknown, args: unknown, opts: unknown, cb: unknown) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (actual.execFile as any)(bin, args, opts, cb)
+  return {
+    ...actual,
+    execFile: ((bin: string, args: string[], opts: unknown, cb?: unknown) => {
+      if (bin === 'tasklist' && winMock.tasklistOut !== '') {
+        (cb as (e: Error | null, so: string, se: string) => void)(null, winMock.tasklistOut, '')
+        return
+      }
+      if (bin === 'taskkill') {
+        winMock.taskkillCalls.push(args)
+        ;(cb as (e: Error | null, so: string, se: string) => void)(null, '', '')
+        return
+      }
+      return passthrough(bin, args, opts, cb)
+    }) as typeof actual.execFile,
+  }
+})
 import {
   type TmuxOpts,
   normalizeSessionName,
   isPiSession,
   logPathFor,
   defaultOpts,
+  rotateLogIfLarge,
 } from '../core'
 import { resolveName, registerTmuxTools } from '../tools'
 
@@ -351,4 +378,110 @@ describe('pi-tmux 三态探测（classifySessionProbe/probeSession）', () => {
     expect(await hasSession(opts, name)).toBe(false)
     removeLog(opts, name)
   }, 30000)
+})
+
+// 审计修复回归：pipe-pane `cat >>` / Windows openSync('a') 追加写无限增长——
+// 超限单代轮转为 <log>.old（覆盖旧代）。纯 fs 逻辑，不依赖 tmux。
+describe('pi-tmux 日志轮转（rotateLogIfLarge）', () => {
+  const ropts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-rotate-test'), prefix: 'pi-' }
+  const NAME = 'pi-rotate'
+  const LOG = join(ropts.logDir, `${NAME}.log`)
+  const OLD = `${LOG}.old`
+
+  afterEach(() => {
+    rmSync(LOG, { force: true })
+    rmSync(OLD, { force: true })
+  })
+
+  it('超上限 → rename 为 <log>.old，原路径腾空（旧行为：原文件保留继续追加）', () => {
+    mkdirSync(ropts.logDir, { recursive: true })
+    writeFileSync(LOG, 'x'.repeat(64))
+    expect(rotateLogIfLarge(ropts, NAME, 16)).toBe(true)
+    expect(existsSync(LOG)).toBe(false)
+    expect(readFileSync(OLD, 'utf-8')).toBe('x'.repeat(64))
+  })
+
+  it('轮转覆盖旧 .old（单代，不累积多份历史）', () => {
+    mkdirSync(ropts.logDir, { recursive: true })
+    writeFileSync(OLD, 'stale-generation')
+    writeFileSync(LOG, 'y'.repeat(64))
+    expect(rotateLogIfLarge(ropts, NAME, 16)).toBe(true)
+    expect(readFileSync(OLD, 'utf-8')).toBe('y'.repeat(64))
+  })
+
+  it('未超限/文件缺失 → 不动（幂等安全）', () => {
+    expect(rotateLogIfLarge(ropts, NAME, 16)).toBe(false)
+    mkdirSync(ropts.logDir, { recursive: true })
+    writeFileSync(LOG, 'tiny')
+    expect(rotateLogIfLarge(ropts, NAME, 16)).toBe(false)
+    expect(existsSync(LOG)).toBe(true)
+    expect(existsSync(OLD)).toBe(false)
+  })
+})
+
+// 审计 MEDIUM 回归：Windows 后端按 pidfile taskkill——陈旧 pidfile + PID 重用会误杀
+// 无关进程树；duplicate 判定同被污染。修复后须 tasklist 校验映像名（白名单
+// node.exe/bash.exe/cmd.exe，pidfile 记录的是 spawn 的 shell）。用本进程 pid 模拟
+// 「存活但映像名不符」：旧行为下 winPidAlive 为真会直接 taskkill（即误杀），新行为必须拦截。
+describe('pi-tmux Windows 后端 pidfile 归属校验（tasklist 映像名）', () => {
+  const wopts: TmuxOpts = { bin: 'tmux', logDir: join(tmpdir(), 'pi-tmux-win-test'), prefix: 'pi-' }
+  const NAME = 'pi-winsafe'
+  const PIDFILE = join(wopts.logDir, `${NAME}.pid`)
+
+  beforeEach(() => {
+    winMock.tasklistOut = ''
+    winMock.taskkillCalls = []
+    mkdirSync(wopts.logDir, { recursive: true })
+  })
+  afterEach(() => {
+    for (const f of [PIDFILE, join(wopts.logDir, `${NAME}.log`), `${join(wopts.logDir, `${NAME}.log`)}.old`]) {
+      rmSync(f, { force: true })
+    }
+  })
+
+  function withWin32<T>(fn: () => Promise<T>): Promise<T> {
+    const desc = Object.getOwnPropertyDescriptor(process, 'platform')!
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true })
+    return fn().finally(() => {
+      Object.defineProperty(process, 'platform', { value: desc.value, configurable: true, writable: desc.writable })
+    })
+  }
+
+  it('kill-session：映像名不符（chrome.exe 冒充）→ 不 taskkill', async () => {
+    writeFileSync(PIDFILE, String(process.pid))
+    winMock.tasklistOut = `"chrome.exe","${process.pid}","Console","1","12,345 K"`
+    await withWin32(async () => {
+      const { runTmux } = await import('../core')
+      const r = await runTmux(wopts, ['kill-session', '-t', NAME], 5000)
+      expect(r.code).toBe(0) // pidfile 已清、无归属进程可杀 → 正常成功
+    })
+    // 关键断言：旧行为（仅凭 process.kill(pid,0) 存活即杀）在此必然发出 taskkill
+    expect(winMock.taskkillCalls).toHaveLength(0)
+  })
+
+  it('kill-session：映像名属本后端（bash.exe）→ 正常 taskkill 树杀', async () => {
+    writeFileSync(PIDFILE, String(process.pid))
+    winMock.tasklistOut = `"bash.exe","${process.pid}","Console","1","9,876 K"`
+    await withWin32(async () => {
+      const { runTmux } = await import('../core')
+      await runTmux(wopts, ['kill-session', '-t', NAME], 5000)
+    })
+    expect(winMock.taskkillCalls).toEqual([['/PID', String(process.pid), '/T', '/F']])
+  })
+
+  it('new-session duplicate 判定：映像名校验通过才判重，不符则放行新建', async () => {
+    writeFileSync(PIDFILE, String(process.pid))
+    await withWin32(async () => {
+      const { runTmux } = await import('../core')
+      winMock.tasklistOut = `"node.exe","${process.pid}","Console","1","1,234 K"`
+      const dup = await runTmux(wopts, ['new-session', '-d', '-s', NAME], 5000)
+      expect(dup.stderr).toMatch(/duplicate session/)
+
+      winMock.tasklistOut = `"chrome.exe","${process.pid}","Console","1","1,234 K"`
+      const fresh = await runTmux(wopts, ['new-session', '-d', '-s', NAME], 5000)
+      // 旧行为：仅凭 pid 存活即判 duplicate → 此处必报 duplicate；修复后放行
+      // （后续 spawn 在测试环境失败也无妨，断言只看未误判 duplicate）
+      expect(fresh.stderr).not.toMatch(/duplicate session/)
+    })
+  })
 })

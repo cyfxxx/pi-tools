@@ -80,7 +80,10 @@ start() {
   [ -n "$model" ] && envs+=(PI_WHISPER_MODEL="$model")
   [ -n "$device" ] && envs+=(PI_WHISPER_DEVICE="$device")
   # ctranslate2 CUDA 依赖（nvidia-cublas/cudnn pip 包）不在系统库路径，需显式加入
-  local nv_lib="$VENV/lib/python3.12/site-packages/nvidia"
+  # 审计 MEDIUM 修复（2026-08-25）：python 小版本用通配探测（对齐 rebuild.sh），
+  # 硬编码 3.12 在其他版本 venv 下静默丢 LD_LIBRARY_PATH → GPU 静默降级 CPU
+  local nv_lib
+  nv_lib="$(ls -d "$VENV"/lib/python*/site-packages/nvidia 2>/dev/null | head -1)"
   if [ -d "$nv_lib/cublas/lib" ] || [ -d "$nv_lib/cudnn/lib" ]; then
     envs+=(LD_LIBRARY_PATH="$nv_lib/cublas/lib:$nv_lib/cudnn/lib:${LD_LIBRARY_PATH:-}")
   fi
@@ -152,7 +155,7 @@ run() {
   [ -n "$token" ] && envs+=(PI_WHISPER_TOKEN="$token")
   [ -n "$model" ] && envs+=(PI_WHISPER_MODEL="$model")
   [ -n "$device" ] && envs+=(PI_WHISPER_DEVICE="$device")
-  nv_lib="$VENV/lib/python3.12/site-packages/nvidia"
+  nv_lib="$(ls -d "$VENV"/lib/python*/site-packages/nvidia 2>/dev/null | head -1)"
   if [ -d "$nv_lib/cublas/lib" ] || [ -d "$nv_lib/cudnn/lib" ]; then
     envs+=(LD_LIBRARY_PATH="$nv_lib/cublas/lib:$nv_lib/cudnn/lib:${LD_LIBRARY_PATH:-}")
   fi

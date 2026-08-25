@@ -17,6 +17,7 @@ vi.mock('node:child_process', () => ({
 }))
 
 import { startRecording, stopRecording, convertToWav, speak, queryRecording, gpuSwitchBlockReason } from '../core'
+import { existsSync, readFileSync } from 'node:fs'
 import { DEFAULTS, type VoiceConfig } from '../config'
 
 const linuxCfg: VoiceConfig = {
@@ -168,6 +169,27 @@ describe('linux speak 两段式', () => {
     })
     const r = await speak({ ...linuxCfg, ttsEngine: 'piper' }, '你好世界')
     expect(r.code).toBe(0)
+  })
+
+  it('TTS 文本暂存带 pid 后缀且用完清理（审计修复：固定名 tts-input.txt 同机双实例互写；espeak-ng/piper 两段式共用此路径）', async () => {
+    let textFile = ''
+    execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
+      if (bin === 'espeak-ng') {
+        textFile = args[args.indexOf('-f') + 1]
+        // 写入侧：内容完整落到带 pid 后缀的暂存文件
+        expect(readFileSync(textFile, 'utf-8')).toBe('双实例隔离')
+        cb(null, '', '')
+      } else if (bin === 'paplay') {
+        cb(null, '', '')
+      }
+    })
+    const r = await speak({ ...linuxCfg, ttsEngine: 'espeak-ng' }, '双实例隔离')
+    expect(r.code).toBe(0)
+    // 旧行为固定名 tts-input.txt 不匹配此断言
+    expect(textFile).toMatch(/tts-input-\d+\.txt$/)
+    expect(textFile).toContain(String(process.pid))
+    // 用完清理（finally rmSync force）
+    expect(existsSync(textFile)).toBe(false)
   })
 
   it('espeak-ng 失败 → 附带安装提示', async () => {

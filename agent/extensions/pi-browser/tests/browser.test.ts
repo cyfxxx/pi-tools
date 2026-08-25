@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { tmpdir } from 'os'
-import { join } from 'node:path'
+import { join, relative, resolve, isAbsolute, basename, sep } from 'node:path'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 
 function createMockPage() {
@@ -365,6 +365,52 @@ describe('saveDownload 同名词防覆盖', () => {
   })
 })
 
+// ── 审计回归：saveDownload 路径穿越防护（suggestedFilename 来自远端）──
+describe('saveDownload 路径穿越防护', () => {
+  let tmp: string
+
+  beforeEach(async () => {
+    await setupMocks()
+    tmp = mkdtempSync(join(tmpdir(), 'pi-browser-dl-trav-'))
+  })
+  afterEach(() => {
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  async function managerForTraversal() {
+    let downloadHandler!: (d: unknown) => void
+    mockPage.on = vi.fn((event: string, handler: (d: unknown) => void) => {
+      if (event === 'download') downloadHandler = handler
+    }) as any
+    const bm = await getBrowserManager()
+    bm.downloads(tmp)
+    mockPage.url.mockReturnValue('https://example.com')
+    mockPage.title.mockResolvedValue('T')
+    await bm.navigate('https://example.com')
+    return { bm, fire: (d: unknown) => downloadHandler(d) }
+  }
+
+  it('远端建议名含 ../ 时取 basename，落盘不越出下载目录', async () => {
+    const { bm, fire } = await managerForTraversal()
+    fire({ suggestedFilename: () => '../../evil.txt', url: () => 'https://a/x', saveAs: () => Promise.resolve() })
+    await vi.waitFor(() => expect(bm.downloads()).toHaveLength(1))
+    const f = bm.downloads()[0]
+    expect(f.filename).toBe('evil.txt')
+    expect(f.path).toBe(join(tmp, 'evil.txt'))
+    expect(f.path!.startsWith(tmp + sep)).toBe(true)
+  })
+
+  it('Windows 风格 ..\\ 分隔与裸 .. 名同样被过滤', async () => {
+    const { bm, fire } = await managerForTraversal()
+    fire({ suggestedFilename: () => '..\\..\\payload.exe', url: () => 'https://a/x', saveAs: () => Promise.resolve() })
+    fire({ suggestedFilename: () => '..', url: () => 'https://a/y', saveAs: () => Promise.resolve() })
+    await vi.waitFor(() => expect(bm.downloads()).toHaveLength(2))
+    const files = bm.downloads()
+    expect(files.map(f => f.filename).sort()).toEqual(['download', 'payload.exe'].sort())
+    expect(files.every(f => f.path!.startsWith(tmp + sep))).toBe(true)
+  })
+})
+
 // ── 审计 MEDIUM：CLOAKBROWSER_BINARY_PATH 残留指向已删文件 → 必须清除后走探测链 ──
 describe('ensureLocalBinaryEnv（残留 env 清理）', () => {
   const ENV_KEY = 'CLOAKBROWSER_BINARY_PATH'
@@ -388,6 +434,23 @@ describe('ensureLocalBinaryEnv（残留 env 清理）', () => {
     const { ensureLocalBinaryEnv } = await import('../browser/impl')
     ensureLocalBinaryEnv()
     expect(process.env[ENV_KEY]).toBe(realBin)
+  })
+
+  it('审计回归：env 为相对路径且相对 cwd 存在 → 归一为绝对路径后使用', async () => {
+    // 旧行为：existsSync(相对路径) 依赖 cwd，且 env 保留相对值——后续 launch
+    // 读 env 时若 cwd 已变则找不到二进制。修复后必须归一为绝对路径回写。
+    const tmpInCwd = mkdtempSync(join(process.cwd(), '.tmp-rel-bin-'))
+    try {
+      const absFile = join(tmpInCwd, 'chrome.exe')
+      writeFileSync(absFile, 'x')
+      process.env[ENV_KEY] = relative(process.cwd(), absFile)
+      const { ensureLocalBinaryEnv } = await import('../browser/impl')
+      ensureLocalBinaryEnv()
+      expect(isAbsolute(process.env[ENV_KEY]!)).toBe(true)
+      expect(resolve(process.env[ENV_KEY]!)).toBe(absFile)
+    } finally {
+      rmSync(tmpInCwd, { recursive: true, force: true })
+    }
   })
 
   it('env 残留指向已删除文件 → 清除变量（非 win32 不复探，win32 继续探测链）', async () => {

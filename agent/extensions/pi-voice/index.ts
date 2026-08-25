@@ -153,7 +153,7 @@ export default function (pi: ExtensionAPI): void {
   // （重启后无进行中，旧残留 mtime 必远超 5s），但同宿主其它 pi 进程刚写入的文件不会被误删
   cleanupStaleAudio(config, 5_000)
   void stopRecording(config).catch(() => undefined)
-  // 清理 TTS 僵尸进程（平台相关：termux 为 termux-tts-speak / termux-api TextToSpeech；linux 为 espeak-ng / paplay）
+  // 清理 TTS 僵尸进程（平台相关：termux 为 termux-tts-speak；linux 为 espeak-ng / paplay）
   for (const pat of platformOf(config).tts.zombiePatterns()) {
     // pkill -x 精确进程名，收敛误杀面（-f 全命令行匹配会误杀同宿主其它用途的
     // espeak-ng/paplay 进程，审计 MEDIUM/2026-08-24）

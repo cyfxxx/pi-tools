@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [3.1.1] - 2026-08-25
+
+### 修复（全项目审计）
+
+- **`web_fetch` 忽略用户中止信号**：execute 此前丢弃 `_signal`，停止生成后 Bing 请求仍挂满内部 10s 超时——searchDirect 增加可选 signal 参数转发进内部 AbortController（与超时任一触发即中断），AbortError 分类语义不变。
+
 ## [3.1.0] - 2026-08-14
 
 ### 修复

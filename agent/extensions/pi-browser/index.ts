@@ -5,6 +5,7 @@ import { BrowserManager, shotDir, pdfDir, downloadsDirDefault } from './browser/
 import { registerBrowserTools } from './browser/index'
 import { unlink, readdir, rm } from 'fs/promises'
 import { join } from 'path'
+import { tmpdir } from 'os'
 import { recordToolUsage, resetBudget } from '../../lib/token-budget.ts'
 import { resetOutputBudget } from '../../lib/prune.ts'
 
@@ -37,6 +38,33 @@ async function cleanPdf(): Promise<void> {
 async function cleanDownloads(): Promise<void> {
   try {
     await rm(downloadsDirDefault(), { recursive: true, force: true })
+  } catch { /* ignore */ }
+}
+
+/**
+ * 崩溃残留清扫（session_start）：shutdown 只清本 pid 目录，崩溃/被杀进程的
+ * pi-browser-{screenshots,pdf,downloads}-<pid> 会永久累积。仅删同时满足：
+ * 匹配 pi-browser-*-数字 模式、非当前 pid、pid 非存活进程（process.kill(pid,0)
+ * 探活，ESRCH=不存在；EPERM=存在无权信号 → 视为存活不删，防误杀活跃实例）。
+ */
+export async function cleanStaleTempDirs(): Promise<void> {
+  const pattern = /^pi-browser-(?:screenshots|pdf|downloads)-(\d+)$/
+  try {
+    const entries = await readdir(tmpdir())
+    await Promise.all(entries.map(async name => {
+      const m = name.match(pattern)
+      if (!m) return
+      const pid = Number(m[1])
+      if (pid === process.pid || pid <= 0) return
+      try {
+        process.kill(pid, 0) // 探活：不发信号，仅检测存在性
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ESRCH') {
+          await rm(join(tmpdir(), name), { recursive: true, force: true }).catch(() => {})
+        }
+        // EPERM 等其他错误：进程存在但不可探活 → 不删
+      }
+    }))
   } catch { /* ignore */ }
 }
 
@@ -79,5 +107,6 @@ export default async function (pi: ExtensionAPI) {
   pi.on('session_start', async () => {
     resetBudget()
     resetOutputBudget()
+    void cleanStaleTempDirs() // 后台清扫崩溃残留，不阻塞会话启动
   })
 }

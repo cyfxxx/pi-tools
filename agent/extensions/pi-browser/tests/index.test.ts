@@ -148,6 +148,42 @@ describe('pi-browser (entry point)', () => {
     await fs.rmdir(otherDir).catch(() => {})
   })
 
+  it('审计回归：session_start 清扫崩溃残留的陈旧 pid 临时目录，不动本进程/非匹配目录', async () => {
+    const fs = await import('fs/promises')
+    // 崩溃残留：选一个几乎不可能存活的 pid
+    const deadPid = 99999999
+    try { process.kill(deadPid, 0); return } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'ESRCH') return // 探活结果不确定则跳过
+    }
+    const staleDirs = [
+      join(tmpdir(), `pi-browser-screenshots-${deadPid}`),
+      join(tmpdir(), `pi-browser-pdf-${deadPid}`),
+      join(tmpdir(), `pi-browser-downloads-${deadPid}`),
+    ]
+    for (const d of staleDirs) {
+      await fs.mkdir(d, { recursive: true })
+      await fs.writeFile(join(d, 'stale.txt'), 'x')
+    }
+    // 本进程目录与非匹配名目录必须保留
+    const ownDir = join(tmpdir(), `pi-browser-screenshots-${process.pid}`)
+    const oddDir = join(tmpdir(), 'pi-browser-screenshots-notapid')
+    await fs.mkdir(ownDir, { recursive: true })
+    await fs.mkdir(oddDir, { recursive: true })
+
+    const main = (await import('../index')).default
+    await main(mockPi as any)
+    await lifecycleHandlers['session_start']()
+    await new Promise(r => setTimeout(r, 50)) // 后台清扫异步落盘
+
+    for (const d of staleDirs) {
+      expect(await fs.access(d).then(() => true).catch(() => false)).toBe(false)
+    }
+    expect(await fs.access(ownDir).then(() => true).catch(() => false)).toBe(true)
+    expect(await fs.access(oddDir).then(() => true).catch(() => false)).toBe(true)
+
+    await fs.rm(oddDir, { recursive: true, force: true }).catch(() => {})
+  })
+
   it('should trim screenshots on session_compact', async () => {
     const fs = await import('fs/promises')
     const shotDir = join(tmpdir(), `pi-browser-screenshots-${process.pid}`)

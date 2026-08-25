@@ -1,11 +1,29 @@
-export async function searchDirect(query: string, maxResults = 5): Promise<string> {
+export async function searchDirect(query: string, maxResults = 5, signal?: AbortSignal): Promise<string> {
   const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}`
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 10000)
+  // 审计修复：用户停止生成（signal）转发到内部 controller，与 10s 内部超时
+  // 任一触发即中断（与 fetch_url 同模式）；abort 均从 fetch 抛 AbortError
+  const onUserAbort = () => controller.abort()
+  signal?.addEventListener?.('abort', onUserAbort)
+  try {
+    return await doSearch(url, maxResults, query, controller.signal)
+  } finally {
+    clearTimeout(timeout)
+    signal?.removeEventListener?.('abort', onUserAbort)
+  }
+}
+
+async function doSearch(
+  url: string,
+  maxResults: number,
+  query: string,
+  reqSignal: AbortSignal,
+): Promise<string> {
   const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timeout))
+    signal: reqSignal,
+  })
   // fetch 失败必抛异常（网络/DNS/超时 abort），不会返回 null——此分支为死代码，已移除
   if (!res.ok) {
     // 取消未消费的响应体，避免连接悬挂（socket 无法复用/泄漏）
