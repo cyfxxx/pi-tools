@@ -41,3 +41,7 @@
 - **session_compact 仅成功路径 emit**（宿主 dist 两处 emit 均在 appendCompaction 之后，cancel/abort 不 emit）：把"压缩完成"类标记从 session_before_compact 移到 session_compact 是通用修复模式，宿主行为已核实。
 - **worker 报告的 git status 描述会互相误指**：3 个 worker 并行改同一仓库，彼此把对方改动当成"工作区已有内容"——抽查 diff 时以文件路径归属判断，不采信 worker 对非自身文件的观察。
 - **push 被拒后 stash -u 有副作用**：会把未跟踪目录（packs/drafts 草稿）一并收走，pop 失败（needs merge）后这些文件滞留 stash——恢复用 `git show stash@{0}^3:<path>` 精确取回；已跟踪文件的 D 状态从 origin/master checkout 恢复。
+
+### 2026-08-25（续）「并行会话进行中工作」误判修正
+- **diff 方向误判实例**：types.ts/pi-cron.sh 工作区 diff 显示 `- deleted 字段`（HEAD 有、工作区无）——即本机落后于已推送的 7f9a8f0，却被误判为"并行会话进行中工作"而保留在工作区。注释里的当日日期强化了误导。正确读法：`-` 行=HEAD 有工作区无→本机旧；`+` 行=工作区新增→本地新改动。**判断前先 `git log --all -- <file>` 查该文件的最近提交**，日期巧合不构成证据。
+- 后续处置：三文件（types.ts/pi-cron.sh/docs/AGENTS-DETAILS.md）checkout HEAD 恢复，autopilot 131 用例复验绿；AGENTS-DETAILS 的 memory/stats 旧说法（不入库）与新同步约定矛盾，一并更正。
