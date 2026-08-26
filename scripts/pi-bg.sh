@@ -7,7 +7,8 @@
 #   1. --no-session    后台不写会话文件（前台会话零污染，即使同 cwd）
 #   2. --no-extensions 不加载任何扩展（无 voice tmp 清理 / memory 写入 /
 #                      autopilot 调度锁 / usage-diag / tmux registry 竞争）
-#   3. --tools 只读集合（默认；--rw 放开完整工具集，写操作风险自负）
+#   3. --tools 软只读集合（默认；含 bash，可执行任意命令——写保护仅 RO_HINT 提示词级
+#      约束、非沙箱隔离；--rw 放开完整工具集含 edit/write，风险自负）
 #   4. 独立工作目录（默认当前目录，可用 --cwd 指定）与独立日志
 #
 # 用法:
@@ -27,7 +28,7 @@ set -u
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 LOG_DIR="$PI_HOME/logs/bg"
 SESS_PREFIX="pi-bg-"
-RO_TOOLS="read,ls,grep,bash"     # 默认只读集合（bash 仍可执行命令，约束见 RO_HINT；glob 非 pi 工具已被 allowlist 忽略）
+RO_TOOLS="read,ls,grep,bash"     # 默认软只读集合：bash 可执行任意命令，写保护靠 RO_HINT 提示词约束（非沙箱）；glob 非 pi 工具已被 allowlist 忽略
 
 mkdir -p "$LOG_DIR"
 

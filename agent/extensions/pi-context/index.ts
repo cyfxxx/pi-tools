@@ -1,7 +1,7 @@
 import { truncateHead, truncateTail, setCompactionWarmPrefixProvider, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
 import type { Usage } from "@earendil-works/pi-ai";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, existsSync, appendFileSync } from "node:fs";
+import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, renameSync, unlinkSync, existsSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
@@ -559,8 +559,15 @@ export default function (pi: ExtensionAPI) {
 	let lastRequestPayload: { messages: unknown[]; tools?: unknown } | null = null;
 	const diag = (reason: string, extra?: unknown) => {
 		try {
+			// 审计 MEDIUM：硬编码 /root 在 Termux/非 root 环境不可写（异常被吞、诊断失效），
+			// 且无轮转上限每请求一行无限增长——改 homedir() 并超 2MB 轮转保留一代
+			const diagFile = join(homedir(), ".pi", "logs", "warm-diag.jsonl");
+			try {
+				const st = statSync(diagFile);
+				if (st.size > 2 * 1024 * 1024) renameSync(diagFile, `${diagFile}.old`);
+			} catch {}
 			appendFileSync(
-				"/root/.pi/logs/warm-diag.jsonl",
+				diagFile,
 				JSON.stringify({ t: Date.now(), reason, extra: extra === undefined ? null : extra }) + "\n",
 			);
 		} catch {}

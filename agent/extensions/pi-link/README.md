@@ -128,6 +128,10 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 > `/link status` 的可达探测（echo pi-link-ok）与 watch/inbox 等远程查询将全部失败、
 > 误报离线；`link_send` 因入口参数兼容仍可用。需要完整状态面则不要对该公钥启用
 > forced command（权衡：安全边界 vs 功能面，二者取一）。
+>
+> **逐项降级清单**（2026-08-26 审计 MEDIUM 补充）：SSH_ORIGINAL_COMMAND 中的
+> sessionPolicy=continue 握手行永不到达 → continue 退化为每次新会话；cwd 与
+> extensions 参数同样失效。依赖这些参数的调用方在加固开启后行为会静默变化。
 
 ## 设备接入 / 升级流程
 

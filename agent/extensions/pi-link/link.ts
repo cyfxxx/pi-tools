@@ -201,6 +201,20 @@ export async function sendToDevice(
   ]
 
   const proc = spawn('ssh', sshArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
+
+  // 工具取消（2026-08-25 审计 MEDIUM：宿主真实下发 AbortSignal，此前被忽略；
+  // 2026-08-26 审计 MEDIUM：注册点从 prompt 写入后提前到 spawn 后——否则多地址探测
+  // +握手 3s+switch 20s 阶段取消无效，最坏数十秒不可中断）
+  let cancelledBySignal = false
+  const onAbort = (): void => {
+    cancelledBySignal = true
+    timedOut = true // 复用熔断标志优先级，保证取消分支可达
+    proc.kill('SIGKILL')
+  }
+  if (opts.signal) {
+    if (opts.signal.aborted) onAbort()
+    else opts.signal.addEventListener('abort', onAbort, { once: true })
+  }
   // 审计：events 全量数组无界累积——长任务（数千轮工具交互）内存膨胀。
   // 改边收边聚合：增量维护 turns/tools 计数与最后一条 assistant 文本/模型
   // （与 extractReply 同语义），不再保留事件数组。
@@ -312,6 +326,7 @@ export async function sendToDevice(
   // **必须等其 response 再发 prompt**——switch 的 rebindSession 收尾与
   // 紧随的 prompt 竞争会导致 prompt 静默卡死（实测复现）。
   await handshakeP
+  if (opts.signal?.aborted) throw new Error('aborted by caller before handshake completed')
   if (lastSession) {
     proc.stdin.write(JSON.stringify({ type: 'switch_session', sessionPath: lastSession, id: 'pi-link-0' }) + '\n')
     await switchP
@@ -324,23 +339,10 @@ export async function sendToDevice(
   // Writable 无需显式 flush（数据即时发送）
 
   // 超时熔断：先置标志再 kill（timedOut 判定优先于 exited，保证 truncated 分支可达）
-  let cancelledBySignal = false
   const timer = setTimeout(() => {
     timedOut = true
     proc.kill('SIGKILL')
   }, timeoutSec * 1000)
-
-  // 工具取消（2026-08-25 审计 MEDIUM：宿主真实下发 AbortSignal，此前被忽略——
-  // ssh 子进程跑到自然超时，期间 inflight 锁占用、同设备后续调用全被拒）
-  const onAbort = () => {
-    cancelledBySignal = true
-    timedOut = true // 复用熔断标志优先级，保证取消分支可达
-    proc.kill('SIGKILL')
-  }
-  if (opts.signal) {
-    if (opts.signal.aborted) onAbort()
-    else opts.signal.addEventListener('abort', onAbort, { once: true })
-  }
 
   await settledP
 

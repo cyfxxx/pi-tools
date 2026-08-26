@@ -1199,7 +1199,9 @@ ${todoList}
       const restored = await restoreStateFromFile();
       if (restored) {
         replaceState(restored);
-        planModeEnabled = false;
+        // 审计 MEDIUM：磁盘兑底命中时无条件 false 会静默覆盖 --plan 启动标志——
+        // 与 resolvePlanModeEnabled 同语义：显式 --plan 启动优先
+        planModeEnabled = pi.getFlag("plan") === true;
         executionMode = false;
         planDir = null;
       }

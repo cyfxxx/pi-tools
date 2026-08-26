@@ -1134,6 +1134,8 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
         child = null
         staleProc.kill('SIGKILL')
       }
+      // 审计 LOW：耗尽分支不删 wake-listen.wav——最多残留 64MB 至下次 start（对比重启分支均 rm）
+      try { rmSync(wakeFile, { force: true }) } catch { /* 清理失败不影响状态提示 */ }
       opts.onStatus('唤醒采集多次重启仍无数据（可能无麦克风输入），请确认麦克风后 /voice wake off 再开启')
       return
     }

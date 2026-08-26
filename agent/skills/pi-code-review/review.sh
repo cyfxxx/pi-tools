@@ -68,9 +68,12 @@ if [ "$MODE" = "selfcheck" ]; then
   say "--- 本仓库技能更新 ---"
   if git rev-parse --git-dir >/dev/null 2>&1; then
     git fetch -q origin 2>/dev/null
-    REMOTE_AHEAD=$(git rev-list --count HEAD..origin/master 2>/dev/null || echo 0)
+    # 审计 LOW：此前固定比较 origin/master，main 分支仓库远程更新检测恒报一致——
+    # 动态取当前分支 upstream，无 upstream 时回退 origin/master
+    UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/master)
+    REMOTE_AHEAD=$(git rev-list --count HEAD.."$UPSTREAM" 2>/dev/null || echo 0)
     LOCAL_SKILL_HASH=$(git log -1 --format=%h -- agent/skills/pi-code-review/ 2>/dev/null || echo "?")
-    REMOTE_SKILL_HASH=$(git log -1 --format=%h origin/master -- agent/skills/pi-code-review/ 2>/dev/null || echo "?")
+    REMOTE_SKILL_HASH=$(git log -1 --format=%h "$UPSTREAM" -- agent/skills/pi-code-review/ 2>/dev/null || echo "?")
     if [ "$REMOTE_AHEAD" != "0" ] && [ "$LOCAL_SKILL_HASH" != "$REMOTE_SKILL_HASH" ]; then
       warn "技能在远程仓库有更新（本地 $LOCAL_SKILL_HASH vs 远程 $REMOTE_SKILL_HASH，$REMOTE_AHEAD 个提交待拉取）→ 先 git pull 再使用"
     else

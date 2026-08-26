@@ -38,7 +38,8 @@ const ENV_PREFIX_PAIRS: Record<EnvKey, [string, string]> = {
 export function buildEnvBrowserConfig(): Partial<{ browser: BrowserConfig }> {
   const b: Record<string, unknown> = {}
   const headless = envFirst(...ENV_PREFIX_PAIRS.headless)
-  if (headless) b.headless = headless === 'true'
+  // 审计 LOW：此前仅字面 'true' 生效，1/yes/on 静默解析 false——扩 truthy 集
+  if (headless) b.headless = ['true', '1', 'yes', 'on'].includes(headless.toLowerCase())
   const vw = envFirst(...ENV_PREFIX_PAIRS.viewport_width)
   if (vw) {
     const v = parseInt(vw)

@@ -56,5 +56,5 @@ node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输�
 - **pi-intervention**（干预捕获：abort 快照/corrective prompt 关联/interventions.jsonl）：`extensions/pi-intervention/README.md`
 - **pi-memory / pi-web-search / pi-browser / subagent**：各自 README
 - **pi-voice**（Termux 语音：入口 Ctrl+Alt+R 与 `/voice`，录音/转写/TTS/听写，配置 `pi-voice.json`、故障排查）：`extensions/pi-voice/README.md`
-- **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 只读工具集 + 独立日志）
+- **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 软只读工具集（含 bash，写保护仅提示词级非沙箱）+ 独立日志）
 - **tmux 部署**（WSL2/WSLg、GPU、clipboard、resurrect/continuum）：`docs/alacritty-tmux-setup.md`

@@ -58,7 +58,9 @@ export function qualityScore(e: MemoryEntry): number {
   // recency 用最近一次内容更新时间（updatedAt），而非 createdAt——频繁 UPDATE 的
   // 记忆 recency 才真实反映活跃度（审计 LOW）。没有 updatedAt 的旧条目回退 createdAt。
   const ts = e.updatedAt || e.createdAt
-  const daysOld = (now - new Date(ts).getTime()) / (1000 * 60 * 60 * 24)
+  const tsMs = new Date(ts).getTime()
+  // 审计 LOW：非法 updatedAt/createdAt 得 NaN 分，注入/检索排序不确定——无有效时间戳时取中性 recency
+  const daysOld = Number.isFinite(tsMs) ? (now - tsMs) / (1000 * 60 * 60 * 24) : 90
   const recency = Math.exp(-daysOld / 90)
   const recurrence = Math.min(e.recurrence / 10, 1)
   return e.confidence * 0.5 + recency * 0.25 + recurrence * 0.25

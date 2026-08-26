@@ -60,6 +60,7 @@ else
   echo "错误: SearXNG 启动失败（进程已退出或端口 8889 未监听）" >&2
   echo "日志尾部:" >&2
   tail -n 20 "$SEARXNG_DIR/searxng.log" >&2 2>/dev/null || true
-  rm -f "$PID_FILE"
+  # 审计 LOW：并发启动时后启动实例失败会误删健康实例的 pid 记录——仅当文件内容仍是本实例 PID 才删
+  if [ "$(cat "$PID_FILE" 2>/dev/null)" = "$PID" ]; then rm -f "$PID_FILE"; fi
   exit 1
 fi

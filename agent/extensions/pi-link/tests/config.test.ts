@@ -32,9 +32,10 @@ describe('pi-link config 加载校验（审计 MEDIUM 修复）', () => {
     )
     const cfg = loadConfig(p)
     expect(cfg.devices.good.user).toBe('root')
-    // 注入/非法 user 被丢弃 → 设备回退默认
-    expect(cfg.devices.optInj.user).toBeUndefined()
-    expect(cfg.devices.blank.user).toBeUndefined()
+    // 注入/非法 user → 整台跳过（2026-08-26 审计 LOW：仅 delete 会留 undefined@host
+    // 每调必败且报错指向不明；与非法 host 整台跳过的行为对称）
+    expect(cfg.devices.optInj).toBeUndefined()
+    expect(cfg.devices.blank).toBeUndefined()
   })
 
   it('非法 port / sshArgs 形态被丢弃，合法保留', async () => {

@@ -108,7 +108,13 @@ export class BrowserManager {
       throw e
     })
     try {
-      return await this.initializing
+      const browser = await this.initializing
+      // 审计 LOW：crash 重连路径——networkLog/dialog 状态不清零会让旧页请求记录
+      // 混入新会话查询结果（dialogMode 保留属特性：用户设定的弹窗策略延续到新会话）
+      this.networkLog = []
+      this.dialogText = null
+      this.lastDialog = null
+      return browser
     } finally {
       this.initializing = null
     }
@@ -472,17 +478,36 @@ export class BrowserManager {
     }
   }
 
-  /** 上传文件到 <input type=file>。 */
+  /** 上传文件到 <input type=file>。
+   * 审计 MEDIUM：恶意页面 prompt 注入可诱导上传本机任意敏感文件（如 auth.json/私钥），
+   * 与 navigate 的协议守卫防护不对等——对已知敏感凭据路径拒绝（黑名单而非白名单，
+   * 兼顾正常业务文件上传的易用性）。 */
   async uploadFile(selector: string, path: string): Promise<void> {
+    const resolved = resolve(path)
+    const lowered = resolved.toLowerCase()
+    const SENSITIVE = [
+      '/.ssh/', '/.gnupg/', '/.aws/', '/.kube/', '/.config/gcloud/',
+      'auth.json', '.netrc', '.env', 'id_rsa', 'id_ed25519', 'id_ecdsa',
+      '.bash_history', '.zsh_history', '.sh_history', 'credentials.json', 'tokens.json',
+    ]
+    if (SENSITIVE.some(s => lowered.includes(s)) || /\.(pem|key|pfx|p12|kdbx)$/.test(lowered)) {
+      throw new Error(`已拒绝上传疑似敏感凭据文件（prompt 注入防护）：${path}`)
+    }
     const page = await this.ensurePage()
     await page.setInputFiles(selector, path)
   }
 
-  /** 读取当前页面域（或给定 url）的 cookies。 */
+  /** 读取当前页面域（或给定 url）的 cookies。
+   * 审计 MEDIUM：httpOnly cookie 的 value 脱敏返回——恶意页面 prompt 注入可诱导
+   * 读会话 cookie 外传；httpOnly 正是服务端防 JS 读取的会话凭据标志。 */
   async getCookies(url?: string): Promise<{ name: string; value: string; domain: string }[]> {
     const page = await this.ensurePage()
     const cs = await page.context().cookies(url)
-    return cs.map(c => ({ name: c.name, value: c.value, domain: c.domain }))
+    return cs.map(c => ({
+      name: c.name,
+      value: (c as { httpOnly?: boolean }).httpOnly ? '<redacted:httpOnly>' : c.value,
+      domain: c.domain,
+    }))
   }
 
   /** 为给定 url 添加一个 cookie。 */

@@ -40,8 +40,15 @@ function ensureDir() {
 function readStoreFile<T>(file: string, kind: string): T | null {
   try {
     return JSON.parse(readFileSync(file, 'utf-8')) as T
-  } catch {
+  } catch (err) {
     if (!existsSync(file)) return null
+    // 审计 LOW：此前任意读异常（EACCES/EISDIR）都当损坏走 rename 备份分支，
+    // 权限类错误被误判且会把目录 rename 成 .corrupt-*——仅语法错误才备份告警
+    const isParseError = err instanceof SyntaxError
+    if (!isParseError) {
+      console.error(`[pi-memory] ${kind} 读取失败（非解析错误，不备份）:`, err instanceof Error ? err.message : err)
+      return null
+    }
     backupCorruptFile(file, kind)
     return null
   }
@@ -249,11 +256,12 @@ function rawLoadNotes(): Record<string, string> {
   return readStoreFile<Record<string, string>>(NOTES_FILE, 'notes') || {}
 }
 
-// 原始写：脱敏后原子落盘
+// 原始写：脱敏后原子落盘（key 同样过 scrubSecrets——审计 LOW：密钥形态字符串作 note key 时绕过净化）
 function rawSaveNotes(notes: Record<string, string>) {
   const scrubbed: Record<string, string> = {}
   for (const [k, v] of Object.entries(notes)) {
-    scrubbed[k] = k.startsWith('__ttl_') ? v : scrubSecrets(v)
+    const cleanKey = k.startsWith('__ttl_') ? k : scrubSecrets(k)
+    scrubbed[cleanKey] = k.startsWith('__ttl_') ? v : scrubSecrets(v)
   }
   writeJSONAtomic(NOTES_FILE, scrubbed)
 }

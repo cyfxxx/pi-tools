@@ -23,11 +23,18 @@ const DESTRUCTIVE_PATTERNS = [
   /\bbrew\s+(install|uninstall|upgrade)/i,
   /\bgit\s+(add|commit|push|pull|merge|rebase|reset|checkout|stash|cherry-pick|revert|tag|init|clone)/i,
   // git 写引用/配置类（审计 MEDIUM）：branch 新建、remote 写子命令、show/diff/log --output 落盘
+  // branch 删除/改名/拷贝等 - 开头写操作由 SAFE 白名单枚举拦截（见下方 branch 只读参数集）
   /\bgit\s+branch\s+[^-\s]/i,
-  /\bgit\s+remote\s+(add|rename|set-url|remove)/i,
+  /\bgit\s+remote\s+(add|rename|set-url|remove|prune|update)/i,
   /\bgit\s+(show|diff|log)\b[^\n;|&]*--output/i,
-  // find 的破坏性动作：-delete 删除、-exec/-ok 执行、-fprint/-fprintf 写文件
-  /\bfind\b[^\n;|&]*\s(-delete|-exec|-execdir|-ok|-fprint|-fprintf)\b/i,
+  // find 的破坏性动作：-delete 删除、-exec/-ok 系列执行、-fprint/-fprint0/-fprintf 写文件。
+  // 审计同类缺口：尾部 \b 使 -fprint0 漏拦（t 与 0 均为词字符无边界）——去尾 \b 改前缀匹配（fail-closed），
+  // 同时补齐 -execdir/-okdir 执行变体
+  /\bfind\b[^\n;|&]*\s(-delete|-exec(dir)?|-ok(dir)?|-fprint0?|-fprintf)/i,
+  // less/more 启动命令 +cmd/+!cmd 可执行任意 shell（非 LESSSECURE 环境；审计同类缺口）
+  /\b(less|more)\b[^\n;|&]*\s\+\S/i,
+  // bat --pager=<cmd> 任意进程执行（同 rg --pre 类；审计同类缺口）
+  /\bbat\b[^\n;|&]*\s--pager(\s|=)/i,
   /\bsudo\b/i,
   /\bsu\b/i,
   /\bkill\b/i,
@@ -43,7 +50,8 @@ const DESTRUCTIVE_PATTERNS = [
   /\bsystemctl\s+(start|stop|restart|enable|disable)/i,
   /\bservice\s+\S+\s+(start|stop|restart)/i,
   // sed w 命令写文件：地址+[0-9,$,/]w file 或独立 w file（GNU sed 仅 -n 只读放行）
-  /\bsed\b[^\n;|&]*([0-9,$/]+w\s|\bw\s)\S/i,
+  // 审计 MEDIUM：flags 含字母组合（gw/pw/Iw…）时 w 前是词字符致 \bw 失效——字符类扩入 a-z
+  /\bsed\b[^\n;|&]*([0-9,$/a-z]*w\s|\bw\s)\S/i,
   // sed 执行类（审计 HIGH）：e 命令执行 shell（GNU sed -n 不抑制 e）；s///e flag 将 replacement 作 shell 命令执行
   /\bsed\b[^\n;|&]*([0-9,$/}]+e\s|\be\s)\S/i,
   /\bsed\b[^\n;|&]*s[/|,#][^'"\n]*[/|,#][^'"\n]*[/|,#][a-z,]*e[a-z,]*/i,
@@ -91,7 +99,11 @@ const SAFE_PATTERNS = [
   /^\s*top\b/,
   /^\s*htop\b/,
   /^\s*free\b/,
-  /^\s*git\s+(status|log|diff|show|branch|remote|config\s+--get)/i,
+  /^\s*git\s+(status|log|diff|show|config\s+--get)/i,
+  // branch 仅放行只读参数集（审计 HIGH：裸放行使 git branch -D/-m/--force 绕过删改分支）
+  /^\s*git\s+branch(\s+(-a|-r|-v|-vv|--all|--list(\s+\S+)?|--show-current|--contains\s+\S+|--no-contains\s+\S+|--merged(\s+\S+)?|--no-merged(\s+\S+)?))*\s*$/i,
+  // remote 仅放行只读子命令（prune/update 会按配置清理本地跟踪引用，不在此列）
+  /^\s*git\s+remote(\s+-v|\s+--verbose|\s+show\s+\S+|\s+get-url\s+\S+)*\s*$/i,
   /^\s*git\s+ls-/i,
   /^\s*npm\s+(list|ls|view|info|search|outdated|audit)/i,
   /^\s*yarn\s+(list|info|why|audit)/i,
@@ -173,8 +185,11 @@ export function isSafeCommand(command: string): boolean {
 
   // curl 白名单存在外传形态（审计实测 -T/--upload-file、-d @file、-F file=@ 均放行；
   // 审计 MEDIUM：--data-urlencode/--data-raw/--data-json/--data-ascii 此前漏拦——
-  // --data 前缀后跟 `-` 不匹配 (\s|=) 锚定）——收紧为 GET-only 查询
+  // --data 前缀后跟 `-` 不匹配 (\s|=) 锚定）——收紧为 GET-only 查询；
+  // 审计 MEDIUM 同类：URL 内裸 $VAR 经 shell 展开可将环境秘密拼入查询串外带（$() 已被
+  // 分隔符拒绝，剩余裸 $ 即变量展开）——curl/wget GET 段一律禁 $
   if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data(?:-urlencode|-raw|-json|-ascii)?|--data-binary|-d|--form|-F)(\s|=)/.test(core)) return false;
+  if (/^\s*(curl|wget)\b/i.test(core) && /\$/.test(core)) return false;
 
   // 进程替换 <(...)（审计实测：`diff <(python3 -c '写文件') <(echo x)` 曾放行——
   // 核心分隔符检查只拦 $()/反引号，< 不在列；>( 已被重定向拦截，<( 是唯一漏网入口）

@@ -605,6 +605,8 @@ async function runSubprocessAgent(
 				// 审计 HIGH：此前静默 resolve(1)——E2BIG（参数超长）/ENOENT 等错误信息丢失，
 				// 链式调用表现为整链无声失败无原因。透传到结果：exitCode=1 + errorMessage，
 				// isFailedResult→getResultOutput 会把原因带回主会话。
+				// 审计 LOW：spawn 失败不触发 close → totalTimer 不被清，悬挂至 30min 超时
+				clearTimeout(totalTimer);
 				currentResult.errorMessage = `子进程启动失败: ${err.message}`;
 				currentResult.stderr += `子进程启动失败: ${err.message}\n`;
 				resolve(1);
@@ -806,7 +808,7 @@ export default function (pi: ExtensionAPI) {
 					previousOutput = getFinalOutput(result.messages);
 				}
 				return {
-					content: [{ type: "text", text: getFinalOutput(results[results.length - 1].messages) || "(no output)" }],
+					content: [{ type: "text", text: truncateParallelOutput(getFinalOutput(results[results.length - 1].messages) || "(no output)") }],
 					details: makeDetails("chain")(results),
 				};
 			}
@@ -923,7 +925,9 @@ export default function (pi: ExtensionAPI) {
 					};
 				}
 				return {
-					content: [{ type: "text", text: getFinalOutput(result.messages) || "(no output)" }],
+					// 审计 MEDIUM：single/chain 此前无字节封顶，超长子代理输出直入主会话
+					// 可挤爆上下文（parallel 已有 50KB cap）——同 cap 截断，完整输出仍在 details
+					content: [{ type: "text", text: truncateParallelOutput(getFinalOutput(result.messages) || "(no output)") }],
 					details: makeDetails("single")([result]),
 				};
 			}

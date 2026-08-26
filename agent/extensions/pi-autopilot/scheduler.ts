@@ -106,18 +106,19 @@ export class SessionScheduler {
     try {
       const config = await readAutopilotConfig()
       const store = await readTasks()
+      // 看门狗挂死检测先于一切业务门控（审计 MEDIUM：此前被 enabled/paused 连带短路——
+      // 自主运行关闭/暂停时主会话真挂死无人恢复）。进程自愈与任务调度正交：
+      // 不想被自动重启用 maxIdleMinutes=0 显式关闭看门狗（isHanging 直接 false）。
+      if (await triggerHangRecovery(config.maxIdleMinutes)) {
+        try { (this.pi as unknown as { shutdown?: () => void }).shutdown?.() } catch { /* ignore */ }
+        try { await releaseSessionLock() } catch { /* ignore */ }
+        process.exit(0)
+      }
       if (store.settings.paused) return
       // enabled=false = 自主运行关闭：到期任务不自动执行（含 waitForUserOnLocal 提示注入）。
       // 审计 HIGH：预算拦截整体包在 fireTask 的 if (config.enabled) 内，若 tick 不门控，
       // 关闭状态下任务照常执行且预算检查完全跳过。手动 /schedule run（force）不受影响。
       if (!config.enabled) return
-
-      // 看门狗：挂死检测
-      if (config.enabled && (await triggerHangRecovery(config.maxIdleMinutes))) {
-        try { (this.pi as unknown as { shutdown?: () => void }).shutdown?.() } catch { /* ignore */ }
-        try { await releaseSessionLock() } catch { /* ignore */ }
-        process.exit(0)
-      }
 
       const tasks = await listTasks()
       // pendingInject=true 表示任务已注入主会话仍可能执行中（fireViaMessage 非阻塞），
@@ -186,7 +187,14 @@ export class SessionScheduler {
 
       if (task.useSubagent) {
         await this.fireViaSubagent(task, provider, model)
-        await updateTaskAfterRun(task.id, 'success', '', Date.now() - startedAt)
+        // 审计 MEDIUM：记账与执行隔离——fireViaSubagent 已成功后 updateTaskAfterRun 若抛错
+        // （磁盘满/JSON 损坏），落外层 catch 会把已成功的任务记 failed 并可能误触 failover 重启。
+        // 记账失败仅记日志，不改任务结果语义（nextRun 停留旧值，下轮 tick 重跑由幂等性兑底）。
+        try {
+          await updateTaskAfterRun(task.id, 'success', '', Date.now() - startedAt)
+        } catch (bookErr) {
+          console.error(`[pi-autopilot] 任务 ${task.id} 成功但记账失败: ${bookErr instanceof Error ? bookErr.message : bookErr}`)
+        }
         await maybeTriggerSummarizer()
         await appendRun({
           ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
@@ -271,6 +279,10 @@ export class SessionScheduler {
           await sendWebhook(task, 'failed', `触发 failover → ${plan.target.provider}/${plan.target.model}: ${plan.reason}`)
           const msg = await executeFailover(plan.target, plan.reason, false)
           console.log(`[pi-autopilot] ${msg}`)
+          // 设计取舍（审计 MEDIUM 定性）：此处无 UI 确认直接重启——failover 是无人值守自愈手段，
+          // headless 下加确认将永不生效；TUI 下用户会被打断但 wrapper 读 set_model restart
+          // request 后拉起新实例并 --continue，会话上下文不丢（与 watchdog restart_hang 同路径）。
+          // 与 tools.ts admin_set_model 的差异：那是用户主动操作、有对话上下文可弹窗；此处相反。
           try { (this.pi as unknown as { shutdown?: () => void }).shutdown?.() } catch { /* ignore */ }
           // 审计 LOW：exit 前释放会话锁，避免残留至下次启动依赖 PID 死亡检测自愈
           try { await releaseSessionLock() } catch { /* ignore */ }

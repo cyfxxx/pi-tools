@@ -543,3 +543,33 @@ describe('dialog 回调 reject 被 .catch 捕获', () => {
     }
   })
 })
+
+describe('uploadFile 敏感凭据拒绝与 getCookies httpOnly 脱敏（2026-08-26 审计 MEDIUM）', () => {
+  beforeEach(async () => {
+    await setupMocks()
+  })
+
+  it('上传敏感凭据路径被拒，普通文件放行', async () => {
+    ;(mockPage as any).setInputFiles = vi.fn()
+    const bm = await getBrowserManager()
+    for (const p of ['/root/.pi/agent/auth.json', '/home/u/.ssh/id_rsa', '/x/server.pem', '/a/.env', '/b/tokens.json']) {
+      await expect(bm.uploadFile('#f', p)).rejects.toThrow(/敏感凭据/)
+      expect((mockPage as any).setInputFiles).not.toHaveBeenCalled()
+    }
+    await bm.uploadFile('#f', '/tmp/report.pdf')
+    expect((mockPage as any).setInputFiles).toHaveBeenCalledWith('#f', '/tmp/report.pdf')
+  })
+
+  it('getCookies 对 httpOnly cookie 的 value 脱敏', async () => {
+    ;(mockPage as any).context = vi.fn().mockReturnValue({
+      cookies: vi.fn().mockResolvedValue([
+        { name: 'sid', value: 'SECRET-SESSION', domain: '.example.com', httpOnly: true },
+        { name: 'pref', value: 'dark', domain: '.example.com', httpOnly: false },
+      ]),
+    }) as any
+    const bm = await getBrowserManager()
+    const cs = await bm.getCookies()
+    expect(cs.find(c => c.name === 'sid')!.value).toBe('<redacted:httpOnly>')
+    expect(cs.find(c => c.name === 'pref')!.value).toBe('dark')
+  })
+})

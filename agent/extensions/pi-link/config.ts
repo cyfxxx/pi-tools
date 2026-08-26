@@ -96,8 +96,12 @@ export function loadConfig(path = configPath()): LinkConfig {
         // 审计 MEDIUM：仅校验 host 时手工编辑 pi-link.json 可绕过 import-card 加固——
         // user 以 `-` 开头/含空白会被 ssh 解析为选项（如 -o ProxyCommand → 本机执行面）。
         // 加载时同规则校验，非法字段丢弃回退默认（与 saveDevice 名称规则对齐）。
+        // 审计 LOW：user 非法仅 delete 时 sendToDevice 会拼 undefined@host 每调必败且
+        // 报错难定位——整台跳过（与非法 host 行为对称）
         if (dev.user !== undefined && (typeof dev.user !== 'string' || !/^[a-zA-Z0-9_.-]+$/.test(dev.user) || dev.user.startsWith('-'))) {
           delete dev.user
+          delete cfg.devices[name]
+          continue
         }
         if (dev.port !== undefined && (typeof dev.port !== 'number' || !Number.isInteger(dev.port) || dev.port < 1 || dev.port > 65535)) {
           delete dev.port

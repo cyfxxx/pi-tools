@@ -46,6 +46,17 @@
 - **diff 方向误判实例**：types.ts/pi-cron.sh 工作区 diff 显示 `- deleted 字段`（HEAD 有、工作区无）——即本机落后于已推送的 7f9a8f0，却被误判为"并行会话进行中工作"而保留在工作区。注释里的当日日期强化了误导。正确读法：`-` 行=HEAD 有工作区无→本机旧；`+` 行=工作区新增→本地新改动。**判断前先 `git log --all -- <file>` 查该文件的最近提交**，日期巧合不构成证据。
 - 后续处置：三文件（types.ts/pi-cron.sh/docs/AGENTS-DETAILS.md）checkout HEAD 恢复，autopilot 131 用例复验绿；AGENTS-DETAILS 的 memory/stats 旧说法（不入库）与新同步约定矛盾，一并更正。
 
+### 2026-08-26（续）全项目审计修复闭环 v2（2 HIGH + 17 MEDIUM + 14 LOW）
+- **多实例并行开发是常态而非异常**：本审计进行中同机另一 pi 实例提交了 pi-context 暖前缀功能（14:07），导致 16:29 的 test-all 结果与早晨全绿不一致、cache-guard baseline 漂移。处置纪律：修复前先 `git log --oneline -3 -- <热点文件>` 确认归属；不碰对方文件；提交只 add 自己的改动清单，绝不 `git add -A`。
+- **pi dist 补丁丢失的快速定位路径**：tsc 报「no exported member X」且 X 属补丁注入 API → 直接对 PI_DIST 重跑 patch-*.mjs（幂等）+ verify-patches.mjs 复核，无需整跑 rebuild.sh（40+ 分钟）；本次 4 分钟恢复。
+- **测试继承宿主 env 的隐蔽污染**：pi 会话内跑 vitest，PI_SESSION_FILE 指向活会话文件 → watchdog isHanging 第二信号 mtime 恒新鲜、挂死判定永假——涉及时间/mtime/env 的测试用例必须显式隔离相关环境变量（save/restore in finally）。
+- **被测函数吞异常时禁用 rejects 断言法**：tick() 有 `catch { /* suppress */ }` 时 mock process.exit 抛错断言 rejects 必然失败（错误到不了测试层）；改为 exit mock 成 no-op + 断言 exitSpy 调用参数等副作用。同理断言必须在 mockReset 之前（reset 清空调用记录）。
+- **vi.mock 部分 mock 模式**：`vi.mock('./x.ts', async (importOriginal) => ({ ...await importOriginal(), targetFn: vi.fn() }))` 可只替换单函数保留其余实际导出——比整模块手写 mock 稳，适合"测集成点 A 调用了 B"而 B 真实逻辑已有独立测试的场景。
+- **SAFE/DESTRUCTIVE 白名单修复选型**：写引用类命令（git branch -D/-M/-u/--force）修在 SAFE 白名单枚举只读参数集，而非 DESTRUCTIVE 枚举写 flag——白名单法天然防未来新 flag 绕过；DESTRUCTIVE 前缀匹配仅用于无只读子集的命令族（find -fprint0? 去 \b 改前缀是 fail-closed 可接受误拦）。
+- **安全修复的易用性平衡**：browser upload 用敏感黑名单（.ssh/auth.json/*.pem…）而非全路径白名单——业务文件上传不可枚举，黑名单覆盖凭据面已消除主要风险；cookie 对 httpOnly value 脱敏而非全拒——保住调试用途同时切断会话窃取面。
+- **设计取舍 vs 缺陷的定性要给依据**：failover 无确认 exit(0)、saveEntries 快照优先均定性为设计并注释理由（无人值守场景加确认永不生效 / tests 显式断言快照优先），而非盲改行为——复核子代理判"真实"不等于应改码，主会话终审要区分「真实缺陷」与「真实存在但属有意取舍」。
+- **test-all 全绿≠当前仓库状态健康**：两次运行间并行线可改变一切；回归结论必须标注运行时间点，跨时段比较前先重跑。
+
 ### 2026-08-26 全量审计（运行态 + 40 条建议复核闭环）
 - **已沉淀教训重复踩坑 → 必须升格进 SKILL 正文**：08-25 基线已记“tmux_run 禁管道 tail”，08-26 审计首跑仍用 `| tail -80` 致日志空白——基线是“翻阅型”知识，执行者不会主动检索；流程性铁律必须写进 SKILL.md 对应步骤（本次已升格至第 2 步）。
 - **抽查脚本先验字段名**：检查 summaries.json 时臆测 summary/text 字段报出 5 条假“空摘要”（实际字段为 fullText/title/decisions 等），虚惊一场后重查——对 json 数据文件先 `list(items[0].keys())` 看结构再写断言。

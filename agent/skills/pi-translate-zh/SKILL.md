@@ -57,17 +57,17 @@ PI="$HOME/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-codin
 grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' "$PI/dist/" --include='*.js' | grep -v node_modules
 
 # 扩展命令（agent/extensions/ 下各扩展入口）
-grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' /root/.pi/agent/extensions/*/index.ts 2>/dev/null
+grep -rn 'description:\s*"[A-Z]\|label:\s*"[A-Z]' $HOME/.pi/agent/extensions/*/index.ts 2>/dev/null
 ```
 
 ### 2. 查找未翻译的 SKILL.md 描述
 
 ```bash
 # 用户技能
-find /root/.pi/agent/skills -name SKILL.md -exec grep -l '^description:' {} \;
+find $HOME/.pi/agent/skills -name SKILL.md -exec grep -l '^description:' {} \;
 
 # 扩展技能
-find /root/.pi/agent/extensions -name SKILL.md -exec sh -c 'grep -q "^description:" "$1" && ! grep -qP "[\x{4e00}-\x{9fff}]" "$1" && echo "⚠️  $1"' _ {} \;
+find $HOME/.pi/agent/extensions -name SKILL.md -exec sh -c 'grep -q "^description:" "$1" && ! grep -qP "[\x{4e00}-\x{9fff}]" "$1" && echo "⚠️  $1"' _ {} \;
 ```
 
 ### 3. 查找 pi 交互界面中未翻译的用户可见字符串
@@ -95,7 +95,7 @@ sed -n '11,16p' "$PI/dist/modes/interactive/components/config-selector.js"
 ```bash
 PI="$HOME/.local/share/pi-node/current/lib/node_modules/@earendil-works/pi-coding-agent"
 grep -n 'registerCommand' "$PI/dist/core/slash-commands.js"
-grep -rn 'commands: \|registerCommand\|name: "/' /root/.pi/agent/extensions/*/index.ts | head -50
+grep -rn 'commands: \|registerCommand\|name: "/' $HOME/.pi/agent/extensions/*/index.ts | head -50
 ```
 
 ### 查找原则

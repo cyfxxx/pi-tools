@@ -400,6 +400,24 @@ main() {
     exit 0
   fi
 
+  # 全局自主运行开关（审计 MEDIUM 同类：此前离线 cron 不读 autopilot config.enabled，
+  # 用户关闭自主运行后离线 cron 仍照跑任务——与 scheduler tick 门控同一语义）。
+  # 配置缺失/解析失败按默认开启处理（与 readAutopilotConfig 缺省一致）。
+  AUTOPILOT_CFG="$AGENT_DIR/.pi-autopilot-config.json"
+  if [ -f "$AUTOPILOT_CFG" ]; then
+    ENABLED=$(python3 -c "
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)  # 解析失败 → 不禁用（输出空串）
+print('1' if d.get('enabled') is True else '')
+" "$AUTOPILOT_CFG")
+    if [ -z "$ENABLED" ]; then
+      exit 0
+    fi
+  fi
+
   # 获取锁（防止 cron 自身并发）
   if ! acquire_lock; then
     exit 0  # 锁被其他进程持有

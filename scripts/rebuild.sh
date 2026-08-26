@@ -478,7 +478,7 @@ phase2_repo() {
       info "尝试: $url"
       # C1/C2：克隆加超时防镜像挂起无限卡；失败后 GIT_SSL_NO_VERIFY 兜底一次（沙箱证书损坏场景）
       if timeout 300 git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1 || \
-         { rm -rf "$PI_HOME/searxng/repo"; timeout 300 env GIT_SSL_NO_VERIFY=1 git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1; }; then
+         { rm -rf "$PI_HOME/searxng/repo"; echo "[rebuild] ⚠ TLS 兑底：GIT_SSL_NO_VERIFY=1（仅本次 clone，供应链风险自担）" >&2; timeout 300 env GIT_SSL_NO_VERIFY=1 git clone --depth 1 "$url" "$PI_HOME/searxng/repo" >/dev/null 2>&1; }; then
         ok=1
         break
       fi
@@ -712,6 +712,8 @@ phase2_browser() {
     return 0
   fi
   # 沙箱/代理拦截证书链（UNABLE_TO_VERIFY_LEAF_SIGNATURE）时绕过 TLS 校验，仅限不可信网络环境
+  # （审计 MEDIUM：绕过时醒目告警，提示供应链风险）
+  echo "[rebuild] ⚠ TLS 兑底：NODE_TLS_REJECT_UNAUTHORIZED=0（仅本次安装，供应链风险自担）" >&2
   if (cd "$ext" && NODE_TLS_REJECT_UNAUTHORIZED=0 timeout 600 npx cloakbrowser install >/dev/null 2>&1) && chrome_ready "$ext"; then
     ok "Chromium 安装完成（TLS 绕过）"
     return 0
@@ -1291,9 +1293,11 @@ else
 if node "$PI_HOME/scripts/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
   ok "补丁目标版本匹配（$(node -e "console.log(require('$(dirname "$PI_DIST")/package.json').version)" 2>/dev/null)）"
 else
-  fail "补丁与当前 pi 版本不匹配：pi update 后需逐补丁核对并更新 @target-version 声明（scripts/verify-patches.mjs 打印明细）"
-  info "确认补丁已核对后重跑 rebuild；临时跳过可加 --skip-patches"
-  exit 1
+  # 审计 MEDIUM：此前 exit 1 直接中止——playwright-core 补丁、install-cron、最终 verify 等
+  # 与补丁无关的维护项全部被连带跳过。改为 warn 继续（后续逐补丁应用会自然暴露失配项），
+  # 失配明细由 verify-patches.mjs 输出
+  warn "补丁与当前 pi 版本可能不匹配：pi update 后需逐补丁核对并更新 @target-version 声明"
+  info "失配明细：node scripts/verify-patches.mjs <pi-dist>；本次继续执行后续维护项"
 fi
 if [ -f "$PI_HOME/scripts/patch-footer-live-context.mjs" ]; then
   node "$PI_HOME/scripts/patch-footer-live-context.mjs" "$PI_DIST" >/dev/null 2>&1 \

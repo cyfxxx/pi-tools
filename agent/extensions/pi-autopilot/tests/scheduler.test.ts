@@ -1,9 +1,14 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect, afterAll, vi } from 'vitest'
 import { mkdtemp, rm, writeFile, readFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
 const TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-autopilot-scheduler-'))
+
+vi.mock('../watchdog.ts', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>()
+  return { ...actual, triggerHangRecovery: vi.fn(async () => false) }
+})
 
 const { __setAgentDir } = await import('./__mocks__/pi-coding-agent')
 __setAgentDir(TEST_DIR)
@@ -296,6 +301,37 @@ describe('scheduler: enabled 门控（2026-08-25 审计 HIGH 修复）', () => {
     await (sched as unknown as { tick: () => Promise<void> }).tick()
     expect(sent).toHaveLength(1)
   })
+  it('enabled=false 但主会话挂死时看门狗仍恢复（2026-08-26 审计 MEDIUM：watchdog 与调度门控正交）', async () => {
+    // 集成分界：真实挂死判定（时钟/env/会话 mtime 多信号）由 watchdog.test.ts 覆盖；
+    // 此处只验证 scheduler.tick 在 enabled=false 时仍调用看门狗并对 true 结果执行恢复。
+    const wd = await import('../watchdog.ts')
+    const trig = wd.triggerHangRecovery as unknown as ReturnType<typeof vi.fn>
+    trig.mockResolvedValue(true)
+    const task = makeTask({ id: 'wd1' })
+    await writeTasksFile([task])
+    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: false }), 'utf-8')
+    await fillTelemetry(0)
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const shutdowns: number[] = []
+    const pi = { sendUserMessage: async (_m: string) => {}, shutdown: () => { shutdowns.push(1) } }
+    const sched = new SessionScheduler(pi as never)
+    // 注意：tick 内部 catch { /* suppress tick errors */ } 会吞掉一切异常——
+    // 不能用「mock exit 抛错再断言 rejects」的方式；改为 exit no-op + 断言调用副作用
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never)
+    try {
+      await (sched as unknown as { tick: () => Promise<void> }).tick()
+      // 断言必须在 mockReset 之前（reset 会清空调用记录）
+      expect(trig).toHaveBeenCalledWith(180)
+      expect(exitSpy).toHaveBeenCalledWith(0)
+      expect(shutdowns).toHaveLength(1)
+      const saved = await readTasksFile()
+      expect((saved.tasks[0] as { history: unknown[] }).history ?? []).toHaveLength(0)
+    } finally {
+      exitSpy.mockRestore()
+      trig.mockReset()
+    }
+  })
+
 })
 
 describe('scheduler: abort 回合不闭环 success（2026-08-25 审计实测修复）', () => {
