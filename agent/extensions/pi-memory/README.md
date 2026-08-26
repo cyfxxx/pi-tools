@@ -236,3 +236,4 @@ cd agent/extensions/pi-memory && npm test   # vitest, 94 用例
 | `PI_MEMORY_DIR` | `~/.pi/memory` | 数据目录 |
 | `PI_MEMORY_INJECT_TOKENS` | `500` | 常驻注入预算 |
 | `CTX_LITE_DIR` | `~/.pi/ctx-lite` | 旧数据迁移源 |
+| `PI_BIN` | `pi`（PATH 解析） | ctx_exec 提取子进程用的 pi 二进制路径 |

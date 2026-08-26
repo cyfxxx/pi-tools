@@ -97,7 +97,7 @@ B 的 pi 收到 prompt → 使用 B 的工具执行（bash/read/…）→ 完成
 
 | 字段 | 说明 |
 |------|------|
-| `host` | Tailscale IP 或局域网 IP |
+| `host` | Tailscale IP 或局域网 IP；可配 `altHosts`（备用地址列表，主地址连不上时依次 failover，适合 Tailscale/局域网双栈） |
 | `user` | SSH 用户名（Termux 通常 `u0_a123` 等） |
 | `port` | SSH 端口，默认 22（Termux sshd 常为 8022） |
 | `cwd` | 远程 RPC 工作目录（可选，默认远程用户 home） |

@@ -45,9 +45,9 @@ pi（earendil-works/pi-coding-agent）扩展开发实测经验汇总（2026-08�
 
 ```bash
 # 单扩展（须在扩展目录跑，顶层跑会因真实包加载超时）
-cd agent/extensions/<ext> && ./node_modules/.bin/vitest run
+cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run
 # 类型 + 冲突
-cd agent/extensions && ./pi-web-search/node_modules/.bin/tsc -p tsconfig.local.json --noEmit
+cd agent/extensions && ../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit
 cd agent/extensions && node tests/conflict-check.mjs
 # 全量
 bash scripts/test-all.sh

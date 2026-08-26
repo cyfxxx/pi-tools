@@ -1,6 +1,6 @@
 # Changelog — subagent
 
-## [v8]
+## [v8] - 2026-08-26
 
 ### Fixed
 - **链式任务 `{previous}` 超 argv 上限整链静默失败（MEDIUM，审计）**：注入上一步全文无截断，超 Linux MAX_ARG_STRLEN(128KB) 时 spawn 报 E2BIG 仅 resolve(1)——新增 `capPreviousOutput()` 96KB 字节级封顶（多字节边界安全 + `[truncated]` 标记）；proc error handler 把 E2BIG/ENOENT 等错误写入 errorMessage+stderr 后再退出，不再静默。

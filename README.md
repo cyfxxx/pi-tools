@@ -28,6 +28,7 @@
 │   │   ├── pi-tmux/           tmux 会话管理（后台任务/长任务）
 │   │   ├── pi-voice/          语音交流（Termux：录音转写 + TTS 朗读）
 │   │   ├── pi-link/           多设备互联（ssh 通道 + 远程 pi RPC，link_send/link_status）
+│   │   ├── pi-intervention/   干预捕获（abort 快照/corrective prompt 关联/interventions.jsonl）
 │   │   └── pi-context/        token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
@@ -38,15 +39,15 @@
 │   │   ├── pi-translate-zh/   中文翻译
 │   │   ├── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
 │   │   ├── pi-code-review/    代码审查（确定性检查 + 分级报告）
+│   │   ├── pi-bug-diagnosis/  硬 bug 诊断纪律（紧反馈回路先行）
 │   │   └── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
-│   └── package.json           统一依赖根（10 扩展共享 agent/node_modules，Node 向上寻径解析）
+│   └── package.json           统一依赖根（11 扩展共享 agent/node_modules，Node 向上寻径解析）
 ├── docs/                      开发与部署文档
 │   ├── TERMUX-DEV-NOTES.md    Termux 环境开发注意事项（Android API/录音/网络）
 │   ├── PI-EXT-DEV-NOTES.md    Pi 扩展开发注意事项（隐性契约/踩坑/黑盒流程）
 │   ├── PI-SDK-EXTENSION.md    Pi SDK 扩展开发说明
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
 ├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
-├── ctx-lite/                  压缩级便笺（ctx_note/ctx_snap，跨对话存活；边界：非长期记忆）
 ├── memory/                    pi-memory 长期记忆（entries/notes/summaries/checkpoints）
 ├── searxng/                   SearXNG 自托管搜索引擎
 │   ├── settings.yml           SearXNG 配置（含 secret_key）
@@ -64,7 +65,7 @@
 │   ├── test-all.sh            一键全量回归（测试+类型+冲突检查）
 │   ├── pi-whisper.sh          whisper 常驻服务管理（start/stop/status/restart）
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
-│   ├── patch-*.mjs            核心补丁 8 个（voice-enter 回车拦截 / footer-live-context / footer-cache / footer-format / footer-restart-hint / plan-tools / tab-arg-completion / playwright-core，rebuild.sh Phase 3 自动执行）
+│   ├── patch-*.mjs            TUI 补丁 9 个：footer×4 / voice-enter 回车拦截 / compaction-warm-prefix 暖前缀重放 / plan-tools / tab-arg-completion 由 rebuild.sh Phase 3 无条件执行；playwright-core 仅 Termux 条件执行
 │   ├── docker-rebuild-test.sh  Docker 干净环境重建回归（clone→rebuild→判定，分支可指定）
 │   ├── pi-bench.sh             用量基准（usage/timing/compare）
 │   ├── smoke-test.sh           冒烟测试（rebuild 依赖其第 1 项）
@@ -435,7 +436,7 @@ pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 
 ## 测试与回归
 
-一键全量回归（9 套 vitest + subagent 63 用例 + 注册面 + 类型检查 + 冲突检查 + 缓存注入面守门）：
+一键全量回归（10 套扩展 vitest + subagent 测试 + 注册面 + 类型检查 + 冲突检查 + 缓存注入面守门）：
 
 ```bash
 bash scripts/test-all.sh
@@ -452,7 +453,8 @@ bash scripts/test-all.sh
 | pi-tmux | `cd agent/extensions/pi-tmux && ../../node_modules/vitest/vitest.mjs run` | 20+2 跳过 |
 | pi-voice | `cd agent/extensions/pi-voice && ../../node_modules/vitest/vitest.mjs run` | 128+ |
 | pi-link | `cd agent/extensions/pi-link && ../../node_modules/vitest/vitest.mjs run` | 58 |
-| subagent | `cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs` | 63 |
+| pi-intervention | `cd agent/extensions/pi-intervention && ../../node_modules/vitest/vitest.mjs run` | 5 |
+| subagent | `cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`；另有 vitest guards 套件（7 用例） | 63+7 |
 | 注册面 | `cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run tests/extensions.test.ts` | 25 |
 | 类型检查 | `cd agent/extensions && ../../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit` | — |
 | 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 9 项（含工具指纹入账） |
@@ -480,7 +482,7 @@ bash scripts/test-all.sh
 |------|------|------|---------|
 | `searxng/venv/` | ~94 MB | `python3 -m venv` | `scripts/rebuild.sh` 自动创建 |
 | `searxng/repo/` | ~28 MB | `git clone searxng/searxng`（--depth 1） | `scripts/rebuild.sh` 自动克隆 |
-| `agent/node_modules/` | ~135 MB（统一依赖根，10 扩展共享） | `npm install` | `scripts/rebuild.sh` Phase 2-A 自动安装 |
+| `agent/node_modules/` | ~135 MB（统一依赖根，11 扩展共享） | `npm install` | `scripts/rebuild.sh` Phase 2-A 自动安装 |
 
 ## 常见问题
 

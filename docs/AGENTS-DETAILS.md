@@ -6,7 +6,7 @@
 
 ### agent/
 - `settings.json` — Pi 主配置（provider/model/extensions/skills；含密钥，git 忽略）
-- `extensions/` — 10 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice / pi-link
+- `extensions/` — 11 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice / pi-link / pi-intervention
 - `extensions/tests/` — 跨扩展检查：`conflict-check.mjs`（9 项：注册冲突/工具指纹入账等）、`cache-guard.mjs`（缓存注入面守门：注入面 sha256 基线 + prune 阈值契约 + 动态源扫描；漂移须 `--update-baseline`）
 - `stats/` — 运行时统计（git 忽略）：`usage-sessions.jsonl`（跨会话命中聚合）、`tool-fingerprint.jsonl`（工具定义指纹历史）
 - `lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装）、`config.ts`（配置分层合并）
@@ -41,7 +41,7 @@
 - `plans/` — plan-mode 生成的计划目录（每计划独立 .git 仓库，供计划内 git 操作）；git 忽略
 - `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/ntfy-relay/pi-voice（通知与语音配置）、scheduled-tasks.json（调度数据）、`.pi-autopilot-*.json`（看门狗状态）、`.pi-tmux-registry.json`、`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、pi-crash.log
 - `memory/stats/` — 跨设备工具使用统计（tool-use-<device>.jsonl）：【入库同步】工具默认启用决策依据；按主机名分文件无冲突，合并视图 tool-stats-sync.mjs
-- `pi-link*.json` — pi-link 设备清单（pi-link.json 入库）与运行时状态（pi-link-active/state/outbox，每次连接刷新，不入库）
+- `pi-link.json` — pi-link 设备清单（**gitignored，不入库**，含内网地址；新机重建或从原机拷贝）与运行时状态（pi-link-active/state/outbox，每次连接刷新，不入库）
 - ctx-lite/ 与 skill-store/ 已清理（分别并入 pi-memory 与 packs/）
 
 ## 回归验证细节
@@ -78,7 +78,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 `patch-compaction-warm-prefix.mjs`（压缩摘要暖前缀重放，2026-08-26 终态：compaction.js 加 setCompactionWarmPrefixProvider 注册点 + completeSummarization 的 produce 内注入 onPayload 桥——buildParams 之后、发送之前用主请求最终 payload 整体替换（缓存键原文，零二次转换；context 级重放已退役：v1/v1.5 实测均二次转换崩溃）+ 包根导出/类型同步；pi-context 按模型门控注册素材（自动前缀缓存家族才启用，overflow/近窗禁用），素材必须用 lastRequestPayload.tools/messages（最终转换版，原始工具定义会 422 缺 type）；实测：/compact rewrite-bridge 生效（baseMsgs=165/tailLen≈9.5K/tools=43，压缩后主请求 input=253/cacheRead=47360））
 `patch-playwright-core.mjs`（Termux android→linux 平台补丁）
 
-共 8 个由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行八个脚本）。
+共 9 个 patch 文件由 rebuild.sh 自动执行（幂等）：8 个无条件（上列除 playwright-core 外全部）+ `patch-playwright-core.mjs` 仅 Termux 条件执行；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行对应脚本）。
 
 footer 状态栏口径速查：`Σ/↑/↓`=会话累计（Σ=总输入=命中+未命中 / ↑=累计未命中输入 / ↓=累计输出）；`CH{x}/{y}%`=左实时（最近一轮）/右会话累计；context 区 `34.5k/200k`=实时/窗口（>40% 追加 ⚠ 提示重启前先压缩、>70% 黄、>90% 红，无括号百分比）；`¥`=成本人民币（参考汇率 6.77=2026-08 近 90 天中位数，常量在 patch-footer-format.mjs，改汇率后重跑自动更新 dist）。
 

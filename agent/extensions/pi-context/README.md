@@ -1,6 +1,6 @@
 # pi-context
 
-上下文管理扩展：8 个事件处理器 + 1 个诊断命令，减少不必要 token 消耗，全程零用户感知。
+上下文管理扩展：8 个事件处理器 + 2 个命令（/usage-diag 诊断 + /tools 用量速览），减少不必要 token 消耗，全程零用户感知。
 
 ## Handler 清单
 
@@ -49,7 +49,7 @@
 
 - **自动压缩**：按窗口比例触发（>256K 窗口 80% 对齐 dsh thresholdRatio 0.8 / ≤256K 窗口 85%，见 `lib/auto-compact.ts`；可经 `PI_CONTEXT_COMPACT_LARGE_RATIO`/`PI_CONTEXT_COMPACT_SMALL_RATIO`/`PI_CONTEXT_WINDOW_FALLBACK` 覆盖）；判定在 `agent_settled`（`ctx.compact()` 会 abort 当前 agent 且不 await 完成；agent_end 时内核可能仍重试，agent_settled 语义为 run 完全 settled 无重试/排队续跑），`recordAutoCompact`/`markCompact` 移入 `onComplete`——压缩成功后才记账/起 180s 冷却，失败不进入 cooldown、下一轮可重试；压缩完成由 `session_compact` 事件通知；`AutoContinueGate` 在压缩完成后自动注入继续指令（`triggerTurn: true` 启动新一轮），180s 冷却防递归。resume 恢复大会话时 `session_start` 立即压缩（此时无 agent 运行，abort 是 no-op，且 gate 未 arm 不会自动继续）。重启/恢复判定另行处理——见下文“重启/恢复压缩阈值 100K”节。
 - **自动压缩（三重门限，2026-08-24 用户策略修订）**：**上下文 >256K（绝对阈值，`PI_CONTEXT_ABSOLUTE_TOKENS` 覆盖，≤0 退回窗口比例）且 任务已完成/阶段性完成（plan-mode 最新 plan.md 无 `- [~]`，`PI_CONTEXT_TASK_GATE=off` 可关）且 本会话无后台任务（pi-tmux registry 中 owner=本会话 `PI_SESSION_ID` 的 tmux 会话全部退出；tmux 缺失宽容放行；`PI_CONTEXT_TMUX_REGISTRY` 测试注入）且 任务完成后/最后操作后连续 10 分钟无用户操作（`PI_CONTEXT_IDLE_MS`；有→无任务切换打点）** —— 全部满足才自动压缩（见 `lib/auto-compact.ts` + `index.ts` 门限）；判定在 `agent_settled`（`ctx.compact()` 会 abort 当前 agent 且不 await 完成；agent_end 时内核可能仍重试，agent_settled 语义为 run 完全 settled 无重试/排队续跑），`recordAutoCompact`/`markCompact` 移入 `onComplete`——压缩成功后才记账/起 180s 冷却，失败不进入 cooldown、下一轮可重试；压缩完成由 `session_compact` 事件通知；`AutoContinueGate` 在压缩完成后自动注入继续指令（`triggerTurn: true` 启动新一轮），180s 冷却防递归。溢出兜底（tokens ≥ window）无条件强制压缩。
-  - **重启/恢复压缩阈值 100K（2026-08-22 用户追加；2026-08-24 用户修正：仅看门狗挂死重启触发）**：`session_start` 读取 pi-autopilot state action，仅 `restart_hang`（看门狗空闲挂死重启）生效，手动/正常重启不压缩；不再复用窗口 0.8/`PI_CONTEXT_RESTART_RATIO`（该环境变量已移除）——重启/恢复后首轮必然全量重发（实测断链轮重发 40-105K 按全价计费），>100K 先压比等常规 256K 再压少烧一轮全量；全新会话 tokens 极小不会误触发；不与日常 decider 共用 cooldown（各自独立）。看门狗 `maxIdleMinutes=180`（3 小时）触发重启后即走此路径。footer 状态栏同阈值：上下文 >40% 窗口追加 `⚠` 提示重启前先 /compact（patch-footer-restart-hint.mjs）。
+  - **重启/恢复压缩阈值 100K（2026-08-22 用户追加；2026-08-24 用户修正：仅看门狗挂死重启触发；`PI_CONTEXT_RESTART_TOKENS` 可覆盖默认值）**：`session_start` 读取 pi-autopilot state action，仅 `restart_hang`（看门狗空闲挂死重启）生效，手动/正常重启不压缩；不再复用窗口 0.8/`PI_CONTEXT_RESTART_RATIO`（该环境变量已移除）——重启/恢复后首轮必然全量重发（实测断链轮重发 40-105K 按全价计费），>100K 先压比等常规 256K 再压少烧一轮全量；全新会话 tokens 极小不会误触发；不与日常 decider 共用 cooldown（各自独立）。看门狗 `maxIdleMinutes=180`（3 小时）触发重启后即走此路径。footer 状态栏同阈值：上下文 >40% 窗口追加 `⚠` 提示重启前先 /compact（patch-footer-restart-hint.mjs）。
   - **上下文解析 fallback**（2026-08-17）：内核不提供 contextWindow 时（opencode-go provider，`getContextUsage()` 返回 undefined——曾致自动压缩静默失效），回退到最近 turn_end 的 provider contextTokens + `PI_CONTEXT_WINDOW_FALLBACK`（默认 1M）+ `PI_CONTEXT_COMPACT_*` 比例，保证任意 provider 下自动压缩可用
   - **溢出兜底**（对齐 dsh CONTEXT_WINDOW_EXCEEDED）：tokens ≥ window 时绕过阈值/冷却强制压缩，比等内核在窗口-reserve 处兜底更早介入
 - **分层擦除**（`lib/prune.ts`）：最近 2 轮 + **120K** token 保护带内保留（`PRUNE_PROTECT_TOKENS`，2026-08-15 从 40K → 80K，2026-08-18 再 → 120K），更早的 toolResult 输出替换为 `[pruned]` 占位（保留结构）；预计回收 **≥80K** 才应用（`PRUNE_MINIMUM_TOKENS`，20K→50K→80K）；判定确定性、擦除点单调后移。**缓存冲突警告**：擦除动作本身改变消息序列（工具输出 → 占位），擦除轮发送的序列 ≠ 上一轮 → DeepSeek 前缀缓存从擦除点断裂全量重发。旧参数（40K/20K）下实测每轮擦除触发轮新增 40-60K、长会话 250K+ 时重发 200K+，日浪费 ~4.7M tokens；调高后实测零擦除断裂轮。

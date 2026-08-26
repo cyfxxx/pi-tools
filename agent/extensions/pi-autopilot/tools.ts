@@ -329,7 +329,8 @@ export function registerTools(pi: ExtensionAPI): void {
     execute: async (_toolCallId, params, _signal, _onUpdate, ctx) => {
       // 重启前提示：上下文超重启压缩阈值（40% 窗口≈重启后首轮必全量重发）时，
       // 告知可先 /compact 再重启，避免浪费几万-几十万未命中 token。
-      // 阈值与 pi-context 的 PI_CONTEXT_RESTART_RATIO（默认 0.4）保持一致。
+      // 阈值硬编码 0.4 窗口（pi-context 原 PI_CONTEXT_RESTART_RATIO 已移除；
+      // pi-context 重启压缩阈值现为 100K 绝对值）。
       const usage = ctx.getContextUsage?.() as
         | { tokens?: number | null; contextWindow?: number; percent?: number | null }
         | undefined

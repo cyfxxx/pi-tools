@@ -1,4 +1,4 @@
-# 未合并改进（合并见 agent/skills/SKILLS-MAINTENANCE.md）
+# 未合并改进（合并见 docs/SKILLS-MAINTENANCE.md）
 
 > 格式：`日期 | 触发任务 | 偏差/发现 | 建议改动`（证据导向：命令/路径/现象）
 

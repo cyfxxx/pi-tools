@@ -1288,7 +1288,7 @@ if [ -z "$PI_DIST" ]; then
 elif [ "$SKIP_PATCHES" = "1" ]; then
   warn "--skip-patches：跳过补丁版本校验与全部 TUI 补丁（临时逃生）"
 else
-# 版本关联校验（2026-08-19）：8 个 patch-*.mjs 头部声明 @target-version <major.minor>，
+# 版本关联校验（2026-08-19）：9 个 patch-*.mjs 头部声明 @target-version <major.minor>，
 # 与当前 pi 版本失配时显式失败——避免 pi update 后补丁静默失效（footer 无实时 token / 回车被吞等回退）
 if node "$PI_HOME/scripts/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
   ok "补丁目标版本匹配（$(node -e "console.log(require('$(dirname "$PI_DIST")/package.json').version)" 2>/dev/null)）"

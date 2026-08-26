@@ -32,11 +32,11 @@ version: v1.1
 | 参数 | 说明 |
 |------|------|
 | `--output <path>` | 输出路径（默认见下方[备份目录约定](#备份目录约定)） |
-
-> **备份目录约定**：Termux/Android 环境默认 `/storage/emulated/0/我的文件/pi-backup/`；其他环境默认 `~/pi-backups/`。归档文件名 `pi-backup-{hostname}-{timestamp}.tar.gz`。
 | `--with-auth` | 包含 `auth.json`（API 密钥）及同源敏感配置 `pi-voice.json`（whisper 令牌）、`models.json`（provider 密钥）。默认不包含。 |
 | `--full` | 包含 sessions、node_modules、venv、bin 等默认排除项 |
 | `--keep N` | 保留最近 N 份备份（默认 5），超出则删除最旧的文件 |
+
+> **备份目录约定**：Termux/Android 环境默认 `/storage/emulated/0/我的文件/pi-backup/`；其他环境默认 `~/pi-backups/`。归档文件名 `pi-backup-{hostname}-{timestamp}.tar.gz`。
 
 **执行步骤：**
 

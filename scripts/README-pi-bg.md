@@ -13,6 +13,8 @@ pi 执行长任务时前台 TUI 被占用，无法同时对话。`pi-bg.sh` 用 
 | 文件修改 | 两 agent 同时改同一文件 | 默认 `--tools read,ls,grep,bash` 只读集合 + 提示词只读约束；确需写操作用 `--rw` 并自行保证与前台分文件 |
 | 模型切换 | settings.json last-writer-wins 互相覆盖 | 后台不切模型（`--no-extensions` 亦禁 `/model` 切换入口） |
 
+> 任务名仅允许 `[A-Za-z0-9._-]`（`check_name` 校验）；日志与状态均落 `~/.pi/logs/bg/<name>.*`。
+
 > 若前台与后台必须同时写文件（如构建产物、同一仓库），用 `--rw` 时请：
 > 分工明确（后台负责 A 目录/分支，前台负责 B），或后台只读、写操作全部回前台。
 
@@ -55,7 +57,7 @@ pi-bg.sh stop helper
 
 ## 约束与说明
 
-- 工作目录默认当前目录，可用 `--cwd <dir>` 指定（注意：路径含单引号会破坏 tmux 命令，暂不支持）。
+- 工作目录默认当前目录，可用 `--cwd <dir>` 指定（经 tmux `-c` 独立参数传递，路径含空格/单引号均可）。
 - 后台实例与前台共享 `settings.json`/`models.json`/`auth.json`（只读共享，安全）。
 - RPC 模式默认只读工具集（无 edit/write），bash 工具仍可执行任意命令——只读约束为提示词级软约束。
 - 日志在 `~/.pi/logs/bg/<name>.log`，tmux 会话名为 `pi-bg-<name>`（前台 pi 退出不会清理它）。

@@ -1,6 +1,6 @@
 # 自优化基线报告（SELF-OPTIMIZING-BASELINE）
 
-> 采集：2026-08-20 | 更新：2026-08-20 晚（今日改动回填） | 用途：后续所有优化改动以本基线为对照，凡影响指标必须复测回填。
+> 采集：2026-08-20 | 更新：2026-08-26（扩展/技能数量回填） | 用途：后续所有优化改动以本基线为对照，凡影响指标必须复测回填。
 
 ## 1. 运行环境
 
@@ -9,8 +9,8 @@
 | pi 版本 | 0.84.2 |
 | provider / model | opencode-go / deepseek-v4-flash |
 | thinking | max |
-| 扩展 | 10（pi-context/pi-autopilot/pi-link/pi-memory/pi-voice/pi-browser/pi-web-search/pi-tmux/plan-mode/subagent） |
-| 技能 | 4（backup/code-review/full-audit/translate-zh；description 均含负例，长清单已外置 references/） |
+| 扩展 | 11（pi-context/pi-autopilot/pi-link/pi-memory/pi-voice/pi-browser/pi-web-search/pi-tmux/plan-mode/subagent/pi-intervention） |
+| 技能 | 5（backup/code-review/full-audit/translate-zh/bug-diagnosis；description 均含负例，长清单已外置 references/） |
 
 ### 今日新增能力（2026-08-20 晚，均已回归）
 

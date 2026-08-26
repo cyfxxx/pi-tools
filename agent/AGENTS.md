@@ -29,7 +29,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 ```bash
 bash scripts/test-all.sh          # 一键全量回归（含 cache-guard 注入面守门）
 bash scripts/test-all.sh --only=<ext1>,<ext2>  # 分层快检
-bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check/cache-guard
+bash scripts/test-all.sh --fast   # 跳过 subagent/注册面/conflict-check/cache-guard/doc-lint/发现完整性（--only 同样跳过 doc-lint 与发现完整性）
 node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输出历史对比与当前差距）
 ```
 
@@ -37,13 +37,14 @@ node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输�
 
 ## 关键约定
 
-- **扩展注册**：pi 0.83+ 自动发现 `extensions/` 下含 index.ts 的子目录；settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制包含 / `-` 强制排除）。新扩展须同步：目录 index.ts、extensions/tsconfig.json include、conflict-check.mjs 监听者清单、extensions.test.ts
+- **扩展注册**：pi 0.83+ 自动发现 `extensions/` 下含 index.ts 的子目录；settings.json 的 extensions 数组仅作覆盖模式（`!` 排除 / `+` 强制包含 / `-` 强制排除）。新扩展须同步：目录 index.ts、extensions/tsconfig.json include、conflict-check.mjs 监听者清单、extensions.test.ts（位于 pi-web-search/tests/ 下）
+- **APPEND_SYSTEM.md 注入面**：agent/APPEND_SYSTEM.md 由 pi 核心原生加载追加到 system prompt（非扩展机制），改动会影响缓存前缀
 - **扩展命令整合规范**：同一扩展 slash 命令 ≤2 个，子命令参数实现，支持 help/-h/--help；子命令补全用 getArgumentCompletions。
 - **缓存友好（跨扩展）**：system prompt 注入禁止时间戳/精确数值；压力提示按档位（<75% 不注入、≥75%/≥90% 固定文案）；估算统一用 lib/context-budget.ts 的 estimateTokens；停止生成用 ctx.abort()；细节见 pi-context README / docs/PI-EXT-DEV-NOTES.md
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **后台任务（禁止阻塞前台）**：tmux_run 启动后**立即结束回合**（notify 默认自动唤醒：命令自然结束会话自动退出触发通知；Ctrl-C 中断/长驻命令会话保留，供 tmux_send 交互）；同轮内禁止 tmux_wait；确需等待只用 pattern= 匹配完成标志且 timeout≤60s；until_exit 仅限会自然退出的命令（2026-08-22 起 tmux_run 默认自动退出，until_exit 可直接用）；仅用户明确要求"等它完成"时例外；无 tmux 环境用 nohup 记 PID
 - 旧扩展名（pi-web-toolkit / pi-router / pi-admin / pi-scheduler）已融合更名，禁止引用
-- **补丁生命周期**：8 个 patch-*.mjs 由 rebuild.sh Phase 3 自动执行（幂等）；pi update 后需重跑 rebuild.sh（wrapper 内执行 pi update 时 L3 钩子自动 rebuild）。清单见 docs/AGENTS-DETAILS.md
+- **补丁生命周期**：9 个 patch 文件由 rebuild.sh 自动执行（幂等）：8 个无条件 + patch-playwright-core.mjs 仅 Termux 条件；pi update 后需重跑 rebuild.sh（wrapper 内执行 pi update 时 L3 钩子自动 rebuild）。清单见 docs/AGENTS-DETAILS.md
 - **已知噪音（勿误判）**：pi-voice 回车键冲突警告属设计行为，无需处理。见 docs/AGENTS-DETAILS.md
 
 ## 各扩展深度文档（指向）

@@ -271,7 +271,7 @@ You are a specialized agent. Your system prompt goes here.
 
 ## 八、测试
 
-测试文件：`tests/test.mjs`（独立 Node.js 脚本，无需 vitest/pi 环境）
+测试文件：`tests/test.mjs`（独立 Node.js 脚本，无需 vitest/pi环境）；另有 vitest guards 套件 `tests/subagent-guards.test.ts`（7 用例，随 test-all.sh 全量回归跑）
 
 ```bash
 node --experimental-strip-types --experimental-loader ./tests/loader.mjs ./tests/test.mjs

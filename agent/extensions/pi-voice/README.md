@@ -160,6 +160,7 @@ apt-get install ffmpeg        # PRoot 侧
 | `PI_VOICE_PLATFORM` | `auto` | 平台强制（auto/termux/linux/windows——自动探测：win32→windows，termux 工具存在→termux，否则 linux） |
 | `PI_VOICE_MIC_DEVICE` / `PI_VOICE_LINUX_MIC_DEVICE` | 空 / `RDPSource` | 录音设备（termux 忽略；Linux 如 `RDPSource`） |
 | `PI_VOICE_TTS_ENGINE` / `PI_VOICE_PIPER_MODEL` | `auto` / 模型路径 | Linux TTS 引擎（auto/piper/sapi/espeak）+ piper 模型 |
+| `PI_VOICE_LINUX_TTS_SINK` / `_TTS_VOICE` / `_TTS_RATE` | 空 / 空 / 空 | Linux sapi/espeak 朗读输出设备 / 音色 / 语速（仅非 piper 引擎时使用） |
 | `PI_VOICE_WHISPER_DEVICE` / `PI_VOICE_WHISPER_SCRIPT` | `auto` / 脚本路径 | whisper 计算设备 + 服务脚本 |
 | `PI_VOICE_STT_BACKEND` | `whisper` | 转写后端：`whisper`（faster-whisper，默认）或 `sherpa`（SenseVoice 端侧模型，中文更准更快） |
 | `PI_VOICE_SHERPA_ENDPOINT` / `PI_VOICE_SHERPA_SCRIPT` | `18768` / 脚本路径 | sherpa 服务地址 + 服务管理脚本 |

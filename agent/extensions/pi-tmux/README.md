@@ -77,6 +77,8 @@ tmux_stop(name="build", remove_log=true)
 }
 ```
 
+> 配置段名 `"pi-tmux"` 与别名 `"tmux"` 均可（config.ts 双键识别）。
+
 ### 环境变量
 
 | 变量 | 说明 | 默认值 |

@@ -43,7 +43,7 @@
 命令：`/auto restart`（重启需确认）
 工具：`admin_status` `admin_list_models` `admin_set_model` `admin_list_sessions` `admin_switch_session` `admin_get_config` `admin_set_config` `admin_restart`
 
-休眠组 `autopilot`（默认不注入，`enable_tool("autopilot")` 启用）：`autopilot_status`（运行状态/遥测）`autopilot_stats`（调度统计）`autopilot_failover`（failover 策略查看）。
+休眠组 `autopilot`（默认不注入，`enable_tool("autopilot")` 启用）：`autopilot_status`（运行状态/遥测）`autopilot_stats`（调度统计）`autopilot_failover`（failover 策略查看）`autopilot_policy`（策略只读查询）`schedule_task`（任务创建/管理）。共 13 个工具（8 admin_* + 5 autopilot/schedule）。
 
 状态/统计：`/auto status [--stats]`（--stats 附加遥测统计） `/auto policy` `/auto failover [--exec]` `/auto pause` `/auto resume`（`/auto help` 查看全部用法）
 
@@ -70,7 +70,7 @@
 
 ## admin_restart 上下文提示
 
-调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（对齐 pi-context 的 `PI_CONTEXT_RESTART_RATIO=0.4`），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。重启照常执行（提示不阻断），避免用户毫不知情地烧掉一次全量重新计费。
+调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（阈值硬编码 0.4；pi-context 侧重启压缩阈值为 100K，见其 README），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。重启照常执行（提示不阻断），避免用户毫不知情地烧掉一次全量重新计费。
 
 运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/` 下）。
 

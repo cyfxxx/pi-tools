@@ -3,6 +3,13 @@
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
 `git checkout <tag>` 回退，或从该 tag 拉分支修复。
 
+## 2026-08-26 审计修复闭环 + packs 扩容
+
+- 全项目审计修复闭环 v2（HIGH×2 + MEDIUM×14 + LOW×11）；压缩摘要暖前缀重放终态（onPayload 桥，机制 B）
+- 缓存影响声明守门 + 评估隔离契约 + 蒸馏质检（dsh 生态借鉴三项）
+- packs 新增 embedded-dev（嵌入式开发）、pcb-design（PCB 硬件设计）、wechatide-skill v0.3.9（小程序开发）
+- pi-link 卡片 IP 探测打分选卡 + WSL ipconfig 解析；pi-autopilot 测试泄漏写真实 admin-state 根因闭环
+
 ## 2026-08-24 portable-win 并入 master
 
 Windows 便携版专用分支 `portable-win` 的修复已全部并入主线（此前经测试分支合并 + 移植提交落地
