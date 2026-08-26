@@ -29,7 +29,7 @@ import {
   loadSummaries,
   CHECKPOINTS_DIR,
 } from './storage.ts'
-import { searchEntries } from './retrieval.ts'
+import { logSearchTrace, searchEntriesWithScores, type SearchTraceInput } from './retrieval.ts'
 import { detectEnvironment, ENVIRONMENTS, formatEnvironments, type RuntimeEnv } from './env.ts'
 
 const MAX_CHECKPOINTS_LIST = 100
@@ -231,10 +231,11 @@ export function registerTools(pi: ExtensionAPI): void {
       },
     },
     execute: async (_toolCallId, params) => {
+      const __t0 = Date.now()
       const entries = loadEntries()
       const currentEnv = detectEnvironment()
       const envFilter: RuntimeEnv | 'all' = params.env ? (params.env as RuntimeEnv) : currentEnv
-      const results = searchEntries(
+      const scored = searchEntriesWithScores(
         entries,
         params.query as string | undefined,
         params.category as MemoryCategory | undefined,
@@ -243,6 +244,17 @@ export function registerTools(pi: ExtensionAPI): void {
         envFilter,
         typeof params.asOf === 'string' ? (params.asOf as string) : undefined,
       )
+      const results = scored.map(x => x.entry)
+      // 检索轨迹台账：query→命中明细，供事后排查「为什么没召回」（fail-open）
+      logSearchTrace({
+        caller: 'memory_search',
+        query: params.query as string | undefined,
+        category: params.category as string | undefined,
+        tags: params.tags as string[] | undefined,
+        limit: typeof params.limit === 'number' ? (params.limit as number) : 5,
+        hits: scored.map(x => ({ id: x.entry.id, title: x.entry.title, score: x.score })),
+        tookMs: Date.now() - __t0,
+      })
 
       if (!results.length) {
         return { content: [{ type: 'text', text: '(无匹配的记忆)' }], details: null }
@@ -408,9 +420,10 @@ export function registerTools(pi: ExtensionAPI): void {
       },
     },
     execute: async (_toolCallId, params) => {
+      const __t0 = Date.now()
       const entries = loadEntries()
       const limit = typeof params.limit === 'number' ? (params.limit as number) : 3
-      const results = searchEntries(
+      const scored = searchEntriesWithScores(
         entries,
         params.query as string | undefined,
         undefined,
@@ -418,6 +431,15 @@ export function registerTools(pi: ExtensionAPI): void {
         limit,
         detectEnvironment(), // 默认只召回当前环境 + all 的条目
       )
+      const results = scored.map(x => x.entry)
+      // 检索轨迹台账（fail-open）
+      logSearchTrace({
+        caller: 'memory_recall',
+        query: params.query as string | undefined,
+        limit,
+        hits: scored.map(x => ({ id: x.entry.id, title: x.entry.title, score: x.score })),
+        tookMs: Date.now() - __t0,
+      })
 
       const blocks: string[] = []
       if (results.length) {

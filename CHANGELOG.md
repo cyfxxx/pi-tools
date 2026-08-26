@@ -3,6 +3,12 @@
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
 `git checkout <tag>` 回退，或从该 tag 拉分支修复。
 
+## 2026-08-27 OpenViking 设计借鉴：输出外置化 + 检索轨迹
+
+- **pi-context 写入时截断外置化**：新增 lib/output-archive.ts——pruneToolOutput 预算截断时原文落盘 logs/tool-outputs/（sha256 内容 hash 命名，同内容同路径确定性），占位符附存档路径可 read 读回；fail-open。与 b798152 分层擦除 refs 机制（logs/prune-refs/ 会话级 md + sentinel 幂等 + 过期清理）分工：写入时预算裁剪 vs 历史轮事后擦除，两目录语义分离
+- **pi-memory 检索轨迹台账**：memory_search/memory_recall 每次检索追加 agent/stats/memory-search.jsonl（query/命中 id+标题+得分/耗时，4MB 轮转一代），供排查「为什么没召回」；PI_MEMORY_TRACE_FILE 可覆盖
+- **ROADMAP 4.5 观察项**：L0 分层注入（OpenViking 三层加载借鉴），触发条件为注入块接近预算或活跃条目 >800
+
 ## 2026-08-26 审计修复闭环 + packs 扩容
 
 - 全项目审计修复闭环 v2（HIGH×2 + MEDIUM×14 + LOW×11）；压缩摘要暖前缀重放终态（onPayload 桥，机制 B）

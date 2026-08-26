@@ -1,6 +1,8 @@
 import type { MemoryEntry, MemoryCategory } from './types.ts'
 import { activeEntries, tokenize } from './storage.ts'
 import { isEnvVisible, type RuntimeEnv } from './env.ts'
+import { appendFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 
 const K1 = 1.5
 const B = 0.75
@@ -172,7 +174,7 @@ export interface SearchOptions {
 // asOf（ISO 时间点）可选：返回“在该时刻有效”的记忆（bi-temporal 回溯查询）。
 // 规则：createdAt ≤ asOf；被取代/软删条目须 validUntil > asOf 才可见（无 validUntil 视为不可回溯）；
 // 活跃条目始终可见（除非 asOf < createdAt）。缺省走 activeEntries（当前态），注入路径不变。
-export function searchEntries(
+export function searchEntriesWithScores(
   entries: MemoryEntry[],
   query?: string,
   category?: MemoryCategory,
@@ -180,7 +182,7 @@ export function searchEntries(
   limit = 5,
   env?: RuntimeEnv | 'all',
   asOf?: string,
-): MemoryEntry[] {
+): Array<{ entry: MemoryEntry; score: number }> {
   let live: MemoryEntry[]
   if (asOf) {
     const asOfTs = new Date(asOf).getTime()
@@ -208,7 +210,7 @@ export function searchEntries(
     const ranked = live
       .map(e => ({ e, score: qualityScore(e) }))
       .sort((a, b) => b.score - a.score)
-    return roundRobinBySession(ranked, limit).map(x => x.e)
+    return roundRobinBySession(ranked, limit).map(x => ({ entry: x.e, score: x.score }))
   }
 
   const docs = live.map(e => buildDoc(e))
@@ -235,7 +237,53 @@ export function searchEntries(
   // MMR 主题多样性（需先建 id→DocTokens 映射）+ 跨会话轮转
   const docMap = new Map(live.map((e, i) => [e.id, docs[i]]))
   const diversified = mmrDiversify(ranked, limit, 0.7, docMap)
-  return roundRobinBySession(diversified, limit).map(x => x.e)
+  const final = roundRobinBySession(diversified, limit)
+  return final.map(x => ({ entry: x.e as MemoryEntry, score: x.score as number }))
+}
+
+/** 主检索入口（兼容原签名）：返回条目数组 */
+export function searchEntries(
+  entries: MemoryEntry[],
+  query?: string,
+  category?: MemoryCategory,
+  tags?: string[],
+  limit = 5,
+  env?: RuntimeEnv | 'all',
+  asOf?: string,
+): MemoryEntry[] {
+  return searchEntriesWithScores(entries, query, category, tags, limit, env, asOf).map(x => x.entry)
+}
+
+export interface SearchTraceInput {
+  caller: 'memory_search' | 'memory_recall'
+  query?: string
+  category?: string
+  tags?: string[]
+  limit: number
+  hits: { id: string; title: string; score: number }[]
+  tookMs: number
+}
+
+/** 台账文件：agent/stats/memory-search.jsonl（与 tool-events 同风格；PI_MEMORY_TRACE_FILE 覆盖，测试注入用） */
+export function traceFile(): string {
+  const home = process.env.HOME || '/root'
+  return process.env.PI_MEMORY_TRACE_FILE || join(home, '.pi', 'agent', 'stats', 'memory-search.jsonl')
+}
+
+/**
+ * 追加一条检索轨迹：query→命中 id/标题/得分 + 耗时。用途：排查「为什么没召回」、
+ * 观察检索质量随记忆库增长的变化。fail-open：写失败静默忽略，不影响检索主流程。
+ */
+export function logSearchTrace(t: SearchTraceInput): void {
+  try {
+    const file = traceFile()
+    mkdirSync(dirname(file), { recursive: true })
+    // 轮转：>4MB 重命名为 .1（保留一代，防无限增长）
+    if (existsSync(file) && statSync(file).size > 4_000_000) {
+      try { renameSync(file, file + '.1') } catch { /* 并发写时 rename 失败可容忍 */ }
+    }
+    appendFileSync(file, JSON.stringify({ ts: new Date().toISOString(), ...t }) + '\n')
+  } catch { /* fail-open */ }
 }
 
 // 提取/消解用：找与候选最相似的条目（内容 Jaccard + 词法）

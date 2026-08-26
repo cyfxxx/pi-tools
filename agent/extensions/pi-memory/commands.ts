@@ -12,7 +12,7 @@ import {
   CHECKPOINTS_DIR,
   getNotesSize,
 } from './storage.ts'
-import { searchEntries } from './retrieval.ts'
+import { logSearchTrace, searchEntriesWithScores } from './retrieval.ts'
 import { ENVIRONMENTS, formatEnvironments, type RuntimeEnv } from './env.ts'
 
 const CATEGORY_HINT =
@@ -79,7 +79,18 @@ export function registerCommands(pi: ExtensionAPI): void {
             }
           }
         }
-        const results = searchEntries(entries, queryParts.join(' '), category, undefined, limit, env)
+        const __t0 = Date.now()
+        const scored = searchEntriesWithScores(entries, queryParts.join(' '), category, undefined, limit, env)
+        // 检索轨迹台账（/memory search 同样入账，fail-open）
+        logSearchTrace({
+          caller: 'memory_search',
+          query: queryParts.join(' ') || undefined,
+          category,
+          limit,
+          hits: scored.map(x => ({ id: x.entry.id, title: x.entry.title, score: x.score })),
+          tookMs: Date.now() - __t0,
+        })
+        const results = scored.map(x => x.entry)
         if (!results.length) {
           ctx.ui.notify('(无匹配的记忆)', 'info')
           return

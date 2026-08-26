@@ -89,6 +89,7 @@
 | 4.2 (P2) | 任务级遥测 | scripts/task-metrics.mjs：会话级成功率代理/干预次数/token 成本（只读） | ✅ |
 | 4.3 (P3) | golden tasks 防退化基准 | scripts/golden-tasks.sh（--fast 确定性 / --full 无头 pi 会话） | ✅ |
 | 4.4 (P4) | 记忆生命周期治理 | scripts/memory-lifecycle.mjs 只读报告（淘汰/升格/冲突候选）；规则入 VISION §5 | ✅ |
+| 4.5 (观察) | pi-memory L0 分层注入 | 借鉴 OpenViking L0/L1/L2：条目写入时生成 ≤256 字符一句话摘要，注入层用 L0、memory_search 结果才给全文——同 500 token 注入预算装更多条目。触发条件：注入块接近预算上限或活跃条目 >800 时启动（2026-08-27 调研，当前 496/500 未触发） | ⏸ 未启动 |
 
 ## 5. 授权边界（用户 2026-08-20 放宽）
 

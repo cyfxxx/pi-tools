@@ -20,6 +20,8 @@
  * 兼容 API：token-budget.ts / prune.ts 为 re-export 兼容层，调用方零改动。
  */
 
+import { archivedStub } from './output-archive.ts'
+
 export interface BudgetReport {
   used: number
   total: number
@@ -276,12 +278,15 @@ export function pruneToolOutput(text: string, toolName: string): string {
   }
   const allowed = Math.min(maxLenTokens, Math.max(300, OUTPUT_BUDGET_TOKENS - s.outputTotalTokens))
   if (allowed <= 0) {
-    return `[${toolName} 输出已裁剪：累计输出已达预算上限]`
+    return archivedStub(text, `[${toolName} 输出已裁剪：累计输出已达预算上限]`)
   }
   const ratio = Math.round((allowed / textTokens) * 100)
   const truncated = truncateByTokens(text, allowed)
   const truncatedText = truncated.replace(/\n\n\[截断\]$/, "")
-  return `${truncatedText}\n\n[${toolName} 输出已截断：约 ${textTokens} token → ${allowed} token (${ratio}%)]`
+  return archivedStub(
+    text,
+    `${truncatedText}\n\n[${toolName} 输出已截断：约 ${textTokens} token → ${allowed} token (${ratio}%)]`,
+  )
 }
 
 export function getOutputReport(): string {

@@ -9,7 +9,7 @@
 - `extensions/` — 11 个扩展：subagent / pi-context / plan-mode / pi-autopilot / pi-memory / pi-web-search / pi-browser / pi-tmux / pi-voice / pi-link / pi-intervention
 - `extensions/tests/` — 跨扩展检查：`conflict-check.mjs`（9 项：注册冲突/工具指纹入账等）、`cache-guard.mjs`（缓存注入面守门：注入面 sha256 基线 + prune 阈值契约 + 动态源扫描；漂移须 `--update-baseline`）
 - `stats/` — 运行时统计（git 忽略）：`usage-sessions.jsonl`（跨会话命中聚合）、`tool-fingerprint.jsonl`（工具定义指纹历史）
-- `lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`registry.ts`（注册/清理统一封装）、`config.ts`（配置分层合并）
+- `lib/` — 共享库：`context-budget.ts`（统一 token 预算/估算/裁剪/缓存统计）、`auto-compact.ts`、`prune.ts`、`usage-diag.ts`、`note-store.ts`、`token-budget.ts`（兼容层）、`output-archive.ts`（工具输出归档：**写入时**预算截断的原文落盘 logs/tool-outputs/ 占位符附路径可读回；分层擦除侧可恢复由 prune.ts dumpRef/refs 机制承担）、`registry.ts`（注册/清理统一封装）、`config.ts`（配置分层合并）
 - `agents/`、`skills/` — 子代理模板、技能；`prompts/` — pi 全局 prompt templates 加载目录（`*.md` 自动注册为 `/name` 斜杠命令）；Pi SDK 文档见 `docs/PI-SDK-EXTENSION.md`
 
 ### portable/（便携 pi，Windows 原生种子）

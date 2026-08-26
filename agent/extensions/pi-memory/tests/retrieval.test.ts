@@ -223,3 +223,18 @@ describe('retrieval: qualityScore recency（审计 L2 修复）', () => {
     expect(qualityScore(fresh)).toBeGreaterThan(qualityScore(stale))
   })
 })
+
+describe('retrieval: searchEntriesWithScores（检索轨迹台账支撑，2026-08-27）', () => {
+  it('返回条目 + 综合得分，得分非负且命中排序降序', async () => {
+    const { searchEntriesWithScores } = await import('../retrieval.ts')
+    const entries = [
+      makeEntry({ id: 'a', title: 'shell 系统', content: 'shell 系统管理' }),
+      makeEntry({ id: 'b', title: '无关', content: '完全不同的内容' }),
+    ]
+    const scored = searchEntriesWithScores(entries, 'shell 系统', undefined, undefined, 5)
+    expect(scored.length).toBeGreaterThanOrEqual(1)
+    expect(scored[0].entry.id).toBe('a')
+    for (const x of scored) expect(x.score).toBeGreaterThanOrEqual(0)
+    for (let i = 1; i < scored.length; i++) expect(scored[i - 1].score).toBeGreaterThanOrEqual(scored[i].score)
+  })
+})

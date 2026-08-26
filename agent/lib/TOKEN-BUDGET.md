@@ -34,10 +34,12 @@
 
 ### 输出裁剪
 
+截断不再丢信息：`pruneToolOutput` 截断时原文经 `lib/output-archive.ts` 落盘（内容 hash 命名，确定性），占位符尾部附「原文 N 字符已存档: <路径>」——模型凭路径用 read 取回原文（读回是新消息，不碰历史前缀）。写盘失败 fail-open 退化为纯占位符。测试注入：`PI_OUTPUT_ARCHIVE_DIR`。
+
 | 函数 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
 | `recordOutput(tool, outputLength)` | `string, number` | `void` | 记录工具输出（字符长度，按 3.5 字符/token 折算） |
-| `pruneToolOutput(text, toolName)` | `string, string` | `string` | 输出预算校验：总量 20K / 单工具 5K tokens，超限截断 |
+| `pruneToolOutput(text, toolName)` | `string, string` | `string` | 输出预算校验：总量 20K / 单工具 5K tokens，超限截断；截断时原文归档并在占位符附存档路径 |
 | `getOutputReport()` | — | `string` | 返回工具输出用量报告文本 |
 | `resetOutputBudget()` | — | `void` | 重置输出裁剪累计 |
 
