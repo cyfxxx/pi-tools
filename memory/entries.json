@@ -13479,6 +13479,55 @@
       "accessedAt": "2026-08-26T05:58:40.874Z",
       "environments": [
         "all"
+      ],
+      "observedAt": "2026-08-26T05:58:40.874Z",
+      "deleted": false
+    },
+    {
+      "id": "64c28d66-da7a-4d7d-b70e-32c80571bbe2",
+      "category": "solutions",
+      "title": "压缩摘要暖前缀重放终态：onPayload 桥（四版迭代收敛）",
+      "content": "pi 压缩成本优化机制 B 终态（2026-08-26 实测通过）：在 dist compaction.js 的 completeSummarization 内 produce 处注入 onPayload 回调（patch 层），摘要请求发送前（buildParams 之后）用主请求最终 payload 整体替换 messages/tools，尾部追加剥离 <conversation> 后的摘要指令——缓存键与主请求逐字节一致，零二次转换。关键约束：①素材必须取主请求最终参数（lastRequestPayload.tools/messages，扩展 v2 before_provider_request handler 采集；原始工具定义 getAllTools 会在参数层替换时 422 tools.0.type missing）；②不能走 context 级重放（转换前消息二次转换结构失配崩溃、已转换参数重复串行化崩溃，v1/v1.5 均实测失败）；③payload 替换发生在 buildParams 之后的 onPayload（pi-ai api 层的 options.onPayload，Agent.run 才注入——摘要经 completeSummarization 直调 streamFn 永不触发，必须在 patch 层自己注入）；④识别回复：最后一条 user 消息（toString 提取 text 块）含 <conversation>，正则 ^<conversation>\\n[\\s\\S]*?\\n<\\/conversation>\\n\\n 剥离 tail；⑤diagnostic 写 /root/.pi/logs/warm-diag.jsonl（reason=rewrite-bridge，baseMsgs/tailLen/tools）。门控：自动前缀缓存家族 /deepseek|qwen|kimi|moonshot|glm|zhipu|doubao|gemini|gpt-|o[134]-/i。实测：rewrite-bridge baseMsgs=165/tailLen≈9.5K/tools=43，压缩成功，压缩后主请求 input=253/cacheRead=47360。patch 脚本三态幂等（全新/旧 _wp 形态升级/新形态跳过），dist 与脚本同步。",
+      "tags": [
+        "compaction",
+        "warm-prefix",
+        "onPayload",
+        "cache",
+        "patch"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T06:10:37.423Z",
+      "updatedAt": "2026-08-26T06:10:37.423Z",
+      "accessedAt": "2026-08-26T06:10:37.423Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T06:10:37.423Z",
+      "deleted": false
+    },
+    {
+      "id": "b5fbdf10-9bfc-408a-9d3c-fef701a60b34",
+      "category": "solutions",
+      "title": "wechatide CLI CONNECT_ERROR 修复：手动补 .cli/.ide 标记文件",
+      "content": "现象：wechatide.cmd 一切业务调用报 CONNECT_ERROR \"Failed to connect to WechatIDE\"，但 cli.bat 报 ENOENT 无法写 C:\\Users\\<user>\\AppData\\Local\\微信开发者工具\\User Data\\<hash>\\Default\\.cli；实际 MCP 服务健康（http://127.0.0.1:20057/mcp/heartbeat 返回 ok:true）。\n\n根因：新版微信开发者工具（2025+）IDE 数据目录在 %APPDATA%\\Roaming\\微信开发者工具，而 CLI 的 global.userDirPath 硬编码旧版路径 Local\\...\\User Data\\<hash>\\Default，该目录从未被创建 → CLI 启动时读不到 .ide-status/.ide 标记。\n\n修复（WSL 内执行）：\n```bash\nd=\"/mnt/c/Users/<user>/AppData/Local/微信开发者工具/User Data/<hash>/Default\"\nmkdir -p \"$d\"\necho -n \"On\" > \"$d/.ide-status\"    # 必须为 On，否则判定服务端口关闭\necho -n \"20057\" > \"$d/.ide\"        # 端口号 = netstat 查到的 LISTENING 端口\n```\n之后 cli.bat / wechatide.cmd 全部正常。hash 目录名以 CLI 报错信息里给出的为准。\n\n排查链：tasklist 查进程 → netstat 查端口（注意进程名是中文\"微信开发者工具.exe\"，grep 英文匹配不到）→ curl /mcp/heartbeat 确认服务健康 → 读安装目录 resources/app.asar.unpacked/js/common/cli/index.js 定位标记文件读写逻辑。\n\n其他要点：WSL 调 Windows CLI 用 `cd /mnt/d && cmd.exe /c \"App_I\\...\\wechatide.cmd\" ...`（cwd 不能是 UNC 路径）；powershell 工具仅在 Windows 原生可用，WSL 用 cmd.exe interop；GUI exe 用 nohup <exe> & 启动可行但 cmd start 会拒绝访问。",
+      "tags": [
+        "wechatide",
+        "微信开发者工具",
+        "CONNECT_ERROR",
+        "cli",
+        "wsl-interop",
+        "miniprogram"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T07:21:57.366Z",
+      "updatedAt": "2026-08-26T07:21:57.366Z",
+      "accessedAt": "2026-08-26T07:21:57.366Z",
+      "environments": [
+        "wsl2"
       ]
     },
     {
