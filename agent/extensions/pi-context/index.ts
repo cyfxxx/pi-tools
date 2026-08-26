@@ -11,7 +11,7 @@ import {
 	recordCacheUsage,
 	estimateTokens,
 } from "../../lib/context-budget.ts";import { computeCompactThreshold, makeAutoContinueGate, makeCompactDecider } from "../../lib/auto-compact.ts";
-import { pruneToolResults, type PruneMessage } from "../../lib/prune.ts";
+import { pruneToolResults, sweepPruneRefs, type PruneMessage } from "../../lib/prune.ts";
 import {
 	createState,
 	tickThinkingLevel,
@@ -42,6 +42,43 @@ import {
 	buildSleepingSummary,
 	computeActiveTools,
 } from "./tool-groups.ts";
+
+// ── 擦除溯源 refs（借鉴 TencentDB-Agent-Memory 的 refs 卸载 + Reclaimer 清理）──
+// 分层擦除的占位 marker 内嵌原文落盘路径：擦除≠销毁，Agent 可按路径 grep/read 下钻找回。
+// 目录 logs/prune-refs/（运行时数据，logs/ 已 git ignore）；文件名 = 会话 ID，
+// 跨轮/重启稳定 → marker 内容确定，缓存前缀不受影响。
+// 同步 IO 仅在实际触发擦除时发生（保护带 120K 下极低频）。
+const PRUNE_REFS_DIR = join(homedir(), ".pi", "logs", "prune-refs");
+const PRUNE_REFS_RETENTION_DAYS = 14;
+
+type PruneDumpCtx = { sessionManager?: { getSessionId?: () => string | null | undefined } };
+
+/** 构造擦除落盘回调：把被擦工具原文追加到 <sessionId>.md，返回路径供 marker 引用 */
+function buildPruneDumpRef(ctx: PruneDumpCtx | undefined) {
+	let sessionId = "adhoc";
+	try {
+		sessionId = String(ctx?.sessionManager?.getSessionId?.() || "adhoc");
+	} catch {
+		// 取不到会话身份时退化为共享文件
+	}
+	const file = join(PRUNE_REFS_DIR, `${sessionId}.md`);
+	let dirReady = false;
+	let seq = 0;
+	return (text: string, meta: { index: number; chars: number }): string | null => {
+		if (text.includes("[pruned:")) return null; // 已是 marker 文本，禁止重复落盘
+		if (!dirReady) {
+			mkdirSync(PRUNE_REFS_DIR, { recursive: true });
+			dirReady = true;
+		}
+		seq++;
+		appendFileSync(
+			file,
+			`\n## 擦除条目 e${seq} · ${new Date().toISOString()} · 消息#${meta.index} · ${meta.chars} 字符\n\n${text}\n`,
+			"utf8",
+		);
+		return file;
+	};
+}
 
 // 执行效率指令（静态注入，缓存友好）：批量工具调用 + 抑制中间答复。
 // 依据 2026-08 实测：同一任务 pi 40 请求 vs opencode 16（同模型 deepseek-v4-flash），
@@ -655,7 +692,7 @@ export default function (pi: ExtensionAPI) {
 	}
 
 	// R2/R3：context 阶段确定性过滤（结果每轮一致，不破坏缓存前缀）
-	pi.on("context", (event) => {
+	pi.on("context", (event, ctx) => {
 		// 供压缩快照用：保存当前消息全文（引用，agent_settled 压缩前落盘可追溯）
 		lastContextMessages = event.messages;
 		// 空闲门：捕获最后一条用户消息时间戳（pi Message.timestamp）
@@ -689,7 +726,9 @@ export default function (pi: ExtensionAPI) {
 		// 擦除本身改变消息序列 → 发送序列 ≠ 上一轮 → DeepSeek 前缀缓存从擦除点断裂全量重发，
 		// 不存在"缓存前缀稳定"。故保护带调至 120K（对齐 append-only 不动老消息哲学）：
 		// 普通会话全程不触发、清理职责让给 auto-compact（一次性断裂），擦除仅作极长会话底线保障。
-		const pruned = pruneToolResults(messages as unknown as PruneMessage[]);
+		const pruned = pruneToolResults(messages as unknown as PruneMessage[], {
+			dumpRef: buildPruneDumpRef(ctx),
+		});
 		if (pruned.modified) {
 			messages = pruned.messages as unknown as typeof messages;
 			modified = true;
@@ -971,6 +1010,9 @@ export default function (pi: ExtensionAPI) {
 		// 阈值 40% 窗口根本不该触发）。new/fork 是新会话身份，清零；
 		// resume/reload 是同一会话恢复，保留供断链恢复判定。
 		if (event.reason === "new" || event.reason === "fork") lastProviderContextTokens = 0
+		// 擦除溯源 refs 过期清理（>14 天或总量超限从旧删起）：异步不阻塞启动，失败静默——
+		// refs 只是找回便利品，非关键数据
+		void sweepPruneRefs(PRUNE_REFS_DIR, { retentionDays: PRUNE_REFS_RETENTION_DAYS }).catch(() => {});
 		const resolved = resolveContext(ctx);
 		if (!resolved) return;
 		const { tokens, window: contextWindow } = resolved;

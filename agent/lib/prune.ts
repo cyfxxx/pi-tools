@@ -24,6 +24,8 @@ export * from './context-budget.ts'
  * - 零 LLM 成本，推迟 auto-compact 触发、减少摘要调用
  */
 
+import { readdir, stat, unlink } from "node:fs/promises";
+import { join } from "node:path";
 import { estimateTokens } from "./context-budget.ts";
 
 // 保护带：从后往前累计保留的 token 预算（opencode PRUNE_PROTECT = 40_000）
@@ -41,6 +43,12 @@ export const PRUNE_MINIMUM_TOKENS = 80_000;
 export const KEEP_RECENT_TURNS = 2;
 // 擦除后的占位文本
 export const PRUNE_MARKER = (chars: number): string => `[pruned: ${chars} chars]`;
+// 已擦除消息的识别签名：二次扫描时跳过（保证 marker 稳定、不重复落盘）
+export const PRUNE_SENTINEL = "[pruned:";
+// 带溯源路径的占位文本（借鉴 TencentDB-Agent-Memory 的 refs 卸载思路：
+// 擦除≠销毁，原文落盘 refs 文件，marker 内嵌路径可 grep/read 下钻找回）
+export const PRUNE_MARKER_REF = (chars: number, ref: string): string =>
+  `[pruned: ${chars} chars → ${ref}]`;
 
 export interface PruneMessage {
   role: string;
@@ -52,6 +60,8 @@ export interface PruneOptions {
   protectTokens?: number;
   minimumTokens?: number;
   keepRecentTurns?: number;
+  /** 擦除时把原文落盘的回调；返回引用路径嵌入 marker（null/抛错 → 降级纯 chars marker） */
+  dumpRef?: (text: string, meta: { index: number; chars: number }) => string | null;
 }
 
 export interface PruneResult {
@@ -93,15 +103,16 @@ export function nonTextBlockCount(m: PruneMessage): number {
 export const NON_TEXT_BLOCK_TOKENS = 1000;
 
 /** 将消息 content 中全部块替换为占位文本（text 块与非 text 块一律擦除）；返回替换后的 content */
-export function pruneMessageText(m: PruneMessage, chars: number): unknown {
+export function pruneMessageText(m: PruneMessage, chars: number, marker?: string): unknown {
+  const text = marker ?? PRUNE_MARKER(chars);
   if (!Array.isArray(m.content)) return m.content;
   return (m.content as { type?: string; text?: string }[]).map((block) => {
     if (!block || typeof block !== "object") return block;
     if (block.type === "text" && typeof block.text === "string") {
-      return { ...block, text: PRUNE_MARKER(chars) };
+      return { ...block, text };
     }
     // 非 text 块（图片等）同样擦除：替换为占位文本块，避免视觉数据持续占用上下文
-    return { type: "text", text: PRUNE_MARKER(chars) };
+    return { type: "text", text };
   });
 }
 
@@ -143,7 +154,8 @@ export function pruneToolResults(
   }
 
   // 从后往前累计保留预算：保护带内（最近轮次）无条件保留，绝不消耗预算；
-  // 保护带外更早的 toolResult 按预算保留，预算耗尽后加入擦除候选
+  // 保护带外更早的 toolResult 按预算保留，预算耗尽后加入擦除候选。
+  // 已擦除消息（含 sentinel）跳过：marker 已稳定，重选只会重写对象/重复落盘
   let budgetLeft = protectTokens;
   const toPrune: number[] = [];
   for (let i = n - 1; i >= 0; i--) {
@@ -155,6 +167,7 @@ export function pruneToolResults(
       budgetLeft = Math.max(0, budgetLeft - sizes[i]);
       continue;
     }
+    if (messageText(messages[i]).includes(PRUNE_SENTINEL)) continue; // 已擦除
     toPrune.push(i);
   }
 
@@ -175,11 +188,90 @@ export function pruneToolResults(
 
   const next = messages.map((m, i) => {
     if (!toPrune.includes(i)) return m;
-    const chars = messageText(m).length;
-    return { ...m, content: pruneMessageText(m, chars) };
+    const text = messageText(m);
+    const chars = text.length;
+    let marker: string | undefined;
+    if (opts.dumpRef) {
+      try {
+        const ref = opts.dumpRef(text, { index: i, chars });
+        if (ref) marker = PRUNE_MARKER_REF(chars, ref);
+      } catch {
+        // 落盘失败降级为纯 chars marker：擦除本身不受影响
+      }
+    }
+    return { ...m, content: pruneMessageText(m, chars, marker) };
   });
 
   return { messages: next, modified: true, prunedCount: toPrune.length, prunedTokens, prunedChars };
+}
+
+// ── 擦除溯源 refs 清理（借鉴 TencentDB-Agent-Memory Reclaimer）──
+
+export interface SweepRefsOptions {
+  /** 文件保留天数（按 mtime）；<0 禁用按龄清理。默认 14 */
+  retentionDays?: number;
+  /** 目录总大小上限（字节），超限从最旧删起。默认 50MB */
+  maxTotalBytes?: number;
+}
+
+export interface SweepRefsStats {
+  scanned: number;
+  deletedByAge: number;
+  deletedBySize: number;
+  freedBytes: number;
+}
+
+/**
+ * 清理擦除溯源 refs 目录：过期文件删除 + 总量超限时从最旧删起。
+ * 单文件失败不阻断整体；目录不存在视为空。异步、无副作用副作用面小。
+ */
+export async function sweepPruneRefs(dir: string, opts: SweepRefsOptions = {}): Promise<SweepRefsStats> {
+  const retentionDays = opts.retentionDays ?? 14;
+  const maxTotalBytes = opts.maxTotalBytes ?? 50 * 1024 * 1024;
+  const stats: SweepRefsStats = { scanned: 0, deletedByAge: 0, deletedBySize: 0, freedBytes: 0 };
+  let files: { path: string; mtime: number; size: number }[] = [];
+  try {
+    for (const name of await readdir(dir)) {
+      const p = join(dir, name);
+      const st = await stat(p).catch(() => null);
+      if (!st?.isFile()) continue;
+      files.push({ path: p, mtime: st.mtimeMs, size: st.size });
+    }
+  } catch {
+    return stats;
+  }
+  stats.scanned = files.length;
+  if (retentionDays >= 0) {
+    const cutoff = Date.now() - retentionDays * 86_400_000;
+    for (const f of files) {
+      if (f.mtime >= cutoff) continue;
+      try {
+        await unlink(f.path);
+        stats.deletedByAge++;
+        stats.freedBytes += f.size;
+        f.size = 0;
+      } catch {
+        // 单文件失败忽略
+      }
+    }
+  }
+  let remaining = files.reduce((s, f) => s + f.size, 0);
+  if (remaining > maxTotalBytes) {
+    for (const f of [...files].sort((a, b) => a.mtime - b.mtime)) {
+      if (remaining <= maxTotalBytes) break;
+      if (f.size === 0) continue;
+      try {
+        await unlink(f.path);
+        stats.deletedBySize++;
+        stats.freedBytes += f.size;
+        remaining -= f.size;
+        f.size = 0;
+      } catch {
+        // 单文件失败忽略
+      }
+    }
+  }
+  return stats;
 }
 
 /**

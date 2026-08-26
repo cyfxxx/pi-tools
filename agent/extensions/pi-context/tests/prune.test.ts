@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   pruneToolResults,
   pruneThinkingBudget,
+  sweepPruneRefs,
   PRUNE_PROTECT_TOKENS,
   PRUNE_MINIMUM_TOKENS,
   KEEP_RECENT_TURNS,
@@ -227,5 +230,110 @@ describe('pruneThinkingBudget: thinking 按 token 预算保留', () => {
     const msgs = [user(), { role: 'assistant', content: [{ type: 'text', text: '回复' }] }]
     const r = pruneThinkingBudget(msgs, 1_000)
     expect(r.modified).toBe(false)
+  })
+})
+describe('pruneToolResults: dumpRef 擦除溯源（refs 卸载）', () => {
+  it('dumpRef 返回路径 → marker 内嵌路径，回调收到完整原文', () => {
+    const refs: string[] = []
+    const msgs = session(3)
+    const r = pruneToolResults(msgs, {
+      minimumTokens: 0,
+      protectTokens: 0,
+      keepRecentTurns: 0,
+      dumpRef: (text, meta) => {
+        expect(meta.chars).toBe(text.length)
+        refs.push(text)
+        return `/tmp/refs/${meta.index}.md`
+      },
+    })
+    expect(r.modified).toBe(true)
+    const prunedMsg = r.messages.find((m, i) => m !== msgs[i])!
+    const text = messageText(prunedMsg)
+    expect(text).toContain('[pruned:')
+    expect(text).toContain('→ /tmp/refs/')
+  })
+
+  it('dumpRef 抛错 → 降级为纯 chars marker，擦除不受影响', () => {
+    const msgs = session(3)
+    const r = pruneToolResults(msgs, {
+      minimumTokens: 0,
+      protectTokens: 0,
+      keepRecentTurns: 0,
+      dumpRef: () => {
+        throw new Error('disk full')
+      },
+    })
+    expect(r.modified).toBe(true)
+    const prunedMsg = r.messages.find((m, i) => m !== msgs[i])!
+    expect(messageText(prunedMsg)).toMatch(/^\[pruned: \d+ chars\]$/)
+  })
+
+  it('dumpRef 返回 null → 纯 chars marker', () => {
+    const msgs = session(3)
+    const r = pruneToolResults(msgs, { minimumTokens: 0, protectTokens: 0, keepRecentTurns: 0, dumpRef: () => null })
+    expect(r.modified).toBe(true)
+    const prunedMsg = r.messages.find((m, i) => m !== msgs[i])!
+    expect(messageText(prunedMsg)).toMatch(/^\[pruned: \d+ chars\]$/)
+  })
+
+  it('已擦除消息（含 sentinel）跳过：不重选、不再回调 dumpRef', () => {
+    const calls: number[] = []
+    const msgs = session(3)
+    // 第一轮：全部擦除
+    const r1 = pruneToolResults(msgs, {
+      minimumTokens: 0,
+      protectTokens: 0,
+      keepRecentTurns: 0,
+      dumpRef: (_t, meta) => {
+        calls.push(meta.index)
+        return '/tmp/refs/x.md'
+      },
+    })
+    expect(calls.length).toBeGreaterThan(0)
+    // 第二轮：对已擦除结果再次扫描 → 无修改、dumpRef 零调用
+    const callsBefore = calls.length
+    const r2 = pruneToolResults(r1.messages, {
+      minimumTokens: 0,
+      protectTokens: 0,
+      keepRecentTurns: 0,
+      dumpRef: (_t, meta) => {
+        calls.push(meta.index)
+        return '/tmp/refs/x.md'
+      },
+    })
+    expect(r2.modified).toBe(false)
+    expect(calls.length).toBe(callsBefore)
+  })
+})
+
+describe('sweepPruneRefs: 擦除溯源目录清理', () => {
+  it('过期文件按 mtime 删除，新文件保留；总量超限从最旧删起', async () => {
+    const { mkdtempSync, writeFileSync, utimesSync } = await import('node:fs')
+    const { tmpdir } = await import('node:os')
+    const dir = mkdtempSync(join(tmpdir(), 'prune-refs-'))
+    const oldFile = join(dir, 'old.md')
+    const newFile = join(dir, 'new.md')
+    writeFileSync(oldFile, 'x'.repeat(100))
+    writeFileSync(newFile, 'y'.repeat(100))
+    // old 设为 30 天前
+    const past = new Date(Date.now() - 30 * 86_400_000)
+    utimesSync(oldFile, past, past)
+
+    const stats = await sweepPruneRefs(dir, { retentionDays: 14 })
+    expect(stats.scanned).toBe(2)
+    expect(stats.deletedByAge).toBe(1)
+    expect(existsSync(oldFile)).toBe(false)
+    expect(existsSync(newFile)).toBe(true)
+
+    // 总量上限：新文件 100 字节，maxTotalBytes=50 → 从最旧（即仅剩的 new）删起
+    const stats2 = await sweepPruneRefs(dir, { retentionDays: -1, maxTotalBytes: 50 })
+    expect(stats2.deletedBySize).toBe(1)
+    expect(existsSync(newFile)).toBe(false)
+})
+
+  it('目录不存在 → 空统计不抛错', async () => {
+    const stats = await sweepPruneRefs('/nonexistent/prune-refs-xyz')
+    expect(stats.scanned).toBe(0)
+    expect(stats.deletedByAge).toBe(0)
   })
 })
