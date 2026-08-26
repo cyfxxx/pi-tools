@@ -13071,10 +13071,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 7,
+      "recurrence": 12,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-26T05:57:32.283Z",
-      "accessedAt": "2026-08-26T05:57:32.283Z",
+      "updatedAt": "2026-08-26T11:42:48.818Z",
+      "accessedAt": "2026-08-26T11:42:48.818Z",
       "environments": [
         "all"
       ],
@@ -13528,7 +13528,9 @@
       "accessedAt": "2026-08-26T07:21:57.366Z",
       "environments": [
         "wsl2"
-      ]
+      ],
+      "observedAt": "2026-08-26T07:21:57.366Z",
+      "deleted": false
     },
     {
       "id": "78637b18-710b-459c-a657-8ea7e201bdb4",
@@ -13578,7 +13580,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058"
+      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
+      "deleted": false
     },
     {
       "id": "5f41b404-271e-4b79-908d-3652a6475e30",
@@ -13600,7 +13603,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058"
+      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
+      "deleted": false
     },
     {
       "id": "efcc89a7-6e6d-4458-b6c4-7be5caf979e3",
@@ -13622,7 +13626,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058"
+      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
+      "deleted": false
     },
     {
       "id": "7d401bc9-5018-464e-bd57-14c55bcbb6b5",
@@ -13644,7 +13649,8 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058"
+      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
+      "deleted": false
     },
     {
       "id": "30b87bfd-acde-4be5-98f6-6e14f2a691c2",
@@ -13666,7 +13672,148 @@
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058"
+      "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
+      "deleted": false
+    },
+    {
+      "id": "bdc586bc-787f-4fde-bb1a-b1f549c474b0",
+      "category": "procedure",
+      "title": "技能整合通用/专用分流与知识层整合模式（pcb-design 实例）",
+      "content": "外部技能包整合时的分流判定与轻量模式（2026-08-26 任务3/4 验证）：1) 分流判定——跨场景可复用的方法论类技能走标准整合流程（见 external-skill-pack-integration 草稿）；强领域专用、脚本依赖重或平台绑定的包（如 PCB/EDA）不整体搬运，改用\"知识层\"模式。2) 知识层包结构：SKILL.md 作入口（工具链路由 + 审查闭环契约 + 命令速查，全部原创提炼）+ references/{upstream-catalog.md, core-workflows.md, specialized-tools.md}；upstream-catalog.md 记录上游仓库 URL/许可/脚本级能力获取方式，需要完整能力时按需从上游取。3) 许可规避：包内显式声明\"整合自 X(MIT) 等上游的设计思想与公开文档描述，本文档为原创提炼\"。4) 实例：packs/pcb-design（源自 kicad-happy MIT 等，含 KiCad 路由/ERC-DRC-Gerber-EMC 速查/JLCPCB 下单检查/SPICE 验证）。该变体尚未并入 external-skill-pack-integration.SKILL.md 草稿，晋升正式包时应合并为一节。",
+      "tags": [
+        "packs",
+        "技能整合",
+        "pcb-design",
+        "知识层",
+        "外部技能包"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T08:30:34.842Z",
+      "updatedAt": "2026-08-26T08:30:34.842Z",
+      "accessedAt": "2026-08-26T08:30:34.842Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T08:30:34.842Z",
+      "deleted": false
+    },
+    {
+      "id": "4459cd0b-116f-4c80-baae-e5a3b56dcde4",
+      "category": "reference",
+      "title": "GitHub 项目调研线索：embed-ai-tool / llm-pid-tuner / garycli",
+      "content": "2026-08-26 会话调研过的 GitHub 项目（仅留索引，结论细节未入库需查当日会话）：embed-ai-tool（嵌入式 AI 工具链方向）、llm-pid-tuner（LLM 整定 PID 参数）、garycli；同时搜索过同类项目。方向上与 packs/embedded-dev、dg-piagent 相关，可作为后续嵌入式/控制类技能包的上游候选。",
+      "tags": [
+        "github",
+        "调研线索",
+        "embedded-dev",
+        "pid",
+        "上游候选"
+      ],
+      "confidence": 0.5,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T08:30:34.978Z",
+      "updatedAt": "2026-08-26T08:30:34.978Z",
+      "accessedAt": "2026-08-26T08:30:34.978Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T08:30:34.978Z",
+      "deleted": false
+    },
+    {
+      "id": "588d8753-394d-4963-8bf1-3f2e6c938d67",
+      "category": "procedure",
+      "title": "全面检查任务标准路径与成本基线",
+      "content": "用户说\"进行全面检查/体检/audit\"时直接触发 pi-full-audit 技能（全量确定性检查 + 回归测试 + subagent 并行审查复核 + 分级报告 + 会话运行健康巡检），无需临时拼装流程。实测成本基线（2026-08-26）：单轮即可完成，36 次工具调用、输出约 1.3K tokens、缓存命中约 43.6K（累计 44K）。后续同类任务可参照此基线判断是否异常膨胀；若审计中发现具体 bug（如当次的 restart_hang 假横幅、vitest 根目录污染），转入独立诊断会话按 pi-bug-diagnosis 处理，不在审计轮内展开。",
+      "tags": [
+        "audit",
+        "pi-full-audit",
+        "成本基线",
+        "token效率",
+        "任务分流"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T09:27:15.790Z",
+      "updatedAt": "2026-08-26T09:27:15.790Z",
+      "accessedAt": "2026-08-26T09:27:15.790Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T09:27:15.790Z",
+      "deleted": false
+    },
+    {
+      "id": "1f3653ef-e136-43e3-8a62-4744d60fb27c",
+      "category": "solutions",
+      "title": "多 pi 实例并行开发时的仓库状态漂移处置",
+      "content": "症状：审计/测试跨时段结果不一致（早晨全绿、下午 3 项红）。根因：同机另一 pi 实例并行开发（pi-context 暖前缀功能），且其 pi update 冲掉了 dist 补丁。\n处置：① 修复前 git log -3 -- 热点文件确认归属，不碰对方文件，提交只 add 自己清单绝不 add -A；② tsc 报「no exported member X」且 X 属补丁注入 API → 直接对 PI_DIST 重跑 scripts/patch-*.mjs（幂等，4 分钟）+ verify-patches.mjs 复核，无需整跑 rebuild.sh；③ cache-guard 漂移先定性（有意变更才 --update-baseline）；④ 回归结论标注运行时间点，跨时段比较前重跑。\n测试污染：pi 会话内跑 vitest 会继承 PI_SESSION_FILE → watchdog isHanging 第二信号恒新鲜。涉 env/mtime 的测试须 finally 内 save/restore 隔离；被测函数吞异常时禁用「mock exit 抛错断言 rejects」法（改 no-op + 断言 exitSpy 调用），断言必须在 mockReset 前。",
+      "tags": [
+        "并行实例",
+        "cache-guard",
+        "补丁",
+        "vitest",
+        "审计"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T10:39:25.556Z",
+      "updatedAt": "2026-08-26T10:39:25.556Z",
+      "accessedAt": "2026-08-26T10:39:25.556Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T10:39:25.556Z",
+      "deleted": false
+    },
+    {
+      "id": "45c76444-d741-492e-a8ac-45dfe10c6352",
+      "category": "solutions",
+      "title": "空转会话识别信号与止损（按轮统计特征）",
+      "content": "识别特征：连续 ≥3 轮 tools=0 且 out≈0（几十字符以内），同时缓存命中量很高（单轮可达 200K+）→ 说明模型在空读上下文等待或卡住，并非在工作。实例：2026-08-26 10:13 会话 15 轮累计 988K tokens，抽样 8 轮中 7 轮 tools=0/out=0，唯一活动轮也仅 hit=250000 无输出。处置：确认无必须前台推进的工作后用 ctx.abort() 结束回合，把控制权交回用户或等后台任务 notify 唤醒；禁止在前台逐轮轮询等待（与「tmux_run 启动后必须立即结束回合」同一原则）。价值：避免近百万 token 的无效上下文累积。",
+      "tags": [
+        "session-health",
+        "token-efficiency",
+        "context-cache",
+        "abort"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T11:45:54.982Z",
+      "updatedAt": "2026-08-26T11:45:54.982Z",
+      "accessedAt": "2026-08-26T11:45:54.982Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T11:45:54.982Z",
+      "deleted": false
+    },
+    {
+      "id": "e298d4bf-0883-4abb-af0c-f1a0933fa6af",
+      "category": "procedure",
+      "title": "全库文档时效性快检清单（单轮可完成的基准）",
+      "content": "适用：定期巡检 ~/.pi 下文档是否过时、需否优化。范围：docs/*.md、各扩展 README.md、AGENTS.md 及其指向的 AGENTS-DETAILS/VISION/ROADMAP 等。检查四项：① 版本号/日期是否落后于当前实际（pi 版本、node 安装目录名、扩展数量、patch 清单）；② 相对路径/交叉引用目标是否仍存在；③ 描述是否与代码现状矛盾（命令面、配置键、注册方式）；④ 条目重复或互相矛盾。产出格式：按「过时必改 / 建议优化 / 正常」三档列清单。成本基线：单轮约 10 次工具调用、26K tokens 即可完成（2026-08-26 实测），适合作为例行轻量任务而非独立长流程。",
+      "tags": [
+        "docs",
+        "audit",
+        "maintenance",
+        "checklist"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T11:45:55.087Z",
+      "updatedAt": "2026-08-26T11:45:55.087Z",
+      "accessedAt": "2026-08-26T11:45:55.087Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
