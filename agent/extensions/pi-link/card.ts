@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process'
 import type { DeviceConfig, LinkConfig } from './config.ts'
+import { detectLanIPv4 } from './lanip.ts'
 
 /**
  * 设备卡片（T2-5，A2A Agent Card 简版）：
@@ -32,10 +33,17 @@ export function detectTailscaleIP(): string | undefined {
   }
 }
 
-/** 构建本机卡片：host 优先 Tailscale IP，其次 hostname -I 的第一个内网 IP */
+/** 构建本机卡片：host 优先 Tailscale IP → 打分 LAN IP（WSL 下取 Windows 物理网卡）→ hostname -I 兜底 */
 export function buildCard(cfg: LinkConfig): AgentCard {
   const name = cfg.selfName ?? process.env.HOSTNAME ?? 'pi-device'
   let host = detectTailscaleIP()
+  if (!host) {
+    try {
+      host = detectLanIPv4()
+    } catch {
+      host = undefined
+    }
+  }
   if (!host) {
     try {
       const out = execSync("hostname -I 2>/dev/null", { timeout: 3000 }).toString().trim()
