@@ -21,7 +21,12 @@ export interface AdminState {
   restartLog: RestartLog | null
 }
 
-const STATE_FILE = path.join(getAgentDir(), '.pi-admin-state.json')
+// 测试隔离逃生门（对齐 pi-context 的 PI_CONTEXT_ADMIN_STATE）：STATE_FILE 在模块加载时
+// 固化，仅靠 vitest 别名 mock getAgentDir 隔离——别名失效时（如在 agent 根直跑 vitest）
+// 会把 restart_hang 等状态写进真实文件（2026-08-26 误报事故根因）。env 优先，双层防御。
+const STATE_FILE = process.env.PI_ADMIN_STATE_FILE
+  ? path.resolve(process.env.PI_ADMIN_STATE_FILE)
+  : path.join(getAgentDir(), '.pi-admin-state.json')
 
 function defaultState(): AdminState {
   return { action: 'none', timestamp: 0, restartLog: null }

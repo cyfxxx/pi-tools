@@ -7,6 +7,8 @@ const TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-autopilot-watchdog-'))
 
 const { __setAgentDir } = await import('./__mocks__/pi-coding-agent')
 __setAgentDir(TEST_DIR)
+// 双层隔离：即使 vitest 别名失效（agent 根直跑），状态写入也重定向到临时目录
+process.env.PI_ADMIN_STATE_FILE = join(TEST_DIR, '.pi-admin-state.json')
 
 afterAll(async () => {
   await rm(TEST_DIR, { recursive: true, force: true })
