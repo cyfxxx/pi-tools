@@ -75,3 +75,11 @@
 - **聚合测试入口清单完整性属注册面纪律**：test-all.sh ALL_EXTS 漏 subagent 致 subagent-guards.test.ts 在任何入口零执行——新增扩展/套件必须同步聚合清单（同 conflict-check 监听者清单约定）。
 - **edit 工具 oldText/newText 方向纪律**：newText 是完整替换文本，长中文块编辑前先确认方向（本会话写反两次，原子回滚保证了误配不落盘）。
 - **push 微流程**：活进程持续追加的统计文件在提交与推送间隙会再变脏 → pull --rebase 报 unstaged 时对该单文件 stash 即可；SSH remote 无 token 免 set-url 还原。
+
+### 2026-08-26 文档一致性专项审查（21 处发现，方法论升格进 SKILL 第 1c 步）
+- **数量口径多点漂移是最高频过时模式**：扩展数（10→11）、技能数（4→5）、patch 数（8→9 口径）在 README/AGENTS.md/DETAILS/BASELINE/脚本注释五处重复——新增 pi-intervention 时只更新了 conflict-check/test-all，全部文档计数漏改。发现一处失真后 grep 全仓库同口径数字逐处清点。
+- **失效跨文档引用新模式**：环境变量删除后引用方不跟着删（PI_CONTEXT_RESTART_RATIO 已从 pi-context 移除，autopilot README+tools.ts 注释仍引用）——删公共 API 时 grep 引用面应含所有 .md 与注释。
+- **状态标记矛盾模式**：ROADMAP `[x]` 打勾却注「待实现」，且 §2 差距摘要与 §6 状态表互相矛盾、实际代码已落地（lesson-miner 自述阶段号可作证据）——勾选框语义必须与文字一致，「规划确认」和「已完成」不能共用 [x]。
+- **文档审查分组法**：按对象分四组并行 scout（根+docs / AGENTS 注入主文档 / 扩展README↔源码 / 工具类文档），比按目录遍历快且覆盖全；每组只报可证伪项（文档原文+实际证据），没问题一句话带过。
+- **文档类发现豁免子代理复核**：核实只需一条 grep/test，主会话直接定论；子代理复核留给代码行为类建议。
+- **TOKEN-BUDGET 类 API 文档失真最重**：函数已删/签名变更/阈值改档位后使用文档三处以上不同步——共享库导出变更时其 .md 文档必须列入同步清单。

@@ -1,7 +1,7 @@
 ---
 name: pi-full-audit
 description: 全项目深度审计（区别于 code-review 的 diff 审查）：全量确定性检查 + 回归测试 + subagent 并行审查与复核 + 分级报告；含会话运行健康巡检（提示词注入/缓存命中/token 消耗/自动执行功能）。用户说"全面检查""深度审计""全项目审查""健康检查""体检""运行检查""会话检查""audit"时触发。。不适用：仅审一次 git diff 用 pi-code-review；查询具体文件/单点问题用 grep/read。
-version: v1.9
+version: v1.10
 经验基线: 见 references/EXPERIENCE-BASELINE.md（已外置，历次沉淀逐次追加）
 
 ---
@@ -24,7 +24,7 @@ version: v1.9
 
 - 确认仓库路径与 git 状态（`git status -sb`），有未提交改动时先处理（stash 或提交），避免审查对象含半成品
 - 若目标仓库是 ~/.pi：先跑 `review.sh --selfcheck` 确认技能自身最新（注意：selfcheck 检查的是**当前 cwd** 而非技能目录，须在仓库内运行）
-- 用 todo 建立 6 步计划：确定性检查 → 基线测试 → 并行深度审查 → 复核核实 → 终审报告 → 修复闭环
+- 用 todo 建立 6 步计划：确定性检查（含文档一致性）→ 基线测试 → 并行深度审查 → 复核核实 → 终审报告 → 修复闭环
 
 ### 第 1 步：确定性检查（机器先跑）
 
@@ -57,11 +57,35 @@ foreach ($f in $files) {
 ```
 
 **编码/行尾实战坑（2026-08-15 沉淀）**：
-
 - ps1 中文必须 UTF-8 BOM（PS 5.1 无 BOM 按 ANSI/GBK 解析 → 乱码可能破坏语法）；bat 反之必须无 BOM
 - 修改 ps1 用 python `open(p,'w',encoding='utf-8-sig')`（保持 BOM）；含反斜杠的锚点用 raw 字符串（r"""..."""），否则 `\b`/`\n` 被解释成控制符导致匹配失败
 - PowerShell here-string 打开符 `@"` 必须行首（PS 5.1 缩进打开符报错）；转义串里多余反引号会把闭合引号转义掉 → 整文件解析崩溃（searxng-setup 实例，ParseFile 18 错误）
 - 种子/实例双份文件：修改后必须双向同步，提交只认种子（实例 bin/ gitignored）
+
+### 第 1c 步：文档一致性检查（与确定性检查同批并行，2026-08-26 升格）
+
+范围 = 项目自有 .md（排除 venv/第三方 repo/node_modules/plans）。方法：按对象分组委派 scout 并行做「文档陈述 vs 实际」**可证伪核对**（不是审文风），每组输出按文件列【过时】/【缺失】/【优化建议】+ 文档原文引用 + 实际证据，没问题的文件一句话带过：
+
+```text
+组A: 根 README/CHANGELOG + docs/ 全部 —— 对照实际目录树/脚本清单/扩展清单/git log 衔接
+组B: AGENTS.md + AGENTS-DETAILS + APPEND_SYSTEM —— 对照 extensions 目录/settings.json/rebuild.sh patch 清单/test-all 参数解析/conflict-check 监听者清单
+组C: 各扩展 README vs 源码 —— grep registerCommand 命令面/process.env 环境变量/配置键读取，逐项命中
+组D: 工具类文档（scripts README/pi-bg/portable/packs/README/lib 使用文档/agents 模板/skills SKILL.md）vs 对应实现
+```
+
+核对维度（全部可证伪）：数量口径、文件/路径存在性、命令与参数面、环境变量与配置键、「入库 vs gitignored」陈述、CHANGELOG 最新条目与 git log 衔接、状态标记矛盾。
+
+**重点陷阱（2026-08-26 实战沉淀）**：
+
+- **同一数字多处重复**：扩展数/技能数/补丁数在 README/AGENTS.md/DETAILS/BASELINE/脚本注释重复出现——改一处漏其余是最高频过时模式。发现一处失真后必须 grep 全仓库同口径数字逐处清点
+- **失效跨文档引用**：A 文档引用 B 扩展已删除的环境变量/函数（实战例：PI_CONTEXT_RESTART_RATIO 已删，autopilot README 仍引用）
+- **翻译损伤语句**：直译生硬到语义不通（实战例：「紧通过/失败信号」）——技能正文重点抽查
+- **矛盾状态标记**：`[x]` 打勾却注「待实现」；「入库」实为 gitignored；目录树画着已删除的目录
+
+处置：
+
+- 文档类发现**豁免第 4 步子代理复核**——核实只需 grep/test 一条命令，主会话直接定论；代码行为类建议仍走复核
+- 修复时注意：AGENTS.md/APPEND_SYSTEM.md 是 system prompt 注入面，修改会使下轮会话缓存前缀失效一次（预期成本，报告中注明即可）
 
 ### 第 2 步：基线回归测试（审查前必跑）
 
@@ -79,9 +103,7 @@ foreach ($f in $files) {
   组2: pi-voice + pi-tmux + pi-browser（进程管理、平台适配）
   组3: pi-memory + pi-context + plan-mode（状态/注入/合并）
   组4: pi-web-search + subagent + scripts/ + skills/（fetch/补丁/脚本）
-  组5（文档专项，用户要求"检查文档是否更新"时加）: AGENTS.md + 各扩展 README + docs/ + portable/README + skills SKILL.md——
-      找：引用不存在的路径/命令/旧扩展名（pi-web-toolkit/pi-router/pi-admin/pi-scheduler、旧命令 /tts /planclear /auto:*）、
-      文档描述功能已删除更名、代码新增功能文档未提、计数类过时（"9 个扩展"、测试用例数）；输出严格精简（每条 ≤60 字、≤12 条、结尾给核对一致总结）
+  组5（文档专项）: 已升格为独立第 1c 步（推荐在深度审查前完成）；用户仅要求「检查文档是否过时」时单独执行第 1c 步即可
 ```
 
 **功能实测维度**（用户要求"测试所有扩展功能"时，审查之外对每个扩展做真实工具调用验证）：
@@ -107,6 +129,7 @@ foreach ($f in $files) {
 **为什么**：初次审查/优化建议必然含缺陷（完美不可能）：行号引用错误、机制描述错误、设计权衡当 bug、定级偏高、遗漏同类问题。若主会话直接采信，错漏会原样进入修复。把建议清单委派给**复核子代理**逐条核实——独立上下文不受主会话先入为主影响，也避免主会话上下文被大量代码细节污染。
 
 - 按建议归属模块分组委派（沿用第 3 步分组），**每组一个子代理**，任务 = 逐条核实
+- **文档一致性发现（第 1c 步产出）豁免本步**：核实只需 grep/test 一条命令，主会话直接定论
 - 核实 prompt 模板（照抄进任务描述，每条建议原文完整粘贴含声称的 文件:行号）：
 
 ```
@@ -140,7 +163,7 @@ foreach ($f in $files) {
    - LOW 项：批量委派 worker 并行修（2-3 个 worker 按模块分组），每个 worker 的 prompt 给精确的 文件:行号 + 修复方案 + 回归测试要求 + 输出格式约束（每项一行、总输出≤1500 字）；worker 间文件不重叠防冲突
    - **worker 修复报告不可全信**：主会话抽查关键 diff（每个 worker 抽 2-4 处：外部句柄承接/状态迁移/边界条件），确认与方案一致
 3. 每个修复点**至少一个回归测试**：优先补在对应扩展现有测试文件；测试要能捕获旧行为（修复前先跑一遍确认失败）
-4. 行为/语义变化的修复同步更新 README/CHANGELOG（有维护惯例的扩展，如 subagent/plan-mode/pi-web-search 有 CHANGELOG）；代码注释与实现矛盾的一并更正
+4. 行为/语义变化的修复同步更新 README/CHANGELOG（有维护惯例的扩展，如 subagent/plan-mode/pi-web-search 有 CHANGELOG）；代码注释与实现矛盾的一并更正。改 AGENTS.md 等注入面文档会使下轮会话缓存前缀失效一次，属预期成本
 5. 全量回归：对应扩展 vitest + tsc + 注册面/conflict-check（`bash scripts/test-all.sh`）；新测试文件要进仓库而非临时验证；全量回归同样 tmux_run 后台跑（禁 tmux_wait，见第 2 步）
 6. **修复逐项销账**：对照审计报告清单逐项核对修复状态（2026-08-15 教训：多任务同文件合并完成时漏更新 todo 状态，#5 残留待办行被用户发现）；全部完成后 todo delete 归档清除 TUI 展示
 7. 提交推送：按仓库惯例分离提交（如代码修复 / memory/entries.json 记忆增量分开）；push 前确认 remote 无凭证 token；SSH remote 直接推
