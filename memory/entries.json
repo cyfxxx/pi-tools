@@ -13709,6 +13709,124 @@
       ],
       "observedAt": "2026-08-26T00:03:32.538Z",
       "deleted": false
+    },
+    {
+      "id": "f87b04d3-bf05-4a13-ad60-3dc0c35949c0",
+      "category": "procedure",
+      "title": "新扩展落地后须经 admin_restart 重启才生效，reason 写明扩展名",
+      "content": "pi 0.83+ 扩展仅在启动时注册命令与工具，会话中途新增/修改 extensions/ 下扩展不会热加载。新扩展落地后必须重启才能生效：写 /root/.pi/.pi-admin-state.json 内容 {\"action\":\"restart\"} 后对当前 pi 进程发 SIGTERM，由 wrapper 拉起新会话（proot 环境实测可行）。用 admin_restart 工具时 reason 字段应写明「目的 + 扩展名」，例：「P1-P4 进化基建落地完成，重启加载 pi-intervention 扩展开始干预捕获」——便于日后从会话记录/摘要追溯每次重启对应的功能上线点。",
+      "tags": [
+        "pi",
+        "extension",
+        "restart",
+        "admin_restart",
+        "intervention"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T00:35:16.422Z",
+      "updatedAt": "2026-08-26T00:35:16.422Z",
+      "accessedAt": "2026-08-26T00:35:16.422Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T00:35:16.422Z",
+      "deleted": false
+    },
+    {
+      "id": "a50dadb2-78ec-45b2-8e94-5f9b2048639a",
+      "category": "solutions",
+      "title": "全面检查审计单轮收敛执行法",
+      "content": "触发词\"全面检查/深度审计/体检\"直接走 pi-full-audit 技能，无需重新摸索流程。实测（2026-08-26 会话）：本仓库规模（约 11 个扩展）的全项目审计可在单轮内收敛——(1) 确定性回归交给 bash scripts/test-all.sh；(2) 代码审查与交叉复核派 subagent 并行，主上下文只接收压缩摘要；(3) 工具调用批量并行发出、文本输出保持极简。该次会话 55 次工具调用仅产生约 1.9K 输出 tokens、累计上下文约 59K，未触发自动压缩、未返工。无新踩坑发现；完整流程已由 pi-full-audit 技能固化，不另存草稿。",
+      "tags": [
+        "pi-full-audit",
+        "审计",
+        "效率",
+        "subagent"
+      ],
+      "confidence": 0.75,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T01:56:41.624Z",
+      "updatedAt": "2026-08-26T01:56:41.624Z",
+      "accessedAt": "2026-08-26T01:56:41.624Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T01:56:41.624Z",
+      "deleted": false
+    },
+    {
+      "id": "ca08fe39-d770-4967-83e6-62b26bae88b2",
+      "category": "procedure",
+      "title": "经验沉淀纪律：任务记录无实质内容时跳过而非编造",
+      "content": "批量沉淀任务经验时，若某任务记录仅剩统计指标（tools/hit/out）与一句话标题、缺少具体发现/踩坑/步骤，则对该任务跳过 memory_store 且不写技能草稿，在汇报中说明原因；禁止凭标题臆测编造\"精确可复现\"的经验条目污染记忆库。首例：2026-08-26 \"全面检查\"任务（pi-full-audit 流程）记录被截断到不可用，仅存统计（55 tools / 59008 hit / 1896 out）；且对应技能 /root/.pi/agent/skills/pi-full-audit/SKILL.md 已存在，无需重复起草。",
+      "tags": [
+        "记忆治理",
+        "经验沉淀",
+        "数据质量"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T01:59:20.084Z",
+      "updatedAt": "2026-08-26T01:59:20.084Z",
+      "accessedAt": "2026-08-26T01:59:20.084Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T01:59:20.084Z",
+      "deleted": false
+    },
+    {
+      "id": "2a1e6c54-6541-4dae-b9ea-ed6d9ea45482",
+      "category": "solutions",
+      "title": "pi全面检查任务单轮收敛执行法",
+      "content": "pi 全项目深度审计可单轮收敛完成：test-all.sh 承担全部确定性检查与回归测试，审查类工作交 subagent 并行分工，最终只输出极简分级报告。2026-08-26 实测 55 次工具调用完成全流程，缓存命中约 59K tokens、输出仅 1.9K，无返工痕迹。适用于同类「全面检查/深度审计」任务的低成本高收敛执行。",
+      "tags": [
+        "pi",
+        "审计",
+        "subagent",
+        "token优化",
+        "执行模式"
+      ],
+      "confidence": 0.75,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T01:59:29.951Z",
+      "updatedAt": "2026-08-26T01:59:29.952Z",
+      "accessedAt": "2026-08-26T01:59:29.952Z",
+      "observedAt": "2026-08-26T01:59:29.952Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03bc7-2eb4-7049-9414-c5f45361a75c",
+      "deleted": false
+    },
+    {
+      "id": "c4269253-8948-4d79-b9a6-b7a9d784dfd4",
+      "category": "procedure",
+      "title": "SKILL.md草稿去重纪律",
+      "content": "将新 SKILL.md 草稿写入 /root/.pi/packs/drafts/ 前，必须先检查 /root/.pi/agent/skills/ 下现有技能是否已覆盖同一流程（如全面检查已被 pi-full-audit 覆盖）；已覆盖则不写副本，避免重复维护。判定标准：成功实现、可复现、且流程具备未被现有技能覆盖的新颖长流程价值，三条同时满足才落草稿。",
+      "tags": [
+        "pi",
+        "技能管理",
+        "去重",
+        "packs-drafts"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T01:59:29.952Z",
+      "updatedAt": "2026-08-26T01:59:29.952Z",
+      "accessedAt": "2026-08-26T01:59:29.952Z",
+      "observedAt": "2026-08-26T01:59:29.952Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03bc7-2eb4-7049-9414-c5f45361a75c",
+      "deleted": false
     }
   ]
 }
