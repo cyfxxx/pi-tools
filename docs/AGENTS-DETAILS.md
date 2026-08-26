@@ -31,7 +31,7 @@
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 
 ### packs/（统一外部技能仓库，2026-08 起并入原 skill-store）
-- `packs/<name>/` — 已确认技能包：`SKILL.md` 入口 + `bin/` `lib/` `references/` `workflows/` 等资源；**当前包清单以 `packs/README.md`「当前包」表为唯一维护源**（含 comfyui-agent / colab-bridge / gamedev / reverse-skill / dg-piagent / mattpocock-skills / novel-writing / wechatide-skill 等；wechatide-skill 为外部收纳型，附本地实测笔记 LOCAL-NOTES.md，不动上游原文件）
+- `packs/<name>/` — 已确认技能包：`SKILL.md` 入口 + `bin/` `lib/` `references/` `workflows/` 等资源；**当前包清单以 `packs/README.md`「当前包」表为唯一维护源**（含 comfyui-agent / colab-bridge / gamedev / reverse-skill / dg-piagent / novel-writing / wechatide-skill / cangjie-skill 等；wechatide-skill 与 cangjie-skill 为外部收纳型，附本地实测/适配笔记，不动上游原文件）
 - `packs/drafts/` — 草稿：`scripts/task-summarizer.mjs` 自动写 `packs/drafts/*.SKILL.md`（待人工确认，不入 agent/skills/ 防提示词膨胀）
 - 流程约定：草稿确认后直接在 `packs/` 建包，**无 active/ 中间态**；与已有同类型技能重复时合并/优化进现有包（如 colab-cli → colab-bridge，comfyui-agent 旧稿 → comfyui-agent 包）
 - 详见 `packs/README.md`

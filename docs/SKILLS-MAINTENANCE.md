@@ -39,7 +39,7 @@
 - 可复现、无时间戳、无个人化表述
 - 合并后清空"未合并"区（已合并历史保留最近 3 条作回看）
 
-## packs 外部包（mattpocock-skills / dg-piagent 等）
+## packs 外部包（cangjie-skill / dg-piagent 等）
 
 原文不动的包：**不改包内 SKILL.md 正文**，偏差记录到包级 `improvements.md`；上游更新对照（包 README 记录克隆基线）时一并裁决本地化适配。
 

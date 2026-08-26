@@ -5,7 +5,7 @@ description: 从 GitHub 调研收集外部技能包，做许可核对、平台�
 
 # 外部技能包整合（packs）
 
-把 GitHub 上分散的开源技能包（prompt/skill 仓库）收集、分析、优化、整合为可复用的本地技能包。已验证实例：`packs/novel-writing`（整合 3 仓库）、`packs/mattpocock-skills`（收纳 8 技能）。
+把 GitHub 上分散的开源技能包（prompt/skill 仓库）收集、分析、优化、整合为可复用的本地技能包。已验证实例：`packs/novel-writing`（整合 3 仓库）、`packs/cangjie-skill`（收纳长内容蒸馏元技能）。
 
 ## 适用与不适用
 

@@ -13884,6 +13884,95 @@
       ],
       "observedAt": "2026-08-26T13:38:55.010Z",
       "deleted": false
+    },
+    {
+      "id": "2c4b4d6f-bdfa-4176-95bc-93fa8e244b14",
+      "category": "solutions",
+      "title": "git 冲突解决纪律（merge/rebase 五步法）",
+      "content": "git merge/rebase 冲突解决纪律（提炼自 mattpocock/skills resolving-merge-conflicts，MIT）：1) 先看当前状态——git 历史与被冲突文件；2) 找每个冲突的原始意图——读 commit message/PR/issue，理解两边为什么这么改；3) 逐 hunk 解决——双方意图能共存就都保留，不兼容时选符合合并目标的并注明取舍，绝不发明新行为；4) 解决后跑项目自动化检查（typecheck→tests→format）；5) 完成合并——rebase 时 continue 直到全部提交重放完。原则：总是解决，绝不 --abort。pi 多机同步（entries.json 共享记忆）场景下：同条目双机时间戳取较新、不同条目做语义并集、cache-guard.baseline.json 等派生文件用 --update-baseline 重新生成而非手合。",
+      "tags": [
+        "git",
+        "rebase",
+        "冲突",
+        "多机同步"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T14:09:23.933Z",
+      "updatedAt": "2026-08-26T14:09:23.933Z",
+      "accessedAt": "2026-08-26T14:09:23.933Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T14:09:23.933Z",
+      "deleted": false
+    },
+    {
+      "id": "ce18fcbe-6243-482e-a7c2-c88ba845c21b",
+      "category": "reference",
+      "title": "writing-for-agents 文档规范：leading words/no-op 测试/单一事实源",
+      "content": "为 AI agent 写文档的核心规则（提炼自 mattpocock/skills writing-for-agents，MIT）：1) leading words——把散落三处的重复短语收拢为一个高信息密度词（如 \"fast, deterministic, low-overhead\"→tight），文档是给 agent 挂思维的钩子；2) negation 失败模式——用禁令会把人/模型的注意力拖向被禁行为（\"别想大象\"），必须正面表述目标行为，禁令只留给无法正面表述的硬护栏且要配正面目标；3) 单一事实源——同一含义只保留一个权威位置，重复=维护成本+token 膨胀；4) 环境是事实源，文档是缓存——只缓存 agent 找不到的东西（不成文约定/决策理由/坑），可查的东西留给环境（package.json/config/--help），避免过期；5) 剪枝纪律——逐句做 no-op 测试（这句是否改变默认行为？模型本来就会做的指令是 no-op），判定是模型相关的不是读者相关的；删整句不删词；6) 相关性——文档漂移的默认结局是沉积（sediment），加易删难；7) 文档长度与相关性正相关（越短越易保持相关）。",
+      "tags": [
+        "文档",
+        "prompt",
+        "SKILL.md",
+        "AGENTS.md"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T14:09:23.977Z",
+      "updatedAt": "2026-08-26T14:09:23.977Z",
+      "accessedAt": "2026-08-26T14:09:23.977Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T14:09:23.977Z",
+      "deleted": false
+    },
+    {
+      "id": "842586e9-dea1-476f-a7bb-c04bdc8d987c",
+      "category": "reference",
+      "title": "深模块设计词汇表（codebase-design 摘要）",
+      "content": "深模块设计词汇表（John Ousterhout 风格，提炼自 mattpocock/skills codebase-design，MIT）：模块=有接口和实现的东西（函数/类/包/跨层切片）；接口=调用者正确使用所需的一切（类型签名+不变量+顺序约束+错误模式+配置+性能特征）；深度=接口的杠杆（小接口背后的大行为），浅模块=接口几乎和实现一样复杂（要避免）；接缝（Feathers）=不改动该处就能改变行为的位置，接口所在之处；适配器=在接缝处满足接口的具体事物，是角色不是实质。原则：1) 深度是接口的属性不是实现的属性（内部可以有私有接缝）；2) 删除测试——删掉模块如果复杂度消失它是透传，如果在 N 个调用方重现它值得存在；3) 接口即测试面——想绕过接口测试说明模块形状不对；4) 一个适配器=假设性接缝，两个适配器=真实接缝——没有变化就不引入接缝。设计接口三问：能否减少方法数/简化参数/把更多复杂度藏进去。",
+      "tags": [
+        "架构",
+        "模块设计",
+        "接口",
+        "测试"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T14:09:24.019Z",
+      "updatedAt": "2026-08-26T14:09:24.019Z",
+      "accessedAt": "2026-08-26T14:09:24.019Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T14:09:24.019Z",
+      "deleted": false
+    },
+    {
+      "id": "6eaf0d5c-bf8b-4b4e-b838-7de1edc8ba70",
+      "category": "solutions",
+      "title": "方案拷问法（grilling：编号 frontier 逐轮拷问）",
+      "content": "方案拷问法（grilling，提炼自 mattpocock/skills，MIT）：用户想打磨大方案/架构决定时，逐轮拷问——每轮问整个 frontier（当前未定问题的完整集合），每个问题编号并附推荐答案；事实自己查（不把查证成本推给用户），决策交给用户（不替用户拍板）。与\"先给方案再确认\"风格互补：方案先行是收敛，拷问是压力测试。适用信号：用户说\"帮我拷问一下这个方案\"或方案里明显有未检验的假设。不适用于：纯信息查询、执行类任务。",
+      "tags": [
+        "方案",
+        "拷问",
+        "架构评审"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T14:09:24.063Z",
+      "updatedAt": "2026-08-26T14:09:24.063Z",
+      "accessedAt": "2026-08-26T14:09:24.063Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
