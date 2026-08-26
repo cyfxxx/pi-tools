@@ -13052,6 +13052,53 @@
       "environments": [
         "all"
       ]
+    },
+    {
+      "id": "cd187b58-2bd1-4f22-a5ab-598f04d6355e",
+      "category": "solutions",
+      "title": "任务记录全零模式的判读",
+      "content": "经验沉淀任务中，若某任务记录呈\"多轮 tools=0/out=0、仅个别轮次大额缓存命中（如单轮 hit=250000）、累计 token 却很高（如 44 轮累计 2823K）\"的模式，说明该会话无可提取的实际工作（可能为空闲/循环/纯思考会话或记录缺口）。正确处理：概括为\"数据过薄无法提取具体经验\"，不硬造条目；沉淀报告中继续建议任务记录附带关键结论或报错片段以提高后续可提取性。（实例：2026-08-26 任务1）",
+      "tags": [
+        "经验沉淀",
+        "任务记录",
+        "判读",
+        "数据质量"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T03:12:30.843Z",
+      "updatedAt": "2026-08-26T03:12:30.843Z",
+      "accessedAt": "2026-08-26T03:12:30.843Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T03:12:30.843Z",
+      "deleted": false
+    },
+    {
+      "id": "721ae17c-a26a-4649-a950-219add0f92cf",
+      "category": "solutions",
+      "title": "会话挂死误报：正常退出重启不算挂死",
+      "content": "用户正常退出 pi 后再次启动，可能被健康检查/看门狗误判为\"会话挂死\"而告警。定性\"挂死\"前必须先排除两类正常路径：(1) wrapper 重启流程——写 .pi-admin-state.json(action=restart) 后 SIGTERM 当前 pi 由 wrapper 重新拉起；(2) 用户手动 Ctrl-C/D 或 exit 正常退出后重开。核实方法：查 .pi-admin-state.json 的最近 action 与时间戳、比对会话文件时间线、必要时直接问用户刚才的操作序列。确认是误报后修正判定逻辑或标注白名单，而不是反复重试探测。（实例：2026-08-26 用户纠正\"刚才是正常退出后的启动，不是会话挂死\"，单轮 34 次工具调用完成核查）",
+      "tags": [
+        "误报",
+        "会话管理",
+        "看门狗",
+        "重启",
+        "诊断"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T03:12:30.990Z",
+      "updatedAt": "2026-08-26T03:12:30.990Z",
+      "accessedAt": "2026-08-26T03:12:30.990Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T03:12:30.990Z",
+      "deleted": false
     }
   ]
 }
