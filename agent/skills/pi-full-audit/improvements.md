@@ -2,21 +2,15 @@
 
 > 格式：`日期 | 触发任务 | 偏差/发现 | 建议改动`（证据导向：命令/路径/现象）
 
-## 2026-08-24 全项目体检（pi-full-audit v1.9）
-- [证据] 技能正文「误报判别清单」写 `references/ERROR-CHECKLIST.md`，未注明完整路径——实际在 `agent/skills/pi-full-audit/references/`，先在 pi-code-review/references/ 下找耗一轮。应在正文首次引用处给完整相对路径。
-- [证据] 运行检查第 1 条用 admin_status/autopilot_status 工具（休眠组）——但在检查系统 prompt/缓存前缀的场景下 enable_tool 会改变工具列表、污染要测的命中率；本次改用只读文件 + usage-stats 等价完成。建议运行检查章节注明「检查缓存时勿启用休眠工具组」。
-- [证据] 第 5 步终审只读代码 + 复核已足够，本次所有 HIGH/MEDIUM 判定与复核一致，无需改动分级流程。
-
-# 已合并（保留最近 3 条）
-
 - （空）
 
-## 2026-08-25 全项目审计 + 修复闭环
-- [证据] 第 6 步修复闭环未预警「多会话并行同仓」场景：本次远端中途出现 3 个外部提交 + 工作区存在并行会话进行中改动（types.ts/pi-cron.sh/.gitignore），首个提交混入 staged memory 文件导致 rebase 冲突。建议第 6 步提交前增加「检查 staged 区残留 + pull --rebase 前确认工作区归属」步骤。
-- [证据] 复核子代理对 HIGH 条目的描述修正（NORMAL_MODE_TOOLS 实为 12 项）说明审查 prompt 应要求 scout 对「工具/文件清单类断言」先 cat 实际定义再写结论，减少复核修正成本。
-- [证据] worker 分组按文件边界执行良好（无冲突），但 worker 新建测试文件的 tsc 类型错误（vi.fn 泛型/vi.mocked 访问）需主会话兜底修复——worker prompt 的输出约束可加「tsc -p tsconfig.local.json 无新增报错」自检要求。
+# 已合并（保留最近 3 条批次摘要）
+
+## 2026-08-26 文档审查 + improvements 合并（v1.10）
+8 条历史建议全部并入正文：ERROR-CHECKLIST 完整路径（误报清单节）；缓存检查勿启用休眠工具组（运行检查节头）；清单类断言先 cat 核实（委派 prompt 要点）；vitest 必须扩展目录 cwd（第 2 步）；worker tsc 自检约束 + 契约测试 grep + 正则修改用 .mjs 脚本 + staged 残留/rebase 归属检查（第 6 步）。
 
 ## 2026-08-26 审计修复闭环
-- [证据] 主会话在 agent/ 根直接跑 `vitest run extensions/pi-autopilot/tests/budget.test.ts` 报 40 失败（遥测 35/3 污染、failover 超时），stash 验证与改动无关——test-all.sh 以扩展目录为 cwd 运行（vitest.config.ts 的 __mocks__ alias 仅在该 root 生效）。分层验证必须走 `bash scripts/test-all.sh --only=<ext>`，不得在 agent/ 根直跑。
-- [证据] pi-link tmux 探测加 30s TTL 缓存破坏既有"改名即时跟进"契约测试（index-tmux.test 锁定行为）——给已有审计修复行为加缓存类优化前先 grep 对应契约测试；改为仅失败路径缓存后通过。
-- [证据] edit 工具写正则负向前瞻 `(?!\[REDACTED])` 时转义层叠错位（文件落成双反斜杠语义反转），且 node -e 修文件时 bash 双引号/JS 字符串/sed 三层转义连环出错——正则类精确修改用 write 写独立 .mjs 脚本执行最可靠。
+vitest 根目录污染（--only 分层验证纪律）→ 第 2 步；契约测试先行（pi-link TTL 缓存案例）→ 第 6 步；正则转义层叠用独立 .mjs → 第 6 步。
+
+## 2026-08-25 全项目审计 + 修复闭环
+多会话并行提交冲突预防 → 第 6 步提交推送；清单类断言先核实 → 委派 prompt 要点；worker tsc 类型兜底 → 第 6 步 worker 约束。
