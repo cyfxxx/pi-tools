@@ -1,6 +1,6 @@
-import { readFile, writeFile, rename, mkdir, unlink, stat } from 'node:fs/promises'
+import { readFile, writeFile, rename, mkdir, unlink, stat, readdir, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, basename } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { Task, TaskStore, SchedulerSettings, ExecHistoryEntry } from './types.ts'
@@ -146,6 +146,17 @@ export async function readTasks(): Promise<TaskStore> {
           const backup = `${p}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`
           await writeFile(backup, raw, 'utf-8')
           console.error(`[pi-autopilot] tasks.json 解析失败，已留档 ${backup}：`, e)
+          // 审计 LOW：corrupt 留档上限 10 份，超出删最旧防无限堆积
+          try {
+            const dir = dirname(p)
+            const base = basename(p)
+            const olds = (await readdir(dir))
+              .filter(f => f.startsWith(`${base}.corrupt-`))
+              .sort()
+            for (const f of olds.slice(0, Math.max(0, olds.length - 10))) {
+              await rm(join(dir, f), { force: true })
+            }
+          } catch { /* 清理失败不阻塞 */ }
         }
       } catch { /* 留档失败不阻塞 */ }
     }

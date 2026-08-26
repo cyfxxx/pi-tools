@@ -31,6 +31,16 @@ describe('isSafeCommand 复合命令解析（③放宽）', () => {
   })
 
   it('保持拒绝: 破坏性命令与 git clone', () => {
+    // git 写引用/配置类（审计 MEDIUM）与 date 改时钟
+    expect(isSafeCommand('git branch new-feature')).toBe(false)
+    expect(isSafeCommand('git branch -a')).toBe(true)
+    expect(isSafeCommand('git branch --show-current')).toBe(true)
+    expect(isSafeCommand('git remote add origin https://x')).toBe(false)
+    expect(isSafeCommand('git remote set-url origin https://x')).toBe(false)
+    expect(isSafeCommand('git remote -v')).toBe(true)
+    expect(isSafeCommand('git show HEAD --output=/tmp/x')).toBe(false)
+    expect(isSafeCommand('date -s 2026-01-01')).toBe(false)
+    expect(isSafeCommand("date '+%s'")).toBe(true)
     expect(isSafeCommand('git clone https://x')).toBe(false)
     expect(isSafeCommand('cd /tmp && git clone https://x')).toBe(false)
     expect(isSafeCommand('curl -o out https://x')).toBe(false)
@@ -43,6 +53,13 @@ describe('isSafeCommand 复合命令解析（③放宽）', () => {
     expect(isSafeCommand("sed -n '1,5w /tmp/out' file.txt")).toBe(false)
     expect(isSafeCommand("sed -n '/foo/w out' file.txt")).toBe(false)
     expect(isSafeCommand('sed -n 1,5p file.txt')).toBe(true)
+    // sed 执行类（审计 HIGH：e 命令与 s///e flag，-n 不抑制执行）
+    expect(isSafeCommand("sed -ne 'e touch /tmp/pwned' file.txt")).toBe(false)
+    expect(isSafeCommand("sed -n '10,20e rm -rf /tmp/x' file.txt")).toBe(false)
+    expect(isSafeCommand("echo x | sed -E 's/./&/e'")).toBe(false)
+    expect(isSafeCommand("sed -n 's/a/b/e' file.txt")).toBe(false)
+    expect(isSafeCommand("sed -n 's/a/b/g' file.txt")).toBe(true)
+    expect(isSafeCommand("sed -n '/error/p' file.txt")).toBe(true)
     expect(isSafeCommand('find /tmp -name x -type f')).toBe(true)
   })
 

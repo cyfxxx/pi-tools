@@ -3,7 +3,7 @@ import {
   loadEntries,
   loadNotes,
   loadSummaries,
-  saveNotes,
+  updateNotes,
   activeEntries,
   autoReclaim,
   migrateFromCtxLite,
@@ -35,12 +35,11 @@ export default function (pi: ExtensionAPI): void {
     const notes = loadNotes()
     const noteCount = Object.keys(notes).filter(k => !k.startsWith('__') && !k.startsWith('_ctx.')).length
 
-    const compactedAt = notes['_ctx.compacted_at']
+    const compactedAt = loadNotes()['_ctx.compacted_at']
     if (compactedAt) {
       const age = Date.now() - new Date(compactedAt).getTime()
       if (age < 30_000) {
-        notes['_ctx.just_compacted'] = 'true'
-        saveNotes(notes)
+        updateNotes(n => { n['_ctx.just_compacted'] = 'true' })
       }
     }
 
@@ -105,9 +104,7 @@ export default function (pi: ExtensionAPI): void {
   // ── compaction 完成: 记录时间戳（session_start 的 just_compacted 判定依据） ──
   pi.on('session_compact', async () => {
     try {
-      const notes = loadNotes()
-      notes['_ctx.compacted_at'] = new Date().toISOString()
-      saveNotes(notes)
+      updateNotes(n => { n['_ctx.compacted_at'] = new Date().toISOString() })
     } catch { /* 标记失败不影响主流程 */ }
   })
 

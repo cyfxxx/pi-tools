@@ -40,20 +40,29 @@ export function loadNotes(): Record<string, string> {
     }
     raw = {}
   }
-  // TTL 清理
+  // TTL 惰性清理：仅过滤内存视图不落盘（对齐 pi-memory/storage；磁盘残留过期键由
+  // 下一次 updateNotes 落盘自然清除，读取侧始终过滤）
   const now = Date.now()
-  let changed = false
   for (const key of Object.keys(raw)) {
     const ttlKey = `__ttl_${key}`
     const ttl = raw[ttlKey]
     if (ttl && new Date(ttl).getTime() <= now) {
       delete raw[key]
       delete raw[ttlKey]
-      changed = true
     }
   }
-  if (changed) saveNotes(raw)
   return raw
+}
+
+/**
+ * 审计 MEDIUM：notes 原子更新基座——fresh 读 → 调用方原地改 → 落盘。
+ * 替代 load→mutate→save 三段式消除跨进程互踩窗口（与 pi-memory/storage.updateNotes 同策略）。
+ */
+export function updateNotes<T>(fn: (notes: Record<string, string>) => T): T {
+  const notes = loadNotes()
+  const result = fn(notes)
+  saveNotes(notes)
+  return result
 }
 
 export function saveNotes(notes: Record<string, string>) {
@@ -69,12 +78,12 @@ export function saveNotes(notes: Record<string, string>) {
 }
 
 export function clearCompactionFlag() {
-  const notes = loadNotes()
-  if (notes["_ctx.just_compacted"]) {
-    delete notes["_ctx.just_compacted"]
-    delete notes["_ctx.compacted_at"]
-    saveNotes(notes)
-  }
+  updateNotes(notes => {
+    if (notes["_ctx.just_compacted"]) {
+      delete notes["_ctx.just_compacted"]
+      delete notes["_ctx.compacted_at"]
+    }
+  })
 }
 
 export function getTotalSize(notes: Record<string, string>): number {

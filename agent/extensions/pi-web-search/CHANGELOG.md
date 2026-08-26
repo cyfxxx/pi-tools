@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [3.1.2] - 2026-08-26
+
+### 修复（全项目审计）
+
+- **超时口径不一（LOW）**：fetch.ts 硬编码 web_fetch 超时 10000ms 与 search 配置默认 15000ms 不一致——抽 HTTP_TIMEOUT_MS 共享常量，web_fetch/fetch_url 统一读 config.search.timeout（行为微变：Bing 直连超时 10s→15s）。
+- **start-searxng.sh 报错指引失效**：提示运行不存在的 install.sh，改为指向 rebuild.sh 部署路径。
+
 ## [3.1.1] - 2026-08-25
 
 ### 修复（全项目审计）

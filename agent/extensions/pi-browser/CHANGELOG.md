@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [1.2.2] - 2026-08-26
+
+### 修复（全项目审计）
+
+- **dialog 回调竞态 unhandledRejection（MEDIUM）**：async 回调内 accept/dismiss 在页面关闭竞态时 reject 无 catch 可崩整个 pi 进程（对照 download 监听已有 .catch）——提取 action Promise 统一 .catch 记录调试日志，accept/input/dismiss 三分支语义不变。
+
 ## [1.2.1] - 2026-08-25
 
 ### 修复（全项目审计）

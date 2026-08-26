@@ -478,3 +478,68 @@ describe('ensureLocalBinaryEnv（残留 env 清理）', () => {
     }
   })
 })
+
+// ── 修复回归：dialog 事件 async 回调内 accept/dismiss 无 catch，页面关闭竞态时
+// reject 成 unhandledRejection 可崩进程（审计 MEDIUM）──
+describe('dialog 回调 reject 被 .catch 捕获', () => {
+  beforeEach(setupMocks)
+
+  function getDialogHandler(): (dialog: unknown) => void {
+    const calls = mockPage.on.mock.calls.filter((c) => c[0] === 'dialog')
+    expect(calls.length).toBe(1)
+    return calls[0][1] as (dialog: unknown) => void
+  }
+
+  async function setupPage() {
+    const bm = await getBrowserManager()
+    mockPage.url.mockReturnValue('https://example.com')
+    await bm.navigate('https://example.com')
+    return bm
+  }
+
+  it('accept reject（页面关闭竞态）→ 不产生 unhandledRejection 且记录调试日志', async () => {
+    const bm = await setupPage()
+    bm.setDialogMode('accept')
+    const handler = getDialogHandler()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      handler({
+        message: () => 'confirm?',
+        accept: vi.fn().mockRejectedValue(new Error('Target closed')),
+        dismiss: vi.fn(),
+      })
+      // 等待微任务链走完：catch 必须已吞掉 reject 并打日志
+      await vi.waitFor(() =>
+        expect(warnSpy).toHaveBeenCalledWith('[browser] dialog action error:', 'Target closed'),
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+
+  it('默认 dismiss 模式同样有 catch 兜底；成功路径不打警告日志', async () => {
+    const bm = await setupPage() // 默认 dialogMode='dismiss'
+    const handler = getDialogHandler()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      handler({
+        message: () => 'alert!',
+        accept: vi.fn(),
+        dismiss: vi.fn().mockResolvedValue(undefined),
+      })
+      await new Promise((r) => setTimeout(r, 10))
+      expect(warnSpy).not.toHaveBeenCalled()
+
+      handler({
+        message: () => 'bye',
+        accept: vi.fn(),
+        dismiss: vi.fn().mockRejectedValue(new Error('Target closed')),
+      })
+      await vi.waitFor(() =>
+        expect(warnSpy).toHaveBeenCalledWith('[browser] dialog action error:', 'Target closed'),
+      )
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+})

@@ -599,13 +599,40 @@ phase2_binaries() {
   [ -x "$fd_src" ] || pkg_install fd-find
   [ -x "$rg_src" ] || pkg_install ripgrep
   # 解真实路径：PATH 前缀可能已含 agent/bin（本仓库约定），command -v 会命中旧链接自身，
-  # 直接 ln -sf 会生成自引用链接（第二次重建即坏）。readlink -f 解不出时回退标准路径。
-  fd_src="$(readlink -f "$fd_src" 2>/dev/null || echo "$fd_src")"
-  rg_src="$(readlink -f "$rg_src" 2>/dev/null || echo "$rg_src")"
-  case "$fd_src" in "$PI_HOME/agent/bin/"*) fd_src="/usr/bin/fdfind" ;; esac
-  case "$rg_src" in "$PI_HOME/agent/bin/"*) rg_src="/usr/bin/rg" ;; esac
-  ln -sf "$fd_src" "$PI_HOME/agent/bin/fd" 2>/dev/null || true
-  ln -sf "$rg_src" "$PI_HOME/agent/bin/rg" 2>/dev/null || true
+  # 直接 ln -sf 会生成自引用链接（第二次重建即坏）。readlink -f 解出后若仍落在 agent/bin 内
+  # （自引用/断链）或为空，则排除 agent/bin 目录重新探测系统实际路径；探测失败则清除残留
+  # 链接并警告，不再硬编码 /usr/bin/* 回退（Termux 无此路径会生成断链）。
+  resolve_bin() {
+    local dest="$1" src="$2"; shift 2
+    local d name cand found=""
+    src="$(readlink -f "$src" 2>/dev/null || printf '%s' "$src")"
+    case "$src" in "$PI_HOME/agent/bin/"*|"")
+      local oldIFS="$IFS"; IFS=:
+      for d in $PATH; do
+        IFS="$oldIFS"
+        [ -n "$d" ] && [ "$d" != "$PI_HOME/agent/bin" ] || continue
+        for name in "$@"; do
+          [ -e "$d/$name" ] || continue
+          cand="$(readlink -f "$d/$name" 2>/dev/null || printf '%s' "$d/$name")"
+          case "$cand" in "$PI_HOME/agent/bin/"*) continue ;; esac
+          found="$cand"; break
+        done
+        [ -n "$found" ] && break
+      done
+      IFS="$oldIFS"
+      if [ -n "$found" ]; then
+        src="$found"
+      else
+        rm -f "$PI_HOME/agent/bin/$dest" 2>/dev/null || true
+        warn "agent/bin/$dest：系统中未找到 $* 实际路径，跳过符号链接（防断链）"
+        return 1
+      fi
+      ;;
+    esac
+    ln -sf "$src" "$PI_HOME/agent/bin/$dest" 2>/dev/null || true
+  }
+  resolve_bin fd "${fd_src:-}" fdfind fd || true
+  resolve_bin rg "${rg_src:-}" rg || true
   ok "agent/bin/fd ($($PI_HOME/agent/bin/fd --version 2>/dev/null | head -1))"
   ok "agent/bin/rg ($($PI_HOME/agent/bin/rg --version 2>/dev/null | head -1))"
 }

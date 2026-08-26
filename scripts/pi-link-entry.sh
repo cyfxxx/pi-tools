@@ -18,7 +18,8 @@ PI_HOME_DIR="${HOME}/.pi"
 PI_BIN="pi"
 
 if ! command -v "$PI_BIN" >/dev/null 2>&1; then
-  echo "pi-link-entry: pi 命令不在 PATH 中（$SSH_ORIGINAL_COMMAND）" >&2
+  # 审计 LOW：set -u 下 SSH_ORIGINAL_COMMAND 未设置时直接引用会 unbound 崩溃丢失诊断信息
+  echo "pi-link-entry: pi 命令不在 PATH 中（original_command=${SSH_ORIGINAL_COMMAND:-<none>}）" >&2
   exit 127
 fi
 

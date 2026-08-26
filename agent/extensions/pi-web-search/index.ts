@@ -74,7 +74,8 @@ export default async function (pi: ExtensionAPI) {
       // 用户停止生成也应中断请求（_signal 转发）；两信号任一触发即 abort
       const onUserAbort = () => controller.abort()
       signal?.addEventListener?.('abort', onUserAbort)
-      const timeout = setTimeout(() => controller.abort(), 15000)
+      // 超时从 config 统一读取（默认 15000ms），不再硬编码（审计修复）
+      const timeout = setTimeout(() => controller.abort(), config.search.timeout)
       try {
         const res = await fetch(url, {
           signal: controller.signal,
@@ -121,8 +122,9 @@ export default async function (pi: ExtensionAPI) {
       const query = params.query as string
       const maxResults = (params.max_results as number) ?? 5
       try {
-        // 用户 signal 透传给 searchDirect：停止生成即中断进行中的 Bing 请求
-        const text = await searchDirect(query, maxResults, signal ?? undefined)
+        // 用户 signal 透传给 searchDirect：停止生成即中断进行中的 Bing 请求；
+        // 超时同源 config.search.timeout（审计修复，不再各处硬编码）
+        const text = await searchDirect(query, maxResults, signal ?? undefined, config.search.timeout)
         const result = pruneToolOutput(text, "web_fetch")
         recordOutput("web_fetch", result.length)
         recordToolUsage("web_fetch", estimateTokens(result))

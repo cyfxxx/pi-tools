@@ -1,8 +1,17 @@
-export async function searchDirect(query: string, maxResults = 5, signal?: AbortSignal): Promise<string> {
+// 共享 HTTP 超时常量：与 config.ts DEFAULT_CONFIG.search.timeout 同源口径（15000ms），
+// 避免各处硬编码漂移；调用方可用 searchDirect 的 timeoutMs 参数覆盖。
+export const HTTP_TIMEOUT_MS = 15000
+
+export async function searchDirect(
+  query: string,
+  maxResults = 5,
+  signal?: AbortSignal,
+  timeoutMs = HTTP_TIMEOUT_MS,
+): Promise<string> {
   const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}`
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 10000)
-  // 审计修复：用户停止生成（signal）转发到内部 controller，与 10s 内部超时
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  // 审计修复：用户停止生成（signal）转发到内部 controller，与内部超时
   // 任一触发即中断（与 fetch_url 同模式）；abort 均从 fetch 抛 AbortError
   const onUserAbort = () => controller.abort()
   signal?.addEventListener?.('abort', onUserAbort)

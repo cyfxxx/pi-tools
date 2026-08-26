@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { spawn } from 'node:child_process'
 import {
-  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun, withStoreLock, isoNow,
+  listTasks, isDue, updateTaskAfterRun, readTasks, writeTasks, renderPrompt, sendWebhook, updateTask, computeNextRun, withStoreLock, isoNow, releaseSessionLock,
 } from './storage.ts'
 import type { Task } from './types.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
@@ -115,6 +115,7 @@ export class SessionScheduler {
       // 看门狗：挂死检测
       if (config.enabled && (await triggerHangRecovery(config.maxIdleMinutes))) {
         try { (this.pi as unknown as { shutdown?: () => void }).shutdown?.() } catch { /* ignore */ }
+        try { await releaseSessionLock() } catch { /* ignore */ }
         process.exit(0)
       }
 
@@ -250,6 +251,17 @@ export class SessionScheduler {
           const plan = await planFailover(config.fallbackModels, provider, model)
           await updateTaskAfterRun(task.id, 'failed', `failover: ${action.note}`, Date.now() - startedAt)
           if (!plan.target) break
+          // 审计 MEDIUM：failover 目标模型须过预算复查——checkBudget 只在 fireTask 入口
+          // 校验 currentModel()，此处不复查则 executeFailover 写 set_model 可静默绕过
+          // allowedModels / maxCostPerDay。拦截时不切换：任务已记 failed 且 nextRun 已推进，
+          // 下次入口检查同样拦截（skipped 防抖已有），连续 failover 另有 failoverCount 熔断。
+          if (config.enabled) {
+            const fb = await checkBudget(config.budget, plan.target.model)
+            if (!fb.allowed) {
+              await sendWebhook(task, 'skipped', `failover 目标被预算拦截: ${fb.reason}`)
+              break
+            }
+          }
           // 递增熔断计数：连续 failover 达到 maxFailovers 后 decide() 会熔断为 suspend_task
           await withStoreLock(async () => {
             const store = await readTasks()
@@ -260,6 +272,8 @@ export class SessionScheduler {
           const msg = await executeFailover(plan.target, plan.reason, false)
           console.log(`[pi-autopilot] ${msg}`)
           try { (this.pi as unknown as { shutdown?: () => void }).shutdown?.() } catch { /* ignore */ }
+          // 审计 LOW：exit 前释放会话锁，避免残留至下次启动依赖 PID 死亡检测自愈
+          try { await releaseSessionLock() } catch { /* ignore */ }
           process.exit(0)
           break
         }

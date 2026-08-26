@@ -37,14 +37,23 @@ export default function (pi: ExtensionAPI): void {
   // 审计：启动时一次性捕获——tmux 会话改名（rename-session / resurrect 恢复）后
   // 快照失效，远程 attach 打错目标。探测廉价（本地 execSync；非 tmux 环境零开销），
   // 改为惰性重探：每次状态回写时重新执行。
+  // 审计 LOW（2026-08-26）：turn_start/agent_settled 每轮同步 execSync 最长阻塞事件循环
+  // 3s（tmux 挂起时）——加 30s TTL 缓存：正常路径仍每轮刷新，异常路径不再反复阻塞。
+  // 审计 LOW（2026-08-26）：turn_start/agent_settled 每轮同步 execSync 在 tmux 挂起时
+  // 最长阻塞事件循环 3s —— 仅失败/超时后缓存“无 tmux”结果 60s，避免反复阻塞；
+  // 成功路径不缓存（保持“改名即时跟进”既有审计契约，且正常探测耗时毫秒级）。
+  let tmuxFailCache = 0
+  const TMUX_FAIL_TTL_MS = 60_000
   function detectTmuxSession(): string | undefined {
+    if (Date.now() - tmuxFailCache < TMUX_FAIL_TTL_MS) return undefined
     try {
       if (process.env.TMUX) {
         const out = execSync('tmux display-message -p "#S" 2>/dev/null', { timeout: 3000 }).toString().trim()
         if (out) return out
       }
     } catch {
-      // 非 tmux 环境
+      // 非 tmux 环境或 tmux 挂起：后者缓存避免每轮阻塞 3s
+      if (process.env.TMUX) tmuxFailCache = Date.now()
     }
     return undefined
   }

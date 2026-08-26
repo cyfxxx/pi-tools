@@ -9,7 +9,7 @@ fi
 
 # 自托管启动（start.sh 不存在时直接启动 SearXNG）
 if [ ! -d "$SEARXNG_DIR/venv" ]; then
-  echo "错误: SearXNG 未部署。请先运行 install.sh 部署 SearXNG。"
+  echo "错误: SearXNG 未部署。请先运行 bash ~/.pi/scripts/rebuild.sh 部署 SearXNG（详见 docs/AGENTS-DETAILS.md）。"
   exit 1
 fi
 

@@ -395,9 +395,63 @@ describe('storage: secret scrubbing', () => {
     const once = scrubSecrets('ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
     expect(scrubSecrets(once)).toBe(once)
   })
+
+  // 审计 MEDIUM：JSON 键值形态（键后引号致 [=:] 紧邻要求漏检）+ AIza/xox 前缀
+  it('scrubs JSON-serialized key-value form and AIza/xox prefixes', async () => {
+    const { scrubSecrets } = await import('../storage.ts')
+    const json = '{"api_key": "sk-proj-abcdefghijklmnop123456", "token":"ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"}'
+    const out = scrubSecrets(json)
+    // sk-/ghp_ 前缀规则优先命中并保留类别标记；JSON 键值形态不再漏检
+    expect(out).toContain('"api_key": "[REDACTED:api-key]"')
+    expect(out).not.toContain('sk-proj-abcdefghijklmnop')
+    expect(out).toContain('[REDACTED:github-token]')
+    const google = scrubSecrets('key=AIzaSyA1234567890abcdefghijklmnopqrstuv')
+    expect(google).toContain('[REDACTED:google-key]')
+    expect(google).not.toContain('AIzaSyA1234')
+    const slack = scrubSecrets('slack xoxb-123456789-abcdefghij')
+    expect(slack).toContain('[REDACTED:slack-token]')
+    expect(slack).not.toContain('xoxb-123456789')
+  })
+
+  // 审计 MEDIUM：loadSummaries 读时重洗——旧版本/手工编辑的磁盘数据含密钥也能拦住
+  it('loadSummaries re-scrubs legacy on-disk summaries (read-time sanitize)', async () => {
+    const { writeFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    writeFileSync(join(dir, 'summaries.json'), JSON.stringify({
+      version: 1,
+      summaries: [{ id: 's1', sessionId: 'ses1', ts: new Date().toISOString(), title: '旧数据', decisions: [], facts: [], prefs: [], lessons: [], fullText: 'token ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 未脱敏' }],
+    }))
+    const { loadSummaries } = await import('../storage.ts')
+    const loaded = loadSummaries()
+    expect(loaded[0].fullText).toContain('[REDACTED:github-token]')
+    expect(loaded[0].fullText).not.toContain('ghp_ABCDEF')
+  })
 })
 
 describe('storage: corruption 防护与并发合并（审计 HIGH/MEDIUM 修复）', () => {
+  // 审计 MEDIUM：updateNotes fresh 读吸收——load 后他实例写盘的新增 key 不被覆盖丢失
+  it('updateNotes absorbs concurrent disk writes made after caller snapshot', async () => {
+    let mod: typeof import('../storage.ts')
+    mod = await import('../storage.ts')
+    mod.saveNotes({ 'a.key': 'va' })
+    const staleView = mod.loadNotes()          // 调用方拿到的快照
+    // 模拟他实例在快照之后写入新 key
+    mod.saveNotes({ ...staleView, 'b.other': 'vb' })
+    // updateNotes 基于 fresh 磁盘态改自己的 key，不丢 b.other
+    mod.updateNotes(n => { n['a.key'] = 'va2' })
+    const final = mod.loadNotes()
+    expect(final['a.key']).toBe('va2')
+    expect(final['b.other']).toBe('vb')
+  })
+
+  it('updateNotes preserves delete semantics (no resurrection)', async () => {
+    const mod = await import('../storage.ts')
+    mod.saveNotes({ 'a.key': 'va', 'b.keep': 'vb' })
+    mod.updateNotes(n => { delete n['a.key'] })
+    const final = mod.loadNotes()
+    expect('a.key' in final).toBe(false)
+    expect(final['b.keep']).toBe('vb')
+  })
   it('loadEntries 遇损坏 JSON：备份 .corrupt-* 且返回 []（不静默覆盖清空）', async () => {
     const { loadEntries } = await import('../storage.ts')
     const file = join(dir, 'entries.json')

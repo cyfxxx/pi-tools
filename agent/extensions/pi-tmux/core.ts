@@ -230,6 +230,9 @@ async function runTmuxWindows(opts: TmuxOpts, args: string[]): Promise<TmuxRunRe
         windowsHide: true,
       })
     } catch (e) {
+      // 审计 LOW：spawn 同步抛错时回滚 winNonInteractive——否则同名会话重建后
+      // send-keys 被“无 stdin 交互”误拒（Set 残留旧标记）
+      winNonInteractive.delete(name)
       closeSync(logFd)
       return { code: 1, stdout: '', stderr: `spawn shell failed: ${String(e)}` }
     }
@@ -689,6 +692,38 @@ export async function pruneRegistry(opts: TmuxOpts): Promise<number> {
   }
   if (removed > 0) saveRegistry(reg)
   return removed
+}
+
+/**
+ * shutdown 清理（审计 MEDIUM）：遍历存活的 pi- 前缀会话，仅杀「owner===selfOwner」
+ * 或「无主（owner 空/缺失的旧条目）」的会话——多实例并行时 B 实例退出不再误杀
+ * A 实例的后台任务；无主旧条目视为公共遗留仍可杀（向后兼容）。他人任务计数跳过。
+ * kill 可注入便于单测；默认 killSession。返回已杀与被跳过的他人会话名列表。
+ */
+export async function shutdownCleanup(
+  opts: TmuxOpts,
+  reg: Registry,
+  sessions: SessionInfo[],
+  prefix: string,
+  selfOwner: string,
+  kill: (o: TmuxOpts, name: string) => Promise<void> = killSession,
+): Promise<{ killed: string[]; skippedOthers: string[] }> {
+  const killed: string[] = []
+  const skippedOthers: string[] = []
+  for (const s of sessions) {
+    if (!isPiSession(s.name, prefix)) continue
+    const entry = reg.sessions[s.name]
+    if (!entry) continue
+    if (entry.owner && entry.owner !== selfOwner) {
+      skippedOthers.push(s.name)
+      continue
+    }
+    try {
+      await kill(opts, s.name)
+      killed.push(s.name)
+    } catch { /* 单个失败不影响其余清理 */ }
+  }
+  return { killed, skippedOthers }
 }
 
 export function removeLog(opts: TmuxOpts, name: string): void {

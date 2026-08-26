@@ -1,5 +1,13 @@
 # Changelog — plan-mode
 
+## [2.10.0] - 2026-08-26
+
+### Fixed
+
+- **sed e 命令任意执行绕过白名单（HIGH，全项目审计）**：`sed -ne 'e <cmd>' file` 可执行任意 shell 命令——SAFE 放行 `sed -n` 但 DESTRUCTIVE 仅拦 `w` 写文件形态，且 GNU sed 的 `-n` 不抑制 `e` 执行；`s///e` flag 同样将 replacement 作命令执行。补两条 DESTRUCTIVE 形态拦截 + 6 个边界用例。
+- **git 白名单过宽（MEDIUM）**：`git branch <new>`（建 refs）、`git remote add/set-url/rename/remove`（写 .git/config）、`git show/diff/log --output=<file>`（落盘）均被 SAFE 分支放行——DESTRUCTIVE 补三条；纯查看形态（branch -a/--show-current、remote -v）不受影响。
+- **date -s 可改系统时钟（LOW）**：root 下影响缓存 TTL/调度，DESTRUCTIVE 补 `-s/--set` 拦截，格式化用法不受影响。
+
 ## [2.9.0] - 2026-08-25
 
 ### Fixed

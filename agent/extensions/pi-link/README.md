@@ -124,6 +124,11 @@ command="~/.pi/scripts/pi-link-entry.sh",restrict ssh-ed25519 AAAA...
 
 （入口脚本校验后以固定参数 exec `pi --mode rpc --no-extensions --session-dir ~/.pi/agent/sessions/pi-link`，A 无法执行其他命令）
 
+> **与状态探测的互斥**（审计发现）：加固模式下 forced command 忽略一切远程命令，
+> `/link status` 的可达探测（echo pi-link-ok）与 watch/inbox 等远程查询将全部失败、
+> 误报离线；`link_send` 因入口参数兼容仍可用。需要完整状态面则不要对该公钥启用
+> forced command（权衡：安全边界 vs 功能面，二者取一）。
+
 ## 设备接入 / 升级流程
 
 ### 新设备接入（双向）

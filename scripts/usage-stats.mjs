@@ -112,7 +112,12 @@ for (const r of turns) {
   // 断裂判定：cacheRead 较上轮突降且 input 暴增（≈重发大量旧内容）
   if (cur.prevCacheRead !== null && r.cacheRead < cur.prevCacheRead - 100 && r.input > 10_000) {
     cur.breaks++
-    const waste = r.input + Math.max(0, cur.prevCacheRead - r.cacheRead)
+    // 浪费口径：A 类全断（cacheRead<1000，前缀整体失效）时 input 本身已是全量重发
+    // （含丢失前缀），再叠加 prevCacheRead-cacheRead 落差属重复计入（≈2× 虚高），
+    // 此时取 waste=input；其余断裂维持「重发 input + 命中落差」口径。
+    const waste = r.cacheRead < 1000
+      ? r.input
+      : r.input + Math.max(0, cur.prevCacheRead - r.cacheRead)
     cur.breakWaste += waste
     // 断裂分类（A 全段重放 / B 尾部重写 / C 起步重建）——持久化供跨会话归因
     const prevCacheK = cur.prevCacheRead >= 1000 ? Math.round(cur.prevCacheRead / 1000) : cur.prevCacheRead
@@ -122,7 +127,10 @@ for (const r of turns) {
       i: cur.rounds,
       cls,
       ts,
-      gapMin: Math.round((ts - prevTs) / 60000), // 距上一请求分钟数：>TTL_GAP_MIN → TTL 逐出候选
+      // TTL 判定用原始毫秒 gapMs（Math.round 会把 6.0-6.5min 进位到 >6 致漏判，
+      // 2026-08-26 审计修复）；gapMin 仅供显示取整。兼容旧持久化行无 gapMs 时回退估算。
+      gapMs: ts - prevTs,
+      gapMin: Math.round((ts - prevTs) / 60000), // 距上一请求分钟数（显示用）
       prevCacheK,               // 断前命中前缀长度（疑似丢失起点）
       cacheReadK: Math.round(r.cacheRead / 1000),
       inputK: Math.round(r.input / 1000),
@@ -184,7 +192,7 @@ for (const s of list) {
       console.log(`      └ [${b.cls}] 轮#${b.i} @${fmtMin(b.ts)} 间隔${b.gapMin}min 断前前缀${b.prevCacheK}K→命中${b.cacheReadK}K 重发${b.inputK}K 浪费${b.wasteK}K${b.compacted ? ' (compacted)' : ''}`)
       // A 类归因顺序：①TTL 逐出（间隔 >6min，服务端缓存过期，与本地序列无关）→ ②工具启用事件（±2 分钟）→ ③本地消息改写候选
       if (b.cls === 'A') {
-        if (b.gapMin > TTL_GAP_MIN) {
+        if ((b.gapMs ?? b.gapMin * 60000) > TTL_GAP_MIN * 60_000) {
           console.log(`            ⚑ 归因: 服务端缓存 TTL 逐出（距上一请求 ${b.gapMin} 分钟 > ${TTL_GAP_MIN}min 阈值，实测逐出区间 6-8min）→ 缓存过期全量重发，与本地序列/注入无关，无需排查本地改动`)
         } else {
           const nearby = toolEvents.filter(e => Math.abs(e.ts - b.ts) < TOOL_EVENT_WINDOW_MS)
@@ -211,14 +219,14 @@ console.log(`\n当前会话: 命中 ${(curS.hitRate * 100).toFixed(1)}%（目标
 if (curS.breakList && curS.breakList.length) {
   const agg = curS.breakList.reduce((m, b) => { m[b.cls] = (m[b.cls] || 0) + 1; return m }, {})
   const hint = Object.entries(agg).map(([c, n]) => `${c}×${n}`).join(' ')
-  const ttlA = (curS.breakList || []).filter(b => b.cls === 'A' && b.gapMin > TTL_GAP_MIN).length
+  const ttlA = (curS.breakList || []).filter(b => b.cls === 'A' && (b.gapMs ?? b.gapMin * 60000) > TTL_GAP_MIN * 60_000).length
   console.log(`  断裂分类: ${hint}${agg.A ? ` — A 类查：先看断裂轮间隔（${ttlA} 次间隔 >${TTL_GAP_MIN}min 属 TTL 逐出，与本地无关），再查 compaction 改写/早期消息改写/provider 缓存键（注入块仅尾部≤500 token 非主因）` : ''}${agg.B ? ' — B 类查：压力档位切换/keepRecentTokens 重建/注入块尾部变化' : ''}${agg.C ? ' — C 类为会话起步重建，正常' : ''}`)
   // 密集断裂异常检测（2026-08-24）：同会话内 ≥3 次"非 TTL（gapMin≤6）且无工具
   // 启用事件"的 A 类全断 → 疑似 provider 网关出站缓存异常。实测案例：08-24 会话
   // 05:34-05:46 连续 6 次间隔仅 2-4 分钟的全断（无事件、无本地改写，含纯 bash/tmux
   // 轮），与 DeepSeek 服务端 TTL（6-8min）不符，本地无法修复，只能持续观测。
   const nonTtlNoEvent = (curS.breakList || []).filter(
-    (b) => b.cls === 'A' && b.gapMin <= TTL_GAP_MIN &&
+    (b) => b.cls === 'A' && (b.gapMs ?? b.gapMin * 60000) <= TTL_GAP_MIN * 60_000 &&
       !toolEvents.some((e) => Math.abs(e.ts - b.ts) < TOOL_EVENT_WINDOW_MS),
   )
   if (nonTtlNoEvent.length >= 3) {
@@ -244,7 +252,7 @@ if (TOOLS) {
       .sort((a, b) => b.input - a.input)
     for (const r of rows.slice(0, 20)) {
       console.log(
-        `${r.name.padEnd(18)} ${String(r.calls).padStart(5)}  ${String(Math.round(r.input / 1000) + 'K').padStart(9)}  ${String(Math.round(r.cacheRead / 1000) + 'K').padStart(9)}  ${(r.ratio * 100).toFixed(1) + '%'.padStart(5)}  ${String(Math.round(r.cacheWrite / 1000) + 'K').padStart(9)}`,
+        `${r.name.padEnd(18)} ${String(r.calls).padStart(5)}  ${String(Math.round(r.input / 1000) + 'K').padStart(9)}  ${String(Math.round(r.cacheRead / 1000) + 'K').padStart(9)}  ${((r.ratio * 100).toFixed(1) + '%').padStart(5)}  ${String(Math.round(r.cacheWrite / 1000) + 'K').padStart(9)}`,
       )
     }
     if (rows.length === 0) console.log('  （暂无数据：运行过工具调用后落账）')

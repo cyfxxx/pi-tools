@@ -25,6 +25,7 @@ import {
   getNotesSize,
   loadNotes,
   saveNotes,
+  updateNotes,
   loadSummaries,
   CHECKPOINTS_DIR,
 } from './storage.ts'
@@ -530,11 +531,12 @@ export function registerTools(pi: ExtensionAPI): void {
         }
       }
       if (params.value === 'null' || params.value === null) {
-        const hadKey = key in notes
-        delete notes[key]
-        const ttlKey = `__ttl_${key}`
-        delete notes[ttlKey]
-        saveNotes(notes)
+        let hadKey = false
+        updateNotes(notes => {
+          hadKey = key in notes
+          delete notes[key]
+          delete notes[`__ttl_${key}`]
+        })
         return {
           content: [{ type: 'text', text: hadKey ? `Deleted note "${key}"` : `(no note "${key}" to delete)` }],
         details: null,
@@ -542,16 +544,16 @@ export function registerTools(pi: ExtensionAPI): void {
       }
 
       const value = params.value as string
-      notes[key] = value
-      const ttlKey = `__ttl_${key}`
-      if (ttl) {
-        notes[ttlKey] = ttl
-      } else {
-        delete notes[ttlKey]
-      }
-      saveNotes(notes)
-
-      const totalSize = getNotesSize(notes)
+      const totalSize = updateNotes(notes => {
+        notes[key] = value
+        const ttlKey = `__ttl_${key}`
+        if (ttl) {
+          notes[ttlKey] = ttl
+        } else {
+          delete notes[ttlKey]
+        }
+        return getNotesSize(notes)
+      })
       const valueKB = (value.length / 1024).toFixed(1)
       let msg = `Saved note "${key}" (${valueKB} KB)`
       if (totalSize > MAX_NOTES_SIZE) {

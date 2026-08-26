@@ -59,6 +59,13 @@ export function runCommand(
 /** 当前平台活跃的 linux 录音进程（startRecording 记录，stopRecording 终止；termux 平台恒为 null）。 */
 let activeLinuxRecorder: { child: ChildProcess; file: string } | null = null
 
+/** 本实例未收尾的 termux 录音会话（审计 MEDIUM 修复：多实例互杀防护门控）。
+ *  startRecording 成功 spawn 置位；子进程异常退出（code≠0，服务端大概率未录）、
+ *  spawn error、或 stopRecording 执行全局 -q 后作废。termux 的 -q 与残留清理
+ *  pkill 作用于 Termux:API 服务侧唯一的 MediaRecorder，多实例并发会误伤其他
+ *  实例的活跃录音——仅本实例自身处于活跃录音状态时才放行这些全局操作。 */
+let termuxSessionActive = false
+
 /** 获取平台 spec（每次解析，探测开销毫秒级可忽略）。 */
 /**
  * GPU 切换预检：返回不可用原因（null = 可切换）。
@@ -96,8 +103,12 @@ export function startRecording(
   // 场景（上次录音已 -q 优雅停止）无残留进程，pgrep 门控跳过整套清理可省
   // ~4.7s 启动延迟；forceClean 用于启动失败后的自动重试（此时服务侧大概率残留）。
   const residue = spec.recorder.residuePattern()
-  let hasResidue = opts.forceClean && residue !== null
-  if (residue !== null && !hasResidue) {
+  // 审计 MEDIUM 修复（2026-08-25）：残留清理的 -q/pkill 均为全局操作，本实例无
+  // 活跃录音会话时执行会误杀同机其他 pi 实例的录音——仅自身有未收尾会话时放行
+  // （多实例安全优先于跨进程崩溃自愈；单实例场景下会话登记已覆盖自愈路径）。
+  const allowResidueClean = termuxSessionActive && residue !== null
+  let hasResidue = allowResidueClean && opts.forceClean === true
+  if (allowResidueClean && !hasResidue) {
     try {
       execFileSync('pgrep', ['-f', residue])
       hasResidue = true
@@ -105,7 +116,7 @@ export function startRecording(
       // 无残留进程：跳过清理直接启动
     }
   }
-  if (hasResidue && residue !== null) {
+  if (hasResidue) {
     try {
       execFileSync(spec.recorder.bin, spec.recorder.stopArgs() ?? [], { timeout: 8000 })
     } catch {
@@ -153,6 +164,10 @@ export function startRecording(
     }
     activeLinuxRecorder = { child, file }
   }
+  if (spec.kind === 'termux' && child.pid !== undefined) {
+    // 审计 MEDIUM 修复：登记本实例录音会话（后续 stopRecording -q / 残留清理的门控依据）
+    termuxSessionActive = true
+  }
   let errBuf = ''
   let outBuf = ''
   child.stdout?.on('data', (d: Buffer) => {
@@ -167,9 +182,16 @@ export function startRecording(
   }
   // spawn 失败（如二进制缺失 ENOENT）：必须监听 error，否则 Node 抛 unhandled error；
   // 用退出码 -2 标记启动失败（区别于运行中退出），由状态机按非 0 分流报错。
-  child.on('error', () => onExit(-2, capture()))
+  child.on('error', () => {
+    // 审计 MEDIUM 修复：spawn 失败（如 ENOENT）无服务端会话可言，作废登记防后续误放行 -q
+    if (spec.kind === 'termux') termuxSessionActive = false
+    onExit(-2, capture())
+  })
   child.on('exit', (code) => {
     if (activeLinuxRecorder?.child === child) activeLinuxRecorder = null
+    // 审计 MEDIUM 修复：子进程异常退出（启动失败/被占用）→ 会话作废；code===0
+    // 保留登记（服务端可能仍在录或待补 -q 收尾 moov atom，见 dictation 续录路径）
+    if (spec.kind === 'termux' && (code ?? -1) !== 0) termuxSessionActive = false
     onExit(code ?? -1, capture())
   })
   return { child, file }
@@ -249,6 +271,12 @@ export async function stopRecording(cfg: VoiceConfig): Promise<CommandResult> {
       }
     })
   }
+  // 审计 MEDIUM 修复：本实例无未收尾录音会话时不发全局 -q——该命令停掉的是
+  // Termux:API 服务侧唯一的 MediaRecorder，多实例下会误停其他实例的活跃录音
+  if (!termuxSessionActive) {
+    return { code: 0, stdout: '', stderr: '' }
+  }
+  termuxSessionActive = false
   return runCommand(spec.recorder.bin, spec.recorder.stopArgs() ?? ['-q'], { timeoutMs: 15000 })
 }
 
@@ -430,11 +458,16 @@ export async function ensureWhisperService(
       // Windows 便携版：服务由 start.bat 的 check-services.js 端口检测拉起（spawn python
       // detached + venv 路径/端口/模型全部正确）；Linux 走 pi-whisper.sh
       if (process.platform === 'win32') {
-        const root = process.env.USERPROFILE || join('')
-        const nodeExe = join(root, 'node', 'node.exe')
-        const checker = join(root, 'bin', 'check-services.js')
-        if (existsSync(nodeExe) && existsSync(checker)) {
-          return runCommand(nodeExe, [checker], { timeoutMs: 30000 })
+        // 审计 LOW 修复：USERPROFILE 缺失时原退化 root=join('')='.' 拼出相对路径探测，
+        // cwd 巧合命中会以错误根目录拉起服务——缺失则明确跳过 win32 探测，走下方
+        // bash 脚本通用路径（其错误信息自带修复指引）
+        const root = process.env.USERPROFILE
+        if (root) {
+          const nodeExe = join(root, 'node', 'node.exe')
+          const checker = join(root, 'bin', 'check-services.js')
+          if (existsSync(nodeExe) && existsSync(checker)) {
+            return runCommand(nodeExe, [checker], { timeoutMs: 30000 })
+          }
         }
       }
       return runCommand('bash', [cfg.whisperScript, 'start'], { timeoutMs: 30000 })
@@ -585,7 +618,13 @@ export async function speak(cfg: VoiceConfig, text: string): Promise<CommandResu
   }
   // linux 两段式：合成引擎生成 wav（espeak-ng -f/-w 或 piper -m/-i/-f），paplay 播放（可指定 sink）
   mkdirSync(cfg.tmpDir, { recursive: true })
-  const stage = join(cfg.tmpDir, TTS_STAGE_FILE.split('/').pop()!)
+  // 审计修复（MEDIUM）：固定名 tts-stage.wav 同机双实例并发朗读互删暂存 wav——
+  // 参照下方 textFile 已有的 -pid 后缀模式隔离；synthesizeArgs 写入/playArgs 播放/
+  // finally 清理同用本变量，天然一致
+  const stage = join(
+    cfg.tmpDir,
+    TTS_STAGE_FILE.split('/').pop()!.replace(/\.wav$/, `-${process.pid}.wav`),
+  )
   // 统一文本文件输入（espeak-ng -f / piper -i），避免 stdin 与特殊字符差异
   // 审计修复：固定名 tts-input.txt 同机双实例互写——加 pid 后缀隔离；写入与
   // synthesizeArgs(textFile) 读取同用本变量天然一致，finally 统一清理
@@ -1035,6 +1074,12 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
     lastReadPos = 0
     child.on('error', (e) => {
       running = false
+      // 审计 LOW（2026-08-25）：error 分支此前只置 running=false，500ms poll/guard
+      // 定时器永久空转泄漏——与 exit 分支同款清理
+      if (timer) {
+        clearInterval(timer)
+        timer = null
+      }
       opts.onStatus(`唤醒监听启动失败：${(e as Error).message}`)
     })
     child.on('exit', (code) => {

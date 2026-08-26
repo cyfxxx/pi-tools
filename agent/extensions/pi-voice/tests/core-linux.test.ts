@@ -133,7 +133,8 @@ describe('linux queryRecording / convertToWav', () => {
 
 describe('linux speak 两段式', () => {
   it('espeak-ng 文本文件 → wav → paplay 播放 → 清理暂存', async () => {
-    const stage = join(linuxCfg.tmpDir, 'tts-stage.wav')
+    // 审计修复：暂存 wav 加 -pid 后缀隔离（多实例并发互删）
+    const stage = join(linuxCfg.tmpDir, `tts-stage-${process.pid}.wav`)
     execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
       if (bin === 'espeak-ng') {
         expect(args[0]).toBe('-f')
@@ -156,7 +157,7 @@ describe('linux speak 两段式', () => {
   })
 
   it('piper 文本文件 → wav → paplay 播放（ttsEngine=piper）', async () => {
-    const stage = join(linuxCfg.tmpDir, 'tts-stage.wav')
+    const stage = join(linuxCfg.tmpDir, `tts-stage-${process.pid}.wav`)
     execFileMock.mockImplementation((bin: string, args: string[], _opts: unknown, cb: (e: Error | null, so: string, se: string) => void) => {
       if (bin === 'piper') {
         expect(args[0]).toBe('-m')

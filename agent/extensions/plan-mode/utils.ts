@@ -21,7 +21,11 @@ const DESTRUCTIVE_PATTERNS = [
   /\bpip\s+(install|uninstall)/i,
   /\bapt(-get)?\s+(install|remove|purge|update|upgrade)/i,
   /\bbrew\s+(install|uninstall|upgrade)/i,
-  /\bgit\s+(add|commit|push|pull|merge|rebase|reset|checkout|branch\s+-[dD]|stash|cherry-pick|revert|tag|init|clone)/i,
+  /\bgit\s+(add|commit|push|pull|merge|rebase|reset|checkout|stash|cherry-pick|revert|tag|init|clone)/i,
+  // git 写引用/配置类（审计 MEDIUM）：branch 新建、remote 写子命令、show/diff/log --output 落盘
+  /\bgit\s+branch\s+[^-\s]/i,
+  /\bgit\s+remote\s+(add|rename|set-url|remove)/i,
+  /\bgit\s+(show|diff|log)\b[^\n;|&]*--output/i,
   // find 的破坏性动作：-delete 删除、-exec/-ok 执行、-fprint/-fprintf 写文件
   /\bfind\b[^\n;|&]*\s(-delete|-exec|-execdir|-ok|-fprint|-fprintf)\b/i,
   /\bsudo\b/i,
@@ -33,11 +37,16 @@ const DESTRUCTIVE_PATTERNS = [
   // curl/wget 落盘即破坏（curl -o/-O/--output=/--output 写文件、wget 非 -O - 时写文件）
   /\bcurl\b[^\n;|&]*\s(-o\s|-o\S|--output\s|--output=|-O\s|--remote-name)/i,
   /\bwget\b(?!\s+-O\s*-)/i,
+  // date 改系统时钟（审计 LOW：root 下影响缓存 TTL/调度）
+  /\bdate\s+(-[^\s]*s|--set)/i,
   /\bshutdown\b/i,
   /\bsystemctl\s+(start|stop|restart|enable|disable)/i,
   /\bservice\s+\S+\s+(start|stop|restart)/i,
   // sed w 命令写文件：地址+[0-9,$,/]w file 或独立 w file（GNU sed 仅 -n 只读放行）
   /\bsed\b[^\n;|&]*([0-9,$/]+w\s|\bw\s)\S/i,
+  // sed 执行类（审计 HIGH）：e 命令执行 shell（GNU sed -n 不抑制 e）；s///e flag 将 replacement 作 shell 命令执行
+  /\bsed\b[^\n;|&]*([0-9,$/}]+e\s|\be\s)\S/i,
+  /\bsed\b[^\n;|&]*s[/|,#][^'"\n]*[/|,#][^'"\n]*[/|,#][a-z,]*e[a-z,]*/i,
   // rg --pre 执行预处理命令（任意进程执行；审计 HIGH：白名单含 rg 但未拦执行类 flag）
   /\brg\b[^\n;|&]*\s(--pre|--pre-glob)(\s|=)/i,
   // fd -x/-X/--exec/--exec-batch 对每个结果执行命令（任意进程执行，同上）

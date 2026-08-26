@@ -192,15 +192,19 @@ export class BrowserManager {
         }
       })
       // 弹窗策略：默认 dismiss（避免阻塞），可经 browser_dialog 改为 accept/input。
-      pg.on('dialog', async (dialog) => {
+      // 审计 MEDIUM：async 回调内 accept/dismiss 在页面关闭竞态时 reject 会成为
+      // unhandledRejection 可崩进程——提取 Promise 补 .catch 记录调试日志（对照 download 监听）
+      pg.on('dialog', (dialog) => {
         this.lastDialog = dialog.message()
-        if (this.dialogMode === 'accept') {
-          await dialog.accept()
-        } else if (this.dialogMode === 'input') {
-          await dialog.accept(this.dialogText ?? '')
-        } else {
-          await dialog.dismiss()
-        }
+        const action =
+          this.dialogMode === 'accept'
+            ? dialog.accept()
+            : this.dialogMode === 'input'
+              ? dialog.accept(this.dialogText ?? '')
+              : dialog.dismiss()
+        action.catch((err) => {
+          console.warn('[browser] dialog action error:', (err as Error)?.message)
+        })
       })
       // 下载监听：保存到 downloadsDir，记录到 downloadedFiles
       pg.on('download', (download) => {

@@ -186,7 +186,8 @@ export function pruneToolResults(
  * Thinking 保留预算：从后往前累计 assistant 消息的 thinking token，
  * 预算耗尽处及更早的 thinking 块全部删除（保留消息其余内容）。
  * 确定性：判定只依赖消息内容，内容不变结果不变 → 缓存前缀稳定。
- * 默认预算与 pi-context 的 KEEP_THINKING_TOKENS 一致。
+ * 2026-08-22 起 pi-context context 阶段已停用本函数（对齐 append-only，清理职责让给
+ * auto-compact），仅保留作未来 compact 后可选兜底；DEFAULT_KEEP_THINKING_TOKENS 为其独立默认值。
  *
  * 2026-08-18 实测：16K 预算下 max 推理级别每 2-3 轮即超预算，剪枝触发率
  * 70%，且每次触发都修改早期消息序列 → 前缀缓存从删除点断裂全价重发
@@ -220,22 +221,26 @@ export function pruneThinkingBudget(input: PruneMessage[], budgetTokens = DEFAUL
   }
 
   let removedChars = 0;
+  let modifiedCount = 0; // 实际被修改的消息数（一次擦除通常跨多条消息，非恒 1）
   const next = input.map((m, i) => {
     if (i > cutoff || m.role !== "assistant" || !Array.isArray(m.content)) return m;
+    let touched = false;
     const filtered = (m.content as { type?: string; thinking?: string }[]).filter((b) => {
       if (b && b.type === "thinking") {
         removedChars += typeof b.thinking === "string" ? b.thinking.length : 0;
+        touched = true;
         return false;
       }
       return true;
     });
+    if (touched) modifiedCount++;
     return { ...m, content: filtered };
   });
 
   return {
     messages: next,
     modified: true,
-    prunedCount: 1,
+    prunedCount: modifiedCount, // 统计实际修改的消息数（审计修复：原硬编码 1 与跨消息擦除不符）
     prunedTokens: Math.ceil(removedChars / 4),
     prunedChars: removedChars,
   };

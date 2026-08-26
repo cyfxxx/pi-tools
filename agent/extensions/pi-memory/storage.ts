@@ -80,7 +80,7 @@ export function writeJSONAtomic(file: string, data: unknown) {
 // 防止密钥形态（GitHub PAT/API key/JWT 等）进入持久存储。
 // 设计：形态匹配保守（长后缀+前缀限定），避免误伤 UUID 等正常文本；
 // 替换为占位符而非拒绝写入，保证记忆流程不中断。
-const SECRET_PATTERNS: Array<[RegExp, string]> = [
+export const SECRET_PATTERNS: Array<[RegExp, string]> = [
   // GitHub token（ghp_ 个人 / gho_ OAuth / ghu_ 用户级 / ghs_ 服务器 / ghr_ 刷新 / github_pat_ 精细）
   [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, '[REDACTED:github-token]'],
   [/\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, '[REDACTED:github-token]'],
@@ -96,6 +96,14 @@ const SECRET_PATTERNS: Array<[RegExp, string]> = [
   [/\b-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]+PRIVATE KEY-----\b/g, '[REDACTED:private-key]'],
   // 密码/令牌键值形态: password/secret/api_key/token/access_key = 或 :（保守长值防误伤）
   [/\b(password|passwd|secret|api[_-]?key|token|access[_-]?key)\s*[=:]\s*['\"]?[^\s'\",;\x5b]{8,}/gi, '$1=[REDACTED]'],
+  // JSON 序列化形态（审计 MEDIUM）："api_key": "长值"——键后引号致上一条 [=:] 紧邻要求漏检；保留引号结构。
+  // 负向前瞻跳过已脱敏值（前缀规则先行时避免二次改写丢失具体类别标记）
+  [/("(?:password|passwd|secret|api[_-]?key|token|access[_-]?key)"\s*:\s*")(?!\[REDACTED)([^"]{8,})(")/gi, '$1[REDACTED]$3'],
+  // Google API key（审计 LOW：AIza 前缀定长 35）
+  [/\bAIza[0-9A-Za-z_-]{35}\b/g, '[REDACTED:google-key]'],
+  // Slack token（审计 LOW：xox[baprs]- 前缀）
+  [/\bxox[baprs]-[0-9A-Za-z-]{10,}\b/g, '[REDACTED:slack-token]'],
+  // 注：AWS secret access key 无前缀特征（40 位裸串），裸拦误伤面大，靠上方键值/JSON 形态规则覆盖
 ]
 
 export function scrubSecrets(text: string): string {
@@ -190,7 +198,9 @@ export function loadSummaries(): SummaryEntry[] {
   ensureDir()
   const store = readStoreFile<SummaryStore>(SUMMARIES_FILE, 'summaries')
   if (!store || !Array.isArray(store.summaries)) return []
-  return store.summaries
+  // 审计 MEDIUM：读时重洗 scrubSecrets（对齐 loadEntries）——旧版本/手工编辑的 summaries
+  // 中密钥不经写时净化即可存在，注入块直接消费本函数返回值
+  return store.summaries.map(sanitizeSummary)
 }
 
 export function saveSummaries(summaries: SummaryEntry[]) {
@@ -233,34 +243,55 @@ export function appendSummary(summary: SummaryEntry): SummaryEntry[] {
 
 // ── L0 工作笔记（ctx-lite 合并） ─────────────────────────────
 
+// 原始读：不做 TTL 清理不落盘（updateNotes/loadNotes 共用基座）
+function rawLoadNotes(): Record<string, string> {
+  migrateFromCtxLite()
+  return readStoreFile<Record<string, string>>(NOTES_FILE, 'notes') || {}
+}
+
+// 原始写：脱敏后原子落盘
+function rawSaveNotes(notes: Record<string, string>) {
+  const scrubbed: Record<string, string> = {}
+  for (const [k, v] of Object.entries(notes)) {
+    scrubbed[k] = k.startsWith('__ttl_') ? v : scrubSecrets(v)
+  }
+  writeJSONAtomic(NOTES_FILE, scrubbed)
+}
+
+/**
+ * 审计 MEDIUM：notes 原子更新基座——fresh 读 → 调用方原地改（增删改均可）→ 落盘。
+ * 替代 load→mutate→save 三段式：三段式的中间窗口内他实例写入会被本次整档覆盖丢更新
+ * （提取子进程 TTL 清理 vs 主进程 session_compact 写 _ctx.compacted_at 实测互踩场景）。
+ * 与 appendSummary 的写前吸收同级属 best-effort：未消除同 key 并发 last-writer-wins，
+ * 但不同 key 不再互踩，且删除语义天然保留。
+ */
+export function updateNotes<T>(fn: (notes: Record<string, string>) => T): T {
+  const notes = rawLoadNotes()
+  const result = fn(notes)
+  rawSaveNotes(notes)
+  return result
+}
+
 export function loadNotes(): Record<string, string> {
   ensureDir()
-  migrateFromCtxLite()
-  let notes = readStoreFile<Record<string, string>>(NOTES_FILE, 'notes') || {}
-  // 保留 _ctx. 内部键名（plan-mode 等扩展通过 lib/note-store 依赖它）
-
-  // TTL 清理
+  const notes = rawLoadNotes()
+  // TTL 惰性清理：仅过滤内存视图不落盘（读路径写是互踩源之一）；磁盘残留过期键
+  // 由下一次任意 updateNotes 落盘自然清除，读取侧始终过滤无副作用
   const now = Date.now()
-  let changed = false
   for (const key of Object.keys(notes)) {
     const ttlKey = `__ttl_${key}`
     const ttl = notes[ttlKey]
     if (ttl && new Date(ttl).getTime() <= now) {
       delete notes[key]
       delete notes[ttlKey]
-      changed = true
     }
   }
-  if (changed) saveNotes(notes)
   return notes
 }
 
 export function saveNotes(notes: Record<string, string>) {
-  const scrubbed: Record<string, string> = {}
-  for (const [k, v] of Object.entries(notes)) {
-    scrubbed[k] = k.startsWith('__ttl_') ? v : scrubSecrets(v)
-  }
-  writeJSONAtomic(NOTES_FILE, scrubbed)
+  // 全量替换意图（清空/恢复检查点等显式调用方）：不走吸收合并，保持覆盖语义
+  rawSaveNotes(notes)
 }
 
 // ctx-lite 数据首次迁移：notes.json + checkpoints 复制到新目录
@@ -282,12 +313,12 @@ export function migrateFromCtxLite(): void {
 }
 
 export function clearCompactionFlag() {
-  const notes = loadNotes()
-  if (notes['_ctx.just_compacted']) {
-    delete notes['_ctx.just_compacted']
-    delete notes['_ctx.compacted_at']
-    saveNotes(notes)
-  }
+  updateNotes(notes => {
+    if (notes['_ctx.just_compacted']) {
+      delete notes['_ctx.just_compacted']
+      delete notes['_ctx.compacted_at']
+    }
+  })
 }
 
 export function getTotalSize(entries: MemoryEntry[]): number {
