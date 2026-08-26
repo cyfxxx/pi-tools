@@ -12499,15 +12499,19 @@
         "蒸馏",
         "空壳任务",
         "提取脚本",
-        "蒸馏流程"
+        "蒸馏流程",
+        "pi",
+        "处置流程",
+        "memory_store",
+        "SKILL草稿"
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 2,
+      "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
-      "updatedAt": "2026-08-26T04:20:07.259Z",
-      "accessedAt": "2026-08-26T04:20:07.259Z",
-      "observedAt": "2026-08-25T08:27:24.585Z",
+      "updatedAt": "2026-08-26T04:48:25.056Z",
+      "accessedAt": "2026-08-26T04:48:25.056Z",
+      "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
         "all"
@@ -13067,10 +13071,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 4,
+      "recurrence": 7,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-26T04:25:22.001Z",
-      "accessedAt": "2026-08-26T04:25:22.001Z",
+      "updatedAt": "2026-08-26T05:57:32.283Z",
+      "accessedAt": "2026-08-26T05:57:32.283Z",
       "environments": [
         "all"
       ],
@@ -13171,6 +13175,311 @@
       ],
       "observedAt": "2026-08-26T03:12:30.990Z",
       "deleted": false
+    },
+    {
+      "id": "72995628-92d8-4a44-b052-41ae453ff6a3",
+      "category": "fact",
+      "title": "机制B落地: 压缩摘要暖前缀重放(patch+门控+待验证项)",
+      "content": "2026-08-26 dsh 机制 B（压缩摘要暖前缀重放）落地：①scripts/patch-compaction-warm-prefix.mjs（@target-version 0.84，三处改动：compaction.js 加 setCompactionWarmPrefixProvider+generateSummaryWithUsage 暖前缀分支、index.js/index.d.ts 导出同步——**类型声明必须同步否则扩展 tsc 报 TS2305**）；②pi-context 门控注册：session_before_compact 禁用条件（reason=overflow 或 tokensBefore>90%窗口，防重放再爆窗）、AUTO_PREFIX_CACHE_RE 限定自动前缀缓存家族（Anthropic 显式缓存语义不同排除）、素材三件套 systemPrompt=before_agent_start event.systemPrompt/messages=context handler 最终产出（lastSentMessages）/tools=getAllTools∩getActiveTools（ToolInfo 直接含 name/description/parameters，无 definition 包装）；③rebuild Phase 3 注册。机制 A（pre-step 迁移）评估后不做：pi 的 agent_end+AutoContinueGate 已等价不打断工作流。关键认知：before_provider_request 的 payload 是 buildParams 后的 provider 特定格式（openai-completions 非 pi Context），不能直接当 Context 用；buildParams 是纯函数，Context 同源则输出一致。待验证：下次真实压缩后 usage-stats 看 cacheRead 是否非零（tools 序列化差异是唯一失配风险点）。Cache-impact 守门首次实战：commit 携带 low 声明通过。",
+      "tags": [
+        "pi-context",
+        "压缩",
+        "缓存",
+        "dsh",
+        "patch"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T04:27:57.379Z",
+      "updatedAt": "2026-08-26T04:27:57.379Z",
+      "accessedAt": "2026-08-26T04:27:57.379Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T04:27:57.379Z",
+      "deleted": false
+    },
+    {
+      "id": "2868c1fb-69dc-40e7-8cb2-702c28887ea1",
+      "category": "solutions",
+      "title": "空壳任务判定与处置（第三次出现）",
+      "content": "经验沉淀输入中任务轮次统计全零（tools=0、hit=0、out=0）即为空壳记录，无可提炼内容：不存memory、不写SKILL草稿，防止污染记忆库。hit=250000恰为统计上限值，属封顶伪影非真实缓存命中。处置顺序：先修提取脚本、人工抽查原始日志确认真实内容，再重跑蒸馏。出现历史：2026-08-25共三次（57轮/3514K、90轮/6015K、16轮/1089K tokens），高度相似疑重复投喂同一日志。",
+      "tags": [
+        "经验沉淀",
+        "空壳任务",
+        "防污染",
+        "蒸馏"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T04:41:37.701Z",
+      "updatedAt": "2026-08-26T04:41:37.701Z",
+      "accessedAt": "2026-08-26T04:41:37.701Z",
+      "observedAt": "2026-08-26T04:41:37.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03c27-d1f4-70c6-9fbd-51530aa1e93c",
+      "deleted": false
+    },
+    {
+      "id": "6d069e13-6478-403b-8b1f-d16185a76749",
+      "category": "procedure",
+      "title": "经验沉淀防污染入库原则",
+      "content": "经验沉淀任务中对各任务记录做入库筛选：①记录过薄（步骤截断、改动项不可见）的不凭残缺信息写SKILL或存memory，避免臆造；②流程已固化在每日任务提示词模板中的（如knowledge-fetch.py订阅+usage-stats.mjs复检）不再重复入库；③纯调研/问答/常规推送类不构成可复用技能，不入库。仅当任务同时满足成功实现、可复现、有保存价值的长流程三条才写SKILL.md草稿到/root/.pi/packs/drafts/。",
+      "tags": [
+        "经验沉淀",
+        "防污染",
+        "SKILL草稿",
+        "入库原则"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T04:41:37.701Z",
+      "updatedAt": "2026-08-26T04:41:37.701Z",
+      "accessedAt": "2026-08-26T04:41:37.701Z",
+      "observedAt": "2026-08-26T04:41:37.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03c27-d1f4-70c6-9fbd-51530aa1e93c",
+      "deleted": false
+    },
+    {
+      "id": "4b907b92-daf7-47c4-a562-f64884b4f25a",
+      "category": "fact",
+      "title": "空壳投喂第三次出现于2026-08-26",
+      "content": "pi 会话蒸馏流水线再次收到空壳任务记录：2026-08-26 03:40 的任务1共29轮累计1799K tokens，29轮中仅8轮有统计行且全部无效（7轮tools/hit/out全零，1轮hit=250000为封顶伪影），无工具调用与产出。此前2026-08-25已出现两次（57轮/3514K、90轮/6015K）。三次同类事件说明上游scripts/下的会话提取/蒸馏脚本bug未修复，每次投喂仍消耗真实token。",
+      "tags": [
+        "pi",
+        "空壳投喂",
+        "蒸馏",
+        "会话统计",
+        "bug"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T04:48:25.056Z",
+      "updatedAt": "2026-08-26T04:48:25.056Z",
+      "accessedAt": "2026-08-26T04:48:25.056Z",
+      "observedAt": "2026-08-26T04:48:25.056Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03c4b-4f4e-71d6-8a17-f247f76ae23d",
+      "deleted": false
+    },
+    {
+      "id": "72751290-9da5-4e25-838c-dcf9e7f71fd2",
+      "category": "solutions",
+      "title": "hit=250000为统计上限封顶伪影",
+      "content": "判定 pi 会话统计是否有效时，hit=250000恰为缓存命中统计的上限值，属封顶伪影而非真实缓存命中，不能视为有效活动证据；配合 tools=0/out=0 全零轮次即可判定整段记录为空壳，无需深挖。",
+      "tags": [
+        "pi",
+        "缓存命中",
+        "统计伪影",
+        "判定技巧"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T04:48:25.056Z",
+      "updatedAt": "2026-08-26T04:48:25.056Z",
+      "accessedAt": "2026-08-26T04:48:25.056Z",
+      "observedAt": "2026-08-26T04:48:25.056Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03c4b-4f4e-71d6-8a17-f247f76ae23d",
+      "deleted": false
+    },
+    {
+      "id": "f9259dda-d3d4-4aa3-9f7b-667f3b9c82e7",
+      "category": "fact",
+      "title": "上游蒸馏脚本待修复后再恢复流程",
+      "content": "pi 会话提取/蒸馏脚本（scripts/下）存在bug，连续三天产出空壳记录（2026-08-25两次、2026-08-26一次）。恢复蒸馏前应先修复提取脚本并人工抽查原始日志，确认能产出含有效工具调用的轮次，避免持续空转消耗token。已向用户提出可着手排查。",
+      "tags": [
+        "pi",
+        "蒸馏脚本",
+        "待办",
+        "scripts"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T04:48:25.056Z",
+      "updatedAt": "2026-08-26T04:48:25.056Z",
+      "accessedAt": "2026-08-26T04:48:25.056Z",
+      "observedAt": "2026-08-26T04:48:25.056Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03c4b-4f4e-71d6-8a17-f247f76ae23d",
+      "deleted": false
+    },
+    {
+      "id": "2c5ff699-d6fd-41d8-8cb7-db496372e727",
+      "category": "fact",
+      "title": "sum-fn-probe 探针用途",
+      "content": "pi 项目维护者使用名为 sum-fn-probe 的诊断探针验证摘要请求链路：确认会话总结类请求是否经由 SDK 桥的 streamFn / onPayload 回调。操作方式为重启会话时在原因字段注明探针注入，随后用 /compact 触发摘要请求观察回调是否命中。后续看到该探针名属主动诊断行为，非系统异常。",
+      "tags": [
+        "pi",
+        "sum-fn-probe",
+        "sdk桥",
+        "streamFn",
+        "onPayload",
+        "诊断",
+        "摘要链路",
+        "compact"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:28:16.617Z",
+      "updatedAt": "2026-08-26T05:28:16.617Z",
+      "accessedAt": "2026-08-26T05:28:16.617Z",
+      "observedAt": "2026-08-26T05:28:16.617Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a03c88-fdf9-7026-b44e-a50356a8d6e2",
+      "deleted": false
+    },
+    {
+      "id": "61d18e77-192c-4c20-87c2-5422dee4d74d",
+      "category": "solutions",
+      "title": "bash heredoc 注入 JS 代码时转义陷阱: \\n 变真实换行导致编译失败",
+      "content": "用 `python3 - <<EOF` 向 JS 文件注入含 \"\\n\" 的字符串字面量时，未加引号的 heredoc 会让 bash 先做转义处理：源码里写 \"\\\\n\" 传入 python 后变成 \"\\n\"（python 层面即真实换行转义），写入 JS 文件就是真实换行符 → JS 字符串跨行 → 模块编译失败/进程崩溃（2026-08-26 实测：patch 探针注入导致 pi 重启崩溃）。规避：① heredoc 定界符加引号 `<<'EOF'`；② 或 python 里用 chr(92)+'n' / raw string；③ 或用 edit/write 工具直接改文件。注入后必跑 node --check 验证语法再重启。",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:29:36.591Z",
+      "updatedAt": "2026-08-26T05:29:36.591Z",
+      "accessedAt": "2026-08-26T05:29:36.591Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T05:29:36.591Z",
+      "deleted": false
+    },
+    {
+      "id": "fcd11ffa-d8ad-4586-bc80-1a9e9464b93e",
+      "category": "solutions",
+      "title": "空壳投喂蒸馏输入识别与复现跟踪",
+      "content": "识别特征：蒸馏输入的任务记录绝大多数轮次 tools/hit/out 全零，仅个别轮 hit=250000 且 out=0（该值为统计封顶伪影，不代表真实缓存命中）；此类输入无任何可提取的实际工作内容。处置纪律：不虚构经验、不写 SKILL 草稿，仅更新本跟踪记忆并建议修复上游会话提取脚本。复现台账：2026-08-26 任务1 早前快照 29 轮/1799K tokens（当时记为第 3 次）；同日 04:19 快照 37 轮/2628K tokens 特征完全一致（8 个统计轮中 7 轮全零、1 轮 hit=250000），疑为同一上游会话的更大快照，说明提取脚本仍未修复。",
+      "tags": [
+        "蒸馏",
+        "空壳",
+        "数据质量",
+        "会话提取"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:42:36.876Z",
+      "updatedAt": "2026-08-26T05:42:36.876Z",
+      "accessedAt": "2026-08-26T05:42:36.876Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T05:42:36.876Z",
+      "deleted": false
+    },
+    {
+      "id": "8ee35f66-f5bb-45ef-b361-6523ced03ee4",
+      "category": "solutions",
+      "title": "pi 暖前缀 v2 方案：before_provider_request 整体替换 payload",
+      "content": "暖前缀装载从 v1「patch 素材逐项拼接」演进为 v2：在 before_provider_request 钩子中对整个请求 payload 做整体替换来装载暖前缀。改动后需 admin_restart 重启才能生效（实测单轮重启即完成加载）。适用于 pi 扩展做缓存友好 system prompt/前缀注入时的方案选型参考：整体替换比逐素材 patch 更可控。",
+      "tags": [
+        "pi-context",
+        "暖前缀",
+        "缓存",
+        "before_provider_request"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:42:36.921Z",
+      "updatedAt": "2026-08-26T05:42:36.921Z",
+      "accessedAt": "2026-08-26T05:42:36.921Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T05:42:36.921Z",
+      "deleted": false
+    },
+    {
+      "id": "59e24527-8fc1-4235-878d-5915c2e39dfa",
+      "category": "procedure",
+      "title": "sum-fn-probe 探针法验证 pi 内部回调链路",
+      "content": "用途：判定某类请求（如 /compact 摘要请求）实际是否经过特定内部回调（sdk 桥的 streamFn / onPayload）。步骤：1) 在目标链路注入专用探针扩展（本次为 sum-fn-probe），挂钩待验证回调并留痕；2) admin_restart 重载使探针生效；3) 执行 /compact 触发真实摘要请求；4) 观察探针是否被回调命中即可判定链路走向。若探针加载失败，先查注入代码语法（见配套 \\n 转义踩坑条目）后重启再测。",
+      "tags": [
+        "诊断",
+        "探针",
+        "compact",
+        "sdk桥",
+        "streamFn",
+        "onPayload"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:42:36.959Z",
+      "updatedAt": "2026-08-26T05:42:36.959Z",
+      "accessedAt": "2026-08-26T05:42:36.959Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T05:42:36.959Z",
+      "deleted": false
+    },
+    {
+      "id": "ef428447-89ba-4372-b105-11f7cc5b8055",
+      "category": "solutions",
+      "title": "dist 注入代码 \\n 转义踩坑",
+      "content": "向打包产物 dist/*.js 注入探针/补丁代码时，生成的代码里换行若未正确转义为 \\\\n（尤其落在模板字符串/字符串字面量内）会导致整文件语法错误、扩展加载失败。实例：dist 探针在第 453 行因 \\n 转义问题报语法错误，修复转义后重启加载恢复正常。预防：注入代码优先写成单行，或多行代码必须做完整转义后再写入，写完先做语法检查（node --check）再重启验证。",
+      "tags": [
+        "踩坑",
+        "dist补丁",
+        "转义",
+        "语法错误"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:42:37.007Z",
+      "updatedAt": "2026-08-26T05:42:37.007Z",
+      "accessedAt": "2026-08-26T05:42:37.007Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T05:42:37.007Z",
+      "deleted": false
+    },
+    {
+      "id": "aee16856-4ef3-44e3-b066-b6bf5144cb3c",
+      "category": "solutions",
+      "title": "空壳投喂再现，无SKILL草稿产出",
+      "content": "现象：蒸馏输入的任务记录为空壳——只有统计轮数据，无任何实际操作描述。最新一次：2026-08-26 任务1（轮31、累计1958K tokens；8个统计轮中7轮 tools/hit/out 全零，1轮 hit=250000 为封顶伪影）。处理纪律：1) 判定空壳后不虚构经验、不新建记忆条目、不写 SKILL 草稿；2) 沿用本标题合并更新，累计记录出现次数与特征；3) 根因在上游会话提取脚本，应先修复并抽查原始日志再恢复蒸馏。识别特征：所有轮次 tools=0 且 out=0、无任务正文、hit 命中整数上限值（如 250000）多为封顶伪影而非真实缓存命中。",
+      "tags": [
+        "distillation",
+        "empty-session",
+        "quality-guard"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T05:58:40.874Z",
+      "updatedAt": "2026-08-26T05:58:40.874Z",
+      "accessedAt": "2026-08-26T05:58:40.874Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
