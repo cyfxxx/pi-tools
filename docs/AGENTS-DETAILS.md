@@ -75,6 +75,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 `patch-footer-restart-hint.mjs`（上下文 >40% 窗口时 context 区追加 ⚠，提示重启前先压缩；依赖 cache 补丁的实时 context 形态）
 `patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）
 `patch-tab-arg-completion.mjs`（tab 参数补全）
+`patch-compaction-warm-prefix.mjs`（压缩摘要暖前缀重放，2026-08-26：compaction.js 加 setCompactionWarmPrefixProvider 注册点 + 包根导出/类型同步；pi-context 按模型门控注册素材——自动前缀缓存家族才启用，overflow/近窗禁用；实测验证：压缩后 usage-stats 看该会话压缩轮 cacheRead 是否非零）
 `patch-playwright-core.mjs`（Termux android→linux 平台补丁）
 
 共 8 个由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行八个脚本）。

@@ -1330,6 +1330,13 @@ if [ -f "$PI_HOME/scripts/patch-voice-enter.mjs" ]; then
 else
   warn "patch-voice-enter.mjs 缺失，跳过"
 fi
+if [ -f "$PI_HOME/scripts/patch-compaction-warm-prefix.mjs" ]; then
+  node "$PI_HOME/scripts/patch-compaction-warm-prefix.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "压缩摘要暖前缀重放补丁（pi-context 缓存复用，2026-08-26）" \
+    || warn "暖前缀补丁未应用（pi 版本可能已改动）：压缩摘要调用将全价计费（功能不受影响，仅成本退化）"
+else
+  warn "patch-compaction-warm-prefix.mjs 缺失，跳过"
+fi
 if [ -f "$PI_HOME/scripts/patch-plan-tools.mjs" ]; then
   node "$PI_HOME/scripts/patch-plan-tools.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "工具 schema 恢复补丁（plan-mode 模型侧切换）" \

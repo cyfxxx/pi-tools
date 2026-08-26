@@ -12491,22 +12491,26 @@
       "id": "f707031c-9c55-45f6-9873-4e3eecfcafcd",
       "category": "solutions",
       "title": "空壳任务记录的判定与处置流程",
-      "content": "经验沉淀输入中若任务轮次统计全零（tools=0、hit=0、out=0）即为空壳记录，无可提炼内容：不存memory、不写SKILL草稿，防止污染记忆库。hit=250000恰为统计上限值，属封顶伪影非真实缓存命中。正确处置顺序：先修提取脚本、人工抽查原始日志确认真实内容，再重跑蒸馏流程。",
+      "content": "经验沉淀输入中若任务轮次统计全零（tools=0、hit=0、out=0）即为空壳记录，无可提炼内容：不存memory、不写SKILL草稿，防止污染记忆库。hit=250000恰为统计上限值，属封顶伪影非真实缓存命中。正确处置顺序：先修提取脚本、人工抽查原始日志确认真实内容，再重跑蒸馏流程。出现历史：2026-08-25两次（57轮/3514K tokens；90轮/6015K tokens，两份高度相似疑重复投喂）；2026-08-26第三次（轮29/累计1799K tokens，8个统计轮中7轮全零+1轮hit=250000封顶伪影）。连续三次未修复，根因在上游会话提取/蒸馏脚本，继续投喂只会重复消耗token，应优先修复脚本而非重跑蒸馏。",
       "tags": [
         "经验沉淀",
         "空壳记录",
         "数据质量",
-        "蒸馏"
+        "蒸馏",
+        "空壳任务",
+        "提取脚本",
+        "蒸馏流程"
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 1,
+      "recurrence": 2,
       "createdAt": "2026-08-25T08:27:24.585Z",
-      "updatedAt": "2026-08-25T08:27:24.585Z",
-      "accessedAt": "2026-08-25T08:27:24.585Z",
+      "updatedAt": "2026-08-26T04:20:07.259Z",
+      "accessedAt": "2026-08-26T04:20:07.259Z",
       "observedAt": "2026-08-25T08:27:24.585Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "all"
       ],
       "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
       "deleted": false
@@ -13063,10 +13067,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 2,
+      "recurrence": 4,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-26T03:42:29.435Z",
-      "accessedAt": "2026-08-26T03:42:29.435Z",
+      "updatedAt": "2026-08-26T04:25:22.001Z",
+      "accessedAt": "2026-08-26T04:25:22.001Z",
       "environments": [
         "all"
       ],
@@ -13117,7 +13121,9 @@
       "accessedAt": "2026-08-26T03:44:45.266Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-26T03:44:45.266Z",
+      "deleted": false
     },
     {
       "id": "cd187b58-2bd1-4f22-a5ab-598f04d6355e",

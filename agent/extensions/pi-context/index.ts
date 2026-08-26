@@ -1,4 +1,4 @@
-import { truncateHead, truncateTail, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
+import { truncateHead, truncateTail, setCompactionWarmPrefixProvider, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
 import type { Usage } from "@earendil-works/pi-ai";
 import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, existsSync } from "node:fs";
@@ -539,6 +539,48 @@ export default function (pi: ExtensionAPI) {
 	// 诊断类消息（/usage-diag 输出）只展示、不进 LLM 上下文
 	const DIAG_CUSTOM_TYPES = new Set(["usage-diag"]);
 
+	// ── 暖前缀重放（2026-08-26，dsh 机制 B）：压缩摘要调用复用主请求 KV 前缀 ──
+	// scripts/patch-compaction-warm-prefix.mjs 提供机制，此处提供素材与门控。
+	// 三件套同源：systemPrompt=before_agent_start 组装结果；messages=context 处理
+	// 器最终产出（含截断/剪枝变换）；tools=getAllTools∩active（尽力对齐，失配最坏
+	// 退化为现状全价，不会更差）。仅自动前缀缓存家族启用（Anthropic 显式缓存语义
+	// 不同，排除）；overflow/近窗禁用（重放体量≈当前上下文，防再爆窗）。
+	let lastSentMessages: unknown[] | null = null;
+	let lastSystemPrompt: string | null = null;
+	let lastModelKey = "";
+	let compactWarmAllowed = false;
+	const AUTO_PREFIX_CACHE_RE = /deepseek|qwen|kimi|moonshot|glm|zhipu|doubao|gemini|gpt-|o[134]-/i;
+	pi.on("session_before_compact", (event, ctx) => {
+		const w = ctx.model?.contextWindow ?? 0;
+		compactWarmAllowed =
+			event.reason !== "overflow" && !(w > 0 && event.preparation.tokensBefore > w * 0.9);
+	});
+	try {
+		setCompactionWarmPrefixProvider(() => {
+			if (!compactWarmAllowed) return null;
+			if (!lastSentMessages?.length || !lastSystemPrompt) return null;
+			if (!AUTO_PREFIX_CACHE_RE.test(lastModelKey)) return null;
+			type WarmTool = { name: string; description: string; parameters?: unknown };
+			const api = pi as ExtensionAPI & {
+				getAllTools?: () => WarmTool[];
+				getActiveTools?: () => string[];
+			};
+			let tools: WarmTool[];
+			try {
+				const active = new Set(api.getActiveTools?.() ?? []);
+				tools = (api.getAllTools?.() ?? [])
+					.filter((t) => active.size === 0 || active.has(t.name))
+					.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters }));
+			} catch {
+				return null; // tools 对齐失败即放弃重放（缺 tools 必然前缀失配）
+			}
+			if (tools.length === 0) return null;
+			return { systemPrompt: lastSystemPrompt, tools, messages: lastSentMessages };
+		});
+	} catch {
+		// 补丁未应用（如 pi update 后未跑 rebuild）时静默降级为原生隔离摘要
+	}
+
 	// R2/R3：context 阶段确定性过滤（结果每轮一致，不破坏缓存前缀）
 	pi.on("context", (event) => {
 		// 供压缩快照用：保存当前消息全文（引用，agent_settled 压缩前落盘可追溯）
@@ -619,6 +661,8 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 		recordThinkingMeter(thinkingTokens);
+		// 暖前缀素材：记录经本处理器变换后的最终 messages（真实发送内容）
+		lastSentMessages = modified ? messages : event.messages;
 		if (modified) return { messages };
 	});
 
@@ -1088,6 +1132,9 @@ export default function (pi: ExtensionAPI) {
 	// 档位基于 auto-compact 阈值比例（早期实现用 contextWindow 的 85%/95%，
 	// 但 auto-compact 在 20% 处先触发，85%/95% 永不达到 → 死代码）。
 	pi.on("before_agent_start", async (event, ctx) => {
+		// 暖前缀素材：组装完成的 system prompt + 当前模型标识（门控用）
+		lastSystemPrompt = event.systemPrompt;
+		lastModelKey = `${ctx.model?.provider ?? ""}/${ctx.model?.id ?? ""}`;
 		// 首次 run 前应用工具分层（此时全部扩展已注册，getAllTools 完整）
 		if (!layeringApplied) {
 			applyToolLayering();
