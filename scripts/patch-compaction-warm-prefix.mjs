@@ -62,27 +62,35 @@ function detectDist() {
 
 const dist = detectDist()
 
-// ── Part 1: compaction.js — setter 注册点 + generateSummaryWithUsage 暖前缀分支 ──
+// ── Part 1: compaction.js — setter 注册点 + completeSummarization onPayload 桥 ──
+// v1.5 终态（2026-08-26）：context 级暖分支已退役（素材为转换前消息时二次转换
+// 结构失配、为已转换参数时再次串行化重复，两版实测均失败）；改在 completeSummarization
+// 的 produce 内注入 onPayload 桥，在 provider 参数层（buildParams 之后、发送之前）用主请求
+// 最终 payload（缓存键原文）整体替换，零二次转换。素材由扩展侧 provider 提供。
 {
   const target = join(dist, 'core', 'compaction', 'compaction.js')
   if (!existsSync(target)) {
     console.error(`找不到 ${target}`)
     failed = true
   } else {
-    const src = readFileSync(target, 'utf-8')
-    if (src.includes(MARKER)) {
+    let src = readFileSync(target, 'utf-8')
+    const hasBridge = src.includes('onPayload 桥——摘要请求发送前')
+    if (src.includes(MARKER) && hasBridge) {
       console.log(`已打补丁，跳过：${target}`)
     } else {
-      // 锚点 1：buildSummarizationContext 定义前插入模块级 provider 注册块
+      // ── 锚点 1：buildSummarizationContext 定义前插入模块级 provider 注册块 ──
       const anchorFn = '/** Build the provider context for a standalone summary request. */'
       if (!src.includes(anchorFn)) {
         console.error('未匹配到 buildSummarizationContext 注释锚点（pi 版本可能已改动），需人工核对。')
         failed = true
       } else {
-        const anchorCall =
-          '    const response = await completeSummarization(model, buildSummarizationContext(promptText), completionOptions, streamFn, retry, callbacks);'
-        if (!src.includes(anchorCall)) {
-          console.error('未匹配到 completeSummarization 调用行（pi 版本可能已改动），需人工核对。')
+        const anchorCall = '    const response = await completeSummarization(model, buildSummarizationContext(promptText), completionOptions, streamFn, retry, callbacks);'
+        const anchorProduce = '    const produce = async () => streamFn\n        ? (await streamFn(model, context, requestOptions)).result()\n        : completeSimple(model, context, requestOptions);'
+        const missing = []
+        if (!src.includes(anchorCall)) missing.push('completeSummarization 调用行（原形态）')
+        if (!src.includes(anchorProduce)) missing.push('produce 定义（原形态）')
+        if (missing.length && !src.includes('_wp = getCompactionWarmPrefix')) {
+          console.error(`未匹配到：${missing.join('、')}（pi 版本可能已改动），需人工核对。`)
           failed = true
         } else {
           const setterBlock = `// ${MARKER}: 暖前缀重放注册点——扩展（pi-context）按模型门控注册 provider，
@@ -100,29 +108,62 @@ function getCompactionWarmPrefix() {
     }
 }
 `
-          const callPatched = `    // ${MARKER}: 暖前缀重放分支——messages 同源时历史部分命中缓存，仅尾部指令为增量。
-    // 注意不重复携带 <conversation> 文本（历史已在 messages 里，避免体积翻倍）。
-    const _wp = getCompactionWarmPrefix();
-    let summaryContext;
-    if (_wp && _wp.systemPrompt && Array.isArray(_wp.messages) && Array.isArray(_wp.tools) && _wp.tools.length > 0) {
-        let tail = basePrompt;
-        if (previousSummary) {
-            tail = \`<previous-summary>\\n\${previousSummary}\\n</previous-summary>\\n\\n\` + tail;
-        }
-        summaryContext = {
-            systemPrompt: _wp.systemPrompt,
-            tools: _wp.tools,
-            messages: [
-                ..._wp.messages,
-                { role: "user", content: [{ type: "text", text: tail }], timestamp: Date.now() },
-            ],
-        };
-    } else {
-        summaryContext = buildSummarizationContext(promptText);
-    }
+          // 旧形态（_wp 分支）升级：整块替换为退役注释 + 原生调用
+          const legacyBlockRe = /    \/\/ Patch \(patch-compaction-warm-prefix\.mjs\): 暖前缀重放分支——[\s\S]*?const response = await completeSummarization\(model, summaryContext, completionOptions, streamFn, retry, callbacks\);/u
+          const retiredBlock = `    // ${MARKER}: 暖前缀重放退役说明——context 级重放已移除：
+    // 历史素材是「转换前」消息时二次转换结构不匹配，是「已转换」最终参数时再次串行化
+    // 会重复串行化（v1/v1.5 两版均实测失败）。改为 completeSummarization 内注入 onPayload
+    // 桥，在 provider 参数层用主请求最终 payload 整体替换（即缓存键原文），零二次转换。
+    const summaryContext = buildSummarizationContext(promptText);
     const response = await completeSummarization(model, summaryContext, completionOptions, streamFn, retry, callbacks);`
-          let patched = src.replace(anchorFn, `${setterBlock}${anchorFn}`)
-          patched = patched.replace(anchorCall, callPatched)
+          const producePatched = `    const produce = async () => {
+        // ${MARKER}: 暖前缀重放 onPayload 桥——摘要请求发送前用主请求
+        // 最终 payload（缓存键原文）替换自身消息，尾部追加剥离 <conversation> 后的摘要指令；素材由
+        // 扩展侧 setCompactionWarmPrefixProvider 提供（未注册/门控拒绝时返回 null → 原生摘要路径）。
+        let reqOpts = requestOptions;
+        if (typeof options?.onPayload !== "function" && typeof getCompactionWarmPrefix === "function") {
+            reqOpts = {
+                ...requestOptions,
+                onPayload: async (payload) => {
+                    try {
+                        const wp = getCompactionWarmPrefix();
+                        if (!wp || !Array.isArray(wp.messages) || wp.messages.length === 0) return payload;
+                        const msgs = payload?.messages;
+                        if (!Array.isArray(msgs) || msgs.length === 0) return payload;
+                        const last = msgs[msgs.length - 1];
+                        const lastText = typeof last?.content === "string"
+                            ? last.content
+                            : Array.isArray(last?.content)
+                                ? last.content.map((b) => (b?.type === "text" ? (b?.text ?? "") : "")).join("\\n")
+                                : "";
+                        if (!(last?.role === "user" && typeof lastText === "string" && lastText.includes("<conversation>"))) return payload;
+                        const tail = lastText.replace(/^<conversation>\\n[\\s\\S]*?\\n<\\/conversation>\\n\\n/, "");
+                        if (!tail || tail === lastText) return payload;
+                        const next = { ...payload, messages: [...wp.messages, { role: "user", content: tail }] };
+                        if (Array.isArray(wp.tools) && wp.tools.length > 0) next.tools = wp.tools;
+                        try {
+                            const fs0 = await import("node:fs");
+                            fs0.appendFileSync("/root/.pi/logs/warm-diag.jsonl", JSON.stringify({ t: Date.now(), reason: "rewrite-bridge", baseMsgs: wp.messages.length, tailLen: tail.length, tools: Array.isArray(wp.tools) ? wp.tools.length : 0 }) + "\\n");
+                        } catch {}
+                        return next;
+                    } catch {
+                        return payload;
+                    }
+                },
+            };
+        }
+        return streamFn
+            ? (await streamFn(model, context, reqOpts)).result()
+            : completeSimple(model, context, reqOpts);
+    };`
+          let patched = src
+          if (!src.includes(MARKER)) {
+            patched = patched.replace(anchorFn, `${setterBlock}${anchorFn}`)
+            patched = patched.replace(anchorCall, retiredBlock)
+          } else if (legacyBlockRe.test(patched)) {
+            patched = patched.replace(legacyBlockRe, retiredBlock)
+          }
+          patched = patched.replace(anchorProduce, producePatched)
           if (!DRY_RUN) {
             writeFileSync(target, patched)
             console.log(`已打补丁：${target}`)

@@ -1,7 +1,7 @@
 import { truncateHead, truncateTail, setCompactionWarmPrefixProvider, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
 import type { Usage } from "@earendil-works/pi-ai";
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, existsSync, appendFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
@@ -545,11 +545,88 @@ export default function (pi: ExtensionAPI) {
 	// 器最终产出（含截断/剪枝变换）；tools=getAllTools∩active（尽力对齐，失配最坏
 	// 退化为现状全价，不会更差）。仅自动前缀缓存家族启用（Anthropic 显式缓存语义
 	// 不同，排除）；overflow/近窗禁用（重放体量≈当前上下文，防再爆窗）。
-	let lastSentMessages: unknown[] | null = null;
-	let lastSystemPrompt: string | null = null;
+	// ── 暖前缀重放 v2（2026-08-26，机制 B2）：before_provider_request 官方事件替换 payload ──
+	// v1（patch 暖分支 + 三件套素材）实测失配根因：素材采自 context 链首，pi-memory/
+	// plan-mode 在链尾过滤注入消息后，缓存版本 ≠ 主请求最终发送版本 → 前缀首 token 失配。
+	// v2 改在 provider 参数层整段替换：非摘要请求的最终 payload 深拷贝保存（逐字节保真，
+	// 即缓存键原文）；摘要请求到达时用主请求的 messages+tools 替换自身，尾部追加剥离
+	// <conversation> 后的摘要指令（previous-summary 与 basePrompt 原样保留），采样参数
+	// （max_tokens/stream 等）保留摘要请求原值。零转换零失真；命中仅依赖“主请求发送过且
+	// 服务端缓存未过期”。门控：仅自动前缀缓存家族启用（Anthropic 显式缓存语义不同，排除）。
 	let lastModelKey = "";
-	let compactWarmAllowed = false;
 	const AUTO_PREFIX_CACHE_RE = /deepseek|qwen|kimi|moonshot|glm|zhipu|doubao|gemini|gpt-|o[134]-/i;
+	const CONV_TAG_RE = /<conversation>/;
+	let lastRequestPayload: { messages: unknown[]; tools?: unknown } | null = null;
+	const diag = (reason: string, extra?: unknown) => {
+		try {
+			appendFileSync(
+				"/root/.pi/logs/warm-diag.jsonl",
+				JSON.stringify({ t: Date.now(), reason, extra: extra === undefined ? null : extra }) + "\n",
+			);
+		} catch {}
+	};
+	pi.on("before_provider_request", async (event) => {
+		try {
+			if (!AUTO_PREFIX_CACHE_RE.test(lastModelKey)) return undefined;
+			const payload = event.payload as {
+				messages?: Array<{ role?: string; content?: string | Array<{ type?: string; text?: string }> }>;
+				tools?: unknown;
+			};
+			const msgs = payload?.messages;
+			if (!Array.isArray(msgs) || msgs.length === 0) return undefined;
+			const last = msgs[msgs.length - 1];
+			const lastText =
+				typeof last.content === "string"
+					? last.content
+					: Array.isArray(last.content)
+						? last.content.map((b) => (b.type === "text" ? (b.text ?? "") : "")).join("\n")
+						: "";
+			const isSummarization = last.role === "user" && CONV_TAG_RE.test(lastText);
+			if (!isSummarization) {
+				// 主请求：保存最终参数（保真素材）
+				lastRequestPayload = {
+					messages: structuredClone(msgs),
+					tools: payload.tools !== undefined ? structuredClone(payload.tools) : undefined,
+				};
+				diag("saved-main", { msgs: msgs.length, tools: payload.tools !== undefined });
+				return undefined;
+			}
+			// 摘要请求：整体替换为 主请求前缀 + 剥离后的摘要指令
+			if (!lastRequestPayload || lastRequestPayload.messages.length === 0) {
+				diag("no-main-saved");
+				return undefined;
+			}
+			const tail = lastText.replace(/^<conversation>\n[\s\S]*?\n<\/conversation>\n\n/, "");
+			if (tail === lastText || !tail.trim()) {
+				diag("tail-extract-failed", { len: tail.length });
+				return undefined;
+			}
+			const next = {
+				...payload,
+				messages: [...lastRequestPayload.messages, { role: "user", content: tail }],
+			} as Record<string, unknown>;
+			if (lastRequestPayload.tools !== undefined) next.tools = lastRequestPayload.tools;
+			diag("rewrite-summarization", {
+				baseMsgs: lastRequestPayload.messages.length,
+				tailLen: tail.length,
+				hasTools: next.tools !== undefined,
+			});
+			return next as typeof event.payload;
+		} catch (err) {
+			diag("handler-error", { msg: err instanceof Error ? err.message : String(err) });
+			return undefined;
+		}
+	});
+
+	// ── 暖前缀重放 v1.5（2026-08-26，机制 B2 修正）：v1 管道（patch 暖分支）+ v2 素材（链尾最终 payload）──
+	// v2（before_provider_request 替换）实测失效：onPayload 是 pi-agent-core Agent 的顶层回调属性，
+	// 仅 Agent.run 路径注入请求 options；摘要请求经 completeSummarization 直调 sdk streamFn（不经
+	// Agent.run），永不触发 onPayload → 摘要请求无法被 v2 拦截（warm-diag 无记录 + dist 探针证明
+	// 走原生摘要路径）。修正：恢复 patch 暖分支管道（摘要经 generateSummaryWithUsage 调用本 provider
+	// 重放前缀），素材改用 v2 采集的 lastRequestPayload（链尾最终发送版，messages[0] 即最终 system
+	// 消息，与缓存键逐字节同源；systemPrompt 传空避免 buildParams 二次插入 system）。v2 handler 保留：
+	// 主请求路径继续采集最终 payload（本 provider 的素材来源）。
+	let compactWarmAllowed = false;
 	pi.on("session_before_compact", (event, ctx) => {
 		const w = ctx.model?.contextWindow ?? 0;
 		compactWarmAllowed =
@@ -558,24 +635,13 @@ export default function (pi: ExtensionAPI) {
 	try {
 		setCompactionWarmPrefixProvider(() => {
 			if (!compactWarmAllowed) return null;
-			if (!lastSentMessages?.length || !lastSystemPrompt) return null;
+			if (!lastRequestPayload || lastRequestPayload.messages.length === 0) return null;
 			if (!AUTO_PREFIX_CACHE_RE.test(lastModelKey)) return null;
-			type WarmTool = { name: string; description: string; parameters?: unknown };
-			const api = pi as ExtensionAPI & {
-				getAllTools?: () => WarmTool[];
-				getActiveTools?: () => string[];
-			};
-			let tools: WarmTool[];
-			try {
-				const active = new Set(api.getActiveTools?.() ?? []);
-				tools = (api.getAllTools?.() ?? [])
-					.filter((t) => active.size === 0 || active.has(t.name))
-					.map((t) => ({ name: t.name, description: t.description, parameters: t.parameters }));
-			} catch {
-				return null; // tools 对齐失败即放弃重放（缺 tools 必然前缀失配）
-			}
-			if (tools.length === 0) return null;
-			return { systemPrompt: lastSystemPrompt, tools, messages: lastSentMessages };
+			// 素材必须是主请求「最终参数」：messages/tools 均取 buildParams 之后、发送之前的
+			// payload（桥在参数层整体替换，不再做任何二次转换——原始工具定义缺 type 字段
+			// 会导致网关 422；context 级重放同理失配）。
+			if (!Array.isArray(lastRequestPayload.tools) || lastRequestPayload.tools.length === 0) return null;
+			return { systemPrompt: "", tools: lastRequestPayload.tools, messages: lastRequestPayload.messages };
 		});
 	} catch {
 		// 补丁未应用（如 pi update 后未跑 rebuild）时静默降级为原生隔离摘要
@@ -661,8 +727,6 @@ export default function (pi: ExtensionAPI) {
 			}
 		}
 		recordThinkingMeter(thinkingTokens);
-		// 暖前缀素材：记录经本处理器变换后的最终 messages（真实发送内容）
-		lastSentMessages = modified ? messages : event.messages;
 		if (modified) return { messages };
 	});
 
@@ -1132,8 +1196,7 @@ export default function (pi: ExtensionAPI) {
 	// 档位基于 auto-compact 阈值比例（早期实现用 contextWindow 的 85%/95%，
 	// 但 auto-compact 在 20% 处先触发，85%/95% 永不达到 → 死代码）。
 	pi.on("before_agent_start", async (event, ctx) => {
-		// 暖前缀素材：组装完成的 system prompt + 当前模型标识（门控用）
-		lastSystemPrompt = event.systemPrompt;
+		// 当前模型标识（暖前缀门控用）
 		lastModelKey = `${ctx.model?.provider ?? ""}/${ctx.model?.id ?? ""}`;
 		// 首次 run 前应用工具分层（此时全部扩展已注册，getAllTools 完整）
 		if (!layeringApplied) {
