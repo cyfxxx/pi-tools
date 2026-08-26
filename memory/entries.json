@@ -664,28 +664,6 @@
       "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022"
     },
     {
-      "id": "37e312c5-cf8b-47e6-b809-e421516b6e51",
-      "category": "preference",
-      "title": "用户指令极简期望自主完成",
-      "content": "用户偏好极简指令（如\"测试tmux扩展功能\"），期望助手自主完成调研、测试、验证全流程后一次性汇报结果表格，不打断询问。与既有记忆一致。",
-      "tags": [
-        "用户偏好",
-        "工作方式"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-05T15:04:03.663Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-05T15:04:03.663Z",
-      "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40"
-    },
-    {
       "id": "c6b04b78-8ade-4605-8666-839a6b2f05be",
       "category": "fact",
       "title": "pi 扩展 .ts 直接加载",
@@ -1499,29 +1477,6 @@
       ]
     },
     {
-      "id": "61a6a4d2-8ebc-4dff-8421-65926eb15a63",
-      "category": "preference",
-      "title": "计划模式退出必须用户确认",
-      "content": "用户明确要求 plan_exit 退出计划模式必须用户手动确认（ctx.ui.select 弹选择器'确认退出/取消'，execute 内阻塞等待），任何情况不得绕过；plan_enter 进入无需确认。实现参考 opencode 权限模型（plan agent 内 enter deny、exit allow；build agent 内 enter allow）。",
-      "tags": [
-        "plan-mode",
-        "用户确认",
-        "偏好"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T02:01:33.439Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T02:01:33.439Z",
-      "observedAt": "2026-08-10T02:01:33.439Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "mem_planexit_confirm_20260814"
-    },
-    {
       "id": "8697154b-a194-4521-b481-0edf6baeb978",
       "category": "fact",
       "title": "内核补丁编写踩坑记录",
@@ -1542,28 +1497,6 @@
       "deleted": false,
       "environments": [
         "termux"
-      ]
-    },
-    {
-      "id": "77b1744c-c0bc-4100-bd66-39e6a19b1f0a",
-      "category": "preference",
-      "title": "退出计划模式必须用户确认",
-      "content": "用户明确要求：模型侧 plan_exit 退出计划模式必须弹用户确认选择器，用户确认后才恢复编辑权限，任何情况不可绕过（ctx.ui.select 阻塞等待）。plan_enter 进入无需确认（只读操作）。",
-      "tags": [
-        "plan-mode",
-        "安全",
-        "用户偏好"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T02:58:04.175Z",
-      "updatedAt": "2026-08-10T02:58:04.175Z",
-      "accessedAt": "2026-08-10T02:58:04.175Z",
-      "observedAt": "2026-08-10T02:58:04.175Z",
-      "deleted": true,
-      "environments": [
-        "all"
       ]
     },
     {
@@ -1697,27 +1630,6 @@
       "deleted": false,
       "environments": [
         "termux"
-      ]
-    },
-    {
-      "id": "df0e5629-326c-4f0b-9f95-4863bb614ae6",
-      "category": "habit",
-      "title": "用户偏好极简指令直接测试",
-      "content": "用户偏好极简指令（如'重启''继续''先测试'），期望助手自主完成调研、修复、验证、提交推送全流程后一次性汇报；测试时先真实执行再讨论，用户会在关键节点直接给出指令并要求如实汇报结论。",
-      "tags": [
-        "用户偏好",
-        "沟通风格"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T05:59:08.973Z",
-      "updatedAt": "2026-08-10T05:59:08.973Z",
-      "accessedAt": "2026-08-10T05:59:08.973Z",
-      "observedAt": "2026-08-10T05:59:08.973Z",
-      "deleted": true,
-      "environments": [
-        "all"
       ]
     },
     {
@@ -1855,28 +1767,6 @@
       ]
     },
     {
-      "id": "9883695d-d9b7-40b3-9eb7-65d62ca96242",
-      "category": "fact",
-      "title": "plan-mode 决策记录：补丁回退方案",
-      "content": "patch-plan-tools.mjs（恢复会话工具 schema 刷新）为方案1的产物，已提交 63d0dc6 并推送。决策记录：若后续不需要模型侧主动切换（用户 Ctrl+Alt+P//plan 切换已完整），移除补丁即可回退方案2。当前用户接受现状：保留补丁待新会话验证，日常用快捷键切换。",
-      "tags": [
-        "plan-mode",
-        "决策记录",
-        "补丁"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T07:05:14.776Z",
-      "updatedAt": "2026-08-10T07:05:14.776Z",
-      "accessedAt": "2026-08-10T07:05:14.776Z",
-      "observedAt": "2026-08-10T07:05:14.776Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "2476e709-c42d-4ad7-b131-4e00d1ef0787",
       "category": "fact",
       "title": "plan-mode 只读保护完整",
@@ -1941,28 +1831,6 @@
       "environments": [
         "all"
       ]
-    },
-    {
-      "id": "33d1d217-316c-4058-828b-d9af3f4c2fc7",
-      "category": "preference",
-      "title": "用户极简指令偏好",
-      "content": "用户偏好极简指令（如'重启''继续'），期望助手自主完成调研、修改、验证全流程后一次性汇报，不打断询问。用户问'有/没有'之类二选一问题时只答对应词，不加解释。执行重启类操作前先确认机制可行性（如 proot 无自动拉起）。",
-      "tags": [
-        "用户偏好",
-        "沟通"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T07:20:00.317Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T07:20:00.317Z",
-      "observedAt": "2026-08-10T07:20:00.317Z",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "a4cf2e73-fe01-473b-a6e3-d91805fb9c40"
     },
     {
       "id": "f952eb6b-5848-4a55-94ab-6db828ce06ad",
@@ -2053,29 +1921,6 @@
       "environments": [
         "all"
       ]
-    },
-    {
-      "id": "66d2cb9f-f4b3-4de4-a113-710aac7fbf6f",
-      "category": "procedure",
-      "title": "proot重启机制",
-      "content": "pi重启流程：写入 .pi-admin-state.json（action=restart+reason）→ SIGTERM 当前 pi 进程（wrapper 子进程，进程名 pi）→ wrapper 循环 1 秒内自动 --continue 拉起并恢复会话。proot 下实测可行，推翻旧结论'proot 无自动拉起'。",
-      "tags": [
-        "重启",
-        "proot",
-        "wrapper"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T08:59:37.714Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T08:59:37.714Z",
-      "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
       "id": "f4c57db1-a18c-45c6-a47b-0374432cf5dc",
@@ -2188,29 +2033,6 @@
       ]
     },
     {
-      "id": "95406166-e6b6-4097-87c3-bd7e848271bd",
-      "category": "fact",
-      "title": "patch-plan-tools.mjs 内核补丁",
-      "content": "提交 63d0dc6 新增 patch-plan-tools.mjs（scripts/），作用于 pi dist 的 agent-session.js 的 prepareNextTurnWithContext，用函数式取值刷新恢复会话工具 schema（注意 tools: state.tools.slice() 会在刷新前求值取到旧快照，必须用函数延迟求值）。已注册 rebuild.sh Phase 3，pi update 后重跑 rebuild.sh 自动重打。对已存在会话不生效，仅影响新会话及运行中后续轮次。\n用户决策：保留内核补丁 patch-plan-tools.mjs（刷新恢复会话工具 schema）+ AGENTS.md 文档说明；若后续确认不需要模型侧主动切换（用户 Ctrl+Alt+P 已完整），移除补丁回退方案 2 即可。当前结论：模型侧 plan_enter 仅新会话可用，日常使用不受影响。\nplan-mode 内核补丁：在 agent-session.js 的 prepareNextTurnWithContext 中用 _refreshToolRegistry 刷新恢复会话工具 schema，已注册 rebuild.sh Phase 3（63d0dc6）。实测未生效：--continue 恢复会话模型仍无法调用 plan_enter，仅新进程可用；用户侧切换（Ctrl+Alt+P//plan）完全正常。后续不需要可回退。",
-      "tags": [
-        "pi",
-        "内核补丁",
-        "rebuild.sh",
-        "plan-mode"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:04:10.970Z",
-      "updatedAt": "2026-08-10T10:04:10.970Z",
-      "accessedAt": "2026-08-10T10:04:10.970Z",
-      "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "d670a554-3c41-4f58-9bce-a3358533a088",
       "category": "fact",
       "title": "todo 降频提醒实现 81cac46",
@@ -2253,28 +2075,6 @@
       "accessedAt": "2026-08-10T10:04:10.970Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
       "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "bbd74b73-2404-4c26-a1a2-b7885e158dbe",
-      "category": "fact",
-      "title": "opencode 无定时提醒机制",
-      "content": "opencode 的 todo 跟踪：todowrite/todoread 是普通工具，agent loop 每轮把 todo 状态注入 context，模型每轮可见进度，靠提示词纪律保证状态同步，没有定时提醒功能。用户曾询问是否需添加定时提醒，结论是现有每轮注入已等价，仅需纪律改进。",
-      "tags": [
-        "opencode",
-        "todo",
-        "机制对比"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:04:10.970Z",
-      "updatedAt": "2026-08-10T10:04:10.970Z",
-      "accessedAt": "2026-08-10T10:04:10.970Z",
-      "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": true,
       "environments": [
         "all"
       ]
@@ -2479,30 +2279,6 @@
       ]
     },
     {
-      "id": "05bb4931-802f-4133-bdd5-91dfa60059bd",
-      "category": "fact",
-      "title": "pi 重启机制实证: proot 下 wrapper 自动拉起",
-      "content": "2026-08-10 实证推翻了旧结论'proot 无自动拉起'：proot 环境下 wrapper 循环工作正常。流程：向 state 文件（.pi-admin-state.json）写入 action=restart + reason，再对 pi 进程发 SIGTERM，wrapper 检测 action≠none 后 1 秒内自动 `pi --continue` 拉起并恢复最近会话，全程无需人工干预。重启前需先定位当前 pi 进程 PID（wrapper 子进程，进程名 pi）。",
-      "tags": [
-        "pi",
-        "重启",
-        "wrapper",
-        "proot"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
-      "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
-    },
-    {
       "id": "e42dc92d-7678-4ee9-9915-e3fbd1a8ac08",
       "category": "fact",
       "title": "pi-bg.sh 后台任务工具已交付",
@@ -2521,28 +2297,6 @@
       "accessedAt": "2026-08-10T10:16:05.357Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
       "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "cc271c3a-7a1b-41e2-901c-d0ee31a3a50b",
-      "category": "fact",
-      "title": "subagent both 模式项目级覆盖用户级",
-      "content": "subagent 扩展 discoverAgents（agents.ts:106-107）在 agentScope=both 模式下先 set 用户级再 set 项目级，Map 后者覆盖前者，即同名代理项目级优先，与内核资源加载方向一致（projectDirs 优先）。原 README 写'用户级覆盖项目级'是错误描述，2026-08-10 已修正并在 tests/test.mjs 补 3 用例固化（用临时目录 + PI_CODING_AGENT_DIR 环境变量隔离）。",
-      "tags": [
-        "subagent",
-        "覆盖方向",
-        "agents.ts"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:16:05.357Z",
-      "updatedAt": "2026-08-10T10:16:05.357Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
-      "observedAt": "2026-08-10T10:16:05.357Z",
-      "deleted": true,
       "environments": [
         "all"
       ]
@@ -2982,28 +2736,6 @@
       "accessedAt": "2026-08-11T02:49:34.877Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
       "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "a7263a0a-7bef-45c4-a1ff-d89b9945561a",
-      "category": "preference",
-      "title": "计划模式退出必须用户手动确认",
-      "content": "用户明确要求：从计划模式退出（plan_exit）必须用户手动确认，任何情况不能绕过。实现方式：plan_exit 工具 execute 内部用 ctx.ui.select 阻塞等待用户选择（确认退出/取消），用户确认后才恢复编辑权限。参考 opencode plan_exit 设计但强化为硬性确认。",
-      "tags": [
-        "plan-mode",
-        "plan_exit",
-        "用户确认"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T02:49:34.877Z",
-      "updatedAt": "2026-08-11T02:49:34.877Z",
-      "accessedAt": "2026-08-11T02:49:34.877Z",
-      "observedAt": "2026-08-11T02:49:34.877Z",
-      "deleted": true,
       "environments": [
         "all"
       ]
@@ -3781,30 +3513,6 @@
       "deleted": false
     },
     {
-      "id": "c89a210d-6c47-440e-af6f-c55cb3e7aa91",
-      "category": "fact",
-      "title": "本环境外网访问被网络层拦截",
-      "content": "当前环境（/root/.pi）外网连接失败：google.com 等直接抓取出现 SSL 错误，搜索引擎请求被网络层拦截，web_fetch 与隐身浏览器均无法取得结果。该状态下应优先修复网络与本地 SearXNG 服务，而非反复重试搜索工具。",
-      "tags": [
-        "网络",
-        "环境",
-        "web_search"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T00:33:43.458Z",
-      "updatedAt": "2026-08-25T01:46:15.219Z",
-      "accessedAt": "2026-08-12T00:33:43.458Z",
-      "observedAt": "2026-08-12T00:33:43.458Z",
-      "environments": [
-        "wsl2"
-      ],
-      "deleted": true,
-      "supersededBy": "0463bc57-9e84-4ac6-954d-2566bd081542",
-      "validUntil": "2026-08-25T01:46:15.219Z"
-    },
-    {
       "id": "1f3527a7-89fe-4caf-ba6e-342d5f4f433a",
       "category": "fact",
       "title": "pi coding agent 官网为 pi.dev",
@@ -4420,32 +4128,6 @@
       "deleted": false
     },
     {
-      "id": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5",
-      "category": "solutions",
-      "title": "install-wrapper.sh readlink 解析 bug 修复",
-      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。\n/root/.pi/scripts/install-wrapper.sh 曾有一个 bug：list_pi_bins() 用 readlink -f 输出路径，把 npm 全局安装的 bin/pi symlink 解析成真实文件（dist/cli.js），install_one() 对其 readlink 返回空，报\"不是 symlink，无法备份（可能已被覆盖）\"并 exit 1。2026-08-10 已修复：改为输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key（sort -u -t'|' -k2 | cut -d'|' -f1）。同时修了 echo /usr/local/bin/pi /usr/bin/pi 一行两路径的问题。pi update 后 npm 会把 Termux 的 usr/bin/pi 覆盖回官方 symlink，属预期行为，自愈（install-wrapper.sh --ensure，由 pi-cron.sh/tmux 启动触发）会自动重建 wrapper 并保留 pi-original 备份。若再出现\"不是 symlink，无法备份\"报错，说明该脚本被改回或存在新的解析问题。",
-      "tags": [
-        "install-wrapper.sh",
-        "symlink",
-        "wrapper",
-        "pi update"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-25T01:58:11.431Z",
-      "accessedAt": "2026-08-12T14:50:07.175Z",
-      "observedAt": "2026-08-12T14:50:07.175Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
-      "deleted": true,
-      "supersededBy": "59a7243e-b273-461a-a6fc-3e988805f861",
-      "validUntil": "2026-08-25T01:58:11.431Z"
-    },
-    {
       "id": "047d9ce4-be1a-497d-b4e3-97caf742466d",
       "category": "fact",
       "title": "GitHub PAT 泄露且 pi-tools 仓库公开",
@@ -4635,31 +4317,6 @@
       ],
       "observedAt": "2026-08-12T15:34:15.673Z",
       "deleted": false
-    },
-    {
-      "id": "7c7dcf3c-bd1c-43fb-8541-4f872b0ab1c4",
-      "category": "solutions",
-      "title": "pi 重启机制：proot 下 wrapper 自动拉起可行",
-      "content": "2026-08-10 实证：proot 环境重启 pi 无需人工干预——写入 ~/.pi/.pi-admin-state.json（action=restart + reason），再 SIGTERM 当前 pi 进程，wrapper 循环检测到 state 后 1 秒内自动以 --continue 拉起新进程恢复会话。此结论推翻旧记忆'proot 无自动拉起'。重启后新进程工具注册完整，plan_exit 缺失问题随之消失。",
-      "tags": [
-        "pi",
-        "重启",
-        "wrapper",
-        "proot"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:03:30.223Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-12T16:03:30.223Z",
-      "observedAt": "2026-08-12T16:03:30.223Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": true,
-      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5"
     },
     {
       "id": "11b49a61-a0e6-4e48-95a4-53385cd764c7",
@@ -5303,45 +4960,6 @@
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
       "deleted": false
-    },
-    {
-      "id": "b4fbb5c7-b7a3-4e7c-ab60-70d786bcfc45",
-      "category": "fact",
-      "title": "用户要求记住的数字: 555",
-      "content": "用户明确要求记住数字 555（原话: 记住数字 555 并确认）。后续会话中用户提及「那个数字」「记住的数字」时指 555。",
-      "tags": [
-        "数字",
-        "555",
-        "用户要求"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T01:09:39.603Z",
-      "updatedAt": "2026-08-13T01:09:39.603Z",
-      "accessedAt": "2026-08-13T01:09:39.603Z",
-      "deleted": true,
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-13T01:09:39.603Z"
-    },
-    {
-      "id": "mem_1786583599544_teinck",
-      "title": "用户要求记住数字 777",
-      "content": "用户明确要求记住数字 777（2025-06-13 记录）",
-      "category": "fact",
-      "confidence": 0.9,
-      "observedAt": "2026-08-13T01:13:19.544Z",
-      "lastAccessedAt": "2026-08-13T01:13:19.546Z",
-      "references": 0,
-      "supersededBy": null,
-      "deleted": true,
-      "tags": [],
-      "environments": [
-        "all"
-      ],
-      "accessedAt": "2026-08-13T01:13:19.544Z"
     },
     {
       "id": "f59ef308-b2ec-43b8-91ff-fb1838d88ef0",
@@ -6215,31 +5833,6 @@
       "deleted": false
     },
     {
-      "id": "621c2564-19bd-4337-b8a2-205f31088d19",
-      "category": "fact",
-      "title": "pi-link 四设备拓扑与连接信息",
-      "content": "pi-link 扩至 4 设备，同处 192.168.124.0/24 局域网 + Tailscale 组网：termux-ubuntu=root@192.168.124.2:8022（备用 100.114.171.18:8022）；termux-phone=u0_a999@192.168.124.4:8022（备用 100.74.15.15:8022）；本机 mypc-wsl=root@192.168.124.3:8022（sshd 实为 8022 非 22，tailscale 侧走宿主 100.117.170.110:22 serve 转发）；win-host 信息待补。pi-link.json 每设备配 altHosts：局域网主 + tailscale 兜底。termux-phone 远程模型处理慢，工具交互多时 120s 回传超时。",
-      "tags": [
-        "pi-link",
-        "设备拓扑",
-        "tailscale",
-        "局域网"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-14T01:44:50.414Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-14T01:44:50.414Z",
-      "observedAt": "2026-08-14T01:44:50.414Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": true,
-      "supersededBy": "e6da85b8-16e1-4f0d-ace8-9669e6535227"
-    },
-    {
       "id": "e74fd944-525f-4a4b-9593-63aaff1fff33",
       "category": "solutions",
       "title": "cloakbrowser 需 playwright-core>=1.53.0",
@@ -6515,53 +6108,6 @@
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false
-    },
-    {
-      "id": "19426f7b-c9fe-44e5-9b91-a300cf742aaa",
-      "category": "procedure",
-      "title": "entries.json 冲突合并约定",
-      "content": "~/.pi 仓库 entries.json 入库共享，多设备 pull 被拒时：先 fetch 对比差异，以远端为基底、只补回本地真正新增条目；远端提交若为去重清理（删旧加新），不可把被删旧条目补回（先确认删除意图）。覆盖前核对内容差异防丢失，合并后推送回 origin/master。",
-      "tags": [
-        "pi-repo",
-        "memory",
-        "git",
-        "merge"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-14T04:40:26.077Z",
-      "updatedAt": "2026-08-14T04:40:26.077Z",
-      "accessedAt": "2026-08-14T04:40:26.077Z",
-      "observedAt": "2026-08-14T04:40:26.077Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": true
-    },
-    {
-      "id": "28ed324a-0d1c-4483-81dc-c99ae60237e0",
-      "category": "fact",
-      "title": "pi-full-audit 技能已创建",
-      "content": "位于 ~/.pi/agent/skills/pi-full-audit/SKILL.md，触发词'全面检查/深度审计/体检/audit'。五步流程：review.sh --all 确定性检查→test-all.sh 基线回归（tmux 后台跑）→subagent 4 组并行深度审查→人工抽查验证→分级报告；含委派 prompt 模板与误报判别清单。创建当时未提交 git，需提交推送同步其他设备。",
-      "tags": [
-        "skill",
-        "audit",
-        "pi-repo"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-14T04:40:26.077Z",
-      "updatedAt": "2026-08-14T04:40:26.077Z",
-      "accessedAt": "2026-08-14T04:40:26.077Z",
-      "observedAt": "2026-08-14T04:40:26.077Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": true
     },
     {
       "id": "fb498aca-f628-4cd6-85a6-ab7804d39659",
@@ -6948,45 +6494,6 @@
       "accessedAt": "2026-08-14T11:04:21.284635Z"
     },
     {
-      "title": "便携 pi Windows 最终架构（junction 统一运行时）",
-      "confidence": 0.7,
-      "observedAt": "2026-08-14T11:04:40.847Z",
-      "id": "13a54f34-2b66-426c-bceb-b65188705b03",
-      "category": "procedure",
-      "content": "便携 pi（Windows 原生）最终架构（2026-08-14 实测完整落地）：包根 = pi-tools 仓库工作副本（git clone），运行时数据经 junction 统一到包根：`.pi/agent` → junction → 包根 `agent/`（配置/会话/扩展唯一真身），`.pi/memory` → junction → 包根 `memory/`（entries.json 入库共享，notes/summaries/checkpoints gitignored）。start.bat 设 USERPROFILE/HOME=包根 + PI_CODING_AGENT_DIR=.pi\\agent（junction 透明）；会话目录按 cwd 编码（`--E-pi-portable--`），`--continue` 恢复。gitignore 忽略便携包实例运行时（/.pi/ /.ssh/ /AppData/ /Microsoft/ /node/ /pi-global/ /tools/ + 根目录脚本），仓库只跟踪 portable/ 模板。junction 创建需 Windows 侧 `cmd /c mklink /J`（WSL interop 被禁用无法从 WSL 直调 mklink；前提是目标路径不存在，先删旧目录）。setup.ps1 自动下载工具组件：ffmpeg（BtbN win64-gpl ~85MB，gh-proxy 镜像+直连双源 fallback，tar 解压，bin/ 固定 tools/ffmpeg）、PortableGit（v2.55.0.4 .7z ~57MB，Windows tar 解压 7z）；ca-bundle.crt + tmux shim（wsl.exe tmux %*）随仓库入库。pi-voice 71209d3 后 Windows 可用（platform windows spec：ffmpeg dshow 录音 + PowerShell SAPI 朗读 + 加载期 reply 延迟修复），不再需要删除。",
-      "tags": [
-        "portable",
-        "windows",
-        "pi",
-        "junction",
-        "architecture"
-      ],
-      "deleted": true,
-      "accessedAt": "2026-08-14T11:04:40.847Z"
-    },
-    {
-      "id": "mem_planmode_fixhist_20260814",
-      "category": "fact",
-      "title": "plan-mode 修复历史汇总（2026-07/08）",
-      "content": "白名单/工具面系列：PLAN_MODE_TOOLS/NORMAL_MODE_TOOLS 写死 9 工具导致扩展工具消失，修复为动态工具面；退出/恢复不再锁死工具；只读保护、todo 白名单、注入消息 role=custom、注入缓存实测、状态条残留根因（updateStatus 键错）。细节见 git log（5f825b5 等）与代码注释。",
-      "tags": [
-        "plan-mode",
-        "extension",
-        "fix-history"
-      ],
-      "confidence": 0.9,
-      "environments": [
-        "all"
-      ],
-      "createdAt": "2026-08-14T11:05:04.950439Z",
-      "updatedAt": "2026-08-14T11:05:04.950439Z",
-      "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge",
-      "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": true,
-      "accessedAt": "2026-08-14T11:05:04.950439Z"
-    },
-    {
       "id": "mem_planmode_decisions_20260814",
       "category": "fact",
       "title": "plan-mode 决策记录汇总",
@@ -7030,28 +6537,6 @@
       "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
-      "id": "mem_tsconfig_merged_20260814",
-      "category": "solutions",
-      "title": "tsconfig paths 根治方案（tsconfig.local.json）",
-      "content": "多设备共享仓库的 tsconfig 路径冲突根因：共享 tsconfig.json 含环境相关 paths；根治：每设备 tsconfig.local.json（extends 共享 + 本机 paths），tsc 用 -p tsconfig.local.json；tsconfig.json 的 paths 为空会全量报 Cannot find module。",
-      "tags": [
-        "tsconfig",
-        "typescript",
-        "multi-device"
-      ],
-      "confidence": 0.95,
-      "environments": [
-        "all"
-      ],
-      "createdAt": "2026-08-14T11:05:18.280887Z",
-      "updatedAt": "2026-08-14T11:05:18.280887Z",
-      "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge",
-      "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": true,
-      "accessedAt": "2026-08-14T11:05:18.280887Z"
-    },
-    {
       "id": "mem_planexit_confirm_20260814",
       "category": "preference",
       "title": "计划模式退出必须用户确认",
@@ -7072,22 +6557,6 @@
       "observedAt": "2026-08-14T11:08:06.333041Z",
       "deleted": false,
       "accessedAt": "2026-08-14T11:08:06.333041Z"
-    },
-    {
-      "title": "pi-tools 仓库目录结构（deploy/ 收拢后）",
-      "confidence": 0.7,
-      "observedAt": "2026-08-14T11:33:24.135Z",
-      "id": "efa2672b-4876-4d15-8b84-0b2e9a19920a",
-      "category": "fact",
-      "content": "pi-tools 仓库目录结构（2026-08-14 整理后）：keys/、systemd/、tmux/ 已收拢为 deploy/（deploy/keys/authorized_keys 公钥合集、deploy/systemd/ unit 模板、deploy/tmux/ tmux.conf+状态脚本），引用已同步（rebuild.sh/pi-link-keys.sh/smoke-test.sh/pi-backup 清单/README/AGENTS.md）。**不可移动**：agent/（PI_CODING_AGENT_DIR=.pi/agent 约定 + Windows 便携包 junction 目标）、memory/（pi-memory DATA_DIR=HOME/.pi/memory 约定 + junction 目标）。根目录 pi-link-*.json 为运行时 gitignored（pi-link 扩展硬约定 ~/.pi/pi-link.json）。scripts/ 23 脚本、docs/ 5 文档、portable/ 种子、searxng/ 仅 3 脚本入库。git 跟踪 259 文件（运行时/密钥全 gitignored）。",
-      "tags": [
-        "repo",
-        "structure",
-        "pi-tools",
-        "deploy"
-      ],
-      "deleted": true,
-      "accessedAt": "2026-08-14T11:33:24.135Z"
     },
     {
       "title": "Windows 便携 pi 最终架构（2026 重构后）",
@@ -7135,22 +6604,6 @@
         "structure"
       ],
       "deleted": false,
-      "accessedAt": "2026-08-14T12:42:42.653Z"
-    },
-    {
-      "title": "pi 会话目录 cwd 编码规则",
-      "confidence": 0.9,
-      "observedAt": "2026-08-14T12:42:42.653Z",
-      "id": "f40628f5-f9a3-4167-83ba-727546a08a4f",
-      "category": "fact",
-      "content": "pi 会话目录按 cwd 编码组织（sessions/--<路径>--/）：WSL /root → --root--，Windows E:\\pi-portable → --E--pi-portable--（冒号与反斜杠各编码为一个 -）。跨平台恢复同一会话：把 WSL 侧会话文件复制到便携版对应编码目录同名覆盖，start.bat --continue 即恢复。便携版旧会话先备份为 .bak-win 可回退。",
-      "tags": [
-        "sessions",
-        "encoding",
-        "cross-platform",
-        "cwd"
-      ],
-      "deleted": true,
       "accessedAt": "2026-08-14T12:42:42.653Z"
     },
     {
@@ -7373,30 +6826,6 @@
       ],
       "observedAt": "2026-08-15T00:06:54.756Z",
       "deleted": false
-    },
-    {
-      "id": "26f6ebaf-8ec9-4092-908f-b228dedbee3a",
-      "category": "fact",
-      "title": "便携 pi Windows 最终架构（2026-08-15 优化后）",
-      "content": "便携 pi Windows 最终架构（2026-08-15 优化完成，portable-win 分支）：①服务自启——start.bat 调用 bin/check-services.js（端口检测 8890/18767，未监听则 spawn python detached 拉起；cmd 嵌套启动实测失败，直接 spawn python + env 最稳）；②searxng 本地（tools/searxng，8890，cn.bing+360search，Windows 补丁：client.py SelectorEventLoop + valkeydb pwd）；③whisper 本地（tools/whisper，18767，small 模型 + PI_WHISPER_LANGUAGE=zh 强制中文 + opencc 繁→简，CPU 推理；GPU 需 nvidia-cublas/cudnn ~1GB 未装）；④pi-browser 官方 stealth 定制版 .cloakbrowser/chromium-146.0.7680.177.5/（562MB zip 手动下载解压，webdriver=false 指纹验证通过；impl.ts ensureLocalBinaryEnv 优先定制版→回退 npmmirror，--no-proxy-server 强制直连防系统代理 ERR_NETWORK_ACCESS_DENIED）；⑤pi-tmux Windows 原生后端（bash -c + --noprofile + 日志 + pidfile/taskkill，startSession 必须带 command 位置参数否则 launchCmd 解析错）；⑥pi-voice 回车听写——detectDistFromPath 需 win32 便携包兜底（USERPROFILE/pi-global/.../dist）+ start.bat PI_DIST；⑦wrapper 自动重启（check-restart.js 候选目录 PI_CODING_AGENT_DIR→USERPROFILE\\.pi\\agent→USERPROFILE\\agent）；⑧git 分支约定：便携版提交推 portable-win 禁 master；⑨verify.ps1 16 项检查、README 已知限制同步。模型缓存 tools/whisper/models 仅 small（464MB）。",
-      "tags": [
-        "portable",
-        "windows",
-        "architecture",
-        "pi",
-        "final"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-15T01:29:49.130Z",
-      "updatedAt": "2026-08-15T01:29:49.130Z",
-      "accessedAt": "2026-08-15T01:29:49.130Z",
-      "environments": [
-        "windows"
-      ],
-      "observedAt": "2026-08-15T01:29:49.130Z",
-      "deleted": true
     },
     {
       "id": "ffa6f0d0-096f-4ded-b692-b506a6644226",
@@ -8053,32 +7482,6 @@
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false
-    },
-    {
-      "id": "0f84be13-ad34-47c5-bef5-133bdef033f1",
-      "category": "fact",
-      "title": "2026-08-15扩展全量回归结果",
-      "content": "10扩展全量测试全绿：9套vitest（web-search/memory/autopilot/browser/context/plan-mode/tmux/voice/link）+tsc -p tsconfig.local.json+subagent mjs 63用例+注册面extensions.test.ts 25用例+conflict-check 8项+自动发现完整性10目录。逐项实测：9/10正常，pi-browser 因旧env注入当前会话失败（wrapper修复后重启生效）；pi-voice环境齐（ffmpeg 6.1.1+pulse RDPSource）；web_search首次瞬时超时但SearXNG healthz OK后重试即恢复；清理3个历史tmux残留会话（audit-fix-verify/audit-regress/cloak-download）附日志删除。",
-      "tags": [
-        "测试",
-        "回归",
-        "扩展",
-        "tmux"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-15T14:52:49.701Z",
-      "updatedAt": "2026-08-25T01:46:15.733Z",
-      "accessedAt": "2026-08-15T14:52:49.701Z",
-      "observedAt": "2026-08-15T14:52:49.701Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
-      "deleted": true,
-      "supersededBy": "d0ff8107-6d1b-4867-bc6e-e542165c620f",
-      "validUntil": "2026-08-25T01:46:15.733Z"
     },
     {
       "id": "4ef83153-0c22-447d-9dea-813e376d3efb",
@@ -9479,32 +8882,6 @@
       "deleted": false
     },
     {
-      "id": "99cff44b-e117-4fc5-b771-7a68b8030a69",
-      "category": "solutions",
-      "title": "git stash 冲突 --theirs 取到旧版",
-      "content": "stash pop 合并冲突时 `git checkout --theirs` 取到的是 stash 里的旧版本（entries.json 495 条）而非 HEAD 版本，需用 `git checkout HEAD -- <file>` 显式取 HEAD（548 条）。本仓库约定 memory/entries.json 等运行时数据冲突一律以远程/HEAD 为准，本地修改丢弃。",
-      "tags": [
-        "git",
-        "冲突",
-        "entries.json",
-        "--theirs"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-22T04:15:50.184Z",
-      "updatedAt": "2026-08-25T22:54:39.493Z",
-      "accessedAt": "2026-08-22T04:15:50.184Z",
-      "observedAt": "2026-08-22T04:15:50.184Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
-      "deleted": true,
-      "supersededBy": "da1a0131-3ada-4d9c-8f5b-13f37503fef1",
-      "validUntil": "2026-08-25T22:54:39.493Z"
-    },
-    {
       "id": "e510e3ff-4eb1-4105-a22b-d3cf8bdad750",
       "category": "procedure",
       "title": "git pull 后先 rebuild 再回归",
@@ -9889,30 +9266,6 @@
       "deleted": false
     },
     {
-      "id": "bb6a7f9c-6a5d-485c-8777-39eaf3ea3be2",
-      "category": "solutions",
-      "title": "DeepSeek 缓存 TTL 逐出导致偶发 20 倍价格（已实测验证）",
-      "content": "排查结论（2026-08-22 实测验证）：后台 API 价格偶发为正常 20+ 倍的根因是 DeepSeek 服务端 KV 缓存 TTL 逐出（约 5 分钟），非 pi 侧问题。证据：快速连续发送\"测试\"（间隔<1分钟）6 笔全部命中（$0.0034/笔，输入增量仅 25-119 tokens）；间隔 6 分钟后的首笔 217593 tokens 全量未命中 $0.0959（≈输入×$0.44/M）。pi 侧 task-records 显示命中率 99.8%+、无压缩/剪枝/切档、注入稳定不破坏前缀。缓解：接受机制；降低每轮输入基线（长会话定期开新会话）；无法根治。",
-      "tags": [
-        "deepseek",
-        "缓存",
-        "缓存逐出",
-        "ttl",
-        "api成本"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-22T09:03:13.639Z",
-      "updatedAt": "2026-08-22T09:03:13.639Z",
-      "accessedAt": "2026-08-22T09:03:13.639Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-22T09:03:13.639Z",
-      "deleted": true
-    },
-    {
       "id": "9d420121-c1df-4f2d-9556-c42c22b0168d",
       "category": "procedure",
       "title": "Phaser 3 浏览器游戏开发要点（tetris 项目实战）",
@@ -9934,32 +9287,6 @@
       ],
       "observedAt": "2026-08-24T01:51:37.745Z",
       "deleted": false
-    },
-    {
-      "id": "2579f689-6ec0-41c6-9c33-3ce40fef7f96",
-      "category": "fact",
-      "title": "用户本地模型部署：Windows llama.cpp + Qwen3.6-35B",
-      "content": "用户环境：pi 运行在 WSL2（x86_64、node v22.23.2），本地模型由 Windows 主机 llama.cpp server 提供（Qwen3.6-35B，启动脚本 D:\\Desktop\\Desktop\\Qwen3.6-35B-test.bat，参数 -c 128000、--reasoning on --jinja、--mmproj 多模态、--host 0.0.0.0 --port 8080）。pi 通过 models.json 的 llama-cpp provider 连接。",
-      "tags": [
-        "环境",
-        "llama.cpp",
-        "Qwen3.6-35B",
-        "WSL2"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T02:04:28.970Z",
-      "updatedAt": "2026-08-25T01:46:15.593Z",
-      "accessedAt": "2026-08-24T02:04:28.970Z",
-      "observedAt": "2026-08-24T02:04:28.970Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
-      "deleted": true,
-      "supersededBy": "598a2f17-c935-431a-945b-a0a9157c0c7a",
-      "validUntil": "2026-08-25T01:46:15.593Z"
     },
     {
       "id": "d1577909-b3de-4871-9c75-a35bf2a2b162",
@@ -10586,28 +9913,6 @@
       "deleted": false
     },
     {
-      "id": "d4d1bc97-9604-4e56-9a65-36458c05c965",
-      "category": "fact",
-      "title": "memory/stats/ 工具统计日志语义与可提交性",
-      "content": "memory/stats/tool-use-<device>.jsonl 是 pi-context usage-diag 的工具使用统计事件日志（JSONL：type=tool-use, eid, device, ts/iso, tool, outputTokens），按设备分文件、30 天保留、随 git 入库共享（本机 device=MYPC）。仅含工具名与 token 计数，无密钥敏感字段，可安全提交。",
-      "tags": [
-        "memory",
-        "统计",
-        "工具日志"
-      ],
-      "confidence": 0.9,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T04:10:12.706Z",
-      "updatedAt": "2026-08-24T04:10:12.706Z",
-      "accessedAt": "2026-08-24T04:10:12.706Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T04:10:12.706Z",
-      "deleted": true
-    },
-    {
       "id": "da1fbcc7-fc25-45b9-b407-01af701b8f94",
       "category": "fact",
       "title": "pi-memory 注入在请求序列尾部，memory 操作几乎不破坏缓存（修正旧条目）",
@@ -10700,29 +10005,6 @@
       ],
       "observedAt": "2026-08-24T05:40:47.172Z",
       "deleted": false
-    },
-    {
-      "id": "6cbddc4f-7043-4f1a-8873-0571a053133d",
-      "category": "procedure",
-      "title": "pi-browser 新增工具落地流程",
-      "content": "新工具落地四处同步：1) impl.ts 实现 + index.ts 注册；2) 根 tsconfig.local.json（真实 SDK）typecheck 0 错误为权威门禁；3) conflict-check.mjs 工具总数台账 + pi-web-search/tests/extensions.test.ts 注册面断言（工具数）；4) test-all 全量回归。本会话 8→18 工具时台账 47→57、断言 8→18 过期被回归抓出。",
-      "tags": [
-        "pi-browser",
-        "扩展开发",
-        "测试流程"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T05:57:31.789Z",
-      "updatedAt": "2026-08-24T05:57:31.789Z",
-      "accessedAt": "2026-08-24T05:57:31.789Z",
-      "observedAt": "2026-08-24T05:57:31.789Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
-      "deleted": true
     },
     {
       "id": "4940f7ba-ed79-4aa9-8582-43c962043b36",
@@ -10863,29 +10145,6 @@
       "deleted": false
     },
     {
-      "id": "b3228e2c-5f09-41da-9c60-76139726bb0b",
-      "category": "solutions",
-      "title": "pi-memory 注入在请求序列尾部",
-      "content": "pi-memory 记忆注入为消息注入：before_agent_start 返回 customType: pi-memory-injection 追加在消息末尾（非 system prompt 头部）。2026-08-14 改造后 memory_store 写入仅重发注入块自身（≤500 token），system prompt+全部历史照常命中。记忆库中'注入在头部、每次写入整段重放'的旧条目描述改造前行为，已作废，勿再引用。",
-      "tags": [
-        "pi-memory",
-        "缓存",
-        "注入"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T05:58:18.531Z",
-      "updatedAt": "2026-08-24T05:58:18.531Z",
-      "accessedAt": "2026-08-24T05:58:18.531Z",
-      "observedAt": "2026-08-24T05:58:18.531Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
-      "deleted": true
-    },
-    {
       "id": "cccc144b-2448-4346-aa01-4a709e35cc50",
       "category": "fact",
       "title": "DeepSeek 缓存 TTL 6-8 分钟、命中 1/31",
@@ -10977,29 +10236,6 @@
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false
-    },
-    {
-      "id": "5b449f85-b300-468d-96e4-47a2161ff9c7",
-      "category": "fact",
-      "title": "plan-mode 任务清理提醒机制",
-      "content": "todo 状态全靠模型显式回写（completed/delete 需逐项调用），无自动判定与自动清理。plan-mode 新增 cleanupReminderCheck：普通模式下存在 completed 任务且连续 ≥3 轮未清理、本轮未碰 todo → 注入 display:false 温和提醒'[任务清理提醒] N 个任务已完成但连续 ≥3 轮未清理'，提醒后计数归零；执行模式有 planComplete、计划模式有 overlay，均不打扰。",
-      "tags": [
-        "plan-mode",
-        "todo",
-        "提醒"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T05:58:18.531Z",
-      "updatedAt": "2026-08-24T05:58:18.531Z",
-      "accessedAt": "2026-08-24T05:58:18.531Z",
-      "observedAt": "2026-08-24T05:58:18.531Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
-      "deleted": true
     },
     {
       "id": "2dc7a6c7-348e-49d7-adbf-9082e3e54cb1",
@@ -11447,30 +10683,6 @@
       "deleted": false
     },
     {
-      "id": "c6d0c73d-922e-48a3-9231-5b2c238f22ce",
-      "category": "fact",
-      "title": "pi-context 压缩策略新基线 256K",
-      "content": "2026-08-22 拉取远程更新后，pi-context 自动压缩阈值上调至 256K，新增「任务完成/无后台任务/无操作」三重门才触发压缩；压力提示档位同步：75%=192K、90%=230K。涉及 auto-compact.ts、context-budget.ts、pi-tmux、cache-guard baseline 等 12 个文件，后续补丁重建需按此新基线。",
-      "tags": [
-        "pi-context",
-        "压缩策略",
-        "256K",
-        "基线"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T09:27:25.423Z",
-      "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
-      "observedAt": "2026-08-24T09:27:25.423Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a032d1-f1e0-7541-b97e-d6c7dd80e95a",
-      "deleted": true
-    },
-    {
       "id": "631684e2-6ffd-4d42-bad4-19784283b4a4",
       "category": "fact",
       "title": "tool-use-localhost.jsonl 未跟踪属正常",
@@ -11588,28 +10800,6 @@
       ],
       "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
       "deleted": false
-    },
-    {
-      "id": "217d2ea5-e845-48d7-af32-bd6a2eff42f9",
-      "category": "preference",
-      "title": "用户用极简词探查环境",
-      "content": "用户习惯用单个极简词（如 skills、list、重启、翻译）发指令探查 pi 环境或触发操作，期望助手直接输出结构化清单或自主完成调研-修改-验证全流程后一次性汇报，不打断询问；重启类操作前需先确认机制可行性（proot 无自动拉起）。",
-      "tags": [
-        "用户偏好",
-        "指令风格"
-      ],
-      "confidence": 0.85,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T10:38:11.771Z",
-      "updatedAt": "2026-08-24T10:38:11.771Z",
-      "accessedAt": "2026-08-24T10:38:11.771Z",
-      "observedAt": "2026-08-24T10:38:11.771Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
-      "deleted": true
     },
     {
       "id": "4c54c2a2-c587-4062-b92a-42dfcd7316fd",
@@ -12589,81 +11779,6 @@
       "deleted": false
     },
     {
-      "id": "ff0f9df5-a674-43cd-b0a2-d6d6ad5c69ee",
-      "category": "fact",
-      "title": "pi-voice whisper 服务为惰性启动",
-      "content": "pi-voice 扩展设计上会在转写前自动拉起 whisper 服务（127.0.0.1:18766），因此发现 whisper 服务未运行时属正常惰性启动而非故障，无需手动常驻。本次冒烟测试手动启动后 Bearer 鉴权响应正常（pid 18915），配置存在。",
-      "tags": [
-        "pi-voice",
-        "whisper",
-        "惰性启动"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:18:01.558Z",
-      "updatedAt": "2026-08-24T07:23:29.281Z",
-      "accessedAt": "2026-08-10T10:18:01.558Z",
-      "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": true,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "da7d8a01-6a25-4e9e-bbd0-e5b9c252e181",
-      "validUntil": "2026-08-24T07:23:29.281Z"
-    },
-    {
-      "id": "c2c8949c-6ccf-4511-a442-eff83488d02d",
-      "category": "fact",
-      "title": "health-alert 2026-08-21",
-      "content": "08-21 每日健康检查：最近会话 10:37（28 轮）命中率 82.1%（<90%）、断裂 4 次（>3）、浪费 1.4M tokens；10:11 会话 79.4%/2 断。当日多会话呈 A 类断裂（断前前缀 141-187K → 命中 0 → 全量重发），且每轮无工具启用/compaction 事件。已定位可疑方向：provider 侧（opencode-go 网关 → deepseek-v4-flash）缓存键按会话隔离——每用户消息轮首请求整段 0 命中、同轮内后续请求 100% 命中、与轮间间隔无关（24 秒也断）。本地已排除：pi-memory 注入块（18 轮 hash 恒定）、compaction、消息历史改写（413 条 id 无重复）。存储 0.26MB 正常。建议：向 opencode-go 反馈跨轮会话缓存键复用，或直连 deepseek API 对照实验。",
-      "tags": [
-        "health-alert",
-        "缓存断裂",
-        "A类",
-        "provider"
-      ],
-      "confidence": 0.9,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-22T03:20:07.370Z",
-      "updatedAt": "2026-08-24T05:58:18.911Z",
-      "accessedAt": "2026-08-22T03:20:07.370Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-22T03:20:07.370Z",
-      "deleted": true,
-      "supersededBy": "cd54ecb3-8644-4041-a410-5a7f500bbcf0",
-      "validUntil": "2026-08-24T05:58:18.911Z"
-    },
-    {
-      "id": "0463bc57-9e84-4ac6-954d-2566bd081542",
-      "category": "solutions",
-      "title": "opencode usage面板数据导出方案",
-      "content": "opencode.ai usage面板无公开导出API。导出方案：在已登录面板页Chrome控制台hook window.fetch，拦截/_server响应，解析JSON数组（id以'usg'开头），累积到window.__usageAcc，用户翻页收集后Blob导出JSON。注意：裸fetch复刻RPC会500（SolidStart私有序列化body），CLI token走RPC也500（只认浏览器cookie），只能hook页面自身请求。",
-      "tags": [
-        "opencode",
-        "usage面板",
-        "数据导出",
-        "RPC"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T01:46:15.132Z",
-      "updatedAt": "2026-08-25T01:58:11.143Z",
-      "accessedAt": "2026-08-25T01:46:15.132Z",
-      "observedAt": "2026-08-25T01:46:15.132Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
-      "deleted": true,
-      "supersededBy": "9a9da0d7-34bc-49c4-8630-537b8ef225d2",
-      "validUntil": "2026-08-25T01:58:11.143Z"
-    },
-    {
       "id": "d0868c72-6cb1-46be-8d99-7f4cd6af70c5",
       "category": "reference",
       "title": "opencode usage RPC协议细节",
@@ -12734,57 +11849,6 @@
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false
-    },
-    {
-      "id": "a6453cc9-64e4-4087-9f58-542280da49b3",
-      "category": "reference",
-      "title": "缓存断裂判别法：账单记录定性与本地无关",
-      "content": "区分连接失败与缓存未命中：面板usage记录只要有output>0和cost即证明请求成功到达并计费，可排除断连/重试失败；断裂轮特征为cr≈0–9K（整段前缀未命中）+in全量重发+cost飙升5–7倍。归因顺序：先查本地jsonl连接事件，再查TTL逐出（DeepSeek TTL实测6–8min），最后查使用间隔与注入尾部变化；本地全部排除后才定性provider出站缓存异常。",
-      "tags": [
-        "缓存分析",
-        "诊断方法",
-        "token成本"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T01:46:15.132Z",
-      "updatedAt": "2026-08-25T01:58:11.225Z",
-      "accessedAt": "2026-08-25T01:46:15.132Z",
-      "observedAt": "2026-08-25T01:46:15.132Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
-      "deleted": true,
-      "supersededBy": "a6823f58-fa1f-44c1-9423-421279878b3a",
-      "validUntil": "2026-08-25T01:58:11.225Z"
-    },
-    {
-      "id": "598a2f17-c935-431a-945b-a0a9157c0c7a",
-      "category": "fact",
-      "title": "用户Windows环境与WSL互访路径",
-      "content": "用户Windows主机IP为192.168.124.1（WSL2可达）；Windows D盘在WSL挂载为/mnt/d，文件D:\\Desktop\\Download\\usage对应/mnt/d/Desktop/Download/usage。Chrome默认未开远程调试端口（192.168.124.1:9222无响应），WSL无法接管已登录浏览器；如需CDP桥需用户以--remote-debugging-port=9222 --user-data-dir独立profile启动新Chrome实例。",
-      "tags": [
-        "WSL2",
-        "Windows",
-        "CDP",
-        "环境"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T01:46:15.132Z",
-      "updatedAt": "2026-08-25T01:58:11.362Z",
-      "accessedAt": "2026-08-25T01:46:15.132Z",
-      "observedAt": "2026-08-25T01:46:15.132Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
-      "deleted": true,
-      "supersededBy": "e5458bce-9f19-4e56-ad06-07b617c98ef6",
-      "validUntil": "2026-08-25T01:58:11.362Z"
     },
     {
       "id": "d32c1faf-4864-4cb8-ab3b-365b80925daf",
@@ -13330,32 +12394,6 @@
       "deleted": false
     },
     {
-      "id": "83a408a6-14f6-4989-baf9-9068fb2b6e84",
-      "category": "solutions",
-      "title": "空壳任务记录判定与处理策略",
-      "content": "pi经验沉淀场景中，任务记录若抽样轮全部呈现tools=0/hit=0/out=0即为空壳，不存memory、不写SKILL草稿，防止污染记忆库；孤立出现的hit=250000恰为常见统计上限值，疑为封顶伪影而非真实缓存命中。处理策略：不强行从空数据提炼经验，先修复记录提取脚本(hit统计/轮次抽样逻辑)再重跑沉淀。2026-08-25任务2/3(累计1358K/1803K tokens)即属此型。",
-      "tags": [
-        "经验沉淀",
-        "空壳记录",
-        "提取脚本",
-        "pi-memory"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T07:18:10.486Z",
-      "updatedAt": "2026-08-25T08:27:24.709Z",
-      "accessedAt": "2026-08-25T07:18:10.486Z",
-      "observedAt": "2026-08-25T07:18:10.486Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
-      "deleted": true,
-      "supersededBy": "f707031c-9c55-45f6-9873-4e3eecfcafcd",
-      "validUntil": "2026-08-25T08:27:24.709Z"
-    },
-    {
       "id": "16048f83-f713-4845-9edd-8709526d827c",
       "category": "fact",
       "title": "提取脚本空壳缺陷修复未落地",
@@ -13878,6 +12916,142 @@
       ],
       "lastSessionId": "01a03bc7-2eb4-7049-9414-c5f45361a75c",
       "deleted": false
+    },
+    {
+      "id": "f1526413-0969-462d-9ea6-9c8dfbf397d8",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-73570 Zimbra 未认证命令注入在野利用 2026-08-26",
+      "content": "Zimbra Collaboration Suite (ZCS) 存在 OS 命令注入漏洞 CVE-2026-73570（CISA 已遭利用列表，2026-08-21 披露），未认证攻击者可执行任意命令，邮件服务器面临入侵风险。修复版本 10.1.20，需立即升级。（来源：CISA 官方群 + FreeBuf 早报双源确认）URL: https://www.freebuf.com/news/497109.html",
+      "tags": [
+        "knowledge",
+        "2026-08-26",
+        "security",
+        "cve"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:49:24.845Z",
+      "updatedAt": "2026-08-26T02:49:24.845Z",
+      "accessedAt": "2026-08-26T02:49:24.845Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T02:49:24.845Z",
+      "deleted": false
+    },
+    {
+      "id": "e34e6369-6d66-4950-a8fb-22c4a4f32eee",
+      "category": "fact",
+      "title": "knowledge 安全 2.45亿下载 Rust crate 遭供应链投毒 2026-08-26",
+      "content": "一个累计下载量 2.45 亿的 Rust crate 被投毒，恶意代码在编译时自动执行，归因朝鲜黑客（Lazarus 类手法）。供应链投毒从 npm/PyPI 扩展到 Rust 生态，构建期即触发是关键特征。（来源：安全客）URL: https://www.anquanke.com/post/id/316013",
+      "tags": [
+        "knowledge",
+        "2026-08-26",
+        "security",
+        "supply-chain"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:49:24.885Z",
+      "updatedAt": "2026-08-26T02:49:24.885Z",
+      "accessedAt": "2026-08-26T02:49:24.885Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T02:49:24.885Z",
+      "deleted": false
+    },
+    {
+      "id": "81b4b12b-0311-4247-a31b-97d8ddf3d9ab",
+      "category": "fact",
+      "title": "knowledge 安全 Microsoft Defender 零日提权漏洞 补丁未发布 2026-08-26",
+      "content": "微软 Defender 曝出零日漏洞：普通账户可一键提权至 SYSTEM（安全软件自身成\"内鬼\"），截至披露时补丁尚未发布。Windows 用户需关注 MSRT/补丁星期二动态。（来源：安全客）URL: https://www.anquanke.com/post/id/316003",
+      "tags": [
+        "knowledge",
+        "2026-08-26",
+        "security",
+        "windows"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:49:24.918Z",
+      "updatedAt": "2026-08-26T02:49:24.918Z",
+      "accessedAt": "2026-08-26T02:49:24.918Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T02:49:24.918Z",
+      "deleted": false
+    },
+    {
+      "id": "18655c1b-0fe6-4406-bb4d-cd0a188e68c3",
+      "category": "fact",
+      "title": "knowledge AI NVIDIA NemoClaw 缺陷 网页内容可夺舍 AI 大模型 2026-08-26",
+      "content": "NVIDIA NemoClaw（LLM 沙箱框架）曝缺陷：单张网页即可向 AI 大模型投毒——沙箱能挡外部黑客但挡不住模型被网页内容\"夺舍\"，揭示 AI Agent 浏览场景下提示注入/数据投毒的新攻击面。（来源：安全客）URL: https://www.anquanke.com/post/id/316021",
+      "tags": [
+        "knowledge",
+        "2026-08-26",
+        "ai-security",
+        "prompt-injection"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:49:24.952Z",
+      "updatedAt": "2026-08-26T02:49:24.952Z",
+      "accessedAt": "2026-08-26T02:49:24.952Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T02:49:24.952Z",
+      "deleted": false
+    },
+    {
+      "id": "cd5c73c2-5cd1-4269-91d0-5c4a0248641f",
+      "category": "fact",
+      "title": "knowledge 科技 SpaceX 拟投 1000 亿美元建路易斯安那第二 Starbase 2026-08-26",
+      "content": "SpaceX 宣布将在路易斯安那州建造第二座 Starbase 航天港，投资最高 1000 亿美元，2027 年动工，Starship 最快 2029 年首飞。（来源：TechCrunch + Ars Technica 双源）URL: https://techcrunch.com/2026/08/25/spacex-will-build-a-second-100b-starbase-spaceport-in-louisiana/",
+      "tags": [
+        "knowledge",
+        "2026-08-26",
+        "space",
+        "spacex"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:49:24.988Z",
+      "updatedAt": "2026-08-26T02:49:24.988Z",
+      "accessedAt": "2026-08-26T02:49:24.988Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T02:49:24.988Z",
+      "deleted": false
+    },
+    {
+      "id": "926815ae-419b-4078-9016-aad317641311",
+      "category": "fact",
+      "title": "WSL2 每日任务重建完成 + Termux 双端去重待办",
+      "content": "2026-08-26 在 WSL2 重建每日任务（原定义随 Termux 端丢失/离线不可达）：knowledge-subscribe（cron 0 8 * * *）+ daily-review（cron 5 9 * * *），均 useSubagent=true、notifyMain=true、waitForUserOnLocal=true，maxRunTime 900s/600s，经 schedule_task 工具创建后手改 JSON 补 notifyMain/waitForUserOnLocal 字段（scheduler tick 每次 readTasks 从磁盘读，无常驻缓存，手改安全；writeTasks 写前合并已防抹除，65s×2 竞态窗口实测存活）。当日手动补跑成功：knowledge 抓取 72 条入库 5 条 → logs/knowledge/2026-08-26.md；review 写入 daily-health.log（异常项：01:47 会话缓存命中 61.7%、lesson-miner 零条入库+第三次异常投喂）。⚠️ 遗留：Termux（termux-ubuntu/termux-phone）上线后须检查其 ~/.pi/agent/scheduled-tasks.json 是否残留同名旧任务，有则删除，防止双端重复执行 knowledge-subscribe 造成 memory 重复入库。首次 review 补跑曾无输出即退（原因未查），重跑正常，属一次性。",
+      "tags": [
+        "pi-autopilot",
+        "每日任务",
+        "wsl2",
+        "调度"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:53:30.711Z",
+      "updatedAt": "2026-08-26T02:53:30.711Z",
+      "accessedAt": "2026-08-26T02:53:30.711Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
