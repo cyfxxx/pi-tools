@@ -10284,24 +10284,6 @@
       "deleted": false
     },
     {
-      "id": "c2db3298-7af9-4bd5-bdc7-183f41f89d7c",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 66,
-      "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-26T00:18:32.866Z",
-      "accessedAt": "2026-08-26T00:18:32.866Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T02:30:52.368Z",
-      "deleted": false
-    },
-    {
       "id": "2e7452f7-4b93-44bb-801e-2d99013e6af0",
       "category": "procedure",
       "title": "工具使用统计：事件日志+跨设备同步+30天保留机制",
