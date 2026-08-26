@@ -66,7 +66,7 @@ foreach ($f in $files) {
 ### 第 2 步：基线回归测试（审查前必跑）
 
 - 用项目自带全量测试（~/.pi 仓库：`bash scripts/test-all.sh`）
-- 长任务用 `tmux_run` 后台跑。**禁止 tmux_wait 阻塞等待**（AGENTS.md 铁律；2026-08-15 实战教训：until_exit 等满 420s 占用前台）——tmux_run 后结束回合或转做其他独立工作，后续轮次用 `tmux_read` 轮询结果
+- 长任务用 `tmux_run` 后台跑，**命令一律全量重定向落盘**：`bash scripts/test-all.sh > /tmp/x.log 2>&1; echo EXIT=$? >> /tmp/x.log`——管道 `| tail` 会吞掉全部中间输出致日志空白误判失败（08-25 与 08-26 两次实战踩坑）。**禁止 tmux_wait 阻塞等待**（AGENTS.md 铁律；2026-08-15 实战教训：until_exit 等满 420s 占用前台）——tmux_run 后结束回合或转做其他独立工作，后续轮次用 `tmux_read` 轮询结果
 - 测试**全绿**再进入深度审查；有红项先记录为问题，不阻塞后续步骤
 
 ### 第 3 步：subagent 并行深度审查（核心）
