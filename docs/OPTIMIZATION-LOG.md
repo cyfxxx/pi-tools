@@ -279,3 +279,22 @@
   ②scout 间歇失败≠永久不可用，重试+主会话兜底保覆盖；
   ③误报判别先行（pi-notify Node 脚本 .sh 命名、auth.json gitignored=预期）；
   ④修复前读实际代码确认 anchor，避免 edit 失配回滚。
+
+---
+
+## 2026-08-26 进化基建强化（VISION P1-P4 落地）
+- 动机: 用户口述终极愿景（docs/VISION.md v1）；度量/干预/防退化三面缺口
+- 落地:
+  - P1 pi-intervention 扩展：input(steer)/before_agent_start/tool_execution_start/agent_end
+    四事件捕获 abort 快照 + 15min corrective prompt 关联 → memory/interventions.jsonl（git 忽略）
+    （queue_update 不在扩展 API 面，改用 input.streamingBehavior==="steer"）
+  - P2 scripts/task-metrics.mjs：会话级成功代理/干预/token 聚合（只读）。
+    首个基线: 21.9 天 / 537 会话 / 成功代理 47.1% / 均 1749K tok
+  - P3 scripts/golden-tasks.sh：--fast 确定性四检查（全绿）/ --full 无头 pi 两任务（未实弹，费用边界）
+    （bash 工具管道 64KB 截断坑 → JSON 校验走临时文件）
+  - P4 scripts/memory-lifecycle.mjs：淘汰/升格/冲突三类只读报告。
+    首报发现垃圾条目 "test"(rec=62) 污染检索，待用户裁决删除
+- 守门修复: cache-guard 基线欠账（78571df 改 pi-context/index.ts 未重置基线）+ 本轮 AGENTS.md
+  愿景指针 → --update-baseline；pi-browser 清扫测试 50ms 固定等待 → 轮询 3s（负载抖动）
+- 回归: test-all.sh 全绿（9 vitest 套件 + tsc + 63 subagent + 注册面 29 + conflict-check +
+  cache-guard + doc-lint + 发现完整性 11 扩展）

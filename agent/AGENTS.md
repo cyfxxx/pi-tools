@@ -5,7 +5,7 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 
 ## 目录结构（概览）
 
-- `agent/` — 配置（settings.json）+ 扩展（extensions/，10 个）+ 共享库（lib/）+ 代理模板/技能/提示模板（agents/ skills/ prompts/）
+- `agent/` — 配置（settings.json）+ 扩展（extensions/，11 个）+ 共享库（lib/）+ 代理模板/技能/提示模板（agents/ skills/ prompts/）
 - `packs/` — 统一外部技能仓库：`packs/<name>/` 已确认技能包（comfyui/colab/gamedev/...）+ `packs/drafts/` 技能草稿。详见 `packs/README.md`
 - `portable/` — 便携 pi（Windows 原生）种子，完整经验见 `portable/README.md`
 - `scripts/` — 生命周期与工具脚本（rebuild/test-all/pi-bg/pi-whisper 等）
@@ -13,6 +13,8 @@ Pi 本地配置仓库：自定义扩展、共享库、技能、自托管 SearXNG
 - `docs/` — 开发与部署文档（ENVIRONMENTS.md 等）
 - `memory/` — pi-memory 运行时数据（entries.json 入库共享，其余 git 忽略）；`logs/` — 运行时日志
 - `plans/` — plan-mode 计划存档（git 忽略，每计划含独立 .git，供计划内 git 操作）
+
+- **项目愿景与进化纪律**：顶层权威文档 `docs/VISION.md`（终极目标/软硬方法论/单向升格通道/度量体系/记忆治理规则）；执行跟踪 `docs/SELF-OPTIMIZING-ROADMAP.md`。涉及行为准则、记忆淘汰/升格、新扩展命令面的决策先对齐 VISION
 
 ## 多环境使用约定
 
@@ -51,6 +53,7 @@ node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输�
 - **pi-autopilot**（定时调度/看门狗/failover/预算）：`extensions/pi-autopilot/README.md`
 - **pi-tmux**（工具用法/环境缺失/access not allowed 故障）：`extensions/pi-tmux/README.md`
 - **pi-link**（多设备互联：ssh 通道 + 远程 pi RPC，设备清单 `pi-link.json`、安全边界、加固 forced command）：`extensions/pi-link/README.md`
+- **pi-intervention**（干预捕获：abort 快照/corrective prompt 关联/interventions.jsonl）：`extensions/pi-intervention/README.md`
 - **pi-memory / pi-web-search / pi-browser / subagent**：各自 README
 - **pi-voice**（Termux 语音：入口 Ctrl+Alt+R 与 `/voice`，录音/转写/TTS/听写，配置 `pi-voice.json`、故障排查）：`extensions/pi-voice/README.md`
 - **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 只读工具集 + 独立日志）

@@ -81,6 +81,15 @@
 - 测试红且 2 次修复失败 → git 回滚 + LOG 记 rolled-back。
 - 涉及不可逆操作（删数据/全局配置/付费）先确认，不受此条自动回滚覆盖。
 
+## 阶段 4（2026-08-26）：进化基建强化（愿景见 docs/VISION.md §4 度量体系）
+
+| # | 项 | 产出/验收 | 状态 |
+|---|---|---|---|
+| 4.1 (P1) | 干预捕获扩展 | pi-intervention：abort 快照 + corrective prompt 关联 → memory/interventions.jsonl；/intervention recent\|stats | ✅ |
+| 4.2 (P2) | 任务级遥测 | scripts/task-metrics.mjs：会话级成功率代理/干预次数/token 成本（只读） | ✅ |
+| 4.3 (P3) | golden tasks 防退化基准 | scripts/golden-tasks.sh（--fast 确定性 / --full 无头 pi 会话） | ✅ |
+| 4.4 (P4) | 记忆生命周期治理 | scripts/memory-lifecycle.mjs 只读报告（淘汰/升格/冲突候选）；规则入 VISION §5 | ✅ |
+
 ## 5. 授权边界（用户 2026-08-20 放宽）
 
 - **可自动执行**（无需每次确认）：

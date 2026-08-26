@@ -369,3 +369,57 @@ describe('pi-link extension', () => {
     expect(r.isError).toBe(true)
   })
 })
+
+// ─── pi-intervention（VISION P1 干预捕获） ─────────────────────
+describe('pi-intervention extension', () => {
+  it('registers exactly 1 command: intervention, 0 tools', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-intervention/index')).default
+    await main(pi as any)
+    expect(pi.registerTool).toHaveBeenCalledTimes(0)
+    const cmdNames = pi.registerCommand.mock.calls.map((c: any[]) => c[0])
+    expect(cmdNames).toEqual(['intervention'])
+  })
+
+  it('registers event listeners: before_agent_start/tool_execution_start/queue_update/agent_end', async () => {
+    const pi = mockPi()
+    const main = (await import('../../pi-intervention/index')).default
+    await main(pi as any)
+    const events = pi.on.mock.calls.map((c: any[]) => c[0])
+    expect(events).toEqual(
+      expect.arrayContaining(['before_agent_start', 'tool_execution_start', 'input', 'agent_end']),
+    )
+  })
+
+  it('writes abort snapshot and links corrective prompt (deterministic, tmp file)', async () => {
+    const fs = await import('node:fs')
+    const os = await import('node:os')
+    const path = await import('node:path')
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'iv-test-'))
+    const file = path.join(dir, 'interventions.jsonl')
+    const mod = await import('../../pi-intervention/index')
+
+    const rec = mod.buildRecord({ prompt: '执行任务X', tools: [{ name: 'read', brief: 'a.ts' }], tail: '正在修改…', steering: [] })
+    mod.appendRecord(file, rec)
+    expect(mod.linkCorrective(file, rec.id, '不对，应该做Y')).toBe(true)
+
+    const lines = fs.readFileSync(file, 'utf8').trim().split('\n').map((l: string) => JSON.parse(l))
+    expect(lines).toHaveLength(1)
+    expect(lines[0].type).toBe('abort')
+    expect(lines[0].prompt).toBe('执行任务X')
+    expect(lines[0].correctivePrompt).toBe('不对，应该做Y')
+    expect(lines[0].env.platform).toBe(process.platform)
+
+    // 幂等：已关联的记录不重复回填
+    expect(mod.linkCorrective(file, rec.id, '第二次纠正')).toBe(false)
+    const again = JSON.parse(fs.readFileSync(file, 'utf8').trim())
+    expect(again.correctivePrompt).toBe('不对，应该做Y')
+  })
+
+  it('isAbortedEnd detects stopReason=aborted on last assistant message', async () => {
+    const mod = await import('../../pi-intervention/index')
+    expect(mod.isAbortedEnd([{ role: 'user' }, { role: 'assistant', stopReason: 'aborted' }])).toBe(true)
+    expect(mod.isAbortedEnd([{ role: 'user' }, { role: 'assistant', stopReason: 'stop' }])).toBe(false)
+    expect(mod.isAbortedEnd([])).toBe(false)
+  })
+})

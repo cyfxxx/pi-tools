@@ -50,6 +50,9 @@ agent/models.json
 .env
 .env.*
 
+# pi-intervention 干预快照（运行时数据，不入库）
+memory/interventions.jsonl
+
 # pi-memory 数据：笔记+记忆+摘要+检查点
 # 排除项：原始对话提取/临时提取（含对话全文，可能含敏感内容如 PAT 明文）
 memory/extract-sessions/

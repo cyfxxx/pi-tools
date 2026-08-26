@@ -134,7 +134,7 @@ fi
 
 cyn "== 扩展注册面测试（extensions.test.ts，mock alias） =="
 (cd "$EXTS/pi-web-search" && "$NODE" "$VITEST_MJS" run tests/extensions.test.ts >/dev/null 2>&1)
-report $? "extensions.test.ts (25 用例)"
+report $? "extensions.test.ts (29 用例)"
 
 cyn "== 扩展冲突检查 =="
 (cd "$EXTS" && "$NODE" tests/conflict-check.mjs >/dev/null 2>&1)
@@ -153,11 +153,11 @@ cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载） =="
 "$NODE" -e "
 const fs = require('fs');
 const extDir = process.argv[1];
-const required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser','pi-tmux','pi-voice','pi-link'];
+const required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser','pi-tmux','pi-voice','pi-link','pi-intervention'];
 const missing = required.filter(e => !fs.existsSync(extDir + '/' + e + '/index.ts'));
 if (missing.length) { console.error('missing:', missing.join(', ')); process.exit(1); }
 " "$EXTS" >/dev/null 2>&1
-report $? "10 个扩展目录 index.ts 齐备"
+report $? "11 个扩展目录 index.ts 齐备"
 
 if [ "$FAILED" -gt 0 ]; then
   printf '\n\033[0;31m✗ 回归失败（%s 项）\033[0m\n' "$FAILED"

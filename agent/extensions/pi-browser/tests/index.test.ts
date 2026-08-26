@@ -173,11 +173,13 @@ describe('pi-browser (entry point)', () => {
     const main = (await import('../index')).default
     await main(mockPi as any)
     await lifecycleHandlers['session_start']()
-    await new Promise(r => setTimeout(r, 50)) // 后台清扫异步落盘
-
-    for (const d of staleDirs) {
-      expect(await fs.access(d).then(() => true).catch(() => false)).toBe(false)
+    // 后台清扫异步落盘：轮询等待（容器高负载下 50ms 固定等待会抖动）
+    const gone = async () =>
+      (await Promise.all(staleDirs.map(d => fs.access(d).then(() => true).catch(() => false)))).every(x => !x)
+    for (let i = 0; i < 60 && !(await gone()); i++) {
+      await new Promise(r => setTimeout(r, 50))
     }
+    expect(await gone()).toBe(true)
     expect(await fs.access(ownDir).then(() => true).catch(() => false)).toBe(true)
     expect(await fs.access(oddDir).then(() => true).catch(() => false)).toBe(true)
 

@@ -28,6 +28,7 @@
     "pi-web-search/**/*.ts",
     "pi-tmux/**/*.ts",
     "pi-voice/**/*.ts",
-    "pi-link/**/*.ts"
+    "pi-link/**/*.ts",
+    "pi-intervention/**/*.ts"
   ]
 }

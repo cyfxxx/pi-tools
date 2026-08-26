@@ -156,7 +156,7 @@ async function main() {
     }
     // 命令整合规范（2026-09）：每扩展 ≤2 命令，具体功能用子命令参数指定，description 标注 help 用法；
     // 新增命令必须同步更新此清单（防 / 菜单噪音回归）
-    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link', 'tools']
+    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link', 'tools', 'intervention']
     const actual = Object.keys(cmdMap).sort()
     const missing = expected.filter((c) => !cmdMap[c])
     const extra = actual.filter((c) => !expected.includes(c))
@@ -212,13 +212,15 @@ async function main() {
     const expectedListeners = {
       'session_start': ['pi-autopilot', 'pi-memory', 'pi-web-search', 'pi-browser', 'plan-mode'],
       'session_shutdown': ['pi-autopilot', 'pi-memory', 'pi-browser', 'plan-mode'],
-      'before_agent_start': ['pi-context', 'pi-memory', 'plan-mode'],
+      'before_agent_start': ['pi-context', 'pi-memory', 'plan-mode', 'pi-intervention'],
       'context': ['pi-context', 'plan-mode'],
       'tool_call': ['plan-mode'],
       'tool_result': ['pi-context'],
       'turn_end': ['plan-mode'],
-      'agent_end': ['plan-mode'],
+      'agent_end': ['plan-mode', 'pi-intervention'],
       'agent_start': ['plan-mode'],
+      'input': ['pi-intervention'],
+      'tool_execution_start': ['pi-intervention'],
       'session_compact': ['pi-browser', 'plan-mode'],
       'session_tree': ['plan-mode'],
       'session_before_compact': ['pi-memory'],

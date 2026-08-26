@@ -9493,14 +9493,16 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-22T04:15:50.184Z",
-      "updatedAt": "2026-08-22T04:15:50.184Z",
+      "updatedAt": "2026-08-25T22:54:39.493Z",
       "accessedAt": "2026-08-22T04:15:50.184Z",
       "observedAt": "2026-08-22T04:15:50.184Z",
       "environments": [
         "wsl2"
       ],
       "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
-      "deleted": false
+      "deleted": true,
+      "supersededBy": "da1a0131-3ada-4d9c-8f5b-13f37503fef1",
+      "validUntil": "2026-08-25T22:54:39.493Z"
     },
     {
       "id": "e510e3ff-4eb1-4105-a22b-d3cf8bdad750",
@@ -10289,10 +10291,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 60,
+      "recurrence": 66,
       "createdAt": "2026-08-24T02:30:52.368Z",
-      "updatedAt": "2026-08-25T13:52:41.734Z",
-      "accessedAt": "2026-08-25T13:52:41.734Z",
+      "updatedAt": "2026-08-26T00:18:32.866Z",
+      "accessedAt": "2026-08-26T00:18:32.866Z",
       "environments": [
         "all"
       ],
@@ -13581,7 +13583,150 @@
       "accessedAt": "2026-08-25T13:53:26.949Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-25T13:53:26.949Z",
+      "deleted": false
+    },
+    {
+      "id": "da1a0131-3ada-4d9c-8f5b-13f37503fef1",
+      "category": "solutions",
+      "title": "entries.json 拉取冲突三方比对流程",
+      "content": "/root/.pi 仓库拉取时 memory/entries.json 常见冲突处理：pi-memory 运行时会写回该文件，git stash pop 后文件可能被覆盖回旧版本。正确流程：(1) stash 前记录本地条目数；(2) 拉取后用 git show HEAD:path 与 stash 版本做三方比对（条目数、recurrence 计数、时间戳）；(3) 验证本地是否为远端真子集（逐条比对0缺失0更新），是则安全丢弃 stash，否则需合并找回。实例：2026-08-25 远端589条严格超集本地578条。",
+      "tags": [
+        "git",
+        "pi-memory",
+        "entries.json",
+        "冲突",
+        "备份"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T22:54:39.097Z",
+      "updatedAt": "2026-08-25T22:54:39.097Z",
+      "accessedAt": "2026-08-25T22:54:39.097Z",
+      "observedAt": "2026-08-25T22:54:39.097Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03b18-34c6-7aa5-9b99-cf6f0a83c185",
+      "deleted": false
+    },
+    {
+      "id": "5fd7288e-45eb-4104-9f88-1e5fa696dbd0",
+      "category": "fact",
+      "title": "pi 仓库 2026-08-25 同步状态",
+      "content": "2026-08-25 拉取后 master 快进至 ba393ba，共更新38个文件(+1337/-104)，主要含全项目审计修复闭环（HIGH×2 + MEDIUM×12 + LOW×13）、memory 运行时数据增量、审计技能经验基线追加。长期未入库项固定三类：tool-use-localhost.jsonl 统计增量、.pi-admin-state.json、backup/ 目录，属正常状态无需处理。",
+      "tags": [
+        "git",
+        "仓库状态",
+        "审计修复"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T22:54:39.097Z",
+      "updatedAt": "2026-08-25T22:54:39.097Z",
+      "accessedAt": "2026-08-25T22:54:39.097Z",
+      "observedAt": "2026-08-25T22:54:39.097Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a03b18-34c6-7aa5-9b99-cf6f0a83c185",
+      "deleted": false
+    },
+    {
+      "id": "8cf5dd59-25ff-43aa-84d3-11a2a5d84d9f",
+      "category": "reference",
+      "title": "项目愿景：自主进化私人助手（docs/VISION.md 权威文档）",
+      "content": "顶层权威文档 ~/.pi/docs/VISION.md（2026-08-26 制定）。终极目标：可自主进化的全能型私人助手。三大功能判据化：智能=命中率≥97%+golden tasks 全绿+成本不劣化；自主=干预率下降+abort 快照 100% 留存并关联 corrective prompt（pi-intervention 扩展→memory/interventions.jsonl）；进化=教训四态闭环（挖掘→入库→验证→升格/淘汰）。方法论软硬结合，核心纪律=单向升格通道：教训 recurrence≥5→提示词规则→扩展逻辑/守门测试→原软引导降权；安全边界一律硬编码。防退化第一：结构性改动以 golden-tasks.sh 为安全网（--fast 确定性/--full 无头会话）。度量工具：task-metrics.mjs（会话级成功率/干预/token）、memory-lifecycle.mjs（陈旧>180天&recurrence≤1&confidence<0.7 淘汰候选；recurrence≥5 升格候选；均报告制，批量删需确认）。LoRA 展望的当前铺垫=干预/遥测数据带结构化字段作未来训练集。执行细节在 SELF-OPTIMIZING-ROADMAP.md 阶段4。",
+      "tags": [
+        "vision",
+        "roadmap",
+        "self-optimizing",
+        "intervention",
+        "golden-tasks",
+        "memory-lifecycle"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-25T23:49:23.088Z",
+      "updatedAt": "2026-08-25T23:49:23.088Z",
+      "accessedAt": "2026-08-25T23:49:23.088Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T23:49:23.088Z",
+      "deleted": false
+    },
+    {
+      "id": "880c616c-9b60-463a-8750-9065d4aa73c1",
+      "category": "solutions",
+      "title": "会话日志空轮模式: hit≈250000 out=0 连续空转",
+      "content": "分析 usage 统计/任务记录时，若见连续多轮 tools=0 hit=0 out=0 且夹杂单轮 hit≈250000 out=0（实例：2026-08-25 任务1 轮40/累计1810K、任务6 轮18/累计963K），特征为巨大前缀缓存命中但零输出零工具调用、token 持续累积。疑似上下文逼近上限导致无法生成而反复空转。处置：识别到此模式应尽早终止会话新开，勿继续追加\"继续\"类指令（实测无效）；可考虑在 pi-context 加护栏：连续 N 轮 out=0 时告警或强制 compact。（置信度：现象确凿，根因未确诊）",
+      "tags": [
+        "logging",
+        "diagnosis",
+        "context",
+        "pi-context"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T00:03:32.325Z",
+      "updatedAt": "2026-08-26T00:03:32.325Z",
+      "accessedAt": "2026-08-26T00:03:32.325Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T00:03:32.325Z",
+      "deleted": false
+    },
+    {
+      "id": "5eed2b23-6a84-49b4-9eaa-dfe0980a8433",
+      "category": "procedure",
+      "title": "极简指令\"拉取更新\"标准响应流程",
+      "content": "用户发\"拉取更新\"/\"执行\"时的固定动作：1) git pull（优先 --ff-only），列出更新文件数与关键内容；2) 核对 packs/drafts/ 是否随更新到位——曾出现其他设备已推送而本地未拉到的情况（2026-08-25），此目录易被遗漏；3) 若 memory/entries.json 冲突，先三方比对确认远端是否严格超集，是则丢弃本地 stash 后快进，否则手工合并；4) 全程不打断询问，完成后一次性汇报。",
+      "tags": [
+        "git",
+        "sync",
+        "workflow",
+        "pull"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T00:03:32.446Z",
+      "updatedAt": "2026-08-26T00:03:32.446Z",
+      "accessedAt": "2026-08-26T00:03:32.446Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T00:03:32.446Z",
+      "deleted": false
+    },
+    {
+      "id": "47d3d9df-3636-45c8-b718-431d1d7ae69f",
+      "category": "solutions",
+      "title": "日志中\"会话记忆提取器\"提示轮非真实用户输入",
+      "content": "会话记录与 usage 统计中以\"你是一个会话记忆提取器……输出严格 JSON\"开头的用户轮，是 pi-memory 后台 summarizer 子任务的提示词，并非用户真实发言。做任务复盘/经验沉淀/token 归因时应跳过这些轮次，只统计真实交互轮。实例：2026-08-25 任务2 与任务7 的记录均含此类轮次。",
+      "tags": [
+        "logging",
+        "pi-memory",
+        "analysis"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T00:03:32.538Z",
+      "updatedAt": "2026-08-26T00:03:32.538Z",
+      "accessedAt": "2026-08-26T00:03:32.538Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T00:03:32.538Z",
+      "deleted": false
     }
   ]
 }
