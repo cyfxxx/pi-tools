@@ -13549,20 +13549,71 @@
       "id": "00535f09-99d6-4cb3-b9bd-6e11d720ee6b",
       "category": "solutions",
       "title": "审计修复闭环: autopilot锁死+memory损坏清空+note-store统一",
-      "content": "2026-08-25 全项目审计修复闭环（pi 0.84.3 后）：已修 HIGH×2——① pi-autopilot/storage.ts acquireSessionLock 的 staleByAge 与 oldPid===myPid 分支原先跳过 unlink 直落 O_EXCL 必 EEXIST 致调度永久停摆，修复为两分支均先 unlink 再 wx；② pi-memory/storage.ts 新增 readStoreFile 泛化 entries 的损坏备份防护到 summaries/notes。test-all.sh ALL_EXTS 已补 subagent（subagent-guards.test.ts 此前零执行）。lib/note-store.ts env 键对齐为 PI_MEMORY_DIR || CTX_LITE_DIR 兜底、saveNotes 过 scrubSecrets、损坏备份；与 pi-memory/storage 双实现写同一 ~/.pi/memory/notes.json 是长期漂移源。暂缓待实测项：pi-context provider 缺流式 usage 时扩展层压缩/压力提示全失效（#8328 同类假设，需先加 usage-diag 探针确认触发面）；pi-voice 启动 stopRecording 全局 -q 双开误停（Termux 平台专属，本机无法实测）；plan-mode agent_start 自愈与 before_agent_start 分层时序。教训：审计报告行号普遍漂移（最大 47 行），复核必须按内容定位；types.ts 曾出现\"注释先于实现\"的虚标（deleted 墓碑），本次已补实现。",
+      "content": "2026-08-25（续二）0.84.3 升级后全量审计修复闭环经验（完整版见 agent/skills/pi-full-audit/references/EXPERIENCE-BASELINE.md 对应小节，与同日早间会话两节合并连续）：① types.ts deleted 墓碑注释虚标已闭环——并行会话只落注释未落实现，本会话补齐 listTasks 过滤+importTasks 拒绝导入；注释日期≠已实现证据。② tmux_run 长任务禁用管道 tail（吞全部中间输出致误判失败），直接重定向文件+EXIT 码。③ 审计行号普遍漂移（最大 47 行），复核按内容定位。④ 红灯验证单文件回退：git stash push -q -- <file> → 跑测试确认失败 → pop。⑤ worker 现场修正可优于审计方案（Windows 映像名白名单 node/bash/cmd.exe），采纳需注明理由。⑥ 探针先于盲修：usage-missing 事件（10min 节流）观测 provider 缺流式 usage 触发面。⑦ test-all.sh ALL_EXTS 补 subagent——聚合测试入口清单完整性属注册面纪律。⑧ edit 工具 oldText/newText 方向写反两次，newText=完整替换文本。⑨ 活进程追加的统计文件在提交/推送间隙变脏，pull --rebase 前单文件 stash 即可。暂缓项跟踪：pi-context 无 usage 兜底待 usage-missing 数据实锤；pi-voice 双开误停待 Termux 实测；plan-mode 自愈时序影响一轮有兜底。",
       "tags": [
         "pi-autopilot",
         "pi-memory",
         "note-store",
         "审计",
-        "0.84.3"
+        "0.84.3",
+        "修复闭环",
+        "usage-diag"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-08-25T13:53:26.949Z",
+      "updatedAt": "2026-08-25T14:11:59.725Z",
+      "accessedAt": "2026-08-25T14:11:59.725Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-25T13:53:26.949Z",
+      "deleted": false
+    },
+    {
+      "id": "06d336b8-7b71-4ee9-be8d-23a840246b95",
+      "category": "reference",
+      "title": "dsh-pocket 可借鉴工程模式（限速器/隧道/自重启/版本检测）",
+      "content": "来源 shaobeichen/dsh-pocket（GPL-2.0）源码分析，供 pi 扩展开发参考：\n\n【登录限速器（若暴露任何 web/RPC 面）】三层内存态：单 IP 60s 滑动窗口失败≥5 锁 60s；全局窗口失败>50 全局锁 30s（防换 IP 扫描）；成功清零。IP 只信 cf-connecting-ip / socket.remoteAddress，明确不信 x-forwarded-for（可伪造）。Map 超 2000 条清理出窗条目防膨胀。\n\n【公网隧道方案（cloudflared）】强制 `--protocol http2`（默认 QUIC 走 UDP 7844 国内/企业网被掐报 error 1033）；URL 正则需负向前瞻排除 api.trycloudflare.com；启动 30s 超时；cleanup 后 child.stdout.resume() 继续吞输出防 64KB 管道缓冲阻塞子进程。下载镜像顺序：清华 TUNA bottle（仅 macOS 可用，Linux bottle ELF 有 @@HOMEBREW_PREFIX@@ 占位符未 patch 会 ENOENT）→ GitHub 官方 → ghproxy 等；文件<1MB 视为错误页换源。自适应下载：HEAD 探 Range → 2MB 探针测速，快则续传慢则 8 段并发分块。\n\n【detached 自重启】不赌固定延时：辅助进程 spawn(process.execPath,['-e',helperCode],{detached:true})+unref()，内部轮询 net.connect 探端口释放（200ms×100 次），释放后拉起新宿主；父进程 500ms 后自杀。标记文件一次性消费（读完即删），带过期时间防残留横幅常驻。适用于 pi-autopilot 重启编排对照。\n\n【版本检测】实时读磁盘 package.json 对比模块加载时固化的 loadedVersion，current>loaded 即\"已更新待重启\"（require 缓存进程内不变）。配合 rebuild.sh 补丁流程可在会话内提示。\n\n【单飞 promise 清理】finally 里 `if (inflight === p) inflight = null`——只清自己的引用，防 stop 后立即 start 时旧协程误清新 promise（孤儿 cloudflared 场景）。\n\n【实测参数】brotli 质量 6 vs 默认 11：17MB JSON 压缩 128ms/1.00MB vs 40s+（手机超时级）；gzip 88ms/1.20MB。WS 心跳：代理每 30s 手写协议层 Ping 帧 Buffer [0x89,0x00]（server→client 不掩码），连续 2 周期零入站 destroy 让客户端重连；WebSocket pipe 必须 end:false + teardown 用 resetAndDestroy() 发 RST（上游 allowHalfOpen=true 收 FIN 不关会挂死）。Node server.closeAllConnections() 不含 upgrade 后 WS socket，需手动 Set 跟踪。",
+      "tags": [
+        "dsh-pocket",
+        "engineering-patterns",
+        "security",
+        "tunnel",
+        "rate-limit",
+        "reference"
       ],
       "confidence": 1,
       "source": "manual",
       "recurrence": 1,
-      "createdAt": "2026-08-25T13:53:26.949Z",
-      "updatedAt": "2026-08-25T13:53:26.949Z",
-      "accessedAt": "2026-08-25T13:53:26.949Z",
+      "createdAt": "2026-08-26T02:13:53.065Z",
+      "updatedAt": "2026-08-26T02:13:53.065Z",
+      "accessedAt": "2026-08-26T02:13:53.065Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T02:13:53.065Z",
+      "deleted": false
+    },
+    {
+      "id": "2cbdab53-3bd1-42e3-9761-bea8321ef64a",
+      "category": "reference",
+      "title": "决策：pi-link 公网隧道不做 + lanip.ts 已落地范围与边界",
+      "content": "决策记录（2026-08-26）：pi-link 不加公网隧道通道。场景\"设备不在同一网络且无 Tailscale\"目前由 Tailscale 覆盖，边际价值低；且 pi 能执行任意代码，暴露公网风险高于 dsh-web。若未来确需：独立扩展实现，方案照抄 dsh-pocket——8 位 PIN 默认每次开启轮换（自定义后固定）、三层限速器、开启前免责声明服务端强制校验 payload.disclaimer===true 防绕过前端直调 RPC、会话 cookie 绑定进程级 randomBytes(16) sessionKey（宿主重启即全失效强制重登）。已落地部分见 lanip.ts：打分选卡 + WSL ipconfig.exe 解析已并入 pi-link/card.ts buildCard 链路（Tailscale → detectLanIPv4 → hostname -I 兜底），WSL2 实测取到 Windows 物理网卡 192.168.124.x 而非 NAT 172.x。注意：WSL2 NAT 模式下外部设备仍无法直接入站连 WSL，卡片地址正确还需 Windows sshd/portproxy 或镜像网络模式配合——export-card 只解决\"报哪个地址\"。",
+      "tags": [
+        "pi-link",
+        "tunnel",
+        "decision",
+        "wsl2",
+        "security"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T02:14:29.085Z",
+      "updatedAt": "2026-08-26T02:14:29.085Z",
+      "accessedAt": "2026-08-26T02:14:29.085Z",
       "environments": [
         "all"
       ],
