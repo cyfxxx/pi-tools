@@ -75,7 +75,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 `patch-footer-restart-hint.mjs`（上下文 >40% 窗口时 context 区追加 ⚠，提示重启前先压缩；依赖 cache 补丁的实时 context 形态）
 `patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）
 `patch-tab-arg-completion.mjs`（tab 参数补全）
-`patch-compaction-warm-prefix.mjs`（压缩摘要暖前缀重放，2026-08-26：compaction.js 加 setCompactionWarmPrefixProvider 注册点 + 包根导出/类型同步；pi-context 按模型门控注册素材——自动前缀缓存家族才启用，overflow/近窗禁用；实测验证：压缩后 usage-stats 看该会话压缩轮 cacheRead 是否非零）
+`patch-compaction-warm-prefix.mjs`（压缩摘要暖前缀重放，2026-08-26 终态：compaction.js 加 setCompactionWarmPrefixProvider 注册点 + completeSummarization 的 produce 内注入 onPayload 桥——buildParams 之后、发送之前用主请求最终 payload 整体替换（缓存键原文，零二次转换；context 级重放已退役：v1/v1.5 实测均二次转换崩溃）+ 包根导出/类型同步；pi-context 按模型门控注册素材（自动前缀缓存家族才启用，overflow/近窗禁用），素材必须用 lastRequestPayload.tools/messages（最终转换版，原始工具定义会 422 缺 type）；实测：/compact rewrite-bridge 生效（baseMsgs=165/tailLen≈9.5K/tools=43，压缩后主请求 input=253/cacheRead=47360））
 `patch-playwright-core.mjs`（Termux android→linux 平台补丁）
 
 共 8 个由 rebuild.sh Phase 3 自动执行（幂等）；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行八个脚本）。
