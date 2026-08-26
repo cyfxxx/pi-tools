@@ -64,6 +64,7 @@ subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip
 - 历史背景：16K thinking 预算曾致 3.8h 会话 27 次缓存断裂、1.46M token 浪费（每 2-3 轮改早期消息 → 前缀断裂）；64K 后模拟断裂 39→4 次，实测 0 断裂/98%+
 - 工具 schema 是 system prompt 一部分：conflict-check 每次运行将 registerTool 块 sha256 入账 `stats/tool-fingerprint.jsonl`，跨会话漂移可追溯
 - 诊断：`node scripts/usage-stats.mjs` 看每会话命中/断裂/浪费；断裂轮 cacheRead ≈ 断裂点，对照该轮事件定位；`cache-guard.mjs` 查注入面漂移
+- 流程层守门（2026-08-26，源自 dsh 生态 Reasonix 纪律）：`scripts/check-cache-impact.sh` 经 `.githooks/commit-msg`（rebuild 自动配 `core.hooksPath`）强制触碰缓存敏感面的 commit 携带 `Cache-impact: <none|low|medium|high> - <理由>`；触碰 `agent/{skills,prompts,agents}/` 追加 `System-prompt-review:`（拒绝 none/占位）。手动报告：`bash scripts/check-cache-impact.sh --staged`。与 cache-guard.mjs 分工：指纹管内容漂移，声明管流程纪律
 
 ## 补丁生命周期
 

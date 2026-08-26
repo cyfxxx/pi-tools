@@ -297,6 +297,16 @@ phase1_config() {
     ok "searxng/settings.yml 已存在"
   fi
 
+  # git hooks（幂等）：缓存影响声明守门（scripts/check-cache-impact.sh 经 commit-msg hook 生效）
+  if [ -d "$PI_HOME/.githooks" ] && git -C "$PI_HOME" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if [ "$(git -C "$PI_HOME" config core.hooksPath)" != ".githooks" ]; then
+      git -C "$PI_HOME" config core.hooksPath .githooks
+      ok "git core.hooksPath → .githooks（缓存影响声明守门）"
+    else
+      ok "git core.hooksPath 已指向 .githooks"
+    fi
+  fi
+
   # pi-web-search 指向本地 SearXNG（幂等：仅在未配置 searxng_url 时写入）
   if [ -f "$PI_HOME/searxng/settings.yml" ] && [ -f "$PI_HOME/agent/settings.json" ]; then
     python3 - "$PI_HOME/agent/settings.json" <<'PY' | tail -1

@@ -13051,6 +13051,72 @@
       "accessedAt": "2026-08-26T02:53:30.711Z",
       "environments": [
         "all"
+      ],
+      "observedAt": "2026-08-26T02:53:30.711Z",
+      "deleted": false
+    },
+    {
+      "id": "762000d2-4a31-4fe1-918e-6b6cfd410dea",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-08-26T03:40:35.318Z",
+      "updatedAt": "2026-08-26T03:42:29.435Z",
+      "accessedAt": "2026-08-26T03:42:29.435Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T03:40:35.318Z",
+      "deleted": false
+    },
+    {
+      "id": "60567bd5-bc42-4b97-91d5-b56cc6a61550",
+      "category": "solutions",
+      "title": "经验沉淀：空壳任务再现，建议先修提取脚本",
+      "content": "空壳任务记录（全程 tools=0/hit=0/out=0）不存细节记忆、不写 SKILL 草稿，防污染记忆库；处置顺序：先修提取脚本、抽查原始日志，再重跑蒸馏。截至 2026-08-26 已三次同类空壳投喂：① 57轮/3514K tokens；② 90轮/6015K tokens；③ 16轮/1089K tokens（08-25 13:51 批次），且第三次再次出现 hit=250000——恰为统计上限值，属封顶伪影非真实命中。三次模式高度相似，确认提取脚本至今未修复，且疑似对同一原始日志重复投喂；修复前应先校验投喂源非空再触发蒸馏会话。",
+      "tags": [
+        "经验蒸馏",
+        "空壳任务",
+        "提取脚本",
+        "缓存伪影",
+        "重复投喂"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T03:42:41.953Z",
+      "updatedAt": "2026-08-26T03:42:41.953Z",
+      "accessedAt": "2026-08-26T03:42:41.953Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-26T03:42:41.953Z",
+      "deleted": false
+    },
+    {
+      "id": "9a40eb39-4241-4719-b29c-46439c5d6065",
+      "category": "fact",
+      "title": "dsh 三项借鉴交付：影响声明守门+评估隔离+蒸馏质检",
+      "content": "2026-08-26 交付 dsh 生态调研三项借鉴：①scripts/check-cache-impact.sh + .githooks/commit-msg（rebuild.sh phase1_config 自动配 core.hooksPath=.githooks）：触碰缓存敏感面（AGENTS.md/pi-context//prune.ts/context-budget.ts/inject.ts 等）的 commit 强制 Cache-impact 字段，触碰 agent/{skills,prompts,agents}/ 追加 System-prompt-review；none 合法但空/todo/tbd 拒绝。5 场景实测通过（拦截/放行/占位拒绝/双字段）。与 cache-guard.mjs 分工：指纹管内容漂移、声明管流程纪律。②VISION.md §3.4 评估隔离契约：评分命令/期望结果/阈值不进被评估会话上下文（防 Goodhart）。③task-summarizer.mjs 蒸馏质检：会话级空壳门禁 SUBSTANTIVE_RATIO_MIN=0.3（实质轮占比不足整会话剔除）、清单只列实质轮+hit≥250000 封顶伪影标注、prompt 增入库前自检五条（具体/可验证/无敏感/非重复/非空壳）与 SKILL.md 质检段（触发条件/前置依赖/验证方式）。教训：git commit 经管道取退出码须用 PIPESTATUS[0] 而非 $?；hook 测试前先确认 core.hooksPath 已配。test-all --fast 11 项全绿。",
+      "tags": [
+        "cache-guard",
+        "守门",
+        "dsh",
+        "借鉴",
+        "蒸馏"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-26T03:44:45.266Z",
+      "updatedAt": "2026-08-26T03:44:45.266Z",
+      "accessedAt": "2026-08-26T03:44:45.266Z",
+      "environments": [
+        "all"
       ]
     },
     {

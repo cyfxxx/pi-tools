@@ -1,0 +1,4 @@
+#!/bin/bash
+# commit-msg hook：缓存影响声明守门（薄包装，逻辑在 scripts/check-cache-impact.sh）
+# git 对非 bare 仓库执行 hook 时 cwd = 工作树根，故按 cwd 推导脚本位置
+exec bash "${PI_HOME:-$(pwd)}/scripts/check-cache-impact.sh" --commit-msg "$1"
