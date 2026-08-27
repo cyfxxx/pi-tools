@@ -38,6 +38,8 @@ Godot 4.x 引擎开发技能，15 个，覆盖 GDScript/C#、场景节点、物�
 ## 本机环境备注（2026-06 实测；环境：termux-ubuntu —— proot-Distro aarch64，Android 宿主的 proot 容器，uname 含 PRoot，其他设备请以自身环境为准）
 
 - Godot 4.7.2 stable 官方 arm64 已装于本环境：`/opt/godot-4.7.2/`，`godot` 命令可用（此环境实测通过 `--version`/`--headless --script` 冒烟；其他设备未装或版本未知，需自行确认）
+- **宿主设备直访**：proot 可读写宿主安卓共享存储（/storage/emulated/0，含 Download/Documents）；宿主设备（华为）已装 Godot 4.7.2 安卓编辑器 APK。项目共享目录：`/storage/emulated/0/Godot/projects/`（本环境创建与验证，设备端 Godot 文件选择器直接打开）；导出 apk/pck 也可直接写该处。Android/data 与应用目录受 Android 限制不可读（proot 伪 root）
+- 设备端验证闭环：本机 headless 写项目/冒烟（`--headless --quit-after N`）→ 写入共享目录 → 设备 Godot 打开运行；adb 不可用（华为 ROM 屏蔽无线调试授权，无弹窗，offline 顽固）
 - 获取途径：Godot 官网 CDN（Hetzner ObjectStorage）可达；GitHub release/TuxFamily 被阻断。下载模板：`https://godot-releases.nbg1.your-objectstorage.com/<版本>-stable/<文件名>`（listing 页见 downloads.godotengine.org）
 - 验证约定：`godot --headless --script <test.gd>`（SceneTree 脚本冒烟）/ `godot --headless --check-only <项目>`（脚本语法检查）；渲染类需要 `--headless` 配合 dummy 显示驱动或截图验证
 - 导出验证：导出模板（export templates）需从官网 CDN 另下；桌面导出需系统依赖（构建工具链），Web 导出需 Web 模板（下载后放 `~/.local/share/godot/export_templates/<版本>/`）
