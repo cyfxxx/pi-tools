@@ -395,6 +395,26 @@ print(' '.join(k for k in deps if not os.path.isdir(os.path.join(nm, k))))
 PY
 }
 
+phase2_nm_cleanup() {
+  # 统一依赖根：扩展目录不应安装独立真实依赖（旧架构每扩展独立 node_modules 约省 500MB）。
+  # 日志 2026-08-28：验证段防御式告警但手工清理，改为 npm 就绪后主动清除（幂等）。
+  local found=0
+  for d in "$PI_HOME/agent/extensions"/*/node_modules; do
+    [ -d "$d" ] || continue
+    # 与验证段同判据：无可见非隐藏项（如 .vite 占位）视为无真实依赖，跳过
+    if find "$d" -mindepth 1 -maxdepth 1 ! -name '.*' 2>/dev/null | grep -q .; then
+      rm -rf "$d"
+      found=$((found+1))
+    fi
+  done
+  if [ "$found" -gt 0 ]; then
+    ok "扩展残留 node_modules 已清理（$found 处）"
+  else
+    # 无声通过：无残留是常态，不刷存在感
+    :
+  fi
+}
+
 phase2_npm() {
   # 统一依赖根：10 个扩展共享 agent/node_modules（Node 向上寻径解析，见 agent/package.json）。
   # 一次 npm install 替换旧的“每扩展独立 node_modules”（约省 500MB / 9 份 vitest）。
@@ -1257,6 +1277,10 @@ PID_REPO=$!
 wait $PID_VENV $PID_REPO 2>/dev/null || true
 phase2_searxng_deps
 wait $PID_NPM 2>/dev/null || true
+
+# 统一根架构防御：npm 就绪后清除扩展目录下的真实 node_modules 残留
+# （仅删真实依赖；.vite 等缓存占位不告警不删除，与验证段逻辑一致）
+phase2_nm_cleanup
 
 phase2_binaries
 phase2_browser
