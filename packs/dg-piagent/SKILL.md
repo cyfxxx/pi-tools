@@ -27,7 +27,7 @@ description: |
 
 2. **升级前评估**：当任务涉及安装/升级（或用户问版本）时，先跑 `npm view @earendil-works/pi-coding-agent version` 拿 latest 与基线对比。若不同，联网查该版本 CHANGELOG/release notes，从 SDK 二次开发角度评估（新功能 / 破坏性变更），给用户简短建议，由用户决定是否升级。日常开发（项目已装好）不触发。
 
-3. **升级即更新 skill**：若用户同意升到 X.Y.Z，安装后按 [skill-maintenance.md](references/skill-maintenance.md) 流程，对照新版 `dist/**/*.d.ts` + CHANGELOG 审查 skill 差异，产出更新清单，报用户确认后再改，并同步更新顶部基线版本号。
+3. **升级即更新 skill**：若用户同意升到 X.Y.Z，安装后按 [技能维护机制](../../../docs/SKILLS-MAINTENANCE.md) 流程，对照新版 `dist/**/*.d.ts` + CHANGELOG 审查 skill 差异，产出更新清单，报用户确认后再改，并同步更新顶部基线版本号。
 
 **变更查阅渠道**（第 2/3 步执行依据）：
 
@@ -268,7 +268,7 @@ try {
 
 > 完整路径导航表(三个包自带内容不对称)、检索配方、降级策略、回流提示 → [source-fallback.md](references/source-fallback.md)
 
-**兜底解决后**:若该问题任何用 pi-agent 的项目都可能遇到,主动建议用户「值得补进 skill 吗」,由用户决定(遵循 [skill-maintenance.md](references/skill-maintenance.md) 沉淀)。
+**兜底解决后**:若该问题任何用 pi-agent 的项目都可能遇到,主动建议用户「值得补进 skill 吗」,由用户决定(遵循 [技能维护机制](../../../docs/SKILLS-MAINTENANCE.md) 沉淀)。
 
 ---
 
@@ -276,7 +276,7 @@ try {
 
 **官方源码参考**: `packages/coding-agent/src/`(SDK)、`packages/agent/src/`(Agent 核心)、`packages/ai/src/`(AI 抽象)
 
-**Skill 维护**: 发现信息缺失/错误导致走弯路时,按 [skill-maintenance.md](references/skill-maintenance.md) 6 条原则完善本 skill,并同步更新 [CHANGELOG.md](CHANGELOG.md)（历史沿革，永久保留）。
+**Skill 维护**: 发现信息缺失/错误导致走弯路时,按 [技能维护机制](../../../docs/SKILLS-MAINTENANCE.md) 6 条原则完善本 skill,并同步更新 [CHANGELOG.md](CHANGELOG.md)（历史沿革，永久保留）。
 
 ## 使用后经验沉淀（必做）
 
