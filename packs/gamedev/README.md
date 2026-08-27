@@ -18,7 +18,7 @@ tar xzf gds.tgz -C /tmp --strip-components=1 --one-top-level=awesome-gds
 # 对照下方"收编清单"复制：cp -r awesome-gds/skills/<目录>/* /root/.pi/packs/gamedev/skills/<分组>/
 ```
 
-## 收编清单（24 个技能，2026-08-21 拉取）
+## 收编清单（39 个技能，2026-08-21 拉取 web/design/workflow，2026-06 增量收编 godot）
 
 | 分组 | 技能 | 用途 |
 |---|---|---|
@@ -27,10 +27,11 @@ tar xzf gds.tgz -C /tmp --strip-components=1 --one-top-level=awesome-gds
 | | threejs-scene-setup、threejs-materials-lighting、threejs-gltf-loading | Three.js 场景/材质光照/glTF 模型 |
 | **design/** 通用学科 (14) | game-feel、game-ui-ux、input-systems、camera-systems、physics-tuning、game-ai、dialogue-systems、level-design、save-systems、procedural-gen、shader-programming、performance-optimization、audio-design、create-game-assets | 引擎无关的开发学科（含资产生成管线附脚本） |
 | **workflow/** 流程 (4) | prototype-fast、game-jam、itch-publish、steam-publish | 快速原型/Game Jam/发布渠道 |
+| **godot/** 完整引擎 (15) | godot-gdscript、godot-csharp、godot-nodes-scenes、godot-signals-groups、godot-2d-movement、godot-3d-essentials、godot-physics、godot-tilemap、godot-ui-control、godot-animation、godot-audio、godot-shaders、godot-resources、godot-multiplayer、godot-export | Godot 4.x（基线 4.7）：GDScript/C#、2D/3D、UI、导出管线；版本纪律见 references/VERSION-SUPPORT.md；本机环境备注见 skills/godot/README.md |
 
 ## 未收编（上游另有，以后需要时按目录增量拉取）
 
-- `godot/`(16)、`unity/`(8)、`unreal/`(6)、`other-engines/`(4: bevy/love2d/pygame/roblox) — 其他引擎
+- `unity/`(8)、`unreal/`(6)、`other-engines/`(4: bevy/love2d/pygame/roblox) — 其他引擎
 - `genres/`(9: platformer/puzzle/roguelike/rpg/card-game 等) — 玩法类型模板（与引擎无关，网页游戏也适用，先未收）
 - 更新重拉时注意上游可能增删技能，以 `find skills -name SKILL.md` 清单为准
 
