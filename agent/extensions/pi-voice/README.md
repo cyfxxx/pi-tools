@@ -91,6 +91,7 @@ python3 -m venv /opt/pi-sherpa/venv
 - 唤醒词拼音约束：声母为单 token（`sh` 不可拆成 `s h`），韵母带声调
 - **唤醒检测通道**：默认 ASR 通道（`PI_SHERPA_WAKE_MODE=asr`）——SenseVoice 转写窗口后匹配“@ 后中文词”，对真实人声可靠（KWS 3.3M 拼音模型对弱信号/口音召回差，实测同段语音转写正确而 KWS 恒不命中，阈值/增益无效）；VAD 预筛（RMS < `PI_SHERPA_WAKE_VAD_RMS` 默认 -36dBFS）滤掉静音窗口，日常 0 开销，活跃窗口转写 ~100ms。KWS 通道可 `PI_SHERPA_WAKE_MODE=kws` 回退（服务端环境变量，重启 sherpa 生效）
 - **采集停滞看门狗**：WSLg 的 RDP 麦克风源会挂起长时间未活动的采集 stream（常驻 parec 无数据而新建录音正常）。监听进程 8s 无数据自动 kill+重启采集（最多 3 次）；且 pi 扩展沙箱下 spawn 的 stdout 为 IPC socket 不可做长流数据，采集固定走文件模式（`--file-format=wav`，poll 读文件尾部）
+- **唤醒排障速查（2026-08-27 沉淀）**：① 唤醒事件收不到但录音正常、统计恒 0 → stdout pipe 在扩展沙箱下不可靠，确认唤醒进程带 `--file-format=wav` 落盘 + 扩展侧轮询读文件；② pi 启动即崩溃且栈指向 pi-voice → 加载期同步调用 runtime API（sendMessage 等），依赖 runtime 的调用必须延迟到首次交互/显式开关；③ KWS 3.3M 模型误检/漏检 → 先换 ASR 通道或调阈值交叉验证，别直接改代码
 
 ## 平台适配
 

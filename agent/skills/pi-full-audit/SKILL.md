@@ -260,6 +260,16 @@ foreach ($f in $files) {
 
 运行检查发现问题需要改代码时：小改动走 pi-code-review（审查 diff 后修），系统性改动转本技能第 6 步（修复闭环）。运行检查不替代审计，两者互补。
 
+## 每日快速巡检模式（轻量只读，2026-08-27 吸收 drafts/daily-ops-review）
+
+每日整体复检 pi 前一日运行情况，**只读为主、不深入探索**（防 token 浪费，参考一轮 tools 6-12 个、out ~500 tokens）。后台独立会话执行（tmux_run），勿改配置，工作目录 `cd /root/.pi`。
+
+1. **缓存命中**：`node scripts/usage-stats.mjs` 看当前/近期会话命中率与断裂
+2. **健康日志**：`ls -lt logs/` 找异常（ERROR/扩展报错），查 tmux 残留
+3. **订阅产出**：知识订阅当日输出非空（knowledge-fetch 任务 lastRun 成功、.seen.txt 未全命中）
+4. **存储水位**：`node scripts/usage-stats.mjs --json` 看会话体积；`du -sh memory/ logs/` 水位（参考阈值：缓存命中 >96%、断裂 ≤1 次 A 类、浪费 <50K tokens、存储 <2MB/条目 <600 为正常）
+5. **汇总**：一条 bash 聚合完成全部检查项；输出仅"ok / 异常项清单"两类结论；异常项创建后续任务处理，不在当轮深挖
+
 ## 每次审计后必须沉淀技能（用户硬性要求，2026-08-18 起）
 
 **每次执行本技能（无论是否产出修复）结束后，必须把本次过程经验沉淀到 references/EXPERIENCE-BASELINE.md（原 frontmatter 巨型行已外置）与相关章节**，这是显式要求而非可选优化：

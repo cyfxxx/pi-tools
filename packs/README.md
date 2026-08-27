@@ -52,6 +52,26 @@ packs/
 3. **收编外部技能**：优先提炼通用能力 + 专用能力分类 + 繁重能力记录（见 pdf-toolkit 三层结构），不整树复制；来源与授权记录在包 README
 4. 更新后立即把本次整合经验追加到 EXPERIENCE.md（本条也适用）
 
+### 外部技能引入完整流程（2026-08-27 吸收 drafts/external-skill-pack-integration + skill-pack-adoption）
+
+**A. 多源整合模式**（用户说"找技能包/整合开源技能/收纳技能"时）：
+
+1. **调研选源**：GitHub 搜索 + web_search，关键词带技能领域；筛选条件 star/近期更新/许可声明/README 完整度；选 2-3 个**互补**源（架构、工具链、方法论各有所长），避免同质源；逐个 fetch 到 /tmp 审阅，记录各自结构与独有贡献点
+2. **许可核对（先于一切改写）**：每个源确认 LICENSE；取最严格许可作为整合版许可（例：三源中 CC BY-NC-SA 4.0 最严则全包用该许可）；包内 README 附"来源-许可-贡献"对照表，引入处标注出处
+3. **平台适配（pi 格式）**：统一 frontmatter（name/description）、路径结构、命令面；去重相似能力；保留各自方法论精髓
+4. **实测验证**：最小用例跑通全链路，记录坑
+
+**B. 单包验收模式**（从 GitHub 拿到现成技能包 zip/release 时）：
+
+1. **选包与下载**：优先有正式 release tag、近期提交、issue 有回应的仓库；下载 zip 到本地，不直接执行来源不明安装脚本
+2. **解压审查（安装前必做）**：SKILL.md frontmatter 合法；脚本无危险操作（递归删除/数据外传/混淆）；依赖清单可审计；审查不合格直接丢弃
+3. **安装**：包体放 `packs/<name>/` 保持原结构；外部 CLI 依赖单独安装，以 `<cli> --version` 出版本号为就绪判据
+4. **对照官方文档核验命令面**：逐一核对封装子命令与官方当前版本一致（版本漂移常见）；完成平台侧前置条件（例：微信开发者工具需先开启「服务端口」）
+5. **冒烟测试**：建最小示例工程，只跑 1-2 条核心命令验证完整链路，通过后删临时工程
+6. **归档**：写使用总结，更新 packs/README.md，git 提交推送（remote 含 token 时先恢复无凭证 URL）
+
+两种模式收尾都必须：验证结果/坑追加到包 EXPERIENCE.md；远程源更新重拉时回到第 1 条"禁止整目录覆盖"流程。
+
 ## 防膨胀守则
 
 - 草稿进 drafts 前由脚本标注"建议"，未确认不建包
@@ -74,6 +94,7 @@ packs/
 | `cangjie-skill/` | 长内容蒸馏元技能（外部收纳 kangarooking/cangjie-skill @5f03a4c，MIT）：RIA-TV++ 七阶段管线把书/长视频转写/播客蒸馏成原子化可执行 skills——Adler 整书分析→5 提取器并行→三重验证（通过率 25-50%）→RIA++ 六维构造→Zettelkasten 关联→压力测试（诱饵题+混淆题）→交付；原文不动，pi 适配与验收规范见包内 README |
 | `pdf-toolkit/` | PDF 处理：通用能力 CLI `bin/pdf_core`（提取/合并/拆分/旋转/加密/水印/渲染/报告）+ 表单填写与扫描件 OCR 子技能；去水印/签名/压缩/Stirling/MinerU 等繁重能力记录在 references/specialized-tools.md。整合 anthropics/pdf skill 技术栈 |
 | `media-toolkit/` | 图片/视频/游戏美术处理：通用 CLI `bin/media_core`（图片：转换/压缩/水印/批量；视频：转码/剪辑/拼接/抽帧/音频/GIF/字幕；游戏：精灵表拆分/图集打包/资产优化）+ 三个子技能（image-basics/video-basics/game-art）；TexturePacker/GIMP/whisper 等繁重能力记录在 references/specialized-tools.md。全部本地执行（ImageMagick+ffmpeg+Pillow） |
+| `knowledge-fetch/` | 零 LLM 知识订阅搭建（渠道调研/抓取脚本/去重过滤容错/定时任务接入）。已验证实例 `/root/.pi/scripts/knowledge-fetch.py` v2（5 section，接入 daily-health-check）。来源：drafts/knowledge-fetch-setup（2026-08-27 升格） |
 
 ## 与 pi-backup 的关系
 

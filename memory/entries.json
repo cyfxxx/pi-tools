@@ -13087,10 +13087,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 21,
+      "recurrence": 23,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-27T07:12:28.091Z",
-      "accessedAt": "2026-08-27T07:12:28.091Z",
+      "updatedAt": "2026-08-27T09:52:09.428Z",
+      "accessedAt": "2026-08-27T09:52:09.428Z",
       "environments": [
         "all"
       ],
@@ -13991,6 +13991,51 @@
       ],
       "observedAt": "2026-08-26T14:09:24.063Z",
       "deleted": false
+    },
+    {
+      "id": "3a1369ac-c538-4995-a8fc-a3911c9cf11b",
+      "category": "solutions",
+      "title": "pi-context 任务门测试时间戳耦合：7 天窗口滚动致测试腐烂，改动态 Date.now()",
+      "content": "pi-context index-compact.test.ts 任务门用例曾写死 plan-1787200000000 目录名，因任务门 7 天窗口（Date.now() - ts < 7d）随日期滚动失效（2026-08-27 实测相距 7.2 天被过滤导致断言失败）。修复：改为 Date.now() 动态生成 plan 目录。教训：涉及时间窗口的测试不要写死时间戳，用动态时间。",
+      "tags": [
+        "pi-context",
+        "测试",
+        "时间耦合",
+        "task-gate"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-27T09:52:55.056Z",
+      "updatedAt": "2026-08-27T09:52:55.056Z",
+      "accessedAt": "2026-08-27T09:52:55.056Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-27T09:52:55.056Z",
+      "deleted": false
+    },
+    {
+      "id": "86e36073-52f9-41a5-a700-59a5219d3fa9",
+      "category": "fact",
+      "title": "缓存断裂根因：opencode.ai 云网关，将切换官方 API 对比",
+      "content": "缓存断裂排查结论（2026-08-27，环境 termux-ubuntu proot）：当前模型链路 = PI_PROVIDER=opencode-go，网关端点 https://opencode.ai/zen/go/v1（opencode 云网关，OpenAI 兼容，本机仅持 key 无配置可调；localhost:8080 本地 Qwen 已闲置未启动，8889 是 SearXNG 与网关无关）。症状：命中率约 87-88%（目标 97%），断裂为 A 类全断（cacheRead 0 全前缀重发），间隔 1.6~6min 离散分布（非固定 TTL），连续三会话（11:26/11:58/19:57）同型，重发量随上下文线性增长（88K→125K）。本地已排除注入/工具启用/compaction 因素；怀疑 opencode.ai 云端网关缓存容量/驱逐压力（多会话共享池）。用户计划切换官方 API 对比验证：切换后应对比断裂频率与命中率，确认是否 opencode.ai 网关问题；若官方 API 断裂消失则该结论坐实。",
+      "tags": [
+        "缓存",
+        "网关",
+        "opencode-ai",
+        "命中率",
+        "诊断"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-27T12:53:00.219Z",
+      "updatedAt": "2026-08-27T12:53:00.219Z",
+      "accessedAt": "2026-08-27T12:53:00.219Z",
+      "environments": [
+        "termux"
+      ]
     }
   ]
 }

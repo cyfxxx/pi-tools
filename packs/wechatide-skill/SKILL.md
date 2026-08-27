@@ -104,6 +104,7 @@ wechatide -c <clientName> <toolName> [flags...] [--token <cliAccessToken>]
 | console / network / 截图取证 / 状态诊断 | `skills/debugger/SKILL.md` |
 | 云环境、云函数、云数据库、云存储 | `skills/cloudbase-operator/SKILL.md` |
 | 小程序地图组件 / 腾讯位置服务 API | 外部 skill：`tencentmap-miniprogram-skill`（前端）/ `tencentmap-webservice-skill`（后端）——本包不处理，需触发主动下载；详见 [map-skill-index](references/map-skill-index.md) |
+| 账号注册/主体选择/技术选型/ICP 备案/上架审核避坑/审核被拒排查（业务链路，工具链在别处） | [references/business-guide.md](references/business-guide.md) |
 
 选择原则：按**当前主目标**进一个 scene；不要跨 scene 混用原子工具。多目标时先完成 blocker，再移交。
 

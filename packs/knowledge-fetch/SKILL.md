@@ -1,5 +1,5 @@
 ---
-name: knowledge-fetch-setup
+name: knowledge-fetch
 description: 搭建零 LLM 官方源直连的知识订阅（渠道调研、抓取脚本、去重过滤容错、定时任务接入）。用户说"新闻功能没触发""加信息渠道""做知识订阅"时触发。
 ---
 
@@ -43,3 +43,14 @@ description: 搭建零 LLM 官方源直连的知识订阅（渠道调研、抓�
 
 - 渠道在 SOURCES 列表集中管理，加/换源只改一处
 - 观察数日：某源长期零新增（源挂了/内容同质）→ 换源；某源噪声高 → 补充 LOW_VALUE 过滤词
+
+---
+
+## 本机环境备注（环境：termux-ubuntu —— proot-Distro aarch64，Android 宿主 proot 容器，uname 含 PRoot；其他设备以自身环境为准）
+
+- 已验证实例：`/root/.pi/scripts/knowledge-fetch.py` v2（5 大 section，接入 daily-health-check 任务），本机可直接复用
+- 定时接入走 pi-autopilot 的 scheduled-tasks.json；渠道集中在脚本内 SOURCES 列表管理
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。
