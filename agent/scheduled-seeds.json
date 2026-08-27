@@ -6,7 +6,7 @@
       "name": "knowledge-subscribe",
       "type": "cron",
       "schedule": "0 8 * * *",
-      "prompt": "执行每日知识订阅：抓取订阅源（web_search）最新内容，筛选 3-5 条高质量条目存入记忆（memory_store），收尾写 ~/.pi/logs/knowledge/summary-{{date}}.md 概要（含来源与一句话要点，无新内容则如实说明）。",
+      "prompt": "执行每日知识订阅（零 LLM 流程，渠道见 scripts/knowledge-fetch.py）：1) 先跑 python3 scripts/knowledge-fetch.py 抓取官方源/RSS 最新内容；2) 若当日有新增（logs/knowledge/ 下当日 md），筛选 3-5 条真正有价值的条目 （时效强/漏洞/重大新闻，排除过时教程与多源冗余），memory_search 查重后逐条 memory_store；3) 收尾写 ~/.pi/logs/knowledge/summary-{{date}}.md 概要（来源+一句话要点，无新内容则如实说明）。【提醒】需要修改订阅渠道/排查订阅不触发/调整过滤规则时，使用 packs/knowledge-fetch 技能（含完整搭建与迭代流程）。",
       "useSubagent": true,
       "notifyMain": true,
       "waitForUserOnLocal": true,
