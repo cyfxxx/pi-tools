@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""media_core - 图片/视频/游戏美术通用 CLI（对齐 pdf-toolkit 的 pdf_core 模式）
+
+依赖: ImageMagick 6 (convert/identify), ffmpeg, Pillow
+子命令:
+  image info/convert/compress/watermark/batch
+  game  sprite-split/sprite-pack/opt/trim
+  video info/transcode/cut/concat/frames/audio/gif/subs
+"""
+import argparse, json, os, subprocess, sys, tempfile
+from pathlib import Path
+from PIL import Image
+
+VERSION = "0.1.0"
+
+
+def sh(*args, **kw):
+    r = subprocess.run(args, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(f"命令失败: {' '.join(args)}\n{r.stderr[-800:]}")
+    return r.stdout.strip()
+
+
+def need(cmd):
+    if shutil_which(cmd) is None:
+        raise SystemExit(f"缺少依赖: {cmd}（apt install imagemagick / ffmpeg）")
+
+
+def shutil_which(cmd):
+    from shutil import which
+    return which(cmd)
+
+
+# ---------------- image ----------------
+
+def img_info(a):
+    p = Path(a.f).resolve()
+    with Image.open(p) as im:
+        print(f"{p.name}: {im.size[0]}x{im.size[1]} {im.mode} {im.format} {p.stat().st_size/1024:.0f}KB")
+
+
+def img_convert(a):
+    p, out = Path(a.f).resolve(), Path(a.out)
+    if a.format and not out.suffix:
+        out = out.with_suffix(f".{a.format}")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(p) as im:
+        if a.resize:
+            w, h = map(int, a.resize.lower().split("x"))
+            im.thumbnail((w, h), Image.LANCZOS)
+        if a.trim:
+            im = im.crop(im.getbbox())
+        if a.format:
+            im = im.convert("RGBA" if a.format in ("png", "webp") else "RGB")
+        im.save(out, quality=a.quality if a.format in ("jpg", "webp", "jpeg") else None)
+    print(f"→ {out} ({out.stat().st_size/1024:.0f}KB)")
+
+
+def img_compress(a):
+    """压缩到目标体积以下（优先 WebP，jpg/png 兜底）"""
+    p, out = Path(a.f).resolve(), Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    target = a.target_kb * 1024
+    im = Image.open(p)
+    for fmt, q in (("webp", 80), ("jpg", 80), ("png", None)):
+        tmp = out.with_suffix(f".{fmt}")
+        if fmt == "png":
+            im.save(tmp, optimize=True)
+        else:
+            im.save(tmp, quality=q)
+        if tmp.stat().st_size <= target or fmt == "png":
+            if fmt != "png":
+                tmp.replace(out)
+            else:
+                im.save(out, optimize=True)
+            print(f"→ {out} ({out.stat().st_size/1024:.0f}KB, {fmt})")
+            return
+    print(f"⚠ {p.name} 压缩后仍 >{a.target_kb}KB（已用 PNG 最优）")
+
+
+def _pick_font(user_font):
+    if user_font and os.path.exists(user_font):
+        return user_font
+    for c in [
+        "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",  # CJK
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]:
+        if os.path.exists(c):
+            return c
+    raise SystemExit("未找到可用字体（中文水印需 DroidSansFallback 或 noto CJK）")
+
+
+def img_watermark(a):
+    p, out = Path(a.f).resolve(), Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    pos = {"tl": "northwest", "tr": "northeast", "bl": "southwest", "br": "southeast",
+           "c": "center"}[a.pos]
+    font = _pick_font(a.font)
+    cmd = ["convert", str(p), "-font", font, "-pointsize", str(a.size),
+           "-fill", a.color, "-gravity", pos, "-annotate", "0", a.text, str(out)]
+    sh(*cmd)
+    print(f"→ {out}（字体 {font}）")
+
+
+def img_batch(a):
+    src, outdir = Path(a.src), Path(a.outdir or ".")
+    outdir.mkdir(parents=True, exist_ok=True)
+    pats = a.pattern.split(",") if a.pattern else ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+    files = [f for pat in pats for f in src.rglob(pat) if f.is_file()]
+    for f in files:
+        rel = f.relative_to(src)
+        o = outdir / rel.with_suffix(f".{a.format or f.suffix.lstrip('.')}")
+        o.parent.mkdir(parents=True, exist_ok=True)
+        with Image.open(f) as im:
+            if a.resize:
+                w, h = map(int, a.resize.lower().split("x"))
+                im.thumbnail((w, h), Image.LANCZOS)
+            im.save(o, quality=a.quality)
+    print(f"批量完成: {len(files)} 个 → {outdir}")
+
+
+# ---------------- game ----------------
+
+def game_sprite_split(a):
+    """精灵表拆分（等格）"""
+    sheet, outdir = Path(a.sheet).resolve(), Path(a.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    with Image.open(sheet) as im:
+        cols, rows = a.cols, a.rows
+        w, h = im.width // cols, im.height // rows
+        for r in range(rows):
+            for c in range(cols):
+                box = (c * w, r * h, (c + 1) * w, (r + 1) * h)
+                im.crop(box).save(outdir / f"{sheet.stem}_{r}_{c}.png")
+    print(f"拆分 {cols}x{rows} = {cols*rows} 帧 → {outdir}")
+
+
+def game_sprite_pack(a):
+    """图集打包（等尺寸网格；异尺寸走 Pillow 简单装箱，适合中小图集）"""
+    files = sorted(Path(f) for f in a.files)
+    ims = [Image.open(f).convert("RGBA") for f in files]
+    if len({im.size for im in ims}) == 1:
+        w, h = ims[0].size
+        cols = a.cols or max(1, int(len(ims) ** 0.5))
+        rows = (len(ims) + cols - 1) // cols
+        atlas = Image.new("RGBA", (cols * w, rows * h), (0, 0, 0, 0))
+        for i, im in enumerate(ims):
+            atlas.paste(im, ((i % cols) * w, (i // cols) * h))
+        meta = {"cols": cols, "rows": rows, "cell": [w, h],
+                "frames": [f.name for f in files]}
+    else:
+        # 简单二值装箱（高度优先）
+        items = sorted(zip(files, ims), key=lambda x: -x[1].size[1])
+        atlas_w = max(im.width for _, im in items)
+        rows, y, cell_h = [], 0, 0
+        for name, im in items:
+            if y + im.height > a.max_h and rows:
+                rows.append((atlas_w, y))
+                y, cell_h = 0, max(im.height for _, i in rows[-1] if False) or im.height
+            y += im.height
+        rows.append((atlas_w, y))
+        atlas = Image.new("RGBA", (atlas_w, y), (0, 0, 0, 0))
+        meta = {"frames": []}
+        y = 0
+        for name, im in items:
+            atlas.paste(im, (0, y))
+            meta["frames"].append({"name": name.name, "x": 0, "y": y,
+                                   "w": im.width, "h": im.height})
+            y += im.height
+    out = Path(a.out or "atlas.png")
+    atlas.save(out)
+    if a.json:
+        Path(a.json).write_text(json.dumps(meta, ensure_ascii=False, indent=1))
+    print(f"→ {out} ({atlas.size[0]}x{atlas.size[1]}, {len(files)} 帧)")
+
+
+def game_opt(a):
+    """游戏资产目录批量优化：无损 PNG 压缩 + 可选项转 WebP"""
+    src, outdir = Path(a.src), Path(a.outdir or a.src)
+    outdir.mkdir(parents=True, exist_ok=True)
+    saved = 0
+    for f in [x for x in src.rglob("*") if x.suffix.lower() in (".png", ".jpg", ".jpeg")]:
+        rel = f.relative_to(src)
+        o = outdir / rel
+        o.parent.mkdir(parents=True, exist_ok=True)
+        before = f.stat().st_size
+        if a.webp and f.suffix.lower() == ".png":
+            o = o.with_suffix(".webp")
+            im = Image.open(f)
+            im.save(o, quality=a.quality)
+        else:
+            with Image.open(f) as im:
+                im.save(o, optimize=True)
+        saved += before - o.stat().st_size
+    print(f"优化完成: 节省 {saved/1024:.0f}KB")
+
+
+# ---------------- video ----------------
+
+def video_info(a):
+    need("ffprobe")
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                        "format=duration,size,bit_rate:stream=codec_name,width,height,r_frame_rate",
+                        "-of", "json", str(a.f)], capture_output=True, text=True)
+    d = json.loads(r.stdout or "{}")
+    fmt = d.get("format", {})
+    v = next((s for s in d.get("streams", []) if "width" in s), {})
+    print(f"{Path(a.f).name}: {fmt.get('duration','?')}s {int(fmt.get('size',0))/1048576:.1f}MB "
+          f"{v.get('codec_name','')} {v.get('width','')}x{v.get('height','')}")
+
+
+def video_transcode(a):
+    cmd = ["ffmpeg", "-y", "-i", str(a.f)]
+    if a.resize:
+        cmd += ["-vf", f"scale={a.resize.replace('x', ':')}:flags=lanczos"]
+    if a.crf is not None:
+        cmd += ["-crf", str(a.crf), "-preset", a.preset]
+    if a.codec:
+        cmd += ["-c:v", a.codec]
+    cmd += [str(a.out)]
+    sh(*cmd)
+    print(f"→ {a.out}")
+
+
+def video_cut(a):
+    """剪辑：默认流拷贝（快）；关键帧对齐失败（空输出/无流）时自动重编码兜底"""
+    out = Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["ffmpeg", "-y", "-ss", a.start]
+    if a.end:
+        cmd += ["-to", a.end]
+    cmd += ["-i", str(a.f), "-c", "copy", str(out)]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    ok = out.exists() and out.stat().st_size > 0
+    if ok:
+        probe = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type",
+                                "-of", "csv", str(out)], capture_output=True, text=True)
+        ok = "video" in probe.stdout
+    if ok:
+        print(f"→ {a.out}（{a.start}~{a.end or '结尾'} 流拷贝）")
+        return
+    # fallback：重编码（关键帧无关，慢但稳）
+    sh("ffmpeg", "-y", "-i", str(a.f), "-ss", a.start,
+       *(["-to", a.end] if a.end else []),
+       "-c:v", "libx264", "-crf", "18", "-c:a", "aac", str(out))
+    print(f"→ {a.out}（{a.start}~{a.end or '结尾'} 重编码 fallback）")
+
+
+def video_concat(a):
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as t:
+        for f in a.files:
+            t.write(f"file '{Path(f).resolve()}'\n")
+        lst = t.name
+    if a.reencode:
+        sh("ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
+           "-c:v", "libx264", "-crf", "18", "-c:a", "aac", str(a.out))
+    else:
+        sh("ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", str(a.out))
+    print(f"→ {a.out}（{'重编码' if a.reencode else '流拷贝'}，{len(a.files)} 段）")
+
+
+def video_frames(a):
+    outdir = Path(a.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    sh("ffmpeg", "-y", "-i", str(a.f), "-vf", f"fps={a.fps}", f"{outdir}/frame_%04d.png")
+    print(f"→ {outdir}/frame_*.png（{a.fps}fps）")
+
+
+def video_audio(a):
+    Path(a.out).parent.mkdir(parents=True, exist_ok=True)
+    cmd = ["ffmpeg", "-y", "-i", str(a.f)]
+    if a.start:
+        cmd += ["-ss", a.start]
+    if a.end:
+        cmd += ["-to", a.end]
+    cmd += ["-vn", "-c:a", a.codec, str(a.out)]
+    sh(*cmd)
+    print(f"→ {a.out}")
+
+
+def video_gif(a):
+    vf = "fps={}".format(a.fps)
+    if a.scale:
+        vf += f",scale={a.scale.replace('x', ':' )}:flags=lanczos"
+    sh("ffmpeg", "-y", "-i", str(a.f), "-vf", vf, "-loop", "0", str(a.out))
+    print(f"→ {a.out}")
+
+
+def video_subs(a):
+    sh("ffmpeg", "-y", "-i", str(a.f), "-vf", f"ass={a.ass}",
+       "-c:a", "copy", str(a.out))
+    print(f"→ {a.out}（烧录字幕 {a.ass}）")
+
+
+# ---------------- main ----------------
+
+def main():
+    ap = argparse.ArgumentParser(prog="media_core", description="图片/视频/游戏美术通用 CLI")
+    sub = ap.add_subparsers(dest="group", required=True)
+
+    img = sub.add_parser("image")
+    ig = img.add_subparsers(dest="cmd", required=True)
+    p = ig.add_parser("info"); p.add_argument("f"); p.set_defaults(fn=img_info)
+    p = ig.add_parser("convert"); p.add_argument("f"); p.add_argument("-o", dest="out", required=True)
+    p.add_argument("--format"); p.add_argument("--resize"); p.add_argument("--trim", action="store_true")
+    p.add_argument("--quality", type=int, default=85); p.set_defaults(fn=img_convert)
+    p = ig.add_parser("compress"); p.add_argument("f"); p.add_argument("-o", dest="out", required=True)
+    p.add_argument("--target-kb", type=int, default=200); p.set_defaults(fn=img_compress)
+    p = ig.add_parser("watermark"); p.add_argument("f"); p.add_argument("-t", dest="text", required=True)
+    p.add_argument("-o", dest="out", required=True); p.add_argument("--pos", default="br")
+    p.add_argument("--size", type=int, default=28); p.add_argument("--color", default="white")
+    p.add_argument("--font", default=""); p.set_defaults(fn=img_watermark)
+    p = ig.add_parser("batch"); p.add_argument("src"); p.add_argument("--outdir")
+    p.add_argument("--pattern"); p.add_argument("--format"); p.add_argument("--resize")
+    p.add_argument("--quality", type=int, default=85); p.set_defaults(fn=img_batch)
+
+    gm = sub.add_parser("game")
+    gg = gm.add_subparsers(dest="cmd", required=True)
+    p = gg.add_parser("sprite-split"); p.add_argument("sheet"); p.add_argument("--cols", type=int, required=True)
+    p.add_argument("--rows", type=int, required=True); p.add_argument("--outdir", required=True)
+    p.set_defaults(fn=game_sprite_split)
+    p = gg.add_parser("sprite-pack"); p.add_argument("files", nargs="+"); p.add_argument("-o", dest="out")
+    p.add_argument("--cols", type=int); p.add_argument("--json"); p.add_argument("--max-h", type=int, default=4096)
+    p.set_defaults(fn=game_sprite_pack)
+    p = gg.add_parser("opt"); p.add_argument("src"); p.add_argument("--outdir")
+    p.add_argument("--webp", action="store_true"); p.add_argument("--quality", type=int, default=85)
+    p.set_defaults(fn=game_opt)
+
+    vi = sub.add_parser("video")
+    vg = vi.add_subparsers(dest="cmd", required=True)
+    p = vg.add_parser("info"); p.add_argument("f"); p.set_defaults(fn=video_info)
+    p = vg.add_parser("transcode"); p.add_argument("f"); p.add_argument("-o", dest="out", required=True)
+    p.add_argument("--resize"); p.add_argument("--crf", type=int); p.add_argument("--preset", default="medium")
+    p.add_argument("--codec"); p.set_defaults(fn=video_transcode)
+    p = vg.add_parser("cut"); p.add_argument("f"); p.add_argument("--start", required=True)
+    p.add_argument("--end"); p.add_argument("-o", dest="out", required=True); p.set_defaults(fn=video_cut)
+    p = vg.add_parser("concat"); p.add_argument("files", nargs="+"); p.add_argument("-o", dest="out", required=True)
+    p.add_argument("--reencode", action="store_true"); p.set_defaults(fn=video_concat)
+    p = vg.add_parser("frames"); p.add_argument("f"); p.add_argument("--fps", type=float, default=1)
+    p.add_argument("--outdir", required=True); p.set_defaults(fn=video_frames)
+    p = vg.add_parser("audio"); p.add_argument("f"); p.add_argument("-o", dest="out", required=True)
+    p.add_argument("--start"); p.add_argument("--end"); p.add_argument("--codec", default="libmp3lame")
+    p.set_defaults(fn=video_audio)
+    p = vg.add_parser("gif"); p.add_argument("f"); p.add_argument("-o", dest="out", required=True)
+    p.add_argument("--fps", type=int, default=10); p.add_argument("--scale"); p.set_defaults(fn=video_gif)
+    p = vg.add_parser("subs"); p.add_argument("f"); p.add_argument("--ass", required=True)
+    p.add_argument("-o", dest="out", required=True); p.set_defaults(fn=video_subs)
+
+    a = ap.parse_args()
+    a.fn(a)
+
+
+if __name__ == "__main__":
+    main()
