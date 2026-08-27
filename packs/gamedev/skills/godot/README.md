@@ -35,9 +35,9 @@ Godot 4.x 引擎开发技能，15 个，覆盖 GDScript/C#、场景节点、物�
 - workflow/**（prototype-fast、game-jam）：流程通用
 - web/** 是浏览器引擎（Phaser/Pixi/Three），Godot 是完整引擎（可导出 Web/WASM）；两类项目路由按用户明确的技术栈选择
 
-## 本机环境备注（2026-06 实测更新）
+## 本机环境备注（2026-06 实测；环境：termux-ubuntu —— proot-Distro aarch64，Android 宿主的 proot 容器，uname 含 PRoot，其他设备请以自身环境为准）
 
-- Godot 4.7.2 stable 官方 arm64 已装于本机：`/opt/godot-4.7.2/`，`godot` 命令可用（proot-Ubuntu aarch64 实测通过 `--version`/`--headless --script` 冒烟）
+- Godot 4.7.2 stable 官方 arm64 已装于本环境：`/opt/godot-4.7.2/`，`godot` 命令可用（此环境实测通过 `--version`/`--headless --script` 冒烟；其他设备未装或版本未知，需自行确认）
 - 获取途径：Godot 官网 CDN（Hetzner ObjectStorage）可达；GitHub release/TuxFamily 被阻断。下载模板：`https://godot-releases.nbg1.your-objectstorage.com/<版本>-stable/<文件名>`（listing 页见 downloads.godotengine.org）
 - 验证约定：`godot --headless --script <test.gd>`（SceneTree 脚本冒烟）/ `godot --headless --check-only <项目>`（脚本语法检查）；渲染类需要 `--headless` 配合 dummy 显示驱动或截图验证
 - 导出验证：导出模板（export templates）需从官网 CDN 另下；桌面导出需系统依赖（构建工具链），Web 导出需 Web 模板（下载后放 `~/.local/share/godot/export_templates/<版本>/`）

@@ -30,6 +30,6 @@ description: >
 ## 本机开发闭环约定
 
 - 运行环境：Node 22 + Vite；无显示器 → 用 chromium-browser headless 截图/录屏做"亲眼验证"（godogen 的 proof-over-claims 思路）
-- Godot 项目：本机未装 Godot 4.x（apt 仅 godot3、官方 arm64 下载被网络阻断），脚本验证/导出需在装有 Godot 的环境执行；详见 skills/godot/README.md 环境备注
+- Godot 项目：本环境（termux-ubuntu proot）已装 Godot 4.7.2 arm64（`godot` 可用），可做 `--check-only`/`--headless --script` 验证；Web/桌面导出需另下导出模板，详见 skills/godot/README.md 环境备注
 - 美术资产缺口：走 Colab T4 + comfyui-agent 生成精灵/背景（见 packs/comfyui-agent）
 - 交付形态：静态站/PWA，手机浏览器直接玩；Godot 项目导出 Web 见 godot-export

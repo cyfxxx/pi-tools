@@ -38,8 +38,8 @@ pdf-toolkit/
 
 在 /root/.pi/packs/pdf-toolkit/examples/ 下用生成样本实测：生成→提取→表格→合并→拆分→旋转→加密→解密→水印→报告→表单填写→验证（记录见 examples/README.md；本环境已实测通过后清理）。
 
-## 环境备注
+## 环境备注（环境：termux-ubuntu —— proot-Distro aarch64，Android 宿主的 proot 容器，uname 含 PRoot；同步到其他设备后以各自环境为准）
 
-- 依赖安装采用 `pip install --break-system-packages`（PEP 668 环境，先例见 reverse-skill）
-- OCR 需额外 `apt install tesseract-ocr tesseract-ocr-chi-sim`（Debian 系）
+- 依赖安装采用 `pip install --break-system-packages`（PEP 668 环境,先例见 reverse-skill；此环境实测于 Ubuntu 24.04 noble proot）
+- OCR 需额外 `apt install tesseract-ocr tesseract-ocr-chi-sim`（Debian 系；本环境已装 tesseract 5 + chi_sim/eng，其他环境按需安装）
 - 坐标约定全包统一 pymupdf 左上原点，避免混用

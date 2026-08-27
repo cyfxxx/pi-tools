@@ -33,7 +33,7 @@
 4. pymupdf 1.28 无 `Page.get_text_length`，用模块级 `pymupdf.get_text_length`
 5. 可搜索 PDF 必须走 `pix.pdfocr_tobytes()` 路线；`get_textpage_ocr` 只生成临时 TextPage，不会写入文件
 
-## 环境
+## 环境（环境：termux-ubuntu —— proot-Distro aarch64，Android 宿主 proot 容器；其他设备以自身环境为准）
 
-- Python 3.12（Debian，PEP 668），依赖以 `pip install --break-system-packages` 安装（先例 reverse-skill）
-- tesseract 5 + chi_sim/eng 语言包
+- Python 3.12（Ubuntu 24.04 noble proot，PEP 668），依赖以 `pip install --break-system-packages` 安装（先例 reverse-skill）
+- tesseract 5 + chi_sim/eng 语言包（已装）
