@@ -148,3 +148,7 @@ wechatide -c <clientName> <toolName> [flags...] [--token <cliAccessToken>]
 - `--project` 配置/appid 错误：`wechatide-tools/references/project-tool-error-guide.md`
 - 创建项目：`wechatide-tools/references/create-project-guide.md`
 - 地图外部 skill：`tencentmap-miniprogram-skill` / `tencentmap-webservice-skill`，索引见 `references/map-skill-index.md`
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。

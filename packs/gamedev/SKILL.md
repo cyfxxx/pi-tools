@@ -33,3 +33,7 @@ description: >
 - Godot 项目：本环境（termux-ubuntu proot）已装 Godot 4.7.2 arm64（`godot` 可用），可做 `--check-only`/`--headless --script` 验证；Web/桌面导出需另下导出模板，详见 skills/godot/README.md 环境备注
 - 美术资产缺口：走 Colab T4 + comfyui-agent 生成精灵/背景（见 packs/comfyui-agent）
 - 交付形态：静态站/PWA，手机浏览器直接玩；Godot 项目导出 Web 见 godot-export
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件/对应子技能正文并清条目。

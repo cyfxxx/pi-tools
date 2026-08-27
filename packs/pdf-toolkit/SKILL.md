@@ -51,3 +51,7 @@ OCR 需 tesseract 二进制 + 语言包，安装命令见 pdf-ocr/SKILL.md 与 s
 1. 交互式文档（表单、带超链接的目录）操作后必须验证：forms 走 verify_form；通用操作重跑 `info`/`extract` 抽查
 2. 扫描件优先走 OCR 而非盲目猜文本；OCR 结果交付前渲染对照抽查
 3. 重型任务（整本书、GPU 解析、批处理）先与用户确认规模再启用 specialized-tools 条目
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加本包根 `EXPERIENCE.md`（工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文对应章节并清条目。

@@ -93,3 +93,7 @@ MCP 接入与 ML 布局等专用工具：`references/specialized-tools.md`
 ## 许可与来源
 
 提炼基于 [aklofas/kicad-happy](https://github.com/aklofas/kicad-happy)（MIT）、[nickkraakman/skidl-skills](https://github.com/nickkraakman/skidl-skills)（MIT）、[Seahan1/hardware-agency-agents](https://github.com/Seahan1/hardware-agency-agents)（MIT）的公开文档描述与设计思想，未复制受版权保护的代码或文本原文。
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。

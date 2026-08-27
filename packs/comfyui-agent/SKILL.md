@@ -104,3 +104,7 @@ img2img：`comfyui upload xxx.png` → 得到 `subfolder/type` → 写 workflow 
 - [references/API.md](references/API.md)：ComfyUI 原生 HTTP API 端点详解（底层调试用）
 - [references/WORKFLOWS.md](references/WORKFLOWS.md)：**本机实例实测可用的工作流**（UI 保存的 7 个工作流 ↔ 内置 API 模板映射、蓝图/折叠节点机制、各模型提示词规范、低分辨率测试建议、LTX-2.3 待确认项）
 - README.md：架构与设计取舍
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。

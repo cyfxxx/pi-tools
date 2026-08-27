@@ -277,3 +277,7 @@ try {
 **官方源码参考**: `packages/coding-agent/src/`(SDK)、`packages/agent/src/`(Agent 核心)、`packages/ai/src/`(AI 抽象)
 
 **Skill 维护**: 发现信息缺失/错误导致走弯路时,按 [skill-maintenance.md](references/skill-maintenance.md) 6 条原则完善本 skill,并同步更新 [CHANGELOG.md](CHANGELOG.md)（历史沿革，永久保留）。
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。

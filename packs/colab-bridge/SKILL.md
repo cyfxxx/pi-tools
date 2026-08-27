@@ -20,3 +20,7 @@ description: 把 Google Colab（免费 GPU）作为 pi 的远程 Python/GPU 执�
 Colab 侧需先在 colab.research.google.com 上传运行 `colab/colab-bridge.ipynb`（内嵌服务+隧道，打印 CLOUD_URL 与 TOKEN）。断连后环境重置，需重跑 notebook。
 
 详见 README.md 与 colab/colab-bridge.ipynb 内的说明。
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。

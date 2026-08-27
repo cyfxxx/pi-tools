@@ -89,3 +89,7 @@ git clone https://github.com/LeoKemp223/embed-ai-tool.git ~/.pi/packs/upstream/e
 
 - 整合提炼基于 [zhinkgit/embeddedskills](https://github.com/zhinkgit/embeddedskills)（MIT）与 [LeoKemp223/embed-ai-tool](https://github.com/LeoKemp223/embed-ai-tool)（无 LICENSE，仅记录引用）的设计思想与公开文档描述，本文档为原创提炼，未复制上游受版权保护的代码或文本
 - 上游清单与许可边界见 `references/upstream-catalog.md`
+
+## 使用后经验沉淀（必做）
+
+任务收尾时按 packs/README.md「经验沉淀机制」追加包根 `EXPERIENCE.md`（无则建；工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文并清条目。
