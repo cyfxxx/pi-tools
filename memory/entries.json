@@ -14035,6 +14035,30 @@
       "accessedAt": "2026-08-27T12:53:00.219Z",
       "environments": [
         "termux"
+      ],
+      "observedAt": "2026-08-27T12:53:00.219Z",
+      "deleted": false
+    },
+    {
+      "id": "7089d0ed-5be6-4416-8fe6-272c10f0778e",
+      "category": "fact",
+      "title": "缓存断裂根因已坐实：opencode.ai 网关问题（官方 API 对比验证 97.6%）",
+      "content": "缓存断裂根因坐实（2026-08-27 官方 API 对比验证完成，环境 termux-ubuntu proot）：切换前 opencode-go 网关（https://opencode.ai/zen/go/v1）命中率 85-88%、A 类全断（cacheRead=0 全前缀重发 88K-125K、间隔 1.6-6min 规律性）；切换到官方 API（模型不变 deepseek-v4-flash）后同配置命中率 97.6% 达标，A 类周期全断消失，仅剩 B 类本地机制断裂（压缩重建/注入尾部变化，浪费约 42K/次）。结论：此前缓存问题为 opencode.ai 云网关出站缓存不稳定（疑缓存容量/驱逐压力），非本地配置问题。后续若换回网关需预期命中率 85-88% 与周期全断；官方 API 路线命中率可维持 97%+。",
+      "tags": [
+        "缓存",
+        "网关",
+        "官方API",
+        "命中率",
+        "验证结论"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-27T13:29:01.373Z",
+      "updatedAt": "2026-08-27T13:29:01.373Z",
+      "accessedAt": "2026-08-27T13:29:01.373Z",
+      "environments": [
+        "termux"
       ]
     }
   ]
