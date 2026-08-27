@@ -237,7 +237,8 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
 
   it('三重门限：计划文件中存在 in_progress 任务（plan.md [~]）→ 不压缩（任务门）', async () => {
     const { handlers } = await loadIndex()
-    const planDir = join(dir, 'plans', 'plan-1787200000000')
+    // 动态时间戳：写死历史时间会随 7 天窗口滚动失效（2026-08-27 实测 plan-1787200000000 距今 7.2 天被窗口过滤）
+    const planDir = join(dir, 'plans', `plan-${Date.now()}`)
     mkdirSync(planDir, { recursive: true })
     writeFileSync(
       join(planDir, 'plan.md'),

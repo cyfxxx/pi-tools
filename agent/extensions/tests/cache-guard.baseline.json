@@ -4,7 +4,7 @@
   "pi-memory/inject.ts（注入头文案）": "8de22d16e788167608b534efaf7ee094dc30cfdc873138f6f0e430ca9f6a1aff",
   "lib/prune.ts（擦除/剪枝阈值）": "635acfd4f2f545df9132776027cfe92c7e3a5296beacf56a8943546431077656",
   "pi-context/index.ts（注入逻辑/文案）": "1c224a875d66a256e4077f420fcf1c811d352d86fab3a3babbc7ff066cd6ad7c",
-  "lib/context-budget.ts（截断标记等）": "f2d4bb14f77bd58c7bade26e791bd4ad9f2e7b0b2f267a225fdf8968e04f5f56",
+  "lib/context-budget.ts（截断标记等）": "2578fa0879843ac313de01c6554ee00f7b6a09e432091af9ee372f6374794b52",
   "subagent/index.ts（delegation 描述）": "a8d910ad4b91bfd7ef913446618dade851a11ce15ec8c18726c16d064b0288ba",
   "pi-context/context-budget.ts（分档注入文案）": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 }
