@@ -6,6 +6,9 @@ import { tmpdir } from 'node:os'
 
 // 隔离：os.homedir() 优先读 $HOME，改写 worker 进程 HOME 即可隔离节流戳与真实 ~/.pi
 const TEST_DIR = join(tmpdir(), `pi-autopilot-extra-${Date.now()}`)
+
+// 结果同步隔离：调度执行写 daily-results，重定向到临时目录防污染真实主目录
+process.env.PI_DAILY_RESULTS_DIR = join(TEST_DIR, 'daily-results')
 process.env.HOME = TEST_DIR
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
 

@@ -8,6 +8,7 @@ import { readAutopilotConfig } from './autoconfig.ts'
 import { decide, classifyError, currentModel, isLocalModel } from './policy.ts'
 import { planFailover, executeFailover } from './failover.ts'
 import { appendRun, estimateCost } from './telemetry.ts'
+import { syncSeedTasks } from './seeds.ts'
 import { checkBudget } from './budget.ts'
 import { triggerHangRecovery, touchActivity } from './watchdog.ts'
 import { markPendingInjected, clearPending } from './queue.ts'
@@ -119,6 +120,12 @@ export class SessionScheduler {
       // 审计 HIGH：预算拦截整体包在 fireTask 的 if (config.enabled) 内，若 tick 不门控，
       // 关闭状态下任务照常执行且预算检查完全跳过。手动 /schedule run（force）不受影响。
       if (!config.enabled) return
+
+      // 种子任务对账（2026-08-27）：pull 后无需重启，30s tick 内自动补注册
+      // （loadSeeds 有 mtime 缓存，文件未变时零重读）
+      try {
+        await syncSeedTasks(new Set(store.tasks.map(t => t.name)))
+      } catch { /* 对账失败静默 */ }
 
       const tasks = await listTasks()
       // pendingInject=true 表示任务已注入主会话仍可能执行中（fireViaMessage 非阻塞），

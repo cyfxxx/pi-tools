@@ -65,9 +65,12 @@ memory/notes.json
 memory/summaries.json
 agent/models-store.json
 
-# ★ 跨设备工具使用统计（tool-use-<device>.jsonl）——【必须同步，勿忽略】
-# 各设备工具调用数据入库共享，是判断扩展工具是否默认启用/休眠的关键依据；
-# 按主机名分文件写入天然无 git 冲突；跨设备合并视图: node scripts/tool-stats-sync.mjs
+# ★ 跨设备工具使用统计——【同步策略 2026-08-27 重构】
+# 原始事件 tool-use-<device>.jsonl 不再入库（臃肿），仅存本机；跨设备改同步
+# 每日聚合计数文件 memory/stats/tool-count-<device>.json（--daily 生成，精简入库）。
+# 合并视图: node scripts/tool-stats-sync.mjs（post-merge/手动）；任务结果同步:
+# memory/daily-results/results-<device>.jsonl（append-only 入库，见 pi-autopilot results.ts）
+memory/stats/tool-use-*.jsonl
 
 # pi-scheduler 运行时数据
 agent/scheduled-tasks.json
@@ -99,6 +102,8 @@ memory/checkpoints/
 
 # pi-backup 配置变更基线（gitignored 配置的 sha256 快照，不入库）
 .backup-baseline/
+# pi-backup 归档产物（tar.gz/README 等临时导出，不入库）
+backup/
 pi-link.json
 # pi-link 运行时状态（T2 活跃设备/身份机制，每次连接刷新，跨环境无意义）
 pi-link-active.json

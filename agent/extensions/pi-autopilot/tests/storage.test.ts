@@ -5,6 +5,9 @@ import { join } from 'path'
 
 const TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-scheduler-test-'))
 
+// 结果同步隔离：updateTaskAfterRun 会写 daily-results，重定向到临时目录防污染真实主目录
+process.env.PI_DAILY_RESULTS_DIR = join(TEST_DIR, 'daily-results')
+
 const { __setAgentDir } = await import('./__mocks__/pi-coding-agent')
 __setAgentDir(TEST_DIR)
 

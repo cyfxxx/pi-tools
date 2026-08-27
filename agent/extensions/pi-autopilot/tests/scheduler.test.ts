@@ -5,6 +5,9 @@ import { join } from 'path'
 
 const TEST_DIR = await mkdtemp(join(tmpdir(), 'pi-autopilot-scheduler-'))
 
+// 结果同步隔离：fireTask/finalizeInjected 会写 daily-results，重定向到临时目录防污染
+process.env.PI_DAILY_RESULTS_DIR = join(TEST_DIR, 'daily-results')
+
 vi.mock('../watchdog.ts', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   return { ...actual, triggerHangRecovery: vi.fn(async () => false) }

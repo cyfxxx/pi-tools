@@ -3,6 +3,7 @@ import { SessionScheduler } from './scheduler.ts'
 import { registerCommands } from './commands.ts'
 import { registerTools } from './tools.ts'
 import { acquireSessionLock, releaseSessionLock, renderPrompt, readTasks, updateTask, sendWebhook, withStoreLock, writeTasks, computeNextRun } from './storage.ts'
+import { syncSeedTasks } from './seeds.ts'
 import { collectOfflineExecutions, formatSummary, markRead } from './notifications.ts'
 import { consumeRestartLog } from './state.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
@@ -26,6 +27,13 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
 
     scheduler.start()
     touchActivity()
+
+    // 种子任务对账（2026-08-27）：补注册本地缺失的每日任务（跨设备通用定义见
+    // agent/scheduled-seeds.json，git 入库；其他设备 pull 后启动即自动加入）
+    try {
+      const added = await syncSeedTasks()
+      if (added > 0) console.log(`[pi-autopilot] 种子任务对账：注册 ${added} 个缺失任务`)
+    } catch { /* 对账失败静默，不阻塞会话启动 */ }
 
     // 统一恢复报告：重启原因 + 离线执行摘要 + 挂死恢复 + 任务重注入
     if (!notified) {

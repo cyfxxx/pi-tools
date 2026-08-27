@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "note": "跨设备每日任务种子（git 入库共享）：各设备 pi-autopilot 启动/运行中对账，本地缺失同名任务则自动注册；已存在则跳过不覆盖本地修改。修改种子文件后 push，其他设备 pull 后 30s 内自动生效。",
+  "tasks": [
+    {
+      "name": "knowledge-subscribe",
+      "type": "cron",
+      "schedule": "0 8 * * *",
+      "prompt": "执行每日知识订阅：抓取订阅源（web_search）最新内容，筛选 3-5 条高质量条目存入记忆（memory_store），收尾写 ~/.pi/logs/knowledge/summary-{{date}}.md 概要（含来源与一句话要点，无新内容则如实说明）。",
+      "useSubagent": true,
+      "notifyMain": true,
+      "waitForUserOnLocal": true,
+      "maxRunTime": 900,
+      "retries": 1,
+      "tags": ["daily", "knowledge"]
+    },
+    {
+      "name": "daily-review",
+      "type": "cron",
+      "schedule": "5 9 * * *",
+      "prompt": "执行每日回顾：1) 读取 memory/daily-results/ 下全部设备的任务结果（含 {{date}} 前后），对比各设备执行情况，识别遗漏与信息不对称；2) 回顾过去 24 小时会话摘要有价值的经验，提炼 1-3 条入库 memory_store；3) 输出回顾结论（200 字内）作为任务结果，如发现其他设备任务长期未跑请明确指出。",
+      "useSubagent": true,
+      "notifyMain": true,
+      "waitForUserOnLocal": true,
+      "maxRunTime": 600,
+      "retries": 1,
+      "tags": ["daily", "review"]
+    },
+    {
+      "name": "tool-stats-daily",
+      "type": "cron",
+      "schedule": "30 23 * * *",
+      "prompt": "执行工具统计每日聚合（当天数据已完整）：运行 node ~/.pi/scripts/tool-stats-sync.mjs --daily，确认生成 memory/stats/tool-count-<hostname>.json 后提交推送：git add 相应文件并 commit（message: 'chore: tool stats {{date}}'）后 git push（推送前先按仓库约定确认 remote URL 无 token）。若与远端冲突（其他设备也推送过计数），先 git pull --rebase 再推。",
+      "useSubagent": true,
+      "notifyMain": true,
+      "waitForUserOnLocal": true,
+      "maxRunTime": 600,
+      "retries": 1,
+      "tags": ["daily", "stats"]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { join, dirname, basename } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { Task, TaskStore, SchedulerSettings, ExecHistoryEntry } from './types.ts'
+import { appendTaskResult } from './results.ts'
 import { STORE_VERSION, DEFAULT_MAX_RUN_TIME, RETRY_BASE_DELAY_MS, RETRY_MAX_DELAY_MS, HISTORY_LIMIT, TASKS_FILE } from './types.ts'
 
 let lockPid: string | null = null
@@ -445,6 +446,10 @@ export async function updateTaskAfterRun(
   const idx = store.tasks.findIndex(t => t.id === id)
   if (idx === -1) return
   const task = store.tasks[idx]
+
+  // 结果跨设备同步（2026-08-27）：append-only 每设备独立文件入库共享，
+  // 其他设备 pull 后可见全部每日任务执行结果；写入失败静默不阻塞记账
+  appendTaskResult({ taskId: id, taskName: task.name, result, output, durationMs })
 
   const historyEntry: ExecHistoryEntry = {
     time: isoNow(),

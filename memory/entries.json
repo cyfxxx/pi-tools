@@ -13087,10 +13087,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 13,
+      "recurrence": 21,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-26T13:36:47.737Z",
-      "accessedAt": "2026-08-26T13:36:47.737Z",
+      "updatedAt": "2026-08-27T07:12:28.091Z",
+      "accessedAt": "2026-08-27T07:12:28.091Z",
       "environments": [
         "all"
       ],
@@ -13988,34 +13988,9 @@
       "accessedAt": "2026-08-26T14:09:24.063Z",
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "78637b18-710b-459c-a657-8ea7e201bdb4",
-      "category": "solutions",
-      "title": "restart_hang 假横幅根因：agent 根直跑 vitest 击穿 mock 别名",
-      "content": "事故（2026-08-26 10:43）：用户正常退出后再启动，session_start 打出「会话挂死（10 分钟无活动）」假 restart_hang 横幅。根因：在 agent/ 根直跑 `vitest run extensions/pi-autopilot` 绕过扩展级 vitest.config.ts 的 __mocks__ 别名 → getAgentDir() 解析到真实目录 → watchdog.test 的 triggerHangRecovery(5, Date.now()+10min) 把 restart_hang 写进真实 .pi-admin-state.json（注入的未来时间戳同时击穿 lastActivity 与会话文件 mtime 双信号校验）；Linux pi-wrapper.sh 不识别 restart_hang，残留至下次启动被 consumeRestartLog 消费。指纹特征：reason 里的分钟数=测试注入偏移量（10），生产阈值(180)下数学上不可能产生。修复（e16d5c3）：① agent 根 vitest.config.ts 守门插件用 configResolved 抛错（globalSetup 在无匹配文件时不执行——实测），根目录任何 vitest 调用即报错并提示走 test-all.sh；② state.ts 支持 PI_ADMIN_STATE_FILE env 覆盖（对齐 pi-context 的 PI_CONTEXT_ADMIN_STATE），watchdog/failover 测试设 env 双层隔离。教训：扩展模块在 import 期固化真实路径的，测试必须有别名之外的 env 逃生门；「不得在 agent 根直跑 vitest」靠纪律不够，要守门。",
-      "tags": [
-        "restart_hang",
-        "vitest",
-        "测试隔离",
-        "pi-autopilot",
-        "误报",
-        "守门"
       ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-26T03:14:50.054Z",
-      "updatedAt": "2026-08-26T05:56:31.555Z",
-      "accessedAt": "2026-08-26T03:14:50.055Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-26T03:14:50.054Z",
-      "deleted": true,
-      "supersededBy": "efcc89a7-6e6d-4458-b6c4-7be5caf979e3",
-      "validUntil": "2026-08-26T05:56:31.555Z"
+      "observedAt": "2026-08-26T14:09:24.063Z",
+      "deleted": false
     }
   ]
 }
