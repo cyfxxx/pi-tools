@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+pdf_core —— PDF 通用操作 CLI（packs/pdf-toolkit 通用能力层）
+
+子命令一览：
+  info      <file>                  页数/尺寸/加密/元数据
+  extract   <file> [-o out]         文本提取（保留布局，Markdown 组织）
+  tables    <file> [-o dir]         表格提取 → 每页 CSV
+  meta      <file> [-o out.json]    元数据 JSON
+  images    <file> [-o dir]         嵌入图片提取（原格式+页码+尺寸+sha256）
+  render    <file> [-p RANGE] [-dpi] [-o dir]   页面渲染 PNG（检查/喂模型/OCR 前处理）
+  merge     f1 f2 ... [-o out]      合并（可选 --bookmarks 按源文件生成目录）
+  split     <file> <RANGE> [-o dir] 拆分（如 1-3,5,7-）
+  rotate    <file> <90|180|270> [-p RANGE] [-o out]
+  encrypt   <file> <userpw> [--owner-pw] [-o out]
+  decrypt   <file> <pw> [-o out]
+  watermark <file> <水印文本|水印PDF> [-o out]   文本角标或叠加水印 PDF
+  report    <file> [-o out.md]      综合报告：元数据+文本摘要+表格+图片清单
+
+依赖：pypdf pdfplumber pymupdf reportlab（见 ../requirements.txt）
+"""
+import argparse, hashlib, json, re, shutil, sys
+from pathlib import Path
+
+def die(msg):
+    print(f"[pdf_core] 错误: {msg}", file=sys.stderr); sys.exit(1)
+
+def parse_range(spec, n_pages):
+    """'1-3,5,7-' -> [0,1,2,4,6..n]（1 基输入，0 基输出）"""
+    pages = set()
+    for part in spec.split(","):
+        part = part.strip()
+        if not part: continue
+        if "-" in part:
+            a, b = part.split("-", 1)
+            lo = int(a) if a else 1
+            hi = int(b) if b else n_pages
+        else:
+            lo = hi = int(part)
+        if lo < 1 or hi > n_pages or lo > hi:
+            die(f"页码范围 {part} 越界（文档共 {n_pages} 页）")
+        pages.update(range(lo - 1, hi))
+    return sorted(pages)
+
+def out_path(o, base, suffix, dflt_dir):
+    if o:
+        p = Path(o)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
+    d = Path(dflt_dir); d.mkdir(parents=True, exist_ok=True)
+    return d / f"{Path(base).stem}{suffix}"
+
+# ---------- info ----------
+def cmd_info(args):
+    import pymupdf
+    doc = pymupdf.open(args.file)
+    print(json.dumps({
+        "pages": doc.page_count, "encrypted": doc.needs_pass,
+        "file": str(args.file),
+        "metadata": {k: v for k, v in (doc.metadata or {}).items() if v},
+        "page_size_pt": [round(x, 1) for x in doc[0].rect[2:]] if doc.page_count else None,
+    }, ensure_ascii=False, indent=2))
+
+# ---------- extract ----------
+def cmd_extract(args):
+    import pdfplumber
+    out = out_path(args.o, args.file, ".md", "./pdf_extract")
+    parts = [f"# {Path(args.file).stem}", ""]
+    with pdfplumber.open(args.file) as pdf:
+        for i, page in enumerate(pdf.pages):
+            text = page.extract_text(layout=True) or ""
+            if not text.strip():
+                parts.append(f"\n<!-- 第 {i+1} 页无可提取文本（可能是扫描图，见 pdf-ocr 技能） -->\n")
+                continue
+            parts.append(f"\n## 第 {i+1} 页\n")
+            parts.append(text)
+    out.write_text("\n".join(parts), encoding="utf-8")
+    print(f"已提取 {len(parts)} 段 → {out}")
+
+# ---------- tables ----------
+def cmd_tables(args):
+    import pdfplumber
+    base = Path(args.file).stem
+    d = Path(args.o) if args.o else Path(f"./pdf_tables_{base}")
+    d.mkdir(parents=True, exist_ok=True)
+    total = 0
+    with pdfplumber.open(args.file) as pdf:
+        for i, page in enumerate(pdf.pages):
+            for j, t in enumerate(page.extract_tables() or []):
+                rows = [r for r in t if any(c is not None and str(c).strip() for c in r)]
+                if not rows: continue
+                f = d / f"p{i+1}_table{j+1}.csv"
+                f.write_text("\n".join(
+                    ",".join((c or "").replace("\n", " ").replace(",", "，") for c in r)
+                    for r in rows) + "\n", encoding="utf-8")
+                total += 1
+                print(f"  p{i+1} 表格{j+1}: {len(rows)} 行 → {f}")
+    print(f"共提取 {total} 个表格 → {d}")
+
+# ---------- meta ----------
+def cmd_meta(args):
+    import pymupdf
+    doc = pymupdf.open(args.file)
+    out = out_path(args.o, args.file, "_meta.json", "./")
+    data = {"file": str(args.file), "pages": doc.page_count, "encrypted": doc.needs_pass,
+            "metadata": {k: v for k, v in (doc.metadata or {}).items() if v}}
+    out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(data, ensure_ascii=False, indent=2)); print(f"→ {out}")
+
+# ---------- images ----------
+def cmd_images(args):
+    import pymupdf
+    base = Path(args.file).stem
+    d = Path(args.o) if args.o else Path(f"./pdf_images_{base}")
+    d.mkdir(parents=True, exist_ok=True)
+    manifest, seen = [], set()
+    with pymupdf.open(args.file) as doc:
+        for i, page in enumerate(doc):
+            for img in page.get_images(full=True):
+                xref = img[0]
+                if xref in seen: continue
+                seen.add(xref)
+                try:
+                    info = doc.extract_image(xref)
+                except Exception:
+                    continue
+                fn = f"p{i+1}_x{xref}.{info['ext']}"
+                (d / fn).write_bytes(info["image"])
+                manifest.append({"file": fn, "page": i + 1, "width": info["width"],
+                                 "height": info["height"], "ext": info["ext"],
+                                 "sha256": hashlib.sha256(info["image"]).hexdigest()[:12]})
+    (d / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"提取 {len(manifest)} 张图片 → {d}（清单 manifest.json，sha256 去重）")
+
+# ---------- render ----------
+def cmd_render(args):
+    import pymupdf
+    base = Path(args.file).stem
+    d = Path(args.o) if args.o else Path(f"./pdf_pages_{base}")
+    d.mkdir(parents=True, exist_ok=True)
+    with pymupdf.open(args.file) as doc:
+        pages = parse_range(args.p, doc.page_count) if args.p else list(range(doc.page_count))
+        for i in pages:
+            pix = doc[i].get_pixmap(dpi=args.dpi)
+            f = d / f"p{i+1:03d}.png"
+            pix.save(f)
+            print(f"  p{i+1} → {f} ({pix.width}x{pix.height})")
+    print(f"渲染 {len(pages)} 页 → {d}")
+
+# ---------- merge ----------
+def cmd_merge(args):
+    import pypdf
+    from pypdf import PdfReader, PdfWriter
+    out = out_path(args.o, args.files[0], "_merged.pdf", "./")
+    writer = PdfWriter()
+    for src in args.files:
+        reader = PdfReader(src)
+        for page in reader.pages: writer.add_page(page)
+        if args.bookmarks:
+            writer.add_outline_item(Path(src).stem, len(writer.pages) - 1)
+    with open(out, "wb") as fh: writer.write(fh)
+    print(f"合并 {len(args.files)} 个文件 → {out}")
+
+# ---------- split ----------
+def cmd_split(args):
+    import pymupdf
+    base = Path(args.file).stem
+    d = Path(args.o) if args.o else Path(f"./pdf_split_{base}")
+    d.mkdir(parents=True, exist_ok=True)
+    with pymupdf.open(args.file) as doc:
+        pages = parse_range(args.range_, doc.page_count)
+        # 连续段合并为一个文件，如 1-3,5 → 文件1(1-3页) 文件2(5页)
+        groups, cur = [], []
+        prev = None
+        for p in pages:
+            if prev is not None and p != prev + 1:
+                groups.append(cur); cur = []
+            cur.append(p); prev = p
+        if cur: groups.append(cur)
+        for gi, grp in enumerate(groups, 1):
+            new = pymupdf.open()
+            for p in grp: new.insert_pdf(doc, from_page=p, to_page=p)
+            f = d / f"part{gi}_p{grp[0]+1}-{grp[-1]+1}.pdf"
+            new.save(f); new.close()
+            print(f"  {f}（{len(grp)} 页）")
+    print(f"拆分 {len(groups)} 段 → {d}")
+
+# ---------- rotate ----------
+def cmd_rotate(args):
+    import pymupdf
+    out = out_path(args.o, args.file, f"_r{args.angle}.pdf", "./")
+    with pymupdf.open(args.file) as doc:
+        targets = parse_range(args.p, doc.page_count) if args.p else list(range(doc.page_count))
+        for i in targets:
+            doc[i].set_rotation((doc[i].rotation + args.angle) % 360)
+        doc.save(out)
+    print(f"旋转 {args.angle}° 共 {len(targets)} 页 → {out}")
+
+# ---------- encrypt / decrypt ----------
+def _encrypt(args):
+    import pypdf
+    from pypdf import PdfReader, PdfWriter
+    reader = PdfReader(args.file)
+    if reader.is_encrypted:
+        try: reader.decrypt("")
+        except Exception: die("文件已加密，无法追加密码（先 decrypt）")
+    writer = PdfWriter()
+    for p in reader.pages: writer.add_page(p)
+    writer.encrypt(args.user_pw, owner_password=args.owner_pw or args.user_pw)
+    out = out_path(args.o, args.file, "_enc.pdf", "./")
+    with open(out, "wb") as fh: writer.write(fh)
+    print(f"已加密 → {out}")
+
+def _decrypt(args):
+    import pypdf
+    from pypdf import PdfReader, PdfWriter
+    reader = PdfReader(args.file)
+    if not reader.is_encrypted:
+        print("[pdf_core] 文件未加密，原样复制"); sys.exit(0)
+    if reader.decrypt(args.pw) == 0: die("密码错误")
+    writer = PdfWriter()
+    for p in reader.pages: writer.add_page(p)
+    out = out_path(args.o, args.file, "_dec.pdf", "./")
+    with open(out, "wb") as fh: writer.write(fh)
+    print(f"已解密 → {out}")
+
+# ---------- watermark ----------
+def cmd_watermark(args):
+    import pymupdf
+    out = out_path(args.o, args.file, "_wm.pdf", "./")
+    src = Path(args.file)
+    with pymupdf.open(src) as doc:
+        for page in doc:
+            if Path(args.mark).exists() and Path(args.mark).suffix.lower() == ".pdf":
+                with pymupdf.open(args.mark) as wm:
+                    if wm.page_count < 1: die("水印 PDF 为空")
+                    page.show_pdf_page(page.rect, wm, 0, overlay=True)
+            else:
+                r = page.rect
+                has_cjk = any(ord(c) > 0x2E80 for c in args.mark)
+                font = "china-s" if has_cjk else "helv"
+                fs = 40 if has_cjk else 48
+                w = pymupdf.get_text_length(args.mark, fontname=font, fontsize=fs)
+                page.insert_text((r.width/2 - w/2, r.height/2), args.mark,
+                                 fontsize=fs, color=(0.75, 0.75, 0.75),
+                                 fontname=font, overlay=True)
+        doc.save(out)
+    print(f"水印已叠加 → {out}")
+
+# ---------- report ----------
+def cmd_report(args):
+    import pymupdf, pdfplumber
+    base = Path(args.file).stem
+    d = Path(f"./pdf_report_{base}"); d.mkdir(parents=True, exist_ok=True)
+    doc = pymupdf.open(args.file)
+    meta = {k: v for k, v in (doc.metadata or {}).items() if v}
+    # 文本全文
+    full_text, img_count = [], 0
+    for i, page in enumerate(doc):
+        full_text.append(f"## 第 {i+1} 页\n" + (page.get_text("text") or ""))
+        img_count += len(page.get_images(full=True))
+    # 表格 → CSV 子目录
+    tdir = d / "tables"; tdir.mkdir(exist_ok=True)
+    n_tables = 0
+    with pdfplumber.open(args.file) as pdf:
+        for i, page in enumerate(pdf.pages):
+            for j, t in enumerate(page.extract_tables() or []):
+                rows = [r for r in t if any(c is not None and str(c).strip() for c in r)]
+                if not rows: continue
+                (tdir / f"p{i+1}_t{j+1}.csv").write_text("\n".join(
+                    ",".join((c or "").replace("\n", " ").replace(",", "，") for c in r)
+                    for r in rows) + "\n", encoding="utf-8")
+                n_tables += 1
+    # 产出报告
+    report = [f"# {base} 提取报告", "",
+              f"- 页数: {doc.page_count} ｜ 表格: {n_tables} ｜ 图片: {img_count}",
+              f"- 加密: {doc.needs_pass}", "",
+              f"**元数据**：\n```json\n{json.dumps(meta, ensure_ascii=False, indent=2)}\n```", "",
+              "**正文**（如需完整表格见 tables/ 目录）：", ""]
+    word_count = sum(len(t.split()) for t in full_text)
+    report.append(f"全文约 {word_count} 词，正文：\n\n" + "\n".join(full_text))
+    out = args.o if args.o else d / f"{base}_report.md"
+    Path(out).write_text("\n".join(report), encoding="utf-8")
+    print(f"综合报告 → {out}（表格 → {tdir}）")
+
+# ---------- main ----------
+def main():
+    ap = argparse.ArgumentParser(prog="pdf_core", description="PDF 通用操作 CLI（packs/pdf-toolkit）")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("info"); p.add_argument("file"); p.set_defaults(fn=cmd_info)
+    p = sub.add_parser("extract"); p.add_argument("file"); p.add_argument("-o"); p.set_defaults(fn=cmd_extract)
+    p = sub.add_parser("tables"); p.add_argument("file"); p.add_argument("-o"); p.set_defaults(fn=cmd_tables)
+    p = sub.add_parser("meta"); p.add_argument("file"); p.add_argument("-o"); p.set_defaults(fn=cmd_meta)
+    p = sub.add_parser("images"); p.add_argument("file"); p.add_argument("-o"); p.set_defaults(fn=cmd_images)
+    p = sub.add_parser("render"); p.add_argument("file"); p.add_argument("-p"); p.add_argument("-dpi", type=int, default=150); p.add_argument("-o"); p.set_defaults(fn=cmd_render)
+    p = sub.add_parser("merge"); p.add_argument("files", nargs="+"); p.add_argument("-o"); p.add_argument("--bookmarks", action="store_true"); p.set_defaults(fn=cmd_merge)
+    p = sub.add_parser("split"); p.add_argument("file"); p.add_argument("range_", metavar="RANGE"); p.add_argument("-o"); p.set_defaults(fn=cmd_split)
+    p = sub.add_parser("rotate"); p.add_argument("file"); p.add_argument("angle", type=int, choices=[90, 180, 270]); p.add_argument("-p"); p.add_argument("-o"); p.set_defaults(fn=cmd_rotate)
+    p = sub.add_parser("encrypt"); p.add_argument("file"); p.add_argument("user_pw"); p.add_argument("--owner-pw"); p.add_argument("-o"); p.set_defaults(fn=_encrypt)
+    p = sub.add_parser("decrypt"); p.add_argument("file"); p.add_argument("pw"); p.add_argument("-o"); p.set_defaults(fn=_decrypt)
+    p = sub.add_parser("watermark"); p.add_argument("file"); p.add_argument("mark"); p.add_argument("-o"); p.set_defaults(fn=cmd_watermark)
+    p = sub.add_parser("report"); p.add_argument("file"); p.add_argument("-o"); p.set_defaults(fn=cmd_report)
+
+    args = ap.parse_args()
+    args.fn(args)
+
+if __name__ == "__main__":
+    main()
