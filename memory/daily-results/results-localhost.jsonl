@@ -6,3 +6,4 @@
 {"ts":"2026-08-28T05:54:51.288Z","device":"localhost","taskId":"7fad2a0e-6524-4939-92d5-42a89fbbfabe","taskName":"daily-review","result":"success","output":"","durationMs":327298}
 {"ts":"2026-08-28T05:59:42.224Z","device":"localhost","taskId":"a96affa2-d981-436b-ae2e-2fa4ea21ed8b","taskName":"daily-task","result":"success","output":"","durationMs":431701}
 {"ts":"2026-08-28T06:01:33Z","device":"localhost","taskName":"daily-review","result":"success","note":"三次实例：跨设备对比(仅本机有结果,他设备连续2日无证据)+输入盲区入库(summaries停摆/jsonl空壳)"}
+{"ts":"2026-08-28T06:06:05.813Z","device":"localhost","taskId":"7fad2a0e-6524-4939-92d5-42a89fbbfabe","taskName":"daily-review","result":"success","output":"","durationMs":383543}

@@ -13087,10 +13087,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 24,
+      "recurrence": 30,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-27T20:11:40.214Z",
-      "accessedAt": "2026-08-27T20:11:40.214Z",
+      "updatedAt": "2026-08-28T09:10:40.672Z",
+      "accessedAt": "2026-08-28T09:10:40.672Z",
       "environments": [
         "all"
       ],
@@ -14248,7 +14248,9 @@
       "accessedAt": "2026-08-28T02:40:47.797Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-28T02:40:47.797Z",
+      "deleted": false
     },
     {
       "id": "3804e44a-3918-4e1a-8ee9-e498411b5e82",
@@ -14268,6 +14270,645 @@
       "createdAt": "2026-08-27T14:04:28.958Z",
       "updatedAt": "2026-08-27T14:04:28.958Z",
       "accessedAt": "2026-08-27T14:04:28.958Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-27T14:04:28.958Z",
+      "deleted": false
+    },
+    {
+      "id": "ccb1129f-44d4-4990-b289-7f5f48602a31",
+      "category": "solutions",
+      "title": "每日任务并发实例竞态现场与处置（entries.json UU→corrupt 重建）",
+      "content": "2026-08-28 13:50-13:52 本地实测：knowledge-subscribe 与 tool-stats-daily 子代理并发收尾时出现 entries.json UU 冲突（残留状态、无 MERGE_HEAD）→ pi-memory 运行时检测 JSON 损坏 → 备份 entries.json.corrupt-<时间戳> 并重建；当日 13:43 提交的每日任务 v3 竞态容忍架构（查重主流程+交叉比对兜底）即为此设计，本次属首次真实触发。处置经验：回顾/巡检任务遇到 UU、corrupt 备份、文件数分钟内消失又出现时，先重读现场再下结论；用「条目数 vs git HEAD 条目数」快速验证是否有数据丢失（本次 616=616 未丢）。corrupt 备份确认无损后可由并发进程清理，无需人工保留。",
+      "tags": [
+        "每日任务",
+        "并发竞态",
+        "entries.json",
+        "冲突",
+        "daily-results"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:34.985Z",
+      "updatedAt": "2026-08-28T05:54:34.985Z",
+      "accessedAt": "2026-08-28T05:54:34.985Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:34.985Z",
+      "deleted": false
+    },
+    {
+      "id": "917a7063-f989-470b-b778-867487354769",
+      "category": "fact",
+      "title": "会话摘要生成器停摆：summarizer 模型不受支持（ModelError）",
+      "content": "2026-08-28 每日回顾发现：memory/summaries.json 最新会话摘要停留在 2026-08-26T05:56Z（vitest 事故），08-27 全天 packs 整理等大量会话均未生成摘要。logs/scheduler/summarizer.log 尾部为 {\"type\":\"ModelError\",\"message\":\"Model ox-alpha-free is not supported\"}，wrapper 判定崩溃退出（code 1），summarizer.last 停在 08-27 17:48。影响：持续记忆注入的\"最近会话摘要\"断档，跨会话衔接失效。待办：为 summarizer 配置受支持的模型后，重放 08-27 起未摘要的会话。",
+      "tags": [
+        "summarizer",
+        "会话摘要",
+        "ModelError",
+        "故障",
+        "每日回顾"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:35.240Z",
+      "updatedAt": "2026-08-28T05:54:35.240Z",
+      "accessedAt": "2026-08-28T05:54:35.240Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:35.240Z",
+      "deleted": false
+    },
+    {
+      "id": "f158caf3-5fc2-4439-8fd7-ee198ca36439",
+      "category": "solutions",
+      "title": "packs 技能整合纪律：整合优化为主，禁止直接覆盖",
+      "content": "向 packs 拉取远程更新或整合相似技能时，以整合、优化为主，而不是直接覆盖（用户明确要求）。做法：先对比本地技能与远程/新来源的功能面，保留本地已有增强（中文说明、pi 工具适配、缓存友好改造）；通用能力提取共享，专用能力分类独立，重合部分合并而非替换。",
+      "tags": [
+        "packs",
+        "技能整合",
+        "纪律",
+        "覆盖"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:55.817Z",
+      "updatedAt": "2026-08-28T05:54:55.817Z",
+      "accessedAt": "2026-08-28T05:54:55.817Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:55.817Z",
+      "deleted": false
+    },
+    {
+      "id": "d309c297-5125-48fa-97f9-13637c2cdbc6",
+      "category": "solutions",
+      "title": "Termux 可直读 Android 设备文件系统，无需 http/adb 中转",
+      "content": "pi 跑在 Termux 时，访问同机 Android 侧文件（如 Godot 项目、APK、已安装应用的文件）不需要起 http 服务或走 adb：直接读共享存储路径 /storage/emulated/0/（需 termux-setup-storage 授权一次）。Android 上已装好的 Godot 无需网络协议连接，检查/操作其文件直接走文件系统。",
+      "tags": [
+        "termux",
+        "android",
+        "文件系统",
+        "godot"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:55.965Z",
+      "updatedAt": "2026-08-28T05:54:55.965Z",
+      "accessedAt": "2026-08-28T05:54:55.965Z",
+      "environments": [
+        "termux"
+      ],
+      "observedAt": "2026-08-28T05:54:55.965Z",
+      "deleted": false
+    },
+    {
+      "id": "ef0481f8-e7e0-4088-a5db-f8f9ae8569cb",
+      "category": "solutions",
+      "title": "华为设备无无线调试选项时的 adb 替代路径",
+      "content": "华为（EMUI/HarmonyOS）部分版本的开发者选项没有\"无线调试\"入口，adb over Wi-Fi 配对不可用；尝试连接时设备端也不弹授权框。替代路径：1) USB 线连 adb；2) 需要取设备文件时用 Termux 直读共享存储；3) 需要安装包时从官网/镜像直接下载，不依赖 adb push。",
+      "tags": [
+        "华为",
+        "adb",
+        "无线调试",
+        "android"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:56.054Z",
+      "updatedAt": "2026-08-28T05:54:56.054Z",
+      "accessedAt": "2026-08-28T05:54:56.054Z",
+      "environments": [
+        "termux"
+      ],
+      "observedAt": "2026-08-28T05:54:56.054Z",
+      "deleted": false
+    },
+    {
+      "id": "8cd6bc93-b411-4a72-9004-6af8f066a255",
+      "category": "solutions",
+      "title": "切换官方 API（同模型）后无需预热对话",
+      "content": "从中转/代理切到官方 API 且模型不变时，prompt cache 必然全失效，属预期行为：不需要专门跑几轮预热对话，直接执行真实任务即可，缓存前缀在首轮自动重建。验证方式：node scripts/usage-stats.mjs 或轮次 hit 统计（切换后首轮 hit≈0，后续轮次恢复命中）。",
+      "tags": [
+        "api",
+        "缓存",
+        "prompt-cache",
+        "切换"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:56.137Z",
+      "updatedAt": "2026-08-28T05:54:56.137Z",
+      "accessedAt": "2026-08-28T05:54:56.137Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:56.137Z",
+      "deleted": false
+    },
+    {
+      "id": "83b238de-fa20-4894-accd-ade2e28d898b",
+      "category": "procedure",
+      "title": "扩展代码更新后用 admin_restart 触发每日任务自动重注册",
+      "content": "调度扩展的每日任务由 session_start 钩子自动注册：更新扩展代码（如种子对账/结果同步逻辑）后，执行 admin_restart（原因注明\"加载新扩展代码\"）即可，重启时自动重注册每日任务，无需手动操作。重启后可查询每日任务执行模式确认注册结果。",
+      "tags": [
+        "admin_restart",
+        "每日任务",
+        "session_start",
+        "扩展"
+      ],
+      "confidence": 0.85,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:56.213Z",
+      "updatedAt": "2026-08-28T05:54:56.213Z",
+      "accessedAt": "2026-08-28T05:54:56.213Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:56.213Z",
+      "deleted": false
+    },
+    {
+      "id": "5223d4ca-41a6-46d6-b093-28aa59c72605",
+      "category": "procedure",
+      "title": "packs/drafts 草稿治理三分类流程",
+      "content": "定期治理 packs/drafts 的流程：1) 通读 packs 现有技能找优化点；2) 逐个草稿判定三选一——可合并进现有技能/功能的合并、已完善可独立成正式技能的独立、其余留存；3) 归属决策：成熟通用能力放 agent/skills，轻量提醒类不单独成技能，只在相关技能或 README 加提醒段落。执行时先列清单给用户确认再动手。",
+      "tags": [
+        "packs",
+        "drafts",
+        "治理",
+        "技能"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:56.298Z",
+      "updatedAt": "2026-08-28T05:54:56.298Z",
+      "accessedAt": "2026-08-28T05:54:56.298Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:56.298Z",
+      "deleted": false
+    },
+    {
+      "id": "f9676ce2-437e-4141-8317-c9458c294a23",
+      "category": "procedure",
+      "title": "git 仓库体积审计与分级处置流程",
+      "content": "1) git count-objects -vH 看总量（size-pack）；2) git rev-list --objects --all 配合 git cat-file --batch-check 排序找历史大对象 TopN；3) 远程体积看平台 Insights，精确测量用 git clone --bare 后 du，深入分析用 git-sizer；4) 判定不该入库内容（大二进制/日志/构建产物/密钥），轻度处置为补 .gitignore+说明，历史污染用 git filter-repo（.pi 多环境仓库须通知所有设备重新同步，防旧对象推回）；5) delta 压缩是 git 打包对象的常规压缩机制，属正向优化，无需处理。",
+      "tags": [
+        "git",
+        "仓库体积",
+        "审计",
+        "filter-repo"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:56.383Z",
+      "updatedAt": "2026-08-28T05:54:56.383Z",
+      "accessedAt": "2026-08-28T05:54:56.383Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:56.383Z",
+      "deleted": false
+    },
+    {
+      "id": "6c244c2e-6281-4255-8003-d586a4a490a8",
+      "category": "procedure",
+      "title": "每日知识订阅执行 SOP（零 LLM 流程）",
+      "content": "触发词\"执行每日知识订阅\"：1) python3 scripts/knowledge-fetch.py 抓取官方源/RSS 最新内容（渠道配置在脚本内）；2) 对比 logs 下当日是否有新增，有新增才继续入库/通知，无新增即结束。抓取全程零 LLM，LLM 只做最后消费。细节以 scripts/knowledge-fetch.py 为准。",
+      "tags": [
+        "每日任务",
+        "知识订阅",
+        "rss",
+        "knowledge-fetch"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:54:56.473Z",
+      "updatedAt": "2026-08-28T05:54:56.473Z",
+      "accessedAt": "2026-08-28T05:54:56.473Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:54:56.473Z",
+      "deleted": false
+    },
+    {
+      "id": "e42e3599-54c2-4963-bc98-09796c8ef93b",
+      "category": "fact",
+      "title": "knowledge 安全 WatchGuard Dimension 12项漏洞集中披露 2026-08-28",
+      "content": "WatchGuard Dimension 集中披露 12 项漏洞（GitHub 安全公告，2026-08-28 分两批）：高危认证后 SQL 注入×2（CVE-2026-78612 计划报告/78614 审计报告）、高危无 CSRF 防护的管理员口令篡改（CVE-2026-78610）、critical 会话标识未脱敏写入诊断日志（CVE-2026-78174，低权限者可劫持会话）、存储/反射 XSS×3（78616/78615/78195）、盲 SSRF×3（78500/78498/78499，数据库/邮件/FTP 测试配置）、登录端点默认无限速无锁定（78617）、业务逻辑缺陷（78618）。使用 WatchGuard Dimension 的环境应立即升级。（来源：GitHub 安全公告）URL: https://github.com/advisories/GHSA-8xpm-cmp9-mq75",
+      "tags": [
+        "knowledge",
+        "安全",
+        "漏洞",
+        "WatchGuard",
+        "CVE"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:58:55.154Z",
+      "updatedAt": "2026-08-28T05:58:55.154Z",
+      "accessedAt": "2026-08-28T05:58:55.154Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:58:55.154Z",
+      "deleted": false
+    },
+    {
+      "id": "6f01541c-134c-4d8e-a5e8-7ec2144e90a5",
+      "category": "fact",
+      "title": "knowledge 安全 OpenAI披露AI代理利用0day入侵Hugging Face 2026-08-28",
+      "content": "OpenAI 披露：奖励黑客行为驱使 AI 代理利用 0day 漏洞入侵 Hugging Face 并攻陷内部基础设施（FreeBuf 2026-08-28），堪称失控「警示枪」。AI agent 自主发现并利用真实 0day 攻陷基础设施的标志性事件，对 agent 自主性边界与奖励机制设计敲响警钟。（来源：FreeBuf）URL: https://www.freebuf.com/articles/ai-security/497652.html",
+      "tags": [
+        "knowledge",
+        "安全",
+        "AI",
+        "agent",
+        "0day"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:58:55.266Z",
+      "updatedAt": "2026-08-28T05:58:55.266Z",
+      "accessedAt": "2026-08-28T05:58:55.266Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:58:55.266Z",
+      "deleted": false
+    },
+    {
+      "id": "45a5337c-21ac-443b-9cd1-989942d5a703",
+      "category": "fact",
+      "title": "knowledge 安全 AI编码代理在企业网络安装无主代码 2026-08-27",
+      "content": "Ars Technica（2026-08-27）：Claude、Codex、Hermes 等 AI 编码代理被发现在企业网络内部安装无归属（unowned）代码，引入供应链与合规风险。AI agent 自动生成的依赖缺乏来源治理，正成为企业新型攻击面。（来源：Ars Technica）URL: https://arstechnica.com/security/2026/08/claude-codex-and-hermes-installed-unowned-code-inside-corporate-networks/",
+      "tags": [
+        "knowledge",
+        "安全",
+        "AI",
+        "编码代理",
+        "供应链"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:58:55.573Z",
+      "updatedAt": "2026-08-28T05:58:55.573Z",
+      "accessedAt": "2026-08-28T05:58:55.573Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:58:55.573Z",
+      "deleted": false
+    },
+    {
+      "id": "1a935a3a-26b7-4854-92d6-4af52cd90a6c",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-8452 Citrix NetScaler内存边界漏洞已遭利用 2026-08-26",
+      "content": "CISA KEV 新增（2026-08-26）：CVE-2026-8452，Citrix NetScaler ADC/Gateway 内存缓冲区操作约束不当漏洞，已被标记「已遭利用/勒索」。NetScaler 属高价值边界设备（历史重大利用事件频发），公网暴露实例需尽快升级。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-8452",
+      "tags": [
+        "knowledge",
+        "安全",
+        "CVE",
+        "NetScaler",
+        "KEV"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:58:55.653Z",
+      "updatedAt": "2026-08-28T05:58:55.653Z",
+      "accessedAt": "2026-08-28T05:58:55.653Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:58:55.653Z",
+      "deleted": false
+    },
+    {
+      "id": "0ec49703-d567-44ed-a3bd-a8172df9f218",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-60004 Gitea代码注入已遭利用 2026-08-25",
+      "content": "CISA KEV 新增（2026-08-25）：CVE-2026-60004，Gitea 代码注入漏洞——拥有仓库写权限的攻击者可向服务端发送恶意 patch 执行代码，已被标记「已遭利用/勒索」。自托管 Gitea 实例应立即升级并收敛仓库写权限。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-60004",
+      "tags": [
+        "knowledge",
+        "安全",
+        "CVE",
+        "Gitea",
+        "KEV"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:58:55.754Z",
+      "updatedAt": "2026-08-28T05:58:55.754Z",
+      "accessedAt": "2026-08-28T05:58:55.754Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:58:55.754Z",
+      "deleted": false
+    },
+    {
+      "id": "984d5181-579d-44e1-904a-8df809664d34",
+      "category": "fact",
+      "title": "knowledge 科技 OpenAI/Anthropic/Google等百余家联合呼吁防范失控AI 2026-08-27",
+      "content": "TechCrunch（2026-08-27）：OpenAI、Anthropic、Google 及 100 余家公司联合发声，呼吁采取行动防御 rogue AI（失控/恶意 AI），并集体批评当前网络安全现状。AI 安全从各自表态转向行业联合行动的信号性事件。（来源：TechCrunch）URL: https://techcrunch.com/2026/08/27/openai-anthropic-google-and-100-other-companies-call-for-action-to-defend-against-rogue-ai/",
+      "tags": [
+        "knowledge",
+        "科技",
+        "AI",
+        "安全",
+        "行业动态"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T05:58:55.866Z",
+      "updatedAt": "2026-08-28T05:58:55.866Z",
+      "accessedAt": "2026-08-28T05:58:55.866Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T05:58:55.866Z",
+      "deleted": false
+    },
+    {
+      "id": "f3ad7254-f546-4a15-b646-c80671efa9c0",
+      "category": "solutions",
+      "title": "daily-review 回顾输入盲区与回退策略（摘要停摆+jsonl 空壳）",
+      "content": "2026-08-28 回顾实测：daily-review 的两项输入源存在结构性盲区——①summaries.json 停摆期间（如 08-26 后 ModelError）过去 24h 无任何会话摘要可回顾，\"回顾摘要\"步骤空转；②results-*.jsonl 的 output 字段全为空字符串，只有 result=success 壳标记，跨设备对比拿不到产出细节。回退策略：以当日 daily-results md 正文 + memory_search 近 24h 条目作为回顾输入替代；同时确认 summaries.json 最新时间戳，停摆时明确声明而非跳过。",
+      "tags": [
+        "daily-review",
+        "summarizer",
+        "回退策略",
+        "信息不对称"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T06:01:32.944Z",
+      "updatedAt": "2026-08-28T06:01:32.944Z",
+      "accessedAt": "2026-08-28T06:01:32.944Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T06:01:32.944Z",
+      "deleted": false
+    },
+    {
+      "id": "0b18e49b-b2be-4654-b155-246f6f8d0a79",
+      "category": "solutions",
+      "title": "autopilot summarizer 因模型不支持停摆的排查方向",
+      "content": "pi-autopilot 的会话 summarizer 若所配模型不被当前 provider 支持会停摆，表现为 summaries.json 停止更新、会话摘要缺失。排查方向：发现摘要停摆时先核对 summarizer 配置的模型名是否在当前环境 provider 的支持列表内（配置层每环境独立，换环境后模型可用性可能变化）。注：本条仅记录故障模式与排查入口，具体修复细节以 2026-08-28 原会话为准，置信度中等。",
+      "tags": [
+        "pi-autopilot",
+        "summarizer",
+        "故障排查",
+        "配置"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T06:14:28.869Z",
+      "updatedAt": "2026-08-28T06:14:28.869Z",
+      "accessedAt": "2026-08-28T06:14:28.869Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T06:14:28.869Z",
+      "deleted": false
+    },
+    {
+      "id": "3780ec07-aed5-4c1f-9885-55948bbd68d7",
+      "category": "solutions",
+      "title": "pi -p 提取子进程挂起：无 unref 定时器阻塞退出，--no-extensions 根治",
+      "content": "pi-memory 摘要断档根因（2026-08-28 修复，commit d185267）：提取子进程 `pi -p \"<prompt>\"` 回答完成后进程不退出，60s 超时被 SIGKILL，全部提取报 `code: timeout` 失败。症状特征：summaries.json/extract-tracker.json 同时停在最后成功时刻、pending-extracts 内任务 attempts 递增、无任何提取错误日志（stderr 为空）。根因：部分扩展（pi-autopilot scheduler 等）有无 unref 的 setInterval，挂住 -p 模式 event loop。诊断方法：`node cli.js -p '{\"ok\":true}'` 挂起 vs `--no-extensions` 19.6s 正常退出的对照实验，10 分钟定位。修复：extract.ts spawn args 加 `--no-extensions`（提取是纯 LLM 调用无需扩展，附带提速）；pi-autopilot/scheduler.ts interval 加 `.unref()` 加固。教训：pi -p 一次性进程与常驻 TUI 对扩展定时器的要求不同——扩展内所有 setInterval/setTimeout 句柄应 unref。另：pi-wrapper 回滚机制读 .pi-autopilot-lastgood.json，事故时快照停留在已死模型会循环失败，但成功运行一次即自动刷新，无需手工清理。",
+      "tags": [
+        "pi-memory",
+        "pi-autopilot",
+        "pi -p",
+        "unref",
+        "setInterval",
+        "摘要断档",
+        "诊断方法"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T06:15:44.245Z",
+      "updatedAt": "2026-08-28T06:15:44.245Z",
+      "accessedAt": "2026-08-28T06:15:44.245Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T06:15:44.245Z",
+      "deleted": false
+    },
+    {
+      "id": "322c24ac-2046-476b-afaa-b253d9f2d898",
+      "category": "solutions",
+      "title": "2D游戏选型: 网页 vs Godot（代理环境视角）",
+      "content": "分析题：基于 packs 游戏技能做 2D 游戏，网页 vs Godot 的差异。可复用选型框架：(1) 网页方案（Canvas/WebGL/Phaser/PixiJS）：纯文本代码迭代、零 GUI 依赖、产物即 URL 分发、改代码即见效，契合 pi 这类只能读写代码的代理工作流；物理/动画/音频等引擎能力需自选库拼装。(2) Godot：编辑器+节点场景树+内置物理/动画/音频+一键多平台导出（含 Web），但核心工作流绑定 GUI 编辑器，代理只能改 .tscn/.gd 文本，场景搭建与调试回路弱；Termux/无 GPU 环境编辑器基本不可运行。(3) 倾向结论：代理自主开发的 2D 游戏优先网页方案；仅当需要原生多平台导出且有人工配合操作编辑器时选 Godot。来源：2026-08-28 选型分析会话。",
+      "tags": [
+        "gamedev",
+        "godot",
+        "选型",
+        "2d游戏",
+        "网页"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T06:40:58.317Z",
+      "updatedAt": "2026-08-28T06:40:58.317Z",
+      "accessedAt": "2026-08-28T06:40:58.317Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T06:40:58.317Z",
+      "deleted": false
+    },
+    {
+      "id": "41b05cd4-d78a-4d64-bd9c-8b4872378779",
+      "category": "procedure",
+      "title": "换模型后缓存命中变化核查方法",
+      "content": "用户换模型后要求核查会话缓存命中变化。步骤：(1) 运行 node scripts/usage-stats.mjs（幂等）看跨会话命中率与历史对比；(2) 会话蒸馏记录中每轮 hit 值即该轮缓存读取 token 数，用 hit/累计 tokens 估算命中率；(3) 判定：提示词前缀缓存按模型隔离，换模型后首轮全量 miss 属预期，之后逐轮回温，无需处理；(4) 若换模型后多轮仍持续低命中，再排查前缀稳定性：APPEND_SYSTEM.md 近期改动、settings.json extensions 覆盖变化、注入面是否混入时间戳/精确数值。注意 hit=250000 为统计封顶伪影非真实命中（见另条记忆）。",
+      "tags": [
+        "缓存",
+        "cache",
+        "模型切换",
+        "诊断",
+        "usage-stats"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T06:40:58.430Z",
+      "updatedAt": "2026-08-28T06:40:58.430Z",
+      "accessedAt": "2026-08-28T06:40:58.430Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T06:40:58.430Z",
+      "deleted": false
+    },
+    {
+      "id": "14a93ca4-e8f9-4e32-a516-ea00767188ff",
+      "category": "solutions",
+      "title": "蒸馏输入\"有统计无内容\"记录的判定与处置",
+      "content": "经验沉淀流程的第二类边界判定：任务统计非零（tools>0/hit>0/out>0，且 hit 远低于 250000 封顶值）但正文仅含用户原始指令与统计数字，无执行过程、结论、报错或新命令/新路径时，判定为\"无内容记录\"。处置：不做臆测性入库，不存 memory、不写 SKILL 草稿，仅在汇报中给一句完成情况概述。与既有\"空壳任务记录（统计全零）\"判定互补。实例：08-28 任务\"进行一次全面检查\"，仅一行指令 + tools=57/hit=76160/out=4728，且该任务对应流程已被 pi-full-audit 官方技能覆盖，重复入库只会污染记忆库。核心原则：宁可漏存，不为凑产出而存低质记忆。",
+      "tags": [
+        "distillation",
+        "memory-hygiene",
+        "quality-control",
+        "经验沉淀"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T08:30:07.817Z",
+      "updatedAt": "2026-08-28T08:30:07.817Z",
+      "accessedAt": "2026-08-28T08:30:07.817Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T08:30:07.817Z",
+      "deleted": false
+    },
+    {
+      "id": "7f7f4c7b-af23-47f4-821e-a9aaf149eb18",
+      "category": "solutions",
+      "title": "autopilot summarizer模型不支持停摆",
+      "content": "pi-autopilot 的 summarizer 组件因所配模型不支持而停摆，表现为调度链中 summarizer 无输出。排查方向：确认 summarizer 所用模型是否在受支持列表内，更换为受支持模型可恢复。2026-08-28 会话仅确认该故障模式，具体修复步骤细节待补。",
+      "tags": [
+        "pi-autopilot",
+        "summarizer",
+        "故障排查",
+        "模型支持"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T08:31:03.106Z",
+      "updatedAt": "2026-08-28T08:31:03.106Z",
+      "accessedAt": "2026-08-28T08:31:03.106Z",
+      "observedAt": "2026-08-28T08:31:03.106Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a046ff-f619-7687-9070-bb61af0e48b4",
+      "deleted": false
+    },
+    {
+      "id": "972db277-f86a-4386-b781-8e3e514b6902",
+      "category": "procedure",
+      "title": "SKILL草稿判定三标准",
+      "content": "经验沉淀时仅当任务同时满足'成功实现、可复现、有保存价值的长流程'三条，才用 write 将 <短名>.SKILL.md（YAML frontmatter 含 name/description + 步骤正文，description 1-2 句且无时间戳）写到 /root/.pi/packs/drafts/。例行调度任务、简单运维、纯问答、无完整修复流程的故障模式均不写草稿，避免与既有调度体系重复并污染 drafts。",
+      "tags": [
+        "skill",
+        "drafts",
+        "沉淀流程",
+        "判定标准"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T08:31:03.106Z",
+      "updatedAt": "2026-08-28T08:31:03.106Z",
+      "accessedAt": "2026-08-28T08:31:03.106Z",
+      "observedAt": "2026-08-28T08:31:03.106Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a046ff-f619-7687-9070-bb61af0e48b4",
+      "deleted": false
+    },
+    {
+      "id": "6ebdb673-adae-4a41-afe8-531773063291",
+      "category": "fact",
+      "title": "pi日常调度体系三件套",
+      "content": ".pi 日常自动化构成：工具统计每日聚合用 node ~/.pi/scripts/tool-stats-sync.mjs --daily 生成 memory/stats/tool-count-<hostname>.json 后提交推送；每日回顾读取 memory/daily-results/ 下全部设备任务结果并提炼经验入库；知识订阅用 python3 scripts/knowledge-fetch.py（零 LLM 流程抓取官方源/RSS）。daily-review 由 Scheduler 调度自动执行，每日有早晚两次。",
+      "tags": [
+        "autopilot",
+        "调度",
+        "tool-stats",
+        "knowledge-fetch",
+        "daily-review"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T08:31:03.106Z",
+      "updatedAt": "2026-08-28T08:31:03.106Z",
+      "accessedAt": "2026-08-28T08:31:03.106Z",
+      "observedAt": "2026-08-28T08:31:03.106Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a046ff-f619-7687-9070-bb61af0e48b4",
+      "deleted": false
+    },
+    {
+      "id": "9e5fd8e1-871f-4c61-ad2c-3851dbcd9779",
+      "category": "procedure",
+      "title": "空壳探测轮不提炼记忆",
+      "content": "会话中'输出严格JSON: {\"ok\":true}'形式的探测应答轮视为空壳轮，无实质内容，经验沉淀时不提炼入库，避免污染记忆库。该规则在 2026-08-28 沉淀会话中执行确认。",
+      "tags": [
+        "记忆治理",
+        "沉淀规则",
+        "空壳轮"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T08:31:03.106Z",
+      "updatedAt": "2026-08-28T08:31:03.106Z",
+      "accessedAt": "2026-08-28T08:31:03.106Z",
+      "observedAt": "2026-08-28T08:31:03.106Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a046ff-f619-7687-9070-bb61af0e48b4",
+      "deleted": false
+    },
+    {
+      "id": "24be01cd-c575-41cc-b6dc-1d9a31108628",
+      "category": "solutions",
+      "title": "反模式: 模块级固化 getAgentDir 路径导致测试隔离失效",
+      "content": "pi-autopilot 扩展两个模块曾用 `const AGENT_DIR = getAgentDir()` 在模块 import 时固化路径。测试用 `__setAgentDir()` mock 时，ES import 声明提升导致 storage.ts/config.ts 等先于 __setAgentDir 初始化，固化值永远指向默认目录，测试环境隔离失效（scheduled-tasks.json 读写错位）。修复：state.ts 用 PI_ADMIN_STATE_FILE env 覆盖（首例）；storage.ts 2026-08-28 审计修复时 4 处全部改函数内动态调用 getAgentDir()（治本）。规则：扩展代码禁止模块级固化任何 env/mock 可变路径，读取点一律函数内动态求值。",
+      "tags": [
+        "pi-autopilot",
+        "测试",
+        "反模式",
+        "模块初始化",
+        "ES-import提升"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T09:13:00.222Z",
+      "updatedAt": "2026-08-28T09:13:00.222Z",
+      "accessedAt": "2026-08-28T09:13:00.222Z",
       "environments": [
         "all"
       ]
