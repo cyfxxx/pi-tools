@@ -337,3 +337,25 @@
 - 待裁决（用户确认级）: 垃圾嫌疑 "test"(id 762000d2) 删除；升格候选 2 条
   （翻译脚本匹配技巧/代码标识符不应翻译，rec=25）进入 §3.1 通道评估
 - 回归: test-all --fast exit=0（12 ✓）
+
+---
+
+## 2026-08-29 续 2：长期记忆全量检查 + daily-health 跨设备接入（种子机制）
+- 记忆检查（快照 logs/entries.json.bak-20260829-preopt）:
+  - 647 活跃 / 0.71MB；标题归一化重复 0 组、content 完全重复 0、>90 天未访问 0、
+    >180 天 0、淘汰候选 0——结构健康（三方合并+去重机制运转正常），"膨胀"是量
+    （647>600 触发线）非腐坏；注入预算贴顶（496/500）的根解是 L0 分层注入（4.5）
+  - 优化执行: 删除垃圾条目 "test"（id 762000d2，content='content'，上一轮已列裁决项）
+    → 646 条，垃圾嫌疑清零；升格候选 2 条维持待裁决
+  - 发现但不动: 13 条 environments 格式不一致（11 条裸字符串 'all' + 2 条数组顺序
+    颠倒）——isEnvVisible 对字符串 'all' 的 includes('all') 碰巧语义正确，且走
+    memory_store 重存会重置 recurrence/confidence 元数据、直接改文件有运行时写回竞态，
+    收益<风险；源头治理（写入侧统一格式）留待 pi-memory 后续改动顺带
+- daily-health 跨设备接入（回答"入库同步 vs 提醒"）:
+  - 脚本已入库=全设备共享；数据/日志本机隔离是正确设计不入库
+  - scheduled-tasks.json 不入库且种子对账"已存在跳过"——改 daily-task 种子传不到
+    老设备；正确通道=新增独立种子任务
+  - 落地: agent/scheduled-seeds.json 新增 daily-health（cron 7:50，字段对齐
+    knowledge-subscribe；alert→daily-results 入库供 daily-review 跨设备对比，ok 静默）；
+    实证 30s 内本机自动注册；同步回退本机 daily-task 里的手动接入句（避免同机双跑）
+- 回归: memory-lifecycle 报告正常、seeds/scheduled-tasks JSON 合法

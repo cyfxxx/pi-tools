@@ -12,7 +12,10 @@
       "waitForUserOnLocal": true,
       "maxRunTime": 900,
       "retries": 1,
-      "tags": ["daily", "knowledge"]
+      "tags": [
+        "daily",
+        "knowledge"
+      ]
     },
     {
       "name": "daily-review",
@@ -24,7 +27,10 @@
       "waitForUserOnLocal": true,
       "maxRunTime": 600,
       "retries": 1,
-      "tags": ["daily", "review"]
+      "tags": [
+        "daily",
+        "review"
+      ]
     },
     {
       "name": "tool-stats-daily",
@@ -36,7 +42,25 @@
       "waitForUserOnLocal": true,
       "maxRunTime": 600,
       "retries": 1,
-      "tags": ["daily", "stats"]
+      "tags": [
+        "daily",
+        "stats"
+      ]
+    },
+    {
+      "name": "daily-health",
+      "type": "cron",
+      "schedule": "50 7 * * *",
+      "prompt": "每日健康度量（确定性主流程，勿做其他事）：运行 node ~/.pi/scripts/daily-health.mjs（输出结论行并自动追加本机 logs/daily-health.log，日志不入库；口径与告警规则见脚本头注释）。仅当输出含 结论=alert 时：将该行与原因写入 memory/daily-results/{{date}}-health-<本机hostname>.md（内容=alert 行+一行原因分析，勿读大文件勿跑诊断），git add 该文件后 commit（message: 'daily-health: alert {{date}}'）并 push（推送冲突先 git pull --rebase 重试一次，仍失败保留本地不阻塞）。结论=ok 时立即结束，不写文件不提交。",
+      "useSubagent": true,
+      "notifyMain": true,
+      "waitForUserOnLocal": true,
+      "maxRunTime": 900,
+      "retries": 1,
+      "tags": [
+        "health",
+        "daily"
+      ]
     }
   ]
 }

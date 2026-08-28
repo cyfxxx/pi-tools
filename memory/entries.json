@@ -13087,15 +13087,15 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 30,
+      "recurrence": 35,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-28T09:10:40.672Z",
-      "accessedAt": "2026-08-28T09:10:40.672Z",
+      "updatedAt": "2026-08-28T11:51:21.925Z",
+      "accessedAt": "2026-08-28T11:35:02.048Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-26T03:40:35.318Z",
-      "deleted": false
+      "deleted": true
     },
     {
       "id": "60567bd5-bc42-4b97-91d5-b56cc6a61550",
@@ -14909,6 +14909,123 @@
       "createdAt": "2026-08-28T09:13:00.222Z",
       "updatedAt": "2026-08-28T09:13:00.222Z",
       "accessedAt": "2026-08-28T09:13:00.222Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T09:13:00.222Z",
+      "deleted": false
+    },
+    {
+      "id": "e89c9c5c-5724-4e7d-b15e-4d63655293cf",
+      "category": "solutions",
+      "title": "空壳投喂修复落地与停摆根因更正（2026-08-29）",
+      "content": "空壳投喂链路已修复（2026-08-29），此前\"修复未落地\"跟踪条目可退役：①源端 pi-memory extract 子进程已加 --no-extensions（d185267，08-28）+ lib/task-record.ts 的 PI_DISABLE_TASK_RECORD 守卫（task-summarizer spawn 时已设）；②消费端 scripts/task-summarizer.mjs 聚类前新增 isDistillable 过滤三类记录：空 userRequest（失败/空转轮）、tools=0 且 output=0（无产出轮，含封顶伪影）、内部子进程 prompt（会话记忆提取器/经验沉淀器，守门失效兜底）；③存量 logs/task-records.jsonl 已就地清理（1288→148 条，备份 .bak-20260829）。hit=250000 伪影归因更正：非本地统计 bug——provider 对 1M 窗口模型封顶报 cacheRead=250000，实测 73 条全部为空 request、cctx=850K、零产出中断轮，\"脚本把上限常量当命中值\"的怀疑不成立。summaries.json 断档（08-26~08-28）双层根因：①所配模型 ox-alpha-free 被 provider 下架（ModelError not supported，见 logs/scheduler/summarizer.log:401）；②extract 子进程加载扩展时常驻定时器挂住 -p event loop 致 60s 超时——两者均于 08-28 闭环（换模型+--no-extensions），\"模型不支持\"只是根因之一。daily-health 度量环节恢复：原由旧 pi-scheduler 的 daily-health-check 定时任务写 logs/daily-health.log，pi-scheduler 退役融合后丢失（08-24 起停更）；08-29 起由 scripts/daily-health.mjs 硬层承载（分段/断裂口径对齐 usage-stats.mjs），已接入 autopilot daily-task 步骤2。",
+      "tags": [
+        "空壳投喂",
+        "task-summarizer",
+        "daily-health",
+        "根因更正",
+        "缓存伪影"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T11:05:59.480Z",
+      "updatedAt": "2026-08-28T11:05:59.480Z",
+      "accessedAt": "2026-08-28T11:05:59.480Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T11:05:59.480Z",
+      "deleted": false
+    },
+    {
+      "id": "5befb635-acb2-4d21-b3e0-3bd522eb7c50",
+      "category": "solutions",
+      "title": "pi-full-audit 审计技能元优化记录",
+      "content": "2026-08-28 对 pi-full-audit 技能做了一轮元优化讨论并落地推送（涉及两个会话：先提出问题，后处理+推送）。议题三个：(1) 审计会话中技能文件被多次读取，讨论了优化技能内容或读取方式；(2) 文档检查放在代码检查前还是检查完成后；(3) 检查过程中出现输出被截断及原因与对策；另讨论了全面检查耗时偏长的优化。注意：具体取舍结论未入任务记录（仅统计与简短汇报），如需确知实际改动，用 git log 查 pi-full-audit SKILL.md/相关文件在 2026-08-28 前后的提交。后续审计若再遇到这三类问题（重复读取、检查顺序、输出截断），先查该提交避免重复讨论。",
+      "tags": [
+        "pi-full-audit",
+        "审计优化",
+        "技能维护"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T11:09:47.779Z",
+      "updatedAt": "2026-08-28T11:09:47.779Z",
+      "accessedAt": "2026-08-28T11:09:47.779Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T11:09:47.779Z",
+      "deleted": false
+    },
+    {
+      "id": "9a231c54-2feb-48e5-82db-bceca7a831f4",
+      "category": "solutions",
+      "title": "废弃模块移除后清理 TUI 残留文案",
+      "content": "移除已合并/废弃模块（如 ctx-lite 并入 pi-memory）后，TUI 状态行可能残留旧文案（实例：'pi-memory: 4 笔记 · 625 记忆已就绪（已合并 ctx-lite）'中括号提示在模块移除后仍显示）。处理：grep 模块名或文案关键词（如 '已合并'）定位硬编码位置并删除该段提示。定位方法通用可靠；具体硬编码文件推断在 pi-memory 扩展的 index.ts/状态注入代码中（未验证，任务记录未含文件路径）。通用原则：下线一个模块时，同步全库 grep 其名称清理引用与展示文案，避免状态行说谎。",
+      "tags": [
+        "pi-memory",
+        "TUI",
+        "文案清理",
+        "模块下线"
+      ],
+      "confidence": 0.65,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T11:09:47.884Z",
+      "updatedAt": "2026-08-28T11:09:47.884Z",
+      "accessedAt": "2026-08-28T11:09:47.884Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T11:09:47.884Z",
+      "deleted": false
+    },
+    {
+      "id": "d6652591-fadc-429a-a0fa-af35ba0eee80",
+      "category": "procedure",
+      "title": "多设备同步环境执行前先检查信息对称性",
+      "content": ".pi 仓库在 Termux/WSL2/Linux 等多环境经 GitHub 同步，本地信息可能过时或缺失（如 memory/entries.json 被其他设备更新、配置层各环境独立）。执行修改/合并类任务前先深入检查：确认 git 状态与远端差异、比对共享文件本地与远端版本是否一致，确认信息对称后再动手；发现不对称或缺失时先同步合并再执行。配套细节见已有记忆\"entries.json 拉取冲突三方比对流程\"。来源：2026-08-28 例行任务实践（52 次工具调用的检查后执行）。",
+      "tags": [
+        "多设备同步",
+        "信息对称",
+        "git",
+        "执行前检查",
+        "pi配置仓库"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T11:36:44.728Z",
+      "updatedAt": "2026-08-28T11:36:44.729Z",
+      "accessedAt": "2026-08-28T11:36:44.729Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T11:36:44.728Z",
+      "deleted": false
+    },
+    {
+      "id": "d04caf5c-b973-478d-ace8-5ee8a33769da",
+      "category": "reference",
+      "title": "daily-health 多设备架构与种子同步机制",
+      "content": "daily-health 多设备架构（2026-08-29 落地）：①scripts/daily-health.mjs git 入库全设备共享（确定性零 LLM，分段/断裂口径对齐 usage-stats.mjs，alert 判据=会话≥3 且命中<90% 或 A/B 断裂>3）；②数据本机隔离——agent/.usage-diag.jsonl 读取、logs/daily-health.log 追加均不入库（各设备缓存行为本机属性，混入会制造无意义冲突）；③调度接入走 agent/scheduled-seeds.json 种子机制（该文件 git 入库，各设备 pi-autopilot 对账：本地缺失同名任务自动注册，已存在跳过不覆盖，push 后 30s 内生效）——daily-health 种子任务 cron 7:50，结论=alert 时写 memory/daily-results/{date}-health-<hostname>.md 并 push 供跨设备 daily-review 对比，ok 静默；④本机 scheduled-tasks.json（不入库）的 daily-task 不再含 daily-health 步骤，职责归种子任务。新增跨设备例行任务的正确姿势=加种子而非改各设备本地 scheduled-tasks.json。",
+      "tags": [
+        "daily-health",
+        "seeds",
+        "多设备",
+        "架构",
+        "调度"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T11:52:53.932Z",
+      "updatedAt": "2026-08-28T11:52:53.932Z",
+      "accessedAt": "2026-08-28T11:52:53.932Z",
       "environments": [
         "all"
       ]
