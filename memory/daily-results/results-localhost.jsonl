@@ -1,2 +1,5 @@
 {"ts":"2026-08-28T02:39:29.725Z","device":"localhost","taskId":"a2375780-75bc-4a7f-9381-643c505e68a6","taskName":"knowledge-subscribe","result":"success","output":"","durationMs":153634}
 {"ts":"2026-08-28T02:41:00.277Z","device":"localhost","taskId":"085bf494-841d-4cb6-8ba5-06bcf4df6b21","taskName":"daily-review","result":"success","output":"","durationMs":214655}
+{"ts":"2026-08-28T05:51:22.689Z","device":"localhost","taskId":"a96affa2-d981-436b-ae2e-2fa4ea21ed8b","taskName":"knowledge-subscribe","result":"success","output":"","durationMs":147683}
+{"ts":"2026-08-28T05:52:30.487Z","device":"localhost","taskId":"52aeb8b8-c84a-41f2-82a7-3979e922c5ec","taskName":"tool-stats-daily","result":"success","output":"","durationMs":246990}
+{"ts":"2026-08-28T05:58:00.000Z","device":"localhost","taskName":"daily-review","result":"success","note":"二次实例：并发竞态现场观察+summarizer停摆发现，经验入库2条"}
