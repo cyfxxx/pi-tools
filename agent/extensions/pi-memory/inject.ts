@@ -19,6 +19,18 @@ export function truncateContent(text: string): string {
   return truncateByTokens(text, CONTENT_TOKEN_CAP)
 }
 
+/**
+ * L0 条目摘要档（ROADMAP 4.5，2026-08-29 落地）：条目内容注入只取 36 token（≈72 汉字），
+ * 全文走 memory_search 检索——同 500 token 预算条目上限 4→8，主题覆盖翻倍。
+ * 触发条件（注入 496/500 贴顶）已满足；条目 title 本身即 20 字内摘要，L0 为补充。
+ * 确定性提取，无写入侧 LLM 摘要（零迁移、零缓存影响）；摘要（L2）结构化段保持
+ * 80 token：决策/事实要点密度高，压到 36 损失要点。回滚=git revert 本改动。
+ */
+export const ENTRY_SUMMARY_TOKEN_CAP = 36
+export function truncateEntrySummary(text: string): string {
+  return truncateByTokens(text, ENTRY_SUMMARY_TOKEN_CAP)
+}
+
 /** 空摘要过滤：fullText 与 decisions 均空，或文案自认无可提取的摘要不注入 */
 const EMPTY_SUMMARY_PATTERN = /无可提取|无实质内容|无需衔接|没有可提取|未提取到内容|无任务执行|无有效信息|无有价值信息|内容极简|无新决策|无事发生|极简会话|没有任务/
 export function isSubstantiveSummary(s: SummaryEntry): boolean {
@@ -76,14 +88,14 @@ export function buildInjectionBlock(
     const docMap = new Map(scored.map(x => [x.e.id, buildDoc(x.e)]))
     const ranked = roundRobinBySession(mmrDiversify(scored, maxRank, 0.7, docMap), maxRank)
     for (const { e } of ranked) {
-      const item = `- [${e.category}] ${e.title}: ${truncateContent(e.content)}`
+      const item = `- [${e.category}] ${e.title}: ${truncateEntrySummary(e.content)}`
       const cost = estimateTokens(item + '\n')
       if (used + cost > budgetTokens && injectedEntries > 0) break
       if (used + cost > budgetTokens * 2) break
       lines.push(item)
       used += cost
       injectedEntries++
-      if (injectedEntries >= 4) break
+      if (injectedEntries >= 8) break
     }
   }
 

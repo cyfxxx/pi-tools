@@ -359,3 +359,23 @@
     knowledge-subscribe；alert→daily-results 入库供 daily-review 跨设备对比，ok 静默）；
     实证 30s 内本机自动注册；同步回退本机 daily-task 里的手动接入句（避免同机双跑）
 - 回归: memory-lifecycle 报告正常、seeds/scheduled-tasks JSON 合法
+
+---
+
+## 2026-08-29 续 3：L0 分层注入落地 + 升格通道首次闭环（用户批准）
+- L0 分层注入（ROADMAP 4.5 ⏸→✅，触发条件满足：注入 496/500 贴顶）:
+  - inject.ts: 条目 L0 摘要档 ENTRY_SUMMARY_TOKEN_CAP=36（≈72 汉字）、条数上限 4→8；
+    摘要 L2 结构化段保持 80（决策/事实要点密度高）；确定性提取零写入侧改动零迁移
+  - 同 500 token 预算主题覆盖翻倍；全文走 memory_search 不变
+  - 测试: inject.test.ts 新增 L0 断言 + "caps entries" 对齐 8；130/130 过；
+    cache-guard 注入面基线更新（--update-baseline，HIGH 漂移=预期注入格式变化）
+  - 抖动记录: pi-link vitest 在 test-all 中间歇红（单独跑稳定 102 过，两轮 test-all
+    红→绿）——历史同款环境抖动，不阻塞
+- 升格通道首次闭环（VISION §3.1，用户 2026-08-29 批准）:
+  - 「翻译脚本匹配技巧」「代码标识符不应翻译」（rec=25×2）知识点吸收进
+    pi-translate-zh/SKILL.md「查找原则」节（子串/精确匹配、标识符不翻译、
+    覆盖率口径偏差、stderr 归属核对），节尾标注升格记录
+  - 原两条记忆删除（硬承载完成，原软引导降权）→ 644 条
+  - 评估说明: 两条内容与 patch-all-zh.mjs 脚本互为表里，SKILL.md 是规则文档承载位；
+    记忆的增量知识（匹配方式/口径偏差/归属核对）此前未文档化，吸收有实质增量
+- 回归: test-all --fast exit=0

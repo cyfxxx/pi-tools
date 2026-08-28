@@ -105,6 +105,11 @@ grep -rn 'commands: \|registerCommand\|name: "/' $HOME/.pi/agent/extensions/*/in
 - `children:"..."`（HTML JSX 属性）→ 替换为 `children:"中文"`
 - SKILL.md `description:` 块→ 保留 YAML 格式，替换文本内容
 - 增量安全：脚本自动跳过已翻译的字符串（`if (content.includes(to)) continue;`）
+- 模板字面量字符串需子串匹配（如 'Auto-compacting... ${cancelHint}'——含插值前后缀）；带前导/尾随空格的字符串（如 '  No resources found'）要精确匹配整串
+- 代码标识符不翻译：'user'/'project' 等枚举值、${m.provider}/${m.id} 等拼接模板、API key/OAuth 等专有名词保持英文；覆盖率统计会因 regex 命中含小写字母的模板字面量产生口径偏差（如 interactive-mode 报 0/1 实为不应翻译的标识符），勿据此回改
+- stderr 与 stdout 交错显示时"未找到"警告可能来自不同区段，逐条核对归属后再删对应条目，避免误删有用翻译
+
+> 升格记录（VISION §3.1）：上三条源自长期记忆「翻译脚本匹配技巧」「代码标识符不应翻译」（rec=25），2026-08-29 吸收入本节后原记忆删除（硬承载完成，原软引导降权）。
 
 ## 验证
 

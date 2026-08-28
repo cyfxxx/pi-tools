@@ -239,57 +239,6 @@
       ]
     },
     {
-      "id": "af33892e-388d-47d4-a5b6-bc70d68b1e49",
-      "category": "fact",
-      "title": "翻译脚本匹配技巧",
-      "content": "模板字面量字符串需子串匹配（如 'Auto-compacting... ${cancelHint}'）；带前导/尾随空格的字符串（如 '  No resources found'）要精确匹配；stderr 与 stdout 交错显示时'未找到'警告实际来自不同区段，需逐一核对归属，避免误删有用条目。",
-      "tags": [
-        "翻译",
-        "匹配技巧",
-        "模板字面量",
-        "踩坑",
-        "patch-all-zh",
-        "pi",
-        "技巧"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 25,
-      "createdAt": "2026-08-02T08:40:02.562Z",
-      "updatedAt": "2026-08-03T13:32:38.669Z",
-      "accessedAt": "2026-08-02T08:40:02.562Z",
-      "observedAt": "2026-08-03T13:32:38.669Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "180c9813-2add-471d-8cae-22daa5f2fca1",
-      "category": "fact",
-      "title": "代码标识符不应翻译",
-      "content": "翻译 pi 界面需区分代码标识符与界面文案：'user'/'project' 枚举值、${m.provider}/${m.id} 拼接模板、API key/OAuth 专有名词保持英文。覆盖率统计可能因 regex 匹配到含小写字母的模板字面量而出现口径偏差（如 interactive-mode 报 0/1 实为不应翻译的标识符）。",
-      "tags": [
-        "翻译",
-        "标识符",
-        "覆盖率",
-        "踩坑",
-        "代码标识符",
-        "pi"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 25,
-      "createdAt": "2026-08-02T08:40:02.562Z",
-      "updatedAt": "2026-08-03T13:32:38.669Z",
-      "accessedAt": "2026-08-02T08:40:02.562Z",
-      "observedAt": "2026-08-03T13:32:38.669Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
       "category": "fact",
       "title": "pi / 命令精简为 13 个",
@@ -13080,24 +13029,6 @@
       "deleted": false
     },
     {
-      "id": "762000d2-4a31-4fe1-918e-6b6cfd410dea",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 35,
-      "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-28T11:51:21.925Z",
-      "accessedAt": "2026-08-28T11:35:02.048Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-26T03:40:35.318Z",
-      "deleted": true
-    },
-    {
       "id": "60567bd5-bc42-4b97-91d5-b56cc6a61550",
       "category": "solutions",
       "title": "经验沉淀：空壳任务再现，建议先修提取脚本",
@@ -15028,7 +14959,50 @@
       "accessedAt": "2026-08-28T11:52:53.932Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-28T11:52:53.932Z",
+      "deleted": false
+    },
+    {
+      "id": "7ebc9065-ec74-400a-951c-162c9b431c8b",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 3,
+      "createdAt": "2026-08-28T12:05:41.438Z",
+      "updatedAt": "2026-08-28T12:15:01.497Z",
+      "accessedAt": "2026-08-28T12:15:01.497Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T12:05:41.438Z",
+      "deleted": false
+    },
+    {
+      "id": "ecec54b5-dd75-4f72-b55e-4b53c6cac6ac",
+      "category": "procedure",
+      "title": "daily-health.mjs 入库判定与跨设备脚本处理规则",
+      "content": "2026-08-28 长期记忆全量审查中处理的问题：daily-health.mjs 类脚本该入库同步还是各设备自理。判定规则（1-3 条为仓库既有约定）：1) 含密钥/认证/设备特定配置的文件不入库（settings.json/auth.json/models.json），某环境需独立值时本地直接改；2) 通用脚本本体（健康检查/构建/统计类）入库共享，git 同步自动分发到各设备，无需逐设备添加提醒；3) 运行时产物 git ignore，需跨设备区分时文件名加 hostname 后缀（如 memory/stats/tool-count-<hostname>.json）；4) daily-health.mjs 按规则 2 归入入库共享。第 4 条为约定推断，沉淀时未经会话原文核实。",
+      "tags": [
+        "git-sync",
+        "multi-device",
+        "memory-governance",
+        "daily-health"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T12:10:17.516Z",
+      "updatedAt": "2026-08-28T12:10:17.516Z",
+      "accessedAt": "2026-08-28T12:10:17.516Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T12:10:17.516Z",
+      "deleted": false
     }
   ]
 }

@@ -46,11 +46,11 @@ describe('inject: buildInjectionBlock', () => {
     expect(result.block).toContain('持续记忆')
   })
 
-  it('caps entries at 4 max', async () => {
+  it('caps entries at 8 max（L0 分层后上限 4→8，ROADMAP 4.5）', async () => {
     const { buildInjectionBlock } = await import('../inject.ts')
     const entries = Array.from({ length: 10 }, (_, i) => makeEntry({ title: `记忆 ${i}`, content: '短内容' }))
     const result = buildInjectionBlock(entries, [], 2000)
-    expect(result.entries).toBeLessThanOrEqual(4)
+    expect(result.entries).toBeLessThanOrEqual(8)
   })
 
   it('includes recent summaries up to 2', async () => {
@@ -99,6 +99,16 @@ describe('inject: buildInjectionBlock', () => {
     const result = buildInjectionBlock([makeEntry({ title: '长条目', content: longContent })], [], 2000)
     expect(result.block).toContain('[截断]')
     expect(result.block.length).toBeLessThan(longContent.length)
+  })
+
+  it('L0 分层：条目摘要档 36 token，同预算装载更多条目（上限 8）', async () => {
+    const { buildInjectionBlock, ENTRY_SUMMARY_TOKEN_CAP } = await import('../inject.ts')
+    expect(ENTRY_SUMMARY_TOKEN_CAP).toBe(36)
+    // 8 条短条目（每条 item ≈22 token），500 预算内应注入 ≥6 条——旧 80token/4 条上限装不下
+    const entries = Array.from({ length: 8 }, (_, i) => makeEntry({ title: `条目${i}`, content: '核心要点，一句话摘要。' }))
+    const result = buildInjectionBlock(entries, [], 500)
+    expect(result.entries).toBeGreaterThanOrEqual(6)
+    expect(result.entries).toBeLessThanOrEqual(8)
   })
 
   it('短内容不加截断标记', async () => {
