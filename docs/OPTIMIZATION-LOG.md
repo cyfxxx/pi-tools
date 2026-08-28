@@ -319,3 +319,21 @@
   - 停摆根因更正入 memory: 双层根因（ox-alpha-free 下架 ModelError + 扩展定时器挂 -p 超时），
     均已 08-28 闭环；合并记忆条目取代旧跟踪条目
 - 回归: node --check × 2 + golden-tasks --fast 全绿 + test-all --fast（见下）
+
+---
+
+## 2026-08-29 续：防退化安全网补全（升格候选过滤 + golden --full 实弹）
+- 动机: 方向 2 遗留两项——①memory-lifecycle 升格候选把噪声条目 "test"(rec=34,
+  content='content') 当高复现有效条目，违反 VISION §3.3 防退化第一（错误教训会自我强化）；
+  ②golden-tasks --full 无头两任务从未实弹，行为级退化无真实检测
+- 落地:
+  - memory-lifecycle.mjs 新增垃圾嫌疑规则（content 归一化 <30 字符或标题为测试噪声词），
+    垃圾嫌疑不进升格候选；报告新增 [垃圾嫌疑] 段（人读 + --json counts.junkSuspects）。
+    全库校验：content<30 仅 "test" 一条，零误报；升格候选 3→2 条
+  - golden-tasks.sh --full 档 export PI_DISABLE_TASK_RECORD=1（G1/G2 断言轮不进
+    task-records，防蒸馏队列把测试指令当任务）
+  - 实弹结果: G1 文本响应断言 ✓ / G2 工具写入断言 ✓，fast 四检全绿——P3 行为级
+    安全网首次真实通过（费用：两次短无头会话）
+- 待裁决（用户确认级）: 垃圾嫌疑 "test"(id 762000d2) 删除；升格候选 2 条
+  （翻译脚本匹配技巧/代码标识符不应翻译，rec=25）进入 §3.1 通道评估
+- 回归: test-all --fast exit=0（12 ✓）

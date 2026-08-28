@@ -96,6 +96,8 @@ if [ $? -eq 0 ]; then grn "F4 干预快照结构"; else red "F4 干预快照结�
 # ---------- Full 档 ----------
 if [ "$MODE" = "full" ]; then
   PI_BIN="${PI_BIN:-$(command -v pi)}"
+  # 无头测试轮不写 task-records（防 G1/G2 断言指令被蒸馏队列当任务总结，对齐 summarizer 防递归）
+  export PI_DISABLE_TASK_RECORD=1
   if [ -z "$PI_BIN" ]; then
     red "G* 找不到 pi 可执行（PI_BIN 覆盖）"
   else
