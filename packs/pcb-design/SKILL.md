@@ -39,13 +39,14 @@ description: PCB/硬件设计的 AI 辅助技能入口：KiCad 工具链路由�
 ### 最小审查清单
 
 - [ ] 数据手册已同步或明确声明验证缺口（无 datasheet 时所有引脚级/电气结论降级为 consistency only）
-- [ ] 原理图分析（连接性/取值/极性/去耦）
-- [ ] PCB 全量分析（DRC + 连接图 + 走线宽度/间距）
+- [ ] 原理图分析（连接性/取值/极性/去耦；时序/复位/时钟/端接/保护细分项 → design-review-checklists）
+- [ ] PCB 全量分析（DRC + 连接图 + 走线宽度/间距 + 布局/布线量化约束 → design-review-checklists）
 - [ ] 原理图↔PCB 交叉引用
 - [ ] EMC 风险扫描（有 PCB 时）
 - [ ] SPICE 子电路仿真（装了 ngspice/LTspice/Xyce 时）
 - [ ] 热点估算（原理图+PCB JSON 齐备时）
-- [ ] Gerber/钻孔分析（制造输出存在时）
+- [ ] Gerber/钻孔分析（制造输出存在时；层集完整性对照 design-review-checklists §Gerber）
+- [ ] DFM 生产/装配友好检查（Mark 点/测试点/元件方向/阴影效应，下单前适用 → design-review-checklists）
 - [ ] 元件生命周期与温度审计（有网络且 MPN 覆盖允许时）
 - [ ] 相对上次 review 的 delta 检查
 - [ ] 关键器件原始文件抽查升级为完全验证
@@ -89,6 +90,7 @@ git clone https://github.com/aklofas/kicad-happy.git ~/.pi/packs/upstream/kicad-
 详细目录：`references/upstream-catalog.md`
 MCP 接入与 ML 布局等专用工具：`references/specialized-tools.md`
 命令速查详解：`references/core-workflows.md`
+布局/布线/数据手册/DFM 审查清单：`references/design-review-checklists.md`
 
 ## 许可与来源
 
