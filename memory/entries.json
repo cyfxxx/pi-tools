@@ -13087,10 +13087,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 23,
+      "recurrence": 24,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-27T09:52:09.428Z",
-      "accessedAt": "2026-08-27T09:52:09.428Z",
+      "updatedAt": "2026-08-27T20:11:40.214Z",
+      "accessedAt": "2026-08-27T20:11:40.214Z",
       "environments": [
         "all"
       ],
@@ -14059,6 +14059,195 @@
       "accessedAt": "2026-08-27T13:29:01.373Z",
       "environments": [
         "termux"
+      ],
+      "observedAt": "2026-08-27T13:29:01.373Z",
+      "deleted": false
+    },
+    {
+      "id": "45b5be21-8a91-44b8-93c7-60e056d3b139",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-53362 Linux内核IPv6提权已遭利用 2026-08-27",
+      "content": "CISA KEV 新增（2026-08-27）：CVE-2026-53362，Linux 内核 IPv6 网络子系统存在未指定漏洞，可致权限提升，已被标记「已遭利用/勒索」，属 CISA 已知被利用漏洞列表。风险高，需关注发行版补丁推送并尽快升级内核。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-53362",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "漏洞",
+        "CISA",
+        "Linux内核"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:39:09.548Z",
+      "updatedAt": "2026-08-28T02:39:09.548Z",
+      "accessedAt": "2026-08-28T02:39:09.548Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:39:09.548Z",
+      "deleted": false
+    },
+    {
+      "id": "399f2b8a-fd97-4b3c-8fb1-9c994eca562f",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-66384 JFrog Artifactory路径穿越已遭利用 2026-08-27",
+      "content": "CISA KEV 新增（2026-08-27）：CVE-2026-66384，JFrog Artifactory 受限目录路径限制不当（路径穿越），已遭利用/勒索标记。Artifactory 是主流制品仓库，承载供应链，需核实版本并升级修复。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-66384",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "漏洞",
+        "CISA",
+        "供应链"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:39:09.803Z",
+      "updatedAt": "2026-08-28T02:39:09.803Z",
+      "accessedAt": "2026-08-28T02:39:09.803Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:39:09.803Z",
+      "deleted": false
+    },
+    {
+      "id": "310f5f19-22ef-4591-88ce-5ed5d53e2713",
+      "category": "fact",
+      "title": "knowledge 安全 Redis补丁被绕过后RCE PoC全网公开 2026-08-27",
+      "content": "Redis 官方补丁被绕过，最新 RCE 漏洞的 PoC 已全网公开（安全客 2026-08-27）。Redis 部署面极广（缓存/会话/队列），PoC 公开后未及时升级的服务器风险陡增，建议核对 Redis 版本与补丁状态。（来源：安全客）URL: https://www.anquanke.com/post/id/316025",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "漏洞",
+        "Redis",
+        "RCE"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:39:10.028Z",
+      "updatedAt": "2026-08-28T02:39:10.028Z",
+      "accessedAt": "2026-08-28T02:39:10.028Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:39:10.028Z",
+      "deleted": false
+    },
+    {
+      "id": "bd10e893-b389-400b-b6c2-791dd9197e81",
+      "category": "fact",
+      "title": "knowledge 安全 GPUThor Rowhammer突破NVIDIA ECC防护实现宿主Root 2026-08-27",
+      "content": "新型 GPUThor Rowhammer 攻击突破 NVIDIA RTX A6000 的 ECC 防护，不仅使 GPU 崩溃，还能实现宿主机 Root 提权并引发静默数据损坏——ECC 不再是充分防御（FreeBuf 2026-08-27）。硬件侧信道攻击进展，云 GPU/虚拟化环境需关注。（来源：FreeBuf）URL: https://www.freebuf.com/articles/system/497524.html",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "漏洞",
+        "硬件攻击",
+        "NVIDIA"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:39:10.232Z",
+      "updatedAt": "2026-08-28T02:39:10.232Z",
+      "accessedAt": "2026-08-28T02:39:10.232Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:39:10.232Z",
+      "deleted": false
+    },
+    {
+      "id": "63ca2b53-fa69-476c-8670-f24f242e3966",
+      "category": "fact",
+      "title": "knowledge 科技 传闻Nvidia拟130亿美元收购Hugging Face 2026-08-27",
+      "content": "Ars Technica 报道（2026-08-27，标题带 Report 属传闻）：Nvidia 拟以 130 亿美元收购 AI 模型仓库 Hugging Face，尚未获官方确认。若成真将对开源 AI 模型分发生态产生重大影响。（来源：Ars Technica）URL: https://arstechnica.com/ai/2026/08/report-nvidia-to-acquire-ai-model-repository-hugging-face-for-13-billion/",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "AI",
+        "Nvidia",
+        "并购"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:39:10.439Z",
+      "updatedAt": "2026-08-28T02:39:10.439Z",
+      "accessedAt": "2026-08-28T02:39:10.439Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:39:10.439Z",
+      "deleted": false
+    },
+    {
+      "id": "7d57a96a-0d88-48a0-aaa7-57ceda1fc574",
+      "category": "procedure",
+      "title": "每日知识订阅零 LLM 流程（knowledge-fetch.py）",
+      "content": "每日知识订阅为纯脚本流程，不消耗 LLM tokens：1) 运行 python3 scripts/knowledge-fetch.py（相对 ~/.pi 仓库根目录），抓取官方源与 RSS 最新内容，渠道清单见脚本内配置；2) 执行后检查当日是否有新增条目；3) 若有新增则记录（日志落在 logs/ 下，具体格式以脚本为准）。整体适合 cron 定时驱动，无需 LLM 介入。",
+      "tags": [
+        "知识订阅",
+        "RSS",
+        "脚本流程",
+        "自动化"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:40:06.507Z",
+      "updatedAt": "2026-08-28T02:40:06.507Z",
+      "accessedAt": "2026-08-28T02:40:06.507Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:40:06.507Z",
+      "deleted": false
+    },
+    {
+      "id": "feba7a33-c484-4392-a6f6-49d087f20cce",
+      "category": "solutions",
+      "title": "每日任务种子首日空转根因：注册时间晚于当日 cron 且无补跑机制",
+      "content": "2026-08-28 实测：scheduled-tasks.json 三个种子任务（knowledge-subscribe 08:00 / daily-review 09:05 / tool-stats-daily 23:30）于当日 04:18 才由种子对账注册，lastRun/runCount 全部为 null/0，08:00 与 09:05 两个点错过且无补跑，直到手动触发才执行。结论：跨设备种子任务首次注册时若 nextRun 已排到当日更早时刻，autopilot 不会补跑；应在注册后立即手动触发首跑，或在对账逻辑里把新任务 nextRun 直接置为注册时刻。另发现 knowledge-subscribe 实际有产出（entries 入库 + logs/knowledge/summary-md）但任务记账 lastRun 仍为 null，表明存在绕过任务记账的执行路径，核对任务状态时不能只看 lastRun，需交叉 logs/knowledge 与 entries.json。",
+      "tags": [
+        "autopilot",
+        "每日任务",
+        "scheduled-tasks",
+        "补跑"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:40:47.511Z",
+      "updatedAt": "2026-08-28T02:40:47.511Z",
+      "accessedAt": "2026-08-28T02:40:47.511Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T02:40:47.511Z",
+      "deleted": false
+    },
+    {
+      "id": "2723ca5b-cba6-4a1f-9f18-4e50ed2ffb59",
+      "category": "fact",
+      "title": "daily-results 约定从未落地：无任何设备写入过任务结果文件",
+      "content": "memory/daily-results/ 目录于 2026-08-28 03:51 由种子对账初始化（仅 .gitkeep 入库），截至 08-28 上午全设备无任何结果文件（本机空；termux-ubuntu/remote 双通道不可达；远端仓库 HEAD 亦无其他设备文件）。即 daily-review 的\"读取各设备任务结果\"前提结构性缺失：任务 prompt 要求各设备写入结果，但种子任务（knowledge-subscribe/daily-review）本身不产出该目录文件。修复方向：daily-review 执行后主动写 daily-results/<hostname>-<date>.md 并 git 提交推送，或由各设备任务收尾统一写结果文件。",
+      "tags": [
+        "daily-review",
+        "daily-results",
+        "跨设备",
+        "任务结果"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T02:40:47.797Z",
+      "updatedAt": "2026-08-28T02:40:47.797Z",
+      "accessedAt": "2026-08-28T02:40:47.797Z",
+      "environments": [
+        "all"
       ]
     }
   ]
