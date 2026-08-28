@@ -55,7 +55,7 @@ export default function (pi: ExtensionAPI): void {
 
     if (noteCount > 0 && ctx.hasUI) {
       ctx.ui.notify(
-        `pi-memory: ${noteCount} 笔记 · ${activeEntries(loadEntries()).length} 记忆已就绪（已合并 ctx-lite）`,
+        `pi-memory: ${noteCount} 笔记 · ${activeEntries(loadEntries()).length} 记忆已就绪`,
         'info',
       )
     }
