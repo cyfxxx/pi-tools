@@ -14249,6 +14249,28 @@
       "environments": [
         "all"
       ]
+    },
+    {
+      "id": "3804e44a-3918-4e1a-8ee9-e498411b5e82",
+      "category": "solutions",
+      "title": "git 历史清理大文件：filter-repo 流程与坑（filter-branch 失败、remote 移除、API 缓存延迟）",
+      "content": "git 历史清理大文件的完整流程（2026-08-27 实测，pi-tools 仓库移除 scan.pdf 6.2MB）：(1) git filter-branch 在 541 提交/8MB 仓库上进程死亡未完成，不可用；(2) git-filter-repo 是最佳工具：pip install --break-system-packages git-filter-repo，然后 git-filter-repo --path <文件> --invert-paths --force，秒级完成（1.4s/541 commits）并自动 repack 清理；(3) filter-repo 默认移除 origin remote（防误推），需手动 git remote add origin 重加；--force 是覆盖已 run 标记必须；(4) 完成后 rm -rf .git/filter-repo 删备份；(5) 推送需 force push（git push origin master --force），旧 clone 环境会分叉需 git fetch + git reset --hard origin/master（会丢未推送提交）；(6) GitHub API size 字段有缓存延迟（数分钟~小时），验证用本地 git count-objects -vH 的 size-pack；(7) pack 减幅可能小于被删 blob——delta 压缩重算会吸收部分（删 6.2MB 仅减 0.9MB，因 entries.json 127 版本被重压缩）；(8) 教训：建包/测试产物 >1MB 的二进制（PDF 等不可压缩格式）不入库，「需要示例用同内容小文件或文本占位 + README 注明生成方法」。",
+      "tags": [
+        "git",
+        "历史重写",
+        "filter-repo",
+        "仓库体积",
+        "大文件清理"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-27T14:04:28.958Z",
+      "updatedAt": "2026-08-27T14:04:28.958Z",
+      "accessedAt": "2026-08-27T14:04:28.958Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
