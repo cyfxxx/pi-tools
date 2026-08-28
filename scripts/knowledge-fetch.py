@@ -10,7 +10,7 @@
 import json, urllib.request, urllib.parse, os, sys, re, html, hashlib
 from datetime import datetime
 
-KLOG = '/root/.pi/logs/knowledge'
+KLOG = os.path.join(os.environ.get('HOME', '/root'), '.pi/logs/knowledge')
 SEEN = os.path.join(KLOG, '.seen.txt')
 DEFAULT_LIMIT = 6          # 每源条数上限
 UA = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/125 Safari/537.36',
