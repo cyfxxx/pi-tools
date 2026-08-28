@@ -64,10 +64,31 @@ function main() {
     return
   }
 
-  // 按间隔聚类会话
+  // 空壳/伪影过滤（2026-08-29，修复“空壳投喂”教训 4+ 次复现烧 token）：
+  // ① 空 userRequest 轮 = 失败轮/空转轮（usage 全零，无任何可蒸馏内容）；
+  // ② tools=0 且 output=0 = 无产出轮（含 hit=250000 封顶伪影：provider 对 1M 窗口
+  //    模型封顶报 cacheRead=250000，实为中断轮，非真实任务，2026-08-29 实测 73 条全是
+  //    空 request + 全零产出）；
+  // ③ 内部子进程 prompt（pi-memory 提取器 / 本脚本沉淀器）——守门 env
+  //    （PI_DISABLE_TASK_RECORD / extract --no-extensions）失效时的兜底，防自指投喂。
+  // 源端修复已落地（extract.ts --no-extensions + lib/task-record env 守卫），此为消费端防线。
+  const isDistillable = (r) => {
+    if (!r.userRequest || !r.userRequest.trim()) return false
+    if (/会话记忆提取器|经验沉淀器/.test(r.userRequest)) return false
+    if (r.tools === 0 && r.output === 0) return false
+    return true
+  }
+  const distillable = fresh.filter(isDistillable)
+  if (distillable.length === 0) {
+    console.log(`思考总结: ${fresh.length} 条记录均为空壳/伪影轮，无可总结任务`)
+    saveCursor(fresh[fresh.length - 1].ts)
+    return
+  }
+
+  // 按间隔聚类会话（只聚类可蒸馏记录：空壳轮不再计入轮数/累计K，不再进投喂清单）
   const sessions = []
   let cur = []
-  for (const r of fresh) {
+  for (const r of distillable) {
     const last = cur[cur.length - 1]
     if (last && r.ts - last.ts > SESSION_GAP_MS) { sessions.push(cur); cur = [] }
     cur.push(r)

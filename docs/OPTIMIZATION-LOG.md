@@ -298,3 +298,24 @@
   愿景指针 → --update-baseline；pi-browser 清扫测试 50ms 固定等待 → 轮询 3s（负载抖动）
 - 回归: test-all.sh 全绿（9 vitest 套件 + tsc + 63 subagent + 注册面 29 + conflict-check +
   cache-guard + doc-lint + 发现完整性 11 扩展）
+
+---
+
+## 2026-08-29 自优化闭环断点修复（空壳投喂 + daily-health 停更 + 停摆根因更正）
+- 动机: 方向分析发现闭环三断点——①蒸馏投喂 4+ 次空壳（烧真金 token 零产出）；
+  ②daily-health.log 08-24 起停更，VISION 判据"命中率≥97%"失去每日度量；
+  ③summaries.json 08-26~08-28 断档根因记忆有误判（"模型不支持"以偏概全）
+- 落地:
+  - 源端确认已修: pi-memory extract --no-extensions（d185267）+ PI_DISABLE_TASK_RECORD 守卫
+  - 消费端防线: scripts/task-summarizer.mjs 聚类前 isDistillable 过滤（空 request /
+    tools=0且output=0 / 内部子进程 prompt 兜底），空壳轮不再计入轮数与投喂清单
+  - 存量清理: logs/task-records.jsonl 1288→148 条（全零 1048 + 提取器 prompt + 封顶伪影 73），
+    备份 .bak-20260829；--dry-run --since 验证过滤生效
+  - 伪影归因更正: hit=250000 = provider 对 1M 窗口封顶报 cacheRead（73 条实测全为
+    空 request/cctx=850K/零产出中断轮），非本地统计 bug
+  - daily-health 硬层恢复: 新增 scripts/daily-health.mjs（口径对齐 usage-stats，零 LLM，
+    alert 判据=会话≥3 且命中<90% 或 AB 断裂>3），接入 autopilot daily-task 步骤2；
+    首跑即报 alert（24h 命中 93.0%、AB 断裂 26、浪费 1858K）——度量恢复即生效
+  - 停摆根因更正入 memory: 双层根因（ox-alpha-free 下架 ModelError + 扩展定时器挂 -p 超时），
+    均已 08-28 闭环；合并记忆条目取代旧跟踪条目
+- 回归: node --check × 2 + golden-tasks --fast 全绿 + test-all --fast（见下）
