@@ -87,6 +87,9 @@ export class SessionScheduler {
   start(): void {
     if (this.timer) return
     this.timer = setInterval(() => this.tick(), 30000)
+    // unref（2026-08-28）：定时器不应阻止进程退出——提取器等 pi -p 一次性进程
+    // 若加载本扩展且锁获取成功，无 unref 的 interval 会挂住 event loop 致永不退出
+    this.timer.unref()
   }
 
   stop(): void {

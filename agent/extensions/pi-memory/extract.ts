@@ -560,7 +560,11 @@ async function doExtract(
 
   const prompt = buildExtractPrompt(messages, opts.maxChars)
   const runner = opts.runner ?? defaultRunner
-  const { stdout, stderr, code } = await runner(bin ?? '', ['-p', prompt], opts.timeoutMs ?? 60_000)
+  // --no-extensions（2026-08-28）：提取是纯 LLM 调用，无需任何扩展；实测部分扩展的
+  // 常驻定时器会挂住 -p 模式 event loop——回答完成后进程不退出，60s 超时被 SIGKILL，
+  // 全部提取报"code: timeout"失败（08-27 起 summaries.json 断档根因）。附带收益：
+  // 跳过 11 个扩展加载，冷启动更快、不与主实例抢调度锁。
+  const { stdout, stderr, code } = await runner(bin ?? '', ['--no-extensions', '-p', prompt], opts.timeoutMs ?? 60_000)
 
   // 超时/进程被杀（code null）或非零退出：明确报错而不是解析垃圾输出
   if (code !== 0) {
