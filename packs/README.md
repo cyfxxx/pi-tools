@@ -84,7 +84,7 @@ packs/
 |---|---|
 | `comfyui-agent/` | ComfyUI 出图/工作流管理（CLI `bin/comfyui`，9 个内置 API 模板，`references/WORKFLOWS.md` 实例实测文档） |
 | `colab-bridge/` | Colab（免费 GPU）远程执行：自研桥 `bin/colab_exec`（备胎）+ 官方 google-colab-cli 方案（首选，`references/colab-cli.md`） |
-| `gamedev/` | 游戏开发技能组（skills/design、web、workflow） |
+| `gamedev/` | 游戏开发技能组（skills/{design,godot,web,workflow}） |
 | `reverse-skill/` | 逆向/CTF 技能包（含 burp-mcp 等） |
 | `dg-piagent/` | pi-agent SDK 开发助手（教程同步维护，API 基线 v0.83.0，含 sdk_doc/场景 references） |
 | `wechatide-skill/` | 微信开发者工具 agent 技能包（skillhub v0.3.9，外部收纳）：通过官方 `wechatide` CLI 驱动 IDE——安装/编译/预览/上传/自动化调试/云开发。9 个 scene 子技能 + tools.yaml 注册表；CLI 需 Windows/macOS 侧运行（WSL 走 interop，本地实测笔记见包内 LOCAL-NOTES.md） |

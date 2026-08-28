@@ -16,8 +16,11 @@
 │   │   ├── context-budget.ts  统一 Token 预算/估算/裁剪 + 缓存命中统计
 │   │   ├── usage-diag.ts      用量诊断（/usage-diag 数据源）
 │   │   ├── auto-compact.ts    自动压缩触发策略
-│   │   ├── TOKEN-BUDGET.md    使用文档
-│   │   └── tests/             单元测试
+│   │   ├── output-archive.ts  工具输出归档（写入时预算截断原文落盘）
+│   │   ├── registry.ts        注册/清理统一封装
+│   │   ├── config.ts          配置分层合并
+│   │   ├── task-record.ts     结构化任务记录（logs/task-records.jsonl）
+│   │   └── TOKEN-BUDGET.md    使用文档
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-search/     网络搜索（SearXNG 私密搜索 + Bing 备选 + HTTP 抓取）
 │   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
@@ -40,12 +43,21 @@
 │   │   ├── pi-backup/         备份恢复技能（本地归档 + GitHub 同步）
 │   │   ├── pi-code-review/    代码审查（确定性检查 + 分级报告）
 │   │   ├── pi-bug-diagnosis/  硬 bug 诊断纪律（紧反馈回路先行）
-│   │   └── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
+│   │   ├── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
+│   │   └── pi-repo-optimize/  配置仓库结构/存储/架构优化（摸底分析 + 分级执行）
 │   └── package.json           统一依赖根（11 扩展共享 agent/node_modules，Node 向上寻径解析）
-├── docs/                      开发与部署文档
+├── docs/                      开发与部署文档（12 文件）
+│   ├── VISION.md              项目愿景与进化纪律（终局目标/软硬方法论/单向升格通道）
+│   ├── SELF-OPTIMIZING-ROADMAP.md  执行跟踪（差距分析/行动计划/决策启发式）
+│   ├── SELF-OPTIMIZING-BASELINE.md 优化基线（记忆库/回归全绿快照）
+│   ├── AGENTS-DETAILS.md      AGENTS.md 细节索引（按需加载）
+│   ├── ENVIRONMENTS.md        多环境识别/差异表/切换流程
 │   ├── TERMUX-DEV-NOTES.md    Termux 环境开发注意事项（Android API/录音/网络）
 │   ├── PI-EXT-DEV-NOTES.md    Pi 扩展开发注意事项（隐性契约/踩坑/黑盒流程）
 │   ├── PI-SDK-EXTENSION.md    Pi SDK 扩展开发说明
+│   ├── GIT-HISTORY-REWRITE.md 历史重写迁移说明
+│   ├── OPTIMIZATION-LOG.md    优化工单日志
+│   ├── SKILLS-MAINTENANCE.md  技能维护约定
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
 ├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
 ├── memory/                    pi-memory 长期记忆（entries/notes/summaries/checkpoints）
@@ -315,7 +327,7 @@ bash scripts/install-systemd.sh        # 或安装 systemd timer
 - **每轮常驻注入** — `before_agent_start` 把 ~500 token「持续记忆」块拼入 system prompt（高价值条目 + 最近会话摘要衔接），预算可用 `PI_MEMORY_INJECT_TOKENS` 调整
 - **手动触发** — `/memory summary` 查看摘要时间线；`/memory search` 手动检索（提取为自动流程；`/memory help` 查看全部子命令）
 
-**文件位置：** `memory/`（entries.json 1 MB 上限 / notes.json / summaries.json / checkpoints/——检查点为瞬时快照，不入 git），ctx-lite 旧数据自动迁移。
+**文件位置：** `memory/`（entries.json 2 MB 上限 / notes.json / summaries.json / checkpoints/——检查点为瞬时快照，不入 git），ctx-lite 旧数据自动迁移。
 
 **数据流：**
 ```
@@ -374,7 +386,7 @@ compaction 前 → 快照 + 异步提取 → 摘要衔接 → 压缩后上下文
 
 ## 主动路由 + 上下文优化（pi-context，已融合 pi-router）
 
-pi-context 作为 token 优化中枢，通过 `before_agent_start` 事件在每轮 LLM 调用前按需注入内容到 system prompt，并注册 8 个事件处理器 + 2 个命令（/usage-diag、/tools，工具分层与休眠组启用）。
+pi-context 作为 token 优化中枢，通过 `before_agent_start` 事件在每轮 LLM 调用前按需注入内容到 system prompt，并注册 10 个事件处理器（含 `before_provider_request` 请求前拦截、`session_before_compact` 压缩前快照/衔接）+ 2 个命令（/usage-diag、/tools，工具分层与休眠组启用）。
 
 ### 主动路由策略表
 
@@ -456,7 +468,7 @@ bash scripts/test-all.sh
 | pi-intervention | `cd agent/extensions/pi-intervention && ../../node_modules/vitest/vitest.mjs run` | 5 |
 | subagent | `cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`；另有 vitest guards 套件（7 用例） | 63+7 |
 | 注册面 | `cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run tests/extensions.test.ts` | 25 |
-| 类型检查 | `cd agent/extensions && ../../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit` | — |
+| 类型检查 | `cd agent/extensions && ../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit` | — |
 | 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 9 项（含工具指纹入账） |
 | 缓存注入面守门 | `cd agent/extensions && node tests/cache-guard.mjs` | 注入面指纹/阈值契约/动态源 |
 

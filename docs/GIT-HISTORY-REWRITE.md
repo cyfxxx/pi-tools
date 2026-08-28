@@ -26,12 +26,12 @@ git reset --hard origin/master    # 丢弃旧历史，对齐新历史（会丢�
 
 注意：
 - 本地**未推送**的提交会被 `reset --hard` 丢弃——同步前先确认（`git log origin/master..HEAD` 应为空）
-- 若本地有未推送且重要的提交，先 `git stash` 或 `git format-patch` 导出，同步后再 cherry-pick/appl
+- 若本地有未推送且重要的提交，先 `git stash` 或 `git format-patch` 导出，同步后再 cherry-pick/applying
 
 ## 验证同步成功
 
 ```bash
-git log --oneline -1        # 应显示 f83450c
+git log --oneline -1        # HEAD 为最新提交（历史已重写，后续提交正常追加，不再对应旧 hash）
 git rev-list --all --objects | grep scan.pdf   # 应无输出（历史已无此文件）
 ```
 

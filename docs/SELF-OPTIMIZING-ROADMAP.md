@@ -10,14 +10,14 @@
 | 感知/交互（全能的面） | 输入输出渠道多样化 | 文本、语音（pi-voice）、浏览器（pi-browser）、搜索（pi-web-search/SearXNG）、多设备（pi-link）、截图分析 |
 | 记忆/学习（沉淀） | 跨会话积累、知识检索 | pi-memory（529 条目/21 摘要，环境标签+去重）、会话摘要、note-store |
 | 行动/自治（做事） | 持续运转、自动执行 | pi-autopilot（定时/看门狗/failover/预算）、pi-tmux 后台、subagent、plan-mode |
-| 自我优化（核心差异化） | 测量→改进→验证→回滚闭环 | usage-stats.mjs、usage-diag、cache-guard、test-all.sh、8 patch 脚本、pi-backup |
+| 自我优化（核心差异化） | 测量→改进→验证→回滚闭环 | usage-stats.mjs、usage-diag、cache-guard、test-all.sh、9 patch 脚本、pi-backup |
 
 前三个轴已成可运行骨架；**核心差异化在第四轴**，此前缺口是"闭环未串通 + 触发靠人工"。
 
 ## 2. 差距摘要（按严重度）
 
 - **A. 自优化闭环已串通（2026-08-20 晚）**：测量/决策/验证/回滚齐备、触发自动化实弹；2.4 失败会话学习（lesson-miner.mjs）与 2.5 用量账单（usage-stats 工具聚合，08-20 落地并持续入账）均已实现；剩余差距=压缩可逆快照（2.6）。
-- **B. 缓存命中已达标**：实弹 97.7%（daily-health 08-30），目标 97% 达成；A 类断裂归因已实证（compaction/早期改写/大工具输出，非记忆注入）。
+- **B. 缓存命中已达标**：实弹 97.7%（daily-health 08-20），目标 97% 达成；A 类断裂归因已实证（compaction/早期改写/大工具输出，非记忆注入）。
 - **C. 感知面**：文档解析/OCR/知识订阅已就绪；语音双后端（whisper+sherpa）；输出渠道（通知推送）待稳定主机后接入。
 - **D. 运维**：记忆库 GC 按 §4.2 规则；pi-link 无人值守拒跨设备指令保留（安全特性）。
 
@@ -40,7 +40,7 @@
 | 2.3 | 优化工单闭环 | 每次自检产出的建议可跟踪执行→验证→回滚 |
 | 2.4 | 失败会话学习（headroom learn 本地化） | 从 usage-diag 断裂轮/异常轮规则化归因 → 教训落 memory（solutions）+ AGENTS-DETAILS 附录，补“观测→归因”缺的“写入修正”端 |
 | 2.5 | 工具/技能用量账单 | usage-stats 按工具聚合调用/token（tool-events.jsonl 数据源）→ 优化优先级数据化 |
-| 2.6 | 压缩可逆快照（headroom CCR 本地化） | auto-compact 触发前原文快照落盘 logs/compact-snapshots/（保留 7 天），压缩后原文可追溯 |
+| 2.6 | 压缩可逆快照（headroom CCR 本地化） | ✅ 已上线：auto-compact 触发前原文快照落盘 logs/compact-snapshots/（保留 8 个/7 天），压缩后原文可追溯（运行产物已验证） |
 
 ### 阶段 3（战略期）：全能面扩展
 | # | 项 | 备注 |
@@ -112,7 +112,7 @@
 - [x] 阶段 2.3（优化工单闭环流程入 memory 库 procedure；1 ticket=1 改动+验证）
 - [x] 阶段 2.4（失败会话学习）——✅ 已落地 scripts/lesson-miner.mjs（只读扫描 usage-diag/tool-events → 候选教训线索，LLM 提炼后存 memory）
 - [x] 阶段 2.5（工具/技能用量账单）——✅ 已落地 usage-stats.mjs 工具聚合 + pi-context tool_result hook 按工具累加
-- [ ] 阶段 2.6（压缩可逆快照）——未实现：auto-compact 触发前原文快照落盘 logs/compact-snapshots/
+- [x] 阶段 2.6（压缩可逆快照）——✅ 已上线：auto-compact 触发前原文快照落盘 logs/compact-snapshots/（compact-snapshots 已有运行产物）
 - [x] 阶段 3.3（通知推送骨架：pi-notify.sh + 模板配置 + 自检联动；渠道接入暂缓，未误发）
 - [x] 阶段 3.1（文档解析：doc-extract.py 全格式可用，pdf/OCR 依赖已装已验）
 - [x] 阶段 3.2（知识订阅：knowledge-fetch.py + 并入自检入库；08-20 已产当日文件）

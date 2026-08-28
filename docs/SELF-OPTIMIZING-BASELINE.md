@@ -10,7 +10,7 @@
 | provider / model | opencode-go / deepseek-v4-flash |
 | thinking | max |
 | 扩展 | 11（pi-context/pi-autopilot/pi-link/pi-memory/pi-voice/pi-browser/pi-web-search/pi-tmux/plan-mode/subagent/pi-intervention） |
-| 技能 | 5（backup/code-review/full-audit/translate-zh/bug-diagnosis；description 均含负例，长清单已外置 references/） |
+| 技能 | 6（backup/code-review/full-audit/translate-zh/bug-diagnosis/repo-optimize；description 均含负例，长清单已外置 references/） |
 
 ### 今日新增能力（2026-08-20 晚，均已回归）
 
@@ -28,7 +28,7 @@
 | 08-19 21:33 | 2 | 90.2% | 0 | 0 |
 | 08-19 21:46 | 33 | 91.7% | 2（A×1 C×1） | 108K（当前会话） |
 
-- **目标 97%，实测实弹 97.7%（daily-health 08-30 实弹）已达标**；规律运营成本（长停顿后首轮无缓存）计入《路线图》§4 P1 已闭环。低命中率会话为缓存治理压测或跨会话边界。
+- **目标 97%，实测实弹 97.7%（daily-health 08-20 实弹）已达标**；规律运营成本（长停顿后首轮无缓存）计入《路线图》§4 P1 已闭环。低命中率会话为缓存治理压测或跨会话边界。
 - **A 类断裂主因（2026-08-20 实证）**：compaction 改写 / 早期消息改写（thinking 剪枝阈值 64K/120K/80K 已调）/ 大工具输出改写 / provider 缓存键。**记忆注入非主因**（尾部注入、确定性、≤500 token）。
 
 ## 3. 记忆库基线（memory_stats）
@@ -44,7 +44,7 @@
 
 ## 4. 回归基线（test-all.sh --fast）
 
-- 结果：**全绿 ✔**（2026-08-20 06:1x）——9 扩展 vitest 全部通过、tsc typecheck 通过；--fast 跳过 subagent/注册面/conflict-check/发现完整性。
+- 结果：**全绿 ✔**（2026-08-20 06:1x）——10 套扩展 vitest 全部通过（pi-intervention 已入列）、tsc typecheck 通过；--fast 跳过 subagent/注册面/conflict-check/发现完整性。
 
 ## 5. 关键事实（供归因，勿误判）
 

@@ -3,6 +3,14 @@
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
 `git checkout <tag>` 回退，或从该 tag 拉分支修复。
 
+## 2026-08-28 每日任务 v3 + 跨设备同步与修复
+
+- **每日任务 v3 竞态容忍架构**（e8073f0）：查重主流程 + 交叉比对兑底，并发竞态下不丢条目
+- **knowledge-fetch KLOG 路径修复**（a54e34a）：KLOG 改 HOME 环境变量解析，兼容 Termux/Linux
+- **rebuild 清理残留 node_modules**（7357ac5）：npm 就绪后主动清除扩展残留独立依赖（幂等，仅删真实依赖，.vite 占位保留）
+- **packs 新增 media-toolkit**（a9a8475）：图片/视频/游戏美术处理
+- **pi-memory 提取子进程 --no-extensions**（d185267）：修复 -p 离线提取挂起超时
+
 ## 2026-08-27 OpenViking 设计借鉴：输出外置化 + 检索轨迹
 
 - **pi-context 写入时截断外置化**：新增 lib/output-archive.ts——pruneToolOutput 预算截断时原文落盘 logs/tool-outputs/（sha256 内容 hash 命名，同内容同路径确定性），占位符附存档路径可 read 读回；fail-open。与 b798152 分层擦除 refs 机制（logs/prune-refs/ 会话级 md + sentinel 幂等 + 过期清理）分工：写入时预算裁剪 vs 历史轮事后擦除，两目录语义分离
@@ -29,7 +37,7 @@ junction 自愈等）。
 
 ## stable-20260814（主线 v1 稳定版）
 
-**tag**: `stable-20260814`（对应提交 `331eeb2` 之后，含 2026-08-14 全部主线修复）
+**tag**: `stable-20260814`（`331eeb2` 为历史重写前 hash，已作废，对应现 tag 指向提交；含 2026-08-14 全部主线修复）
 
 **定位**: 多环境（Termux/WSL2/Linux/macOS）日常运维基线。本版本之前完成：
 

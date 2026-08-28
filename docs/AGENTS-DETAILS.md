@@ -39,22 +39,22 @@
 ## 运行时数据与 git 忽略（不入库，多环境隔离）
 
 - `plans/` — plan-mode 生成的计划目录（每计划独立 .git 仓库，供计划内 git 操作）；git 忽略
-- `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/ntfy-relay/pi-voice（通知与语音配置）、scheduled-tasks.json（调度数据）、`.pi-autopilot-*.json`（看门狗状态）、`.pi-tmux-registry.json`、`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、pi-crash.log
-- `memory/stats/` — 跨设备工具使用统计（tool-use-<device>.jsonl）：【入库同步】工具默认启用决策依据；按主机名分文件无冲突，合并视图 tool-stats-sync.mjs
+- `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/ntfy-relay/pi-voice（通知与语音配置）、scheduled-tasks.json（调度数据）、`.pi-autopilot-telemetry/lastgood/crash.json` 三项运行时状态（config 入库共享）、`.pi-tmux-registry.json`、`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、pi-crash.log
+- `memory/stats/` — 跨设备工具使用统计：【同步】tool-use-*.jsonl 原始事件仅本机（git 忽略，臃肿不入库）；跨设备改同步每日聚合计数文件 tool-count-<device>.json（tool-stats-sync.mjs --daily 生成，精简入库），工具默认启用决策依据
 - `pi-link.json` — pi-link 设备清单（**gitignored，不入库**，含内网地址；新机重建或从原机拷贝）与运行时状态（pi-link-active/state/outbox，每次连接刷新，不入库）
 - ctx-lite/ 与 skill-store/ 已清理（分别并入 pi-memory 与 packs/）
 
 ## 回归验证细节
 
 单套件：`cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run`（统一依赖根 agent/node_modules）
-（基线用例数：pi-web-search 75+ / pi-memory 94+ / pi-autopilot 106+ / pi-browser 25+ / pi-context 92 / plan-mode 72 / pi-tmux 20+2 跳过 / pi-voice 128+ / pi-link 58，以 test-all.sh 当前输出为准）
+（基线用例数：pi-web-search 75+ / pi-memory 94+ / pi-autopilot 106+ / pi-browser 25+ / pi-context 92 / plan-mode 72 / pi-tmux 20+2 跳过 / pi-voice 128+ / pi-link 58 / pi-intervention 5，另 subagent vitest guards 7 用例；以 test-all.sh 当前输出为准）
 
 注册面：`cd agent/extensions/pi-web-search && ../../node_modules/vitest/vitest.mjs run tests/extensions.test.ts`
 （须在该目录跑使 mock alias 生效；顶层跑 subagent 用例会因真实包加载超时）
 
-subagent 无 vitest：`cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`
+subagent 双轨：mjs 测试 `cd agent/extensions/subagent && node --experimental-strip-types --import ./tests/loader.mjs ./tests/test.mjs`；另有 vitest 套件（vitest.config.ts + tests/subagent-guards.test.ts，SDK alias 探测与 loader.mjs 同逻辑），随 test-all.sh 的 11 套 vitest 统一跑
 
-类型检查：`cd agent/extensions && ../../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit`
+类型检查：`cd agent/extensions && ../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit`
 （必须 local.json——共享 tsconfig.json 的 paths 为空会全量报 Cannot find module；缺失时回退共享配置）
 
 ## 缓存治理（2026-08-18，append-only 原则）
@@ -84,7 +84,7 @@ footer 状态栏口径速查：`Σ/↑/↓`=会话累计（Σ=总输入=命中+�
 
 重启/压缩策略（2026-08-17 对齐 DeepSeek Harness dsh 源码结论）：
 - **日常压缩阈值** thresholdRatio 0.8（dsh compaction-basic 同值，晚压缩更优；verbatim tail 由 pi 内核 keepRecentTokens=20000 实现，同 dsh retainRatio 0.16 思路）
-- **重启/恢复阈值** 40% 窗口（PI_CONTEXT_RESTART_RATIO 可覆盖）：session_start 时上下文 ≥40% 窗口即自动压缩（pi-context index.ts），首轮不会再全量重发；admin_restart 工具超阈值前会 warning 提示先 /compact
+- **重启/恢复阈值** 100K（`PI_CONTEXT_RESTART_TOKENS` 可覆盖；原 40% 窗口比例 `PI_CONTEXT_RESTART_RATIO` 已移除）：`session_start` 读取 pi-autopilot state action，仅看门狗 `restart_hang`（空闲挂死重启，maxIdleMinutes=180）触发提前压缩——重启后首轮必然全量重发，>100K 先压更省；手动/正常重启不压缩。admin_restart 工具超阈值前会 warning 提示先 /compact（详见 pi-context/README.md「重启/恢复压缩阈值」节）
 - **dsh 调研要点**（npm 包 @deepseek-ai/dsh 0.1.0-rc.7 源码）：无显式缓存优化代码，缓存友好是架构默认——静态 persona（{{model}}/{{cwd}} 启动时解析一次，无时间戳）、compaction 阈值 0.8+retainRatio 0.16、token-meter 按 input+cacheRead+cacheWrite 算压力。我们已全部对齐/超额。
 - **自动重启间隔**：看门狗 maxIdleMinutes 由用户改为 180（3 小时，.pi-autopilot-config.json；types.ts 默认同步），挂死判定放宽避免误杀长思考。
 
