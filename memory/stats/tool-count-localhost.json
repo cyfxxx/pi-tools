@@ -1,32 +1,32 @@
 {
   "device": "localhost",
-  "generatedAt": "2026-08-28T05:48:53.193Z",
+  "generatedAt": "2026-08-28T15:39:46.828Z",
   "windowDays": 30,
-  "totalCalls": 1938,
+  "totalCalls": 2409,
   "tools": {
     "read": {
-      "calls": 97,
+      "calls": 127,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787559056353,
-      "lastTs": 1787830279797
+      "lastTs": 1787918498473
     },
     "bash": {
-      "calls": 1234,
+      "calls": 1519,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787559060833,
-      "lastTs": 1787896129913
+      "lastTs": 1787920498201
     },
     "tmux_run": {
-      "calls": 13,
+      "calls": 16,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787559773846,
-      "lastTs": 1787831499074
+      "lastTs": 1787907980305
     },
     "tmux_read": {
       "calls": 9,
@@ -37,12 +37,12 @@
       "lastTs": 1787831498813
     },
     "write": {
-      "calls": 82,
+      "calls": 87,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787563657675,
-      "lastTs": 1787839469143
+      "lastTs": 1787916765449
     },
     "memory_stats": {
       "calls": 3,
@@ -53,12 +53,12 @@
       "lastTs": 1787623997535
     },
     "todo": {
-      "calls": 169,
+      "calls": 222,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787564941392,
-      "lastTs": 1787829233351
+      "lastTs": 1787919601590
     },
     "web_search": {
       "calls": 9,
@@ -69,28 +69,28 @@
       "lastTs": 1787830027803
     },
     "subagent": {
-      "calls": 27,
+      "calls": 33,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787565224969,
-      "lastTs": 1787743778017
+      "lastTs": 1787907248199
     },
     "edit": {
-      "calls": 197,
+      "calls": 226,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787565471653,
-      "lastTs": 1787836898847
+      "lastTs": 1787919059909
     },
     "memory_search": {
-      "calls": 11,
+      "calls": 30,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787567928814,
-      "lastTs": 1787811425247
+      "lastTs": 1787918404992
     },
     "grep": {
       "calls": 8,
@@ -101,12 +101,12 @@
       "lastTs": 1787827408186
     },
     "memory_store": {
-      "calls": 50,
+      "calls": 84,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787571812964,
-      "lastTs": 1787839469109
+      "lastTs": 1787919017727
     },
     "enable_tool": {
       "calls": 3,
@@ -133,28 +133,28 @@
       "lastTs": 1787621598666
     },
     "memory_recall": {
-      "calls": 3,
+      "calls": 5,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787621710306,
-      "lastTs": 1787732849034
+      "lastTs": 1787896815241
     },
     "ctx_note": {
-      "calls": 6,
+      "calls": 8,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787621885517,
-      "lastTs": 1787837341500
+      "lastTs": 1787897744347
     },
     "memory_forget": {
-      "calls": 1,
+      "calls": 4,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787704007257,
-      "lastTs": 1787704007257
+      "lastTs": 1787918657624
     },
     "tmux_status": {
       "calls": 1,
