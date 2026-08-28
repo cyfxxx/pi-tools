@@ -329,6 +329,16 @@ describe('detectAudioLevel（真实 ffmpeg 集成）', () => {
     const lv = await detectAudioLevel('/tmp/pi-voice-does-not-exist.wav')
     expect(lv).toBeNull()
   })
+
+  it.runIf(hasFfmpeg)('审计修复：ffmpegBin 实参透传（自定义 bin 不存在 → 探测失败返 null）', async () => {
+    const wav = genWav('sine=frequency=440:duration=1')
+    try {
+      // 若实现硬编码 'ffmpeg'，真实 ffmpeg 存在时不会返 null；自定义 bin 缺失返 null 证明透传生效
+      expect(await detectAudioLevel(wav, 'pi-voice-nonexistent-ffmpeg-bin')).toBeNull()
+    } finally {
+      if (existsSync(wav)) rmSync(wav)
+    }
+  })
 })
 
 describe('sherpa 后端（SenseVoice）', () => {

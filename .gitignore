@@ -1,7 +1,7 @@
 # 自动生成的 session 文件
 agent/sessions/
 
-# npm 安装的依赖（统一根：agent/package.json → agent/node_modules，10 扩展共享）
+# npm 安装的依赖（统一根：agent/package.json → agent/node_modules，11 扩展共享）
 agent/node_modules/
 # agent/package-lock.json 入库：CI（.github/workflows/ci.yml:20 cache-dependency-path）依赖该文件，勿忽略
 # 防护：个别扩展若出现独立依赖，不入库（rebuild 时应清理回统一根）

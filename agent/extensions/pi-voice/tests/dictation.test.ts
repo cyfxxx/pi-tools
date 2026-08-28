@@ -74,6 +74,20 @@ describe('dictation 状态机', () => {
     expect(deps.startRecording).toHaveBeenCalledTimes(1)
   })
 
+  it('审计修复：startRecording 同步抛错（mkdirSync 失败等）→ start 返回失败提示而非抛穿（status 报错不抛）', () => {
+    const deps = makeDeps({
+      startRecording: vi.fn(() => {
+        throw new Error('创建录音临时目录失败（tmpDir=/tmp/pi-voice）: ENOTDIR')
+      }),
+    })
+    const d = createDictation(cfg, deps, makeCallbacks())
+    expect(() => d.start()).not.toThrow()
+    const m = d.start()
+    expect(m).toContain('录音启动失败')
+    expect(m).toContain('创建录音临时目录失败')
+    expect(d.isRecording()).toBe(false)
+  })
+
   it('stop 走 转码→转写→删除音频（即用即弃）', async () => {
     const deps = makeDeps()
     const d = createDictation(cfg, deps, makeCallbacks())

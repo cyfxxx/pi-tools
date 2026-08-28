@@ -32,6 +32,7 @@
 - **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；默认 **180（3 小时）**——长思考/长时间等待场景不再误判；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免）
 - **崩溃回滚**：pi-wrapper 连续 3 次崩溃 → 回滚 lastGood 模型（5 分钟防抖）
 - **任务超时钳位**：调度任务 `maxRunTime` 钳位到 [5, 86400] 秒（负值/0 → 5s，≥2³¹ 溢出 → 86400），防极端值导致任务被立即误杀 / `maxCostPerDay`(0=不限) / `allowedModels`，超限自动跳过并通知（跳过时推进下次调度时间，预算恢复后自动补跑；不记 failed 遥测，避免 todayRuns 越拦越满锁到次日零点）
+- **成本估算口径（2026-08-26 审计声明）**：遥测 `estCost` 以 prompt/output **字符数近似 token 数**（1 字符≈1 token，真实 usage 不可得）——对中文等多字节文本**系统性偏松（低估）**，`budget.maxCostPerDay` / `/auto status` 的成本数字依赖此口径，仅作相对趋势参考，非精确计费
 - **恢复队列（A2/A3）**：
   - `pendingInject` 语义改为**运行中标记**——fireViaMessage 非阻塞（sendUserMessage 立即返回），tick 过滤 pendingInject=true 的任务防 interval 长任务重叠触发；`agent_settled`（主会话空闲）统一清除
   - 附带修复：旧实现注入后从不清除，崩溃恢复会重放全部历史注入任务；现只恢复真正"注入后未完成"的任务

@@ -53,8 +53,11 @@ export function getMaxConcurrency(localProvider: boolean): number {
   return isTermuxEnv() ? TERMUX_CONCURRENCY : MAX_CONCURRENCY
 }
 
-/** 写入类工具：readonly agent spawn 时强制移除（只读隔离的硬约束） */
-const WRITABLE_TOOLS = new Set(["bash", "edit", "write"]);
+/**
+ * readonly agent 允许的工具白名单（2026-08-28 审计：黑名单模式被 frontmatter tools 穿透——
+ * tmux_run/ctx_exec/memory_store 等可写/可执行工具不在 WRITABLE_TOOLS；改为白名单 fail-closed）
+ */
+const READONLY_ALLOWED_TOOLS = new Set(["read", "grep", "find", "ls"]);
 
 /** readonly agent 的强制只读系统提示（与工具过滤双保险） */
 const READONLY_AGENT_HINT = `
@@ -64,13 +67,13 @@ const READONLY_AGENT_HINT = `
 `;
 
 /**
- * readonly agent 的工具集收紧：过滤写入类工具；过滤后为空时回退最小只读集。
+ * readonly agent 的工具集收紧：白名单过滤（仅 read/grep/find/ls）；过滤后为空时回退最小只读集。
  * 纯函数便于单测（plan-mode 只校验 agent 名，子进程 --no-extensions 无扩展拦截，
  * 只读隔离必须在此层硬保证）。
  */
 export function resolveAgentTools(agent: { readonly?: boolean; tools?: string[] }): string[] | undefined {
 	if (!agent.readonly) return agent.tools;
-	const filtered = (agent.tools ?? []).filter((t) => !WRITABLE_TOOLS.has(t));
+	const filtered = (agent.tools ?? []).filter((t) => READONLY_ALLOWED_TOOLS.has(t));
 	return filtered.length > 0 ? filtered : ["read", "ls"];
 }
 
@@ -664,9 +667,6 @@ const SubagentParams = Type.Object({
 	tasks: Type.Optional(Type.Array(TaskItem, { description: "Array of {agent, task} for parallel execution" })),
 	chain: Type.Optional(Type.Array(ChainItem, { description: "Array of {agent, task} for sequential execution" })),
 	agentScope: Type.Optional(AgentScopeSchema),
-	confirmProjectAgents: Type.Optional(
-		Type.Boolean({ description: "Prompt before running project-local agents. Default: true.", default: true }),
-	),
 	cwd: Type.Optional(Type.String({ description: "Working directory for the agent process (single mode)" })),
 });
 
@@ -676,7 +676,6 @@ interface SubagentToolParams {
 	tasks?: { agent?: string; task: string; cwd?: string }[];
 	chain?: { agent?: string; task: string; cwd?: string }[];
 	agentScope?: AgentScope;
-	confirmProjectAgents?: boolean;
 	cwd?: string;
 }
 
@@ -697,7 +696,8 @@ export default function (pi: ExtensionAPI) {
 			const agentScope: AgentScope = params.agentScope ?? "user";
 			const discovery = discoverAgents(ctx.cwd, agentScope);
 			const agents = discovery.agents;
-			const confirmProjectAgents = params.confirmProjectAgents ?? true;
+			// 2026-08-28 审计：确认开关不再由模型参数控制（传 false 即跳过 UI 确认门），恒为 true
+			const confirmProjectAgents = true;
 			const currentModel = ctx.model as { id?: string; provider?: string } | undefined;
 
 			const hasChain = (params.chain?.length ?? 0) > 0;
@@ -739,7 +739,7 @@ export default function (pi: ExtensionAPI) {
 				if (projectAgentsRequested.length > 0) {
 					if (!ctx.hasUI) {
 						return {
-							content: [{ type: "text", text: "Canceled: project-local agents require UI confirmation. Run in interactive mode or set confirmProjectAgents=false." }],
+							content: [{ type: "text", text: "Canceled: project-local agents require UI confirmation. Run in interactive mode." }],
 							details: makeDetails(hasChain ? "chain" : hasTasks ? "parallel" : "single")([]),
 						};
 					}

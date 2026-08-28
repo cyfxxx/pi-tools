@@ -263,23 +263,17 @@ function linuxSpec(cfg: VoiceConfig, env: PlatformEnv): PlatformSpec {
       // 无独立停止命令：stopRecording 直接终止录音进程（parec 无服务端残留概念）
       stopArgs: () => null,
       queryArgs: () => null,
-      residuePattern: () => null,
+      // 审计修复（2026-08-26）：返回可匹配本配置录音进程的模式（工具名 + 本 tmpDir
+      // 路径前缀），供 startRecording 残留清理（pgrep/pkill -f）引用——仅 forceClean
+      // （启动失败重试）时使用，见 core.startRecording 门控说明。pgrep 用 ERE，路径
+      // 需转义；同时覆盖听写（pi-voice-*.wav）与唤醒（wake-listen.wav）两类采集。
+      residuePattern: () => `${micBin} .*${cfg.tmpDir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
       micLabel: `${micBin}${cfg.linuxMicDevice ? ` (${cfg.linuxMicDevice})` : ''}`,
       installHint: 'apt-get install pulseaudio-utils（parec）或 alsa-utils（arecord）；WSL 需 Windows 麦克风权限',
       permissionHint: 'WSL：Windows 设置 → 隐私 → 麦克风 → 允许；检查 PULSE_SERVER 与 pactl list sources',
     },
     tts,
     micProbeArgs: () => null,
-  }
-}
-
-/** which 探测 piper（linuxSpec 内部用；与 PlatformEnv 解耦，走 PATH） */
-function commandExistsSafe(name: string): boolean {
-  try {
-    execFileSync('which', [name], { stdio: 'ignore' })
-    return true
-  } catch {
-    return false
   }
 }
 

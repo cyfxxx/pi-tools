@@ -12,7 +12,12 @@ import type {
 } from './types.ts'
 
 const HOME = process.env.HOME || '/root'
-export const DATA_DIR = process.env.PI_MEMORY_DIR || join(HOME, '.pi', 'memory')
+// 审计修复（2026-08-25）：回退链对齐 lib/note-store.ts——优先 PI_MEMORY_DIR，
+// CTX_LITE_DIR 仅作历史兼容回退。原实现只认 PI_MEMORY_DIR：单设 CTX_LITE_DIR 时
+// pi-memory 与 note-store 指向不同文件，同一 notes.json 被两套读写分裂。
+// 注意：env CTX_LITE_DIR 生效时 DATA_DIR === CTX_LITE_DIR，下方 ctx-lite 迁移
+// 条件（!existsSync(NOTES_FILE) && existsSync(CTX_LITE_NOTES)）自动恒 false，迁移无副作用。
+export const DATA_DIR = process.env.PI_MEMORY_DIR || process.env.CTX_LITE_DIR || join(HOME, '.pi', 'memory')
 export const ENTRIES_FILE = join(DATA_DIR, 'entries.json')
 export const NOTES_FILE = join(DATA_DIR, 'notes.json')
 export const SUMMARIES_FILE = join(DATA_DIR, 'summaries.json')
@@ -438,9 +443,12 @@ export function applyMem0Action(
 export function deleteEntry(entries: MemoryEntry[], id: string): boolean {
   const idx = entries.findIndex(e => e.id === id)
   if (idx === -1) return false
-  entries.splice(idx, 1)
-  // 墓碑：写前合并（saveEntries）不得把刚删除的条目从磁盘复活
-  saveEntries(entries, { excludeIds: new Set([id]) })
+  // 审计修复（2026-08-25）：硬 splice 改软删墓碑（对齐上方 Mem0 DELETE 分支语义）——
+  // 条目保留（deleted=true），检索/统计路径统一过滤（activeEntries/visibleAt/getStats）。
+  // saveEntries 写前合并对 deleted 磁盘条目不补回，快照内墓碑直接落盘，无复活面。
+  entries[idx].deleted = true
+  entries[idx].updatedAt = new Date().toISOString()
+  saveEntries(entries)
   return true
 }
 

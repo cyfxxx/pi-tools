@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, rmSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { Runner } from '../extract.ts'
@@ -363,5 +363,48 @@ describe('extract: pending 落盘净化（审计 L4 修复）', () => {
     const raw = readFileSync(PENDING_DIR + '/' + files[0], 'utf-8')
     expect(raw).not.toContain(secret)
     expect(raw).toContain('[REDACTED:api-key]')
+  })
+})
+
+describe('extract: acquireExtractLock（审计修复：wx 原子抢占 + stale 验证）', () => {
+  it('首次抢占成功，锁文件内容为当前 pid', async () => {
+    const { acquireExtractLock, LOCK_FILE } = await import('../extract.ts')
+    expect(acquireExtractLock()).toBe(true)
+    expect(readFileSync(LOCK_FILE, 'utf8')).toBe(String(process.pid))
+  })
+
+  it('锁被存活进程持有 → 互斥失败（wx EEXIST 路径，不 rm 不覆盖）', async () => {
+    const { acquireExtractLock, LOCK_FILE } = await import('../extract.ts')
+    // 以本进程 pid 模拟持有者存活（kill(pid,0) 探活成功）
+    writeFileSync(LOCK_FILE, String(process.pid))
+    expect(acquireExtractLock()).toBe(false)
+    // 原持锁内容未被覆盖
+    expect(readFileSync(LOCK_FILE, 'utf8')).toBe(String(process.pid))
+  })
+
+  it('stale 锁（pid 不存在）→ 清理后重新抢占', async () => {
+    const { acquireExtractLock, LOCK_FILE } = await import('../extract.ts')
+    writeFileSync(LOCK_FILE, '999999999') // 超出 Linux pid 上限，探活必失败
+    expect(acquireExtractLock()).toBe(true)
+    expect(readFileSync(LOCK_FILE, 'utf8')).toBe(String(process.pid))
+  })
+
+  it('锁内容损坏（非 pid）→ 按 stale 处理，可重新抢占', async () => {
+    const { acquireExtractLock, LOCK_FILE } = await import('../extract.ts')
+    writeFileSync(LOCK_FILE, 'garbage-not-a-pid')
+    expect(acquireExtractLock()).toBe(true)
+    expect(readFileSync(LOCK_FILE, 'utf8')).toBe(String(process.pid))
+  })
+
+  it('releaseExtractLock 只删自己的锁，不动他人锁；无锁时可安全调用', async () => {
+    const { acquireExtractLock, releaseExtractLock, LOCK_FILE } = await import('../extract.ts')
+    expect(() => releaseExtractLock()).not.toThrow() // 无锁
+    expect(acquireExtractLock()).toBe(true)
+    releaseExtractLock()
+    expect(existsSync(LOCK_FILE)).toBe(false)
+    // 他人锁（pid ≠ 自身）释放时保留
+    writeFileSync(LOCK_FILE, '999999999')
+    releaseExtractLock()
+    expect(existsSync(LOCK_FILE)).toBe(true)
   })
 })

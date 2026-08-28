@@ -7,12 +7,13 @@ import { join } from 'node:path'
 // mock child_process 全模块（本文件只测 linux 平台分支）
 const spawnMock = vi.hoisted(() => vi.fn())
 const execFileMock = vi.hoisted(() => vi.fn())
+const execFileSyncMock = vi.hoisted(() => vi.fn())
 const killMock = vi.hoisted(() => vi.fn())
 
 vi.mock('node:child_process', () => ({
   spawn: spawnMock,
   execFile: execFileMock,
-  execFileSync: vi.fn(),
+  execFileSync: execFileSyncMock,
   type: {},
 }))
 
@@ -44,6 +45,7 @@ function fakeChild(pid = 999): { child: ChildProcess } {
 beforeEach(() => {
   spawnMock.mockReset()
   execFileMock.mockReset()
+  execFileSyncMock.mockReset()
   killMock.mockReset()
   vi.doUnmock('node:fs')
 })
@@ -53,16 +55,45 @@ afterEach(() => {
 })
 
 describe('linux startRecording', () => {
-  it('parec 参数：--device RDPSource + 16k wav 直出，无残留清理', () => {
+  it('parec 参数：--device RDPSource + 16k wav 直出，timeout 包装（maxSeconds+30s 兑底上限），无残留清理', () => {
     const { child } = fakeChild()
     spawnMock.mockReturnValue(child)
     const onExit = vi.fn()
     const r = startRecording(linuxCfg, onExit)
-    expect(spawnMock).toHaveBeenCalledWith('parec', [
+    // 审计修复：linux 录音命令用 coreutils timeout 包装（DEFAULTS.maxSeconds=120 → 裕量 150s）
+    expect(spawnMock).toHaveBeenCalledWith('timeout', [
+      '150', 'parec',
       '--device', 'RDPSource',
       '--format=s16le', '--rate=16000', '--channels=1', '--file-format=wav', expect.stringMatching(/\.wav$/),
     ], expect.anything())
     expect(r.file.endsWith('.wav')).toBe(true)
+  })
+
+  it('maxSeconds=0（不限时）→ timeout 兑底 24h 上限', () => {
+    const { child } = fakeChild()
+    spawnMock.mockReturnValue(child)
+    startRecording({ ...linuxCfg, maxSeconds: 0 }, () => {})
+    const args = spawnMock.mock.calls[0][1] as string[]
+    expect(args[0]).toBe('86400')
+    expect(args[1]).toBe('parec')
+  })
+
+  it('forceClean（启动失败重试）→ pkill 本配置 tmpDir 残留 pattern；非 forceClean 不清理', () => {
+    const { child } = fakeChild()
+    spawnMock.mockReturnValue(child)
+    startRecording(linuxCfg, () => {}, { forceClean: true })
+    const pkillCalls = execFileSyncMock.mock.calls.filter((c) => c[0] === 'pkill')
+    expect(pkillCalls.length).toBe(1)
+    const pattern = pkillCalls[0]![1]![1] as string
+    expect(pattern).toContain('parec')
+    expect(pattern).toContain(linuxCfg.tmpDir)
+  })
+
+  it('非 forceClean → 不执行残留清理（pgrep/pkill 均不调用，防多实例误杀）', () => {
+    const { child } = fakeChild()
+    spawnMock.mockReturnValue(child)
+    startRecording(linuxCfg, () => {})
+    expect(execFileSyncMock.mock.calls.filter((c) => c[0] === 'pkill' || c[0] === 'pgrep')).toHaveLength(0)
   })
 
   it('文件名含随机后缀：同秒内两次启动路径不冲突（防 stop→start 竞态复用文件）', () => {

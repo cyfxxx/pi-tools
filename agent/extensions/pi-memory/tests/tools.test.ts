@@ -95,7 +95,7 @@ describe('tools: memory_forget 批量删除', () => {
     expect(saved.entries.map((e: { id: string }) => e.id)).toEqual(['b'])
   })
 
-  it('单条 id 删除路径仍正常', async () => {
+  it('单条 id 删除路径仍正常（软删墓碑：条目保留、deleted=true，审计修复对齐 Mem0 DELETE）', async () => {
     writeFileSync(join(dir, 'entries.json'), JSON.stringify({
       version: 1,
       entries: [makeEntry({ id: 'only' })],
@@ -105,7 +105,10 @@ describe('tools: memory_forget 批量删除', () => {
     const res = await forget.execute('call-1', { id: 'only' })
     expect(res.content[0].text).toContain('已删除记忆 only')
     const saved = JSON.parse(readFileSync(join(dir, 'entries.json'), 'utf-8'))
-    expect(saved.entries).toHaveLength(0)
+    // 软删墓碑：条目不从磁盘移除，标记 deleted=true（检索/统计路径过滤）
+    expect(saved.entries).toHaveLength(1)
+    expect(saved.entries[0].id).toBe('only')
+    expect(saved.entries[0].deleted).toBe(true)
   })
 
   it('无效日期返回 isError', async () => {

@@ -171,7 +171,9 @@ export default function (pi: ExtensionAPI): void {
   dictation = createDictation(
     config,
     {
-      startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe: transcribeByBackend, deleteAudioPair, waitForFileStable, detectAudioLevel,
+      startRecording, stopRecording, queryRecording, fileExists, convertToWav, transcribe: transcribeByBackend, deleteAudioPair, waitForFileStable,
+      // 审计修复：透传 cfg.ffmpegBin（detectAudioLevel 不再硬编码 'ffmpeg'）
+      detectAudioLevel: (wav) => detectAudioLevel(wav, config.ffmpegBin),
       micLabel: spec.recorder.micLabel,
       micInstallHint: spec.recorder.installHint,
       micPermissionHint: spec.recorder.permissionHint,

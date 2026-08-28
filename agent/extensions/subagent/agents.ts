@@ -13,7 +13,7 @@ export interface AgentConfig {
 	description: string;
 	tools?: string[];
 	model?: string;
-	/** frontmatter readonly: true 时 spawn 强制过滤写入类工具（bash/edit/write）+ 注入只读提示 */
+	/** frontmatter readonly: true 时 spawn 强制白名单工具集（仅 read/grep/find/ls）+ 注入只读提示 */
 	readonly?: boolean;
 	systemPrompt: string;
 	source: "user" | "project";
@@ -51,15 +51,28 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			continue;
 		}
 
-		const { frontmatter, body } = parseFrontmatter<Record<string, string>>(content);
+		const { frontmatter, body } = (() => {
+			try {
+				return parseFrontmatter<Record<string, string>>(content);
+			} catch {
+				// 2026-08-28 审计：畸形 YAML 在 UI 确认门前棸掉整个 subagent 调用——跳过该文件而非中断
+				return { frontmatter: {} as Record<string, string>, body: "" };
+			}
+		})();
 
 		if (!frontmatter.name || !frontmatter.description) {
 			continue;
 		}
 
-		const tools = frontmatter.tools
-			?.split(",")
-			.map((t: string) => t.trim())
+		// 2026-08-28 审计：兼容 YAML 数组语法 tools: [read, ls]（split 对数组抛 TypeError）
+		const tools = (
+			Array.isArray(frontmatter.tools)
+				? frontmatter.tools
+				: typeof frontmatter.tools === "string"
+					? frontmatter.tools.split(",")
+					: []
+		)
+			.map((t: unknown) => String(t).trim())
 			.filter(Boolean);
 
 		const rawReadonly = (frontmatter as Record<string, unknown>).readonly;

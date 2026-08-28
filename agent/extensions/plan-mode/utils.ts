@@ -23,14 +23,17 @@ const DESTRUCTIVE_PATTERNS = [
   /\bbrew\s+(install|uninstall|upgrade)/i,
   /\bgit\s+(add|commit|push|pull|merge|rebase|reset|checkout|stash|cherry-pick|revert|tag|init|clone)/i,
   // git 写引用/配置类（审计 MEDIUM）：branch 新建、remote 写子命令、show/diff/log --output 落盘
+  // --ext-diff/--textconv 显式 flag 由恶意仓库配置驱动任意执行（审计 MEDIUM；textconv 默认开启的
+  // 配置驱动风险需仓库信任层管理，此处拦显式 flag fail-closed）
+  /\bgit\b[^\n;|&]*\s--(no-)?(ext-diff|textconv)\b/i,
   // branch 删除/改名/拷贝等 - 开头写操作由 SAFE 白名单枚举拦截（见下方 branch 只读参数集）
   /\bgit\s+branch\s+[^-\s]/i,
   /\bgit\s+remote\s+(add|rename|set-url|remove|prune|update)/i,
   /\bgit\s+(show|diff|log)\b[^\n;|&]*--output/i,
-  // find 的破坏性动作：-delete 删除、-exec/-ok 系列执行、-fprint/-fprint0/-fprintf 写文件。
+  // find 的破坏性动作：-delete 删除、-exec/-ok 系列执行、-fls/-fprint/-fprint0/-fprintf 写文件。
   // 审计同类缺口：尾部 \b 使 -fprint0 漏拦（t 与 0 均为词字符无边界）——去尾 \b 改前缀匹配（fail-closed），
-  // 同时补齐 -execdir/-okdir 执行变体
-  /\bfind\b[^\n;|&]*\s(-delete|-exec(dir)?|-ok(dir)?|-fprint0?|-fprintf)/i,
+  // 同时补齐 -execdir/-okdir 执行变体与 -fls 写文件变体
+  /\bfind\b[^\n;|&]*\s(-delete|-exec(dir)?|-ok(dir)?|-fls|-fprint0?|-fprintf)/i,
   // less/more 启动命令 +cmd/+!cmd 可执行任意 shell（非 LESSSECURE 环境；审计同类缺口）
   /\b(less|more)\b[^\n;|&]*\s\+\S/i,
   // bat --pager=<cmd> 任意进程执行（同 rg --pre 类；审计同类缺口）
@@ -155,7 +158,10 @@ export function isSafeCommand(command: string): boolean {
   if (withStderrDiscard && />|>>/.test(core0)) return false;
 
   // cd 前缀：cd <dir> && <核心命令>（核心命令仍须整体单条白名单）
+  // 审计 HIGH：cd 参数先剥离后检查，参数内命令替换（$(touch)/`touch`/"$(… )"）逃过 $()/反引号
+  // 检查被 shell 真实执行——剥离前先对 cd 参数本体做分隔符/替换扫描
   const cdMatch = /^\s*cd\s+("[^"]*"|'[^']*'|\S+)\s*&&\s*/.exec(core0);
+  if (cdMatch && /[;&|&]|`|\$\(|\n|\r|<\(/.test(cdMatch[1])) return false;
   const core = /* cd 前缀剥离 */ cdMatch ? core0.slice(cdMatch[0].length).trim() : core0;
   if (cdMatch && core.includes("&&")) return false;
 
@@ -188,15 +194,20 @@ export function isSafeCommand(command: string): boolean {
   // --data 前缀后跟 `-` 不匹配 (\s|=) 锚定）——收紧为 GET-only 查询；
   // 审计 MEDIUM 同类：URL 内裸 $VAR 经 shell 展开可将环境秘密拼入查询串外带（$() 已被
   // 分隔符拒绝，剩余裸 $ 即变量展开）——curl/wget GET 段一律禁 $
-  if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data(?:-urlencode|-raw|-json|-ascii)?|--data-binary|-d|--form|-F)(\s|=)/.test(core)) return false;
+  // 审计 MEDIUM：-K/--config（配置文件内 output=/data=@file 绕过命令行拦截）与独立 --json
+  // （curl≥7.76 @file 读文件 POST）补拦；wget -O - 形态的 --post-file/--post-data/--method
+  // 可读文件外带（wget DESTRUCTIVE 已拦非 -O - 形态，此处补 -O - 形态的外传 flag）
+  if (/^\s*curl\b/i.test(core) && /(^|\s)(-T|--upload-file|--data(?:-urlencode|-raw|-json|-ascii)?|--data-binary|-d|--form|-F|-K|--config|--json)(\s|=)/.test(core)) return false;
+  if (/^\s*wget\b/i.test(core) && /(^|\s)(--post-file|--post-data|--body-file|--body-string|--method)(\s|=)/.test(core)) return false;
   if (/^\s*(curl|wget)\b/i.test(core) && /\$/.test(core)) return false;
 
   // 进程替换 <(...)（审计实测：`diff <(python3 -c '写文件') <(echo x)` 曾放行——
   // 核心分隔符检查只拦 $()/反引号，< 不在列；>( 已被重定向拦截，<( 是唯一漏网入口）
   if (/<\(/.test(core)) return false;
 
-  // sort -o/--output 可写文件（审计实测：sort 在白名单且 DESTRUCTIVE 无 -o 拦截）
-  if (/^\s*sort\b/i.test(core) && /(^|\s)(-o|--output)(\s|=)/.test(core)) return false;
+  // sort -o/--output 可写文件（审计实测：sort 在白名单且 DESTRUCTIVE 无 -o 拦截）；
+  // --compress-program=CMD 对排序块执行任意程序（审计 MEDIUM：引号内空格不含分隔符即放行）
+  if (/^\s*sort\b/i.test(core) && /(^|\s)(-o|--output|--compress-program)(\s|=)/.test(core)) return false;
 
   return !DESTRUCTIVE_PATTERNS.some((p) => p.test(core)) && SAFE_PATTERNS.some((p) => p.test(core))
 }

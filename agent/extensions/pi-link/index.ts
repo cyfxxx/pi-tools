@@ -161,11 +161,16 @@ export default function (pi: ExtensionAPI): void {
         return ok('未配置任何设备。在 ~/.pi/pi-link.json 添加（参考 /link help）后重试。')
       }
       const lines: string[] = [`已配置 ${names.length} 台设备:`]
-      for (const n of names) {
+      // 审计：串行 probeDevice（每地址最长 8s）多设备时 status 耗时线性累积——
+      // 改 Promise.allSettled 并发探测，结果按 names 顺序保序展示
+      const results = await Promise.allSettled(names.map((n) => probeDevice(cfg.devices[n])))
+      names.forEach((n, i) => {
         const d = cfg.devices[n]
-        const r = await probeDevice(d)
+        const r = results[i].status === 'fulfilled'
+          ? results[i].value
+          : { ok: false, latencyMs: 0, detail: String((results[i] as PromiseRejectedResult).reason) }
         lines.push(`  ${r.ok ? '●' : '○'} ${describeDevice(n, d)} — ${r.ok ? `可达 ${r.latencyMs}ms` : `不可达: ${r.detail ?? ''}`}`)
-      }
+      })
       return ok(lines.join('\n'))
     },
   })
@@ -209,11 +214,15 @@ export default function (pi: ExtensionAPI): void {
           return
         }
         const lines = [`已配置 ${names.length} 台设备:`]
-        for (const n of names) {
+        // 审计：与 link_status 工具同改——并发探测、保序展示
+        const results = await Promise.allSettled(names.map((n) => probeDevice(cfg.devices[n])))
+        names.forEach((n, i) => {
           const d = cfg.devices[n]
-          const r = await probeDevice(d)
+          const r = results[i].status === 'fulfilled'
+            ? results[i].value
+            : { ok: false, latencyMs: 0, detail: String((results[i] as PromiseRejectedResult).reason) }
           lines.push(`  ${r.ok ? '●' : '○'} ${describeDevice(n, d)} — ${r.ok ? `可达 ${r.latencyMs}ms` : `不可达: ${r.detail ?? ''}`}`)
-        }
+        })
         await output(lines.join('\n'))
         return
       }
@@ -284,7 +293,10 @@ export default function (pi: ExtensionAPI): void {
         return
       }
       if (sub === 'import-card') {
-        const raw = parts.slice(2).join(' ')
+        // 审计：旧 parts.slice(2) 是 off-by-one（对照 send 分支 parts.slice(2) 语义不同：
+        // 卡片参数从 parts[1] 起），导致首位 token 被吞；且 split/重 join 会破坏 JSON
+        // 内连续空格。改从原始命令串按首个空格切分取余串。
+        const raw = (args ?? '').trim().slice(sub.length).trim()
         if (!raw) {
           ctx.ui.notify('用法: /link import-card <卡片JSON>（可用 /link export-card 生成）', 'warning')
           return

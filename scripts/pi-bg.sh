@@ -69,7 +69,7 @@ usage() {
 cmd_start() {
   local rw=0 cwd="$PWD"
   [ "${1:-}" = "--rw" ] && { rw=1; shift; }
-  [ "${1:-}" = "--cwd" ] && { cwd="$2"; shift 2; }
+  [ "${1:-}" = "--cwd" ] && { [ $# -ge 2 ] || { usage; exit 2; }; cwd="$2"; shift 2; }
   [ $# -lt 2 ] && { usage; exit 1; }
   local name="$1"; shift
   check_name "$name"
@@ -101,7 +101,7 @@ $prompt"
 cmd_rpc() {
   local rw=0 cwd="$PWD"
   [ "${1:-}" = "--rw" ] && { rw=1; shift; }
-  [ "${1:-}" = "--cwd" ] && { cwd="$2"; shift 2; }
+  [ "${1:-}" = "--cwd" ] && { [ $# -ge 2 ] || { usage; exit 2; }; cwd="$2"; shift 2; }
   [ $# -lt 1 ] && { usage; exit 1; }
   local name="$1"
   check_name "$name"

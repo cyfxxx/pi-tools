@@ -315,12 +315,13 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
 
   it('M4：历史/旧会话遗留 in_progress（非最新目录）不再阻塞压缩', async () => {
     const { handlers } = await loadIndex()
-    // 旧目录（ts 较小）含进行中步骤——修复前的遍历会因它阻塞
-    const oldDir = join(dir, 'plans', 'plan-1787200000000')
+    // 旧目录（ts 较小，超过 7 天窗口被过滤）含进行中步骤——修复前的遍历会因它阻塞
+    // 动态时间戳：写死历史时间会随 7 天窗口滚动失效（08-27/08-28 两次实测）
+    const oldDir = join(dir, 'plans', `plan-${Date.now() - 8 * 24 * 3600e3}`)
     mkdirSync(oldDir, { recursive: true })
     writeFileSync(join(oldDir, 'plan.md'), '# 计划\n- [~] 1. 旧任务 (正在跑)\n', 'utf8')
     // 最新目录无进行中任务
-    const newDir = join(dir, 'plans', 'plan-1787300000000')
+    const newDir = join(dir, 'plans', `plan-${Date.now()}`)
     mkdirSync(newDir, { recursive: true })
     writeFileSync(join(newDir, 'plan.md'), '# 计划\n- [ ] 1. 待办\n', 'utf8')
     const compact = vi.fn()
@@ -330,8 +331,8 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
 
   it('M4：最新目录含 in_progress → 仍阻塞压缩', async () => {
     const { handlers } = await loadIndex()
-    // 最新目录含进行中任务（应阻塞，与单一目录旧行为一致）
-    const newDir = join(dir, 'plans', 'plan-1787300000000')
+    // 最新目录含进行中任务（应阻塞，与单一目录旧行为一致）；动态时间戳避 7 天窗口失效
+    const newDir = join(dir, 'plans', `plan-${Date.now()}`)
     mkdirSync(newDir, { recursive: true })
     writeFileSync(join(newDir, 'plan.md'), '# 计划\n- [~] 1. 新任务 (正在跑)\n', 'utf8')
     const compact = vi.fn()
@@ -402,7 +403,7 @@ describe('pi-context: 压缩触发挂载点与记账时机', () => {
     vi.useFakeTimers()
     try {
       const { handlers } = await loadIndex()
-      const planDir = join(dir, 'plans', 'plan-1787400000000')
+      const planDir = join(dir, 'plans', `plan-${Date.now()}`)
       mkdirSync(planDir, { recursive: true })
       // 阶段1：有 in_progress → 任务门阻塞
       writeFileSync(join(planDir, 'plan.md'), '# 计划\n- [~] 1. 进行中 (跑)\n', 'utf8')

@@ -78,4 +78,14 @@ describe('doctor linux ffmpeg 提示（审计 LOW）', () => {
     const lines = await doctor(termuxCfg)
     expect(lines).toContain('✗ ffmpeg 缺失：请 apt-get install ffmpeg')
   })
+
+  it('审计修复：linux 分支用 cfg.ffmpegBin 探测（不再硬编码 ffmpeg）', async () => {
+    execFileMock.mockImplementation((bin: string, _args: string[], _opts: unknown, cb: (e: Error | null, o?: string, s?: string) => void) => {
+      if (bin === 'my-custom-ffmpeg' || bin === 'nvidia-smi') cb(enoent(bin))
+      else cb(null, 'ok', '')
+    })
+    const lines = await doctor({ ...cfg, ffmpegBin: 'my-custom-ffmpeg' })
+    // 自定义 bin 缺失 → 仍走 info 提示；若实现硬编码 'ffmpeg'（探测成功）则不会有提示行
+    expect(lines.some(l => l.startsWith('ℹ') && l.includes('ffmpeg'))).toBe(true)
+  })
 })

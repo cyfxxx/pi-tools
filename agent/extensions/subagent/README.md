@@ -116,8 +116,7 @@ subagent({ agent: "scout", task: "Find all authentication code" })
 | `agent` | string | 是 | Agent 名称 |
 | `task` | string | 是 | 任务描述 |
 | `cwd` | string | 否 | 工作目录 |
-| `agentScope` | "user" / "project" / "both" | 否 | agent 来源（默认 "user"） |
-| `confirmProjectAgents` | boolean | 否 | 项目 agent 前确认（默认 true） |
+| `agentScope` | "user" / "project" / "both" | 否 | agent 来源（默认 "user"）；project 前需 UI 确认 |
 
 ### ② Parallel（并行） — tasks[]
 

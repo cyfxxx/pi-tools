@@ -45,8 +45,8 @@ describe('pi-link config 加载校验（审计 MEDIUM 修复）', () => {
       p,
       JSON.stringify({
         devices: {
-          bad: { host: 'h1', port: 99999, sshArgs: 'nope' },
-          ok: { host: 'h2', port: 22, sshArgs: ['-i', '/root/.ssh/id'] },
+          bad: { host: 'h1', user: 'u', port: 99999, sshArgs: 'nope' },
+          ok: { host: 'h2', user: 'u', port: 22, sshArgs: ['-i', '/root/.ssh/id'] },
         },
       }),
     )
@@ -111,6 +111,35 @@ describe('pi-link config host 严格校验（isValidUserHost 套用）', () => {
       expect(cfg.devices.mixed).toBeDefined()
       expect(cfg.devices.mixed.altHosts).toEqual([{ host: '10.0.0.2' }])
       expect(warnSpy).toHaveBeenCalledTimes(3)
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
+})
+
+// 审计（2026-08-26）：user 缺失（undefined）此前跳过校验——下游 sendToDevice 拼出
+// undefined@host 每调必败且报错难定位。缺失与非法同规格：整台跳过并告警。
+describe('pi-link config 加载校验（user 缺失审计修复）', () => {
+  it('user 缺失的设备整台跳过并 console.warn；合法设备保留', async () => {
+    const { loadConfig } = await import('../config.ts')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const p = join(dir, 'pi-link.json')
+      writeFileSync(
+        p,
+        JSON.stringify({
+          devices: {
+            noUser: { host: '10.0.0.9', port: 22 },
+            good: { host: '10.0.0.1', user: 'root' },
+          },
+        }),
+      )
+      const cfg = loadConfig(p)
+      expect(cfg.devices.noUser).toBeUndefined()
+      expect(cfg.devices.good).toBeDefined()
+      expect(cfg.devices.good.user).toBe('root')
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(String(warnSpy.mock.calls[0][0])).toContain('noUser')
     } finally {
       warnSpy.mockRestore()
     }

@@ -5,6 +5,7 @@ import {
   pruneToolResults,
   pruneThinkingBudget,
   sweepPruneRefs,
+  isPrunedMessage,
   PRUNE_PROTECT_TOKENS,
   PRUNE_MINIMUM_TOKENS,
   KEEP_RECENT_TURNS,
@@ -108,6 +109,44 @@ describe('pruneToolResults: 工具输出分层擦除', () => {
     expect(messageText(after.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
     expect(messageText(after.messages[5])).toMatch(/^\[pruned: \d+ chars\]$/)
     expect(messageText(after.messages[8])).toMatch(/^\[pruned: \d+ chars\]$/)
+  })
+
+  it('已擦除判定：正文含 "[pruned:" 字面量（非开头）不误判，仍被正常擦除（审计修复）', () => {
+    // 场景：工具输出恰好包含 marker 字面量（如 cat 本文件源码的输出）。旧判定
+    // includes 会把该消息误判为已擦除而跳过 → 原文常驻上下文。
+    const msgs = session(8, 200_000)
+    // index 2 的输出：字面量在正文中部（前面有真实输出文本）
+    msgs[2] = toolResult(`文件内容如下：
+[pruned: 12345 chars]
+${'y'.repeat(200_000)}`)
+    const r = pruneToolResults(msgs)
+    // 修复后：该消息不被误判，与其他早期消息一样进入擦除（3 条全擦）
+    expect(r.prunedCount).toBe(3)
+    expect(isPrunedMessage(msgs[2])).toBe(false)
+    expect(messageText(r.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
+  })
+
+  it('已擦除判定：真实擦除后的消息（marker 开头）仍被识别，重扫不重复擦除', () => {
+    const first = pruneToolResults(session(8, 200_000))
+    const pruned = first.messages[2]
+    expect(isPrunedMessage(pruned)).toBe(true)
+    // 重扫（更激进参数）：已擦除消息被跳过，marker 稳定不被重写/恢复
+    const second = pruneToolResults(first.messages, { protectTokens: 0, minimumTokens: 0 })
+    expect(messageText(second.messages[2])).toMatch(/^\[pruned: \d+ chars\]$/)
+    expect(second.messages[2]).toBe(pruned) // 同一对象原样返回（未被重选）
+  })
+
+  it('已擦除判定：非 toolRole 消息不误判；marker 前导空白容忍', () => {
+    // user/assistant 正文即使以字面量开头也不判为已擦除（角色门卫）
+    expect(isPrunedMessage({ role: 'user', content: [{ type: 'text', text: '[pruned: 1 chars]' }] })).toBe(false)
+    expect(isPrunedMessage({ role: 'assistant', content: [{ type: 'text', text: '[pruned: 1 chars]' }] })).toBe(false)
+    // toolRole + marker 开头（含前导空白）→ 已擦除
+    expect(isPrunedMessage(toolResult('[pruned: 1 chars]'))).toBe(true)
+    expect(isPrunedMessage(toolResult('  \n[pruned: 1 chars]'))).toBe(true)
+    // toolRole + 带 ref 的 marker 开头 → 已擦除
+    expect(isPrunedMessage(toolResult('[pruned: 5 chars → /tmp/ref.txt]'))).toBe(true)
+    // toolRole + 字面量在中部 → 未擦除
+    expect(isPrunedMessage(toolResult('output... [pruned: 1 chars] more'))).toBe(false)
   })
 
   it('messageText 只提取 text block', () => {

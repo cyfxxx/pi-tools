@@ -378,11 +378,14 @@ PY
 
 # ---- Phase 2-A: npm 依赖 ----
 # 幂等判定：node_modules 目录非空 ≠ 依赖齐备（中断/失败的 install 会残留部分包）。
-# 按 package.json 的 dependencies+devDependencies 逐包探测缺失，缺则装。
+# 按 package.json 的 dependencies+devDependencies 逐包探测：目录缺失、包损坏
+# （无/坏 package.json）、版本 major.minor 与声明范围不匹配均算缺失，缺则装。
+# 范围语义简单判断：^ 同 major 且 ≥锚点 / ~ 与 >= 按锚点比较 / 精确按 major.minor；
+# 无法解析的范围（*/x/git/url）退回仅按目录存在判定。
 # 并发：≤3 个 npm install 同时跑（滚动窗口，避免 npm 缓存争抢/registry 压力）。
 npm_missing_deps() {
   python3 - "$1" <<'PY'
-import json, os, sys
+import json, os, re, sys
 pkg_dir = sys.argv[1]
 try:
     d = json.load(open(os.path.join(pkg_dir, 'package.json')))
@@ -391,7 +394,43 @@ except Exception:
     raise SystemExit(0)
 deps = {**d.get('dependencies', {}), **d.get('devDependencies', {})}
 nm = os.path.join(pkg_dir, 'node_modules')
-print(' '.join(k for k in deps if not os.path.isdir(os.path.join(nm, k))))
+
+def ver_pair(s):
+    m = re.match(r'^v?(\d+)\.(\d+)', s or '')
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+def spec_ok(inst, spec):
+    for part in spec.split('||'):
+        m = re.match(r'^\s*([\^~>=]*)\s*v?(\d+)(?:\.(\d+))?', part)
+        if not m:
+            return True  # */x/git/url 等无法解析 → 目录存在即视为满足
+        op = m.group(1)
+        anchor = (int(m.group(2)), int(m.group(3) or 0))
+        if op.startswith('^'):
+            if inst[0] == anchor[0] and inst >= anchor:
+                return True
+        elif op.startswith('~') or not op:
+            if inst == anchor:
+                return True
+        elif op.startswith('>='):
+            if inst >= anchor:
+                return True
+    return False
+
+missing = []
+for k, spec in deps.items():
+    d_dir = os.path.join(nm, k)
+    if not os.path.isdir(d_dir):
+        missing.append(k)
+        continue
+    try:
+        inst = ver_pair(json.load(open(os.path.join(d_dir, 'package.json'))).get('version', ''))
+    except Exception:
+        missing.append(k)  # 残留/损坏的包目录
+        continue
+    if inst is None or not spec_ok(inst, spec):
+        missing.append(k)
+print(' '.join(missing))
 PY
 }
 
@@ -416,7 +455,7 @@ phase2_nm_cleanup() {
 }
 
 phase2_npm() {
-  # 统一依赖根：10 个扩展共享 agent/node_modules（Node 向上寻径解析，见 agent/package.json）。
+  # 统一依赖根：11 个扩展共享 agent/node_modules（Node 向上寻径解析，见 agent/package.json）。
   # 一次 npm install 替换旧的“每扩展独立 node_modules”（约省 500MB / 9 份 vitest）。
   title "Phase 2-A" "npm 依赖（统一根 agent/）"
 
@@ -432,7 +471,9 @@ phase2_npm() {
 
   local missing
   missing=$(npm_missing_deps "$d")
-  if [ -n "$missing" ] && [ "$missing" != "PKGERR" ]; then
+  if [ "$missing" = "PKGERR" ]; then
+    echo "  ✗ package.json 解析失败，请人工检查: $d/package.json（本阶段跳过依赖安装）"
+  elif [ -n "$missing" ]; then
     info "安装依赖: agent/（缺失: $missing）"
     if (cd "$d" && timeout $NPM_INSTALL_TIMEOUT npm install --no-fund --no-audit >/dev/null 2>&1); then
       ok "agent/node_modules 依赖安装完成（$(ls "$d/node_modules" 2>/dev/null | wc -l) packages）"

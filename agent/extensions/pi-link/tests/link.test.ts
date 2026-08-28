@@ -693,3 +693,80 @@ describe('pi-link: switch_session 超时按失败处理', () => {
     }
   })
 })
+
+// ── 审计修复回归（2026-08-26）：AbortSignal 注册提前到探测循环之前——
+// 探测阶段（每地址最长 8s）取消此前无效；probeAddr 响应 signal 中断探测
+describe('pi-link: sendToDevice 探测阶段可取消（审计修复）', () => {
+  beforeEach(() => {
+    resetSendGuards()
+    spawnMock.mockReset()
+  })
+
+  function hangingProbeProc() {
+    // 永不自行退出/出错，仅在被 kill 时发 exit（模拟真实进程被 SIGKILL）
+    const stdout = new PassThrough()
+    const stderr = new PassThrough()
+    const stdin = new PassThrough()
+    const exitCbs: Array<(c: number | null) => void> = []
+    const proc = {
+      stdin, stdout, stderr,
+      pid: 12345,
+      kill: vi.fn((sig?: string) => {
+        if (sig === 'SIGKILL') setImmediate(() => { for (const cb of exitCbs) cb(null) })
+        return true
+      }),
+      on: (ev: string, cb: (c?: unknown) => void) => {
+        if (ev === 'exit') exitCbs.push(cb as (c: number | null) => void)
+      },
+    }
+    return proc
+  }
+
+  it('多地址探测进行中 abort：立即返回取消，不再探测后续地址', async () => {
+    const calls: string[] = []
+    spawnMock.mockImplementation((_cmd: string, args: string[]) => {
+      const target = (args as string[]).find((a) => (a as string).includes('@')) as string
+      calls.push(target)
+      return hangingProbeProc()
+    })
+    const dev: DeviceConfig = { host: '10.0.0.1', user: 'u', port: 22, altHosts: [{ host: '10.0.0.2', port: 22 }] }
+    const ctrl = new AbortController()
+    const pending = sendToDevice(dev, 'hi', { signal: ctrl.signal, timeoutSec: 30 })
+    // 推进到第一个地址的探测挂起点
+    await new Promise((r) => setImmediate(r))
+    await new Promise((r) => setImmediate(r))
+    expect(calls).toEqual(['u@10.0.0.1']) // 正在探测主地址（挂起）
+    const t0 = Date.now()
+    ctrl.abort()
+    const r = await pending
+    // 探测阶段取消即刻生效（修复前：监听注册在探测后，需等探测 8s 超时 × 地址数）
+    expect(Date.now() - t0).toBeLessThan(1000)
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('取消')
+    // 未继续探测备用地址，也未进入 ssh 发送
+    expect(calls).toHaveLength(1)
+  })
+
+  it('调用前已 aborted：不 spawn，直接返回取消', async () => {
+    const ctrl = new AbortController()
+    ctrl.abort()
+    const r = await sendToDevice(DEV, 'hi', { signal: ctrl.signal, timeoutSec: 30 })
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('取消')
+    expect(spawnMock).not.toHaveBeenCalled()
+  })
+
+  it('probeAddr 收到 signal：杀探针并立即返回不可达（探测已被取消）', async () => {
+    spawnMock.mockImplementation(() => hangingProbeProc())
+    const { probeDevice } = await import('../link')
+    const dev: DeviceConfig = { host: '10.0.0.1', user: 'u', port: 22 }
+    const ctrl = new AbortController()
+    const pending = probeDevice(dev, ctrl.signal)
+    await new Promise((r) => setImmediate(r))
+    const t0 = Date.now()
+    ctrl.abort()
+    const r = await pending
+    expect(Date.now() - t0).toBeLessThan(1000)
+    expect(r.ok).toBe(false)
+  })
+})

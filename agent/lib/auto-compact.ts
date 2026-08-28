@@ -38,7 +38,8 @@ export interface CompactThresholdOpts {
   largeRatio?: number
   /** 小窗口压缩比例（默认 0.85） */
   smallRatio?: number
-  /** 绝对 token 阈值（>0 时优先于窗口比例；用户策略 2026-08-24：上下文长度 >256K 才考虑压缩） */
+  /** 绝对 token 阈值（>0 且窗口>该值时优先于窗口比例；窗口≤该值退回比例，防小窗口
+   *  模型阈值=全窗口而常规压缩永不可达。用户策略 2026-08-24：上下文 >256K 才考虑压缩） */
   absoluteTokens?: number
 }
 
@@ -47,8 +48,15 @@ export function computeCompactThreshold(
   opts: CompactThresholdOpts = {},
 ): number | null {
   if (!Number.isFinite(contextWindow) || contextWindow <= 0) return null;
-  // 绝对阈值优先（如 256K 固定值），不随窗口比例浮动
-  if (typeof opts.absoluteTokens === "number" && opts.absoluteTokens > 0) {
+  // 绝对阈值仅对大窗口模型生效：窗口 > 绝对值才用绝对值，不随窗口比例浮动。
+  // 审计修复（2026-08-25）：原无条件优先——窗口≤256K 模型遇绝对默认 256K 时
+  // 阈值=全窗口，常规压缩永不可达。窗口≤绝对值退回窗口比例路径；
+  // PI_CONTEXT_ABSOLUTE_TOKENS 语义对大窗口模型不变。
+  if (
+    typeof opts.absoluteTokens === "number" &&
+    opts.absoluteTokens > 0 &&
+    contextWindow > opts.absoluteTokens
+  ) {
     return Math.floor(opts.absoluteTokens);
   }
   const lws = opts.largeWindowSize ?? LARGE_WINDOW_SIZE;

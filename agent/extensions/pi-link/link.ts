@@ -185,12 +185,43 @@ export async function sendToDevice(
   // 全部不可达时退回主地址（让 ssh 报真实连接错误，避免误报）
   let target: DeviceAddr = { host: device.host, port: device.port }
   const addrs = deviceAddresses(device)
-  if (addrs.length > 1) {
+
+  // 工具取消（2026-08-25 审计 MEDIUM：宿主真实下发 AbortSignal，此前被忽略；
+  // 2026-08-26 审计 MEDIUM：注册点从 prompt 写入后提前到 spawn 后——否则多地址探测
+  // +握手 3s+switch 20s 阶段取消无效，最坏数十秒不可中断；
+  // 2026-08-26 审计 MEDIUM：注册点再提前到探测循环之前——探测阶段（每地址最长 8s）
+  // 取消此前无效；probeAddr 同步响应 signal，探测中即中断）
+  let cancelledBySignal = false
+  let timedOut = false
+  let proc: ReturnType<typeof spawn> | undefined
+  const onAbort = (): void => {
+    cancelledBySignal = true
+    timedOut = true // 复用熔断标志优先级，保证取消分支可达
+    try { proc?.kill('SIGKILL') } catch { /* 进程可能已退出 */ }
+  }
+  if (opts.signal) {
+    if (opts.signal.aborted) onAbort()
+    else opts.signal.addEventListener('abort', onAbort, { once: true })
+  }
+
+  if (addrs.length > 1 && !cancelledBySignal) {
     for (const a of addrs) {
-      const r = await probeAddr(device, a)
+      const r = await probeAddr(device, a, opts.signal)
       if (r.ok) { target = a; break }
+      // 探测中收到取消信号：不再继续探测/切换地址
+      if (cancelledBySignal || opts.signal?.aborted) break
     }
   }
+  // spawn 前已取消（探测阶段取消/注册前已 aborted）：直接返回取消，不启动 ssh
+  if (cancelledBySignal) {
+    if (opts.signal) opts.signal.removeEventListener('abort', onAbort)
+    return done({
+      ok: false, reply: undefined, turns: 0, tools: 0,
+      durationSec: Math.round((Date.now() - started) / 1000),
+      error: '调用已被取消（工具中止）', resumed: false,
+    })
+  }
+
   const sshArgs = [
     ...(target.port ? ['-p', String(target.port)] : []),
     '-o', 'BatchMode=yes',
@@ -200,21 +231,7 @@ export async function sendToDevice(
     buildRemoteCommand(device, opts),
   ]
 
-  const proc = spawn('ssh', sshArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
-
-  // 工具取消（2026-08-25 审计 MEDIUM：宿主真实下发 AbortSignal，此前被忽略；
-  // 2026-08-26 审计 MEDIUM：注册点从 prompt 写入后提前到 spawn 后——否则多地址探测
-  // +握手 3s+switch 20s 阶段取消无效，最坏数十秒不可中断）
-  let cancelledBySignal = false
-  const onAbort = (): void => {
-    cancelledBySignal = true
-    timedOut = true // 复用熔断标志优先级，保证取消分支可达
-    proc.kill('SIGKILL')
-  }
-  if (opts.signal) {
-    if (opts.signal.aborted) onAbort()
-    else opts.signal.addEventListener('abort', onAbort, { once: true })
-  }
+  proc = spawn('ssh', sshArgs, { stdio: ['pipe', 'pipe', 'pipe'] })
   // 审计：events 全量数组无界累积——长任务（数千轮工具交互）内存膨胀。
   // 改边收边聚合：增量维护 turns/tools 计数与最后一条 assistant 文本/模型
   // （与 extractReply 同语义），不再保留事件数组。
@@ -245,7 +262,6 @@ export async function sendToDevice(
   let stderr = ''
   let lastSession: string | undefined
   let spawnFailed = ''
-  let timedOut = false
 
   proc.stderr.setEncoding('utf-8')
   proc.stderr.on('data', (c: string) => {
@@ -394,16 +410,17 @@ export async function sendToDevice(
   }
 }
 
-/** 连通性探测：ssh 远程执行 echo（3 秒超时） */
-export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latencyMs: number; detail?: string }> {
+/** 连通性探测：ssh 远程执行 echo（3 秒超时）；signal 可选（取消时中断探测） */
+export function probeDevice(device: DeviceConfig, signal?: AbortSignal): Promise<{ ok: boolean; latencyMs: number; detail?: string }> {
   return new Promise(async (resolve) => {
     const addrs = deviceAddresses(device)
     const started = Date.now()
     let last: { detail?: string } = {}
     for (const addr of addrs) {
       // 按序探测（主地址优先）；单地址超时 8s，多地址总耗时 = 地址数 × 单地址失败耗时
-      const r = await probeAddr(device, addr)
+      const r = await probeAddr(device, addr, signal)
       if (r.ok) return resolve({ ok: true, latencyMs: Date.now() - started })
+      if (signal?.aborted) break // 取消：不再探测后续地址
       last = { detail: r.detail }
     }
     resolve({ ok: false, latencyMs: Date.now() - started, detail: last.detail })
@@ -411,8 +428,12 @@ export function probeDevice(device: DeviceConfig): Promise<{ ok: boolean; latenc
 }
 
 /** 单地址连通性探测（ssh 远程 echo，8s 兜底） */
-function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolean; detail?: string }> {
+function probeAddr(device: DeviceConfig, addr: DeviceAddr, signal?: AbortSignal): Promise<{ ok: boolean; detail?: string }> {
   return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve({ ok: false, detail: '探测前已取消' })
+      return
+    }
     const args = [
       ...(addr.port ? ['-p', String(addr.port)] : []),
       // 审计 LOW：failover 探测此前不携带 device.sshArgs——依赖自定义 -i 等参数的
@@ -427,6 +448,18 @@ function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolea
     let out = ''
     let err = ''
     let failed = ''
+    // 统一收口：清定时器 + 移除 abort 监听 + resolve（幂等，多路径竞争只收一次）
+    const finish = (v: { ok: boolean; detail?: string }): void => {
+      clearTimeout(t)
+      if (signal) signal.removeEventListener('abort', onAbort)
+      resolve(v)
+    }
+    // 取消：杀探针进程并立即收口（kill 后可能无 exit，abort 侧兑底 resolve）
+    const onAbort = (): void => {
+      try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ }
+      finish({ ok: false, detail: '探测已被取消' })
+    }
+    if (signal) signal.addEventListener('abort', onAbort, { once: true })
     proc.stdout.setEncoding('utf-8')
     proc.stdout.on('data', (c: string) => { out += c })
     proc.stderr.setEncoding('utf-8')
@@ -434,21 +467,19 @@ function probeAddr(device: DeviceConfig, addr: DeviceAddr): Promise<{ ok: boolea
     proc.on('error', (e: Error) => {
       // spawn 失败（ssh 缺失/ENOENT）只发 error 不发 exit，必须在此 resolve 防永久挂起
       failed = e.message
-      clearTimeout(t)
-      resolve({ ok: false, detail: failed })
+      finish({ ok: false, detail: failed })
     })
     proc.on('exit', (code) => {
-      clearTimeout(t)
       if (code === 0 && out.trim() === 'pi-link-ok') {
-        resolve({ ok: true })
+        finish({ ok: true })
       } else {
-        resolve({ ok: false, detail: failed || (err || out).trim().slice(0, 200) || `exit ${code}` })
+        finish({ ok: false, detail: failed || (err || out).trim().slice(0, 200) || `exit ${code}` })
       }
     })
     const t = setTimeout(() => {
       proc.kill('SIGKILL')
       // 兜底：spawn 失败时 kill 无效且不会产生 exit（且 error 可能早于定时器），此处直接 resolve
-      resolve({ ok: false, detail: failed || 'probe timeout' })
+      finish({ ok: false, detail: failed || 'probe timeout' })
     }, 8000)
   })
 }

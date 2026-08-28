@@ -46,7 +46,8 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 
-const AGENT = join(homedir(), '.pi', 'agent')
+// PI_HOME 约定与 rebuild.sh/test-all.sh 对齐：优先环境变量，回退 ~/.pi
+const AGENT = join(process.env.PI_HOME || join(homedir(), '.pi'), 'agent')
 const DIAG = join(AGENT, '.usage-diag.jsonl')
 const STATS_DIR = join(AGENT, 'stats')
 const OUTPUT = join(STATS_DIR, 'usage-sessions.jsonl')

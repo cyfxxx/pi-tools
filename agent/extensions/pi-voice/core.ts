@@ -106,7 +106,12 @@ export function startRecording(
   // 审计 MEDIUM 修复（2026-08-25）：残留清理的 -q/pkill 均为全局操作，本实例无
   // 活跃录音会话时执行会误杀同机其他 pi 实例的录音——仅自身有未收尾会话时放行
   // （多实例安全优先于跨进程崩溃自愈；单实例场景下会话登记已覆盖自愈路径）。
-  const allowResidueClean = termuxSessionActive && residue !== null
+  // linux 例外：parec 无单实例限制、无会话登记，仅 forceClean（本实例启动失败
+  // 自动重试）时放行 pkill——pattern 限定本配置 tmpDir 前缀（见 platform linuxSpec
+  // residuePattern），清理的是崩溃残留的孤儿采集进程；pgrep 探测路径（非 forceClean）
+  // 对 linux 保持关闭，避免误杀共享 tmpDir 的其他实例活跃录音。
+  const allowResidueClean =
+    residue !== null && (termuxSessionActive || (spec.kind === 'linux' && opts.forceClean === true))
   let hasResidue = allowResidueClean && opts.forceClean === true
   if (allowResidueClean && !hasResidue) {
     try {
@@ -117,10 +122,15 @@ export function startRecording(
     }
   }
   if (hasResidue) {
-    try {
-      execFileSync(spec.recorder.bin, spec.recorder.stopArgs() ?? [], { timeout: 8000 })
-    } catch {
-      // 无进行中录音或 -q 失败：忽略，继续
+    // stopArgs 仅 termux 有值（-q 优雅停止服务端 MediaRecorder）；linux 为 null，
+    // 跳过（裸跑 spec.recorder.bin 无参数会挂起等待 stdin）。
+    const stopArgs = spec.recorder.stopArgs()
+    if (stopArgs) {
+      try {
+        execFileSync(spec.recorder.bin, stopArgs, { timeout: 8000 })
+      } catch {
+        // 无进行中录音或 -q 失败：忽略，继续
+      }
     }
     try {
       execFileSync('pkill', ['-f', residue])
@@ -145,7 +155,19 @@ export function startRecording(
   // termux 的 MediaRecorder.setMaxDuration 基于媒体时间戳计时而非墙钟，实际停止
   // 时间与设定值偏差大（实测经常提前一半以上停止），不可依赖；-l 0 = 服务端不限时。
   // linux 的 parec 由 stopRecording 终止进程（无服务端计时概念）。
-  const args = spec.recorder.startArgs(file)
+  let args = spec.recorder.startArgs(file)
+  let recBin = spec.recorder.bin
+  if (spec.kind === 'linux') {
+    // 审计修复（2026-08-26）：linux parec 无服务端时长概念，Node 侧定时器随进程
+    // 崩溃失效，孤儿 parec 会无限占麦并向 tmpDir 写盘——用 coreutils timeout 包装
+    // 兜底时长上限（maxSeconds+30s 裕量）。SIGTERM 先杀 timeout 时其会向子进程
+    // 转发信号（coreutils ≥8.13），stopRecording 语义不变；即便 SIGKILL 兜底只杀
+    // 了 timeout 本体，孤儿 parec 也会在裕量内自行退出，不再无限写盘。
+    // maxSeconds=0（不限时）时兜底 24h 上限。
+    const margin = cfg.maxSeconds > 0 ? cfg.maxSeconds + 30 : 86400
+    args = [String(margin), recBin, ...args]
+    recBin = 'timeout'
+  }
   // stdio: 同时捕获 stdout+stderr（termux-microphone-record 的错误信息如
   // "Recording already in progress!" 打到 stdout；stderr 也可能有内容），
   // 报错时可向用户展示真实原因。
@@ -154,7 +176,7 @@ export function startRecording(
   // 报错时可向用户展示真实原因。windows：stdin 需 pipe（stopRecording 写 'q' 优雅停止）。
   const stdio: ['ignore' | 'pipe', 'pipe', 'pipe'] =
     spec.kind === 'windows' ? ['pipe', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe']
-  const child = spawn(spec.recorder.bin, args, { stdio })
+  const child = spawn(recBin, args, { stdio })
   if (spec.kind === 'linux' || spec.kind === 'windows') {
     // 审计 MEDIUM 修复：覆盖前先终止仍存活的旧录音进程——热重载/扩展重载时
     // 旧句柄丢失，不杀则 parec/ffmpeg 成孤儿持续占麦克风并向 tmpDir 写文件
@@ -203,9 +225,10 @@ export function startRecording(
  */
 export async function detectAudioLevel(
   wavPath: string,
+  ffmpegBin = 'ffmpeg',
 ): Promise<{ maxDb: number; meanDb: number } | null> {
   const r = await runCommand(
-    'ffmpeg',
+    ffmpegBin,
     ['-i', wavPath, '-af', 'volumedetect', '-f', 'null', 'null'],
     { timeoutMs: 30000 },
   )
@@ -802,7 +825,7 @@ export async function doctor(cfg: VoiceConfig): Promise<string[]> {
     const ff = await runCommand(cfg.ffmpegBin, ['-version'], { timeoutMs: 10000 })
     lines.push(ff.code === 0 ? '✓ ffmpeg 可用' : '✗ ffmpeg 缺失：请 apt-get install ffmpeg')
   } else if (spec.kind === 'linux') {
-    const ff = await runCommand('ffmpeg', ['-version'], { timeoutMs: 10000 })
+    const ff = await runCommand(cfg.ffmpegBin, ['-version'], { timeoutMs: 10000 })
     if (ff.code !== 0) {
       lines.push('ℹ ffmpeg 缺失（可选）：录音/转写不受影响，但音量检测不可用，无法区分「麦克风无声」与「有声音未识别」。可选安装：apt-get install ffmpeg')
     }
@@ -954,6 +977,10 @@ const WAKE_STALL_MS = 8000 // ring 停滞判定阈值
 const WAKE_MIN_ALIVE_MS = 8000 // spawn 后 8s 内不判定（启动窗口，与停滞阈值同长，避免重启后紧接着再判定）
 const WAKE_MAX_RESTARTS = 3 // 连续停滞重启上限
 const WAKE_FILE_MAX_BYTES = 64 * 1024 * 1024 // 采集 wav 文件上限（~35min）；超限滚动重启，防无限增长
+// 审计修复（2026-08-26）：唤醒采集进程用 coreutils timeout 包装硬上限（比听写路径
+// maxSeconds+30s 更大裕量）。裕量须远大于滚动重启周期（~35min）与停滞重启窗口，
+// 正常运行永不触达；仅在 Node 崩溃后孤儿 parec 场景生效，限制其无限占麦写盘。
+const WAKE_PAREC_TIMEOUT_S = 2 * 60 * 60
 const WAV_HEADER_LEN = 44 // 标准 PCM wav 头长度（parec --file-format=wav 直出）
 // 采集走文件而非 stdout：pi 扩展沙箱下 spawn 的 stdout 被替换为 IPC socket，长时间
 // 流式数据不达（实测 0 字节），而文件模式（dictation 同款参数）稳定可靠。
@@ -1069,7 +1096,10 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
     const args: string[] = []
     if (cfg.linuxMicDevice) args.push('--device', cfg.linuxMicDevice)
     args.push('--format=s16le', '--rate=16000', '--channels=1', '--file-format=wav', wakeFile)
-    child = spawn(cfg.micBin === 'termux-microphone-record' ? 'parec' : cfg.micBin, args, { stdio: ['ignore', 'pipe', 'ignore'] })
+    // timeout 硬上限（WAKE_PAREC_TIMEOUT_S）防 Node 崩溃后孤儿采集进程无限写盘；
+    // SIGTERM 先杀 timeout 时会向 parec 转发信号（coreutils ≥8.13），stop()/rollover 语义不变
+    const parecBin = cfg.micBin === 'termux-microphone-record' ? 'parec' : cfg.micBin
+    child = spawn('timeout', [String(WAKE_PAREC_TIMEOUT_S), parecBin, ...args], { stdio: ['ignore', 'pipe', 'ignore'] })
     spawnAt = Date.now()
     lastReadPos = 0
     child.on('error', (e) => {
@@ -1108,7 +1138,13 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
     ring = Buffer.alloc(0)
     lastDataAt = 0
     lastReadPos = 0
-    stale.kill('SIGKILL')
+    // SIGTERM 先杀 timeout（转发到 parec 优雅退出）；500ms 兕底强杀本体
+    stale.kill('SIGTERM')
+    setTimeout(() => {
+      try {
+        if (stale.exitCode === null) stale.kill('SIGKILL')
+      } catch { /* 已退出 */ }
+    }, 500).unref()
     rmSync(wakeFile, { force: true })
     spawnRecorder()
   }
@@ -1132,7 +1168,13 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
         staleProc.removeAllListeners('exit')
         staleProc.removeAllListeners('error')
         child = null
-        staleProc.kill('SIGKILL')
+        staleProc.kill('SIGTERM')
+        // 兕底强杀（timeout 转发失败等极端场景）；即便孤儿化也在裕量内自行退出
+        setTimeout(() => {
+          try {
+            if (staleProc.exitCode === null) staleProc.kill('SIGKILL')
+          } catch { /* 已退出 */ }
+        }, 500).unref()
       }
       // 审计 LOW：耗尽分支不删 wake-listen.wav——最多残留 64MB 至下次 start（对比重启分支均 rm）
       try { rmSync(wakeFile, { force: true }) } catch { /* 清理失败不影响状态提示 */ }
@@ -1147,7 +1189,13 @@ export function createWakeSession(cfg: VoiceConfig, opts: WakeOptions): WakeSess
     ring = Buffer.alloc(0)
     lastDataAt = 0
     lastReadPos = 0
-    stale.kill('SIGKILL')
+    // SIGTERM 先杀 timeout（转发到 parec）；500ms 兕底强杀本体
+    stale.kill('SIGTERM')
+    setTimeout(() => {
+      try {
+        if (stale.exitCode === null) stale.kill('SIGKILL')
+      } catch { /* 已退出 */ }
+    }, 500).unref()
     rmSync(wakeFile, { force: true })
     spawnRecorder()
   }

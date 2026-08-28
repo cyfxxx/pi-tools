@@ -36,11 +36,19 @@ describe('auto-compact: 阈值计算', () => {
     expect(computeCompactThreshold(600_000, { largeWindowSize: 500_000, largeRatio: 0.5 })).toBe(300_000)
   })
 
-  it('absoluteTokens 绝对阈值优先（用户策略 200K，不随窗口比例浮动）', () => {
+  it('absoluteTokens：窗口>绝对值时优先于窗口比例（大窗口模型语义不变）', () => {
     expect(computeCompactThreshold(1_000_000, { absoluteTokens: 200_000 })).toBe(200_000)
-    expect(computeCompactThreshold(131_072, { absoluteTokens: 200_000 })).toBe(200_000)
     expect(computeCompactThreshold(1_000_000, { absoluteTokens: 0 })).toBe(800_000) // <=0 退回比例
     expect(computeCompactThreshold(1_000_000, { absoluteTokens: 200_000, largeRatio: 0.5 })).toBe(200_000)
+  })
+
+  it('absoluteTokens：窗口≤绝对值退回窗口比例路径（审计修复：小窗口模型常规压缩可达）', () => {
+    // 旧行为：131K 窗口遇绝对默认 256K → 阈值 256K=全窗口，常规压缩永不可达
+    expect(computeCompactThreshold(131_072, { absoluteTokens: 200_000 })).toBe(
+      Math.floor(131_072 * SMALL_WINDOW_RATIO),
+    )
+    // 窗口 == 绝对值：不满足 "> 绝对值" → 比例路径（200K ≤ 256K 分界 → 小窗口档）
+    expect(computeCompactThreshold(200_000, { absoluteTokens: 200_000 })).toBe(Math.floor(200_000 * SMALL_WINDOW_RATIO))
   })
 })
 

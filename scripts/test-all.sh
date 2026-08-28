@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-all.sh — pi-tools 一键全量回归（Termux/Linux + Windows 便携双环境）
-# 9 套 vitest + subagent mjs 测试 + 扩展注册面测试 + 根 typecheck + 扩展冲突检查 + 缓存注入面守门（cache-guard）+ 文档一致性守门（doc-lint）
+# 11 套 vitest + subagent mjs 测试 + 扩展注册面测试 + 根 typecheck + 扩展冲突检查 + 缓存注入面守门（cache-guard）+ 文档一致性守门（doc-lint）
 # 任一失败以非零码退出并汇总失败清单
 #
 # 用法（dsh 借鉴：证据面匹配分层，2026-08-14）：
@@ -16,7 +16,7 @@ set -uo pipefail
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 EXTS="$PI_HOME/agent/extensions"
-# 统一依赖根（10 扩展共享 agent/node_modules；Node 向上寻径解析）
+# 统一依赖根（11 扩展共享 agent/node_modules；Node 向上寻径解析）
 AGENT_NM="$PI_HOME/agent/node_modules"
 VITEST_MJS="$AGENT_NM/vitest/vitest.mjs"
 TSC_BIN="$AGENT_NM/typescript/bin/tsc"
@@ -61,7 +61,11 @@ if [ "$IS_WIN_PORTABLE" -eq 1 ]; then
 fi
 
 report() {
-  if [ "$1" -eq 0 ]; then green "✓ $2"; else red "✗ $2"; FAILED=$((FAILED+1)); fi
+  if [ "$1" -eq 0 ]; then green "✓ $2"; else
+    red "✗ $2"
+    red "  └ 诊断: 单独重跑定位（vitest: cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run；其余套件命令见 README「回归验证」表）"
+    FAILED=$((FAILED+1))
+  fi
 }
 
 cyn "== vitest 套件（统一根 $AGENT_NM） =="
@@ -117,7 +121,7 @@ if [ "$FAST" -eq 1 ] || [ -n "$ONLY" ]; then
   exit $FAILED
 fi
 
-cyn "== subagent mjs 测试（63 用例） =="
+cyn "== subagent mjs 测试（65 用例） =="
 if [ -f "$EXTS/subagent/tests/test.mjs" ]; then
   # Windows 便携环境：改用 export PI_SDK_PATH（原 env $SDK_ENV 未引号，路径含空格时被分词失效）
   (

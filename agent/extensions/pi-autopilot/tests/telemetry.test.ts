@@ -78,3 +78,12 @@ describe('errClassOf', () => {
     expect(errClassOf('', 2)).toBe('unknown')
   })
 })
+
+describe('estimateCost 成本口径（2026-08-26 审计声明）', () => {
+  it('字符数直接按 token 计价——对中文等多字节文本系统性偏松（低估），仅作趋势参考', async () => {
+    // 1000 字符按 1k token 计：真实 usage 不可得的最小口径；中文实际 token 数 ≥ 字符数，
+    // 故 estCost 系统性低估。本用例锁定该口径，防止未来无声明变更。
+    const cost = estimateCost('deepseek', 'deepseek-v4-flash', 1000, 0)
+    expect(cost).toBeCloseTo(0.0001, 6)
+  })
+})

@@ -102,6 +102,15 @@ export function nonTextBlockCount(m: PruneMessage): number {
 // 非 text 块名义 token（保守下限：read 返回的截图常见视觉 token 数百至上千）
 export const NON_TEXT_BLOCK_TOKENS = 1000;
 
+/** 已擦除判定：仅 toolRole（toolResult）消息且文本 trimStart 后以 sentinel 开头。
+ * 不用 includes 子串：正文本身含 "[pruned:" 字面量（如 cat 本文件源码的输出）
+ * 会误判为已擦除而跳过擦除、原文常驻上下文；真实 marker 由 pruneMessageText
+ * 写入且恒为全文头部占位（PRUNE_MARKER / PRUNE_MARKER_REF），startsWith 稳定命中。 */
+export function isPrunedMessage(m: PruneMessage): boolean {
+  if (m.role !== "toolResult") return false;
+  return messageText(m).trimStart().startsWith(PRUNE_SENTINEL);
+}
+
 /** 将消息 content 中全部块替换为占位文本（text 块与非 text 块一律擦除）；返回替换后的 content */
 export function pruneMessageText(m: PruneMessage, chars: number, marker?: string): unknown {
   const text = marker ?? PRUNE_MARKER(chars);
@@ -167,7 +176,7 @@ export function pruneToolResults(
       budgetLeft = Math.max(0, budgetLeft - sizes[i]);
       continue;
     }
-    if (messageText(messages[i]).includes(PRUNE_SENTINEL)) continue; // 已擦除
+    if (isPrunedMessage(messages[i])) continue; // 已擦除（startsWith 判定，正文含字面量不误判）
     toPrune.push(i);
   }
 

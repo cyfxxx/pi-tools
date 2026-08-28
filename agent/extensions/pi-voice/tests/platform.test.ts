@@ -93,11 +93,28 @@ describe('linux spec 命令构造', () => {
     ])
   })
 
-  it('停止/查询：null（进程终止即结束，无续录判定）', () => {
+  it('审计修复：residuePattern 返回 micBin + 本 tmpDir 前缀（不再为 null），供启动清理 pgrep/pkill 引用', () => {
+    const spec = resolvePlatform({ ...baseCfg, platform: 'linux' }, env([]))
+    const pattern = spec.recorder.residuePattern()
+    expect(pattern).not.toBeNull()
+    expect(pattern).toContain('parec')
+    expect(pattern).toContain(baseCfg.tmpDir)
+    // 路径中正则特殊字符已转义（pgrep 用 ERE）
+    expect(() => new RegExp(pattern!)).not.toThrow()
+    // 命令行形如 “timeout 150 parec --... /tmp/pi-voice/pi-voice-x.wav” 可匹配
+    expect(new RegExp(pattern!).test(`timeout 150 parec --format=s16le ${baseCfg.tmpDir}/pi-voice-20260101_000000-abc123.wav`)).toBe(true)
+    // 唯醒采集 wake-listen.wav 同样命中
+    expect(new RegExp(pattern!).test(`timeout 7200 parec --format=s16le ${baseCfg.tmpDir}/wake-listen.wav`)).toBe(true)
+    // 其他路径/其他工具录音不误匹配
+    expect(new RegExp(pattern!).test('parec --format=s16le /home/user/other.wav')).toBe(false)
+  })
+
+  it('停止/查询：null（进程终止即结束，无续录判定）；残留 pattern 已启用（审计修复）', () => {
     const spec = resolvePlatform({ ...baseCfg, platform: 'linux' }, env([]))
     expect(spec.recorder.stopArgs()).toBeNull()
     expect(spec.recorder.queryArgs()).toBeNull()
-    expect(spec.recorder.residuePattern()).toBeNull()
+    // 审计修复：不再为 null，返回 micBin+tmpDir 模式（详见上方 residuePattern 专测）
+    expect(spec.recorder.residuePattern()).not.toBeNull()
   })
 
   it('TTS：espeak-ng 文本文件 → wav → paplay 播放', () => {

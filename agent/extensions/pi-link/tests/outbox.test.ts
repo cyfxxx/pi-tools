@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest'
-import { readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, rmSync, mkdirSync, readdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -82,5 +82,26 @@ describe('pi-link: outbox 信箱', () => {
       { role: 'assistant', content: [{ type: 'text', text: '第一段' }, { type: 'text', text: '第二段' }] },
     ]
     expect(extractFinalReply(msgs)).toBe('第一段\n第二段')
+  })
+})
+
+// 审计（2026-08-26）：outboxFilePath 对齐 state.ts 支持 PI_LINK_STATE_DIR 重定向
+describe('pi-link: outbox PI_LINK_STATE_DIR 重定向（审计修复）', () => {
+  it('设置了 PI_LINK_STATE_DIR 时读写该目录而非真实 ~/.pi', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'pi-link-outbox-env-'))
+    const prev = process.env.PI_LINK_STATE_DIR
+    process.env.PI_LINK_STATE_DIR = dir
+    try {
+      const { outboxFilePath: p, appendOutbox: append, readOutbox: read } = await import('../outbox.ts')
+      expect(p()).toBe(join(dir, 'pi-link-outbox.json'))
+      append('devB', '重定向回复')
+      const entries = read()
+      expect(entries).toHaveLength(1)
+      expect(entries[0].text).toBe('重定向回复')
+    } finally {
+      if (prev === undefined) delete process.env.PI_LINK_STATE_DIR
+      else process.env.PI_LINK_STATE_DIR = prev
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })

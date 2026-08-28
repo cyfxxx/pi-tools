@@ -261,7 +261,16 @@ export function createDictation(
     if (currentFile !== null) return '已在录音中（再按 Ctrl+Alt+R 停止）'
     gen += 1
     retried = false
-    const r = spawnRecorder(gen)
+    // 审计修复（2026-08-26）：startRecording 内部 mkdirSync 失败会同步抛错——
+    // start() 被 withStatus(…) 实参求值调用，抛穿会直达快捷键/命令分发器。
+    // 捕获后转失败提示返回（status 报错不抛），调用方按普通失败消息展示。
+    let r: { child: ChildProcess; file: string } | null = null
+    try {
+      r = spawnRecorder(gen)
+    } catch (e) {
+      gen -= 1 // 启动失败回滚代次，避免 gen 虚增
+      return `录音启动失败：${(e as Error)?.message ?? String(e)}。请检查录音路径可写（当前 ${cfg.tmpDir}）或稍后重试`
+    }
     if (!r) {
       return `录音启动失败（无法启动录音程序，请确认已安装：${deps.micInstallHint}）`
     }

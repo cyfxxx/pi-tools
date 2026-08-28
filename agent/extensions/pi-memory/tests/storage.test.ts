@@ -115,6 +115,35 @@ describe('storage: entries', () => {
     saveEntries([])
     expect(loadEntries()).toHaveLength(0)
   })
+
+  it('deleteEntry 软删墓碑（不硬 splice）：落盘保留 + 检索/统计路径过滤（审计修复）', async () => {
+    const { loadEntries, saveEntries, deleteEntry, activeEntries, getStats } = await import('../storage.ts')
+    const a = makeEntry({ id: 'a-keep', title: 'keep' })
+    const b = makeEntry({ id: 'b-gone', title: 'delete-me' })
+    saveEntries([a, b])
+
+    expect(deleteEntry(loadEntries(), 'b-gone')).toBe(true)
+    expect(deleteEntry(loadEntries(), 'missing')).toBe(false)
+
+    // 墓碑落盘（非物理移除）：entries.json 仍含该条目且 deleted=true
+    const disk = JSON.parse(readFileSync(join(dir, 'entries.json'), 'utf-8'))
+    expect(disk.entries).toHaveLength(2)
+    expect(disk.entries.find((e: { id: string }) => e.id === 'b-gone').deleted).toBe(true)
+
+    // 检索路径（activeEntries）与统计路径（getStats）均过滤墓碑
+    const loaded = loadEntries()
+    expect(loaded.find(e => e.id === 'b-gone')!.deleted).toBe(true)
+    expect(activeEntries(loaded).map(e => e.id)).toEqual(['a-keep'])
+    const stats = getStats(loaded)
+    expect(stats.activeEntries).toBe(1)
+    expect(stats.byCategory[a.category]).toBe(1)
+
+    // 写前合并不复活墓碑：后续 saveEntries 传入不含墓碑的快照（模拟另一路径/进程
+    // 持旧全量快照），磁盘上的 deleted 条目不补回（merge 的 !d.deleted 门卫）
+    saveEntries([a])
+    const after = loadEntries()
+    expect(after.find(e => e.id === 'b-gone')).toBeUndefined()
+  })
 })
 
 describe('storage: notes + ctx-lite migration', () => {
@@ -528,5 +557,28 @@ describe('lib/note-store 与 pi-memory 对齐（2026-08-25 审计修复）', () 
     expect(loaded).toEqual({})
     expect(existsSync(file)).toBe(false)
     expect(readdirSync(dir).filter((f) => f.startsWith('notes.json.corrupt-'))).toHaveLength(1)
+  })
+})
+
+describe('storage: DATA_DIR 回退链（2026-08-25 审计修复，对齐 lib/note-store.ts）', () => {
+  it('单设 CTX_LITE_DIR → 生效（原实现只认 PI_MEMORY_DIR，两套读写分裂）', async () => {
+    delete process.env.PI_MEMORY_DIR
+    process.env.CTX_LITE_DIR = dir
+    const { DATA_DIR } = await import('../storage.ts')
+    expect(DATA_DIR).toBe(dir)
+  })
+
+  it('PI_MEMORY_DIR 优先于 CTX_LITE_DIR（历史兼容回退序）', async () => {
+    process.env.PI_MEMORY_DIR = dir
+    process.env.CTX_LITE_DIR = join(dir, 'legacy')
+    const { DATA_DIR } = await import('../storage.ts')
+    expect(DATA_DIR).toBe(dir)
+  })
+
+  it('均未设置 → 默认 ~/.pi/memory', async () => {
+    delete process.env.PI_MEMORY_DIR
+    delete process.env.CTX_LITE_DIR
+    const { DATA_DIR } = await import('../storage.ts')
+    expect(DATA_DIR).toBe(join(process.env.HOME || '/root', '.pi', 'memory'))
   })
 })

@@ -2,6 +2,7 @@ import { homedir } from 'node:os'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { hostname } from 'node:os'
+import { withStateLock } from './state-writer.ts'
 
 /**
  * 活跃设备/身份机制（T2-1）
@@ -57,10 +58,14 @@ export function readActive(file = activeFilePath()): ActiveState | null {
 export function writeActive(state: Partial<ActiveState>, file = activeFilePath()): void {
   try {
     mkdirSync(join(file, '..'), { recursive: true })
-    const cur = readActive(file)
-    const tmp = file + '.tmp.' + process.pid
-    writeFileSync(tmp, JSON.stringify({ ...(cur ?? {}), ...state, device: state.device ?? cur?.device ?? '' }, null, 2), 'utf-8')
-    renameSync(tmp, file)
+    // 审计 MEDIUM（2026-08-26）：与 writeLocalState 同规格——read-merge-write 加
+    // 同目录 .lock 互斥，防多实例并发互相覆盖丢更新
+    withStateLock(file, () => {
+      const cur = readActive(file)
+      const tmp = file + '.tmp.' + process.pid
+      writeFileSync(tmp, JSON.stringify({ ...(cur ?? {}), ...state, device: state.device ?? cur?.device ?? '' }, null, 2), 'utf-8')
+      renameSync(tmp, file)
+    })
   } catch {
     // 写失败不影响主流程
   }

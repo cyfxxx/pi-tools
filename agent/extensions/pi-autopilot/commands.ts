@@ -189,6 +189,11 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           }
           if (restArgs.includes('--exec')) {
             reply(pi, await executeFailover(plan.target, plan.reason, false))
+            // 审计（2026-08-26）：executeFailover 只写 set_model 重启请求不退进程——
+            // 请求可被 watchdog restart_hang 覆盖。对齐 /auto restart：shutdown +
+            // 兜底强退，让 wrapper 立即读请求拉起新模型实例
+            try { ctx.shutdown() } catch { /* ignore */ }
+            setTimeout(() => process.exit(0), 1500)
             break
           }
           reply(pi, `当前 ${provider}/${model}\nfail: ${plan.reason}\n（dry-run，使用 --exec 实际执行）`)
@@ -455,8 +460,10 @@ export function registerCommands(pi: ExtensionAPI, scheduler: SessionScheduler):
           return
         }
         try {
-          const store = await readTasks()
-          const task = store.tasks.find(t => t.name === name || t.id === name)
+          // 审计（2026-08-26）：readTasks 含 deleted 墓碑，陈旧副本可被 runNow 写回复活——
+          // 改用 listTasks()（内部已过滤 deleted）
+          const tasks = await listTasks()
+          const task = tasks.find(t => t.name === name || t.id === name)
           if (!task) {
             reply(pi, `未找到任务: ${name}`)
             return

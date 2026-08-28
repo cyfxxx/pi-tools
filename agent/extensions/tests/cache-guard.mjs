@@ -15,7 +15,8 @@
  *
  * 用法：node tests/cache-guard.mjs          # 检查（test-all.sh 非 --fast 路径调用）
  *       node tests/cache-guard.mjs --update-baseline   # 改动注入面后显式更新基线
- * 退出码：0 = 通过（或基线已更新）；1 = 指纹漂移/阈值回退（阻断提交）
+ * 退出码：0 = 通过（或基线已更新）；1 = 指纹漂移/阈值回退（阻断提交）；
+ *         medium 漂移与 high 一律阻断；动态源扫描（dynHits）仅进提示文案，不影响退出码。
  */
 
 import { readFileSync, readdirSync, existsSync, writeFileSync } from 'node:fs'
@@ -38,7 +39,7 @@ const INJECTION_SURFACE = [
   ['pi-context/index.ts（注入逻辑/文案）', 'extensions/pi-context/index.ts', 'medium'],
   ['lib/context-budget.ts（截断标记等）', 'lib/context-budget.ts', 'medium'],
   ['subagent/index.ts（delegation 描述）', 'extensions/subagent/index.ts', 'medium'],
-  ['pi-context/context-budget.ts（分档注入文案）', 'extensions/pi-context/context-budget.ts', 'medium'],
+  ['lib/context-budget.ts（分档注入文案）', 'lib/context-budget.ts', 'medium'],
 ]
 
 function sha256(s) { return createHash('sha256').update(s).digest('hex') }
@@ -111,14 +112,14 @@ if (UPDATE) {
   console.log(`\n已更新基线 → ${BASELINE_FILE}`)
   process.exit(0)
 }
-const dynNote = dynHits > 0 ? 1 : 0 // 动态源需人工确认，警告不阻断
+// 动态源扫描（dynHits）仅人工确认提示，不参与退出码判定；漂移（含 medium）一律阻断
 if (hardFail > 0) {
   console.log(`\n✗ cache-guard 失败（${hardFail} 项 HIGH 漂移/阈值回退）`)
   process.exit(1)
 }
 if (drift > 0) {
   console.log(`\n⚠ cache-guard 漂移（${drift} 项未确认）——若已审计缓存影响，运行 --update-baseline 固化；未审计前建议不提交注入面改动`)
-  process.exit(drift > 0 && dynNote ? 1 : 0)
+  process.exit(drift > 0 ? 1 : 0)
 }
 console.log('\n✓ cache-guard 通过：注入面稳定、阈值合规')
 process.exit(0)

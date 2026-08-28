@@ -9,18 +9,23 @@ import { STORE_VERSION, DEFAULT_MAX_RUN_TIME, RETRY_BASE_DELAY_MS, RETRY_MAX_DEL
 
 let lockPid: string | null = null
 
-const AGENT_DIR = getAgentDir()
-
+// 审计修复（2026-08-28）：不再 import 时固化 agentDir——ES import 提升会使测试的
+// __setAgentDir 晚于本模块初始化，固化值永远指向默认目录（同 state.ts PI_ADMIN_STATE_FILE
+// 同型问题）。改为每次动态读取，测试环境可正常隔离。
 export function tasksPath(): string {
-  return join(AGENT_DIR, 'scheduled-tasks.json')
+  return join(getAgentDir(), 'scheduled-tasks.json')
 }
 
 export function lockPath(): string {
-  return join(AGENT_DIR, 'scheduler.lock')
+  return join(getAgentDir(), 'scheduler.lock')
+}
+
+function logsDir(): string {
+  return join(getAgentDir(), '..', 'logs', 'scheduler')
 }
 
 export function logDir(): string {
-  return join(AGENT_DIR, '..', 'logs', 'scheduler')
+  return join(getAgentDir(), '..', 'logs', 'scheduler')
 }
 
 function emptyStore(): TaskStore {
@@ -571,7 +576,7 @@ export async function sendWebhook(task: Pick<Task, 'name' | 'type' | 'schedule'>
 
 export async function exportTasks(): Promise<string> {
   const store = await readTasks()
-  const outPath = join(AGENT_DIR, `scheduler-export-${Date.now()}.json`)
+  const outPath = join(getAgentDir(), `scheduler-export-${Date.now()}.json`)
   await writeFile(outPath, JSON.stringify({ version: STORE_VERSION, exportedAt: isoNow(), tasks: store.tasks }, null, 2), 'utf-8')
   return outPath
 }

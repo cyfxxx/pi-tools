@@ -115,13 +115,31 @@ function pidAlive(pid: number): boolean {
 export function acquireExtractLock(): boolean {
   try {
     mkdirSync(DATA_DIR, { recursive: true })
-    if (existsSync(LOCK_FILE)) {
-      const pid = Number(readFileSync(LOCK_FILE, 'utf8'))
-      if (pidAlive(pid)) return false
-      rmSync(LOCK_FILE, { force: true })
+    // 审计修复（2026-08-25）：原子抢占（flag:'wx' 存在即失败 EEXIST），消除原
+    // exists→rm→write 的 check-then-act 窗口（两进程可同时过 exists 检查后双双抢锁）
+    try {
+      writeFileSync(LOCK_FILE, String(process.pid), { flag: 'wx' })
+      return true
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException)?.code !== 'EEXIST') return false
     }
-    writeFileSync(LOCK_FILE, String(process.pid))
-    return true
+    // 锁已存在：验证 stale——读 pid 并探活，持有者存活则互斥失败
+    let stale = true
+    try {
+      const pid = Number(readFileSync(LOCK_FILE, 'utf8').trim())
+      if (pidAlive(pid)) stale = false
+    } catch {
+      /* 读失败/内容损坏（非 pid）→ 按 stale 处理 */
+    }
+    if (!stale) return false
+    // stale 锁：rm + 原子重写一次（若间隙被其他进程抢占，'wx' 再失败 → 返回 false）
+    try {
+      rmSync(LOCK_FILE, { force: true })
+      writeFileSync(LOCK_FILE, String(process.pid), { flag: 'wx' })
+      return true
+    } catch {
+      return false
+    }
   } catch {
     return false
   }

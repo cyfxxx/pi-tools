@@ -657,16 +657,31 @@ export function loadRegistry(): Registry {
 
 export function saveRegistry(reg: Registry): void {
   mkdirSync(join(registryPath(), '..'), { recursive: true })
-  writeFileSync(registryPath(), JSON.stringify(reg, null, 2), 'utf-8')
+  // 审计修复（2026-08-26）：tmp+rename 原子替换——并发读者不再看到写一半的残缺
+  // JSON（rename 在同文件系统上原子）；tmp 带 pid 后缀防多实例互覆盖临时文件
+  const tmp = `${registryPath()}.tmp-${process.pid}`
+  try {
+    writeFileSync(tmp, JSON.stringify(reg, null, 2), 'utf-8')
+    renameSync(tmp, registryPath())
+  } finally {
+    try { if (existsSync(tmp)) rmSync(tmp) } catch { /* 清理失败忽略 */ }
+  }
 }
 
+// 审计修复（2026-08-26）：并发覆盖收敛——register/unregister/prune 均以「写前重读
+// 磁盘 + 仅应用本实例自身条目变更」落盘：他实例条目以磁盘最新为准，不被本实例的
+// 陈旧快照覆盖（prune 的存活校验逐条 hasSession，耗时可达秒级，是主要覆盖窗口）。
+// 读-改-写仍非跨进程原子（无文件锁），但窗口从「快照存活期」缩到「单次同步块」。
+
 export function registerSession(entry: RegistryEntry): void {
+  // 写前重读磁盘：仅新增/更新本条目，他实例条目以磁盘为准（见上方并发覆盖收敛说明）
   const reg = loadRegistry()
   reg.sessions[entry.name] = entry
   saveRegistry(reg)
 }
 
 export function unregisterSession(name: string): void {
+  // 写前重读磁盘：仅删除本条目，他实例条目以磁盘为准
   const reg = loadRegistry()
   delete reg.sessions[name]
   saveRegistry(reg)
@@ -682,16 +697,19 @@ export async function pruneRegistry(opts: TmuxOpts): Promise<number> {
   const probe = await runTmux(opts, ['-V'], 5000)
   if (probe.code !== 0) return 0
   const reg = loadRegistry()
-  let removed = 0
+  const dead: string[] = []
   for (const name of Object.keys(reg.sessions)) {
     const alive = await hasSession(opts, name)
-    if (!alive) {
-      delete reg.sessions[name]
-      removed++
-    }
+    if (!alive) dead.push(name)
   }
-  if (removed > 0) saveRegistry(reg)
-  return removed
+  if (dead.length > 0) {
+    // 写前重读磁盘：仅应用本实例判定的删除名单，其余（含校验期间他实例新注册的
+    // 条目）以磁盘为准写回，不把陈旧快照整份覆盖
+    const fresh = loadRegistry()
+    for (const name of dead) delete fresh.sessions[name]
+    saveRegistry(fresh)
+  }
+  return dead.length
 }
 
 /**

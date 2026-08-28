@@ -134,10 +134,10 @@ export class SessionScheduler {
       // pendingInject=true 表示任务已注入主会话仍可能执行中（fireViaMessage 非阻塞），
       // 过滤掉防 interval 长任务重叠触发（agent_settled 时统一清除）
       const due = tasks.filter(t => isDue(t) && !this.firing.has(t.id) && !t.pendingInject)
-      for (const task of due) {
-        if (this.firing.has(task.id)) continue
-        await this.fireTask(task)
-      }
+      // 审计（2026-08-26）：for-await 串行 fireTask，多任务同时到期时耗时线性累积（含
+      // 预算/存储 IO）——改 Promise.allSettled 并发。并发安全：fireTask 入口第一行同步
+      // 登记 firing 去重，before 任何 await，无重复触发窗口（单任务失败不阻塞其余）
+      await Promise.allSettled(due.map(task => this.fireTask(task)))
     } catch { /* suppress tick errors */ }
   }
 
@@ -236,6 +236,14 @@ export class SessionScheduler {
       const exitCode = (err as { exitCode?: number }).exitCode ?? 1
       const outputLen = (err as { outputLen?: number }).outputLen ?? 0
       const errClass = classifyError(message, exitCode)
+      // 审计（2026-08-26）：sendUserMessage 不可用是注入环境故障（主会话未挂载）——
+      // errClassOf 归 unknown 后 policy 会走 failover 换模型重启，不解决根因。
+      // 带 envFailure 标记的错误：记日志、按普通失败重试/暂停，即使 decide 判
+      // failover 也降级为普通失败（不入 failover 统计/不换模型）
+      const envFailure = (err as { envFailure?: boolean }).envFailure === true
+      if (envFailure) {
+        console.warn(`[pi-autopilot] 任务 ${task.name} 注入环境故障（sendUserMessage 不可用）：不触发 failover，按普通失败处理`)
+      }
 
       await appendRun({
         ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
@@ -259,15 +267,19 @@ export class SessionScheduler {
         outputLen,
         durationMs: Date.now() - startedAt,
       })
+      // 环境故障降级：failover 换模型重启不解决 sendUserMessage 不可用，降为普通失败
+      const finalAction = envFailure && action.type === 'failover'
+        ? { type: 'fail' as const, note: `${action.note}（注入环境故障，failover 已抑制）` }
+        : action
 
-      switch (action.type) {
+      switch (finalAction.type) {
         case 'retry':
         case 'fail':
-          await updateTaskAfterRun(task.id, 'failed', action.note, Date.now() - startedAt)
+          await updateTaskAfterRun(task.id, 'failed', finalAction.note, Date.now() - startedAt)
           break
         case 'failover': {
           const plan = await planFailover(config.fallbackModels, provider, model)
-          await updateTaskAfterRun(task.id, 'failed', `failover: ${action.note}`, Date.now() - startedAt)
+          await updateTaskAfterRun(task.id, 'failed', `failover: ${finalAction.note}`, Date.now() - startedAt)
           if (!plan.target) break
           // 审计 MEDIUM：failover 目标模型须过预算复查——checkBudget 只在 fireTask 入口
           // 校验 currentModel()，此处不复查则 executeFailover 写 set_model 可静默绕过
@@ -301,8 +313,8 @@ export class SessionScheduler {
         }
         case 'suspend_task':
           await updateTask(task.id, { enabled: false })
-          await updateTaskAfterRun(task.id, 'failed', action.note, Date.now() - startedAt)
-          await sendWebhook(task, 'suspended', action.note)
+          await updateTaskAfterRun(task.id, 'failed', finalAction.note, Date.now() - startedAt)
+          await sendWebhook(task, 'suspended', finalAction.note)
           break
       }
     } finally {
@@ -323,7 +335,11 @@ export class SessionScheduler {
       // once 任务（updateTaskAfterRun 的 once 分支 splice），提醒任务从未真正交付就消失
       if (!this.pi.sendUserMessage) {
         await clearPending(task.id)
-        throw new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败')
+        // 审计（2026-08-26）：自身抛的错误带 envFailure 标记——fireTask catch 识别后
+        // 不入 failover 统计（换模型重启不解决主会话未挂载的根因）
+        const e = new Error('sendUserMessage 不可用（主会话未挂载），任务注入失败') as Error & { envFailure?: boolean }
+        e.envFailure = true
+        throw e
       }
       try {
         await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)

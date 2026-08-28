@@ -373,3 +373,75 @@ describe('scheduler: abort 回合不闭环 success（2026-08-25 审计实测修�
     expect(await readTelemetryFile()).toHaveLength(1)
   })
 })
+
+// ── 审计修复回归（2026-08-26）─────────────────────────────
+// 审计：sendUserMessage 不可用的错误被 errClassOf 归 unknown → decide 判 failover
+// 换模型重启（不解决根因）。修复：fireViaMessage 自身抛的错误带 envFailure 标记，
+// fireTask catch 识别后降级为普通失败（重试/暂停），不写重启请求、不递增 failoverCount。
+describe('scheduler: 注入环境故障不触发 failover（审计修复）', () => {
+  it('sendUserMessage 不可用：按普通失败处理，无重启请求/无 failoverCount/不退进程', async () => {
+    // failCount=2 存储 + decide 预+1=3 ≥ failoverAfter(2) 且配置 fallbackModels
+    // → 修复前必走 failover（executeFailover 写 set_model + process.exit(0)）
+    const task = makeTask({ id: 'env1', failCount: 2 })
+    await writeTasksFile([task])
+    await fillTelemetry(0)
+    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({
+      fallbackModels: [{ provider: 'p2', model: 'm2' }],
+    }), 'utf-8')
+
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const { readState } = await import('../state.ts')
+    const pi = { shutdown: () => {} } // 无 sendUserMessage → 注入必失败
+    const sched = new SessionScheduler(pi as never)
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never)
+    try {
+      await (sched as unknown as { fireTask: (t: unknown) => Promise<void> }).fireTask(task)
+      // 不退进程、不写重启请求（修复前 failover 分支两者皆发生）
+      expect(exitSpy).not.toHaveBeenCalled()
+      expect(readState().restartLog).toBeNull()
+      // 按普通失败记账：任务未暂停、failoverCount 未递增、note 标注抑制
+      const saved = await readTasksFile()
+      const after = saved.tasks[0] as { failoverCount?: number; enabled: boolean; history: Array<{ output: string }> }
+      expect(after.enabled).toBe(true)
+      expect(after.failoverCount ?? 0).toBe(0)
+      expect(after.history[0].output).toContain('failover 已抑制')
+      // 遥测仍记 failed（按普通失败重试/暂停语义），errClass unknown
+      const runs = await readTelemetryFile()
+      expect(runs).toHaveLength(1)
+      expect(runs[0].result).toBe('failed')
+      expect(runs[0].errClass).toBe('unknown')
+    } finally {
+      exitSpy.mockRestore()
+    }
+  })
+})
+
+// 审计：tick 内 for-await 串行 fireTask 多任务到期线性累积——改 Promise.allSettled
+// 并发（fireTask 入口同步登记 firing 去重，无重复触发）
+describe('scheduler: tick 并发触发（审计修复）', () => {
+  it('多个到期任务并发 fireTask（最大同时在飞 2，串行修复前为 1）', async () => {
+    const t1 = makeTask({ id: 'cc1', name: 'cc1' })
+    const t2 = makeTask({ id: 'cc2', name: 'cc2' })
+    await writeTasksFile([t1, t2])
+    await fillTelemetry(0)
+
+    let active = 0
+    let maxActive = 0
+    const sent: string[] = []
+    const { SessionScheduler } = await import('../scheduler.ts')
+    const pi = {
+      sendUserMessage: async (m: string) => {
+        active++
+        maxActive = Math.max(maxActive, active)
+        await new Promise((r) => setTimeout(r, 50))
+        active--
+        sent.push(m)
+      },
+      shutdown: () => {},
+    }
+    const sched = new SessionScheduler(pi as never)
+    await (sched as unknown as { tick: () => Promise<void> }).tick()
+    expect(sent).toHaveLength(2)
+    expect(maxActive).toBe(2)
+  })
+})

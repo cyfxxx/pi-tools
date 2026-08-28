@@ -51,8 +51,12 @@ if (!dry) {
   try { fs.writeFileSync(STATE, JSON.stringify(state)) } catch { /* 状态写失败不阻塞 */ }
 }
 
-const enc = s => encodeURIComponent(String(s ?? ''))
-const json = s => JSON.stringify(String(s ?? ''))
+// enc：URL 编码后再防 shell 单引号 breakout——单引号模板（curl -d '...'）内值含 ' 会提前闭合包裹；' 替换为 '\''（POSIX 单引号拼接唯一安全写法）
+const enc = s => encodeURIComponent(String(s ?? '')).replace(/'/g, "'\\''")
+// json：JSON.stringify 后再做 shell 双引号安全转义（\ ` " 三字符前加 \）——
+// 防双引号模板上下文中 ` 提前触发命令替换、" 提前闭合；shell 解码后仍还原为合法 JSON 字面量。
+// 注意：本方案面向双引号模板风格；单引号模板（现 notify.json 实际风格）内 json 占位符值含 ' 仍可破坏包裹，模板应保持双引号风格或值先行清洗
+const json = s => JSON.stringify(String(s ?? '')).replace(/[\\`"\\]/g, c => '\\' + c)
 const sent = []
 
 for (const ch of (cfg.channels || [])) {

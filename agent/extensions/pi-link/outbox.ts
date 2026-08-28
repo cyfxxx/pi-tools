@@ -12,6 +12,10 @@ export interface OutboxEntry {
 export const OUTBOX_MAX = 10
 
 export function outboxFilePath(): string {
+  // 审计：与 state.ts 对齐支持 PI_LINK_STATE_DIR 重定向（测试/多实例隔离）——
+  // 此前仅状态/活跃文件重定向，outbox 仍固定写真实 ~/.pi，测试污染且多实例互踩
+  const env = process.env.PI_LINK_STATE_DIR
+  if (env) return join(env, 'pi-link-outbox.json')
   return join(homedir(), '.pi', 'pi-link-outbox.json')
 }
 

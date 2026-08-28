@@ -140,8 +140,11 @@ describe('createWakeSession 采集看门狗', () => {
     ws = createWakeSession({ ...BASE, tmpDir }, { onHit: () => {}, onStatus: (s) => statuses.push(s) })
     await ws.start()
     expect(spawnMock).toHaveBeenCalledTimes(1)
-    expect(spawnMock.mock.calls[0][0]).toBe('parec') // micBin 默认值 → parec
+    // 审计修复：timeout 包装硬上限（WAKE_PAREC_TIMEOUT_S=2h）防孤儿采集无限写盘
+    expect(spawnMock.mock.calls[0][0]).toBe('timeout')
     const args = spawnMock.mock.calls[0][1] as string[]
+    expect(args[0]).toBe('7200')
+    expect(args[1]).toBe('parec') // micBin 默认值 → parec
     expect(args).toContain('--file-format=wav') // 文件模式采集
     expect(args[args.length - 1]).toContain('wake-listen.wav')
 

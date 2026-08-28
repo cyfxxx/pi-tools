@@ -125,7 +125,11 @@ function localDay(d: Date | string): string {
   return new Date(date.getTime() - off).toISOString().slice(0, 10)
 }
 
-// 估算成本：读 models.json 可选 pricePer1kIn/pricePer1kOut 字段
+// 估算成本：读 models.json 可选 pricePer1kIn/pricePer1kOut 字段。
+// 口径声明（2026-08-26 审计）：真实 usage（token 数）不可得，此处以字符数近似 token
+// 数（1 字符≈1 token）——对中文等多字节文本系统性偏松（低估，1 个中文字符≈1-2 token
+// 但只按 1 计），日预算 maxCostPerDay/趋势报告依赖此口径，仅作相对趋势参考，非精确计费。
+// 若需精确口径，需在上层接入模型返回的真实 usage 后替换。
 export function estimateCost(provider: string, model: string, promptLen: number, outputLen: number): number {
   const models = readModels()
   const p = models.providers?.[provider]
