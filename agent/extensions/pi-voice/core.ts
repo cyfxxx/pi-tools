@@ -4,8 +4,9 @@
  */
 
 import { execFile, spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync, writeFileSync, openSync, readSync, closeSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdirSync, readdirSync, rmSync, statSync, readFileSync, existsSync, writeFileSync, unlinkSync, openSync, readSync, closeSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { homedir } from 'node:os'
 import type { VoiceConfig } from './config'
 import { resolvePlatform, platformInstallGuide, TTS_STAGE_FILE, type PlatformSpec } from './platform'
 
@@ -66,6 +67,35 @@ let activeLinuxRecorder: { child: ChildProcess; file: string } | null = null
  *  实例的活跃录音——仅本实例自身处于活跃录音状态时才放行这些全局操作。 */
 let termuxSessionActive = false
 
+// ---- 录音会话状态文件（2026-08-28 审计：崩溃自愈的 PID 归属化） ----
+// 原 termuxSessionActive 单布尔在进程崩溃后随内存消失，新实例恒 false →
+// 启动清理与 /voice stop 被门控成 no-op，孤儿录音永久占用设备。
+// 现持久化持有者 pid：持有者已死（ESRCH）即孤儿态，放行全局清理；持有者
+// 存活则维持多实例互杀防护不动。
+function sessionStateFile(): string {
+  return join(homedir(), '.pi', 'agent', '.pi-voice-session.json')
+}
+function writeSessionOwner(): void {
+  try {
+    mkdirSync(dirname(sessionStateFile()), { recursive: true })
+    writeFileSync(sessionStateFile(), JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }))
+  } catch { /* 状态写失败不影响录音主流程 */ }
+}
+function clearSessionOwner(): void {
+  try { unlinkSync(sessionStateFile()) } catch { /* 不存在/失败忽略 */ }
+}
+/** 登记的录音持有者已死 → 孤儿态：清除登记并返回 true（放行清理）。 */
+export function ownerOrphaned(): boolean {
+  try {
+    const o = JSON.parse(readFileSync(sessionStateFile(), 'utf8')) as { pid?: number }
+    if (typeof o.pid !== 'number' || !Number.isFinite(o.pid)) { clearSessionOwner(); return false }
+    try { process.kill(o.pid, 0); return false } catch {
+      clearSessionOwner()
+      return true
+    }
+  } catch { return false }
+}
+
 /** 获取平台 spec（每次解析，探测开销毫秒级可忽略）。 */
 /**
  * GPU 切换预检：返回不可用原因（null = 可切换）。
@@ -111,7 +141,10 @@ export function startRecording(
   // residuePattern），清理的是崩溃残留的孤儿采集进程；pgrep 探测路径（非 forceClean）
   // 对 linux 保持关闭，避免误杀共享 tmpDir 的其他实例活跃录音。
   const allowResidueClean =
-    residue !== null && (termuxSessionActive || (spec.kind === 'linux' && opts.forceClean === true))
+    residue !== null &&
+    (termuxSessionActive ||
+     ownerOrphaned() || // 持有者已死的孤儿录音：放行清理（崩溃自愈，2026-08-28）
+     (spec.kind === 'linux' && opts.forceClean === true))
   let hasResidue = allowResidueClean && opts.forceClean === true
   if (allowResidueClean && !hasResidue) {
     try {
@@ -187,8 +220,10 @@ export function startRecording(
     activeLinuxRecorder = { child, file }
   }
   if (spec.kind === 'termux' && child.pid !== undefined) {
-    // 审计 MEDIUM 修复：登记本实例录音会话（后续 stopRecording -q / 残留清理的门控依据）
+    // 审计 MEDIUM 修复：登记本实例录音会话（后续 stopRecording -q / 残留清理的门控依据）；
+    // 2026-08-28：同步持久化 pid 供崩溃后新实例判定孤儿态
     termuxSessionActive = true
+    writeSessionOwner()
   }
   let errBuf = ''
   let outBuf = ''
@@ -206,14 +241,14 @@ export function startRecording(
   // 用退出码 -2 标记启动失败（区别于运行中退出），由状态机按非 0 分流报错。
   child.on('error', () => {
     // 审计 MEDIUM 修复：spawn 失败（如 ENOENT）无服务端会话可言，作废登记防后续误放行 -q
-    if (spec.kind === 'termux') termuxSessionActive = false
+    if (spec.kind === 'termux') { termuxSessionActive = false; clearSessionOwner() }
     onExit(-2, capture())
   })
   child.on('exit', (code) => {
     if (activeLinuxRecorder?.child === child) activeLinuxRecorder = null
     // 审计 MEDIUM 修复：子进程异常退出（启动失败/被占用）→ 会话作废；code===0
     // 保留登记（服务端可能仍在录或待补 -q 收尾 moov atom，见 dictation 续录路径）
-    if (spec.kind === 'termux' && (code ?? -1) !== 0) termuxSessionActive = false
+    if (spec.kind === 'termux' && (code ?? -1) !== 0) { termuxSessionActive = false; clearSessionOwner() }
     onExit(code ?? -1, capture())
   })
   return { child, file }
@@ -295,12 +330,15 @@ export async function stopRecording(cfg: VoiceConfig): Promise<CommandResult> {
     })
   }
   // 审计 MEDIUM 修复：本实例无未收尾录音会话时不发全局 -q——该命令停掉的是
-  // Termux:API 服务侧唯一的 MediaRecorder，多实例下会误停其他实例的活跃录音
-  if (!termuxSessionActive) {
+  // Termux:API 服务侧唯一的 MediaRecorder，多实例下会误停其他实例的活跃录音。
+  // 2026-08-28：登记持有者已死（崩溃遗留）时放行——孤儿态不清则设备永久占用。
+  if (!termuxSessionActive && !ownerOrphaned()) {
     return { code: 0, stdout: '', stderr: '' }
   }
   termuxSessionActive = false
-  return runCommand(spec.recorder.bin, spec.recorder.stopArgs() ?? ['-q'], { timeoutMs: 15000 })
+  const result = await runCommand(spec.recorder.bin, spec.recorder.stopArgs() ?? ['-q'], { timeoutMs: 15000 })
+  clearSessionOwner()
+  return result
 }
 
 /**

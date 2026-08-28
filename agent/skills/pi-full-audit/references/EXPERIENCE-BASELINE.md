@@ -94,3 +94,6 @@
 - **模块级固化路径是反模式（第 2 例）**：pi-autopilot/storage.ts `const AGENT_DIR = getAgentDir()` import 时固化，测试 ES import 提升使 __setAgentDir 晚于模块初始化 → 测试必踩。同型首例 state.ts 已加 env 逃生门；本次 4 处全部改函数内动态读取。新扩展一律禁止模块级固化 env/mock 可变路径。
 - **时间炸弹测试第 2 例**：pi-context hasInProgressTask 7 天窗口 + 测试写死 plan-<历史ts> 目录名，恰在 08-28 17:00 CST 越界批量变红（基线绿→下班红）。凡按时间窗口过滤的实现，测试注入数据一律用 `Date.now() - N*窗口` 动态生成（pi-context 240 行 08-27 已修一处，M4 段漏修——同类修复必须 grep 全文件所有同类模式）。
 - **红测验证用 git stash 双跑**：新用例先 stash 实现改动跑红（确认捕获旧行为）再 pop 跑绿，一条命令链完成，比手动回滚可靠。
+
+### 2026-08-28 收尾（技能加载优化落地）
+- **read 工具默认单次行数有限**：SKILL.md 仅 27KB 却读了 8 次——根因是未显式给 limit 参数（默认 ~65 行/次），非文件超 50KB。读已知大文件首读就带 `limit: 300`；运行检查章节已外置 RUNTIME-CHECK.md（按需加载，主文件 294→229 行）。

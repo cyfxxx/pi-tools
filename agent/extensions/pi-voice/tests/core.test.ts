@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { existsSync, rmSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -501,3 +501,54 @@ describe('sherpa 后端（SenseVoice）', () => {
   })
 })
 
+
+describe('ownerOrphaned（录音会话 PID 归属化，2026-08-28 审计）', () => {
+  let savedHome = ''
+  let tmpHome = ''
+  beforeEach(() => {
+    savedHome = process.env.HOME ?? ''
+    tmpHome = mkdtempSync(join(tmpdir(), 'pi-voice-home-'))
+    process.env.HOME = tmpHome
+  })
+  afterEach(() => {
+    process.env.HOME = savedHome
+    rmSync(tmpHome, { recursive: true, force: true })
+  })
+
+  it('无状态文件 → 非孤儿', async () => {
+    const { ownerOrphaned } = await import('../core')
+    expect(ownerOrphaned()).toBe(false)
+  })
+
+  it('持有者存活 → 非孤儿且登记保留', async () => {
+    const { ownerOrphaned } = await import('../core')
+    const f = join(tmpHome, '.pi', 'agent', '.pi-voice-session.json')
+    mkdirSync(join(tmpHome, '.pi', 'agent'), { recursive: true })
+    writeFileSync(f, JSON.stringify({ pid: process.pid }))
+    expect(ownerOrphaned()).toBe(false)
+    expect(existsSync(f)).toBe(true)
+  })
+
+  it('持有者已死 → 孤儿且登记清除', async () => {
+    const { ownerOrphaned } = await import('../core')
+    // spawnSync 返回时进程必已退出，其 pid 即死 pid
+    const dead = spawnSync('true')
+    expect(dead.pid).toBeGreaterThan(0)
+    const f = join(tmpHome, '.pi', 'agent', '.pi-voice-session.json')
+    mkdirSync(join(tmpHome, '.pi', 'agent'), { recursive: true })
+    writeFileSync(f, JSON.stringify({ pid: dead.pid }))
+    expect(ownerOrphaned()).toBe(true)
+    expect(existsSync(f)).toBe(false)
+  })
+
+  it('损坏 JSON / pid 非数字 → 非孤儿不误清', async () => {
+    const { ownerOrphaned } = await import('../core')
+    const f = join(tmpHome, '.pi', 'agent', '.pi-voice-session.json')
+    mkdirSync(join(tmpHome, '.pi', 'agent'), { recursive: true })
+    writeFileSync(f, '{broken')
+    expect(ownerOrphaned()).toBe(false)
+    writeFileSync(f, JSON.stringify({ pid: 'abc' }))
+    expect(ownerOrphaned()).toBe(false)
+    expect(existsSync(f)).toBe(false)
+  })
+})
