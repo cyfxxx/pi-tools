@@ -88,3 +88,9 @@
 - **tmux_run 全量测试无 EXIT= 标记 = 会话被提前终止**：test-all.sh 在 subagent mjs 测试段会话终止（vitest/tsc 全绿落盘后 EXIT 未写入），单独补跑该段 65/65 通过——命令串中段被杀属 tmux 自动退出包装与测试子进程交互的偶发，重定向日志完整≠执行完整，**判读全量测试结果必须先 grep EXIT= 确认收尾标记**；缺失时按脚本阶段清单逐段补跑（各阶段独立、重入安全）。
 - **复核报告尾部截断时按条目核实成本分流**：截断残留若是「一条 grep 可核实」的 LOW/事实类条目（脚本计数/硬编码/env 读取），主会话单条 bash 补验比重委派 scout 省 10 倍 token；机制复杂条目才重派。
 - **审查报告「无限循环」类描述需复核熔断路径**：fireViaMessage 失败→failover 循环描述被复核证伪为「1 次重启即熔断 suspend」——恐惧性传播链描述（失败→重启→再失败）必须核对熔断计数器才能定级。
+
+### 2026-08-28 修复闭环（三阶段新坑）
+- **worker abort ≠ 工作未做**：并行 worker 批返回 "Subagent was aborted" 但 55 文件改动已落地（abort 发生在报告返回阶段）——处置：先 git status 核对产物覆盖面（对照任务清单逐模块查），缺失模块重派补齐；注意甄别 zz-dbg 类调试遗留文件。
+- **模块级固化路径是反模式（第 2 例）**：pi-autopilot/storage.ts `const AGENT_DIR = getAgentDir()` import 时固化，测试 ES import 提升使 __setAgentDir 晚于模块初始化 → 测试必踩。同型首例 state.ts 已加 env 逃生门；本次 4 处全部改函数内动态读取。新扩展一律禁止模块级固化 env/mock 可变路径。
+- **时间炸弹测试第 2 例**：pi-context hasInProgressTask 7 天窗口 + 测试写死 plan-<历史ts> 目录名，恰在 08-28 17:00 CST 越界批量变红（基线绿→下班红）。凡按时间窗口过滤的实现，测试注入数据一律用 `Date.now() - N*窗口` 动态生成（pi-context 240 行 08-27 已修一处，M4 段漏修——同类修复必须 grep 全文件所有同类模式）。
+- **红测验证用 git stash 双跑**：新用例先 stash 实现改动跑红（确认捕获旧行为）再 pop 跑绿，一条命令链完成，比手动回滚可靠。
