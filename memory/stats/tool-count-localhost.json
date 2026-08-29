@@ -1,120 +1,120 @@
 {
   "device": "localhost",
-  "generatedAt": "2026-08-28T15:39:46.828Z",
+  "generatedAt": "2026-08-29T15:31:14.698Z",
   "windowDays": 30,
-  "totalCalls": 2409,
+  "totalCalls": 3121,
   "tools": {
     "read": {
-      "calls": 127,
+      "calls": 170,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787559056353,
-      "lastTs": 1787918498473
+      "lastTs": 1788012438798
     },
     "bash": {
-      "calls": 1519,
+      "calls": 1817,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787559060833,
-      "lastTs": 1787920498201
+      "lastTs": 1788012538729
     },
     "tmux_run": {
-      "calls": 16,
+      "calls": 22,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787559773846,
-      "lastTs": 1787907980305
+      "lastTs": 1788002732343
     },
     "tmux_read": {
-      "calls": 9,
+      "calls": 13,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787560026687,
-      "lastTs": 1787831498813
+      "lastTs": 1787968306525
     },
     "write": {
-      "calls": 87,
+      "calls": 133,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787563657675,
-      "lastTs": 1787916765449
+      "lastTs": 1788012192400
     },
     "memory_stats": {
-      "calls": 3,
+      "calls": 4,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787563715024,
-      "lastTs": 1787623997535
+      "lastTs": 1787966897060
     },
     "todo": {
-      "calls": 222,
+      "calls": 313,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787564941392,
-      "lastTs": 1787919601590
+      "lastTs": 1788012555311
     },
     "web_search": {
-      "calls": 9,
+      "calls": 32,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787564951609,
-      "lastTs": 1787830027803
+      "lastTs": 1788008224655
     },
     "subagent": {
-      "calls": 33,
+      "calls": 43,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787565224969,
-      "lastTs": 1787907248199
+      "lastTs": 1787977177573
     },
     "edit": {
-      "calls": 226,
+      "calls": 308,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787565471653,
-      "lastTs": 1787919059909
+      "lastTs": 1788012211089
     },
     "memory_search": {
-      "calls": 30,
+      "calls": 43,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787567928814,
-      "lastTs": 1787918404992
+      "lastTs": 1788005378540
     },
     "grep": {
-      "calls": 8,
+      "calls": 9,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787571211335,
-      "lastTs": 1787827408186
+      "lastTs": 1787995658382
     },
     "memory_store": {
-      "calls": 84,
+      "calls": 115,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787571812964,
-      "lastTs": 1787919017727
+      "lastTs": 1788005502074
     },
     "enable_tool": {
-      "calls": 3,
+      "calls": 5,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787573935804,
-      "lastTs": 1787705065077
+      "lastTs": 1787996325681
     },
     "admin_restart": {
       "calls": 3,
@@ -149,20 +149,20 @@
       "lastTs": 1787897744347
     },
     "memory_forget": {
-      "calls": 4,
+      "calls": 6,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787704007257,
-      "lastTs": 1787918657624
+      "lastTs": 1788005485524
     },
     "tmux_status": {
-      "calls": 1,
+      "calls": 2,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787704988096,
-      "lastTs": 1787704988096
+      "lastTs": 1787967849644
     },
     "admin_status": {
       "calls": 1,
@@ -189,12 +189,12 @@
       "lastTs": 1787705099898
     },
     "fetch_url": {
-      "calls": 4,
+      "calls": 16,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1787827788902,
-      "lastTs": 1787827818327
+      "lastTs": 1788008198797
     },
     "tmux_stop": {
       "calls": 1,
@@ -203,6 +203,70 @@
       "cacheWrite": 0,
       "firstTs": 1787832352987,
       "lastTs": 1787832352987
+    },
+    "browser_network": {
+      "calls": 2,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787931638253,
+      "lastTs": 1787931667420
+    },
+    "browser_navigate": {
+      "calls": 8,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787931701517,
+      "lastTs": 1788012073117
+    },
+    "browser_extract": {
+      "calls": 1,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787931709851,
+      "lastTs": 1787931709851
+    },
+    "browser_evaluate": {
+      "calls": 21,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787931771508,
+      "lastTs": 1788012138136
+    },
+    "ls": {
+      "calls": 2,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787986097069,
+      "lastTs": 1787987424528
+    },
+    "browser_screenshot": {
+      "calls": 5,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787996625462,
+      "lastTs": 1788011729270
+    },
+    "browser_click": {
+      "calls": 5,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787996661629,
+      "lastTs": 1788011658260
+    },
+    "browser_close": {
+      "calls": 2,
+      "input": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "firstTs": 1787996773885,
+      "lastTs": 1788008169716
     }
   }
 }
