@@ -1,20 +1,8 @@
-# 每日统一任务报告 2026-08-29（localhost）
+# daily-review 2026-08-29 (localhost)
 
-## 1) 拉取
-git pull --rebase：Already up to date（origin/master=1ae052c）。工作区 entries.json 本地 648 条 vs HEAD 647 条，三方比对：本地为远端严格超集（本地独有 1 条 tool-stats-sync 流程记忆，远端独有 0），无冲突放行。
-
-## 2) 日常检查
-- 磁盘：/ 91G/105G 用 87%，余 15G（≥80% 关注线，暂不告警）
-- 内存：7717M 总量，可用 1300M，偏紧但正常
-- 负载：up 2 min，load 0.12（刚开机）
-- pi 进程：8 个
-- 记忆库：648 条（活跃 630，被取代 18，冷数据 0，0.35MB/2MB）
-
-## 3) 跨设备查重
-entries.json 当天(2026-08-29) knowledge+订阅 条目 0 条 → 其他设备未完成，本机执行订阅。
-
-## 4) 知识订阅
-knowledge-fetch.py 新增 52 条（安全 18/科技 16/热点 12/新闻 6）。筛 5 条入库：ZhiShi agent harness、NVIDIA 收购 Hugging Face、CVE-2026-63077 TeamCity、CVE-2025-62593 Ray、Linux 勒索预警。详见 logs/knowledge/summary-2026-08-29.md。
-
-## 5) 提交
-报告 + entries.json 入库后 commit+push（结果见提交记录）。
+- 同步：pull --rebase 正常（远端无新提交，与 origin/master 一致）；本地运行时增量（entries 648 条 + results.jsonl）随本次一并入库。
+- 跨设备对比：当日仅本机有产物（daily-health alert 09:26 + 统一任务订阅产出 logs/knowledge/2026-08-29.md + entries 7 条新入库）。termux-ubuntu/MYPC 连续 3 日无执行证据（双通道超时+无推送+无 tool-count），长期未跑，需人工检查设备在线状态。
+- 兜底清理：当日订阅条目 7 条全部源自本机（manual），全库 648 条规范化标题去重扫描 0 组重复，无需 memory_forget 删除。
+- 摘要回顾：过去 24h 新摘要 3 条（summarizer 已于 08-28 恢复，14:18/16:31/19:37），两条为一次性/空壳无可提炼；例行调度沉淀与 08-28 回顾重复，不重复入库。
+- 入库 2 条 solutions：①summarizer 停摆已修复（状态更新）；②knowledge-subscribe 系僵尸种子（lastRun=None/runCount=0），订阅实际由 daily-task 统一任务执行——昨日"记账分叉"根因定位。
+- 结论（<200字）：本机链路健康——健康告警、统一订阅任务、回顾任务均正常产出并入库；summarizer 恢复使跨会话衔接恢复。遗留两点：①termux-ubuntu/MYPC 连续 3 日失联未跑，属长期未跑需人工介入；②scheduled-tasks.json 僵尸种子 knowledge-subscribe 待清理。当日缓存告警（AB 断裂 15）记录待观察，疑与多任务并行注入面变动相关。

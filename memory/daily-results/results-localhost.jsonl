@@ -7,3 +7,7 @@
 {"ts":"2026-08-28T05:59:42.224Z","device":"localhost","taskId":"a96affa2-d981-436b-ae2e-2fa4ea21ed8b","taskName":"daily-task","result":"success","output":"","durationMs":431701}
 {"ts":"2026-08-28T06:01:33Z","device":"localhost","taskName":"daily-review","result":"success","note":"三次实例：跨设备对比(仅本机有结果,他设备连续2日无证据)+输入盲区入库(summaries停摆/jsonl空壳)"}
 {"ts":"2026-08-28T06:06:05.813Z","device":"localhost","taskId":"7fad2a0e-6524-4939-92d5-42a89fbbfabe","taskName":"daily-review","result":"success","output":"","durationMs":383543}
+{"ts":"2026-08-28T15:40:32.384Z","device":"localhost","taskId":"52aeb8b8-c84a-41f2-82a7-3979e922c5ec","taskName":"tool-stats-daily","result":"success","output":"","durationMs":85612}
+{"ts":"2026-08-29T01:26:52.335Z","device":"localhost","taskId":"e44aadcc-de64-46b6-906a-c3d49440b67c","taskName":"daily-health","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-08-29T01:29:42.517Z","device":"localhost","taskId":"c511c07e-d004-4a39-8b36-226ca0ed5999","taskName":"knowledge-subscribe","result":"success","output":"","durationMs":218615}
+{"ts":"2026-08-29T01:31:10.625Z","device":"localhost","taskId":"a96affa2-d981-436b-ae2e-2fa4ea21ed8b","taskName":"daily-task","result":"success","output":"","durationMs":306724}

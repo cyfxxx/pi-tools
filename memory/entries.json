@@ -15309,6 +15309,54 @@
       "accessedAt": "2026-08-29T01:30:07.627Z",
       "environments": [
         "all"
+      ],
+      "observedAt": "2026-08-29T01:30:07.627Z",
+      "deleted": false
+    },
+    {
+      "id": "8ea4d14d-608c-4824-9b42-941c2118e593",
+      "category": "solutions",
+      "title": "summarizer 停摆已修复恢复（2026-08-28 起）",
+      "content": "2026-08-29 每日回顾确认：pi-autopilot task-summarizer 已于 2026-08-28 恢复，当日生成 3 条新会话摘要（14:18/16:31/19:37 CST），task-summarizer-out.log 09:27 仍在活跃更新。此前\"summarizer 因模型 ox-alpha-free 不支持而停摆（停于 08-26）\"的故障状态已解除，停摆记忆仅作历史故障模式保留，检索时注意时效。",
+      "tags": [
+        "summarizer",
+        "pi-autopilot",
+        "会话摘要",
+        "恢复",
+        "状态更新"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:58.744Z",
+      "updatedAt": "2026-08-29T01:30:58.744Z",
+      "accessedAt": "2026-08-29T01:30:58.744Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:30:58.744Z",
+      "deleted": false
+    },
+    {
+      "id": "3fb3f1a8-9e25-4478-b8cf-b7e5a8bc1560",
+      "category": "solutions",
+      "title": "knowledge-subscribe 为僵尸种子，订阅实际由 daily-task 统一任务执行",
+      "content": "scheduled-tasks.json 中存在僵尸任务种子 \"knowledge-subscribe\"（lastRun=None、runCount=0，从未执行）；实际知识订阅工作由 \"daily-task\" 统一任务承担（pi-wrapper.sh 拉取→检查→订阅→报告，scripts/knowledge-fetch.py 零 LLM 抓取），每日产出 logs/knowledge/<日期>.md + entries 入库。此前\"记账分叉\"现象的根因即此：查任务执行情况应看 daily-task 而非 knowledge-subscribe。处理建议：删除僵尸种子或将其并入统一任务记账，避免误判订阅未跑。",
+      "tags": [
+        "scheduled-tasks",
+        "knowledge-subscribe",
+        "僵尸任务",
+        "记账分叉",
+        "pi-autopilot"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:58.970Z",
+      "updatedAt": "2026-08-29T01:30:58.970Z",
+      "accessedAt": "2026-08-29T01:30:58.970Z",
+      "environments": [
+        "all"
       ]
     }
   ]
