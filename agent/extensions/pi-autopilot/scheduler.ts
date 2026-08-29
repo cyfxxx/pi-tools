@@ -125,9 +125,10 @@ export class SessionScheduler {
       if (!config.enabled) return
 
       // 种子任务对账（2026-08-27）：pull 后无需重启，30s tick 内自动补注册
-      // （loadSeeds 有 mtime 缓存，文件未变时零重读）
+      // （loadSeeds 有 mtime 缓存，文件未变时零重读）；同名任务与 seeds 有差异时
+      // 写漂移日志（logs/scheduler/seed-drift.log，签名去重），不覆盖本地任务
       try {
-        await syncSeedTasks(new Set(store.tasks.map(t => t.name)))
+        await syncSeedTasks(store.tasks)
       } catch { /* 对账失败静默 */ }
 
       const tasks = await listTasks()

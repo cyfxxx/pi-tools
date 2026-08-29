@@ -31,8 +31,9 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
     // 种子任务对账（2026-08-27）：补注册本地缺失的每日任务（跨设备通用定义见
     // agent/scheduled-seeds.json，git 入库；其他设备 pull 后启动即自动加入）
     try {
-      const added = await syncSeedTasks()
-      if (added > 0) console.log(`[pi-autopilot] 种子任务对账：注册 ${added} 个缺失任务`)
+      const r = await syncSeedTasks()
+      if (r.added > 0) console.log(`[pi-autopilot] 种子任务对账：注册 ${r.added} 个缺失任务`)
+      if (r.drifted.length > 0) console.log(`[pi-autopilot] 种子漂移提醒（seeds 已更新，本地任务不覆盖，需手动同步）：${r.drifted.join('；')}｜详情 logs/scheduler/seed-drift.log`)
     } catch { /* 对账失败静默，不阻塞会话启动 */ }
 
     // 统一恢复报告：重启原因 + 离线执行摘要 + 挂死恢复 + 任务重注入

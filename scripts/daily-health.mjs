@@ -14,8 +14,8 @@
  *   - 命中率 = ΣcacheRead / Σ(input+cacheRead)，窗口内加权
  *   - alert 判据（对齐 task-metrics 成功代理口径）：会话 ≥3 且命中率 <90%，或 A/B 断裂 >3
  *   - 跨设备健康（2026-08-29 增）：设备最后遥测距今 >48h（memory/stats/tool-use-*.jsonl 尾行 ts）→ alert；
- *     种子-任务失配（agent/scheduled-seeds.json 声明但 scheduled-tasks.json 未注册，或 schedule 漂移）→ alert。
- *     注意对账机制“已存在不覆盖”：seeds 修改 schedule 后需各设备本地同步，漂移告警即为修复触发器
+ *     种子-任务失配（agent/scheduled-seeds.json 声明但 scheduled-tasks.json 未注册，或 schedule/prompt 漂移）→ alert。
+ *     注意对账机制“已存在不覆盖”：seeds 修改后需各设备本地同步，漂移告警即为修复触发器
  *   - 守门防篡改（2026-08-29 增，DGM 教训：评价器须在被改对象写权限之外）：
  *     test-all/golden-tasks/daily-health/verify-patches 有未提交改动 → alert（改动即提交是仓库纪律）
  *
@@ -131,6 +131,7 @@ function main() {
     for (const s of seeds) {
       if (!local[s.name]) { seedDrift++; reasons.push(`种子任务 ${s.name} 未注册`) }
       else if (local[s.name].schedule && s.schedule && local[s.name].schedule !== s.schedule) { seedDrift++; reasons.push(`种子任务 ${s.name} schedule 漂移(${local[s.name].schedule}≠${s.schedule})`) }
+      else if (typeof local[s.name].prompt === 'string' && s.prompt && local[s.name].prompt !== s.prompt) { seedDrift++; reasons.push(`种子任务 ${s.name} prompt 漂移(与 seeds 不一致，需同步本地任务)`) }
     }
   } catch { /* seeds 缺失不阻塞 */ }
 
