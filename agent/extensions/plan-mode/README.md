@@ -300,7 +300,7 @@ let qaMessages: QAPair[] = [];  // 与该计划相关的 Q&A 讨论历史
 3. **Compaction 恢复**: 检测到刚完成 compaction 时，注入"继续之前的工作"提示
 4. **溢出预警**: 剩余 token 不足 20K 时注入 🟠🔴 预警
 5. **摘要引导**: 压力 critical 时引导 LLM 用 ctx_note 保存结构化摘要
-6. **技能清单**: 首次动态扫描 `~/.pi/agent/skills/*/SKILL.md` 并注入可用技能
+6. **技能清单**: 首次注入单行技能指引（`/skill:name` 用法；清单本体由核心 `<available_skills>` 提供，去重不罗列）
 7. **压力标签兜底**: 执行模式计划未变化时仅注入 token 压力标签
 - 消息类型为 `customType`，`display: false`（不显示在聊天中，只发送给 LLM）
 

@@ -839,18 +839,16 @@ ${todoList}
       };
     }
 
-    // 注入可用技能清单（仅一次，动态扫描）
+    // 注入技能指引（仅一次，动态扫描探活）：清单本体由核心 <available_skills> 提供
+    // （名称+描述+路径），此处不再重复罗列（去重省 ~600 token/会话），仅补 /skill:name 用法提示
     if (!skillsInjected) {
       skillsInjected = true;
       const skills = discoverSkills();
       if (skills.length > 0) {
-        const skillList = skills
-          .map((s) => `  /skill:${s.name} — ${s.desc}`)
-          .join("\n");
         return {
           message: {
             customType: "plan-skill-list",
-            content: `[可用技能]\n${skillList}\n\n当用户需求匹配时，提示用户使用对应技能或回复 /skill:name。`,
+            content: `[可用技能] 清单与触发条件见系统提示 <available_skills>；需求匹配时提示用户使用对应技能或回复 /skill:name。`,
             display: false,
           },
         };

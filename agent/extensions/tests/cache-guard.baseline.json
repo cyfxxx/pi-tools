@@ -1,7 +1,7 @@
 {
   "AGENTS.md": "29a6319e5a1c2ef8e86b4f9d21a3ef43e1620bf57dc743de4a13c821ed981a3e",
   "pi-context/tool-groups.ts（休眠简介/核心分组）": "6ee48914fb2fc02292a3050eab9030b6edfc8b4fd0ed12537158011a5616055b",
-  "pi-memory/inject.ts（注入头文案）": "d4ddaedacc3f081f3be1798546645b030ac6218721ec8e69cbdae4db0ac0bf1e",
+  "pi-memory/inject.ts（注入头文案）": "d84290961cf330d843201ffde23e7f2db052dd3c482421c891e1ed744432590b",
   "lib/prune.ts（擦除/剪枝阈值）": "30ea1b6649e30a5f252e5ddfcb1b2308b776fd99100295432fee8118025d313a",
   "pi-context/index.ts（注入逻辑/文案）": "1c224a875d66a256e4077f420fcf1c811d352d86fab3a3babbc7ff066cd6ad7c",
   "lib/context-budget.ts（截断标记等）": "2578fa0879843ac313de01c6554ee00f7b6a09e432091af9ee372f6374794b52",
