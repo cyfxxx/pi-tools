@@ -144,4 +144,10 @@
 ### 远期分析（记录触发条件，暂不实施）
 
 - **5.8 提示词元优化**（GEPA/DSPy/TextGrad）：metric 已备（task-metrics --json）；障碍 = 个人场景样本量小（噪声大）+ APPEND_SYSTEM.md 改动重置缓存前缀（成本敏感）。触发条件：interventions corrective 记录 ≥50 条（现 1 条）。
-- **5.9 GEP 式经验表示固化**（arXiv:2604.15097 实证：文档式 skill 包控制信号不稳定，紧凑结构化表示最优）：决策 = entries schema 冻结，唯一候选增列 links（A-MEM 双向链接）与 5.5 绑定评估；LoRA 铺垫（VISION §6）数据面持续积累（P1/P2 结构化字段已就绪），等量变。
+  **范围分层设计（2026-08-29 细化）**：
+  - Tier 1（非缓存面提示词，零缓存成本，可先行）：pi-memory extract prompt、task-summarizer prompt、任务/回顾 prompt。metric：产物质量代理（extract 条目被 lifecycle 淘汰/合并的比例、summarizer 草稿采纳率、任务结果重做率）+ corrective 关联。样本门槛降至 ≥10 条可观察。
+  - Tier 2（注入面：APPEND_SYSTEM.md/注入块）：维持原触发（corrective≥50 + golden --full 绿 + 命中率不降），缓存重置成本计入优化收益核算。
+- **5.9 GEP 式经验表示固化**（arXiv:2604.15097 实证：文档式 skill 包控制信号不稳定，紧凑结构化表示最优）：
+  - ✅ links 双向链接 2026-08-29 落地（预案内唯一 schema 增列，v6）：入库时标题 bigram-jaccard≥0.34 自动单链最优邻居（与 5.5 聚合同口径，links 连通分量即聚合候选图基础）；superseded 取代关系入链；检索结果显示关联数；零工具 schema 变化零注入面变化；单测覆盖建链/幂等/自环/ADD 分支
+  - 读取侧消费（检索未命中回退邻居遍历）留观察后决定；LoRA 铺垫（VISION §6）数据面持续积累（P1/P2 结构化字段已就绪），等量变
+  - schema 冻结维持：除 links 外不再增列，字段演进需重新评估

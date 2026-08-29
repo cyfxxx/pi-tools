@@ -375,6 +375,51 @@ export function getNotesSize(notes: Record<string, string>): number {
 
 // ── 写入与消解 ───────────────────────────────────────────────
 
+// ---- links 双向链接（A-MEM 卡片盒，2026-08-29 ROADMAP 5.9a）----
+// 标题 bigram-jaccard ≥ LINK_SIM 自动建双向链，与 memory-lifecycle 聚合候选同口径
+// （links 连通分量即未来聚合候选的图基础）。取自包含实现避免 storage↔retrieval 循环依赖。
+const LINK_SIM = 0.34
+function titleBigrams(s: string): Set<string> {
+  const t = String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  const out = new Set<string>()
+  for (let i = 0; i < t.length - 1; i++) out.add(t.slice(i, i + 2))
+  return out
+}
+function linkSim(a: string, b: string): number {
+  const A = titleBigrams(a)
+  const B = titleBigrams(b)
+  if (!A.size || !B.size) return 0
+  let inter = 0
+  for (const x of A) if (B.has(x)) inter++
+  return inter / (A.size + B.size - inter)
+}
+/** 双向链接两条目（幂等，自环保护）；纯内存操作，落盘由调用方统一 saveEntries */
+export function linkEntries(entries: MemoryEntry[], aId: string, bId: string): void {
+  if (aId === bId) return
+  const a = entries.find(e => e.id === aId)
+  const b = entries.find(e => e.id === bId)
+  if (!a || !b) return
+  a.links = a.links || []
+  b.links = b.links || []
+  if (!a.links.includes(bId)) a.links.push(bId)
+  if (!b.links.includes(aId)) b.links.push(aId)
+}
+/** 新条目入库自动建链：取标题最相似活跃条目（≥LINK_SIM）单链最优邻居
+ *  （A-MEM 邻接演化的确定性简化；零工具 schema 变化，不影响注入面/缓存） */
+export function autoLinkNewEntry(entries: MemoryEntry[], fresh: MemoryEntry): void {
+  let best: MemoryEntry | null = null
+  let bestSim = 0
+  for (const e of entries) {
+    if (e.deleted || e.id === fresh.id) continue
+    const s = linkSim(e.title, fresh.title)
+    if (s > bestSim) {
+      bestSim = s
+      best = e
+    }
+  }
+  if (best && bestSim >= LINK_SIM) linkEntries(entries, best.id, fresh.id)
+}
+
 export function storeEntry(
   entries: MemoryEntry[],
   entry: MemoryEntry,
@@ -420,6 +465,7 @@ export function storeEntry(
   }
 
   entries.push(entry)
+  autoLinkNewEntry(entries, entry)
   const merged2 = saveEntries(entries)
   return { entries: merged2, action: 'created' }
 }
@@ -434,6 +480,7 @@ export function applyMem0Action(
   switch (action) {
     case 'ADD': {
       entries.push(candidate)
+      autoLinkNewEntry(entries, candidate)
       const merged = saveEntries(entries)
       return { entries: merged, applied: true }
     }

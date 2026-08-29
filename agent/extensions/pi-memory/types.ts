@@ -26,6 +26,9 @@ export interface MemoryEntry {
   lastSessionId?: string
   /** v5: 失效时间（被取代/冲突发生时点，ISO）。有值表示该条目在此刻后不再有效，供 asOf 回溯查询 */
   validUntil?: string
+  /** v6: 关联条目 id（双向）。入库时按标题 bigram-jaccard 自动建链（A-MEM 卡片盒思想，
+   *  与 memory-lifecycle 聚合候选同口径）；取零工具 schema 变化，不影响注入面 */
+  links?: string[]
 }
 
 export interface SummaryEntry {

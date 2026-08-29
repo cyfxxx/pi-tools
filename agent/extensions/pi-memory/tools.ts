@@ -267,7 +267,8 @@ export function registerTools(pi: ExtensionAPI): void {
         const age = Math.round(
           (Date.now() - new Date(e.createdAt).getTime()) / (1000 * 60 * 60 * 24),
         )
-        return `${i + 1}. [${e.category}] ${e.title}（${formatEnvironments(e.environments)}）
+        const linkNote = e.links?.length ? ` ↔关联${e.links.length}条` : ''
+        return `${i + 1}. [${e.category}] ${e.title}（${formatEnvironments(e.environments)}）${linkNote}
    置信度: ${e.confidence} | 引用: ${e.recurrence} 次 | ${age} 天前
    ${e.content.length > 200 ? e.content.slice(0, 200) + '...' : e.content}`
       })

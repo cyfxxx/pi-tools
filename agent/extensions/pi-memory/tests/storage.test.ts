@@ -607,3 +607,45 @@ describe('storage: touchAccessedAt 访问强化（2026-08-29）', () => {
     expect(touchAccessedAt(loadEntries(), ['acc-2'])).toBe(1)
   })
 })
+
+describe('storage: links 双向链接（ROADMAP 5.9a，A-MEM）', () => {
+  it('store 相近标题自动互链，无关条目不链，linkEntries 幂等/自环保护', async () => {
+    const { loadEntries, storeEntry, linkEntries } = await import('../storage.ts')
+    const base = makeEntry({ id: 'seed', title: 'pi update 后 rebuild 恢复补丁', content: '内容 A：update 后必须重跑 rebuild 恢复补丁' })
+    storeEntry(loadEntries(), base)
+
+    // 相近标题 → 自动建链
+    const near = makeEntry({ id: 'near', title: 'pi update 网络超时绕过 rebuild 流程', content: '内容 B：update 网络超时时的绕过流程' })
+    storeEntry(loadEntries(), near)
+    let disk = loadEntries()
+    expect(disk.find(e => e.id === 'seed')!.links).toContain('near')
+    expect(disk.find(e => e.id === 'near')!.links).toContain('seed')
+
+    // 无关标题 → 不建链
+    const far = makeEntry({ id: 'far', title: '量化交易回测参数调优心得', content: '内容 C：量化交易回测参数调优' })
+    storeEntry(loadEntries(), far)
+    disk = loadEntries()
+    expect(disk.find(e => e.id === 'far')!.links).toBeUndefined()
+    expect(disk.find(e => e.id === 'seed')!.links).not.toContain('far')
+
+    // 幂等 + 自环保护
+    const entries = loadEntries()
+    linkEntries(entries, 'seed', 'near')
+    linkEntries(entries, 'seed', 'seed')
+    disk = loadEntries()
+    const seedLinks = disk.find(e => e.id === 'seed')!.links!
+    expect(seedLinks.filter(x => x === 'near').length).toBe(1)
+    expect(seedLinks).not.toContain('seed')
+  })
+
+  it('applyMem0Action ADD 分支同样自动建链', async () => {
+    const { loadEntries, storeEntry, applyMem0Action } = await import('../storage.ts')
+    storeEntry(loadEntries(), makeEntry({ id: 'a', title: 'searxng 自托管搜索引擎维护', content: '内容 D：searxng 自托管维护' }))
+    const cand = makeEntry({ id: 'b', title: 'searxng 搜索引擎聚合配置', content: '内容 E：searxng 聚合配置' })
+    const r = applyMem0Action(loadEntries(), 'ADD', cand)
+    expect(r.applied).toBe(true)
+    const disk = loadEntries()
+    expect(disk.find(e => e.id === 'a')!.links).toContain('b')
+    expect(disk.find(e => e.id === 'b')!.links).toContain('a')
+  })
+})

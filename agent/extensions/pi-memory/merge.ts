@@ -1,5 +1,5 @@
 import type { MemoryAction, MemoryEntry } from './types.ts'
-import { activeEntries, tokenize, jaccardSimilarity, saveEntries, applyMem0Action, mergeEnvironments } from './storage.ts'
+import { activeEntries, tokenize, jaccardSimilarity, saveEntries, applyMem0Action, mergeEnvironments, linkEntries } from './storage.ts'
 import { findSimilar } from './retrieval.ts'
 
 export interface MergeDecision {
@@ -75,6 +75,8 @@ export async function decideMerge(
     }
     entry.supersededBy = candidate.id
     entry.deleted = true
+    // v6: 矛盾取代双方互链（取代关系入 links 图，可追溯）
+    linkEntries(entries, entry.id, candidate.id)
     // v5: 记录失效时点（bi-temporal；供 asOf 回溯查询旧事实）
     entry.validUntil = new Date().toISOString()
     entry.updatedAt = new Date().toISOString()
@@ -125,6 +127,8 @@ export async function decideMerge(
   ) {
     best.entry.supersededBy = candidate.id
     best.entry.deleted = true
+    // v6: 取代关系入 links 图
+    linkEntries(entries, best.entry.id, candidate.id)
     // v5: 记录失效时点（bi-temporal；供 asOf 回溯查询旧事实）
     best.entry.validUntil = new Date().toISOString()
     best.entry.updatedAt = new Date().toISOString()

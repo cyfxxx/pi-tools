@@ -442,3 +442,22 @@
   但返回信息易误读为部分成功；多处不相关改动应分次调用或改用 node 直写
 - 回归: golden --fast 全绿（F1-F5）、pi-memory vitest+tsc 绿、lifecycle 人读/json/合成数据
   三路验证、task-summarizer/lifecycle node --check 通过、seeds/scheduled-tasks JSON 合法
+
+---
+
+## 2026-08-29 续 7：远期优化启动（5.9a links 落地 + 5.8 分层设计）
+- 5.9a links 双向链接（A-MEM 卡片盒，预案内唯一 schema 增列 v6）:
+  - types.ts links?: string[]；storage.ts linkEntries（幂等/自环保护/纯内存）+
+    autoLinkNewEntry（入库时标题 bigram-jaccard≥0.34 单链最优邻居，与 5.5 聚合同口径，
+    links 连通分量即聚合候选图基础；自包含实现避免 storage↔retrieval 循环依赖）
+  - merge.ts 两处 superseded 取代关系入链；tools.ts 检索结果显示 ↔关联N 条
+  - 零工具 schema 变化零注入面变化（缓存安全）；单测：建链/幂等/自环/ADD 分支/无关不链
+- 5.8 范围分层设计写入 ROADMAP: Tier1 非缓存面提示词（extract/summarizer/任务 prompt，
+  零缓存成本，样本门槛 ≥10）可先行；Tier2 注入面维持 corrective≥50+golden 绿+命中率核算
+- 过程教训（重要）:
+  1. edit 生成笔误（b.links.push 误写 a.links.push）被新增单测当场拦截——防退化网价值实证；
+     源码目检因预期偏差失效（眼睛自动纠正为预期写法），toString() 打印运行时函数体是
+     定位"行为与源码目检不符"的决定性手段
+  2. 测试数据设计: makeEntry 默认 content 全同 → storeEntry 内容 jaccard>0.7 走 merged
+     分支、新条目未创建——fixture 必须内容差异化，否则测的是合并不是创建
+- 回归: pi-memory vitest+tsc 绿；生产库无测试污染验证（665 条无测试 id）
