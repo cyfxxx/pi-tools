@@ -15003,6 +15003,313 @@
       ],
       "observedAt": "2026-08-28T12:10:17.516Z",
       "deleted": false
+    },
+    {
+      "id": "b9f68936-7901-4e1a-8fa8-de6245311aa8",
+      "category": "procedure",
+      "title": "tool-stats-sync 每日聚合提交流程",
+      "content": "工具使用统计每日聚合流程（当天数据完整后执行）：1) 运行 node ~/.pi/scripts/tool-stats-sync.mjs --daily；2) 确认生成 memory/stats/tool-count-<hostname>.json（文件名含主机名，各环境独立产物）；3) git add 该文件并 commit + push 入库共享。来源：2026-08-28 实际执行成功（单轮 4 次工具调用）。",
+      "tags": [
+        "tool-stats",
+        "统计",
+        "日常运维",
+        "git"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-28T15:42:10.788Z",
+      "updatedAt": "2026-08-28T15:42:10.788Z",
+      "accessedAt": "2026-08-28T15:42:10.788Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-28T15:42:10.788Z",
+      "deleted": false
+    },
+    {
+      "id": "d4ef1887-d7ff-4cc6-bdf0-8914d9ba1ac6",
+      "category": "procedure",
+      "title": "微信文章输入的技能优化落地流程",
+      "content": "以微信公众号文章（mp.weixin.qq.com/s/...）为输入优化既有技能的可复现流程：1) 微信文章多为服务端渲染，正文在 js_content 节点，通常 fetch_url 可直接取到正文，无需起浏览器；被反爬/验证拦截时改用 browser_navigate 渲染后 browser_extract；2) 从文章提炼与目标技能相关的可执行要点，逐条与现有技能文件比对，剔除已覆盖项，避免重复堆砌；3) 向用户给出改动点清单，获极简确认（如\"执行\"）后用 edit 逐条落地，汇报保持简短。",
+      "tags": [
+        "wechat",
+        "fetch_url",
+        "技能优化",
+        "文章分析"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:28:55.570Z",
+      "updatedAt": "2026-08-29T01:28:55.570Z",
+      "accessedAt": "2026-08-29T01:28:55.570Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:28:55.570Z",
+      "deleted": false
+    },
+    {
+      "id": "04fe1c3c-f5e0-43d6-9ff0-adc45a2d904a",
+      "category": "procedure",
+      "title": "低信息量任务记录的沉淀纪律",
+      "content": "经验沉淀时若任务记录只有单行摘要+轮次统计、缺少改动细节（改了哪些文件/哪些要点），只存可从记录确凿推断的通用经验（如抓取手段、流程框架），不臆造文章标题、具体改动内容等细节；不满足\"成功实现+可复现+有保存价值的长流程\"三条不写 SKILL 草稿。与既有的\"空壳任务记录判定\"（全零统计）互补：非全零但信息不足的记录同样只做保守沉淀。",
+      "tags": [
+        "记忆治理",
+        "沉淀",
+        "防污染"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:28:55.688Z",
+      "updatedAt": "2026-08-29T01:28:55.688Z",
+      "accessedAt": "2026-08-29T01:28:55.688Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:28:55.688Z",
+      "deleted": false
+    },
+    {
+      "id": "2f901bd0-444e-4c32-94ff-1ccf025b3330",
+      "category": "fact",
+      "title": "knowledge 安全 CISA KEV批次：macOS/Cisco ASA/Windows WinSock 等6项在野利用 2026-08-29",
+      "content": "CISA KEV 本批新增 6 项「已遭利用/勒索」漏洞（CISA 官方群，2026-08-29 抓取）：①CVE-2026-65400 Apple macOS 认证不当，网络攻击者可认证至 ScreenConnect 相关组件；②CVE-2026-20349 Cisco Secure Firewall ASA/FTD heap inspection，边界防火墙设备高危；③CVE-2026-68820 Windows WinSock 辅助功能驱动（AFD）UAF，授权攻击者可利用；④CVE-2025-62593 Ray 代码注入致 RCE（开发依赖场景风险）；⑤CVE-2026-72898 Metabase 未认证 SQL 注入；⑥CVE-2026-8037 Progress LoadMaster 未认证命令注入。涉及操作系统内核、边界防火墙、BI 平台与负载均衡，运维需按资产排查升级。URL: https://www.cve.org/CVERecord?id=CVE-2026-65400 等",
+      "tags": [
+        "knowledge",
+        "security",
+        "cve",
+        "kev",
+        "cisa"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:29:04.520Z",
+      "updatedAt": "2026-08-29T01:29:04.520Z",
+      "accessedAt": "2026-08-29T01:29:04.520Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:29:04.520Z",
+      "deleted": false
+    },
+    {
+      "id": "9da864e9-fb55-4388-adf9-b84c7b3ab878",
+      "category": "fact",
+      "title": "knowledge 安全 MongoDB BI Connector 三漏洞集中披露（含TLS验证缺陷）2026-08-29",
+      "content": "MongoDB Connector for BI 集中披露 3 项漏洞（GitHub 安全公告，2026-08-29）：①CVE-2026-81532（high）BI ODBC 驱动 positioned update SQL 注入，可提交 SQL 的应用用户可利用；②CVE-2026-81533（medium）ODBC 驱动处理特定 SQL 语句时内存安全问题；③CVE-2026-81518（high）mongosqld 配置 client CA 文件时监听器在 TLS 握手未强制客户端证书，认证约束失效。BI 数据接入链路组件，自托管 MongoDB BI 场景需升级。URL: https://github.com/advisories/GHSA-ggj7-6w53-qw2v 等",
+      "tags": [
+        "knowledge",
+        "security",
+        "cve",
+        "mongodb"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:29:04.727Z",
+      "updatedAt": "2026-08-29T01:29:04.727Z",
+      "accessedAt": "2026-08-29T01:29:04.727Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:29:04.727Z",
+      "deleted": false
+    },
+    {
+      "id": "e7f012d5-3ab2-461b-9a86-e0653d4e36e5",
+      "category": "fact",
+      "title": "knowledge 安全 宇树Unitree G1 EDU人形机器人root级RCE（蓝牙触发）2026-08-29",
+      "content": "Unitree 宇树 G1 EDU 人形机器人被曝两处 root 级远程代码执行：chat_go 服务与蓝牙路径均可攻破，另存在云授权缺陷（已修复）。漏洞可经蓝牙触发，机器人首次成为成熟攻击面，实体设备 RCE 影响物理安全。部署机器人产品需关注固件更新与蓝牙暴露面收敛。（来源：FreeBuf）URL: https://www.freebuf.com/articles/system/497800.html",
+      "tags": [
+        "knowledge",
+        "security",
+        "robotics",
+        "iot",
+        "rce"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:29:04.836Z",
+      "updatedAt": "2026-08-29T01:29:04.836Z",
+      "accessedAt": "2026-08-29T01:29:04.836Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:29:04.836Z",
+      "deleted": false
+    },
+    {
+      "id": "c793f0bb-7df2-4652-b8f3-1706071acbb1",
+      "category": "fact",
+      "title": "knowledge 科技 Anthropic研究员展示自我改进AI：10项错位行为基准全部自我提升 2026-08-29",
+      "content": "Anthropic 研究员展示自我改进 AI 进展（TechCrunch 2026-08-29）：给定 10 项特定错位行为（misaligned behaviors）基准，自动化系统在每一项上都实现了性能自我提升，且不损害其他能力。自动化改进能力与错位行为结合是对齐风险的直接信号，值得关注后续论文与评测细节。URL: https://techcrunch.com/2026/08/28/an-anthropic-researcher-just-gave-us-a-peek-at-self-improving-ai/",
+      "tags": [
+        "knowledge",
+        "ai",
+        "safety",
+        "alignment"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:29:04.935Z",
+      "updatedAt": "2026-08-29T01:29:04.935Z",
+      "accessedAt": "2026-08-29T01:29:04.935Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:29:04.935Z",
+      "deleted": false
+    },
+    {
+      "id": "d126dc59-8870-4361-a09f-74eb0ddb3c45",
+      "category": "fact",
+      "title": "knowledge 科技 联邦法官裁定特朗普将Anthropic列入\"woke\"黑名单违法 2026-08-29",
+      "content": "美国联邦法官裁定特朗普政府以\"woke\"为由将 Anthropic 列入黑名单的行为违法（Ars Technica 2026-08-29）。政府针对 AI 公司的政治性排除手段被司法否决，属 AI 产业监管与政企关系的重大判例，影响后续联邦机构与 AI 供应商合作格局。URL: https://arstechnica.com/tech-policy/2026/08/trump-blacklisting-of-woke-anthropic-deemed-illegal-by-federal-judge/",
+      "tags": [
+        "knowledge",
+        "ai",
+        "policy",
+        "anthropic"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:29:05.034Z",
+      "updatedAt": "2026-08-29T01:29:05.035Z",
+      "accessedAt": "2026-08-29T01:29:05.035Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:29:05.034Z",
+      "deleted": false
+    },
+    {
+      "id": "7b8c669c-85a1-4628-8972-28e52b313793",
+      "category": "fact",
+      "title": "知识订阅: ZhiShi——安全研究领域从提示词到 harness 的演进",
+      "content": "FreeBuf 2026-08-28 报道：ZhiShi 是面向安全研究领域的 agent harness，演进路径为\"从一段提示词到一台 harness\"。对 pi 这类 agent harness 项目的参考价值：harness 可以从最小提示词内核逐步长出工具面/循环控制/领域（安全研究）能力。来源: https://www.freebuf.com/articles/sectool/497759.html",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "knowledge-subscribe-2026-08-29",
+        "agent-harness",
+        "安全"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:06.981Z",
+      "updatedAt": "2026-08-29T01:30:06.982Z",
+      "accessedAt": "2026-08-29T01:30:06.982Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:30:06.981Z",
+      "deleted": false
+    },
+    {
+      "id": "d8119fd1-c1f0-4958-945d-59566d3475b0",
+      "category": "fact",
+      "title": "知识订阅: NVIDIA 收购 Hugging Face，估值或超 130 亿美元",
+      "content": "FreeBuf 周报（2026-08-28）: NVIDIA 收购 Hugging Face，估值或超 130 亿美元。信号：模型分发/开源生态平台被算力巨头整合，开源模型托管与算力绑定加深。来源: https://www.freebuf.com/articles/497765.html",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "knowledge-subscribe-2026-08-29",
+        "AI产业",
+        "NVIDIA",
+        "HuggingFace"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:07.198Z",
+      "updatedAt": "2026-08-29T01:30:07.198Z",
+      "accessedAt": "2026-08-29T01:30:07.198Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:30:07.198Z",
+      "deleted": false
+    },
+    {
+      "id": "521e6170-f51e-4864-81fc-4ddf98179230",
+      "category": "fact",
+      "title": "知识订阅: CVE-2026-63077 JetBrains TeamCity 反序列化漏洞已遭利用",
+      "content": "CVE-2026-63077（2026-08-05 公布，CISA 标记已遭利用）: JetBrains TeamCity 反序列化不可信数据漏洞。TeamCity 广泛用于 CI/CD，失陷即构建管道失陷。自托管 TeamCity 实例应立即升级并排查异常构建任务。来源: CISA KEV 群 2026-08-29 订阅",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "knowledge-subscribe-2026-08-29",
+        "CVE",
+        "TeamCity",
+        "CI-CD"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:07.382Z",
+      "updatedAt": "2026-08-29T01:30:07.382Z",
+      "accessedAt": "2026-08-29T01:30:07.382Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:30:07.382Z",
+      "deleted": false
+    },
+    {
+      "id": "dacd8a0c-f649-4260-9a84-cbf06c6c1d05",
+      "category": "fact",
+      "title": "知识订阅: CVE-2025-62593 Ray 代码注入漏洞已遭利用（AI 基础设施）",
+      "content": "CVE-2025-62593（CISA 标记已遭利用/勒索）: Ray（Ray-Project）代码注入漏洞可致远程代码执行。Ray 是分布式 AI/LLM 训练与推理基础设施，开发环境中暴露的管理端口是主要攻击面。跑 AI 集群的 Linux 服务器须升级 Ray 且不将 dashboard 暴露公网。来源: CISA KEV 群 2026-08-29 订阅",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "knowledge-subscribe-2026-08-29",
+        "CVE",
+        "Ray",
+        "AI基础设施"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:07.497Z",
+      "updatedAt": "2026-08-29T01:30:07.497Z",
+      "accessedAt": "2026-08-29T01:30:07.497Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-29T01:30:07.497Z",
+      "deleted": false
+    },
+    {
+      "id": "339cdd4e-6dfa-4897-af19-a3034e20dbf0",
+      "category": "fact",
+      "title": "知识订阅: Linux 服务器勒索病毒国家正式预警",
+      "content": "国家层面正式预警：勒索病毒已瞄准 Linux 服务器（安全客 2026-08-13 收录）。提示：本机多环境均为 Linux/Termux，应保持 pi 配置仓库与关键数据的异地备份（已有 GitHub 同步 + pi-backup 技能），避免只依赖本地副本。来源: https://www.anquanke.com/post/id/315959",
+      "tags": [
+        "knowledge",
+        "订阅",
+        "knowledge-subscribe-2026-08-29",
+        "勒索软件",
+        "Linux",
+        "备份"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-29T01:30:07.627Z",
+      "updatedAt": "2026-08-29T01:30:07.627Z",
+      "accessedAt": "2026-08-29T01:30:07.627Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
