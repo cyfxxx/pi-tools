@@ -422,3 +422,23 @@
 - 中期 5.4-5.7 设计分析与远期 5.8-5.9 触发条件写入 ROADMAP 阶段 5（patch-vs-create/归纳升级/
   importance 阈值反思/自动课程；元优化等 corrective≥50 条；GEP schema 冻结+links 候选绑 5.5）
 - 回归: pi-memory vitest+tsc 绿、daily-health --print 新判据正常、seeds/scheduled-tasks JSON 合法
+
+---
+
+## 2026-08-29 续 6：中期优化 5.4-5.7 全量落地（ROADMAP 阶段 5 中期项清零）
+- 5.5 ExpeL 归纳升级（唯一代码级）: memory-lifecycle.mjs 新增第 5 类"聚合候选"——
+  solutions/procedure 标题 bigram-jaccard 贪心聚类（阈值 0.34），组内 ≥3 条且 Σrec≥8 触发；
+  人读+--json 双输出；合成数据实测：3 条同主题聚中/无关条目排除，Σrec 门槛生效。
+  设计修正：执行侧不新增 UPGRADE 写操作，走既有"报告→确认→快照→执行"（对齐 VISION §5）
+- 5.4 patch-vs-create（memU 第 3 步）: task-summarizer prompt 第 3 条改写——先查既有草稿，
+  同主题→概述中列"建议 patch <文件名>：<差异要点>"待确认，无才新建
+- 5.6 importance 触发反思（Generative Agents）: daily-review 步骤 2 内嵌确定性计算
+  Σ(confidence×recurrence)>12 → 跨条目归纳 insight（带引用）。判定在确定性层（可测），
+  反思在 LLM 层（软硬结合）
+- 5.7 自动课程（Voyager）: daily-review 步骤 4——logs/lesson-course.json 状态比对，
+  同主题连续第 2 天→workticket-<短名>.md 工单草稿（仅草稿不执行），状态文件每轮更新
+- daily-review 整合为 6 步版（seeds+本机双写），maxRunTime 600→900
+- 教训记录: edit 工具多 edit 原子回滚——edits[1] 未命中时 edits[0] 也不应用，
+  但返回信息易误读为部分成功；多处不相关改动应分次调用或改用 node 直写
+- 回归: golden --fast 全绿（F1-F5）、pi-memory vitest+tsc 绿、lifecycle 人读/json/合成数据
+  三路验证、task-summarizer/lifecycle node --check 通过、seeds/scheduled-tasks JSON 合法

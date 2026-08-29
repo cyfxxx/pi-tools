@@ -133,7 +133,7 @@ function main() {
     '请对每个任务：',
     '1) 用一句话概括完成情况；',
     '2) 如有值得长期保留的经验/踩坑/技巧，用 memory_store 工具存入（category 选 procedure 或 solutions，title 简短，content 精确可复现，confidence 一律传 0.6——蒸馏产物非直接观察，防错误经验高置信自我强化，验证有效后可升置信）；多条经验可逐条存；',
-    '3) 特别标注：若某个任务满足"成功实现、可复现、有保存价值的长流程"三条，请用 write 工具把 SKILL.md 草稿写到 /root/.pi/packs/drafts/ 下（文件名 `<短名>.SKILL.md`，格式：YAML frontmatter 的 name/description + 步骤正文，description 控制在 1-2 句且不带时间戳）。',
+    '3) 特别标注：若某个任务满足"成功实现、可复现、有保存价值的长流程"三条，先 ls /root/.pi/packs/drafts/ 并读取主题相近草稿的 description：存在同主题草稿时不新建，改为在最终概述中列出"建议 patch <文件名>：<差异要点>"待人工确认合并；确认无同主题才用 write 工具新建 SKILL.md 草稿（文件名 `<短名>.SKILL.md`，格式：YAML frontmatter 的 name/description + 步骤正文，description 控制在 1-2 句且不带时间戳）。',
     '注意：除此两项（memory_store / write 草稿）外不要改动任何其他文件，不要执行其他工具。',
     '最后用 3-5 行概述本次沉淀了什么。',
     '',

@@ -135,10 +135,11 @@
 
 ### 中期设计（已分析，待实施）
 
-- **5.4 summarizer patch-vs-create**（memU 六步管线第 3 步）：写 SKILL 草稿前先 ls packs/drafts + memory_search 同主题；存在 → 输出差异报告人工确认合并，不存在 → 新建。成本 prompt 级；随下次 summarizer 迭代顺手落地。防草稿碎片化。
-- **5.5 ExpeL 归纳升级**：memory-lifecycle 增“聚合候选”类（同主题 solutions 组内 Σrecurrence≥8 且条数≥3）→ LLM 归纳单条规则（confidence 0.7），旧条目 superseded 指向新条目；merge.ts 增 UPGRADE 操作。价值：条目数控制（665+ 且增长）+ 注入预算压力缓解。前置：5.1 数据准确后运行一轮观察。
-- **5.6 importance 累计触发反思**（Generative Agents）：daily-health 增输出近 24h 新条目 Σ(confidence×recurrence)，超阈值（初值 12）→ daily-review 当日强制跨条目反思（生成带引用 insight）。确定性触发（硬）+ LLM 反思（软），替代纯固定节奏。
-- **5.7 自动课程**（Voyager）：lesson-miner 连续 2 轮同主题高置信教训 → 自动生成 drafts/ 优化工单草稿（不执行），daily-review 呈报待确认。前置：5.2 稳定运行一段。授权边界不变：结构性改动仍须用户确认。
+- **5.4 summarizer patch-vs-create**（memU 六步管线第 3 步）：✅ 2026-08-29 落地——task-summarizer prompt 改为"先 ls+读同主题草稿 description；存在同主题→不新建，概述中列'建议 patch <文件名>：<差异要点>'待人工确认；确认无才新建"。防草稿碎片化。
+- **5.5 ExpeL 归纳升级**：✅ 2026-08-29 落地（报告端）——memory-lifecycle 新增第 5 类"聚合候选"：solutions/procedure 标题 bigram-jaccard（阈值 0.34）贪心聚类，组内 ≥3 条且 Σrecurrence≥8 输出归纳建议；合成数据实测聚类正确。执行侧不走新 UPGRADE 写操作，由 daily-review 步骤 5 出规则草案→OPTIMIZATION-LOG→用户确认后走既有"确认→快照→执行"流程（对齐 VISION §5）。
+- **5.6 importance 累计触发反思**（Generative Agents）：✅ 2026-08-29 落地——daily-review 步骤 2 内嵌确定性计算（近 24h 新条目 Σ(confidence×recurrence)），>12 触发跨条目归纳 insight（带引用条目标题）。确定性触发+LLM 反思，替代纯固定节奏。
+- **5.7 自动课程**（Voyager）：✅ 2026-08-29 落地——daily-review 步骤 4：logs/lesson-course.json 状态文件比对，同主题连续第 2 天→生成 packs/drafts/workticket-<短名>.md 工单草稿（问题/建议改动/验证方式三节，仅草稿不执行），并更新状态文件。授权边界不变：结构性改动仍须用户确认。
+- daily-review 随 5.4-5.7 整合为 6 步版，maxRunTime 600→900（步骤增多）。
 
 ### 远期分析（记录触发条件，暂不实施）
 
