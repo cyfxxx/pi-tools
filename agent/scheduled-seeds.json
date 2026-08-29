@@ -5,7 +5,7 @@
     {
       "name": "knowledge-subscribe",
       "type": "cron",
-      "schedule": "0 8 * * *",
+      "schedule": "20 8 * * *",
       "prompt": "执行每日知识订阅（零 LLM 流程，渠道见 scripts/knowledge-fetch.py）：1) 先跑 python3 scripts/knowledge-fetch.py 抓取官方源/RSS 最新内容；2) 若当日有新增（logs/knowledge/ 下当日 md），筛选 3-5 条真正有价值的条目 （时效强/漏洞/重大新闻，排除过时教程与多源冗余），memory_search 查重后逐条 memory_store；3) 收尾写 ~/.pi/logs/knowledge/summary-{{date}}.md 概要（来源+一句话要点，无新内容则如实说明）。【提醒】需要修改订阅渠道/排查订阅不触发/调整过滤规则时，使用 packs/knowledge-fetch 技能（含完整搭建与迭代流程）。",
       "useSubagent": true,
       "notifyMain": true,
@@ -21,7 +21,7 @@
       "name": "daily-review",
       "type": "cron",
       "schedule": "5 9 * * *",
-      "prompt": "执行每日回顾：1) 读取 memory/daily-results/ 下全部设备的任务结果（含 {{date}} 前后），对比各设备执行情况，识别遗漏与信息不对称；2) 回顾过去 24 小时会话摘要有价值的经验，提炼 1-3 条入库 memory_store；3) 输出回顾结论（200 字内）作为任务结果，如发现其他设备任务长期未跑请明确指出。",
+      "prompt": "执行每日回顾：1) 读取 memory/daily-results/ 下全部设备的任务结果（含 {{date}} 前后），对比各设备执行情况，识别遗漏与信息不对称；2) 回顾过去 24 小时会话摘要有价值的经验，提炼 1-3 条入库 memory_store；3) 运行 node ~/.pi/scripts/memory-lifecycle.mjs --json（只读报告）：对'升格候选'逐条评估是否满足单向升格通道（recurrence≥5 且验证有效），满足的写入 OPTIMIZATION-LOG 升格建议待用户确认，不直接改提示词/扩展；'冲突嫌疑'组给出合并裁决建议；'淘汰候选'仅列出不动，批量删除须用户确认；无任何需处理候选则跳过本步；4) 输出回顾结论（200 字内）作为任务结果，如发现其他设备任务长期未跑请明确指出。",
       "useSubagent": true,
       "notifyMain": true,
       "waitForUserOnLocal": true,
@@ -60,6 +60,21 @@
       "tags": [
         "health",
         "daily"
+      ]
+    },
+    {
+      "name": "golden-fast",
+      "type": "cron",
+      "schedule": "30 7 * * *",
+      "prompt": "执行防退化基准（确定性零 LLM 主流程，勿做其他事）：运行 bash ~/.pi/scripts/golden-tasks.sh（--fast 档：F1-F5 本地脚本断言）。全部 ✓ 则输出一行'golden-fast 全绿'即结束，不写文件不提交。任一 ✗ 红项：将失败行与 golden 输出尾部 10 行写入 memory/daily-results/{{date}}-golden-<本机hostname>.md，git add 该文件后 commit（message: 'golden: fail {{date}}'）并 push（冲突先 git pull --rebase 重试一次，仍失败保留本地不阻塞）。",
+      "useSubagent": true,
+      "notifyMain": true,
+      "waitForUserOnLocal": true,
+      "maxRunTime": 300,
+      "retries": 1,
+      "tags": [
+        "daily",
+        "golden"
       ]
     }
   ]

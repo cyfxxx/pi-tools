@@ -379,3 +379,29 @@
   - 评估说明: 两条内容与 patch-all-zh.mjs 脚本互为表里，SKILL.md 是规则文档承载位；
     记忆的增量知识（匹配方式/口径偏差/归属核对）此前未文档化，吸收有实质增量
 - 回归: test-all --fast exit=0
+
+---
+
+## 2026-08-29 续 4：自优化闭环缺漏批量修复（H1-H5，全面审计后用户批准"全部修复"）
+- 审计来源：深度审计结论=六环齐备但为"LLM 会话中介的半自动闭环"，验证环≈50% 最大缺口
+- H1 防退化基准自动化 + F5:
+  - scheduled-seeds.json 新增 golden-fast 种子任务（cron 7:30，确定性零 LLM；红项才落盘
+    daily-results+commit push，全绿静默——对齐 daily-health alert 模式）
+  - golden-tasks.sh 新增 F5 干预快照写路径校验：写合成记录(type=golden-synthetic)→读回→
+    按精确 id 清理→行数复原；验证捕获面文件层可用（hook 级触发验证留 --full）
+- H2 记忆生命周期挖掘端接入: daily-review prompt 新增步骤 3（memory-lifecycle --json 只读
+  报告）：升格候选按 §3.1 评估写入 LOG 待确认、冲突嫌疑给合并建议、淘汰候选仅列不动
+- H3 覆盖面验证通道: 由 F5 承载（见 H1）；干预率判据计算仍需数据积累
+- H4 蒸馏产物降置信: task-summarizer prompt 指示 memory_store confidence 一律 0.6
+  （蒸馏非直接观察，防错误经验高置信自我强化；验证有效后可升置信）
+- H5 跨设备/种子健康度量: daily-health.mjs 新增两项确定性度量并入 alert 判据——
+  设备失联>48h（memory/stats/tool-use-*.jsonl 尾行 ts）、种子失配（seeds 声明未注册/
+  schedule 漂移）；输出行加 设备=N(失联M) 种子失配=K；dry-run 实证：MYPC 失联 2 天正确捕获
+- M 错峰: knowledge-subscribe 0 8→20 8（与本地遗留 daily-task 08:00 错开）；
+  本机 scheduled-tasks.json 已同步 schedule 并注册 golden-fast（注入式，对齐本机
+  daily-health 实践）
+- 已知影响（非缺陷，为预期修复触发器）: seeds 对账"已存在不覆盖"——其他设备 pull 后
+  knowledge-subscribe 仍为 08:00，将触发 schedule 漂移告警，届时由回顾任务/人工同步；
+  MYPC 失联告警将持续直至设备恢复上线
+- 回归: golden-tasks --fast 全绿（F1-F5）、test-all --fast 全绿（11 扩展+tsc）、
+  daily-health --print 新字段输出正常、seeds/scheduled-tasks JSON 合法

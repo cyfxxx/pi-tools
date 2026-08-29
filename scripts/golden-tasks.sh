@@ -10,6 +10,9 @@
 #     F2 lesson-miner.mjs / usage-stats.mjs 可运行（分析面健康）
 #     F3 entries.json 完整性：合法 JSON、非空、无明文密钥（scrubSecrets 兜底验证）
 #     F4 interventions.jsonl 结构完整（若存在）：每行含 id/ts/type
+#     F5 interventions.jsonl 写路径校验（若存在）：写合成记录→读回→按 id 清理，
+#       验证捕获面文件可写可读（hook 级触发验证属 --full 会话范畴，此处只验文件层）；
+#       毫秒级写删窗口，与运行时捕获并发冲突概率可忽略，清理只按精确 id 过滤
 #   --full 追加无头 pi 会话（真实模型，少量确定性断言；产生 provider 费用）：
 #     G1 纯文本响应断言（回复包含固定标记）
 #     G2 工具执行断言（在 tmp 目录写文件并校验内容）
@@ -92,6 +95,30 @@ for line in open(path):
 print(f'F4 interventions.jsonl 结构完整: {n} 条')
 PYEOF
 if [ $? -eq 0 ]; then grn "F4 干预快照结构"; else red "F4 干预快照结构异常"; fi
+
+python3 - << 'PYEOF' 2>/dev/null
+import json, os, sys, time
+root = os.environ.get('PI_HOME') or os.path.expanduser('~/.pi')
+path = os.path.join(root, 'memory', 'interventions.jsonl')
+if not os.path.exists(path):
+    print('F5 interventions.jsonl 不存在（扩展尚未捕获数据，跳过写路径校验）'); sys.exit(0)
+lines = [l for l in open(path, encoding='utf-8').read().split('\n') if l.strip()]
+before = len(lines)
+now = int(time.time() * 1000)
+rid = f'golden-synthetic-{now}'
+rec = json.dumps({'id': rid, 'ts': now, 'type': 'golden-synthetic', 'note': 'golden-tasks F5 写路径校验'}, ensure_ascii=False)
+with open(path, 'a', encoding='utf-8') as f:
+    f.write(rec + '\n')                                             # 写
+back = [l for l in open(path, encoding='utf-8').read().split('\n') if l.strip()]
+found = any(json.loads(l).get('id') == rid for l in back)            # 读回
+kept = [l for l in back if json.loads(l).get('id') != rid]           # 按精确 id 清理
+with open(path, 'w', encoding='utf-8') as f:
+    f.write('\n'.join(kept) + ('\n' if kept else ''))
+after = len([l for l in open(path, encoding='utf-8').read().split('\n') if l.strip()])
+assert found and after == before, f'found={found} rows {before}->{after}'
+print(f'F5 写→读→删校验通过（原有 {before} 条不受影响）')
+PYEOF
+if [ $? -eq 0 ]; then grn "F5 干预快照写路径"; else red "F5 干预快照写路径异常"; fi
 
 # ---------- Full 档 ----------
 if [ "$MODE" = "full" ]; then

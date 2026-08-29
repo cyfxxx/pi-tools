@@ -13,12 +13,15 @@
  *   - 断裂判定：cacheRead < prev-100 且 input > 10K；alert 只看 A/B 类（C=起步重建正常）
  *   - 命中率 = ΣcacheRead / Σ(input+cacheRead)，窗口内加权
  *   - alert 判据（对齐 task-metrics 成功代理口径）：会话 ≥3 且命中率 <90%，或 A/B 断裂 >3
+ *   - 跨设备健康（2026-08-29 增）：设备最后遥测距今 >48h（memory/stats/tool-use-*.jsonl 尾行 ts）→ alert；
+ *     种子-任务失配（agent/scheduled-seeds.json 声明但 scheduled-tasks.json 未注册，或 schedule 漂移）→ alert。
+ *     注意对账机制“已存在不覆盖”：seeds 修改 schedule 后需各设备本地同步，漂移告警即为修复触发器
  *
  * 用法：
  *   node scripts/daily-health.mjs           # 计算并追加 logs/daily-health.log
  *   node scripts/daily-health.mjs --print   # 只输出不落盘（dry）
  */
-import { readFileSync, statSync, existsSync, appendFileSync } from 'node:fs'
+import { readFileSync, statSync, existsSync, appendFileSync, readdirSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -90,8 +93,45 @@ function main() {
     entryCount = Array.isArray(d) ? d.length : (d.entries?.length ?? 0)
   } catch { /* 缺失时保持 0 */ }
 
-  // alert 判据：样本充足（≥3 会话）才判命中率；A/B 断裂独立判
+  // 跨设备遥测健康：各设备最后遥测距今天数（memory/stats/tool-use-<device>.jsonl 尾行 ts）
   const reasons = []
+  const STATS_DIR = join(HOME, '.pi', 'memory', 'stats')
+  const devices = []
+  let staleDevices = 0
+  try {
+    if (existsSync(STATS_DIR)) {
+      for (const f of readdirSync(STATS_DIR)) {
+        if (!f.startsWith('tool-use-') || !f.endsWith('.jsonl')) continue
+        const dev = f.slice('tool-use-'.length, -'.jsonl'.length)
+        const lines = readFileSync(join(STATS_DIR, f), 'utf8').split('\n').filter(Boolean)
+        if (!lines.length) continue
+        let last = 0
+        try { last = JSON.parse(lines[lines.length - 1]).ts || 0 } catch { /* 跳过坏尾行 */ }
+        const days = last ? (now - last) / 86400_000 : Infinity
+        devices.push({ dev, days })
+        if (days > 2) { staleDevices++; reasons.push(`设备 ${dev} 失联 ${days === Infinity ? '未知时长' : Math.floor(days) + '天'}`) }
+      }
+    }
+  } catch { /* 统计缺失不阻塞主指标 */ }
+
+  // 种子-任务失配：seeds 声明但本地未注册，或 schedule 漂移（对账“已存在不覆盖”需要人工/回顾同步）
+  const SEEDS = join(HOME, '.pi', 'agent', 'scheduled-seeds.json')
+  const TASKS = join(HOME, '.pi', 'agent', 'scheduled-tasks.json')
+  let seedDrift = 0
+  try {
+    const seeds = JSON.parse(readFileSync(SEEDS, 'utf8')).tasks || []
+    const local = {}
+    try {
+      const t = JSON.parse(readFileSync(TASKS, 'utf8')).tasks || []
+      for (const x of t) local[x.name] = x
+    } catch { /* 无本地任务文件视为全部未注册 */ }
+    for (const s of seeds) {
+      if (!local[s.name]) { seedDrift++; reasons.push(`种子任务 ${s.name} 未注册`) }
+      else if (local[s.name].schedule && s.schedule && local[s.name].schedule !== s.schedule) { seedDrift++; reasons.push(`种子任务 ${s.name} schedule 漂移(${local[s.name].schedule}≠${s.schedule})`) }
+    }
+  } catch { /* seeds 缺失不阻塞 */ }
+
+  // alert 判据：样本充足（≥3 会话）才判命中率；A/B 断裂独立判
   if (sessions.length >= 3 && hit !== null && hit < 0.9) reasons.push(`命中率 ${(hit * 100).toFixed(1)}%<90%`)
   if (totAB > 3) reasons.push(`A/B 断裂 ${totAB}>3`)
   const verdict = reasons.length ? 'alert' : 'ok'
@@ -100,7 +140,7 @@ function main() {
   const p = (n) => String(n).padStart(2, '0')
   const stamp = `${ts.getFullYear()}-${p(ts.getMonth() + 1)}-${p(ts.getDate())} ${p(ts.getHours())}:${p(ts.getMinutes())}`
   const hitStr = hit === null ? 'n/a(无数据)' : `${(hit * 100).toFixed(1)}%`
-  const line = `${stamp} 命中=${hitStr} 断裂=${totBreaks}(AB=${totAB}) 浪费=${Math.round(totWaste / 1000)}K 存储=${sizeMB.toFixed(2)}MB 条目=${entryCount} 会话=${sessions.length} 轮=${rounds.length} 结论=${verdict}`
+  const line = `${stamp} 命中=${hitStr} 断裂=${totBreaks}(AB=${totAB}) 浪费=${Math.round(totWaste / 1000)}K 存储=${sizeMB.toFixed(2)}MB 条目=${entryCount} 会话=${sessions.length} 轮=${rounds.length} 设备=${devices.length}(失联${staleDevices}) 种子失配=${seedDrift} 结论=${verdict}`
 
   console.log(line)
   if (verdict === 'alert') console.log('  └ 原因: ' + reasons.join('；'))
