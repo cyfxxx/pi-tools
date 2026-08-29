@@ -26,6 +26,7 @@ import {
   loadNotes,
   saveNotes,
   updateNotes,
+  touchAccessedAt,
   loadSummaries,
   CHECKPOINTS_DIR,
 } from './storage.ts'
@@ -245,6 +246,8 @@ export function registerTools(pi: ExtensionAPI): void {
         typeof params.asOf === 'string' ? (params.asOf as string) : undefined,
       )
       const results = scored.map(x => x.entry)
+      // 访问强化：命中条目回写 accessedAt（fail-open，进程级去抖）
+      touchAccessedAt(entries, results.map(e => e.id))
       // 检索轨迹台账：query→命中明细，供事后排查「为什么没召回」（fail-open）
       logSearchTrace({
         caller: 'memory_search',
@@ -432,6 +435,8 @@ export function registerTools(pi: ExtensionAPI): void {
         detectEnvironment(), // 默认只召回当前环境 + all 的条目
       )
       const results = scored.map(x => x.entry)
+      // 访问强化（同 memory_search，fail-open）
+      touchAccessedAt(entries, results.map(e => e.id))
       // 检索轨迹台账（fail-open）
       logSearchTrace({
         caller: 'memory_recall',

@@ -16,12 +16,15 @@
  *   - 跨设备健康（2026-08-29 增）：设备最后遥测距今 >48h（memory/stats/tool-use-*.jsonl 尾行 ts）→ alert；
  *     种子-任务失配（agent/scheduled-seeds.json 声明但 scheduled-tasks.json 未注册，或 schedule 漂移）→ alert。
  *     注意对账机制“已存在不覆盖”：seeds 修改 schedule 后需各设备本地同步，漂移告警即为修复触发器
+ *   - 守门防篡改（2026-08-29 增，DGM 教训：评价器须在被改对象写权限之外）：
+ *     test-all/golden-tasks/daily-health/verify-patches 有未提交改动 → alert（改动即提交是仓库纪律）
  *
  * 用法：
  *   node scripts/daily-health.mjs           # 计算并追加 logs/daily-health.log
  *   node scripts/daily-health.mjs --print   # 只输出不落盘（dry）
  */
 import { readFileSync, statSync, existsSync, appendFileSync, readdirSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -130,6 +133,15 @@ function main() {
       else if (local[s.name].schedule && s.schedule && local[s.name].schedule !== s.schedule) { seedDrift++; reasons.push(`种子任务 ${s.name} schedule 漂移(${local[s.name].schedule}≠${s.schedule})`) }
     }
   } catch { /* seeds 缺失不阻塞 */ }
+
+  // 守门脚本防篡改（DGM 教训：agent 可能博弈/修改评价器）：关键守门脚本若有未提交改动 → alert。
+  // 正常流程改动即提交（LOG 纪律），07:50 时点未提交即异常；新增未跟踪文件不在此列。
+  const GUARD_SCRIPTS = ['scripts/test-all.sh', 'scripts/golden-tasks.sh', 'scripts/daily-health.mjs', 'scripts/verify-patches.mjs']
+  try {
+    const out = execFileSync('git', ['-C', join(HOME, '.pi'), 'status', '--porcelain', '--', ...GUARD_SCRIPTS], { encoding: 'utf8', timeout: 5000 })
+    const dirty = out.split('\n').map(l => l.slice(3).trim()).filter(Boolean)
+    if (dirty.length) reasons.push(`守门脚本有未提交改动: ${dirty.join(', ')}`)
+  } catch { /* git 不可用时静默，不阻塞主指标 */ }
 
   // alert 判据：样本充足（≥3 会话）才判命中率；A/B 断裂独立判
   if (sessions.length >= 3 && hit !== null && hit < 0.9) reasons.push(`命中率 ${(hit * 100).toFixed(1)}%<90%`)

@@ -405,3 +405,20 @@
   MYPC 失联告警将持续直至设备恢复上线
 - 回归: golden-tasks --fast 全绿（F1-F5）、test-all --fast 全绿（11 扩展+tsc）、
   daily-health --print 新字段输出正常、seeds/scheduled-tasks JSON 合法
+
+---
+
+## 2026-08-29 续 5：业界借鉴落地（低垂果实 3 项 + 中期/远期设计分析）
+- 调研源：GitHub API 实测 26 仓 + jsdelivr 拉 README 原文（AHE/memU/MemOS/Evolver/GenericAgent 等）；
+  关键参照 AHE（可观测性驱动 harness 进化）、memU（自动技能提取六步）、DGM（评价器博弈教训）、GEP 论文
+- 5.1 访问强化（MemoryBank）: pi-memory storage.ts 新增 touchAccessedAt（命中回写 accessedAt，
+  进程级 Set 去抖，fail-open，saveEntries 写前合并防墓碑复活）；tools.ts memory_search/memory_recall
+  双挂点；新增单测（回写持久化/deleted 跳过/去抖）→ pi-memory vitest 全绿 + tsc 绿
+- 5.2 干预→反思闭环（Reflexion）: daily-review prompt 新增步骤 3——解析 interventions.jsonl 近 7 天
+  corrective 非空记录，有则提炼教训（solutions/confidence 0.6/前缀'干预教训:'/回链 ts）；seeds 与本机
+  scheduled-tasks 双写（对账不覆盖已存在任务，必须本地同步）
+- 5.3 守门防篡改（DGM 教训）: daily-health 新判据——test-all/golden-tasks/daily-health/verify-patches
+  4 脚本 git status 未提交改动 → alert；dry-run 实证捕获本次自身未提交改动（闭环自证），提交后消除
+- 中期 5.4-5.7 设计分析与远期 5.8-5.9 触发条件写入 ROADMAP 阶段 5（patch-vs-create/归纳升级/
+  importance 阈值反思/自动课程；元优化等 corrective≥50 条；GEP schema 冻结+links 候选绑 5.5）
+- 回归: pi-memory vitest+tsc 绿、daily-health --print 新判据正常、seeds/scheduled-tasks JSON 合法

@@ -118,3 +118,29 @@
 - [x] 阶段 3.2（知识订阅：knowledge-fetch.py + 并入自检入库；08-20 已产当日文件）
 - [x] 阶段 3.4/3.5（⏸ 暂缓：无稳定主机、无邮箱/Telegram 需求；用户定焦 = 优化 pi + 日常沟通）
 - [x] §4 P1 缓存断链：✅ 已闭环——归因错误已回滚（无网关硬裁）；MISS=缓存 TTL 过期+跨会话边界；实弹 97.7% 达目标，剩余为规律运营成本
+
+## 阶段 5（2026-08-29）：业界借鉴落地（GitHub 自进化 agent 项目调研驱动）
+
+> 调研源：GitHub API 实测 26 仓（AHE/memU/OpenViking/Evolver/MemOS/DGM/Voyager/ExpeL/Reflexion 等），
+> 机制细节与结论详见 memory reference 条目「GitHub 自进化 agent 项目调研结论」。区分两类信号源：
+> benchmark 驱动（DGM/OpenEvolve）与真实使用驱动（Voyager/AHE/memU）——本阶段只吸收后者可迁移机制。
+
+### 已执行（低垂果实，用户批准）
+
+| # | 项 | 来源 | 落点 |
+|---|---|---|---|
+| 5.1 | 访问强化：检索命中回写 accessedAt（进程级去抖，fail-open）；修复剪枝语义漏洞（被检索使用不强化→活跃旧条目误剪） | MemoryBank | pi-memory storage.touchAccessedAt + tools.ts search/recall 双挂点 + 单测 |
+| 5.2 | 干预→反思闭环：daily-review 新增步骤 3（近 7 天 corrective 记录提炼教训，confidence=0.6，回链记录 ts） | Reflexion | seeds + 本机 scheduled-tasks 同步（5 步版） |
+| 5.3 | 守门防篡改：test-all/golden-tasks/daily-health/verify-patches 未提交改动 → alert（DGM 实锤 agent 会博弈评价器） | DGM 教训 | daily-health 新判据；改动即提交纪律下误报率≈0 |
+
+### 中期设计（已分析，待实施）
+
+- **5.4 summarizer patch-vs-create**（memU 六步管线第 3 步）：写 SKILL 草稿前先 ls packs/drafts + memory_search 同主题；存在 → 输出差异报告人工确认合并，不存在 → 新建。成本 prompt 级；随下次 summarizer 迭代顺手落地。防草稿碎片化。
+- **5.5 ExpeL 归纳升级**：memory-lifecycle 增“聚合候选”类（同主题 solutions 组内 Σrecurrence≥8 且条数≥3）→ LLM 归纳单条规则（confidence 0.7），旧条目 superseded 指向新条目；merge.ts 增 UPGRADE 操作。价值：条目数控制（665+ 且增长）+ 注入预算压力缓解。前置：5.1 数据准确后运行一轮观察。
+- **5.6 importance 累计触发反思**（Generative Agents）：daily-health 增输出近 24h 新条目 Σ(confidence×recurrence)，超阈值（初值 12）→ daily-review 当日强制跨条目反思（生成带引用 insight）。确定性触发（硬）+ LLM 反思（软），替代纯固定节奏。
+- **5.7 自动课程**（Voyager）：lesson-miner 连续 2 轮同主题高置信教训 → 自动生成 drafts/ 优化工单草稿（不执行），daily-review 呈报待确认。前置：5.2 稳定运行一段。授权边界不变：结构性改动仍须用户确认。
+
+### 远期分析（记录触发条件，暂不实施）
+
+- **5.8 提示词元优化**（GEPA/DSPy/TextGrad）：metric 已备（task-metrics --json）；障碍 = 个人场景样本量小（噪声大）+ APPEND_SYSTEM.md 改动重置缓存前缀（成本敏感）。触发条件：interventions corrective 记录 ≥50 条（现 1 条）。
+- **5.9 GEP 式经验表示固化**（arXiv:2604.15097 实证：文档式 skill 包控制信号不稳定，紧凑结构化表示最优）：决策 = entries schema 冻结，唯一候选增列 links（A-MEM 双向链接）与 5.5 绑定评估；LoRA 铺垫（VISION §6）数据面持续积累（P1/P2 结构化字段已就绪），等量变。

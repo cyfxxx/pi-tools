@@ -582,3 +582,28 @@ describe('storage: DATA_DIR 回退链（2026-08-25 审计修复，对齐 lib/not
     expect(DATA_DIR).toBe(join(process.env.HOME || '/root', '.pi', 'memory'))
   })
 })
+
+describe('storage: touchAccessedAt 访问强化（2026-08-29）', () => {
+  it('命中条目回写 accessedAt 并持久化，deleted 跳过，去抖不重复写', async () => {
+    const { loadEntries, saveEntries, touchAccessedAt } = await import('../storage.ts')
+    const old = new Date(Date.now() - 100 * 86400_000).toISOString()
+    const e1 = makeEntry({ id: 'acc-1', accessedAt: old })
+    const e2 = makeEntry({ id: 'acc-2', accessedAt: old })
+    const e3 = makeEntry({ id: 'acc-del', accessedAt: old, deleted: true })
+    saveEntries([e1, e2, e3])
+
+    const entries = loadEntries()
+    const changed = touchAccessedAt(entries, ['acc-1', 'acc-del', 'acc-1'])
+    expect(changed).toBe(1) // acc-del deleted 跳过；acc-1 去抖只算一次
+
+    const disk = loadEntries()
+    const got = disk.find(e => e.id === 'acc-1')!
+    expect(new Date(got.accessedAt).getTime()).toBeGreaterThan(new Date(old).getTime())
+    expect(disk.find(e => e.id === 'acc-del')!.accessedAt).toBe(old)
+
+    // 同进程再触同一 id：去抖，无新写
+    expect(touchAccessedAt(loadEntries(), ['acc-1'])).toBe(0)
+    // 未触过的 id 正常回写
+    expect(touchAccessedAt(loadEntries(), ['acc-2'])).toBe(1)
+  })
+})

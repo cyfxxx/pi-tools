@@ -148,6 +148,32 @@ function sanitizeSummary(s: SummaryEntry): SummaryEntry {
 
 // ── L1 长期记忆 ──────────────────────────────────────────────
 
+/**
+ * 访问强化（MemoryBank，2026-08-29）：检索命中回写 accessedAt。
+ * 修复语义漏洞：30/60 天未访问剪枝中的“访问”原只算被再次提取（store/merge），
+ * 被检索使用不强化 → 活跃引用的旧条目会被误剪。
+ * 去抖：进程级 Set，同一 id 本进程内只写盘一次（访问强化时间粒度天级，足够）；
+ * saveEntries 走写前合并（防墓碑复活），fail-open 不影响检索主流程。
+ */
+const accessTouched = new Set<string>()
+export function touchAccessedAt(entries: MemoryEntry[], ids: string[]): number {
+  let changed = 0
+  try {
+    const now = new Date().toISOString()
+    for (const id of ids) {
+      if (accessTouched.has(id)) continue
+      const e = entries.find(x => x.id === id)
+      if (e && !e.deleted) {
+        e.accessedAt = now
+        accessTouched.add(id)
+        changed++
+      }
+    }
+    if (changed) saveEntries(entries)
+  } catch { /* fail-open */ }
+  return changed
+}
+
 export function loadEntries(): MemoryEntry[] {
   ensureDir()
   const store = readEntriesFile()
