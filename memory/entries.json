@@ -923,7 +923,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-09T12:45:36.011Z",
       "updatedAt": "2026-08-09T12:45:36.011Z",
-      "accessedAt": "2026-08-30T02:35:25.146Z",
+      "accessedAt": "2026-08-30T02:51:00.370Z",
       "observedAt": "2026-08-09T12:45:36.011Z",
       "deleted": false,
       "environments": [
@@ -1060,7 +1060,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-09T14:52:13.231Z",
       "updatedAt": "2026-08-09T14:52:13.231Z",
-      "accessedAt": "2026-08-30T02:35:24.968Z",
+      "accessedAt": "2026-08-30T02:51:00.370Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
       "deleted": false,
       "environments": [
@@ -1082,7 +1082,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-09T14:52:13.231Z",
       "updatedAt": "2026-08-09T14:52:13.231Z",
-      "accessedAt": "2026-08-09T14:52:13.231Z",
+      "accessedAt": "2026-08-30T02:51:00.370Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
       "deleted": false,
       "environments": [
@@ -2244,7 +2244,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T10:16:05.357Z",
       "updatedAt": "2026-08-10T10:16:05.357Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
+      "accessedAt": "2026-08-30T02:51:00.370Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
       "deleted": false,
       "environments": [
@@ -4856,7 +4856,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T00:09:32.667Z",
       "updatedAt": "2026-08-13T00:09:32.667Z",
-      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-08-30T02:51:00.181Z",
       "observedAt": "2026-08-13T00:09:32.667Z",
       "environments": [
         "termux"
@@ -5603,7 +5603,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-08-13T16:02:02.699Z",
-      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-08-30T02:51:00.370Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "termux"
@@ -10968,7 +10968,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T12:16:03.384Z",
       "updatedAt": "2026-08-24T12:16:03.384Z",
-      "accessedAt": "2026-08-24T12:16:03.384Z",
+      "accessedAt": "2026-08-30T02:50:59.858Z",
       "observedAt": "2026-08-24T12:16:03.384Z",
       "environments": [
         "termux"
@@ -14140,7 +14140,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T02:40:06.507Z",
       "updatedAt": "2026-08-28T02:40:06.507Z",
-      "accessedAt": "2026-08-28T02:40:06.507Z",
+      "accessedAt": "2026-08-30T02:50:59.858Z",
       "environments": [
         "all"
       ],
@@ -14258,7 +14258,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T05:54:35.240Z",
       "updatedAt": "2026-08-28T05:54:35.240Z",
-      "accessedAt": "2026-08-28T05:54:35.240Z",
+      "accessedAt": "2026-08-30T02:51:00.181Z",
       "environments": [
         "all"
       ],
@@ -14442,7 +14442,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T05:54:56.473Z",
       "updatedAt": "2026-08-28T05:54:56.473Z",
-      "accessedAt": "2026-08-28T05:54:56.473Z",
+      "accessedAt": "2026-08-30T02:50:59.858Z",
       "environments": [
         "all"
       ],
@@ -14612,7 +14612,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T06:01:32.944Z",
       "updatedAt": "2026-08-28T06:01:32.944Z",
-      "accessedAt": "2026-08-28T06:01:32.944Z",
+      "accessedAt": "2026-08-30T02:51:00.181Z",
       "environments": [
         "all"
       ],
@@ -14780,7 +14780,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T08:31:03.106Z",
       "updatedAt": "2026-08-28T08:31:03.106Z",
-      "accessedAt": "2026-08-28T08:31:03.106Z",
+      "accessedAt": "2026-08-30T02:50:59.858Z",
       "observedAt": "2026-08-28T08:31:03.106Z",
       "environments": [
         "termux"
@@ -14945,30 +14945,12 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T11:52:53.932Z",
       "updatedAt": "2026-08-28T11:52:53.932Z",
-      "accessedAt": "2026-08-28T11:52:53.932Z",
+      "accessedAt": "2026-08-30T02:51:00.181Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-28T11:52:53.932Z",
       "deleted": false
-    },
-    {
-      "id": "7ebc9065-ec74-400a-951c-162c9b431c8b",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 10,
-      "createdAt": "2026-08-28T12:05:41.438Z",
-      "updatedAt": "2026-08-30T02:50:12.102Z",
-      "accessedAt": "2026-08-30T02:35:25.718Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-28T12:05:41.438Z",
-      "deleted": true
     },
     {
       "id": "ecec54b5-dd75-4f72-b55e-4b53c6cac6ac",
@@ -15343,7 +15325,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-29T01:30:58.970Z",
       "updatedAt": "2026-08-29T01:30:58.970Z",
-      "accessedAt": "2026-08-29T01:30:58.970Z",
+      "accessedAt": "2026-08-30T02:50:59.858Z",
       "environments": [
         "all"
       ],
@@ -16049,6 +16031,51 @@
       ],
       "observedAt": "2026-08-30T02:37:04.049Z",
       "deleted": false
+    },
+    {
+      "id": "e5a70972-edd1-4a73-be25-fb48b93dc8d5",
+      "category": "solutions",
+      "title": "扩展/SDK 忙时发消息需指定 streamingBehavior",
+      "content": "pi 扩展/SDK 在 agent 正在处理回合时调用 sendMessage/sendPrompt 类 API 会抛错：Extension \"<runtime>\" error: Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the...。两种修法：①发送前先检查 agent 忙状态（是否处理中）再决定是否发送；②显式传 streamingBehavior 参数——'steer' 将消息转向当前进行中的回合（当轮生效），'followUp' 排队为下一回合输入。扩展内自动化触发（scheduler/事件驱动/嵌套调用）建议用 'followUp'，避免打断正在执行的任务。实测于 2026-08-30 会话（Extension \"<runtime>\" 报错场景）。",
+      "tags": [
+        "pi-sdk",
+        "扩展开发",
+        "streamingBehavior",
+        "报错处理"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-30T02:51:39.296Z",
+      "updatedAt": "2026-08-30T02:51:39.296Z",
+      "accessedAt": "2026-08-30T02:51:39.296Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-30T02:51:39.296Z",
+      "deleted": false
+    },
+    {
+      "id": "ef8b02f0-e922-44e9-9fa2-17304d8cb228",
+      "category": "solutions",
+      "title": "sendUserMessage 主会话 busy 时必须传 deliverAs",
+      "content": "pi 0.8x SDK：主会话 streaming（处理回合中）时调用 pi.sendUserMessage() 不带 options，底层 prompt() 直接抛 \"Agent is already processing. Specify streamingBehavior ('steer' or 'followUp')\"，调用方若无 catch 或静默 catch，消息永久丢失。规则：后台/自动路径（调度任务完成报告、恢复注入等）必须传 { deliverAs: 'followUp' }——busy 时排队到当前回合结束后投递，空闲时立即开新回合；需要打断/插话当前回合用 'steer'（pi-voice 先例）；sync 签名另支持 'nextTurn'。2026-08-30 事故：daily-review 完成报告因该竞态被静默吞掉未达主会话，修复 commit e2ca26d（pi-autopilot scheduler.ts:346/487、index.ts:100、plan-mode/index.ts:1131 四处）。",
+      "tags": [
+        "pi-autopilot",
+        "sendUserMessage",
+        "deliverAs",
+        "scheduler",
+        "bugfix"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-30T02:52:14.884Z",
+      "updatedAt": "2026-08-30T02:52:14.884Z",
+      "accessedAt": "2026-08-30T02:52:14.884Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }
