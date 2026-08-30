@@ -58,6 +58,8 @@
 
 数据源字段：`recurrence`（复现次数）、`accessedAt`、`confidence`、`source`。
 
+- **内容域边界（2026-08-29 用户指令）**：长期记忆只存 pi 项目/用户相关内容；项目域经验（如游戏开发、外部技能包的实操经验）存对应技能包（packs/<name>/EXPERIENCE.md 或 SKILL.md），不进记忆库
+
 - **淘汰候选**：未删除 且 recurrence≤1 且 accessedAt 距今 >180 天 且 confidence<0.7 → 报告列出；批量删除必须用户确认（授权边界见 ROADMAP §5）。
 - **升格候选**：solutions/fact 类 recurrence≥5 → 进入 §3.1 升格通道评估。
 - **冲突嫌疑**：标题近似或同主题反向结论 → 报告列出，由会话裁决合并。
