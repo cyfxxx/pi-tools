@@ -88,7 +88,8 @@ export const EFFICIENCY_ADVICE = `## Execution Efficiency
 
 - Independent tool calls (multiple reads, greps, globs) MUST be issued in a single assistant turn — batch them together; a parallel batch costs only one request.
 - During exploration/execution turns, do NOT write explanatory text or progress reports — output tool calls only. Summarize once when everything is done.
-- Exception: when todo progress updates are required or a plan summary is requested, output the required structured summary.`;
+- Exception: when todo progress updates are required or a plan summary is requested, output the required structured summary.
+- Long exploration dead-ends: if multiple reads/greps yield no conclusion, delegate exploration to subagent (scout) to keep the main context clean.`;
 
 /**
  * 低压力精简版委托建议（静态注入，缓存友好）：
@@ -292,6 +293,29 @@ function compactJson(
 // 规则确定性 → 同输入同输出，不破坏缓存；无错误标记时不改动。
 const ERROR_MARK_RE = /(^|\n)\s*(Error|ERROR|Traceback \(most recent call last\)|error:)/;
 const ERROR_LINE_MAX = 800;
+const FAIL_STREAK_LIMIT = 3
+/** 连续失败熔断提示（静态、写入时追加，不改历史消息 → 无缓存破坏） */
+export const FAIL_BREAKER_HINT = "\n\n→ 熔断提示：同一工具已连续失败 3 次以上。停止重复尝试：先检查前置条件（路径/权限/网络/参数）或改用替代方案；再次失败应暂停并向用户说明。"
+/** 错误脱水时的引用提示（一行，静态） */
+export const DEHYDRATE_HINT = "\n→ 错误已精简；连续失败时优先参考记忆库 [solutions] 条目。"
+
+/** 失败计数状态：同一工具连续失败（中间有成功即清零），会话级 */
+const failStreak = new Map<string, number>()
+
+/** 更新失败连击：返回触发熔断的提示（第 FAIL_STREAK_LIMIT 次失败时；纯函数，便于测试） */
+export function updateFailStreak(
+	streak: Map<string, number>,
+	toolName: string,
+	isError: boolean,
+): { n: number; hint?: string } {
+	if (!isError) {
+		streak.delete(toolName);
+		return { n: 0 };
+	}
+	const n = (streak.get(toolName) ?? 0) + 1;
+	streak.set(toolName, n);
+	return n === FAIL_STREAK_LIMIT ? { n, hint: FAIL_BREAKER_HINT } : { n };
+};
 const ERROR_LINE_KEEP = 240;
 
 function dehydrateErrorOutput(text: string): string | undefined {
@@ -339,6 +363,14 @@ function rebuildTextContent(
 	return rebuilt;
 }
 
+/** 内容尾部追加文本块（非 text 块保持相对顺序；写入时修改，无缓存影响）。 */
+function appendText(
+	content: ToolResultEvent["content"],
+	text: string,
+): ToolResultEvent["content"] {
+	return [...content, { type: "text", text }];
+}
+
 /**
  * R4 工具输出截断的纯函数（供单测）：超限时截断文本块；
  * 非 text 块（read 返回的图片等）必须原样保留——重建 content 时不得静默丢弃。
@@ -366,7 +398,7 @@ export function truncateToolContent(
 	if (dehy !== undefined && Buffer.byteLength(dehy, "utf8") <= cap) {
 		const omitted = Buffer.byteLength(totalText, "utf8") - Buffer.byteLength(dehy, "utf8");
 		if (omitted > 0) {
-			return { content: rebuildTextContent(content, dehy), omittedBytes: omitted };
+			return { content: rebuildTextContent(content, dehy + DEHYDRATE_HINT), omittedBytes: omitted };
 		}
 	}
 
@@ -776,15 +808,23 @@ export default function (pi: ExtensionAPI) {
 		if (modified) return { messages };
 	});
 
-	// R4：工具输出截断（确定性变换，稳定）。
+	// R4：工具输出截断（确定性变换，稳定）+ 连续失败熔断（写入时追加提示）。
 	// bash/read 输出上限 5KB（最常见的超大输出源）；其他工具 20KB 兜底
 	// （防止未来新工具输出失控直达上下文，子代理等合理输出不受影响）。
+	// 熔断：同一工具连续失败 ≥3 次 → 结果尾部追加静态提示，阻止重复试错轮
 	pi.on("tool_result", (event: ToolResultEvent) => {
 		const cap = event.toolName === "bash" || event.toolName === "read" ? MAX_TOOL_BYTES : MAX_OTHER_TOOL_BYTES;
 		const truncated = truncateToolContent(event.toolName, event.content, cap);
-		if (!truncated) return;
+		let content = truncated ? truncated.content : event.content;
+		let hint: string | undefined;
+		if (event.isError) {
+			hint = updateFailStreak(failStreak, event.toolName, true).hint;
+		} else {
+			updateFailStreak(failStreak, event.toolName, false);
+		}
+		if (!truncated && !hint) return;
 		return {
-			content: truncated.content,
+			content: hint ? appendText(content, hint) : content,
 			details: event.details,
 		};
 	});

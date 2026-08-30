@@ -59,7 +59,9 @@
 - **thinking 剪枝**：**2026-08-22 起已停用**——每轮剪最老 thinking 块导致前缀缓存全断重发（max 档位单轮 18-20K，64K 预算仅容 ~3 轮必触发）；清理职责让给 auto-compact，`pruneThinkingBudget` 函数保留在 lib/prune.ts（含测试）作未来 compact 后兜底，context 阶段不再调用。以下为停用前历史参数：保留最近 64K token 的 thinking（`DEFAULT_KEEP_THINKING_TOKENS = 64000`），预算耗尽处及更早的全部删除。早期"保留最近 2 轮"的数量规则已废弃——max 推理级别下单轮 reasoning 可达 5-10K，轮数上限不可控。
   - **2026-08-18 实测调高 16K→64K**：16K 预算下剪枝触发率 70%（max 推理级别每 2-3 轮超预算），每次触发修改早期消息序列 → 前缀缓存从删除点断裂全价重发（3.8h 会话 27 次断裂、1.46M token 浪费 ≈ 9.2M/天，总累计命中率被拉到 88%）。64K 覆盖典型会话全部 thinking（实测 52K）→ 剪枝休眠；仅超长深推理会话触发，触发间隔 = 64K/每轮 thinking ≈ 12-30 轮。代价：thinking 全保留使每轮 cacheRead 多 ~52K × 1/5 折价 ≈ 10K/轮等价值，远低于断裂重发成本。
 - **工具输出截断**（R4）：写入时截断——bash/read 5KB（bash 用 `truncateTail` 保留尾部错误/结果，read 用 `truncateHead` 保留开头，并保留原始 details），其他工具 20KB 兜底（防止未来新工具输出失控直达上下文）。
-- **执行效率注入**（`EFFICIENCY_ADVICE`，静态缓存友好）：要求模型一轮内批量发出独立工具调用（内核已支持 parallel batch）、非终轮不写解释文本、todo/plan 摘要请求时例外。
+  - **错误脱水提示**：错误文本命中脱水路径（重复行折叠/超长行截断）时，尾部追加一行 `→ 错误已精简；连续失败时优先参考记忆库 [solutions] 条目`（静态、写入时追加）。
+  - **连续失败熔断**（2026-08-31，借鉴 12-factor-agents factor 9 error counter）：同一工具连续失败 ≥3 次（中间有成功清零，会话级计数，`updateFailStreak` 纯函数）→ 该轮结果尾部追加静态熔断提示（停止重复尝试/检查前置条件/暂停向用户说明），第 3 次失败触发一次不重复。
+- **执行效率注入**（`EFFICIENCY_ADVICE`，静态缓存友好）：要求模型一轮内批量发出独立工具调用（内核已支持 parallel batch）、非终轮不写解释文本、todo/plan 摘要请求时例外、长探索僵局转 subagent 隔离探索。
 - **压力提示按档位**：基于 auto-compact 阈值比例注入固定文案（阈值内 <75% 不注入、≥75% 注入委托建议文案、≥90% 注入保存决策文案）；档位跳变才改变 system prompt，无压力时与 pi 原生完全一致 → 消息历史缓存前缀稳定。
 - **真实用量校准（2026-08 审计）**：`before_agent_start` 用 `ctx.getContextUsage()` 的真实 tokens 调 `setUsedTokens` 覆盖共享库上报值（recordToolUsage 只统计工具输出，与真实上下文用量口径不一致）——plan-mode 等共享 context-budget 的消费者压力提示随之准确
 - **缓存友好**：所有变换均为确定性（判定只依赖消息内容）；system prompt 注入不含时间戳与精确数值。**注意：确定性 ≠ 缓存安全**——任何变换（擦除/剪枝/过滤）只要改变消息序列就会破坏前缀缓存，确定性只保证同输入同输出，不保证与上一轮序列一致。

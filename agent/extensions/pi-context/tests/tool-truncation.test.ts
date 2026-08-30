@@ -14,7 +14,7 @@ vi.mock('@earendil-works/pi-coding-agent', () => ({
   },
 }))
 
-import { truncateToolContent } from '../index.ts'
+import { truncateToolContent, updateFailStreak } from '../index.ts'
 
 function textBlock(text: string) {
   return { type: 'text' as const, text }
@@ -173,5 +173,46 @@ describe('truncateToolContent: 错误确定性脱水（12-factor factor-09）', 
     expect(text).toContain('Error: start here')
     expect(text).toContain('end marker here') // 未砍头砍尾
     expect(text).toContain('行重复已折叠')
+  })
+})
+
+describe('updateFailStreak: 连续失败熔断计数', () => {
+  it('同一工具连续失败 3 次触发熔断提示，4 次不重复触发', () => {
+    const streak = new Map<string, number>()
+    const r1 = updateFailStreak(streak, 'bash', true)
+    expect(r1.hint).toBeUndefined()
+    const r2 = updateFailStreak(streak, 'bash', true)
+    expect(r2.hint).toBeUndefined()
+    const r3 = updateFailStreak(streak, 'bash', true)
+    expect(r3.hint).toBeDefined()
+    const r4 = updateFailStreak(streak, 'bash', true)
+    expect(r4.hint).toBeUndefined() // 已在熔断态，不重复追加
+  })
+
+  it('中途成功清零连击', () => {
+    const streak = new Map<string, number>()
+    updateFailStreak(streak, 'bash', true)
+    updateFailStreak(streak, 'bash', true)
+    updateFailStreak(streak, 'bash', false) // 成功清零
+    const r = updateFailStreak(streak, 'bash', true)
+    expect(r.hint).toBeUndefined() // 重新从 1 计数
+  })
+
+  it('不同工具独立计数', () => {
+    const streak = new Map<string, number>()
+    updateFailStreak(streak, 'bash', true)
+    updateFailStreak(streak, 'bash', true)
+    expect(updateFailStreak(streak, 'read', true).hint).toBeUndefined()
+    expect(updateFailStreak(streak, 'read', true).hint).toBeUndefined()
+    expect(updateFailStreak(streak, 'read', true).hint).toBeDefined()
+  })
+
+  it('失败计数不因熔断触发后重置（连续失败仍保持计数）', () => {
+    const streak = new Map<string, number>()
+    updateFailStreak(streak, 'bash', true)
+    updateFailStreak(streak, 'bash', true)
+    updateFailStreak(streak, 'bash', true)
+    updateFailStreak(streak, 'bash', true)
+    expect(streak.get('bash')).toBe(4)
   })
 })
