@@ -32,8 +32,9 @@ import { getBudgetReport } from "../../lib/context-budget.ts";
 export const LEVEL_LADDER = ["low", "medium", "high"] as const;
 export type AutoThinkLevel = (typeof LEVEL_LADDER)[number];
 
-/** 压力阈值：ratio>=CRITICAL_RATIO 降挡；ratio<LOW_RATIO 视为回落（对照 context-budget 的 70/85/95） */
-export const CRITICAL_RATIO = 0.95;
+/** 压力阈值：ratio>=CRITICAL_RATIO 降挡；ratio<LOW_RATIO 视为回落（对照 context-budget 的 70/90/95）
+ * 2026-08-30 用户修订：降档阈值 95%→90%（真实窗口比例，1M 窗口下 ≈900K 触发） */
+export const CRITICAL_RATIO = 0.9;
 export const LOW_RATIO = 0.7;
 /** 防抖死区：切换后此时间窗内不再次切换（ms） */
 export const MIN_INTERVAL_MS = 90_000;
