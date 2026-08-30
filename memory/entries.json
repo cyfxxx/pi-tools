@@ -231,7 +231,7 @@
       "recurrence": 25,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-08-03T13:32:38.668Z",
-      "accessedAt": "2026-08-30T02:35:25.718Z",
+      "accessedAt": "2026-08-30T08:58:23.514Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -11908,7 +11908,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T01:58:10.919Z",
       "updatedAt": "2026-08-25T01:58:10.919Z",
-      "accessedAt": "2026-08-25T01:58:10.919Z",
+      "accessedAt": "2026-08-30T08:59:59.320Z",
       "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
         "wsl2"
@@ -12401,7 +12401,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T07:18:10.486Z",
       "updatedAt": "2026-08-25T07:18:10.486Z",
-      "accessedAt": "2026-08-25T07:18:10.486Z",
+      "accessedAt": "2026-08-30T08:59:59.320Z",
       "observedAt": "2026-08-25T07:18:10.486Z",
       "environments": [
         "wsl2"
@@ -12478,7 +12478,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-08-29T07:17:01.281Z",
+      "accessedAt": "2026-08-30T08:59:59.320Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -12654,7 +12654,7 @@
       "recurrence": 2,
       "createdAt": "2026-08-25T22:54:39.097Z",
       "updatedAt": "2026-08-29T01:51:17.706Z",
-      "accessedAt": "2026-08-29T07:17:01.281Z",
+      "accessedAt": "2026-08-30T08:59:59.320Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -16075,7 +16075,9 @@
       "accessedAt": "2026-08-30T02:52:14.884Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-30T02:52:14.884Z",
+      "deleted": false
     },
     {
       "id": "af33892e-388d-47d4-a5b6-bc70d68b1e49",
@@ -16096,7 +16098,7 @@
       "recurrence": 25,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-08-03T13:32:38.669Z",
-      "accessedAt": "2026-08-02T08:40:02.562Z",
+      "accessedAt": "2026-08-30T08:59:59.320Z",
       "observedAt": "2026-08-03T13:32:38.669Z",
       "deleted": false,
       "environments": [
@@ -16136,10 +16138,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 13,
+      "recurrence": 15,
       "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-26T13:36:47.737Z",
-      "accessedAt": "2026-08-26T13:36:47.737Z",
+      "updatedAt": "2026-08-30T08:59:59.286Z",
+      "accessedAt": "2026-08-30T08:59:59.286Z",
       "environments": [
         "all"
       ],
@@ -16578,7 +16580,8 @@
       "references": 0,
       "supersededBy": null,
       "deleted": false,
-      "tags": []
+      "tags": [],
+      "accessedAt": "2026-08-13T01:13:19.544Z"
     },
     {
       "id": "1e40c26a-8242-44d3-a037-3dacdc5c0f94",
@@ -19339,7 +19342,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:04.950439Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:04.950439Z"
     },
     {
       "id": "mem_tsconfig_merged_20260814",
@@ -19360,7 +19364,8 @@
       "lastSessionId": "2026-08-13T14-47-05",
       "source": "manual-merge",
       "observedAt": "2026-08-14T11:05:18.280887Z",
-      "deleted": false
+      "deleted": false,
+      "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
       "id": "0e173073-7b57-40e9-bb1c-8183f5e3b3fb",
@@ -19741,7 +19746,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "693dad64-2311-48ea-93e9-c5f099e48050",
@@ -19764,7 +19770,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "84c34cb1-9bf1-4293-84a2-982f0938fdc5",
@@ -19787,7 +19794,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "1999f763-2d7e-4810-9e44-4f5b0004184a",
@@ -19811,7 +19819,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "0e2e8e62-1429-4e6e-b54e-2e8f3242c6e2",
@@ -19834,7 +19843,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "fbe9d199-a70d-44bc-9e7c-3370c5c79e1a",
@@ -19856,7 +19866,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "3951b7cf-a070-4dd1-a3b8-4aaa59998482",
@@ -19879,7 +19890,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc"
+      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
+      "deleted": false
     },
     {
       "id": "3b9736cb-af89-4376-8738-bdc0dd8e5910",
@@ -21286,7 +21298,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "49260c34-a3c8-46f7-b5f1-9905559a8b95",
@@ -21308,7 +21321,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "e35950f3-e533-4bdb-8231-be3d101e97ca",
@@ -21330,7 +21344,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "2d861c94-47fc-4407-95da-eaf9e772b393",
@@ -21351,7 +21366,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "2c97b487-90f3-4e5a-814a-9befa6190729",
@@ -21373,7 +21389,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "17d89598-a204-4eff-a7b6-a1d925eaaeca",
@@ -21395,7 +21412,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "4728fc10-1d4e-4fcf-9342-e8a6089dd22f",
@@ -21417,7 +21435,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     },
     {
       "id": "5c92cf9c-4609-4617-bbde-b48f48127b5b",
@@ -21439,7 +21458,8 @@
       "environments": [
         "wsl2"
       ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d"
+      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
+      "deleted": false
     }
   ]
 }
