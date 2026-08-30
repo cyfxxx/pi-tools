@@ -343,7 +343,10 @@ export class SessionScheduler {
         throw e
       }
       try {
-        await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`)
+        // deliverAs:'followUp'（2026-08-30）：主会话 streaming 中调用裸 sendUserMessage 会抛
+        // "Agent is already processing"，任务注入被记失败走恢复重注入；followUp 排队到
+        // 当前回合结束后投递，busy 不再失败，真实故障（API 缺失等）仍走下方复位逻辑
+        await this.pi.sendUserMessage(`${label}: ${renderPrompt(task.prompt)}`, { deliverAs: 'followUp' })
       } catch (e) {
         // 审计 MEDIUM：抛错前 markPendingInjected(true) 已置位——失败必须复位，
         // 否则暂停期 tick 跳过该任务（!pendingInject 过滤）且崩溃恢复会把未交付
@@ -484,7 +487,10 @@ export class SessionScheduler {
             const tail = stdout.trim().slice(-1500)
             if (tail) {
               try {
-                await this.pi.sendUserMessage?.(`[Scheduler] ${task.name} 已完成\n\n${tail}`)
+                // deliverAs:'followUp'（2026-08-30）：主会话 busy 时裸调用抛错被此处 catch
+                // 静默吞掉，完成报告永久丢失（当日 daily-review 报告即因此未达主会话）；
+                // followUp 排队投递，busy 也不再触发主会话的 "Agent is already processing" 报错
+                await this.pi.sendUserMessage?.(`[Scheduler] ${task.name} 已完成\n\n${tail}`, { deliverAs: 'followUp' })
               } catch { /* 主会话不可用时静默 */ }
             }
           }

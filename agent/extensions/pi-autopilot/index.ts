@@ -97,7 +97,7 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
                   await writeTasks(store)
                 }
               })
-              await pi.sendUserMessage(`[Scheduler] ${task.name}（上次会话中断，第 ${recovery} 次恢复注入）: ${renderPrompt(task.prompt)}`)
+              await pi.sendUserMessage(`[Scheduler] ${task.name}（上次会话中断，第 ${recovery} 次恢复注入）: ${renderPrompt(task.prompt)}`, { deliverAs: 'followUp' })
               // 审计 MEDIUM 修复（2026-08-18）：恢复注入同样登记 injectedIds——
               // 否则 agent_settled 的 finalizeInjected 不感知本路径（d323ab9 只补了
               // fireViaMessage 正常注入），once 任务恢复注入后永不删除、nextRun 缓冲

@@ -1128,7 +1128,8 @@ ${todoList}
     } else if (choice === "优化计划") {
       const refinement = await ctx.ui.editor("优化计划:", "");
       if (refinement?.trim()) {
-        pi.sendUserMessage(refinement.trim());
+        // deliverAs:'followUp'（2026-08-30）：主会话 streaming 中裸调用会抛 "Agent is already processing"
+        pi.sendUserMessage(refinement.trim(), { deliverAs: 'followUp' });
       }
     } else {
       // 继续计划模式（或取消选择）：确认当前任务状态，避免下一轮重复弹选择器
