@@ -154,7 +154,7 @@ describe('tickThinkingLevel', () => {
     const { calls, setLevel } = recordEvents()
     const clk = makeNow()
     expect(tickThinkingLevel(s, 0.8, setLevel, clk.now())).toBeNull()
-    expect(tickThinkingLevel(s, 0.9, setLevel, clk.now())).toBeNull()
+    expect(tickThinkingLevel(s, 0.85, setLevel, clk.now())).toBeNull()
     expect(s.criticalStreak).toBe(0)
     expect(s.lowStreak).toBe(0)
     expect(calls).toEqual([])
