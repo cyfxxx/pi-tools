@@ -3,11 +3,14 @@
  *
  * 背景：thinking 档位（high/medium/low）决定每轮思考 token 预算，与缓存命中/A 类
  * 剪枝断裂强相关。max→high 实测有效后，改为按上下文压力自动升降档位：
- *   - 降挡：上下文持续 critical（token/window ratio≥95%）→ 降一档。critical 时
+ *   - 降挡：上下文持续 critical（真实窗口比例≥95%）→ 降一档。critical 时
  *     thinking 预算会与上下文空间争抢、触发 thinking 剪枝（A 类断裂主因），降档
  *     可同时省 token 并降低剪枝概率。
  *   - 升回：压力回落 low（ratio<70%）且连续稳定 → 升一档，最高到本会话基准档位。
  *   - 防抖：切换后死区窗口内不再次切换（规避档位跳变加剧剪枝不确定性）。
+ * 2026-08-30 用户策略修订：ratio 分母为真实上下文窗口（resolved.window，本环境 1M），
+ * 不再对齐 256K 压缩阈值——阈值只是运维提示，不代表模型能力上限；
+ * 此前按 256K 比例在 tokens≈264K（真实 26%）即误判 critical 降档。
  *
  * 压力信号说明：不使用 context-budget.getBudgetReport().pressure——其 usedTotal 为
  * 单调不回退设计（压缩后不回落，仅支持压力上涨信号），会导致升回永不触发。

@@ -881,11 +881,11 @@ export default function (pi: ExtensionAPI) {
 			// thinking 档位自适应（task #25）：按真实 tokens/window 比例自动升降档，
 			// 每次切换强制 recordLevelChange 记账；切换后思考量变化由 thinking-meter 持续关联。
 			// 用真实比例（不用 context-budget 的单调 used）：压缩后回落才能触发升回。
-			// 档位压力基准对齐自动压缩阈值（~256K）而非模型窗口（1M）：对 1M 窗口，
-			// 0.95 降档需 950K 永不可达，自动降档（防 thinking 剪枝核心）会成死代码（审计 M2）。
-			// 改按压缩阈值比例后，接近压缩点前即可触发降档，压缩后回落自然触发升回。
-			const compactT = computeCompactThreshold(resolved.window, { absoluteTokens: ABSOLUTE_TOKENS });
-			const ratio = compactT && compactT > 0 ? resolved.tokens / compactT : resolved.tokens / resolved.window;
+			// 2026-08-30 用户策略修订：压力基准改回真实窗口（resolved.window，本环境 1M），
+			// 不再对齐 256K 压缩阈值——阈值只是运维提示（压缩省 token），不代表模型能力上限；
+			// 按 256K 比例在 tokens≈264K（真实 1M 的 26%）时即误判 critical 降档（审计 M2 教训）。
+			// 降档只在真正逼近模型能力上限（≥95% 真实窗口）时发生。
+			const ratio = resolved.tokens / resolved.window;
 			if (!thinkState && typeof pi.getThinkingLevel === "function") {
 				thinkState = createState(pi.getThinkingLevel());
 			}
