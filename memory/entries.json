@@ -408,7 +408,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-04T02:09:14.119Z",
       "updatedAt": "2026-08-04T02:09:14.119Z",
-      "accessedAt": "2026-08-04T02:09:14.119Z",
+      "accessedAt": "2026-08-31T00:14:52.038Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
       "deleted": false,
       "environments": [
@@ -3252,7 +3252,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T13:54:24.746Z",
       "updatedAt": "2026-08-11T13:54:24.746Z",
-      "accessedAt": "2026-08-11T13:54:24.746Z",
+      "accessedAt": "2026-08-31T00:14:14.190Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
         "wsl2"
@@ -6170,7 +6170,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T08:31:00.967Z",
       "updatedAt": "2026-08-14T08:31:00.967Z",
-      "accessedAt": "2026-08-14T08:31:00.967Z",
+      "accessedAt": "2026-08-31T00:14:51.946Z",
       "observedAt": "2026-08-14T08:31:00.967Z",
       "environments": [
         "wsl2"
@@ -6944,7 +6944,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-15T11:09:56.619Z",
       "updatedAt": "2026-08-15T11:09:56.619Z",
-      "accessedAt": "2026-08-15T11:09:56.619Z",
+      "accessedAt": "2026-08-31T00:14:51.946Z",
       "observedAt": "2026-08-15T11:09:56.619Z",
       "environments": [
         "wsl2"
@@ -6993,7 +6993,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-15T11:10:55.286Z",
       "updatedAt": "2026-08-15T11:10:55.286Z",
-      "accessedAt": "2026-08-15T11:10:55.286Z",
+      "accessedAt": "2026-08-31T00:14:51.946Z",
       "observedAt": "2026-08-15T11:10:55.286Z",
       "environments": [
         "wsl2"
@@ -7204,7 +7204,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-15T12:10:00.463Z",
       "updatedAt": "2026-08-15T12:10:00.463Z",
-      "accessedAt": "2026-08-15T12:10:00.463Z",
+      "accessedAt": "2026-08-31T00:14:52.038Z",
       "observedAt": "2026-08-15T12:10:00.463Z",
       "environments": [
         "wsl2"
@@ -8021,7 +8021,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T07:13:56.890Z",
       "updatedAt": "2026-08-19T07:13:56.890Z",
-      "accessedAt": "2026-08-30T02:35:24.968Z",
+      "accessedAt": "2026-08-31T00:14:51.703Z",
       "environments": [
         "all"
       ],
@@ -8791,7 +8791,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-21T13:28:05.570Z",
       "updatedAt": "2026-08-21T13:28:05.570Z",
-      "accessedAt": "2026-08-21T13:28:05.570Z",
+      "accessedAt": "2026-08-31T00:15:00.912Z",
       "environments": [
         "all"
       ],
@@ -9453,7 +9453,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T02:05:26.489Z",
       "updatedAt": "2026-08-24T02:05:26.489Z",
-      "accessedAt": "2026-08-24T02:05:26.489Z",
+      "accessedAt": "2026-08-31T00:15:00.731Z",
       "observedAt": "2026-08-24T02:05:26.489Z",
       "environments": [
         "wsl2"
@@ -10567,7 +10567,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T09:28:18.758Z",
       "updatedAt": "2026-08-14T09:28:18.758Z",
-      "accessedAt": "2026-08-14T09:28:18.758Z",
+      "accessedAt": "2026-08-31T00:14:51.703Z",
       "observedAt": "2026-08-14T09:28:18.758Z",
       "environments": [
         "wsl2"
@@ -10831,7 +10831,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T11:43:32.892Z",
       "updatedAt": "2026-08-24T11:43:32.892Z",
-      "accessedAt": "2026-08-24T11:43:32.892Z",
+      "accessedAt": "2026-08-31T00:15:00.835Z",
       "environments": [
         "all"
       ],
@@ -10853,7 +10853,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T12:10:01.373Z",
       "updatedAt": "2026-08-24T12:10:01.373Z",
-      "accessedAt": "2026-08-24T12:10:01.373Z",
+      "accessedAt": "2026-08-31T00:15:00.835Z",
       "environments": [
         "all"
       ],
@@ -10922,12 +10922,15 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T12:10:01.646Z",
       "updatedAt": "2026-08-24T12:10:01.646Z",
-      "accessedAt": "2026-08-24T12:10:01.646Z",
+      "accessedAt": "2026-08-31T00:15:00.835Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-08-24T12:10:01.646Z",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "b2c950fe-8505-4bae-92ad-4ecaa43c172b"
+      ]
     },
     {
       "id": "56705305-96c3-41c0-bbee-f0401f1a41bd",
@@ -11235,29 +11238,6 @@
         "termux"
       ],
       "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
-      "deleted": false
-    },
-    {
-      "id": "1f2bb0fe-192e-4d4f-ae46-4c1acebf3f2d",
-      "category": "procedure",
-      "title": "每日例行检查设计边界：整体层面+后台独立会话+防 token 浪费",
-      "content": "每日检查（知识订阅/整体复检）的正确设计：1) 在后台独立会话执行（tmux_run），只读为主，勿改配置；2) 检查应是整体层面：缓存健康（usage-stats.mjs 命中率/断裂次数/浪费 tokens）、健康日志 alert 条件、知识订阅产出、lesson-miner 异常线索、任务记录数与存储水位（memory_stats）；3) 严禁深入探索单点问题防 token 浪费（参考值：轮 tokens ~475-486，tools 6-12 个）；4) 检查项用一条 bash 聚合命令完成（如 `node scripts/usage-stats.mjs 2>&1 | tail -6`），避免碎调用；5) 当日结论只有 ok / 异常项清单两种，异常项创建后续任务处理，不在当轮深挖。2026-08-24 实测缓存命中 96.9%、断裂 1 次 A 类、浪费 36K tokens 属正常范围。",
-      "tags": [
-        "pi维护",
-        "每日检查",
-        "token优化",
-        "例行任务"
-      ],
-      "confidence": 0.8,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T14:28:20.235Z",
-      "updatedAt": "2026-08-24T14:28:20.235Z",
-      "accessedAt": "2026-08-24T14:28:20.235Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T14:28:20.235Z",
       "deleted": false
     },
     {
@@ -12704,7 +12684,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T23:49:23.088Z",
       "updatedAt": "2026-08-25T23:49:23.088Z",
-      "accessedAt": "2026-08-25T23:49:23.088Z",
+      "accessedAt": "2026-08-31T00:14:14.190Z",
       "environments": [
         "all"
       ],
@@ -12913,7 +12893,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T02:49:24.845Z",
       "updatedAt": "2026-08-26T02:49:24.845Z",
-      "accessedAt": "2026-08-26T02:49:24.845Z",
+      "accessedAt": "2026-08-31T00:15:00.912Z",
       "environments": [
         "all"
       ],
@@ -12959,7 +12939,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T02:49:24.918Z",
       "updatedAt": "2026-08-26T02:49:24.918Z",
-      "accessedAt": "2026-08-26T02:49:24.918Z",
+      "accessedAt": "2026-08-31T00:14:51.772Z",
       "environments": [
         "all"
       ],
@@ -13457,7 +13437,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T06:10:37.423Z",
       "updatedAt": "2026-08-26T06:10:37.423Z",
-      "accessedAt": "2026-08-26T06:10:37.423Z",
+      "accessedAt": "2026-08-31T00:14:14.190Z",
       "environments": [
         "all"
       ],
@@ -14050,7 +14030,10 @@
         "all"
       ],
       "observedAt": "2026-08-28T02:39:09.803Z",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "43fd5109-8be2-4764-ac55-e9ea013247bc"
+      ]
     },
     {
       "id": "310f5f19-22ef-4591-88ce-5ed5d53e2713",
@@ -14145,7 +14128,10 @@
         "all"
       ],
       "observedAt": "2026-08-28T02:40:06.507Z",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "03f3fe75-1719-4b25-8bd7-c8478fc1df1e"
+      ]
     },
     {
       "id": "feba7a33-c484-4392-a6f6-49d087f20cce",
@@ -14442,7 +14428,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T05:54:56.473Z",
       "updatedAt": "2026-08-28T05:54:56.473Z",
-      "accessedAt": "2026-08-30T02:50:59.858Z",
+      "accessedAt": "2026-08-31T00:14:51.862Z",
       "environments": [
         "all"
       ],
@@ -14466,7 +14452,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T05:58:55.154Z",
       "updatedAt": "2026-08-28T05:58:55.154Z",
-      "accessedAt": "2026-08-28T05:58:55.154Z",
+      "accessedAt": "2026-08-31T00:14:51.772Z",
       "environments": [
         "all"
       ],
@@ -14541,7 +14527,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T05:58:55.653Z",
       "updatedAt": "2026-08-28T05:58:55.653Z",
-      "accessedAt": "2026-08-28T05:58:55.653Z",
+      "accessedAt": "2026-08-31T00:14:51.703Z",
       "environments": [
         "all"
       ],
@@ -15060,7 +15046,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-29T01:29:04.520Z",
       "updatedAt": "2026-08-29T01:29:04.520Z",
-      "accessedAt": "2026-08-29T01:29:04.520Z",
+      "accessedAt": "2026-08-31T00:15:00.912Z",
       "environments": [
         "all"
       ],
@@ -15796,7 +15782,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T02:35:38.184Z",
       "updatedAt": "2026-08-30T02:35:38.184Z",
-      "accessedAt": "2026-08-30T02:35:38.184Z",
+      "accessedAt": "2026-08-31T00:14:51.862Z",
       "environments": [
         "all"
       ],
@@ -15853,7 +15839,8 @@
         "all"
       ],
       "links": [
-        "45b5be21-8a91-44b8-93c7-60e056d3b139"
+        "45b5be21-8a91-44b8-93c7-60e056d3b139",
+        "83f4f449-a1fc-4481-bf8d-fc81e0cbfde4"
       ],
       "observedAt": "2026-08-30T02:36:03.543Z",
       "deleted": false
@@ -15903,7 +15890,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T02:36:03.886Z",
       "updatedAt": "2026-08-30T02:36:03.886Z",
-      "accessedAt": "2026-08-30T02:36:03.886Z",
+      "accessedAt": "2026-08-31T00:14:51.862Z",
       "environments": [
         "all"
       ],
@@ -16538,7 +16525,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:02.444Z",
       "updatedAt": "2026-08-30T08:50:02.444Z",
-      "accessedAt": "2026-08-30T08:50:02.444Z",
+      "accessedAt": "2026-08-31T00:14:52.038Z",
       "environments": [
         "all"
       ],
@@ -18706,6 +18693,550 @@
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false
+    },
+    {
+      "id": "ffc2fb1e-cd4b-4963-bea3-c00fabbd5a12",
+      "category": "solutions",
+      "title": "脚本报错与 grep 矛盾时先重跑验证",
+      "content": "2026-08-30 复检时 usage-stats.mjs 首跑报第 49 行未解决的 git 合并冲突标记（<<<<<<< HEAD）语法错误，但 grep 搜索冲突标记无结果且 git status 显示未修改，与报错矛盾。重跑验证发现脚本已被自动修复（mtime 16:50），疑似外部进程写入干扰。经验：脚本报错与文件状态检查矛盾时，先重跑验证当前状态再下结论；usage-stats.mjs 报错优先检查合并冲突标记残留。",
+      "tags": [
+        "usage-stats",
+        "合并冲突",
+        "故障排查"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-30T09:08:51.422Z",
+      "updatedAt": "2026-08-30T09:08:51.422Z",
+      "accessedAt": "2026-08-30T09:08:51.422Z",
+      "observedAt": "2026-08-30T09:08:51.422Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051dc-6004-7c1c-a9e9-766a17b917fb",
+      "deleted": false
+    },
+    {
+      "id": "d9217da9-6399-476f-91b7-dd831ac74bb5",
+      "category": "fact",
+      "title": "2026-08-30 缓存健康异常详情",
+      "content": "2026-08-30 复检：今日 3 个统计会话中 2 个缓存命中<90%（08:46 会话为 49.7%、08:48 为 88.8%），断裂 1 次、浪费 14K，未超 3 次/200K 阈值；当前会话 96.1% 正常。当日会话 4 个、知识文件 2026-08-30.md（18.9KB）已生成、task-summarizer 无异常 4 条要点、task-records 1217 行。结论已写入 daily-health.log，异常项留待用户安排排查。",
+      "tags": [
+        "缓存健康",
+        "2026-08-30",
+        "复检"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-30T09:08:51.422Z",
+      "updatedAt": "2026-08-30T09:08:51.422Z",
+      "accessedAt": "2026-08-30T09:08:51.422Z",
+      "observedAt": "2026-08-30T09:08:51.422Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051dc-6004-7c1c-a9e9-766a17b917fb",
+      "deleted": false
+    },
+    {
+      "id": "22f90e1e-df19-4b3d-8115-e5305e20cf67",
+      "category": "procedure",
+      "title": "防退化基准: golden-tasks.sh 用法与全绿判据",
+      "content": "防退化基准脚本 ~/.pi/scripts/golden-tasks.sh，确定性零 LLM 主流程。--fast 档运行 F1-F5 本地脚本断言（bash 直接跑，勿做其他事）。全部 ✓ 则输出一行 'golden-fast 全绿' 即结束。涉及主流程改动后作为回归验证执行，防止静默退化。",
+      "tags": [
+        "golden-tasks",
+        "回归基准",
+        "防退化"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:52.925Z",
+      "updatedAt": "2026-08-31T00:14:52.925Z",
+      "accessedAt": "2026-08-31T00:14:52.925Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-31T00:14:52.925Z",
+      "deleted": false
+    },
+    {
+      "id": "03f3fe75-1719-4b25-8bd7-c8478fc1df1e",
+      "category": "procedure",
+      "title": "知识订阅: knowledge-fetch.py 零LLM增量抓取",
+      "content": "执行 python3 /root/.pi/scripts/knowledge-fetch.py 抓取官方源增量：零 LLM（不耗 token）、自动去重、产出写 /root/.pi/logs/ 下。由调度在后台独立会话执行。复检只看产出：连续多日无新增时先查触发机制（任务是否真的运行），不默认脚本坏了。",
+      "tags": [
+        "知识订阅",
+        "knowledge-fetch",
+        "每日例行"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:52.983Z",
+      "updatedAt": "2026-08-31T00:14:52.983Z",
+      "accessedAt": "2026-08-31T00:14:52.983Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "7d57a96a-0d88-48a0-aaa7-57ceda1fc574"
+      ],
+      "observedAt": "2026-08-31T00:14:52.983Z",
+      "deleted": false
+    },
+    {
+      "id": "cefb0c39-72e8-4a28-9c53-42d5ddaeedbd",
+      "category": "procedure",
+      "title": "每日例行任务执行模式: 后台会话+聚合命令防 token 浪费",
+      "content": "每日例行任务（知识订阅/整体复检/防退化基准）在 tmux 后台独立会话执行：只读为主、勿改配置；多个检查项合并为一条 bash 聚合命令（如 node scripts/usage-stats.mjs 2>&1 | tail -6）；输出仅结论性一行（ok/异常项/'golden-fast 全绿'）即结束回合。参考用量：轮 tools 6-12、out ~500 tokens。防 token 浪费优先级低于准确性与稳定性。",
+      "tags": [
+        "每日例行",
+        "token优化",
+        "后台会话"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:53.044Z",
+      "updatedAt": "2026-08-31T00:14:53.044Z",
+      "accessedAt": "2026-08-31T00:14:53.044Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-31T00:14:53.044Z",
+      "deleted": false
+    },
+    {
+      "id": "33cea6ab-4c88-49db-997a-963951e529cc",
+      "category": "procedure",
+      "title": "每日整体复检惯例",
+      "content": "每日整体复检在后台独立会话执行，只读为主、不改配置，防 token 浪费。用一条 bash 聚合命令完成检查：node /root/.pi/scripts/usage-stats.mjs 2>&1 | tail -6，查看缓存健康（命中率/断裂）。usage-stats.mjs 幂等，输出历史对比与当前差距。",
+      "tags": [
+        "每日复检",
+        "usage-stats",
+        "缓存健康"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:57.309Z",
+      "updatedAt": "2026-08-31T00:14:57.309Z",
+      "accessedAt": "2026-08-31T00:14:57.309Z",
+      "observedAt": "2026-08-31T00:14:57.309Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
+      "deleted": false
+    },
+    {
+      "id": "abc1db56-237a-4b09-a44a-8ec49728391c",
+      "category": "solutions",
+      "title": "空壳投喂根因与应对策略",
+      "content": "任务记录中 tools/hit/out 全零的轮次多为\"空壳投喂\"：08-26 第三次再现（8 轮中 7 轮全零），hit=250000 是封顶伪影而非真实缓存命中；08-30 首次观察到空壳内容回显\"会话记忆提取器提示词\"本身，根因在上游提取脚本把自己的提示词当对话内容输出。应对：该现象已有记忆记录时不重复存储；修复上游脚本前，蒸馏结果需人工甄别。",
+      "tags": [
+        "空壳投喂",
+        "会话提取",
+        "封顶伪影"
+      ],
+      "confidence": 0.75,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:57.309Z",
+      "updatedAt": "2026-08-31T00:14:57.309Z",
+      "accessedAt": "2026-08-31T00:14:57.309Z",
+      "observedAt": "2026-08-31T00:14:57.309Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
+      "deleted": false
+    },
+    {
+      "id": "e44dd630-6226-40ea-a03e-08ff36a8a24f",
+      "category": "fact",
+      "title": "任务记录统计格式",
+      "content": "经验沉淀任务的任务记录按\"日期 时间、轮数、累计 tokens、每轮 tools/hit/out 统计\"格式列出，如\"08-26 13:36, 轮22, 累计1130K tokens\"。tools 为工具调用数，hit 为缓存命中 tokens，out 为输出 tokens，用于判断任务轮次是否有实质内容。",
+      "tags": [
+        "任务记录",
+        "统计格式"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:57.309Z",
+      "updatedAt": "2026-08-31T00:14:57.309Z",
+      "accessedAt": "2026-08-31T00:14:57.309Z",
+      "observedAt": "2026-08-31T00:14:57.309Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
+      "deleted": false
+    },
+    {
+      "id": "a3067324-6ba8-4a2b-8d94-d2de10cb5824",
+      "category": "procedure",
+      "title": "SKILL 草稿写入规范",
+      "content": "经验沉淀任务中仅当任务满足\"成功实现、可复现、有保存价值的长流程\"三条时才写 SKILL.md 草稿到 /root/.pi/packs/drafts/，文件名 <短名>.SKILL.md；格式为 YAML frontmatter（name/description）加步骤正文，description 控制在 1-2 句且不带时间戳。除 memory_store 与写草稿外不改动任何其他文件。",
+      "tags": [
+        "SKILL草稿",
+        "packs/drafts"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:14:57.309Z",
+      "updatedAt": "2026-08-31T00:14:57.309Z",
+      "accessedAt": "2026-08-31T00:14:57.309Z",
+      "observedAt": "2026-08-31T00:14:57.309Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
+      "deleted": false
+    },
+    {
+      "id": "83f4f449-a1fc-4481-bf8d-fc81e0cbfde4",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-59310 VMware vCenter路径遍历已遭利用 2026-08-31",
+      "content": "CISA KEV 新增（2026-08-18 披露，08-31 抓取）：CVE-2026-59310，Broadcom VMware vCenter 路径遍历漏洞，已被标记「已遭利用/勒索」。具有 vCenter 网络访问权限的攻击者可利用该漏洞，存在越权访问风险。vCenter 是虚拟化管理核心，公网暴露或内网核心区实例需尽快升级。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-59310",
+      "tags": [
+        "knowledge",
+        "2026-08-31",
+        "安全",
+        "漏洞",
+        "CISA KEV",
+        "VMware"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:13.493Z",
+      "updatedAt": "2026-08-31T00:15:13.493Z",
+      "accessedAt": "2026-08-31T00:15:13.493Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "4334ae1e-80ba-42c9-b1e6-59ffcebf055b"
+      ],
+      "observedAt": "2026-08-31T00:15:13.493Z",
+      "deleted": false
+    },
+    {
+      "id": "43fd5109-8be2-4764-ac55-e9ea013247bc",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-33824 Microsoft IKE双重释放RCE已遭利用 2026-08-31",
+      "content": "CISA KEV 新增（2026-08-18 披露，08-31 抓取）：CVE-2026-33824，Microsoft Internet Key Exchange (IKE) Service Extensions 双重释放（double free）漏洞，已被标记「已遭利用/勒索」。可导致远程代码执行，Windows 核心网络服务（IPsec/IKE）受影响，需关注补丁星期二更新。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-33824",
+      "tags": [
+        "knowledge",
+        "2026-08-31",
+        "安全",
+        "漏洞",
+        "CISA KEV",
+        "Microsoft"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:13.554Z",
+      "updatedAt": "2026-08-31T00:15:13.554Z",
+      "accessedAt": "2026-08-31T00:15:13.554Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "399f2b8a-fd97-4b3c-8fb1-9c994eca562f"
+      ],
+      "observedAt": "2026-08-31T00:15:13.554Z",
+      "deleted": false
+    },
+    {
+      "id": "022790c1-742e-4f59-8b53-57198230ef81",
+      "category": "fact",
+      "title": "knowledge 安全 ServiceNow连爆3个CVSS 10.0漏洞无需登录接管 2026-08-31",
+      "content": "ServiceNow 连爆 3 个 CVSS 10.0 漏洞（安全客 2026-08-30 报道）：无需登录认证即可远程接管整个 ServiceNow 平台实例。ServiceNow 是企业 IT 服务管理（ITSM）核心 SaaS，大量企业客户使用，平台实例被接管意味着内部工单、资产、流程数据全面暴露。各租户应立即检查官方补丁与缓解措施。（来源：安全客）URL: https://www.anquanke.com/post/id/316039",
+      "tags": [
+        "knowledge",
+        "2026-08-31",
+        "安全",
+        "漏洞",
+        "ServiceNow"
+      ],
+      "confidence": 0.8,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:13.611Z",
+      "updatedAt": "2026-08-31T00:15:13.611Z",
+      "accessedAt": "2026-08-31T00:15:13.611Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-31T00:15:13.611Z",
+      "deleted": false
+    },
+    {
+      "id": "b2c950fe-8505-4bae-92ad-4ecaa43c172b",
+      "category": "fact",
+      "title": "knowledge 重要新闻 新版国防动员法2026-10-01施行 2026-08-31",
+      "content": "2026-08-28 十四届全国人大常委会第二十四次会议表决通过新修订的《国防动员法》，自 2026 年 10 月 1 日起施行。贯彻习近平强军思想与新时代军事战略方针，明确新体制下国防动员军地职责分工。（来源：新华社，知乎热榜 1556 万热度）URL: https://www.zhihu.com/question/2076954184558047646",
+      "tags": [
+        "knowledge",
+        "2026-08-31",
+        "重要新闻",
+        "政策"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:13.662Z",
+      "updatedAt": "2026-08-31T00:15:13.662Z",
+      "accessedAt": "2026-08-31T00:15:13.662Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "a56b7d37-6c36-4e0e-9b9c-d5d5764769bf"
+      ],
+      "observedAt": "2026-08-31T00:15:13.662Z",
+      "deleted": false
+    },
+    {
+      "id": "b625fd4d-1afa-4b64-8d21-03b2c34a9e7c",
+      "category": "fact",
+      "title": "knowledge 科技 我国首次实现地月双向高速激光通信 2026-08-31",
+      "content": "我国首次实现地月双向高速激光通信（新华网 2026-08-27 报道）。地月激光通信是深空探测通信技术重大突破，较传统无线电通信带宽提升明显，为后续月球科研站与深空任务奠定通信基础。（来源：新华网科技）URL: https://www.news.cn/tech/20260827/ed017277df184fe9ad7d10df5364172e/c.html",
+      "tags": [
+        "knowledge",
+        "2026-08-31",
+        "科技",
+        "航天"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:13.729Z",
+      "updatedAt": "2026-08-31T00:15:13.729Z",
+      "accessedAt": "2026-08-31T00:15:13.729Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-31T00:15:13.729Z",
+      "deleted": false
+    },
+    {
+      "id": "771dabeb-7687-4164-8e64-f8c1ca619874",
+      "category": "solutions",
+      "title": "git 分叉以远程权威收敛方案",
+      "content": ".pi 仓库与 origin/master 分叉时：1) 先 stash 工作区运行时数据修改；2) git merge 演练评估冲突规模（可逆，abort 恢复）；3) 用 git log origin/master..master --cherry-pick 补丁级比对量化本地独有提交；4) 确认本地内容全部等价于远程后，git reset --hard origin/master 收敛（reflog 可找回）；5) 迁移运行数据（entries.json 按 id 去重合并、统计文件转本机、草稿恢复为未跟踪）；6) test-all.sh 回归后推送。避免手动解 add/add 冲突。",
+      "tags": [
+        "git",
+        "同步",
+        "分叉",
+        ".pi仓库"
+      ],
+      "confidence": 0.93,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "7773e874-d174-4a0f-b0e0-6474ea6e3b22",
+      "category": "solutions",
+      "title": "stash drop 后对象找回方法",
+      "content": "git stash drop 只删除引用，commit 对象仍留在仓库对象库中。已 drop 的 stash 数据可通过 reflog/git fsck --lost-found 找到对应 commit 对象并直接提取内容。2026-08 底在 .pi 仓库凭此法找回已 drop 的 tool-use jsonl 30 行增量数据并入本机文件。",
+      "tags": [
+        "git",
+        "stash",
+        "数据恢复"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "acd08825-f14f-4882-9471-7ce8d43a0fa7",
+      "category": "fact",
+      "title": ".pi 仓库分叉与强制重写事件",
+      "content": "2026-08 底 .pi 仓库出现严重分叉：本地 master 498 提交 vs 远程 558，分叉点 2026-07-12；远程历史 8-30 被强制重写（fetch 显示 forced update），导致三方合并产生 113 个 add/add 冲突。最终 reset 到远程主线 b3dc433，本地内容确认零丢失。后续拉取更新须警惕同类情况。",
+      "tags": [
+        "git",
+        "事件",
+        ".pi仓库"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "71864578-4bb8-4ed1-9111-60fa04af2178",
+      "category": "fact",
+      "title": "tool-use 统计方案改版",
+      "content": ".pi 仓库工具使用统计方案改版落地：tool-use-*.jsonl 不再入库（转本机 gitignore 文件），入库改为同步聚合文件 tool-count-MYPC.json（--daily 聚合）。packs/drafts 草稿同样不入库，恢复为本机未跟踪文件。远程删除了旧入库的 tool-use-*.jsonl ×2 与 drafts 草稿 ×5。",
+      "tags": [
+        "pi",
+        "统计",
+        "gitignore",
+        "方案改版"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "ed934037-6c07-43e1-8b18-6406f0ec2e4b",
+      "category": "fact",
+      "title": "entries.json 合并先例",
+      "content": "entries.json 分叉合并方法：以远程版本为基底，把本地 stash/未推送条目标记按 id 去重合入。2026-08 底成功合并：远程 691 条 + 本地未推送 231 条 = 922 条，本地内容未丢失。本地历史提交 bab49a7 有同法先例。",
+      "tags": [
+        "pi-memory",
+        "entries.json",
+        "合并"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "42bdcf10-4219-496b-a830-4084ff44883c",
+      "category": "fact",
+      "title": "cache-guard 指纹漂移先例",
+      "content": "cache-guard 基线指纹漂移处理先例（2026-08 底）：远程线 8-30 提交 e283104（思考档位压力基准改真实窗口）改了注入面文案但未同步更新 baseline，属远程已知待办，非合并错误。处理方式：先验证漂移性质，确属远程已知状态后按机制固化指纹（仅 1 行变化）即可，无需改动远程。",
+      "tags": [
+        "pi-context",
+        "cache-guard",
+        "指纹",
+        "回归"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "4867caf9-5356-41ae-9201-d581293a8076",
+      "category": "fact",
+      "title": "远程线 67 个新提交内容",
+      "content": "2026-08 底 reset 对齐后，远程线 67 个本地没有的提交全部合入 .pi 仓库：self-optimize 系列、daily-review/health 自动化、pi-autopilot seeds、pi-memory 重构、godot 技能包、工具统计方案改版。远程树含本地全部关键功能（含暖前缀机制）。",
+      "tags": [
+        ".pi仓库",
+        "远程更新",
+        "功能清单"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "9924adfe-15ab-47e9-9901-fc83cc3874f3",
+      "category": "habit",
+      "title": "破坏性操作先确认再执行",
+      "content": "用户的协作习惯：涉及 git reset 等破坏性/大规模操作时，助手先给出完整方案与备选，征求同意（用户简短回复\"执行\"批准）后才动手；用户不要求时不做。本会话分叉收敛即按此流程完成，重置前自动备份（导出本地版本快照）。",
+      "tags": [
+        "协作习惯",
+        "git",
+        "流程"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:15:34.001Z",
+      "updatedAt": "2026-08-31T00:15:34.001Z",
+      "accessedAt": "2026-08-31T00:15:34.001Z",
+      "observedAt": "2026-08-31T00:15:34.001Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
+      "deleted": false
+    },
+    {
+      "id": "281e6ea1-dda4-4f5d-984d-9053090e74eb",
+      "category": "reference",
+      "title": "WikiSkill 论文细读：三层知识架构+技能-知识共进化",
+      "content": "arXiv:2608.27454 WikiSkill（Google Research 2026-08-27，作者 Liyan Tang/Cyrus Rashtchian/Da-Cheng Juan/Tu Vu 等）。三层知识架构：Raw Layer（不可变执行轨迹）/ Wiki Layer（持久累积知识库：patterns 模式页+logs.md 进化日志+skill-impact.md 技能影响追踪器，记录每次提案 diff/验证分/接受结果）/ Skills Layer（活动技能）。四组件循环：Inference Agent 注入技能执行但不许访问 wiki（消融：训练时访问 wiki 使最终技能降质 63.7%→60.9%，因轨迹失去信息量）；Wiki Maintainer 采样成败轨迹做根因分析、增量 patch 更新模式页；Skill Proposer 以 ReAct 自主读取，每轮只产一个原子提案（新建或 patch 单技能），凭 skill-impact 历史避免重复已拒方案；Gating and Rollback 验证集门控，技能回滚但 wiki 永不回滚，验证达 1.0 提前终止。实验：5 基准×5 模型（Qwen-3.5-4B/9B、Qwen-3.6-27B、Gemma-4-31B、Gemini-3.5-Flash），相对最强基线 +3.3~+12.0 分；收益随模型规模增大（+12.3→+23.9）；9B+技能(47.4%)超 27B 无技能(39.4%)；转移技能可胜过自进化（27B 技能使 9B SpreadSheet 50.5% vs 自进化 33.6%）；负迁移案例：4B 的低层 workaround 技能（单行 python 命令）使 Gemini SpreadSheet 50.5%→18.1%；持久 wiki 是关键（Proposer 有 wiki 访问 +15.0 分）。消融：Inference Agent 训练时访问 wiki 降质。局限：技能全量注入未评估检索/触发；门控只接受验证分提升、排除中性但可能解锁后续增益的提案；wiki 无自动剪枝；未覆盖超长任务。与 pi 仓库对照：wiki 模式页↔memory entries，skill-impact↔interventions.jsonl/lesson-course，原子提案↔workticket 草稿，验证门控↔golden-tasks。可借鉴：①执行与知识积累分离（生产流程不直接读 wiki 解题）；②中性提案被门控排除是已知缺陷，可记录中性观察供复用。全文文本提取在 /tmp/wikiskill.txt（HTML 版，92K 字符）。",
+      "tags": [
+        "wikiskill",
+        "arxiv",
+        "技能进化",
+        "自主优化",
+        "记忆治理",
+        "google"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-31T00:23:26.919Z",
+      "updatedAt": "2026-08-31T00:23:26.919Z",
+      "accessedAt": "2026-08-31T00:23:26.919Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }

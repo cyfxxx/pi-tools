@@ -461,3 +461,21 @@
   2. 测试数据设计: makeEntry 默认 content 全同 → storeEntry 内容 jaccard>0.7 走 merged
      分支、新条目未创建——fixture 必须内容差异化，否则测的是合并不是创建
 - 回归: pi-memory vitest+tsc 绿；生产库无测试污染验证（665 条无测试 id）
+
+---
+
+## 2026-08-31 WikiSkill 借鉴：提案追踪闭环 + 执行-知识分离规则（ROADMAP 5.7 扩展）
+- 状态: done
+- 关联: WikiSkill arXiv:2608.27454 细读；ROADMAP 5.7 workticket 机制；VISION §3.4 新增
+
+### Before
+- lesson-course.json 只记主题+日期，不记结果；同主题优化建议可能被反复提出（无拒绝历史）；工单无 accepted/rejected/neutral 追踪，无法量化采纳率；VISION 无"执行与知识积累分离"原则（论文消融实证：Inference 训练期访问 wiki 使技能降质 63.7%→60.9%）。
+
+### Change
+- daily-review（seeds + 本机 scheduled-tasks 同步）步骤 4 重写：①生成 workticket 前查 lesson-course.json + workticket-*.md + OPTIMIZATION-LOG.md 去重（已提过无论结果如何不重复生成）；②lesson-course.json 记录主题/日期/状态；③工单验证回写三态 accepted|rejected|neutral（neutral 保留草稿供增量提案）；④清理规则：仅保留近 90 天、按主题去重。
+- docs/VISION.md §3.3 后新增 §3.4 执行-知识分离软规则（用户已确认）。
+- docs/SELF-OPTIMIZING-ROADMAP.md 追加记录 5.10 原子提案纪律（待工单样本≥10 条再实施）。
+
+### After
+- 待验证：seed 失配检查应转绿；明日 daily-review 运行后 lesson-course.json 首建，观察去重与三态回写是否按预期。回归：无扩展代码/脚本改动，test-all 不受影响。
+- 结论：保留
