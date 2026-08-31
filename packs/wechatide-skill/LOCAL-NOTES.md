@@ -46,3 +46,10 @@ wechatide.cmd -c pi auto_preview --project "D:\projects\todo-demo"
 - auth/login 类 pending 任务按规范主动轮询（10s×10 次）；其余 pending 只提醒用户在 IDE 内确认，禁止重发原操作
 - tokenRequired:false 时无需 CLI 令牌；若未来开启，令牌从 IDE「设置→安全」获取，不入库不打日志
 - AppSecret 与小程序前端无关，不得写入任何 git 跟踪文件
+
+## 2026-08-31 CLI 通用要点（迁自长期记忆，补充实测覆盖）
+
+- wechatide-skill 依赖 wechatide CLI：CLI 未装时技能命令直接失败，应先 `<cli> --version` 确认就绪再跑技能命令。
+- 微信开发者工具原生 CLI：Windows 位于安装目录下的 cli.bat（macOS 为 cli 二进制），首次使用必须在开发者工具「设置 → 安全设置」开启「服务端口」，否则 CLI 连接被拒。
+- 官方 CLI 文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html ；小程序注册（获取 AppID）https://mp.weixin.qq.com ；开发者工具下载 https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html 。
+- 2026-08-26 完成 CLI 安装并冒烟验证通过，链路可用。

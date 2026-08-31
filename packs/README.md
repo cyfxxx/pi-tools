@@ -99,3 +99,5 @@ packs/
 ## 与 pi-backup 的关系
 
 packs 入库 Git（/root/.pi 仓库），随 pi-backup 同步，不依赖本机单独备份。
+| `repo-size-audit` | git 仓库体积审计：定位历史大对象与不该入库内容，忽略+说明或清历史分级处置 |
+| `skill-integration` | 外部技能包引入与整合统一流程：选包/许可核对/审查/验收/三层归置/整合纪律 |

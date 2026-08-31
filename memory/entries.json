@@ -6490,29 +6490,6 @@
       "recurrence": 0
     },
     {
-      "id": "mem_planexit_confirm_20260814",
-      "category": "preference",
-      "title": "计划模式退出必须用户确认",
-      "content": "退出计划模式（plan_exit/退出执行）必须由用户手动确认，模型不可自行退出（对齐 plan-mode 退出确认机制与用户多次重申的偏好）。",
-      "tags": [
-        "plan-mode",
-        "preference",
-        "confirmation"
-      ],
-      "confidence": 1,
-      "environments": [
-        "all"
-      ],
-      "createdAt": "2026-08-14T11:08:06.333041Z",
-      "updatedAt": "2026-08-14T11:08:06.333041Z",
-      "lastSessionId": "2026-08-13T14-47-05",
-      "source": "manual-merge",
-      "observedAt": "2026-08-14T11:08:06.333041Z",
-      "deleted": false,
-      "accessedAt": "2026-08-14T11:08:06.333041Z",
-      "recurrence": 0
-    },
-    {
       "title": "Windows 便携 pi 最终架构（2026 重构后）",
       "confidence": 0.95,
       "observedAt": "2026-08-14T12:42:42.653Z",
@@ -8725,80 +8702,6 @@
       "deleted": false
     },
     {
-      "id": "7d25ac74-04e7-44a8-9d01-6f5d2a9f5971",
-      "category": "reference",
-      "title": "comfyui-agent 整合包：位置、命令面、用法",
-      "content": "comfyui-agent：pi 整合包（~/.pi/packs/comfyui-agent，git 仓库），把远程 ComfyUI 作为 pi 工具。CLI 入口 bin/comfyui（python3 单文件 stdlib only，lib/comfyui.py），直连 ComfyUI 原生 HTTP API（/prompt+/history 轮询+/view）。命令：servers add/list、status、models、nodes、run（src=本地API格式json|builtin:txt2img|@远程UI工作流|-）、queue、upload、workflows list/get/save；--json 输出。参数化占位符 {{prompt}} {{int:steps=20}} {{float:cfg}} {{seed:seed}} {{ckpt=默认.safetensors}}，缺必填报错、seed 缺省随机。配置 ~/.config/comfyui-agent/config.json（COMFYUI_AGENT_CONFIG 覆盖）。mock 端到端测试通过（/tmp/mock_comfyui.py 可复用）。**重要：用户要求不注册进 settings.json skills 数组**（防止提示词膨胀），需要时手动加载：pi --skill /root/.pi/packs/comfyui-agent/SKILL.md 启动，或直接 read SKILL.md 按指令执行。无 GPU 本机 + 远程 GPU 机（--listen 0.0.0.0，建议 tailscale/ssh 隧道）。",
-      "tags": [
-        "comfyui",
-        "skill",
-        "pi",
-        "图像生成",
-        "packs"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 2,
-      "createdAt": "2026-08-21T09:06:44.080Z",
-      "updatedAt": "2026-08-21T09:31:14.119Z",
-      "accessedAt": "2026-08-21T09:31:14.119Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-21T09:06:44.080Z",
-      "deleted": false
-    },
-    {
-      "id": "521d0ee6-1e05-4412-b9c5-62916b84c8ed",
-      "category": "reference",
-      "title": "colab-bridge 整合包：用法与限制",
-      "content": "colab-bridge：pi 整合包（~/.pi/packs/colab-bridge，git 仓库，未注册 skill 保持零注入）。把免费 Google Colab 变 pi 的远程 GPU 执行后端：Colab 上传运行 colab/colab-bridge.ipynb（内嵌桥接服务 HTTP :8787 + cloudflared 隧道/tailscale 备用 + 自检，打印 CLOUD_URL 和随机 TOKEN）；pi 侧 bin/colab_exec（python3 stdlib only）：conf <url> <token> 存 ~/.config/colab-bridge/config.json、status、run '<python码>'/sh '<bash>'（-f 文件、-t 超时、--cwd、--json、退出码透传）、up/down 文件传输。认证 X-Token 头。免费层限制：12h 会话、90min 空闲断、断后环境重置、GPU 配额动态（多为 T4）、cloudflared URL 每次变化。已本地联调全通过（无 GPU 环境 GPU 显示 -）。",
-      "tags": [
-        "colab",
-        "GPU",
-        "远程执行",
-        "pi",
-        "packs",
-        "桥接"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-21T09:54:37.960Z",
-      "updatedAt": "2026-08-21T09:54:37.961Z",
-      "accessedAt": "2026-08-21T09:54:37.961Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-21T09:54:37.960Z",
-      "deleted": false
-    },
-    {
-      "id": "633b56dd-376f-4931-aaf3-a95c84551fe8",
-      "category": "solutions",
-      "title": "Colab CLI 0.6.0 跑通：认证、版本坑、可用命令链",
-      "content": "Google Colab CLI（google-colab-cli 0.6.0，官方）在本机已跑通，替代 colab-bridge 自制桥成为首选（自制桥保留为无 Google 网络时备胎）。要点：pip install --break-system-packages -i https://pypi.org/simple google-colab-cli（PEP668 环境需 --break-system-packages；国内镜像 tuna 在 VPN 下 TLS 中断需走官方源）。首次认证 colab --auth=oauth2 sessions 触发浏览器授权（默认 oauth2，内置 Google 官方 client id，code 粘贴回终端，token 缓存 ~/.config/colab-cli/token.json）。**版本坑：jupyter-kernel-client 1.0.1 把 KernelClient 改名 JupyterKernelClient 导致 CLI 0.6.0 报 AttributeError，必须降级 jupyter-kernel-client==0.15.0**。免费账号 T4 可用（Tesla T4 15360MiB）。命令链路验证：colab run --gpu T4 script.py（一次性+自动释放）/ new -s 名 --gpu T4 + exec（stdin/-f）+ upload/download/stop 全通过。依赖 Google 网络（VPN 必需，accounts+colab.research 需通，sandbox 域名 assign 亦通）。tmux_run 后台跑 colab 命令尾部必须加 \"; exec true\" 否则 shell 不退出无完成通知。",
-      "tags": [
-        "colab",
-        "CLI",
-        "GPU",
-        "T4",
-        "VPN",
-        "版本坑"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-21T13:28:05.570Z",
-      "updatedAt": "2026-08-21T13:28:05.570Z",
-      "accessedAt": "2026-08-31T00:15:00.912Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-21T13:28:05.570Z",
-      "deleted": false
-    },
-    {
       "id": "fab3816a-2541-48fe-b657-a10a041aa64c",
       "category": "solutions",
       "title": "packs 整合包入库策略（剥离内嵌 .git，保持零注入）",
@@ -9138,76 +9041,6 @@
       "deleted": false
     },
     {
-      "id": "8359b8dc-4ac5-4eba-acf5-f950ab3dc73f",
-      "category": "fact",
-      "title": "ComfyUI 环境: FLUX.2 klein 系列 + 匹配约束",
-      "content": "Windows 宿主机 ComfyUI 0.33.0 (localhost:8188，WSL2 镜像网络可直连 127.0.0.1)，GPU RTX 3070 Ti Laptop 8GB。模型为 FLUX.2 klein 系：UNET 有 flux2-klein-9b-base-fp8 / z-anime-distill-8step-fp8 / z_image_turbo_bf16 等；CLIP 有 qwen_3_4b / qwen_3_8b_fp8mixed。关键约束：flux2-klein-9b 的 KSampler 需要 qwen_3_8b_fp8mixed 作为 CLIP（matmul 维度 12288），用 qwen_3_4b 会报 'mat1 and mat2 shapes cannot be multiplied (512x7680 and 12288x4096)'；UNETLoader 必须传 weight_dtype=default；FLUX.2 用 EmptySD3LatentImage + FluxGuidance(3.5) + cfg=1.0 + euler/sgm_uniform，latent 用 flux2-vae。832x1216 20 步约 66 秒。comfyui-agent 内置 txt2img 模板是 SD 系（CheckpointLoaderSimple），该环境不可用。",
-      "tags": [
-        "comfyui",
-        "flux2",
-        "packs",
-        "图像生成"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-22T07:21:58.969Z",
-      "updatedAt": "2026-08-22T07:21:58.969Z",
-      "accessedAt": "2026-08-22T07:21:58.969Z",
-      "environments": [
-        "wsl2"
-      ],
-      "observedAt": "2026-08-22T07:21:58.969Z",
-      "deleted": false
-    },
-    {
-      "id": "bdd31342-59e5-4704-bc4d-de8ea092ee44",
-      "category": "procedure",
-      "title": "ComfyUI 蓝图折叠节点展开与内置模板清单",
-      "content": "ComfyUI 0.33 前端\"折叠节点\"（UUID 类型，如 7b34ab90-/f2fdebf6-/27eacb9f-）是子图蓝图节点，API 直提报 missing_node_type；展开定义可经 GET /global_subgraphs（列表）与 /global_subgraphs/<64位hash>（.data 含 definitions.subgraphs 完整子图）获取，也已展开为标准 API 模板内置到 packs/comfyui-agent/workflows/（zit_txt2img/z_anime_txt2img/flux2_klein_t2i/flux2_klein_edit/flux2_kv_ref/ltx23_i2v/ltx23_i2v_noaudio，用法与提示词规范见 references/WORKFLOWS.md）。官方模板源 github.com/Comfy-Org/workflow_templates，官方文档 docs.comfy.org 页面加 .md 后缀可取 Markdown。UI 工作流枚举用 /api/userdata?dir=workflows，取文件用 /api/userdata/workflows%2F<文件名>（encodeURIComponent）。KV 工作流 megapixels 默认 0.26（≈512²）否则放大到 1024² 耗时增 14 倍。",
-      "tags": [
-        "comfyui",
-        "蓝图",
-        "subgraph",
-        "packs",
-        "工作流"
-      ],
-      "confidence": 0.95,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-22T08:08:56.710Z",
-      "updatedAt": "2026-08-22T08:08:56.710Z",
-      "accessedAt": "2026-08-22T08:08:56.710Z",
-      "environments": [
-        "wsl2"
-      ],
-      "observedAt": "2026-08-22T08:08:56.710Z",
-      "deleted": false
-    },
-    {
-      "id": "7faa114b-f06c-4f81-a8d8-a4cfce59c6fe",
-      "category": "fact",
-      "title": "ComfyUI 模型多目录机制与本机分布",
-      "content": "ComfyUI 模型按格式分目录存放，模型不在 checkpoints 也能被识别：GET /models 列 50+ 分类，GET /models/<目录> 列文件。本机 8188 实例：checkpoints 为空；diffusion_models/ 有 flux2-klein-9b-base/fp8/kv-fp8、z-anime-distill-8step-fp8、z_image_turbo_bf16、MelBandRoformer；unet_gguf/ 有 LTX-2.3-22B-distilled-1.1-Q4_K_M.gguf（LTX23 视频主模型）与 sulphur_dev-Q4_K_M.gguf；clip_gguf/ 有 flux2-klein uncensored、qwen3 abliterated 等 4 个；text_encoders/ 有 qwen_3_4b/8b、ltx-2.3_text_projection；vae/ 有 LTX23_audio/video_vae、flux2-vae/kv-vae、zit-vae；latent_upscale_models/ 有 ltx-2.3-spatial-upscaler-x2-1.1。comfyui-agent CLI 的 models 子命令已支持 unet/unet_gguf/clip_gguf/text_encoders 等目录直读。",
-      "tags": [
-        "comfyui",
-        "模型目录",
-        "gguf",
-        "ltx23"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-22T08:29:25.161Z",
-      "updatedAt": "2026-08-22T08:29:25.161Z",
-      "accessedAt": "2026-08-22T08:29:25.161Z",
-      "environments": [
-        "wsl2"
-      ],
-      "observedAt": "2026-08-22T08:29:25.161Z",
-      "deleted": false
-    },
-    {
       "id": "74c81de3-96a2-4199-9ee9-da052d37b501",
       "category": "fact",
       "title": "用户决策: ComfyUI 不用 Colab，Colab 仅用于代码测试与微调训练",
@@ -9228,29 +9061,6 @@
         "wsl2"
       ],
       "observedAt": "2026-08-22T08:43:25.425Z",
-      "deleted": false
-    },
-    {
-      "id": "9d420121-c1df-4f2d-9556-c42c22b0168d",
-      "category": "procedure",
-      "title": "Phaser 3 浏览器游戏开发要点（tetris 项目实战）",
-      "content": "/root/tetris-game 俄罗斯方块项目经验：1) phaser 3.90 ESM 无 default export，须 `import * as Phaser from 'phaser'`；2) Canvas 必须 `parent: 'game-container'` 否则 append 到 body，flex 居中失效会被推出视口；3) DAS/ARR 计时必须统一用 `this.time.now`（game clock），keydown 事件里用 Date.now() 与 update 的 time.now 不同源会导致永远不触发；4) 渲染不要每帧 `this.add.graphics()`（内存泄漏），用持久实例 + clear() + dirty 标记；5) 浏览器验证可用 window.dispatchEvent(new KeyboardEvent('keydown', {code})) 模拟按键，注意 keyup 需手动补发；6) 纯逻辑游戏（无碰撞/重力物理）不要启用 arcade physics，白占包体。",
-      "tags": [
-        "phaser",
-        "gamedev",
-        "tetris",
-        "web-game"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T01:51:37.745Z",
-      "updatedAt": "2026-08-24T01:51:37.745Z",
-      "accessedAt": "2026-08-24T01:51:37.745Z",
-      "environments": [
-        "linux"
-      ],
-      "observedAt": "2026-08-24T01:51:37.745Z",
       "deleted": false
     },
     {
@@ -9390,121 +9200,6 @@
         "wsl2"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
-      "deleted": false
-    },
-    {
-      "id": "91686fbd-449c-413e-b70b-dd9004f3366a",
-      "category": "solutions",
-      "title": "Phaser 3 ESM 导入与输入 API 踩坑",
-      "content": "用 Phaser 4 教程代码 + npm 装的 Phaser 3.90 做 Tetris：①Phaser 3 ESM 是命名导出，需 `import * as Phaser from 'phaser'`（默认导入会 undefined 报错）；②`this.input.keyboard.list` 在 Phaser 3 不存在，需改用 this.input.keyboard.on('keydown') 处理输入。写 Phaser 项目前应先确认 npm 实际安装版本，按版本核对 API。",
-      "tags": [
-        "phaser",
-        "gamedev",
-        "踩坑"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T02:05:26.489Z",
-      "updatedAt": "2026-08-24T02:05:26.489Z",
-      "accessedAt": "2026-08-24T02:05:26.489Z",
-      "observedAt": "2026-08-24T02:05:26.489Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
-      "deleted": false
-    },
-    {
-      "id": "f6224bb8-12bd-40f0-840f-facfc25e2a3e",
-      "category": "solutions",
-      "title": "Phaser Canvas 必须指定 parent 容器",
-      "content": "Phaser 游戏配置不写 `parent: 'game-container'` 时 Canvas 直接 append 到 body，CSS flex 居中失效，元素被推到视口外（案例：scale.fit 放大到 800px 后 top=800px，视口仅 800px 高，画面完全不可见且 Console 无报错）。指定 parent 后 Canvas 正确居中（top=0）。排查'页面无画面但无 JS 错误'时优先检查此点。",
-      "tags": [
-        "phaser",
-        "渲染",
-        "布局"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T02:05:26.489Z",
-      "updatedAt": "2026-08-24T02:05:26.489Z",
-      "accessedAt": "2026-08-24T02:05:26.489Z",
-      "observedAt": "2026-08-24T02:05:26.489Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
-      "deleted": false
-    },
-    {
-      "id": "c115ef76-9d0d-4e0a-b8c6-bf79ccdaae8d",
-      "category": "solutions",
-      "title": "Phaser DAS 输入两大坑：e.repeat 与时间基准",
-      "content": "①Phaser 全局 keyboard.on('keydown') 会收到 OS 层按键重复事件（e.repeat=true，按住约 500ms 后每约 30ms 触发），不过滤则与 DAS/ARR 叠加成三倍速度，须只保留首次按下；②keydown 回调用 Date.now() 而 update 循环用 game clock，两时间源不同导致 DAS 永不触发，必须统一基准。修复后参数：DAS 180ms 初始延迟 + ARR 40ms。",
-      "tags": [
-        "phaser",
-        "输入",
-        "DAS"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T02:05:26.489Z",
-      "updatedAt": "2026-08-24T02:05:26.489Z",
-      "accessedAt": "2026-08-31T00:15:00.731Z",
-      "observedAt": "2026-08-24T02:05:26.489Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
-      "deleted": false
-    },
-    {
-      "id": "c321f0dc-08ce-4b50-a2a5-02d47803b6a8",
-      "category": "solutions",
-      "title": "Phaser 每帧 add.graphics() 内存泄漏修复",
-      "content": "Tetris 棋盘渲染原实现每帧 this.add.graphics() 新建 Graphics 对象且旧对象永不销毁（每帧泄漏 5 个对象，长时间运行会卡死）。修复：启动时创建持久 Graphics 实例，每帧 clear() 后重画，加 dirty 标记按需重绘；HUD 文本用 setText 增量更新而非销毁重建 Text 对象。",
-      "tags": [
-        "phaser",
-        "性能",
-        "内存"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T02:05:26.489Z",
-      "updatedAt": "2026-08-24T02:05:26.489Z",
-      "accessedAt": "2026-08-24T02:05:26.489Z",
-      "observedAt": "2026-08-24T02:05:26.489Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
-      "deleted": false
-    },
-    {
-      "id": "994802d2-6fb0-4035-84d9-db266b04b218",
-      "category": "fact",
-      "title": "Tetris 游戏项目 /root/tetris-game",
-      "content": "2026-08-23 完成，Phaser 3.90 + Vite，dev 端口 3456（cd /root/tetris-game && npm run dev）。功能：标准 DAS/ARR 输入、7-bag 随机、踢墙旋转、Hold、幽灵方块、Web Audio 合成音效（零外部资源）、localStorage 最高分、HTML 触摸按钮。结构：src/{main,constants,physics,PlayScene}.js，物理层有 Node 单元测试。",
-      "tags": [
-        "tetris",
-        "phaser",
-        "项目"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T02:05:26.489Z",
-      "updatedAt": "2026-08-24T02:05:26.489Z",
-      "accessedAt": "2026-08-24T02:05:26.489Z",
-      "observedAt": "2026-08-24T02:05:26.489Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
       "deleted": false
     },
     {
@@ -10791,30 +10486,6 @@
       "deleted": false
     },
     {
-      "id": "21ad96de-1b06-4a7d-afd4-90fc6e61141e",
-      "category": "procedure",
-      "title": "外部技能包整合规范（novel-writing/mattpocock 实例）",
-      "content": "从 GitHub 收集外部技能包整合进 /root/.pi/packs/ 的标准流程（novel-writing 整合 3 仓库、mattpocock-skills 收纳 8 技能两个实例验证）：1) 调研：GitHub 搜索候选仓库，看 star/许可/活跃度，选 2-3 个互补的；2) 许可：取最严格许可作为整合版许可（如三仓库中 CC BY-NC-SA 4.0 最严则全包用该许可），包内 README 附来源-许可-贡献对照表；3) 平台适配：删除 Anthropic/Codex 专属字段（allowed-tools、CODEX_HOME、sync_skill_mirror）、PowerShell 脚本、作者个人蒸馏文件，frontmatter 仅留 name/description（pi 技能格式，缓存友好无时间戳）；4) 引用体系简化：上游 [REF:xxx]/[KERNEL_REF:xxx] 全局 ID 索引改为按文件名扁平引用；5) 命名平实化：去掉修辞化命名（天命/法典/铁律等）保留执行语义；6) 参数可配置：上游写死常数（字数/缓冲比/配额）收敛为\"可调参数\"表标注默认值；7) 补强工程层：新增 engineering.md（分批/事实锁/状态回证/追踪）、templates/、README（上游往往只讲初始化不讲建库迁移）；8) 脚本独立：依赖仓库内共享模块的脚本重写为无外部依赖单文件；9) 产物放入 packs/<name>/（drafts 只放草稿），README.md 表格登记。",
-      "tags": [
-        "packs",
-        "技能包",
-        "novel-writing",
-        "开源整合",
-        "skill"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T11:43:32.793Z",
-      "updatedAt": "2026-08-24T11:43:32.793Z",
-      "accessedAt": "2026-08-24T11:43:32.793Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-24T11:43:32.793Z",
-      "deleted": false
-    },
-    {
       "id": "8025e01a-bdd1-414a-8861-e20a046dc78b",
       "category": "solutions",
       "title": "pi-voice 转写后端选择：whisper vs sherpa(SenseVoice)",
@@ -11022,30 +10693,6 @@
         "all"
       ],
       "observedAt": "2026-08-24T12:16:42.142Z",
-      "deleted": false
-    },
-    {
-      "id": "3dea0b56-81ed-43b2-b63a-5872e75421cb",
-      "category": "solutions",
-      "title": "外部技能包整合 9 步规范",
-      "content": "从 GitHub 找技能包→分析→优化→整合放入 packs/ 的流程：任务 4 将 tianming-skill、chinese-longnovel-skill、ani-book-skill 三个小说写作包整合为 packs/novel-writing（六大协议+工程化补强，许可证 CC BY-NC-SA 4.0）。满足'成功实现、可复现、有保存价值'三条的流程另写 SKILL.md 草稿至 /root/.pi/packs/drafts/。",
-      "tags": [
-        "技能包",
-        "packs",
-        "novel-writing",
-        "整合规范"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:20:40.412Z",
-      "updatedAt": "2026-08-24T12:20:40.412Z",
-      "accessedAt": "2026-08-24T12:20:40.412Z",
-      "observedAt": "2026-08-24T12:20:40.412Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03394-2214-7c6e-95b2-74bbc2de2b12",
       "deleted": false
     },
     {
@@ -12222,29 +11869,6 @@
         "all"
       ],
       "observedAt": "2026-08-25T02:05:22.217Z",
-      "deleted": false
-    },
-    {
-      "id": "651e920a-7c12-4438-a72a-7af04a10bbf7",
-      "category": "solutions",
-      "title": "ComfyUI 多目录模型布局与 colab 使用边界",
-      "content": "ComfyUI 可识别多个目录，分别对应不同格式模型（checkpoints/loras/vae/upscale_models 等），排查\"模型找不到\"时勿只查 checkpoints 目录。测试生成用低分辨率缩短耗时。colab 定位仅限代码测试与微调训练：图像/视频模型体积大，上传存放不现实；视频模型本地可直接生成，无需 colab。packs 合并决策：skill-store 已并入 packs 统一管理。",
-      "tags": [
-        "comfyui",
-        "colab",
-        "模型目录",
-        "packs"
-      ],
-      "confidence": 0.9,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-25T02:05:34.738Z",
-      "updatedAt": "2026-08-25T02:05:34.738Z",
-      "accessedAt": "2026-08-25T02:05:34.738Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-25T02:05:34.738Z",
       "deleted": false
     },
     {
@@ -13751,52 +13375,6 @@
       "deleted": false
     },
     {
-      "id": "2344a39b-9605-4061-a03a-8b4c587e8ba6",
-      "category": "solutions",
-      "title": "wechatide CLI 与微信开发者工具 CLI 使用要点",
-      "content": "wechatide-skill 依赖 wechatide CLI：CLI 未装时技能命令直接失败，应先 `<cli> --version` 确认就绪再跑技能命令。微信开发者工具原生 CLI：Windows 位于安装目录下的 cli.bat（macOS 为 cli 二进制），首次使用必须在开发者工具 设置→安全设置 中开启「服务端口」，否则 CLI 连接被拒。命令面以官方文档为准：https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html 。配套地址：小程序注册（获取 AppID）https://mp.weixin.qq.com ；开发者工具下载 https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html 。",
-      "tags": [
-        "wechatide",
-        "微信小程序",
-        "cli",
-        "windows"
-      ],
-      "confidence": 0.85,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-26T12:24:46.237Z",
-      "updatedAt": "2026-08-26T12:24:46.237Z",
-      "accessedAt": "2026-08-26T12:24:46.237Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-26T12:24:46.237Z",
-      "deleted": false
-    },
-    {
-      "id": "4d13d447-3aed-4ed9-9ce2-eda53f30ab20",
-      "category": "reference",
-      "title": "微信云开发 vs 云托管区别与选型",
-      "content": "微信云开发（CloudBase/TCB）：Serverless BaaS——云函数 + 云数据库 + 云存储 + 云调用，小程序端 SDK 直连、免运维，适合纯小程序轻后端快速搭建。微信云托管：容器化 Serverless 运行时——任意语言/Docker 镜像、自动扩缩容、按量计费，HTTP 服务经微信侧代理可免鉴权调用（免去 access_token 维护），且与云开发资源内网互通，适合存量后端迁移或自定义运行时。选型：轻逻辑快搭→云开发；已有服务/长进程/自定义框架→云托管。",
-      "tags": [
-        "微信小程序",
-        "cloudbase",
-        "cloudrun",
-        "后端选型"
-      ],
-      "confidence": 0.85,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-26T12:24:46.274Z",
-      "updatedAt": "2026-08-26T12:24:46.274Z",
-      "accessedAt": "2026-08-26T12:24:46.274Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-26T12:24:46.274Z",
-      "deleted": false
-    },
-    {
       "id": "f8365063-4bd8-412b-9f31-004077e26091",
       "category": "reference",
       "title": "开源项目线索: book-to-skill 可借鉴或入 packs",
@@ -13980,60 +13558,6 @@
       ],
       "observedAt": "2026-08-27T13:29:01.373Z",
       "deleted": false
-    },
-    {
-      "id": "45b5be21-8a91-44b8-93c7-60e056d3b139",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-53362 Linux内核IPv6提权已遭利用 2026-08-27",
-      "content": "CISA KEV 新增（2026-08-27）：CVE-2026-53362，Linux 内核 IPv6 网络子系统存在未指定漏洞，可致权限提升，已被标记「已遭利用/勒索」，属 CISA 已知被利用漏洞列表。风险高，需关注发行版补丁推送并尽快升级内核。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-53362",
-      "tags": [
-        "knowledge",
-        "订阅",
-        "漏洞",
-        "CISA",
-        "Linux内核"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-28T02:39:09.548Z",
-      "updatedAt": "2026-08-28T02:39:09.548Z",
-      "accessedAt": "2026-08-28T02:39:09.548Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-28T02:39:09.548Z",
-      "deleted": false,
-      "links": [
-        "4334ae1e-80ba-42c9-b1e6-59ffcebf055b"
-      ]
-    },
-    {
-      "id": "399f2b8a-fd97-4b3c-8fb1-9c994eca562f",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-66384 JFrog Artifactory路径穿越已遭利用 2026-08-27",
-      "content": "CISA KEV 新增（2026-08-27）：CVE-2026-66384，JFrog Artifactory 受限目录路径限制不当（路径穿越），已遭利用/勒索标记。Artifactory 是主流制品仓库，承载供应链，需核实版本并升级修复。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-66384",
-      "tags": [
-        "knowledge",
-        "订阅",
-        "漏洞",
-        "CISA",
-        "供应链"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-28T02:39:09.803Z",
-      "updatedAt": "2026-08-28T02:39:09.803Z",
-      "accessedAt": "2026-08-28T02:39:09.803Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-28T02:39:09.803Z",
-      "deleted": false,
-      "links": [
-        "43fd5109-8be2-4764-ac55-e9ea013247bc"
-      ]
     },
     {
       "id": "310f5f19-22ef-4591-88ce-5ed5d53e2713",
@@ -15696,30 +15220,6 @@
       "deleted": false
     },
     {
-      "id": "3fc51aff-06c3-4d9a-b47d-3203dc9c6724",
-      "category": "procedure",
-      "title": "网页游戏原型极简指令自主迭代流程（tribe-era）",
-      "content": "用户极简指令驱动网页游戏开发的完整链路（单日跨 9 会话完成，仓库 github.com/cyfxxx/tribe-era）：1) 用户给概念关键词（2D 模拟经营、休闲、石器时代科技树、网页运行）→ 查 packs 技能 + web_search 同类开源项目/开发经验，汇总完善设计后再动手；2) 差异化卖点按用户原话锁定：科技树/物品合成/技术发展贴近真实；3) 用户说\"自行迭代，制作测试原型\"即无人值守产出可运行原型（单会话约 95 次工具调用）；4) 用户\"运行，我测试一下\"→ 提供可运行入口交验收；5) 按验收反馈迭代，结构性决策严格按用户描述实现（本例：地图分两层——大世界地图简略显示 + 文明地图详细显示，单轮 25 次工具调用）；6) 新机制（插件/mod 动态改变游戏内容）先调研通用实现方案再落地本项目；7) 用户授权\"自行迭代直到完整\"后长程自主计划/执行/决策/测试（单会话约 93 次工具调用、累计 213K tokens），自评无大改必要才停止并汇报。要点：每阶段保持可运行状态便于随时验收；极简指令≠无设计输入，重大决策不自行发挥；阶段性成果推送用户指定仓库保持远端可测。",
-      "tags": [
-        "game-dev",
-        "自主迭代",
-        "无人值守",
-        "tribe-era",
-        "用户验收"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T15:37:01.773Z",
-      "updatedAt": "2026-08-29T15:37:01.774Z",
-      "accessedAt": "2026-08-29T15:37:01.774Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-29T15:37:01.773Z",
-      "deleted": false
-    },
-    {
       "id": "9fa3281a-096c-4d32-9fae-3f7460a568c5",
       "category": "solutions",
       "title": "termux 后台服务纪律：tmux 承载 + 内存压力避 vite dev 常驻",
@@ -16118,24 +15618,6 @@
       ]
     },
     {
-      "id": "762000d2-4a31-4fe1-918e-6b6cfd410dea",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 15,
-      "createdAt": "2026-08-26T03:40:35.318Z",
-      "updatedAt": "2026-08-30T08:59:59.286Z",
-      "accessedAt": "2026-08-30T08:59:59.286Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-26T03:40:35.318Z",
-      "deleted": false
-    },
-    {
       "id": "c1cbedf2-5baa-43e9-b004-381671719359",
       "category": "solutions",
       "title": "空壳投喂记录识别与处理",
@@ -16396,29 +15878,6 @@
       "deleted": false
     },
     {
-      "id": "8773efdf-077a-4123-aaf5-00d631e0b4e1",
-      "category": "solutions",
-      "title": "微信开发者工具CLI使用要点",
-      "content": "wechatide CLI 依赖微信开发者工具客户端，使用前需先启动开发者工具（服务端口前置）。官方CLI文档地址：developers.weixin.qq.com/miniprogram/dev/devtools/cli.html。2026-08-26完成CLI安装并冒烟验证通过，链路可用。",
-      "tags": [
-        "wechatide",
-        "微信开发者工具",
-        "CLI"
-      ],
-      "confidence": 0.85,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-30T08:50:02.026Z",
-      "updatedAt": "2026-08-30T08:50:02.026Z",
-      "accessedAt": "2026-08-30T08:50:02.026Z",
-      "observedAt": "2026-08-30T08:50:02.026Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a03e03-f3b9-7e00-b3a3-3f5b6cc96f4a",
-      "deleted": false
-    },
-    {
       "id": "b03220da-8729-4aee-94c5-6b925e6c2f9a",
       "category": "fact",
       "title": "空壳投喂第四次出现(2026-08-26)",
@@ -16554,21 +16013,6 @@
       ],
       "observedAt": "2026-08-30T08:50:02.494Z",
       "deleted": false
-    },
-    {
-      "id": "mem_1786583599544_teinck",
-      "title": "用户要求记住数字 777",
-      "content": "用户明确要求记住数字 777（2025-06-13 记录）",
-      "category": "fact",
-      "confidence": 0.9,
-      "environment": "all",
-      "observedAt": "2026-08-13T01:13:19.544Z",
-      "lastAccessedAt": "2026-08-13T01:13:19.546Z",
-      "references": 0,
-      "supersededBy": null,
-      "deleted": false,
-      "tags": [],
-      "accessedAt": "2026-08-13T01:13:19.544Z"
     },
     {
       "id": "1e40c26a-8242-44d3-a037-3dacdc5c0f94",
@@ -16970,29 +16414,6 @@
       "deleted": false
     },
     {
-      "id": "a0150a25-a998-4a0e-91c5-b66f37c39b90",
-      "category": "fact",
-      "title": "Termux:API MediaRecorder 连续录音不稳定",
-      "content": "Termux:API 的 MediaRecorder 服务在 Android 端连续录音时表现不稳定：第一次录音通常正常跑满设定上限，之后进程常提前退出（1.5-1.9 秒），偶发空输出 0 字节文件；手动 termux-microphone-record -q 清理后可恢复。此问题在 pi-voice 连续多次录音场景下复现。",
-      "tags": [
-        "pi-voice",
-        "termux",
-        "bug",
-        "media-recorder"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T04:30:08.118Z",
-      "updatedAt": "2026-08-12T04:30:08.118Z",
-      "accessedAt": "2026-08-12T04:30:08.118Z",
-      "observedAt": "2026-08-12T04:30:08.118Z",
-      "environments": [
-        "termux"
-      ],
-      "deleted": false
-    },
-    {
       "id": "13d9a160-0169-4193-a03d-3320d01209ab",
       "category": "preference",
       "title": "pi-autopilot maxIdleMinutes 默认 30 偏激进",
@@ -17250,24 +16671,6 @@
       "accessedAt": "2026-08-14T11:05:18.280887Z"
     },
     {
-      "id": "0e173073-7b57-40e9-bb1c-8183f5e3b3fb",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 7,
-      "createdAt": "2026-08-14T03:29:32.815Z",
-      "updatedAt": "2026-08-14T05:30:24.935Z",
-      "accessedAt": "2026-08-14T05:30:24.935Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-14T03:29:32.815Z",
-      "deleted": false
-    },
-    {
       "id": "19426f7b-c9fe-44e5-9b91-a300cf742aaa",
       "category": "procedure",
       "title": "entries.json 冲突合并约定",
@@ -17494,30 +16897,6 @@
         "故障修复"
       ],
       "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-15T00:40:00.808Z",
-      "updatedAt": "2026-08-15T00:40:00.808Z",
-      "accessedAt": "2026-08-15T00:40:00.808Z",
-      "observedAt": "2026-08-15T00:40:00.808Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
-      "deleted": false
-    },
-    {
-      "id": "693dad64-2311-48ea-93e9-c5f099e48050",
-      "category": "solutions",
-      "title": "check-restart.js 状态文件路径修正",
-      "content": "pi-autopilot 的 admin_restart 把重启请求写入 PI_CODING_AGENT_DIR\\.pi-admin-state.json（即 USERPROFILE\\.pi\\agent\\），而便携版 start.bat wrapper 的 bin/check-restart.js 原读 USERPROFILE\\agent\\，路径不匹配导致 wrapper 检测不到重启请求。修复：按序尝试 PI_CODING_AGENT_DIR → USERPROFILE\\.pi\\agent → USERPROFILE\\agent 兜底，三场景实测通过。注意 agent\\ 下可能存在手工放置的状态文件副本（内容 none）误导排查。",
-      "tags": [
-        "pi-autopilot",
-        "重启",
-        "便携版",
-        "故障修复"
-      ],
-      "confidence": 0.95,
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-08-15T00:40:00.808Z",
@@ -17959,28 +17338,6 @@
       "updatedAt": "2026-08-10T08:59:37.714Z",
       "accessedAt": "2026-08-10T08:59:37.714Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "8cc9bf5b-b861-4dbf-a4bb-389c10dfc2c9",
-      "category": "fact",
-      "title": "plan_enter/plan_exit 模型侧切换工具",
-      "content": "pi 扩展已实现模型侧计划模式切换工具（提交 99a8770，参考 opencode 权限设计）：plan_enter 仅执行模式可见、进入免确认；plan_exit 仅计划模式可见、退出必须弹 ctx.ui.select 确认选择器（'确认退出/取消'）由用户手动确认，任何情况不绕过。提示词已同步注明需用户确认。",
-      "tags": [
-        "plan-mode",
-        "扩展",
-        "工具"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T09:48:09.454Z",
-      "updatedAt": "2026-08-10T09:48:09.454Z",
-      "accessedAt": "2026-08-10T09:48:09.454Z",
-      "observedAt": "2026-08-10T09:48:09.454Z",
       "deleted": false,
       "environments": [
         "all"
@@ -18468,48 +17825,6 @@
       ],
       "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
       "deleted": false
-    },
-    {
-      "id": "a91c7441-136f-4e17-b1d0-b0e64c376dd7",
-      "category": "fact",
-      "title": "pi-link 设备拓扑：termux=100.114.171.18:8022",
-      "content": "本机 WSL（mypc-wsl）与 termux 的 pi-link 连接配置：termux 设备 Tailscale IP=100.114.171.18（短时间不变，可写入记忆），SSH 端口 8022，用户 root，已写入 ~/.pi/pi-link.json（gitignored，本机独立）。3 条公钥加设备标签（termux@100.114.171.18 / mypc-wsl / win-host）推送 f5e8904。link_send 端到端双向打通（tailnet 延迟约 2s，回复 29-34s）。",
-      "tags": [
-        "pi-link",
-        "termux",
-        "tailscale",
-        "ssh"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T07:07:53.438Z",
-      "updatedAt": "2026-08-13T07:07:53.438Z",
-      "accessedAt": "2026-08-13T07:07:53.438Z",
-      "observedAt": "2026-08-13T07:07:53.438Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false
-    },
-    {
-      "id": "d77f42e9-ec47-437b-bee3-5e1294c971d9",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 53,
-      "createdAt": "2026-08-10T10:02:42.622Z",
-      "updatedAt": "2026-08-13T12:01:16.924Z",
-      "accessedAt": "2026-08-13T12:01:16.924Z",
-      "observedAt": "2026-08-10T10:02:42.622Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
     },
     {
       "id": "ed549a29-52fd-46b5-aa04-e754745ed688",

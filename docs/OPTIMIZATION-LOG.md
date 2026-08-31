@@ -479,3 +479,24 @@
 ### After
 - 待验证：seed 失配检查应转绿；明日 daily-review 运行后 lesson-course.json 首建，观察去重与三态回写是否按预期。回归：无扩展代码/脚本改动，test-all 不受影响。
 - 结论：保留
+
+---
+
+## 2026-08-31 packs 草稿归置 + 记忆库内容域整理（828→798）
+- 状态: done
+- 关联: packs/README 流程（草稿确认机制）；VISION §5 内容域边界
+
+### Before
+- packs/drafts/ 积压 8 个草稿未处置；comfyui/colab/gamedev 无 EXPERIENCE.md
+- 记忆库 828 条含 17 条项目域经验（ComfyUI/Colab/Phaser/gamedev/微信）+ 4 条 junk（test×3、记住数字 777）+ 7 组冲突重复 + 2 条与技能包重复的整合规范
+
+### Change
+- 草稿归置：repo-size-audit → 独立包 packs/repo-size-audit/；skill-integrate+skill-pack-adoption+external-skill-pack-integration → 合并为 packs/skill-integration/（选包/许可核对/审查/验收/三层归置/整合纪律）；miniprogram-dev → 并入 wechatide-skill（references/business-guide.md 已有完备覆盖，删除草稿）；webgame-autopilot → 并入 gamedev/references/webgame-autopilot.md + SKILL.md 路由；pi-voice-wake-debug → 并入 extensions/pi-voice/README.md Troubleshooting；daily-ops-review → 功能已被 daily-health 任务取代，删除
+- 记忆迁移（按 VISION §5 内容域边界）：17 条项目域经验 → comfyui-agent/EXPERIENCE.md、colab-bridge/EXPERIENCE.md、gamedev/EXPERIENCE.md、wechatide LOCAL-NOTES.md + business-guide.md（云开发 vs 云托管选型），随后从 entries.json 删除（备份 /tmp/entries-backup-20260831-083716.json）
+- 记忆清理：4 条 junk 删除；7 组冲突重复各保留较新/较完整侧；2 条外部技能包整合规范（内容已入 skill-integration）删除
+
+### After
+- packs/drafts/ 清空；新增 2 包（repo-size-audit/skill-integration）+ 4 个 EXPERIENCE.md/LOCAL-NOTES 增量
+- 记忆库 828 → 798（-30）；用户偏好/环境类条目（ComfyUI 决策/Tetris 手感/游戏方向/小程序环境）保留未动
+- 回归：无扩展代码改动；待明日 daily-review 运行确认 lesson-course 机制正常
+- 结论：保留

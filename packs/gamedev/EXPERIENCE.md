@@ -46,3 +46,13 @@
 - 场景/经验: 数据边界教训——world-atlas land-110m 南极洲南界只到 -88° 且 -84° 以下有洞（渲染成中空蓝斑），需光栅化后隐式补全 lat<-84.5° 为陆地（+2.8% 陆地，占比 32.0%）；**补全公式里纬度符号写错（90-84.5 应为 90+84.5）曾把全图误标陆地**，好在像素占比统计（陆地 95%+）立刻暴露
 - 场景/经验: 经纬网格 0.18 混合在深海上过显（白线明显）、亮陆地上隐形（反差分裂）——降到 0.10 统一；网格是"海洋图装饰"，视觉上应弱到可忽略
 - 决策: 待优化项更新（B 版海洋色偏脏为首要遗留；rock 0.6% 偏少；罗宾逊投影可选）；质检基准更新为陆地 32.0%；管线参数表已同步到 /root/tribe-era/docs/ART-PIPELINE.md
+
+## 2026-08 Tetris/Phaser 3 实战（迁自长期记忆 2026-08-31）
+- 环境: wsl2
+- Phaser 3.90 ESM 无 default export，须 `import * as Phaser from 'phaser'`（Phaser 4 教程代码不可直接用，先确认 npm 实际版本）；`this.input.keyboard.list` 在 Phaser 3 不存在，用 this.input.keyboard.on('keydown')
+- Canvas 必须 `parent: 'game-container'`，否则 append 到 body 致 flex 居中失效（scale.fit 放大到 800px 后 top=800px 画面不可见且无 JS 报错）——排查"页面无画面但无 JS 错误"先查此点
+- DAS/ARR 计时统一用 `this.time.now`（game clock），keydown 里 Date.now() 与 update 的 time.now 不同源会导致 DAS 永不触发；Phaser 全局 keyboard.on('keydown') 会收 OS 层重复事件（e.repeat，按住约 500ms 后每 30ms 触发），须只保留首次按下。参数：DAS 180ms 初始延迟 + ARR 40ms
+- 渲染不要每帧 `this.add.graphics()`（每帧泄漏 5 对象卡死）：持久实例 + 每帧 clear() + dirty 标记按需重绘；HUD 文本用 setText 增量更新
+- 纯逻辑游戏（无碰撞/重力）不要启用 arcade physics 白占包体；浏览器验证可用 window.dispatchEvent(new KeyboardEvent('keydown', {code})) 模拟按键，keyup 需手动补发
+- 项目：/root/tetris-game，Phaser 3.90 + Vite，dev 端口 3456；标准 DAS/ARR、7-bag、踢墙旋转、Hold、幽灵方块、Web Audio 合成音效（零外部资源）、localStorage 最高分、HTML 触摸按钮；src/{main,constants,physics,PlayScene}.js，物理层有 Node 单测
+- 说明: 网页游戏极简指令自主迭代流程（tribe-era 实证细节）已完整落入 references/webgame-autopilot.md（2026-08-31 迁入），本处不再重复

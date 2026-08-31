@@ -27,6 +27,7 @@ description: >
 | 打磨/性能 | design/performance-optimization、design/audio-design、design/shader-programming |
 | 发布 | workflows/itch-publish（网页游戏首选免费渠道）、steam-publish（商业）；Godot 项目另见 godot-export（presets/CI/Web） |
 
+- 用户极简指令驱动网页游戏原型自主迭代（"做一个 xxx 游戏"→完整可测原型→反馈迭代→推送）→ [references/webgame-autopilot.md](references/webgame-autopilot.md)
 ## 本机开发闭环约定
 
 - 运行环境：Node 22 + Vite；无显示器 → 用 chromium-browser headless 截图/录屏做"亲眼验证"（godogen 的 proof-over-claims 思路）
