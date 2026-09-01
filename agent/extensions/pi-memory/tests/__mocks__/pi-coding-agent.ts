@@ -28,3 +28,13 @@ export function truncateToWidth(text: string, maxWidth: number, ellipsis = "..."
   const out = cur + ellipsis
   return pad ? out + " ".repeat(Math.max(0, maxWidth - visibleWidth(out))) : out
 }
+
+/** Key 对象 mock，用于快捷键注册 */
+export const Key = {
+  ctrlAlt: (key: string) => ({ ctrl: true, alt: true, key }),
+  ctrl: (key: string) => ({ ctrl: true, key }),
+  alt: (key: string) => ({ alt: true, key }),
+  shift: (key: string) => ({ shift: true, key }),
+  return: { key: 'return' },
+  enter: { key: 'enter' },
+}

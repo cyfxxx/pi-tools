@@ -25,7 +25,7 @@ import { formatPlanMessageLine, parsePlanFile, renderPlanFile } from "./view.ts"
 import { registerTodoTool, runTodosCommand } from "./todo.ts";
 import { TodoOverlay } from "./overlay.ts";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "todo", "web_search", "fetch_url", "subagent", "plan_exit"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "todo", "web_search", "fetch_url", "subagent", "plan_exit", "ask_user"];
 
 /**
  * 退出受限状态时恢复全量工具（唯一正确方式）。
@@ -337,6 +337,176 @@ export default function planModeExtension(pi: ExtensionAPI): void {
   }
 
   registerTodoTool(pi);
+
+  // 注册 ask_user 工具：模型向用户提问，用户通过选择回答
+  pi.registerTool({
+    name: "ask_user",
+    label: "向用户提问",
+    description:
+      "向用户提问并获取选择回答。当需要用户决策、确认下一步操作、或获取用户偏好时使用此工具。返回用户选择的选项标签。",
+    promptSnippet: "向用户提问并获取选择回答",
+    promptGuidelines: [
+      "需要用户决策时使用此工具。问题应清晰明确，选项应互斥且完整。",
+      "选项标签应简洁（1-5个词），描述可选但建议提供以帮助用户理解。",
+      "工具返回用户选择的选项标签，可用于后续逻辑分支。",
+    ],
+    parameters: {
+      type: "object",
+      properties: {
+        question: {
+          type: "string",
+          description: "问题内容",
+        },
+        header: {
+          type: "string",
+          description: "简短标签（显示在选择器标题）",
+        },
+        options: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: {
+                type: "string",
+                description: "选项标签（简洁，1-5个词）",
+              },
+              description: {
+                type: "string",
+                description: "选项描述（可选，帮助用户理解）",
+              },
+            },
+            required: ["label"],
+          },
+          description: "选项数组（至少2个选项）",
+        },
+        multiple: {
+          type: "boolean",
+          description: "是否允许多选（默认false）",
+        },
+      },
+      required: ["question", "options"],
+    },
+
+    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+      const { question, header, options, multiple } = params as {
+        question: string;
+        header?: string;
+        options: Array<{ label: string; description?: string }>;
+        multiple?: boolean;
+      };
+
+      // 验证参数
+      if (!question || typeof question !== "string") {
+        return {
+          content: [{ type: "text" as const, text: "Error: question is required" }],
+          details: null,
+          isError: true,
+        };
+      }
+
+      if (!Array.isArray(options) || options.length < 2) {
+        return {
+          content: [{ type: "text" as const, text: "Error: options must be an array with at least 2 items" }],
+          details: null,
+          isError: true,
+        };
+      }
+
+      // 提取选项标签
+      const optionLabels = options.map((opt) => opt.label);
+      const title = header ? `${header}: ${question}` : question;
+
+      // 单选模式：支持确认/修改
+      if (!multiple) {
+        let finalChoice: string | undefined;
+        
+        while (true) {
+          // 显示选择器
+          const choice = await ctx.ui.select(title, optionLabels);
+
+          if (choice === undefined) {
+            return {
+              content: [{ type: "text" as const, text: "用户取消了选择" }],
+              details: null,
+            };
+          }
+
+          // 显示确认对话框
+          const confirmTitle = `确认选择: ${choice}`;
+          const confirmOptions = ["确认", "修改"];
+          const confirmChoice = await ctx.ui.select(confirmTitle, confirmOptions);
+
+          if (confirmChoice === "确认") {
+            finalChoice = choice;
+            break;
+          } else if (confirmChoice === "修改") {
+            // 继续循环，重新选择
+            continue;
+          } else {
+            // 用户取消确认
+            return {
+              content: [{ type: "text" as const, text: "用户取消了选择" }],
+              details: null,
+            };
+          }
+        }
+
+        return {
+          content: [{ type: "text" as const, text: finalChoice! }],
+          details: null,
+        };
+      }
+
+      // 多选模式：支持选择/取消单个选项，直到选择"完成"
+      const selected: string[] = [];
+      
+      while (true) {
+        // 构建选项列表：已选选项（带✓标记）+ 未选选项 + "完成选择" + "取消全部"
+        const selectedOptions = selected.map((label) => `✓ ${label}`);
+        const availableOptions = optionLabels.filter((label) => !selected.includes(label));
+        const selectOptions = [...selectedOptions, ...availableOptions, "完成选择", "取消全部"];
+        
+        // 显示选择器
+        const choice = await ctx.ui.select(title, selectOptions);
+
+        if (choice === undefined) {
+          return {
+            content: [{ type: "text" as const, text: "用户取消了选择" }],
+            details: null,
+          };
+        }
+
+        if (choice === "完成选择") {
+          if (selected.length === 0) {
+            // 没有选择任何选项，提示用户
+            continue;
+          }
+          // 返回已选择的选项，用逗号分隔
+          return {
+            content: [{ type: "text" as const, text: selected.join(", ") }],
+            details: null,
+          };
+        }
+
+        if (choice === "取消全部") {
+          selected.length = 0;
+          continue;
+        }
+
+        // 处理选择/取消：移除 ✓ 前缀获取实际标签
+        const actualLabel = choice.startsWith("✓ ") ? choice.slice(2) : choice;
+        
+        if (selected.includes(actualLabel)) {
+          // 已选择的选项：取消选择
+          const index = selected.indexOf(actualLabel);
+          selected.splice(index, 1);
+        } else {
+          // 未选择的选项：添加选择
+          selected.push(actualLabel);
+        }
+      }
+    },
+  });
 
   // 模型侧计划模式切换工具（参考 opencode plan_enter/plan_exit 权限设计）：
   // plan_enter 仅执行模式白名单可见（模型可主动进入只读探索）；

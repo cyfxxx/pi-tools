@@ -50,7 +50,8 @@
 |------|------|
 | **`todo` 工具** | 6 个操作（create/update/list/get/delete/clear），5 状态机（pending→in_progress→completed→deleted，blocked 阻塞可回退） |
 | **TodoOverlay 悬浮层** | 编辑器上方显示任务列表，彩色图标（○/◐/✓/⏸）、删除线、溢出折叠、标题行高亮当前执行步骤 |
-| **只读工具集** | 限制可用工具为 read、bash、grep、find、ls、todo、web_search、fetch_url、subagent、plan_exit（共 10 个，`PLAN_MODE_TOOLS`，`index.ts:28`） |
+| **只读工具集** | 限制可用工具为 read、bash、grep、find、ls、todo、web_search、fetch_url、subagent、plan_exit、ask_user（共 11 个，`PLAN_MODE_TOOLS`，`index.ts:28`） |
+| **`ask_user` 工具** | 模型向用户提问并获取选择回答。单选模式支持确认/修改防止误选，多选模式支持点击已选选项取消选择。在正常模式和计划模式均可使用 |
 | **Bash 白名单** | 只允许白名单中的纯读取 bash 命令 |
 | **自动提取计划** | 从 `Plan:` 标题下提取编号步骤，自动通过 reducer 创建任务 |
 | **`[DONE:n]` 标记（已移除）** | 统一使用 `todo update status=completed` 完成步骤 |
@@ -89,10 +90,10 @@
               │          Plan Mode                   │
               │         (只读探索阶段)                 │
               │                                      │
-              │  可用工具 (10 个):                     │
+              │  可用工具 (11 个):                     │
               │    read / bash / grep / find / ls     │
               │    todo / web_search / fetch_url      │
-              │    subagent / plan_exit               │
+              │    subagent / plan_exit / ask_user    │
               │                                      │
               │  Bash 受 allowlist 限制               │
               │  (cat、grep、ls 等只读命令)            │
@@ -579,6 +580,7 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 | 工具 | 描述 | 操作 |
 |------|------|------|
 | `todo` | 管理计划任务列表 | create / update / list / get / delete / clear |
+| `ask_user` | 向用户提问并获取选择回答 | 返回用户选择的选项标签 |
 
 **todo 工具参数：**
 - `action` (必填): create / update / list / get / delete / clear
@@ -595,6 +597,46 @@ git 命令通过 `runGit(pi, cwd, command)` 执行（`pi.exec("bash", ["-c", ...
 - `blocked → pending / in_progress / completed / deleted`（阻塞解决后恢复）
 - `completed → deleted`（归档）
 - 存在 `blocked` 任务时计划不会判定为"全部完成"
+
+**ask_user 工具参数：**
+- `question` (必填): 问题内容
+- `header`: 简短标签（显示在选择器标题）
+- `options` (必填): 选项数组（至少2个选项），每个选项包含：
+  - `label` (必填): 选项标签（简洁，1-5个词）
+  - `description`: 选项描述（可选，帮助用户理解）
+- `multiple`: 是否允许多选（默认 false）
+
+**ask_user 工具特性：**
+- **单选模式**：选择后显示确认对话框，支持"确认"或"修改"，防止误选
+- **多选模式**：已选选项显示 ✓ 标记，点击可取消选择，支持"完成选择"或"取消全部"
+- **取消支持**：任何时候按 Esc 或取消都会返回"用户取消了选择"
+
+**ask_user 工具示例：**
+```typescript
+// 单选示例
+ask_user({
+  question: "下一步要执行什么操作？",
+  header: "操作选择",
+  options: [
+    { label: "继续执行", description: "继续执行当前任务" },
+    { label: "暂停", description: "暂停执行，等待进一步指令" },
+    { label: "终止", description: "终止当前任务" }
+  ]
+})
+// 返回用户选择的标签，如 "继续执行"
+
+// 多选示例
+ask_user({
+  question: "需要哪些操作？",
+  options: [
+    { label: "编译代码" },
+    { label: "运行测试" },
+    { label: "部署" }
+  ],
+  multiple: true
+})
+// 返回用户选择的标签，如 "编译代码, 运行测试"
+```
 
 ### 快捷键
 
