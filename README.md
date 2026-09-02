@@ -9,6 +9,10 @@
 │   ├── settings.json          Pi 主配置（provider, model, extensions, skills）
 │   ├── AGENTS.md              项目环境描述
 │   ├── APPEND_SYSTEM.md       追加系统提示词
+│   ├── modes.json             模式切换配置（full/light/quick）
+│   ├── rescue/                救援模式配置
+│   │   ├── rescue-config.json 救援模式配置（最小化 pi）
+│   │   └── rescue-prompt.md   救援模式提示词（修复主程序）
 │   ├── lib/                   共享库模块
 │   │   ├── token-budget.ts    跨扩展 Token 用量追踪（兼容层 → context-budget.ts）
 │   │   ├── note-store.ts      ctx-lite 笔记持久化（已并入 pi-memory，保留兼容）
@@ -46,7 +50,7 @@
 │   │   ├── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
 │   │   └── pi-repo-optimize/  配置仓库结构/存储/架构优化（摸底分析 + 分级执行）
 │   └── package.json           统一依赖根（11 扩展共享 agent/node_modules，Node 向上寻径解析）
-├── docs/                      开发与部署文档（12 文件）
+├── docs/                      开发与部署文档（13 文件）
 │   ├── VISION.md              项目愿景与进化纪律（终局目标/软硬方法论/单向升格通道）
 │   ├── SELF-OPTIMIZING-ROADMAP.md  执行跟踪（差距分析/行动计划/决策启发式）
 │   ├── SELF-OPTIMIZING-BASELINE.md 优化基线（记忆库/回归全绿快照）
@@ -58,6 +62,7 @@
 │   ├── GIT-HISTORY-REWRITE.md 历史重写迁移说明
 │   ├── OPTIMIZATION-LOG.md    优化工单日志
 │   ├── SKILLS-MAINTENANCE.md  技能维护约定
+│   ├── RESCUE-MODE.md         救援模式说明（自动恢复/手动救援/快照管理）
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
 ├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
 ├── memory/                    pi-memory 长期记忆（entries/notes/summaries/checkpoints）
@@ -71,9 +76,11 @@
 │   ├── pi-cron.sh             pi-autopilot 离线执行包装脚本
 │   ├── install-cron.sh        安装 crontab 条目
 │   ├── install-systemd.sh     安装 systemd timer（备选）
-│   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启）
+│   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启 + 救援模式）
 │   ├── install-wrapper.sh     wrapper 安装/卸载
 │   ├── pi-orig.sh             绕过 wrapper 直启（故障逃生）
+│   ├── pi-snapshot.sh         快照管理（创建/恢复/列出）
+│   ├── pi-rescue.sh           手动救援脚本（交互式修复）
 │   ├── test-all.sh            一键全量回归（测试+类型+冲突检查）
 │   ├── pi-whisper.sh          whisper 常驻服务管理（start/stop/status/restart）
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
@@ -293,6 +300,32 @@ echo "$PI_DIST"
 - **看门狗：** 会话超过 `maxIdleMinutes` 无活动自动重启恢复
 - **崩溃回滚：** wrapper 检测连续 3 次崩溃后回滚至最近一次良好模型（lastGood 快照）
 - **预算三锁：** `maxRunsPerDay`（默认 50）/ `maxCostPerDay` / `allowedModels`，超限自动跳过并通知
+
+### 救援模式
+
+当 Pi 在进行自我修改和优化时发生崩溃，救援模式提供多层次的自动恢复机制：
+
+| 崩溃次数 | 恢复措施 | 说明 |
+|---------|---------|------|
+| 3-4 次 | 回滚 lastGood 模型 | 现有逻辑 |
+| 5-6 次 | 恢复配置文件 | 从快照或 git 恢复 |
+| 7+ 次 | 启动救援模式 pi | 最小化配置，用于修复问题 |
+
+**救援模式 pi**：一个最小化的 pi 实例，无扩展、无技能，专门用于诊断和修复主程序问题。
+
+**手动救援**：
+```bash
+bash scripts/pi-rescue.sh    # 手动救援脚本
+```
+
+**快照管理**：
+```bash
+bash scripts/pi-snapshot.sh create   # 创建快照
+bash scripts/pi-snapshot.sh list     # 列出快照
+bash scripts/pi-snapshot.sh restore <path>  # 恢复快照
+```
+
+详细说明见 `docs/RESCUE-MODE.md`。
 
 ### 自管理
 

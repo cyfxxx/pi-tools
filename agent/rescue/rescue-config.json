@@ -1,0 +1,8 @@
+{
+  "description": "救援模式配置 - 用于修复主程序崩溃问题",
+  "extensions": [],
+  "skills": [],
+  "systemPrompt": null,
+  "appendSystemPrompt": "~/.pi/agent/rescue/rescue-prompt.md",
+  "thinking": "low"
+}

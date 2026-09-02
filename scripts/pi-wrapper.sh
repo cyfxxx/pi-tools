@@ -87,10 +87,18 @@ SETTINGS_FILE="$HOME/.pi/agent/settings.json"
 PI_AUTOPILOT=1
 export PI_AUTOPILOT
 CRASH_THRESHOLD=3
+RESCUE_THRESHOLD=5  # 连续崩溃达 5 次触发配置恢复
+RESCUE_PI_THRESHOLD=7  # 连续崩溃达 7 次启动救援模式 pi
 LAST_ROLLBACK_TS=0
 # 审计 MEDIUM 修复：崩溃计数时间窗（24h）——窗口外的旧计数清零，
 # 避免长期积累的正常使用（零散非零退出）被误判为连续崩溃触发回滚
 CRASH_WINDOW_MS=$((24 * 3600 * 1000))
+
+# 救援模式相关路径
+RESCUE_DIR="$HOME/.pi/agent/rescue"
+SNAPSHOT_DIR="$HOME/.pi/.snapshots"
+RESCUE_CONFIG="$RESCUE_DIR/rescue-config.json"
+RESCUE_PROMPT="$RESCUE_DIR/rescue-prompt.md"
 
 init_state_file() {
   mkdir -p "$(dirname "$STATE_FILE")"
@@ -218,6 +226,104 @@ if [ "$1" = "update" ]; then
   fi
   exit "$UPD_EXIT"
 fi
+
+# ── 快照与恢复函数 ──
+# 在 pi 启动前自动创建快照，崩溃时可以恢复
+
+# 创建快照：保存关键配置文件和 git 状态
+create_snapshot() {
+  local timestamp=$(date +%Y%m%d_%H%M%S)
+  local snapshot_path="$SNAPSHOT_DIR/snapshot_${timestamp}"
+  
+  mkdir -p "$SNAPSHOT_DIR" "$snapshot_path"
+  
+  # 保存关键配置文件
+  cp "$SETTINGS_FILE" "$snapshot_path/" 2>/dev/null || true
+  cp "$HOME/.pi/agent/modes.json" "$snapshot_path/" 2>/dev/null || true
+  
+  # 保存扩展列表
+  ls "$HOME/.pi/agent/extensions/" > "$snapshot_path/extensions.list" 2>/dev/null || true
+  
+  # 保存 git 状态
+  cd "$HOME/.pi"
+  git rev-parse HEAD > "$snapshot_path/git-commit" 2>/dev/null || true
+  git status --porcelain > "$snapshot_path/git-status" 2>/dev/null || true
+  
+  # 清理旧快照（保留最近 10 个）
+  local count=$(ls -1d "$SNAPSHOT_DIR"/snapshot_* 2>/dev/null | wc -l)
+  if [ "$count" -gt 10 ]; then
+    ls -1d "$SNAPSHOT_DIR"/snapshot_* | head -n $((count - 10)) | xargs rm -rf
+  fi
+  
+  echo "$snapshot_path"
+}
+
+# 恢复快照：从指定快照恢复配置文件
+restore_snapshot() {
+  local snapshot_path="$1"
+  
+  if [ ! -d "$snapshot_path" ]; then
+    echo "[pi-wrapper] 快照不存在: $snapshot_path" >&2
+    return 1
+  fi
+  
+  # 恢复配置文件
+  cp "$snapshot_path/settings.json" "$SETTINGS_FILE" 2>/dev/null || true
+  cp "$snapshot_path/modes.json" "$HOME/.pi/agent/modes.json" 2>/dev/null || true
+  
+  echo "[pi-wrapper] 已恢复快照: $snapshot_path" >&2
+  return 0
+}
+
+# 恢复配置：从 git 恢复配置文件
+restore_config_from_git() {
+  cd "$HOME/.pi"
+  
+  # 检查是否有未提交的更改
+  if git diff --quiet agent/settings.json 2>/dev/null; then
+    echo "[pi-wrapper] settings.json 无更改，跳过 git 恢复" >&2
+    return 1
+  fi
+  
+  # 恢复 settings.json
+  git checkout HEAD -- agent/settings.json 2>/dev/null
+  if [ $? -eq 0 ]; then
+    echo "[pi-wrapper] 已从 git 恢复 settings.json" >&2
+    return 0
+  else
+    echo "[pi-wrapper] git 恢复失败" >&2
+    return 1
+  fi
+}
+
+# 启动救援模式 pi：使用最小化配置启动
+start_rescue_pi() {
+  echo "[pi-wrapper] 启动救援模式 pi..." >&2
+  
+  # 确保救援配置存在
+  if [ ! -f "$RESCUE_CONFIG" ]; then
+    mkdir -p "$RESCUE_DIR"
+    cat > "$RESCUE_CONFIG" << 'EOF'
+{
+  "description": "救援模式配置 - 用于修复主程序崩溃问题",
+  "extensions": [],
+  "skills": [],
+  "systemPrompt": null,
+  "appendSystemPrompt": "~/.pi/agent/rescue/rescue-prompt.md",
+  "thinking": "low"
+}
+EOF
+  fi
+  
+  # 使用救援配置启动 pi
+  node "$PI_JS" \
+    --no-extensions \
+    --no-skills \
+    --append-system-prompt "$RESCUE_PROMPT" \
+    "$@"
+  
+  return $?
+}
 
 init_crash_file() {
   if [ ! -f "$CRASH_FILE" ]; then
@@ -471,6 +577,13 @@ while true; do
   ensure_cron
   # 解析 --mode 参数并应用模式配置
   resolve_mode "$@"
+  
+  # 启动前创建快照（仅在首次启动或崩溃恢复后）
+  if [ "${SNAPSHOT_CREATED:-}" != "1" ]; then
+    create_snapshot >/dev/null 2>&1
+    SNAPSHOT_CREATED=1
+  fi
+  
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
     node "$PI_JS" "$@"
@@ -498,7 +611,44 @@ while true; do
       crash_count=$((crash_count + 1))
       write_crash_count "$crash_count"
       echo "[pi-wrapper] 检测到崩溃 (第 ${crash_count} 次)" >&2
-      if [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
+      
+      # 崩溃恢复策略：根据崩溃次数采取不同的恢复措施
+      if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
+        # 崩溃 7+ 次：启动救援模式 pi（最小化配置）
+        echo "[pi-wrapper] 连续崩溃 ${crash_count} 次，启动救援模式 pi..." >&2
+        start_rescue_pi
+        echo "[pi-wrapper] 救援模式 pi 已退出，重置崩溃计数" >&2
+        write_crash_count 0
+        break
+      elif [ "$crash_count" -ge "$RESCUE_THRESHOLD" ]; then
+        # 崩溃 5-6 次：尝试恢复配置文件
+        echo "[pi-wrapper] 连续崩溃 ${crash_count} 次，尝试恢复配置..." >&2
+        
+        # 先尝试从快照恢复
+        local latest_snapshot=$(ls -1d "$SNAPSHOT_DIR"/snapshot_* 2>/dev/null | tail -1)
+        if [ -n "$latest_snapshot" ] && restore_snapshot "$latest_snapshot"; then
+          echo "[pi-wrapper] 已从快照恢复配置，1 秒后重启..." >&2
+          sleep 1
+          set -- "${ORIG_ARGS[@]}" "--continue"
+          continue
+        fi
+        
+        # 快照恢复失败，尝试从 git 恢复
+        if restore_config_from_git; then
+          echo "[pi-wrapper] 已从 git 恢复配置，1 秒后重启..." >&2
+          sleep 1
+          set -- "${ORIG_ARGS[@]}" "--continue"
+          continue
+        fi
+        
+        # git 恢复也失败，启动救援模式
+        echo "[pi-wrapper] 配置恢复失败，启动救援模式 pi..." >&2
+        start_rescue_pi
+        echo "[pi-wrapper] 救援模式 pi 已退出，重置崩溃计数" >&2
+        write_crash_count 0
+        break
+      elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
+        # 崩溃 3-4 次：回滚 lastGood 模型（现有逻辑）
         if rollback_to_lastgood; then
           echo "[pi-wrapper] 回滚后 1 秒重启..." >&2
           sleep 1
@@ -506,12 +656,14 @@ while true; do
           continue
         fi
       fi
+      
       echo "[pi-wrapper] 崩溃次数未达阈值或回滚失败，停止" >&2
       break
     fi
     # 正常退出：记录 lastGood 并清零崩溃计数
     save_lastgood
     write_crash_count 0
+    SNAPSHOT_CREATED=0
     echo "[pi-wrapper] 正常退出，不重启" >&2
     break
   fi
