@@ -29,6 +29,7 @@
     "pi-tmux/**/*.ts",
     "pi-voice/**/*.ts",
     "pi-link/**/*.ts",
-    "pi-intervention/**/*.ts"
+    "pi-intervention/**/*.ts",
+    "pi-mode/**/*.ts"
   ]
 }

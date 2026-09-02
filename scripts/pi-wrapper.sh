@@ -366,9 +366,111 @@ ensure_cron() {
   fi
 }
 
+# pi-mode: 解析 --mode/-m 参数并翻译为 CLI 标志
+# 用法: pi --mode light 或 pi -m light
+resolve_mode() {
+  local mode_name=""
+  local new_args=()
+  local skip_next=false
+
+  for ((i=1; i<=$#; i++)); do
+    local arg="${!i}"
+    if [ "$skip_next" = true ]; then
+      skip_next=false
+      continue
+    fi
+    if [ "$arg" = "--mode" ] || [ "$arg" = "-m" ]; then
+      local next_i=$((i+1))
+      mode_name="${!next_i}"
+      skip_next=true
+      continue
+    fi
+    new_args+=("$arg")
+  done
+
+  if [ -z "$mode_name" ]; then
+    eval "set -- \"\$@\""
+    return
+  fi
+
+  # 读取 modes.json 并翻译为 CLI 标志
+  local modes_file="$HOME/.pi/agent/modes.json"
+  if [ ! -f "$modes_file" ]; then
+    echo "[pi-wrapper] 模式配置文件不存在: $modes_file" >&2
+    eval "set -- \"\$@\""
+    return
+  fi
+
+  local mode_config
+  mode_config=$(node -e "
+    const fs = require('fs');
+    try {
+      const modes = JSON.parse(fs.readFileSync('$modes_file', 'utf-8'));
+      const mode = modes.modes['$mode_name'];
+      if (!mode) { console.log('{}'); process.exit(0); }
+      console.log(JSON.stringify(mode));
+    } catch(e) { console.log('{}'); }
+  " 2>/dev/null)
+
+  local extra_args=()
+
+  # 扩展处理：!ALL 禁用所有扩展
+  local no_ext
+  no_ext=$(echo "$mode_config" | node -e "
+    const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+    console.log((m.extensions||[]).includes('!ALL')?'yes':'no');
+  " 2>/dev/null)
+  if [ "$no_ext" = "yes" ]; then
+    extra_args+=("--no-extensions")
+  fi
+
+  # 技能处理：!ALL 禁用所有技能
+  local no_skills
+  no_skills=$(echo "$mode_config" | node -e "
+    const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+    console.log((m.skills||[]).includes('!ALL')?'yes':'no');
+  " 2>/dev/null)
+  if [ "$no_skills" = "yes" ]; then
+    extra_args+=("--no-skills")
+  fi
+
+  # 系统提示词处理
+  local sys_prompt
+  sys_prompt=$(echo "$mode_config" | node -e "
+    const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+    console.log(m.systemPrompt||'');
+  " 2>/dev/null)
+  if [ -n "$sys_prompt" ] && [ "$sys_prompt" != "null" ]; then
+    # 展开 ~ 为 $HOME
+    sys_prompt="${sys_prompt/#\~\//$HOME/}"
+    extra_args+=("--system-prompt" "$sys_prompt")
+  fi
+
+  # 追加系统提示词处理
+  local append_prompt
+  append_prompt=$(echo "$mode_config" | node -e "
+    const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
+    console.log(m.appendSystemPrompt||'');
+  " 2>/dev/null)
+  if [ -n "$append_prompt" ] && [ "$append_prompt" != "null" ]; then
+    # 展开 ~ 为 $HOME
+    append_prompt="${append_prompt/#\~\//$HOME/}"
+    extra_args+=("--append-system-prompt" "$append_prompt")
+  fi
+
+  # 设置环境变量供扩展使用
+  export PI_AGENT_MODE="$mode_name"
+  echo "[pi-wrapper] 启用模式: $mode_name" >&2
+
+  # 合并参数：先插入模式参数，再跟原始参数
+  set -- "${extra_args[@]}" "${new_args[@]}"
+}
+
 while true; do
   ensure_tmux
   ensure_cron
+  # 解析 --mode 参数并应用模式配置
+  resolve_mode "$@"
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
     node "$PI_JS" "$@"
