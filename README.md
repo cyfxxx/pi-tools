@@ -12,7 +12,8 @@
 │   ├── modes.json             模式切换配置（full/light/quick）
 │   ├── rescue/                救援模式配置
 │   │   ├── rescue-config.json 救援模式配置（最小化 pi）
-│   │   └── rescue-prompt.md   救援模式提示词（修复主程序）
+│   │   ├── rescue-prompt.md   救援模式提示词（修复主程序）
+│   │   └── README.md          救援模式说明文档
 │   ├── lib/                   共享库模块
 │   │   ├── token-budget.ts    跨扩展 Token 用量追踪（兼容层 → context-budget.ts）
 │   │   ├── note-store.ts      ctx-lite 笔记持久化（已并入 pi-memory，保留兼容）
@@ -50,7 +51,7 @@
 │   │   ├── pi-full-audit/     全项目深度审计（确定性检查 + 回归 + 并行审查 + 复核）
 │   │   └── pi-repo-optimize/  配置仓库结构/存储/架构优化（摸底分析 + 分级执行）
 │   └── package.json           统一依赖根（11 扩展共享 agent/node_modules，Node 向上寻径解析）
-├── docs/                      开发与部署文档（13 文件）
+├── docs/                      开发与部署文档（12 文件）
 │   ├── VISION.md              项目愿景与进化纪律（终局目标/软硬方法论/单向升格通道）
 │   ├── SELF-OPTIMIZING-ROADMAP.md  执行跟踪（差距分析/行动计划/决策启发式）
 │   ├── SELF-OPTIMIZING-BASELINE.md 优化基线（记忆库/回归全绿快照）
@@ -62,7 +63,6 @@
 │   ├── GIT-HISTORY-REWRITE.md 历史重写迁移说明
 │   ├── OPTIMIZATION-LOG.md    优化工单日志
 │   ├── SKILLS-MAINTENANCE.md  技能维护约定
-│   ├── RESCUE-MODE.md         救援模式说明（自动恢复/手动救援/快照管理）
 │   └── alacritty-tmux-setup.md  tmux 部署（WSL2/WSLg、GPU、clipboard）
 ├── deploy/                    部署配置（systemd unit 模板 / tmux 配置与状态脚本 / pi-link 公钥合集）
 ├── memory/                    pi-memory 长期记忆（entries/notes/summaries/checkpoints）

@@ -26,7 +26,8 @@ Pi 救援模式是一套冗余安全措施，用于在 Pi 进行自我修改和�
 ├── agent/
 │   ├── rescue/
 │   │   ├── rescue-config.json    # 救援模式配置
-│   │   └── rescue-prompt.md      # 救援模式提示词
+│   │   ├── rescue-prompt.md      # 救援模式提示词
+│   │   └── README.md             # 本文档
 │   └── .pi-autopilot-crash.json  # 崩溃计数
 ├── .snapshots/                   # 快照目录
 │   └── snapshot_YYYYMMDD_HHMMSS/
