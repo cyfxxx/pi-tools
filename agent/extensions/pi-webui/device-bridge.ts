@@ -50,10 +50,11 @@ const selfName = (): string => {
   }
 }
 
+import { hostname as osHostname } from 'node:os'
+
 function hostname(): string {
   try {
-    const { hostname } = await import('node:os')
-    return hostname()
+    return osHostname()
   } catch {
     return 'unknown'
   }
