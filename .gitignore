@@ -6,6 +6,7 @@ agent/node_modules/
 # agent/package-lock.json 入库：CI（.github/workflows/ci.yml:20 cache-dependency-path）依赖该文件，勿忽略
 # 防护：个别扩展若出现独立依赖，不入库（rebuild 时应清理回统一根）
 agent/extensions/*/node_modules/
+agent/extensions/*/ui/node_modules/
 agent/extensions/*/package-lock.json
 
 # pi 运行时缓存
