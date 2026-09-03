@@ -97,13 +97,13 @@ export function createWebuiServer(
       return
     }
 
-    // 认证
-    if (!checkAuth(req, config)) {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
+
+    // 认证：仅对 /api/* 生效；静态资源与首页放行（首页由 JS 侧自行携带 token 请求 API）
+    if (url.pathname.startsWith('/api/') && !checkAuth(req, config)) {
       sendJson(res, 401, { error: 'unauthorized' })
       return
     }
-
-    const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
 
     // API 路由
     if (url.pathname === '/api/messages') {

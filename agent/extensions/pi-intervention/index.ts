@@ -137,32 +137,26 @@ export function buildRecord(input: {
 		steering: input.steering.slice(-STEERING_MAX),
 		correctivePrompt: null,
 		correctedAt: null,
-		env: {
-			platform: process.platform,
-			termux: Boolean(process.env.TERMUX_VERSION),
-		},
+		env: { platform: os.platform(), termux: process.env.TERMUX_VERSION !== undefined },
 		cwd: process.cwd(),
 	};
 }
 
-// ── 文件操作（原子写；静默容错由调用方包裹） ────────────────
-
 function readLines(file: string): InterventionRecord[] {
 	if (!fs.existsSync(file)) return [];
+	const raw = fs.readFileSync(file, "utf-8").split("\n").filter(Boolean);
 	const out: InterventionRecord[] = [];
-	for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-		if (!line.trim()) continue;
+	for (const line of raw) {
 		try {
 			out.push(JSON.parse(line));
 		} catch {
-			/* 跳过损坏行 */
+			/* skip */
 		}
 	}
 	return out;
 }
 
 function writeLines(file: string, records: InterventionRecord[]): void {
-	fs.mkdirSync(path.dirname(file), { recursive: true });
 	const tmp = `${file}.tmp`;
 	fs.writeFileSync(tmp, records.map((r) => JSON.stringify(r)).join("\n") + "\n");
 	fs.renameSync(tmp, file);
@@ -253,11 +247,18 @@ export default async function (pi: ExtensionAPI) {
 
 	pi.registerCommand("intervention", {
 		description: "干预捕获：查看中断快照与统计（/intervention help 用法）",
-		getArgumentCompletions: () => [
-			{ value: "recent", label: "recent", description: "最近 N 条中断快照（默认 5）" },
-			{ value: "stats", label: "stats", description: "累计统计（总数/关联率/近7天）" },
-			{ value: "help", label: "help", description: "显示用法" },
-		],
+		getArgumentCompletions: (prefix) => {
+			const first = (prefix?.trim().split(/\s+/)[0] ?? "").toLowerCase();
+			const items = [
+				{ value: "recent", label: "recent", description: "最近 N 条中断快照（默认 5）" },
+				{ value: "stats", label: "stats", description: "累计统计（总数/关联率/近7天）" },
+				{ value: "help", label: "help", description: "显示用法" },
+			];
+			if (!prefix?.includes(" ")) {
+				return items.filter((i) => i.value.startsWith(first));
+			}
+			return [];
+		},
 		handler: async (args, ctx) => {
 			const [sub, ...rest] = args.trim().split(/\s+/);
 			const records = readLines(file);

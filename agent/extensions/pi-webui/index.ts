@@ -38,7 +38,14 @@ const SELF_NAME_FILE = join(homedir(), '.pi', 'webui', 'self-name')
 
 function loadConfig(): WebuiConfig {
   const cfg = { ...DEFAULT_CONFIG }
-  if (!existsSync(CONFIG_PATH)) return cfg
+  if (!existsSync(CONFIG_PATH)) {
+    // 自动生成 authToken
+    if (!cfg.authToken) {
+      cfg.authToken = nanoid(32)
+      saveConfig(cfg)
+    }
+    return cfg
+  }
   try {
     const raw = JSON.parse(readFileSync(CONFIG_PATH, 'utf-8')) as Partial<WebuiConfig>
     if (typeof raw.port === 'number') cfg.port = raw.port
@@ -91,18 +98,20 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
   let httpServer: ReturnType<typeof import('node:http').createServer> | null = null
   let wss: import('ws').WebSocketServer | null = null
 
-  // ── 设备在线追踪 (复用 pi-link 状态) ──────────────
-  hub.register({ readyState: 1, send: () => {}, on: () => {} } as any, selfDevice, false)
-
   // ── 消息路由 ──────────────────────────────────────
   function handleUserMessage(msg: ChatMessage): void {
     // 转发到其他设备
     if (msg.target === null) {
       // 群聊: 广播
       bridge.broadcastToDevices(msg)
+      // 群聊消息也送给本地 agent 处理
+      pi.sendUserMessage(msg.content, { deliverAs: 'followUp' })
     } else if (msg.target !== 'user' && msg.target !== selfDevice) {
-      // 私聊: 定向转发
+      // 私聊: 定向转发给目标设备
       bridge.sendToDevice(msg.target, msg)
+    } else if (msg.target === selfDevice) {
+      // 发给自己的私聊: 送给本地 agent 处理
+      pi.sendUserMessage(msg.content, { deliverAs: 'followUp' })
     }
   }
 
@@ -136,18 +145,32 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
 
   // ── 斜杠命令 ──────────────────────────────────────
 
-  pi.registerCommand?.({
-    name: 'webui',
-    description: 'WebUI 聊天界面管理',
+  pi.registerCommand('webui', {
+    description: 'WebUI 聊天界面管理（/webui help 查看用法）',
+    getArgumentCompletions: (prefix) => {
+      const p = prefix?.trim() ?? ''
+      const first = (p.split(/\s+/)[0] ?? '').toLowerCase()
+      const items = [
+        { value: 'start', label: 'start', description: '启动 WebUI 服务' },
+        { value: 'stop', label: 'stop', description: '停止 WebUI 服务' },
+        { value: 'status', label: 'status', description: '查看服务状态与设备' },
+        { value: 'help', label: 'help', description: '显示用法' },
+      ]
+      if (!p.includes(' ')) {
+        return items.filter(i => i.value.startsWith(first))
+      }
+      return []
+    },
     async handler(args, ctx) {
-      const sub = args.trim()
+      const sub = args.trim().split(/\s+/)[0]?.toLowerCase() || ''
 
       if (sub === 'start') {
         if (httpServer) {
           ctx.ui.notify('WebUI 服务已在运行', 'info')
           return
         }
-        return startServer(ctx)
+        startServer(ctx)
+        return
       }
 
       if (sub === 'stop') {
@@ -171,7 +194,8 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
           `  ${selfDevice} (本机) ● 在线`,
           ...statuses.map(s => `  ${s.name} ${s.online ? '● 在线' : '○ 离线'}${s.error ? ` (${s.error})` : ''}`),
         ]
-        return lines.join('\n')
+        ctx.ui.notify(lines.join('\n'), 'info')
+        return
       }
 
       // 默认: 显示状态 + 访问地址
@@ -186,7 +210,7 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
         '  /webui stop   停止服务',
         '  /webui status 设备状态',
       ]
-      return lines.join('\n')
+      ctx.ui.notify(lines.join('\n'), 'info')
     },
   })
 
@@ -219,7 +243,7 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
 
       const lanIP = detectLanIP()
       const msg = `WebUI 已启动\n地址: http://${lanIP ?? 'localhost'}:${config.port}\nToken: ${config.authToken}`
-      pi.sendMessage({ customType: 'webui-status', content: msg, display: true })
+      pi.sendMessage({ customType: 'webui-status', content: msg, display: false })
     })
 
     httpServer.on('error', (err) => {
@@ -228,7 +252,7 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
       pi.sendMessage({
         customType: 'webui-status',
         content: `WebUI 启动失败: ${err.message}`,
-        display: true,
+        display: false,
       })
     })
   }

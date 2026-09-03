@@ -1250,6 +1250,25 @@ export default function (pi: ExtensionAPI) {
 	// 工具分层管理命令：/tools list | enable <group>
 	pi.registerCommand("tools", {
 		description: "工具分层：list 查看分组/状态，enable <group> 启用休眠组（见 /tools help）",
+		getArgumentCompletions: (prefix) => {
+			const first = (prefix?.trim().split(/\s+/)[0] ?? "").toLowerCase();
+			const items = [
+				{ value: "list", label: "list", description: "查看分组/状态" },
+				{ value: "enable ", label: "enable", description: "启用休眠组（browser/admin/autopilot/link）" },
+				{ value: "help", label: "help", description: "显示用法" },
+			];
+			if (!prefix?.includes(" ")) {
+				return items.filter((i) => i.value.startsWith(first));
+			}
+			if (first === "enable") {
+				return SLEEPING_GROUPS.filter((g) => g.name.startsWith(prefix.trim().split(/\s+/)[1] ?? "")).map((g) => ({
+					value: "enable " + g.name,
+					label: g.name,
+					description: g.tools.join(", "),
+				}));
+			}
+			return [];
+		},
 		handler: async (args, ctx) => {
 			const [cmd, ...rest] = args.trim().split(/\s+/);
 			if (cmd === "enable" && rest[0]) {

@@ -288,13 +288,13 @@ describe('pi-browser extension', () => {
 
 // ─── plan-mode (unregistered extension) ───────────────────────
 describe('plan-mode extension', () => {
-  it('registers 3 tools: plan_enter, plan_exit, todo', async () => {
+  it('registers 4 tools: plan_enter, plan_exit, todo, ask_user', async () => {
     const pi = mockPi()
     const main = (await import('../../plan-mode/index')).default
     await main(pi as any)
-    expect(pi.registerTool).toHaveBeenCalledTimes(3)
+    expect(pi.registerTool).toHaveBeenCalledTimes(4)
     const toolNames = pi.registerTool.mock.calls.map((c: any[]) => c[0].name)
-    expect(toolNames.sort()).toEqual(['plan_enter', 'plan_exit', 'todo'].sort())
+    expect(toolNames.sort()).toEqual(['plan_enter', 'plan_exit', 'todo', 'ask_user'].sort())
   })
 
   it('registers 1 plan command（plan/planclear/planresume/planview/todos 已整合为 /plan 子命令）', async () => {

@@ -433,7 +433,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 
           // 显示确认对话框
           const confirmTitle = `确认选择: ${choice}`;
-          const confirmOptions = ["确认", "修改"];
+          const confirmOptions = ["确认", "修改", "退出选择"];
           const confirmChoice = await ctx.ui.select(confirmTitle, confirmOptions);
 
           if (confirmChoice === "确认") {
@@ -442,6 +442,18 @@ export default function planModeExtension(pi: ExtensionAPI): void {
           } else if (confirmChoice === "修改") {
             // 继续循环，重新选择
             continue;
+          } else if (confirmChoice === "退出选择") {
+            // 退出选择，让用户说明原因
+            const reason = await ctx.ui.editor("退出选择，请说明原因：", "");
+            if (reason && reason.trim()) {
+              return {
+                content: [{ type: "text" as const, text: `退出选择: ${reason.trim()}` }],
+                details: null,
+              };
+            } else {
+              // 用户未输入原因，继续循环
+              continue;
+            }
           } else {
             // 用户取消确认
             return {
@@ -461,10 +473,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
       const selected: string[] = [];
       
       while (true) {
-        // 构建选项列表：已选选项（带✓标记）+ 未选选项 + "完成选择" + "取消全部"
+        // 构建选项列表：已选选项（带✓标记）+ 未选选项 + "完成选择" + "取消全部" + "退出选择"
         const selectedOptions = selected.map((label) => `✓ ${label}`);
         const availableOptions = optionLabels.filter((label) => !selected.includes(label));
-        const selectOptions = [...selectedOptions, ...availableOptions, "完成选择", "取消全部"];
+        const selectOptions = [...selectedOptions, ...availableOptions, "完成选择", "取消全部", "退出选择"];
         
         // 显示选择器
         const choice = await ctx.ui.select(title, selectOptions);
@@ -493,8 +505,27 @@ export default function planModeExtension(pi: ExtensionAPI): void {
           continue;
         }
 
+        if (choice === "退出选择") {
+          // 退出选择，让用户说明原因
+          const reason = await ctx.ui.editor("退出选择，请说明原因：", "");
+          if (reason && reason.trim()) {
+            return {
+              content: [{ type: "text" as const, text: `退出选择: ${reason.trim()}` }],
+              details: null,
+            };
+          } else {
+            // 用户未输入原因，继续循环
+            continue;
+          }
+        }
+
         // 处理选择/取消：移除 ✓ 前缀获取实际标签
         const actualLabel = choice.startsWith("✓ ") ? choice.slice(2) : choice;
+        
+        if (actualLabel === "完成选择" || actualLabel === "取消全部" || actualLabel === "退出选择") {
+          // ignore, already handled above
+          continue;
+        }
         
         if (selected.includes(actualLabel)) {
           // 已选择的选项：取消选择

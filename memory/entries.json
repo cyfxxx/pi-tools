@@ -15117,30 +15117,10 @@
         "termux"
       ],
       "lastSessionId": "01a04e25-2279-75f8-9b75-74ef2a6c2d93",
-      "deleted": false
-    },
-    {
-      "id": "6cb9c119-aab8-4a04-8cc8-67bde0d7e3aa",
-      "category": "fact",
-      "title": "pi-tools 统计仓库地址",
-      "content": "工具使用计数仓库 pi-tools 远端为 ssh://git@ssh.github.com:443/cyfxxx/pi-tools.git，分支 master，ssh URL 无 token（无需清理凭证）。2026-08-29 提交 8440fb2 记录 localhost 30 天窗口 3121 次工具调用。",
-      "tags": [
-        "pi-tools",
-        "git-remote",
-        "tool-stats"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T15:36:11.587Z",
-      "updatedAt": "2026-08-29T15:36:11.587Z",
-      "accessedAt": "2026-09-03T13:22:37.328Z",
-      "observedAt": "2026-08-29T15:36:11.587Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a04e25-2279-75f8-9b75-74ef2a6c2d93",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "067b674b-ac72-4d2d-9248-e680f0908330"
+      ]
     },
     {
       "id": "b5dc187a-4bfe-4358-8cae-262c1293f5c0",
@@ -19777,6 +19757,475 @@
         "termux"
       ],
       "lastSessionId": "01a06734-d16c-7db7-82f5-d00e4a95d869",
+      "deleted": false
+    },
+    {
+      "id": "a7d1df5d-69a3-4850-b053-7a04b623a49f",
+      "category": "fact",
+      "title": ".pi配置仓库remote为cyfxxx/pi-tools.git",
+      "content": ".pi配置仓库的远程仓库为ssh://ssh.github.com:443/cyfxxx/pi-tools.git，分支master，使用无凭证URL记录。SSH key用户cyfxxx拥有该仓库写权限，可直接git push。该对应关系于2026-08-03首次记录，本次会话经用户确认无误。",
+      "tags": [
+        "github",
+        "pi-tools",
+        "repository",
+        "remote"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T13:57:09.005Z",
+      "updatedAt": "2026-09-03T13:57:09.005Z",
+      "accessedAt": "2026-09-03T13:57:09.005Z",
+      "observedAt": "2026-09-03T13:57:09.005Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06738-403e-7de3-9df0-67256e2b579d",
+      "deleted": false
+    },
+    {
+      "id": "c4f5b1d8-13b7-4b3f-b311-d9929ddbf84a",
+      "category": "procedure",
+      "title": "空壳任务记录判定规则",
+      "content": "判定任务记录是否为空壳的规则：内容严重不足、缺少可操作细节、含字面量占位符（如content）、recurrence异常高、或时间为明显笔误的条目，应视为提取流程产生的半成品，需删除或人工补全。保留的规则定义条目（如空壳任务记录判定本身）若内容完整则保留。",
+      "tags": [
+        "memory",
+        "extraction",
+        "hygiene"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T13:57:09.005Z",
+      "updatedAt": "2026-09-03T13:57:09.005Z",
+      "accessedAt": "2026-09-03T13:57:09.005Z",
+      "observedAt": "2026-09-03T13:57:09.005Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06738-403e-7de3-9df0-67256e2b579d",
+      "deleted": false
+    },
+    {
+      "id": "849dd7d5-1d3e-410b-bdc5-3ac7840b0ecf",
+      "category": "fact",
+      "title": "自动记忆提取的常见缺陷",
+      "content": "自动提取流程可能产生三类问题：1) 空壳条目——内容严重不足或为字面量占位符；2) 重复条目——同一事件的简写版与完整版并存；3) 环境标签误用——通用方法论条目被错误打上特定环境标签（如wsl2），导致其他环境检索时漏掉。需定期审计记忆内容，并检查extract.ts中环境标签判定逻辑。",
+      "tags": [
+        "memory",
+        "extraction",
+        "bug",
+        "audit"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T13:57:09.005Z",
+      "updatedAt": "2026-09-03T13:57:09.005Z",
+      "accessedAt": "2026-09-03T13:57:09.005Z",
+      "observedAt": "2026-09-03T13:57:09.005Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06738-403e-7de3-9df0-67256e2b579d",
+      "deleted": false
+    },
+    {
+      "id": "be2f7c69-d78b-4d39-a210-769fb336a70a",
+      "category": "preference",
+      "title": "用户倾向先查看再处理",
+      "content": "用户在面对记忆条目清理等问题时，倾向于先要求查看具体内容，确认无误后再执行删除或修改操作，而非直接批量处理。助手应遵循此习惯，在执行不可逆操作前先展示内容并说明处置理由。",
+      "tags": [
+        "user-preference",
+        "workflow"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T13:57:09.006Z",
+      "updatedAt": "2026-09-03T13:57:09.006Z",
+      "accessedAt": "2026-09-03T13:57:09.006Z",
+      "observedAt": "2026-09-03T13:57:09.006Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06738-403e-7de3-9df0-67256e2b579d",
+      "deleted": false
+    },
+    {
+      "id": "2f994ac0-3587-4443-93fa-5fe2385fde4a",
+      "category": "fact",
+      "title": "长期记忆清理结果855→850条",
+      "content": "2026-09-03对长期记忆entries.json进行审计，总条目855条，分类分布fact(398)>solutions(203)>procedure(153)>reference(44)>preference(43)>habit(14)。删除5条问题条目后降至850条，清理后已推送到cyfxxx/pi-tools.git。最近24小时新增61条，最新条目时间2026-09-03 12:34。",
+      "tags": [
+        "memory",
+        "entries",
+        "cleanup"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T13:57:09.006Z",
+      "updatedAt": "2026-09-03T13:57:09.006Z",
+      "accessedAt": "2026-09-03T13:57:09.006Z",
+      "observedAt": "2026-09-03T13:57:09.006Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06738-403e-7de3-9df0-67256e2b579d",
+      "deleted": false
+    },
+    {
+      "id": "ec94f20d-defa-4b95-877a-40c2104ddcc9",
+      "category": "procedure",
+      "title": ".pi 配置仓库远程推送流程",
+      "content": ".pi 配置仓库 remote 为 ssh://ssh.github.com:443/cyfxxx/pi-tools.git（SSH 端口 443 穿透防火墙），用户 cyfxxx 有写权限。推送前需确认：1) 进入 ~/.pi 目录；2) git remote -v 确认 remote 无 token；3) git push 直接推送。auth.json/settings.json/models.json 已在 .gitignore 中，不跨机覆盖。.pi-autopilot-config.json 入库共享（无密钥）。",
+      "tags": [
+        "git",
+        "pi-config",
+        "remote",
+        "push"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T15:35:20.952Z",
+      "updatedAt": "2026-09-03T15:35:20.952Z",
+      "accessedAt": "2026-09-03T15:35:20.952Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-09-03T15:35:20.952Z",
+      "deleted": false
+    },
+    {
+      "id": "067b674b-ac72-4d2d-9248-e680f0908330",
+      "category": "procedure",
+      "title": "工具统计每日聚合与推送流程",
+      "content": "每日执行：node ~/.pi/scripts/tool-stats-sync.mjs --daily。生成文件：memory/stats/tool-count-<hostname>.json（按主机名隔离，跨设备不冲突）。确认文件生成后：git add memory/stats/tool-count-<hostname>.json && git commit -m 'chore: daily tool stats <YYYY-MM-DD>' && git push。脚本内部含幂等去重与跨会话聚合逻辑。",
+      "tags": [
+        "tool-stats",
+        "daily",
+        "sync",
+        "pi-scripts",
+        "工具统计",
+        "每日聚合",
+        "主机名隔离",
+        "自动推送"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-09-03T15:35:44.396Z",
+      "updatedAt": "2026-09-03T19:05:01.701Z",
+      "accessedAt": "2026-09-03T19:05:01.701Z",
+      "environments": [
+        "linux",
+        "termux"
+      ],
+      "links": [
+        "e4408886-4597-464a-88be-17933d3f3958"
+      ],
+      "observedAt": "2026-09-03T19:05:01.701Z",
+      "deleted": false
+    },
+    {
+      "id": "3c947efc-cae2-48d5-808c-518c9aca9fe4",
+      "category": "procedure",
+      "title": "工具统计每日聚合推送流程",
+      "content": "每日聚合: 运行 node ~/.pi/scripts/tool-stats-sync.mjs --daily 生成 memory/stats/tool-count-<hostname>.json。推送前: git remote set-url origin 恢复无凭证 URL; git add 对应文件; git commit -m 'chore: tool stats YYYY-MM-DD'; git pull --rebase 处理冲突; git push。文件名含主机名, 多设备各自生成互不冲突。",
+      "tags": [
+        "工具统计",
+        "每日聚合",
+        "git工作流"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T15:36:02.469Z",
+      "updatedAt": "2026-09-03T15:36:02.469Z",
+      "accessedAt": "2026-09-03T15:36:02.469Z",
+      "observedAt": "2026-09-03T15:36:02.469Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a067e4-b07a-7fc2-968b-8ceb1847852a",
+      "deleted": false
+    },
+    {
+      "id": "a8dae1a1-2d7b-49f2-9b6b-884e8a7bf164",
+      "category": "solutions",
+      "title": "webui 启动异常排查清单",
+      "content": "webui 启动异常排查要点：1) token 验证失效/未生成 → 检查启动参数是否传递 token、环境变量 PI_WEBUI_TOKEN 是否设置、认证中间件是否正确加载；2) TUI 界面被连接信息阻塞 → 检查 webui 进程是否在前台运行（应后台化）、日志输出是否重定向、是否占用 stdin/stdout 干扰 pi 主进程；3) 端口冲突/重复启动 → lsof -i :<port> 检查；4) 进程管理 → 建议用 tmux_run 后台启动（notify=true 自动唤醒），避免阻塞主会话。",
+      "tags": [
+        "webui",
+        "token",
+        "tui",
+        "debug",
+        "background"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T15:36:06.915Z",
+      "updatedAt": "2026-09-03T15:36:06.915Z",
+      "accessedAt": "2026-09-03T15:36:06.915Z",
+      "environments": [
+        "linux"
+      ],
+      "observedAt": "2026-09-03T15:36:06.915Z",
+      "deleted": false
+    },
+    {
+      "id": "242c5064-1131-4f3e-a0c9-7f11e1f35ddd",
+      "category": "procedure",
+      "title": ".pi配置仓库远程推送流程",
+      "content": "远程仓库：cyfxxx/pi-tools（SSH端口443）。推送前检查：git remote -v确认地址、ssh -T git@github.com验证连通性、确认settings.json/models.json/auth.json未被跟踪（已gitignore）。配置文件每环境独立，仅.pi-autopilot-config.json共享入库。推送命令：cd /root/.pi && git push。",
+      "tags": [
+        "pi配置",
+        "git推送",
+        "SSH",
+        "环境隔离"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:05:01.700Z",
+      "updatedAt": "2026-09-03T19:05:01.700Z",
+      "accessedAt": "2026-09-03T19:05:01.700Z",
+      "observedAt": "2026-09-03T19:05:01.700Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
+      "deleted": false
+    },
+    {
+      "id": "acdf6e22-0efc-4f5a-a203-7f845c48aaf0",
+      "category": "solutions",
+      "title": "WebUI启动异常排查清单",
+      "content": "现象：1)token验证失效，无token生成，直接访问地址即进入；2)启动后TUI持续显示连接信息导致pi无法使用。排查点：a)检查token生成逻辑与环境变量传递；b)WebUI进程是否占用stdout/stderr阻塞TUI——需用nohup或tmux后台运行并重定向输出；c)端口冲突检查（lsof -i:<port>）；d)建议启动脚本增加&后台化与日志文件重定向，避免污染pi主进程终端。",
+      "tags": [
+        "WebUI",
+        "token验证",
+        "TUI阻塞",
+        "后台化",
+        "端口冲突"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:05:01.701Z",
+      "updatedAt": "2026-09-03T19:05:01.701Z",
+      "accessedAt": "2026-09-03T19:05:01.701Z",
+      "observedAt": "2026-09-03T19:05:01.701Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
+      "deleted": false
+    },
+    {
+      "id": "7c437506-2b51-49db-84f8-927a797229ce",
+      "category": "reference",
+      "title": "tool-stats-daily-sync草稿技能",
+      "content": "已在/root/.pi/packs/drafts/tool-stats-daily-sync.SKILL.md创建草稿技能，记录工具统计每日同步的完整可复现流程：触发条件（每日/手动）、执行步骤（运行脚本、验证输出、git提交推送）、关键点（主机名隔离、幂等去重、跨会话聚合）、相关文件路径。待人工确认后可升格为正式技能包。",
+      "tags": [
+        "草稿技能",
+        "工具统计",
+        "技能包",
+        "packs/drafts"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:05:01.701Z",
+      "updatedAt": "2026-09-03T19:05:01.701Z",
+      "accessedAt": "2026-09-03T19:05:01.701Z",
+      "observedAt": "2026-09-03T19:05:01.701Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
+      "deleted": false
+    },
+    {
+      "id": "53e26d6d-8503-44d5-8a37-2acca5f164d9",
+      "category": "procedure",
+      "title": "pi-webui 启动验证流程",
+      "content": "验证修复：1) 删除 ~/.pi/webui/config.json 触发首次生成；2) 启动 webui 观察控制台输出 token；3) 浏览器无 token 访问应显示 401/登录页；4) 带 token 访问可进入 UI；5) TUI 界面不应显示启动连接信息。",
+      "tags": [
+        "pi-webui",
+        "verification",
+        "testing"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:09:30.774Z",
+      "updatedAt": "2026-09-03T19:09:30.774Z",
+      "accessedAt": "2026-09-03T19:09:30.774Z",
+      "observedAt": "2026-09-03T19:09:30.774Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
+      "deleted": false
+    },
+    {
+      "id": "b2cdc41a-5a76-4a6d-b603-996b99de8628",
+      "category": "fact",
+      "title": "用户报告 bug",
+      "content": "用户在对话中简要说明有 bug，请求处理。",
+      "tags": [
+        "fact"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:10:15.542Z",
+      "updatedAt": "2026-09-03T19:10:15.542Z",
+      "accessedAt": "2026-09-03T19:10:15.542Z",
+      "observedAt": "2026-09-03T19:10:15.542Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a068a8-0b84-7969-b3f0-012daf5482d5",
+      "deleted": false
+    },
+    {
+      "id": "559db7cb-8959-4642-9e02-c0a452fffbeb",
+      "category": "habit",
+      "title": "用户使用 /q 命令",
+      "content": "用户通过 /q 简短指令快速请求帮助或结束对话。",
+      "tags": [
+        "habit"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:10:15.542Z",
+      "updatedAt": "2026-09-03T19:10:15.542Z",
+      "accessedAt": "2026-09-03T19:10:15.542Z",
+      "observedAt": "2026-09-03T19:10:15.542Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a068a8-0b84-7969-b3f0-012daf5482d5",
+      "deleted": false
+    },
+    {
+      "id": "53222f97-b36c-4dfe-b8cf-233c0f266403",
+      "category": "fact",
+      "title": "webui 问题修复",
+      "content": "webui 问题已修复：1) loadConfig() 逻辑修复，首次启动自动生成 32 位 token 并写入 ~/.pi/webui/config.json；2) 所有 pi.sendMessage(..., { display: true }) 改为 display:false，仅控制台打印不污染 TUI；3) DeviceBridge 桥接日志移除，避免 TUI 刷屏。TypeScript 编译通过，认证校验通过 Authorization: Bearer <token> 或 ?token=[REDACTED]",
+      "tags": [],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T19:13:39.206Z",
+      "updatedAt": "2026-09-03T19:13:39.206Z",
+      "accessedAt": "2026-09-03T19:13:39.206Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-03T19:13:39.206Z",
+      "deleted": false
+    },
+    {
+      "id": "3fa950bf-4b0d-4f3c-805e-e7a0e3fbcd04",
+      "category": "solutions",
+      "title": "pi-webui 设备列表重复与消息路由修复",
+      "content": "1) 删除 hub.register(virtualWs, selfDevice, false) 虚拟注册，避免显示两台设备；2) handleUserMessage 中群聊/私聊消息同时转发给其他设备并送给本地 agent 处理（pi.sendUserMessage）；3) 私聊 target===selfDevice 时回流给发送者。文件：agent/extensions/pi-webui/src/index.ts",
+      "tags": [
+        "pi-webui",
+        "device",
+        "message-routing",
+        "agent"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T02:55:55.111Z",
+      "updatedAt": "2026-09-04T02:55:55.111Z",
+      "accessedAt": "2026-09-04T02:55:55.111Z",
+      "observedAt": "2026-09-04T02:55:55.111Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
+      "deleted": false
+    },
+    {
+      "id": "8b4d3ca7-745e-4871-b120-2a67d4528bb7",
+      "category": "solutions",
+      "title": "pi-webui 前端设备名显示与 Hook 规则修复",
+      "content": "前端 WebSocket 连接使用固定 deviceName:'user' 区分人类用户，selfDevice:'localhost' 为 pi 本机。修复 React Hook 条件调用错误：始终调用 useWebSocket，在组件内部通过 deviceName 参数守卫连接时机。文件：agent/extensions/pi-webui/ui/src/App.tsx, hooks/useWebSocket.ts",
+      "tags": [
+        "pi-webui",
+        "frontend",
+        "react-hooks",
+        "device-name"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T02:55:55.111Z",
+      "updatedAt": "2026-09-04T02:55:55.111Z",
+      "accessedAt": "2026-09-04T02:55:55.111Z",
+      "observedAt": "2026-09-04T02:55:55.111Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
+      "deleted": false
+    },
+    {
+      "id": "af196bdd-d603-4158-b8ce-522d76ff5d75",
+      "category": "fact",
+      "title": "pi-webui 配置与访问信息",
+      "content": "配置文件：~/.pi/webui/config.json，含 authToken (32位 nanoid)。服务监听 0.0.0.0:3100。认证支持查询参数 ?token= 或 Header Authorization: Bearer。访问示例：http://192.168.8.176:3100/?token=[REDACTED]",
+      "tags": [
+        "pi-webui",
+        "config",
+        "access",
+        "port"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T02:55:55.111Z",
+      "updatedAt": "2026-09-04T02:55:55.111Z",
+      "accessedAt": "2026-09-04T02:55:55.111Z",
+      "observedAt": "2026-09-04T02:55:55.111Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
+      "deleted": false
+    },
+    {
+      "id": "92cffdb7-105e-40a6-aa01-acc6bf3128cc",
+      "category": "procedure",
+      "title": "pi-webui 前端构建与部署流程",
+      "content": "前端源码在 agent/extensions/pi-webui/ui/，构建命令：cd ui && npm run build。产物输出至 ../static/，文件名带 hash（如 index-BBkCYg5R.js）。修改前端代码后需重新构建并重启 pi 服务生效。",
+      "tags": [
+        "pi-webui",
+        "frontend",
+        "build",
+        "deploy"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T02:55:55.111Z",
+      "updatedAt": "2026-09-04T02:55:55.111Z",
+      "accessedAt": "2026-09-04T02:55:55.111Z",
+      "observedAt": "2026-09-04T02:55:55.111Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
       "deleted": false
     }
   ]
