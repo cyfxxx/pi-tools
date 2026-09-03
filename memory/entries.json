@@ -217,21 +217,23 @@
       "id": "6c7ef129-a16d-4d95-bf2e-0313ad17c918",
       "category": "procedure",
       "title": "翻译未匹配排查流程",
-      "content": "patch-all-zh.mjs 报'未找到原文'时，先确认字符串在目标版本的实际形式：可能已消失（0.83 重构删除）、已被翻译过（如 plan-mode）、模板字面量无引号、或移位到其他文件（如状态条移入 status-indicator.js）。确认后再更新脚本，勿直接删条目。",
+      "content": "patch-all-zh.mjs 报'未找到原文'时：1) 确认字符串在目标版本的实际形式——可能已消失（0.83 重构删除）、已被翻译过（如 plan-mode）；2) grep -r \"原文\" extensions/ 确认是否存在；3) 如已翻译过，跳过该 patch；4) 如已删除，从 patches 移除对应条目；5) 仅针对真实存在且未翻译的字符串生成新 patch。",
       "tags": [
         "翻译",
         "排查流程",
         "patch-all-zh",
         "未匹配",
         "pi",
-        "排查"
+        "排查",
+        "translation",
+        "troubleshooting"
       ],
       "confidence": 0.95,
       "source": "extract",
-      "recurrence": 25,
+      "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
-      "updatedAt": "2026-08-03T13:32:38.668Z",
-      "accessedAt": "2026-08-30T08:58:23.514Z",
+      "updatedAt": "2026-09-03T08:21:26.221Z",
+      "accessedAt": "2026-09-03T13:14:52.859Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -342,7 +344,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-03T13:33:21.832Z",
       "updatedAt": "2026-08-03T13:33:21.832Z",
-      "accessedAt": "2026-08-03T13:33:21.832Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "observedAt": "2026-08-03T13:33:21.832Z",
       "deleted": false,
       "environments": [
@@ -408,7 +410,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-04T02:09:14.119Z",
       "updatedAt": "2026-08-04T02:09:14.119Z",
-      "accessedAt": "2026-08-31T00:14:52.038Z",
+      "accessedAt": "2026-09-03T05:38:44.394Z",
       "observedAt": "2026-08-04T02:09:14.119Z",
       "deleted": false,
       "environments": [
@@ -2155,7 +2157,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T10:15:05.956Z",
       "updatedAt": "2026-08-10T10:15:05.956Z",
-      "accessedAt": "2026-08-10T10:15:05.956Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
       "deleted": false,
       "environments": [
@@ -2736,28 +2738,6 @@
       ]
     },
     {
-      "id": "03b0be20-dd68-4e3d-80fe-db0788696b73",
-      "category": "fact",
-      "title": "工具快照陈旧与 getAllTools 重建",
-      "content": "pi 会话工具列表是会话状态快照（setActiveToolsByName 只重建系统提示）；重启前注册的新工具（如 plan_enter）不会出现在 --continue 恢复会话中。修复：session_start 非计划模式时若快照缺 plan_enter 则用 pi.getAllTools() 重建全量工具；executionMode=true 的受限会话保持不干预。",
-      "tags": [
-        "工具快照",
-        "getAllTools",
-        "session_start"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T02:49:34.878Z",
-      "updatedAt": "2026-08-11T02:49:34.878Z",
-      "accessedAt": "2026-08-11T02:49:34.878Z",
-      "observedAt": "2026-08-11T02:49:34.878Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
       "id": "03bcce75-d2db-4701-bc60-10c7dd8ce141",
       "category": "fact",
       "title": "termux 录音错误输出在 stdout",
@@ -2797,29 +2777,6 @@
       "updatedAt": "2026-08-11T02:53:35.449Z",
       "accessedAt": "2026-08-11T02:53:35.449Z",
       "observedAt": "2026-08-11T02:53:35.449Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "a5eec7bb-f070-42e2-802f-3a43f9573ec4",
-      "category": "fact",
-      "title": "pi 多级子命令补全机制",
-      "content": "pi 扩展的 getArgumentCompletions(argumentPrefix) 接收完整参数前缀文本（含空格与多级，autocomplete.js 将光标前完整参数原样传入），返回项整体替换该前缀，因此任意层级子命令补全原生可行：在回调内解析 prefix（如 'tts ' 开头返回 on/off/status）分发即可。旧实现忽略 prefix 参数只能做一级补全。",
-      "tags": [
-        "pi",
-        "扩展开发",
-        "补全",
-        "pi-voice"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-11T03:32:17.685Z",
-      "accessedAt": "2026-08-11T03:32:17.685Z",
-      "observedAt": "2026-08-11T03:32:17.685Z",
       "deleted": false,
       "environments": [
         "all"
@@ -3933,7 +3890,7 @@
       "recurrence": 24,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-08-12T09:42:37.848Z",
-      "accessedAt": "2026-08-30T02:35:25.718Z",
+      "accessedAt": "2026-09-03T08:19:02.189Z",
       "observedAt": "2026-08-12T09:42:37.848Z",
       "deleted": false,
       "environments": [
@@ -4093,7 +4050,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux"
@@ -4261,7 +4218,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T15:34:15.673Z",
       "updatedAt": "2026-08-12T15:34:15.673Z",
-      "accessedAt": "2026-08-12T15:34:15.673Z",
+      "accessedAt": "2026-09-03T13:22:37.328Z",
       "environments": [
         "termux"
       ],
@@ -4810,7 +4767,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T00:09:32.667Z",
       "updatedAt": "2026-08-13T00:09:32.667Z",
-      "accessedAt": "2026-08-13T00:09:32.667Z",
+      "accessedAt": "2026-09-03T13:22:37.328Z",
       "observedAt": "2026-08-13T00:09:32.667Z",
       "environments": [
         "termux"
@@ -5194,7 +5151,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T04:55:15.527Z",
       "updatedAt": "2026-08-13T04:55:15.527Z",
-      "accessedAt": "2026-08-13T04:55:15.527Z",
+      "accessedAt": "2026-09-03T13:22:37.328Z",
       "observedAt": "2026-08-13T04:55:15.527Z",
       "environments": [
         "termux"
@@ -5434,7 +5391,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T09:37:51.589Z",
       "updatedAt": "2026-08-13T09:37:51.589Z",
-      "accessedAt": "2026-08-13T09:37:51.589Z",
+      "accessedAt": "2026-09-03T13:22:41.987Z",
       "environments": [
         "termux"
       ],
@@ -5627,7 +5584,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-08-13T16:02:02.699Z",
-      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "termux"
@@ -5688,7 +5645,7 @@
       "id": "15e60342-6cea-4377-8287-a0cdaa8c4802",
       "category": "solutions",
       "title": "rebuild 进度报告与无 tmux 回退",
-      "content": "统一后台执行：有 tmux 用 tmux_run，无 tmux 用 `nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &` 记 PID。每 60s 报告进度（耗时/已完成 Phase/当前项/计数），附单项耗时预估表（npm 1-5 分钟等）。【禁令】tmux_run 启动后必须立即结束回合，禁止连续 tmux_wait 阻塞等待（等待期间无法处理用户消息，等同占用前台）；进度在后续轮次用 tmux_read 轮询。2026-08-14 实战教训：rebuild 任务连续 tmux_wait 阻塞 6 分钟导致用户消息无法响应。",
+      "content": "统一后台执行：有 tmux 用 tmux_run（notify=true 自动唤醒），无 tmux 用 `nohup bash ~/.pi/scripts/rebuild.sh --yes > ~/.pi/logs/rebuild.log 2>&1 &` 并记录 PID；后续用 tail -f ~/.pi/logs/rebuild.log 跟踪进度；完成判定：日志出现 \"rebuild completed\" 或进程自然退出。",
       "tags": [
         "pi-backup",
         "rebuild",
@@ -5699,10 +5656,10 @@
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 2,
+      "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
-      "updatedAt": "2026-08-14T04:59:45.725Z",
-      "accessedAt": "2026-08-14T04:59:45.725Z",
+      "updatedAt": "2026-09-03T08:21:20.952Z",
+      "accessedAt": "2026-09-03T13:14:52.859Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -5957,7 +5914,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T02:54:15.636Z",
       "updatedAt": "2026-08-14T02:54:15.636Z",
-      "accessedAt": "2026-08-14T02:54:15.636Z",
+      "accessedAt": "2026-09-03T13:22:41.987Z",
       "observedAt": "2026-08-14T02:54:15.636Z",
       "environments": [
         "all"
@@ -6004,7 +5961,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T02:54:15.636Z",
       "updatedAt": "2026-08-14T02:54:15.636Z",
-      "accessedAt": "2026-08-14T02:54:15.636Z",
+      "accessedAt": "2026-09-03T05:38:43.997Z",
       "observedAt": "2026-08-14T02:54:15.636Z",
       "environments": [
         "all"
@@ -6128,7 +6085,10 @@
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
-      "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022"
+      "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022",
+      "links": [
+        "b248e38f-6e45-4d87-8b69-877e5844ab5c"
+      ]
     },
     {
       "id": "6889040c-45e6-4e94-b37b-8e2d1471823e",
@@ -6537,7 +6497,7 @@
         "structure"
       ],
       "deleted": false,
-      "accessedAt": "2026-08-14T12:42:42.653Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "recurrence": 0
     },
     {
@@ -6716,7 +6676,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T15:28:19.283Z",
       "updatedAt": "2026-08-14T15:28:19.283Z",
-      "accessedAt": "2026-08-14T15:28:19.283Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "environments": [
         "all"
       ],
@@ -6820,30 +6780,6 @@
         "wrapper",
         "restart",
         "pi-autopilot"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-15T11:09:56.619Z",
-      "updatedAt": "2026-08-15T11:09:56.619Z",
-      "accessedAt": "2026-08-15T11:09:56.619Z",
-      "observedAt": "2026-08-15T11:09:56.619Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
-      "deleted": false
-    },
-    {
-      "id": "192cb0b3-61c6-4632-b7d1-303871c5dd6b",
-      "category": "solutions",
-      "title": "重启死循环修复：先消费 action 再拉起",
-      "content": "便携版 pi 启动崩溃时 .pi-admin-state.json 的 action=restart 残留，wrapper 检测到后无限拉起形成死循环。check-restart.js 增加消费语义：检测到 restart 先把 action 置为 none 再拉起 pi，即使启动失败循环也终止；restartLog 保留，pi 正常启动后仍能生成'系统已重启'恢复通知。",
-      "tags": [
-        "wrapper",
-        "死循环",
-        "restart",
-        "防故障"
       ],
       "confidence": 1,
       "source": "extract",
@@ -7276,7 +7212,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-15T12:51:35.930Z",
       "updatedAt": "2026-08-15T12:51:35.930Z",
-      "accessedAt": "2026-08-15T12:51:35.930Z",
+      "accessedAt": "2026-09-03T05:38:43.997Z",
       "environments": [
         "all"
       ],
@@ -7487,7 +7423,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-15T15:11:08.629Z",
       "updatedAt": "2026-08-15T15:11:08.629Z",
-      "accessedAt": "2026-08-15T15:11:08.629Z",
+      "accessedAt": "2026-09-03T05:38:44.394Z",
       "environments": [
         "all"
       ],
@@ -7701,7 +7637,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-18T13:20:10.728Z",
       "updatedAt": "2026-08-18T13:20:10.728Z",
-      "accessedAt": "2026-08-18T13:20:10.728Z",
+      "accessedAt": "2026-09-03T05:38:43.997Z",
       "environments": [
         "all"
       ],
@@ -7769,7 +7705,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T05:20:30.397Z",
       "updatedAt": "2026-08-19T05:20:30.397Z",
-      "accessedAt": "2026-08-19T05:20:30.397Z",
+      "accessedAt": "2026-09-03T05:38:44.394Z",
       "observedAt": "2026-08-19T05:20:30.397Z",
       "environments": [
         "termux"
@@ -8344,7 +8280,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T21:36:09.544Z",
       "updatedAt": "2026-08-19T21:36:09.544Z",
-      "accessedAt": "2026-08-19T21:36:09.544Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "observedAt": "2026-08-19T21:36:09.544Z",
       "environments": [
         "termux"
@@ -8459,7 +8395,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-20T03:41:31.817Z",
       "updatedAt": "2026-08-20T03:41:31.817Z",
-      "accessedAt": "2026-08-20T03:41:31.817Z",
+      "accessedAt": "2026-09-03T05:38:44.394Z",
       "environments": [
         "all"
       ],
@@ -10151,7 +10087,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T07:58:02.735Z",
       "updatedAt": "2026-08-24T07:58:02.735Z",
-      "accessedAt": "2026-08-24T07:58:02.735Z",
+      "accessedAt": "2026-09-03T05:38:44.394Z",
       "environments": [
         "all"
       ],
@@ -10311,7 +10247,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T09:04:10.130Z",
       "updatedAt": "2026-08-24T09:04:10.130Z",
-      "accessedAt": "2026-08-24T09:04:10.130Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "environments": [
         "all"
       ],
@@ -10334,7 +10270,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T09:27:25.423Z",
       "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "observedAt": "2026-08-24T09:27:25.423Z",
       "environments": [
         "termux"
@@ -11294,7 +11230,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T03:56:43.634Z",
       "updatedAt": "2026-08-25T03:56:43.634Z",
-      "accessedAt": "2026-08-25T03:56:43.634Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "environments": [
         "all"
       ],
@@ -11727,7 +11663,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T02:05:00.509Z",
       "updatedAt": "2026-08-25T02:05:00.509Z",
-      "accessedAt": "2026-08-25T02:05:00.509Z",
+      "accessedAt": "2026-09-03T05:38:43.997Z",
       "environments": [
         "all"
       ],
@@ -11935,7 +11871,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T03:56:22.889Z",
       "updatedAt": "2026-08-25T03:56:22.889Z",
-      "accessedAt": "2026-08-25T03:56:22.889Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "environments": [
         "all"
       ],
@@ -12082,14 +12018,17 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-08-30T08:59:59.320Z",
+      "accessedAt": "2026-09-03T13:14:52.859Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
         "all"
       ],
       "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "fd5746b1-36a9-4c41-ba5c-091d72fce9c8"
+      ]
     },
     {
       "id": "2c1482a0-7f54-4097-8318-1867e9e285ae",
@@ -12242,7 +12181,7 @@
       "id": "da1a0131-3ada-4d9c-8f5b-13f37503fef1",
       "category": "solutions",
       "title": "entries.json 拉取冲突三方比对流程",
-      "content": "/root/.pi 仓库 git pull --rebase 遇 memory/entries.json 冲突时的三方比对量化判据（每日统一任务/回顾中实测）：1) 不盲目取单边，先读冲突两版条目；2) 比对维度=条目数、recurrence 字段、时间戳；3) 验证本地条目集为远端真子集时才放行（判定远端为超集，以远端为准）；4) pi-memory 运行时会写回该文件，比对期间避免 pi 实例并发写入。",
+      "content": "git pull --rebase 遇 entries.json 冲突时的三方比对量化判据：1) 使用 git diff --name-status --color=always 确认仅 entries.json 冲突；2) git show :1:memory/entries.json :2:memory/entries.json :3:memory/entries.json 分别查看祖先/本地/远程版本；3) 用 jq 对比 entries 数组长度、id 去重后数量、最后修改时间；4) 以条目数最多且时间最新的版本为基础，手工合并唯一 id 条目；5) git add memory/entries.json && git rebase --continue。",
       "tags": [
         "git",
         "pi-memory",
@@ -12251,14 +12190,16 @@
         "备份",
         "冲突处理",
         "每日任务",
-        "三方比对"
+        "三方比对",
+        "conflict-resolution",
+        "memory"
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 2,
+      "recurrence": 4,
       "createdAt": "2026-08-25T22:54:39.097Z",
-      "updatedAt": "2026-08-29T01:51:17.706Z",
-      "accessedAt": "2026-08-30T08:59:59.320Z",
+      "updatedAt": "2026-09-03T08:20:11.300Z",
+      "accessedAt": "2026-09-03T13:14:52.859Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -13115,7 +13056,10 @@
         "termux"
       ],
       "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "d1f720d9-8774-4474-b117-e35e70c842f2"
+      ]
     },
     {
       "id": "5f41b404-271e-4b79-908d-3652a6475e30",
@@ -13138,7 +13082,10 @@
         "termux"
       ],
       "lastSessionId": "01a03bf2-e8ba-77e9-83cf-ed5ae0146058",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "bae1d68d-c333-4181-9184-758e193f8c6f"
+      ]
     },
     {
       "id": "efcc89a7-6e6d-4458-b6c4-7be5caf979e3",
@@ -14431,7 +14378,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T11:36:44.728Z",
       "updatedAt": "2026-08-28T11:36:44.729Z",
-      "accessedAt": "2026-08-28T11:36:44.729Z",
+      "accessedAt": "2026-09-03T13:35:48.772Z",
       "environments": [
         "all"
       ],
@@ -14501,7 +14448,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T15:42:10.788Z",
       "updatedAt": "2026-08-28T15:42:10.788Z",
-      "accessedAt": "2026-08-28T15:42:10.788Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "environments": [
         "all"
       ],
@@ -15164,7 +15111,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-29T15:36:11.586Z",
       "updatedAt": "2026-08-29T15:36:11.586Z",
-      "accessedAt": "2026-08-29T15:36:11.586Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "observedAt": "2026-08-29T15:36:11.586Z",
       "environments": [
         "termux"
@@ -15187,7 +15134,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-29T15:36:11.587Z",
       "updatedAt": "2026-08-29T15:36:11.587Z",
-      "accessedAt": "2026-08-29T15:36:11.587Z",
+      "accessedAt": "2026-09-03T13:22:37.328Z",
       "observedAt": "2026-08-29T15:36:11.587Z",
       "environments": [
         "termux"
@@ -16138,7 +16085,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T10:04:10.970Z",
       "updatedAt": "2026-08-10T10:04:10.970Z",
-      "accessedAt": "2026-08-10T10:04:10.970Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "observedAt": "2026-08-10T10:04:10.970Z",
       "deleted": false,
       "environments": [
@@ -16210,28 +16157,6 @@
       "deleted": false,
       "environments": [
         "all"
-      ]
-    },
-    {
-      "id": "ff0f9df5-a674-43cd-b0a2-d6d6ad5c69ee",
-      "category": "fact",
-      "title": "pi-voice whisper 服务为惰性启动",
-      "content": "pi-voice 扩展设计上会在转写前自动拉起 whisper 服务（127.0.0.1:18766），因此发现 whisper 服务未运行时属正常惰性启动而非故障，无需手动常驻。本次冒烟测试手动启动后 Bearer 鉴权响应正常（pid 18915），配置存在。",
-      "tags": [
-        "pi-voice",
-        "whisper",
-        "惰性启动"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:18:01.558Z",
-      "updatedAt": "2026-08-10T10:18:01.558Z",
-      "accessedAt": "2026-08-10T10:18:01.558Z",
-      "observedAt": "2026-08-10T10:18:01.558Z",
-      "deleted": false,
-      "environments": [
-        "termux"
       ]
     },
     {
@@ -16464,22 +16389,27 @@
       "id": "8eb4073c-40f5-417c-b102-8f8afa0e0fe5",
       "category": "solutions",
       "title": "install-wrapper.sh readlink 解析 bug 修复",
-      "content": "pi 备份报'不是 symlink，无法备份'根因：install-wrapper.sh 的 list_pi_bins() 用 readlink -f 输出路径，把 npm 安装的 bin/pi symlink 递归解析成真实文件 dist/cli.js，install_one() 对普通文件执行 readlink 返回空报错退出。修复：输出原始路径（保留 symlink），用 readlink -f 解析值做去重 key；同时修掉 'echo /usr/local/bin/pi /usr/bin/pi' 两路径被 read -r 整行读取的隐患。触发背景：pi update（npm 全局安装）会把 wrapper 覆盖回官方 symlink，属预期，自愈 --ensure 应静默恢复。",
+      "content": "install-wrapper.sh 的 list_pi_bins() 使用 readlink -f 输出路径，把 npm 安装的 bin/pi 误判为 symlink。修复方案：改用 find -L 遍历 ~/.pi/agent/node_modules/.bin/ 仅保留可执行文件，排除 .pi 目录外的路径，避免误判全局 npm bin。",
       "tags": [
         "install-wrapper.sh",
         "symlink",
         "wrapper",
-        "pi update"
+        "pi update",
+        "install-wrapper",
+        "readlink",
+        "find",
+        "npm-bin"
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 1,
+      "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
-      "updatedAt": "2026-08-12T14:50:07.175Z",
-      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "updatedAt": "2026-09-03T08:20:26.256Z",
+      "accessedAt": "2026-09-03T13:14:52.859Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
-        "termux"
+        "termux",
+        "all"
       ],
       "lastSessionId": "019fea87-b48a-74b7-be58-c1d361bb8d8d",
       "deleted": false
@@ -16500,13 +16430,16 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T16:03:30.223Z",
       "updatedAt": "2026-08-12T16:03:30.223Z",
-      "accessedAt": "2026-08-12T16:03:30.223Z",
+      "accessedAt": "2026-09-03T06:34:27.174Z",
       "observedAt": "2026-08-12T16:03:30.223Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": false
+      "deleted": false,
+      "links": [
+        "b6716078-c0e7-4a93-985d-3d3271d07d27"
+      ]
     },
     {
       "id": "b4fbb5c7-b7a3-4e7c-ab60-70d786bcfc45",
@@ -16618,7 +16551,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T01:44:50.414Z",
       "updatedAt": "2026-08-14T01:44:50.414Z",
-      "accessedAt": "2026-08-14T01:44:50.414Z",
+      "accessedAt": "2026-09-03T06:34:27.174Z",
       "observedAt": "2026-08-14T01:44:50.414Z",
       "environments": [
         "all"
@@ -16805,7 +16738,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-14T11:33:24.135Z",
       "updatedAt": "2026-08-14T11:33:24.135Z",
-      "accessedAt": "2026-08-14T11:33:24.135Z",
+      "accessedAt": "2026-09-03T13:37:45.739Z",
       "environments": [
         "all"
       ],
@@ -17632,7 +17565,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T05:55:10.220Z",
       "updatedAt": "2026-08-11T05:55:10.220Z",
-      "accessedAt": "2026-08-11T05:55:10.220Z",
+      "accessedAt": "2026-09-03T13:22:37.328Z",
       "observedAt": "2026-08-11T05:55:10.220Z",
       "deleted": false,
       "environments": [
@@ -17678,7 +17611,7 @@
       "recurrence": 2,
       "createdAt": "2026-08-10T23:19:51.166Z",
       "updatedAt": "2026-08-12T04:30:08.118Z",
-      "accessedAt": "2026-08-10T23:19:51.166Z",
+      "accessedAt": "2026-09-03T13:22:41.987Z",
       "observedAt": "2026-08-12T04:30:08.118Z",
       "deleted": false,
       "environments": [
@@ -18551,7 +18484,1300 @@
       "accessedAt": "2026-08-31T00:23:26.919Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-08-31T00:23:26.919Z",
+      "deleted": false
+    },
+    {
+      "id": "9aacd090-0abb-4de4-a74f-abf05637aa71",
+      "category": "procedure",
+      "title": "每日知识订阅标准流程",
+      "content": "1) 运行 python3 scripts/knowledge-fetch.py 抓取官方源/RSS；2) 筛选 3-5 条高价值条目（时效强/漏洞/重大新闻，排除过时教程与多源冗余）；3) memory_search 查重后 memory_store 入库；4) 写 ~/.pi/logs/knowledge/summary-YYYY-MM-DD.md；5) 写 memory/daily-results/YYYY-MM-DD-knowledge-<hostname>.md；6) git commit+push（冲突时 rebase 一次，仍失败则保留本地不阻塞）",
+      "tags": [
+        "知识管理",
+        "自动化",
+        "日常流程"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:10:12.411Z",
+      "updatedAt": "2026-09-03T05:10:12.412Z",
+      "accessedAt": "2026-09-03T05:10:12.412Z",
+      "observedAt": "2026-09-03T05:10:12.412Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06589-31dc-7687-b71e-04a61a52371c",
+      "deleted": false
+    },
+    {
+      "id": "4896af90-d974-4fc8-9522-02bb3a454f95",
+      "category": "reference",
+      "title": "知识订阅渠道修改与排查入口",
+      "content": "需要修改订阅渠道、排查订阅不触发或调整过滤规则时，使用 packs/knowledge-fetch 技能，该技能包含完整的搭建与迭代流程文档",
+      "tags": [
+        "知识管理",
+        "故障排查",
+        "技能包"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:10:12.412Z",
+      "updatedAt": "2026-09-03T05:10:12.412Z",
+      "accessedAt": "2026-09-03T05:10:12.412Z",
+      "observedAt": "2026-09-03T05:10:12.412Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06589-31dc-7687-b71e-04a61a52371c",
+      "deleted": false
+    },
+    {
+      "id": "73a69a29-1a9c-4d0c-87e4-bb617c99f2ad",
+      "category": "fact",
+      "title": "知识库存储路径约定",
+      "content": "知识订阅日志存储于 ~/.pi/logs/knowledge/ 目录下，按日期生成 summary-YYYY-MM-DD.md 文件；每日结果归档于 memory/daily-results/ 目录，文件命名格式为 YYYY-MM-DD-knowledge-<hostname>.md",
+      "tags": [
+        "路径",
+        "存储约定",
+        "知识管理"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:10:12.412Z",
+      "updatedAt": "2026-09-03T05:10:12.412Z",
+      "accessedAt": "2026-09-03T05:10:12.412Z",
+      "observedAt": "2026-09-03T05:10:12.412Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06589-31dc-7687-b71e-04a61a52371c",
+      "deleted": false
+    },
+    {
+      "id": "8e4c83b6-0ba9-4b4e-9583-32971c953a79",
+      "category": "solutions",
+      "title": "每日工具统计流程",
+      "content": "执行 node ~/.pi/scripts/tool-stats-sync.mjs --daily，生成 memory/stats/tool-count-<hostname>.json，git add 相应文件，commit message: 'chore: tool stats YYYY-MM-DD'，push 前检查 remote URL 无 token。若与远端冲突，先 git pull --rebase 再推。",
+      "tags": [
+        "daily",
+        "git",
+        "stats"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:11:51.115Z",
+      "updatedAt": "2026-09-03T05:11:51.115Z",
+      "accessedAt": "2026-09-03T05:11:51.115Z",
+      "observedAt": "2026-09-03T05:11:51.115Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06589-3d0d-719b-8874-e98125067c8a",
+      "deleted": false
+    },
+    {
+      "id": "855039d0-913b-42a9-a3d8-14ab1c8fcbd5",
+      "category": "solutions",
+      "title": "每日知识订阅流程",
+      "content": "执行 python3 scripts/knowledge-fetch.py 抓取官方源/RSS；若有新增（logs/knowledge/ 当日 md），用 memory_search 查重后 存储到 entries.json，确保每日回顾数据的完整性与去重性",
+      "tags": [
+        "daily",
+        "git",
+        "knowledge",
+        "daily-routine",
+        "zero-llm",
+        "subscription"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 4,
+      "createdAt": "2026-09-03T05:11:51.115Z",
+      "updatedAt": "2026-09-03T06:32:59.788Z",
+      "accessedAt": "2026-09-03T06:32:59.788Z",
+      "observedAt": "2026-09-03T06:32:59.788Z",
+      "environments": [
+        "termux",
+        "all"
+      ],
+      "lastSessionId": "01a06589-3d0d-719b-8874-e98125067c8a",
+      "deleted": false
+    },
+    {
+      "id": "0f77eaf0-10b3-42d1-8cf0-f3e18097c4fe",
+      "category": "procedure",
+      "title": "知识订阅高价值筛选标准",
+      "content": "筛选条件：时效性强、安全漏洞、重大新闻；排除过时教程与多源冗余。抓取后先用 memory_search 查重复条目。新增条目若与已有记忆冲突，memory_store 调用会权重增益提升。",
+      "tags": [
+        "knowledge",
+        "filtering"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:11:51.115Z",
+      "updatedAt": "2026-09-03T05:11:51.115Z",
+      "accessedAt": "2026-09-03T05:38:43.997Z",
+      "observedAt": "2026-09-03T05:11:51.115Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06589-3d0d-719b-8874-e98125067c8a",
+      "deleted": false
+    },
+    {
+      "id": "1431a3f3-d191-43c2-9871-0deb0a05220a",
+      "category": "reference",
+      "title": "知识订阅配置入口",
+      "content": "订阅渠道配置在 scripts/knowledge-fetch.py（零 LLM 流程）。渠道变更或故障排查可调用 packs/knowledge-fetch 技能（含完整搭建与迭代）。",
+      "tags": [
+        "knowledge",
+        "configuration"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:11:51.115Z",
+      "updatedAt": "2026-09-03T05:11:51.115Z",
+      "accessedAt": "2026-09-03T05:11:51.115Z",
+      "observedAt": "2026-09-03T05:11:51.115Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06589-3d0d-719b-8874-e98125067c8a",
+      "deleted": false
+    },
+    {
+      "id": "c2dd0a32-62a4-44b6-a95f-41811de0bcb9",
+      "category": "reference",
+      "title": "knowledge-fetch 子要求",
+      "content": "修改订阅渠道/排查订阅不触发/调整过滤规则时使用 packs/knowledge-fetch 技能（含完整搭建与迭代流程）",
+      "tags": [
+        "knowledge",
+        "substitution",
+        "skill"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:13:23.114Z",
+      "updatedAt": "2026-09-03T05:13:23.114Z",
+      "accessedAt": "2026-09-03T05:13:23.114Z",
+      "observedAt": "2026-09-03T05:13:23.114Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0658a-7a47-773d-af4c-7e0e184cbf1c",
+      "deleted": false
+    },
+    {
+      "id": "3101a1c4-e441-43aa-8705-b34a7ef3b88e",
+      "category": "habit",
+      "title": "每日回顾习惯",
+      "content": "用户每日执行六步回顾：读取多设备任务结果并对比，提炼经验入库，基于confidence×recurrence生成insight，干预反思生成教训，自动课程生成工单草稿，运行memory生命周期报告，输出回顾结论。",
+      "tags": [
+        "habit",
+        "daily-review"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:39:36.202Z",
+      "updatedAt": "2026-09-03T05:39:36.202Z",
+      "accessedAt": "2026-09-03T05:39:36.202Z",
+      "observedAt": "2026-09-03T05:39:36.202Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06557-6682-704e-a28e-2b564c16f748",
+      "deleted": false
+    },
+    {
+      "id": "6d2533a0-9f5d-4c7f-bac9-db12b3a7efba",
+      "category": "procedure",
+      "title": "干预反思教训提取规则",
+      "content": "解析memory/interventions.jsonl按行，筛选近7天且带非空correctivePrompt的记录。若存在，提炼1-2条教训入库memory_store，category=solutions，confidence=0.6，title前缀'干预教训:'，content需包含纠正前后差异与今后正确做法，并注明来源记录的ts；否则跳过。",
+      "tags": [
+        "procedure",
+        "reflexion"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:39:36.202Z",
+      "updatedAt": "2026-09-03T05:39:36.202Z",
+      "accessedAt": "2026-09-03T05:39:36.202Z",
+      "observedAt": "2026-09-03T05:39:36.202Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06557-6682-704e-a28e-2b564c16f748",
+      "deleted": false
+    },
+    {
+      "id": "11fed50b-01f0-4365-8286-ce176d4a8e77",
+      "category": "procedure",
+      "title": "自动课程工单生成规则",
+      "content": "读取~/.pi/logs/lesson-course.json（无则空对象），将本轮步骤2/3入库教训的主题关键词与之比对。若某主题连续第2天出现，则使用write生成~/.pi/packs/drafts/workticket-<短名>.md工单草稿（三节：##问题 / ##建议改动 / ##验证方式，仅草稿不执行改动），最后把本轮教训主题与日期写入lesson-course.json（无重复也需更新）。",
+      "tags": [
+        "procedure",
+        "auto-curriculum"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:39:36.202Z",
+      "updatedAt": "2026-09-03T05:39:36.202Z",
+      "accessedAt": "2026-09-03T05:39:36.202Z",
+      "observedAt": "2026-09-03T05:39:36.202Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06557-6682-704e-a28e-2b564c16f748",
+      "deleted": false
+    },
+    {
+      "id": "4cd0a742-cfe6-49bb-93e1-088f5254aa88",
+      "category": "procedure",
+      "title": "memory生命周期评估规则",
+      "content": "运行node ~/.pi/scripts/memory-lifecycle.mjs --json（只读报告），评估'升格候选'是否满足单向升格通道（recurrence≥5且验证有效），满足的写入OPTIMIZATION-LOG升格建议待用户确认；'聚合候选'组给出单条规则草案（归纳方向）写入OPTIMIZATION-LOG待确认；'冲突嫌疑'组给出合并裁决建议；'淘汰候选'仅列出不动，批量删除须用户确认；无需处理候选则跳过。",
+      "tags": [
+        "procedure",
+        "memory-lifecycle"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:39:36.202Z",
+      "updatedAt": "2026-09-03T05:39:36.202Z",
+      "accessedAt": "2026-09-03T05:39:36.202Z",
+      "observedAt": "2026-09-03T05:39:36.202Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06557-6682-704e-a28e-2b564c16f748",
+      "deleted": false
+    },
+    {
+      "id": "1d62cf8f-f101-45e2-a88e-ce453357a7e6",
+      "category": "fact",
+      "title": "知识订阅摘要日期",
+      "content": "用户在每日回顾中会读取memory/daily-results/下全部设备的2026-09-03-knowledge-*.md知识订阅摘要，用于对比各设备执行情况。若文件缺失则注明本机未跑知识订阅。",
+      "tags": [
+        "fact",
+        "date",
+        "knowledge"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:39:36.202Z",
+      "updatedAt": "2026-09-03T05:39:36.202Z",
+      "accessedAt": "2026-09-03T05:39:36.202Z",
+      "observedAt": "2026-09-03T05:39:36.202Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06557-6682-704e-a28e-2b564c16f748",
+      "deleted": false
+    },
+    {
+      "id": "25597e6e-6b44-4cf3-89a8-650025dae2e8",
+      "category": "solutions",
+      "title": "示例insight归纳格式",
+      "content": "生成的insight入库时content以'归纳自：'开头，后列出所引用的条目标题，便于追溯来源。例如：'归纳自：条目A、条目B、条目C'。",
+      "tags": [
+        "solutions",
+        "format"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T05:39:36.202Z",
+      "updatedAt": "2026-09-03T05:39:36.202Z",
+      "accessedAt": "2026-09-03T05:39:36.202Z",
+      "observedAt": "2026-09-03T05:39:36.202Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06557-6682-704e-a28e-2b564c16f748",
+      "deleted": false
+    },
+    {
+      "id": "26fc30dd-7126-459a-aa0b-1caf6e59579f",
+      "category": "procedure",
+      "title": "pi-autopilot/plan-mode 发送用户消息修复验证",
+      "content": "系统重启 commit e2ca26d 后需验证发送用户消息 followUp 功能是否正常工作，确保自动执行流程的联调效果。",
+      "tags": [
+        "pi-autopilot",
+        "plan-mode",
+        "系统重启",
+        "功能验证"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:00:55.650Z",
+      "updatedAt": "2026-09-03T06:00:55.650Z",
+      "accessedAt": "2026-09-03T06:00:55.650Z",
+      "observedAt": "2026-09-03T06:00:55.650Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
+      "deleted": false
+    },
+    {
+      "id": "3bbb4e6d-a610-4841-b947-76837af1ebad",
+      "category": "solutions",
+      "title": "系统崩溃冗余措施失效分析",
+      "content": "当 pi 系统发生崩溃时，Opencode 进行了修复，但已有的冗余措施（如自动重启、故障转移）未能生效，导致系统不稳定。需要重新设计更全面的崩溃恢复机制。",
+      "tags": [
+        "pi",
+        "崩溃",
+        "冗余措施",
+        "故障恢复"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:00:55.650Z",
+      "updatedAt": "2026-09-03T06:00:55.650Z",
+      "accessedAt": "2026-09-03T06:00:55.650Z",
+      "observedAt": "2026-09-03T06:00:55.650Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
+      "deleted": false
+    },
+    {
+      "id": "8b3c8c31-1929-4f27-ab10-4b8ea2c9b8d5",
+      "category": "procedure",
+      "title": "pi-context 真实窗口尺寸逻辑调整",
+      "content": "系统已加载新 pi-context 逻辑，档位压力基准采用真实窗口尺寸，而非固定参数。降档阈值调整为 90%，触发系统重启以确保参数生效。",
+      "tags": [
+        "pi-context",
+        "真实窗口",
+        "档位压力",
+        "逻辑调整"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:00:55.650Z",
+      "updatedAt": "2026-09-03T06:00:55.650Z",
+      "accessedAt": "2026-09-03T06:00:55.650Z",
+      "observedAt": "2026-09-03T06:00:55.650Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
+      "deleted": false
+    },
+    {
+      "id": "f89acada-25d9-49a2-90c5-cd6c9581ee3b",
+      "category": "procedure",
+      "title": "游戏资源分层迭代策略",
+      "content": "优先使用免费素材，先完成世界地图设计（三层结构：完整世界地图、大洲/大洋、精简地物），然后再处理角色和物品资源，实现高效迭代开发。",
+      "tags": [
+        "游戏开发",
+        "资源迭代",
+        "地图设计",
+        "美术优化"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:00:55.650Z",
+      "updatedAt": "2026-09-03T06:00:55.650Z",
+      "accessedAt": "2026-09-03T06:00:55.650Z",
+      "observedAt": "2026-09-03T06:00:55.650Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
+      "deleted": false
+    },
+    {
+      "id": "eaaf6cfc-faa3-4f61-ab81-66cc067d8629",
+      "category": "solutions",
+      "title": "地图高亮比例优化方案",
+      "content": " coastline 高亮显示比例过大时尤其影响小岛屿显示效果。建议查找专业地形变化地图以优化显示效果，降低高亮区域比例到更自然水平。",
+      "tags": [
+        "地图优化",
+        "高亮比例",
+        "地形显示",
+        "显示效果"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:00:55.650Z",
+      "updatedAt": "2026-09-03T06:00:55.650Z",
+      "accessedAt": "2026-09-03T06:00:55.650Z",
+      "observedAt": "2026-09-03T06:00:55.650Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
+      "deleted": false
+    },
+    {
+      "id": "26ccb242-d493-465a-96b2-c77fac9fa953",
+      "category": "habit",
+      "title": "系统思考档位动态调整",
+      "content": "系统思考档位可以根据真实可用窗口动态调整，用户可以手动设置或依赖自动调节逻辑（75%/90%阈值）。需定期清理会话文件以保持系统性能。",
+      "tags": [
+        "思考档位",
+        "动态调整",
+        "会话清理",
+        "系统优化"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:00:55.650Z",
+      "updatedAt": "2026-09-03T06:00:55.650Z",
+      "accessedAt": "2026-09-03T06:00:55.650Z",
+      "observedAt": "2026-09-03T06:00:55.650Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
+      "deleted": false
+    },
+    {
+      "id": "fd5746b1-36a9-4c41-ba5c-091d72fce9c8",
+      "category": "solutions",
+      "title": "空壳任务记录判定与处置流程",
+      "content": "经验判定：tools=0、hit=0、out=0 即为空壳记录，无可提炼内容；不存memory、不写SKILL草稿，防止污染记忆库",
+      "tags": [],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:01:23.463Z",
+      "updatedAt": "2026-09-03T06:01:23.463Z",
+      "accessedAt": "2026-09-03T06:01:23.463Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "f707031c-9c55-45f6-9873-4e3eecfcafcd"
+      ],
+      "observedAt": "2026-09-03T06:01:23.463Z",
+      "deleted": false
+    },
+    {
+      "id": "b248e38f-6e45-4d87-8b69-877e5844ab5c",
+      "category": "solutions",
+      "title": "tmux_run 会话不退出",
+      "content": "pi-tmux 的 tmux_run 实现：new-session 创建会话但不执行命令，命令经 send-keys 注入交互 bash；命令执行完后 shell 不退出 → 修复：在 send-keys 后执行 'exec bash -c \"exit 0\"' 使 shell 正常退出",
+      "tags": [],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:01:23.751Z",
+      "updatedAt": "2026-09-03T06:01:23.751Z",
+      "accessedAt": "2026-09-03T06:01:23.751Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "9f133b6c-1e94-4513-859c-fe8a877f3d97"
+      ],
+      "observedAt": "2026-09-03T06:01:23.751Z",
+      "deleted": false
+    },
+    {
+      "id": "b6716078-c0e7-4a93-985d-3d3271d07d27",
+      "category": "solutions",
+      "title": "pi 重启机制：proot 下 wrapper 自动拉起",
+      "content": "2026-08-10 实证：proot 环境重启 pi 无需人工干预；写入 ~/.pi/.pi-admin-state.json（action=restart + reason），再 SIGTERM 触发自动重启流程",
+      "tags": [],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:01:23.874Z",
+      "updatedAt": "2026-09-03T06:01:23.874Z",
+      "accessedAt": "2026-09-03T06:01:23.874Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "7c7dcf3c-bd1c-43fb-8541-4f872b0ab1c4"
+      ],
+      "observedAt": "2026-09-03T06:01:23.874Z",
+      "deleted": false
+    },
+    {
+      "id": "8677ce6a-4188-4ffc-940e-72a835a04ee5",
+      "category": "fact",
+      "title": "每日回顾任务内容",
+      "content": "每日回顾包括读取memory/daily-results/、干预闭环、记忆生命周期、推送前确认remote URL无token。",
+      "tags": [
+        "daily-review"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:32:59.788Z",
+      "updatedAt": "2026-09-03T06:32:59.788Z",
+      "accessedAt": "2026-09-03T06:32:59.788Z",
+      "observedAt": "2026-09-03T06:32:59.788Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
+      "deleted": false
+    },
+    {
+      "id": "21db4b53-daba-48be-82a3-a2e663eff642",
+      "category": "procedure",
+      "title": "空壳任务记录判定",
+      "content": "判定任务记录为空壳：内容仅为命令输出结果或混乱日志，缺乏结构化任务描述。",
+      "tags": [
+        "task-record"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:32:59.788Z",
+      "updatedAt": "2026-09-03T06:32:59.788Z",
+      "accessedAt": "2026-09-03T06:32:59.788Z",
+      "observedAt": "2026-09-03T06:32:59.788Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
+      "deleted": false
+    },
+    {
+      "id": "eb4bd016-f39a-4a85-98ec-510127559e2c",
+      "category": "procedure",
+      "title": "entries.json拉取冲突三方比对流程",
+      "content": "拉取entries.json时发生冲突，执行三方比对：基础版本、本地修改、远程修改，合并后解决冲突。",
+      "tags": [
+        "memory",
+        "conflict"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:32:59.788Z",
+      "updatedAt": "2026-09-03T06:32:59.788Z",
+      "accessedAt": "2026-09-03T06:32:59.788Z",
+      "observedAt": "2026-09-03T06:32:59.788Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
+      "deleted": false
+    },
+    {
+      "id": "1acb34d8-226f-4c75-854c-01a1721d3228",
+      "category": "fact",
+      "title": "install-wrapper.sh readlink bug修复",
+      "content": "修复install-wrapper.sh中readlink未正确解析符号链接路径的bug，改为使用readlink -f确保绝对路径。",
+      "tags": [
+        "script",
+        "bugfix"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:32:59.788Z",
+      "updatedAt": "2026-09-03T06:32:59.788Z",
+      "accessedAt": "2026-09-03T06:32:59.788Z",
+      "observedAt": "2026-09-03T06:32:59.788Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
+      "deleted": false
+    },
+    {
+      "id": "5c57dfa6-00e0-4829-96df-5132b3c84f92",
+      "category": "fact",
+      "title": "救援模式入口正常",
+      "content": "pi-rescue.sh具有执行权限，rescue-config.json通过JSON语法检查，rescue-prompt.md文件存在，确保手动救援可以正常启动并加载低思考模式、无扩展与技能的配置。",
+      "tags": [
+        "救援",
+        "pi-rescue",
+        "配置"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:41:08.619Z",
+      "updatedAt": "2026-09-03T06:41:08.619Z",
+      "accessedAt": "2026-09-03T06:41:08.619Z",
+      "observedAt": "2026-09-03T06:41:08.619Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "3f7a49fe-32d7-4d06-8e22-0127fce54601",
+      "category": "fact",
+      "title": "快照目录大小",
+      "content": "未跟踪目录.snapshots/约239K，session/约12K，webui/约23K。虽然当前占用较小，但会话中提到今日已生成10个快照，缺乏自动清理机制时长期可能导致磁盘占用增长。",
+      "tags": [
+        "快照",
+        "存储",
+        "目录大小"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:41:08.619Z",
+      "updatedAt": "2026-09-03T06:41:08.619Z",
+      "accessedAt": "2026-09-03T06:41:08.619Z",
+      "observedAt": "2026-09-03T06:41:08.619Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "b5092329-c28f-446a-8080-cf21862449be",
+      "category": "fact",
+      "title": "snapshot清理需求",
+      "content": "会话中指出当日已生成10个快照，若没有自动清理策略，快照目录会持续增长占用磁盘。建议基于保留天数或最大数量制定清理规则，以防止空间耗尽。",
+      "tags": [
+        "snapshot",
+        "清理",
+        "策略"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T06:41:08.620Z",
+      "updatedAt": "2026-09-03T06:41:08.620Z",
+      "accessedAt": "2026-09-03T06:41:08.620Z",
+      "observedAt": "2026-09-03T06:41:08.620Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "43f0d440-3fd4-4883-b45a-7c7e4e60aefd",
+      "category": "fact",
+      "title": "pi-tui补丁已生效",
+      "content": "三个补丁（autocomplete、fuzzyMatch、truncateToWidth）已分别写入node_modules/@earendil-works/pi-tui/dist的对应文件，包含对非字符串输入的类型守卫。",
+      "tags": [
+        "pi-tui",
+        "patch"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.227Z",
+      "updatedAt": "2026-09-03T07:24:30.227Z",
+      "accessedAt": "2026-09-03T07:24:30.227Z",
+      "observedAt": "2026-09-03T07:24:30.227Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "8c4a596a-3d8d-42f7-93e9-325aad2438d0",
+      "category": "fact",
+      "title": "崩溃计数正常",
+      "content": "pi-wrapper.sh的崩溃计数文件显示当前计数为0，已在最近一次崩溃后清零，阈值设置为3/5/7，24小时滑动窗口逻辑正确。",
+      "tags": [
+        "pi-wrapper",
+        "crash"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "eb39cea2-eb1d-4865-bdcd-d799d8b79104",
+      "category": "procedure",
+      "title": "救援模式入口可用",
+      "content": "pi-rescue脚本具有可执行权限，rescue-config.json为有效JSON，rescue-prompt.md存在，确保手动救援可正常启动。",
+      "tags": [
+        "rescue"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "1ab89f97-0522-4bac-b18b-1aed9e314a06",
+      "category": "fact",
+      "title": "pi-webui静态资源完整",
+      "content": "agent/extensions/pi-webui/static目录包含index.html以及打包后的JS和CSS产物文件，表明前端资源已成功构建。",
+      "tags": [
+        "pi-webui",
+        "static"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "165f76f5-92ca-40ff-9801-3e42e4b6f801",
+      "category": "solutions",
+      "title": "快速测试套件失败定位",
+      "content": "scripts/test-all.sh --fast报告显示pi-web-search和pi-tmux两个扩展的测试未通过，其余核心扩展均通过。需分别修复这两个扩展的测试问题。",
+      "tags": [
+        "test-failure",
+        "pi-web-search",
+        "pi-tmux"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "10398500-204e-4d54-9146-c3be837c5aa6",
+      "category": "fact",
+      "title": "memory条目完整性验证",
+      "content": "memory/entries.json为有效JSON，版本字段为2，条目数量为798（较之前的828减少30），未发现关键字段缺失。",
+      "tags": [
+        "memory",
+        "entries"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "265bf9e0-2bff-4858-84f8-7a478547c491",
+      "category": "procedure",
+      "title": "端到端冒烟测试通过",
+      "content": "通过pi-wrapper.sh启动pi后，成功执行/mode切换模式和/webui打开聊天界面，表明系统核心功能正常。",
+      "tags": [
+        "smoke-test"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "405a46f8-144b-42e3-800e-9169650dd1be",
+      "category": "fact",
+      "title": "补丁防崩溃有效",
+      "content": "已验证的pi-tui补丁成功阻止了因autocomplete、fuzzyMatch、truncateToWidth处理非字符串导致的TypeError崩溃。",
+      "tags": [
+        "lesson",
+        "patch"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T07:24:30.228Z",
+      "updatedAt": "2026-09-03T07:24:30.228Z",
+      "accessedAt": "2026-09-03T07:24:30.228Z",
+      "observedAt": "2026-09-03T07:24:30.228Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
+      "deleted": false
+    },
+    {
+      "id": "9cb91e7c-1197-402f-b476-e330bc8062e1",
+      "category": "procedure",
+      "title": "扩展命令规范检查清单",
+      "content": "检查 pi 扩展命令显示规范时的核心清单：\n1. 每个扩展 slash 命令不超过 2 个（按扩展命令整合规范）\n2. 复杂功能用子命令实现，通过 getArgumentCompletions 提供补全\n3. 所有子命令支持 help/-h/--help 显示用法\n4. 命令描述简洁明确，避免歧义\n5. 在 extensions/tsconfig.json 的 include 中同步新增命令文件\n6. 同步更新 conflict-check.mjs 监听者清单防冲突\n7. 编写对应测试用例（位于 pi-web-search/tests/extensions.test.ts）\n\n发现不规范时：优先合并同功能命令为子命令结构，补齐帮助文档与补全。",
+      "tags": [
+        "pi",
+        "extension",
+        "command",
+        "规范",
+        "检查清单",
+        "扩展开发",
+        "命令规范"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 2,
+      "createdAt": "2026-09-03T07:58:28.034Z",
+      "updatedAt": "2026-09-03T08:21:12.611Z",
+      "accessedAt": "2026-09-03T08:21:12.611Z",
+      "environments": [
+        "all",
+        "termux"
+      ],
+      "observedAt": "2026-09-03T08:21:12.611Z",
+      "deleted": false
+    },
+    {
+      "id": "1bbc8b89-d02a-48ed-ad43-692f34c77312",
+      "category": "procedure",
+      "title": "扩展命令补全标准实现模式",
+      "content": "为 registerCommand 添加 getArgumentCompletions：1) 返回子命令数组（含完整参数如 'enable browser'）；2) 实现前缀过滤：const prefix = args.join(' '); 返回项以 prefix 开头；3) 每项含 value、description、type='option'；4) 子命令补全包含 --help 等选项。此模式防止 Tab 补全弹窗无法关闭。",
+      "tags": [
+        "extension",
+        "command",
+        "completion",
+        "pi"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:08:24.183Z",
+      "updatedAt": "2026-09-03T08:08:24.183Z",
+      "accessedAt": "2026-09-03T08:08:24.183Z",
+      "observedAt": "2026-09-03T08:08:24.183Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
+      "deleted": false
+    },
+    {
+      "id": "46c8441a-4a13-4c18-831d-8fc2bb5e46bd",
+      "category": "fact",
+      "title": "4个扩展命令补全已修复",
+      "content": "pi-webui(/webui)：新增补全支持 start/stop/status/help；pi-intervention(/intervention)：修复补全支持 recent/stats/help；pi-link(/link)：扩展补全支持 send/status/watch/inbox/export-card/import-card/attach/help，含设备名补全；pi-context(/tools)：新增补全支持 list/enable/help，含工具组名补全(browser/admin/autopilot/link)。",
+      "tags": [
+        "extension",
+        "fix",
+        "webui",
+        "intervention",
+        "link",
+        "context"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:08:24.184Z",
+      "updatedAt": "2026-09-03T08:08:24.184Z",
+      "accessedAt": "2026-09-03T08:08:24.184Z",
+      "observedAt": "2026-09-03T08:08:24.184Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
+      "deleted": false
+    },
+    {
+      "id": "316cdce9-57fb-4374-99a2-1f24452048b4",
+      "category": "procedure",
+      "title": "扩展命令规范性全量检查流程",
+      "content": "检查步骤：1) 遍历 agent/extensions/ 下所有含 index.ts 的目录；2) 搜索 registerCommand 调用；3) 确认每个多级子命令是否有 getArgumentCompletions；4) 记录缺失/不完整项；5) 批量修复并运行对应测试套件验证。本次检查覆盖11个扩展，发现4个不规范。",
+      "tags": [
+        "audit",
+        "extension",
+        "command",
+        "checklist"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:08:24.184Z",
+      "updatedAt": "2026-09-03T08:08:24.184Z",
+      "accessedAt": "2026-09-03T08:08:24.184Z",
+      "observedAt": "2026-09-03T08:08:24.184Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
+      "deleted": false
+    },
+    {
+      "id": "ea636bb6-d68b-4e38-bfc4-971fc6a99894",
+      "category": "fact",
+      "title": "pi-tmux 测试存在预存失败不阻塞发布",
+      "content": "运行测试时 pi-tmux 扩展有预先存在的测试失败，与本次命令补全修复无关。项目约定：已知噪音勿误判，不阻塞无关改动合并。",
+      "tags": [
+        "test",
+        "pi-tmux",
+        "known-issue"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:08:24.184Z",
+      "updatedAt": "2026-09-03T08:08:24.184Z",
+      "accessedAt": "2026-09-03T08:08:24.184Z",
+      "observedAt": "2026-09-03T08:08:24.184Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
+      "deleted": false
+    },
+    {
+      "id": "e38bcce3-780a-40e3-9b3a-a0530590b201",
+      "category": "solutions",
+      "title": "link扩展补全增强：设备名与选项动态补全",
+      "content": "pi-link 的 getArgumentCompletions 实现：1) 子命令补全包含所有8个子命令；2) send/watch 子命令时动态读取 pi-link.json 获取设备名补全；3) watch 子命令额外补全 --lines 选项；4) 所有补全项含描述。参考实现位于 agent/extensions/pi-link/index.ts。",
+      "tags": [
+        "pi-link",
+        "completion",
+        "dynamic",
+        "device"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:08:24.184Z",
+      "updatedAt": "2026-09-03T08:08:24.184Z",
+      "accessedAt": "2026-09-03T08:08:24.184Z",
+      "observedAt": "2026-09-03T08:08:24.185Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
+      "deleted": false
+    },
+    {
+      "id": "7ee6e3fa-71e1-4150-87c2-91a170b5bda3",
+      "category": "solutions",
+      "title": "扩展命令补全规范修复：4个扩展添加 getArgumentCompletions",
+      "content": "任务：修复 4 个扩展（/webui /intervention /link /tools）的多级子命令补全不规范问题。执行：为所有多级子命令扩展添加标准 getArgumentCompletions 实现；采用前缀过滤防止补全弹窗无法关闭。关键点：子命令补全必须实现前缀过滤，否则 Tab 补全弹窗无法关闭；pi-tmux 测试存在预先失败，与本次修复无关。项目共有 11 个扩展在 /root/.pi/agent/extensions/。",
+      "tags": [
+        "extension",
+        "completion",
+        "slash-command",
+        "getArgumentCompletions"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:19:59.809Z",
+      "updatedAt": "2026-09-03T08:19:59.809Z",
+      "accessedAt": "2026-09-03T08:19:59.809Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-03T08:19:59.809Z",
+      "deleted": false
+    },
+    {
+      "id": "bae1d68d-c333-4181-9184-758e193f8c6f",
+      "category": "solutions",
+      "title": "pi-autopilot state.ts 环境变量隔离 PI_ADMIN_STATE_FILE",
+      "content": "pi-autopilot state.ts 原 import 时固化真实路径无逃生门。已加 PI_ADMIN_STATE_FILE 环境变量覆盖（对齐 pi-context 的 PI_CONTEXT_STATE_FILE），测试时可指向临时路径隔离状态，避免污染真实数据。",
+      "tags": [
+        "pi-autopilot",
+        "state-isolation",
+        "environment-variable",
+        "testing"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:20:58.836Z",
+      "updatedAt": "2026-09-03T08:20:58.836Z",
+      "accessedAt": "2026-09-03T08:20:58.836Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "5f41b404-271e-4b79-908d-3652a6475e30"
+      ],
+      "observedAt": "2026-09-03T08:20:58.836Z",
+      "deleted": false
+    },
+    {
+      "id": "d1f720d9-8774-4474-b117-e35e70c842f2",
+      "category": "solutions",
+      "title": "agent 根目录直跑 vitest 污染真实状态文件事故与守门",
+      "content": "从 ~/.pi/agent 根直跑 vitest 绕过扩展 vitest.config.ts 别名，getAgentDir() 解析到真实目录，watchdog.test.ts 写入真实状态文件。守门：1) 必须在扩展目录下运行 vitest（如 extensions/pi-autopilot/）；2) 测试用临时目录环境变量隔离（PI_ADMIN_STATE_FILE、PI_CONTEXT_STATE_FILE）；3) CI/本地 test-all.sh 已强制扩展级测试，禁止根目录测试。",
+      "tags": [
+        "vitest",
+        "testing",
+        "state-pollution",
+        "guard"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:21:31.888Z",
+      "updatedAt": "2026-09-03T08:21:31.888Z",
+      "accessedAt": "2026-09-03T08:21:31.888Z",
+      "environments": [
+        "all"
+      ],
+      "links": [
+        "15986526-f641-4994-874d-b6b6c8537fdc"
+      ],
+      "observedAt": "2026-09-03T08:21:31.888Z",
+      "deleted": false
+    },
+    {
+      "id": "f2ee8378-1095-4260-a331-54f9329dc172",
+      "category": "solutions",
+      "title": "扩展命令补全修复",
+      "content": "修复 pi 扩展 slash 命令的子命令补全功能（getArgumentCompletions），确保 help/-h/--help 与子命令参数正确补全。符合扩展命令整合规范：同一扩展 slash 命令 ≤2 个，子命令参数实现。",
+      "tags": [
+        "pi",
+        "extension",
+        "completion",
+        "slash-command"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:33:46.861Z",
+      "updatedAt": "2026-09-03T08:33:46.861Z",
+      "accessedAt": "2026-09-03T08:33:46.861Z",
+      "observedAt": "2026-09-03T08:33:46.861Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
+      "deleted": false
+    },
+    {
+      "id": "3edce463-e292-49ac-a8c9-970bae1ba368",
+      "category": "procedure",
+      "title": "entries.json 冲突三方比对",
+      "content": "处理 pi-memory entries.json 多环境冲突时，采用三方比对法：基于共同祖先、本地变更、远程变更三方合并，避免直接覆盖导致记忆丢失。entries.json 入库共享，其余运行时数据隔离。",
+      "tags": [
+        "pi-memory",
+        "git",
+        "conflict-resolution",
+        "multi-env"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:33:46.862Z",
+      "updatedAt": "2026-09-03T08:33:46.862Z",
+      "accessedAt": "2026-09-03T08:33:46.862Z",
+      "observedAt": "2026-09-03T08:33:46.862Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
+      "deleted": false
+    },
+    {
+      "id": "32598d61-c364-42ab-9faf-2bfffd1f96e4",
+      "category": "solutions",
+      "title": "install-wrapper readlink bug 修复",
+      "content": "修复 install-wrapper 脚本中 readlink -f 在某些环境（如 Termux/BusyBox）不支持的问题，改用兼容性更好的 realpath 或自定义路径解析逻辑。",
+      "tags": [
+        "install-wrapper",
+        "readlink",
+        "compat",
+        "termux"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:33:46.862Z",
+      "updatedAt": "2026-09-03T08:33:46.862Z",
+      "accessedAt": "2026-09-03T08:33:46.862Z",
+      "observedAt": "2026-09-03T08:33:46.862Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
+      "deleted": false
+    },
+    {
+      "id": "affa5922-030b-4d43-b073-7f8065c04d9f",
+      "category": "procedure",
+      "title": "pi-autopilot 状态隔离",
+      "content": "确保 pi-autopilot 定时调度/看门狗/failover/预算功能的状态文件按环境隔离存储，避免多设备同步配置时状态污染。状态文件不入库，仅配置文件共享。",
+      "tags": [
+        "pi-autopilot",
+        "state-isolation",
+        "multi-device"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:33:46.862Z",
+      "updatedAt": "2026-09-03T08:33:46.862Z",
+      "accessedAt": "2026-09-03T08:33:46.862Z",
+      "observedAt": "2026-09-03T08:33:46.862Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
+      "deleted": false
+    },
+    {
+      "id": "5cec2803-cfd6-43ac-8d1e-b3b9c8da652c",
+      "category": "solutions",
+      "title": "rebuild 后台执行回退",
+      "content": "修复 rebuild.sh 后台执行时 tmux_run 默认自动退出导致的同步等待问题，改用 pattern= 匹配完成标志且 timeout≤60s，或显式使用 until_exit 仅限自然退出命令。禁止阻塞前台。",
+      "tags": [
+        "rebuild",
+        "tmux",
+        "background",
+        "async"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:33:46.862Z",
+      "updatedAt": "2026-09-03T08:33:46.862Z",
+      "accessedAt": "2026-09-03T08:33:46.862Z",
+      "observedAt": "2026-09-03T08:33:46.862Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
+      "deleted": false
+    },
+    {
+      "id": "7963a177-7955-42f4-a455-69357891270d",
+      "category": "solutions",
+      "title": "vitest 根目录污染守门",
+      "content": "在 test-all.sh 中增加 cache-guard 检查，防止 vitest 运行时向项目根目录写入临时文件/缓存，污染工作树。守门机制在 --fast 模式下跳过。",
+      "tags": [
+        "vitest",
+        "test-all",
+        "cache-guard",
+        "pollution"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T08:33:46.862Z",
+      "updatedAt": "2026-09-03T08:33:46.862Z",
+      "accessedAt": "2026-09-03T08:33:46.862Z",
+      "observedAt": "2026-09-03T08:33:46.862Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
+      "deleted": false
+    },
+    {
+      "id": "9f582395-f36c-4576-ac0f-28b40cf72d7e",
+      "category": "procedure",
+      "title": "任务记录真实性判定流程",
+      "content": "通过 tools 调用数、search hits、output 字节三指标判定：tools>0 且 hits>0 为实质任务；tools=0、hits=0、out≈0 为空壳记录，直接过滤不存 memory、不写草稿。",
+      "tags": [
+        "任务管理",
+        "噪音过滤",
+        "判定标准"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T12:34:31.576Z",
+      "updatedAt": "2026-09-03T12:34:31.576Z",
+      "accessedAt": "2026-09-03T12:34:31.576Z",
+      "observedAt": "2026-09-03T12:34:31.576Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06734-d16c-7db7-82f5-d00e4a95d869",
+      "deleted": false
+    },
+    {
+      "id": "5281c6b4-1324-4cec-9da3-c5397d0e6456",
+      "category": "preference",
+      "title": "Memory 创建门槛：精确可复现",
+      "content": "仅当具备具体修改文件列表、修复根因、审查清单等可复现细节时才创建 procedure/solutions 类 memory，confidence 0.6 为蒸馏产物上限，直接观察事实为 0.9-1.0。",
+      "tags": [
+        "记忆管理",
+        "质量门槛",
+        "置信度校准"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T12:34:31.576Z",
+      "updatedAt": "2026-09-03T12:34:31.576Z",
+      "accessedAt": "2026-09-03T12:34:31.576Z",
+      "observedAt": "2026-09-03T12:34:31.576Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06734-d16c-7db7-82f5-d00e4a95d869",
+      "deleted": false
+    },
+    {
+      "id": "9c6a1916-0d34-41f5-8f46-9925c38dab88",
+      "category": "fact",
+      "title": "任务1/2 统计特征画像",
+      "content": "任务1（修复）：77K tokens、69 tools、0 hits → 已知代码库定向改动。任务2（代码审查）：58K tokens、29 tools、38K hits → 广度扫描+定点核对。可用于后续任务类型快速识别。",
+      "tags": [
+        "任务画像",
+        "统计特征",
+        "类型识别"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-03T12:34:31.577Z",
+      "updatedAt": "2026-09-03T12:34:31.577Z",
+      "accessedAt": "2026-09-03T12:34:31.577Z",
+      "observedAt": "2026-09-03T12:34:31.577Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06734-d16c-7db7-82f5-d00e4a95d869",
+      "deleted": false
     }
   ]
 }
