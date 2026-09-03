@@ -126,6 +126,7 @@ async function main() {
       'memory_store', 'memory_search', 'memory_stats', 'memory_forget', 'memory_recall',
       'schedule_task', 'ctx_exec', 'ctx_note', 'ctx_list', 'ctx_snap',
       'todo', 'subagent', 'plan_enter', 'plan_exit',
+      'ask_user', // plan-mode 用户交互
       'web_search', 'fetch_url', 'web_fetch',
       'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
       'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
@@ -156,7 +157,7 @@ async function main() {
     }
     // 命令整合规范（2026-09）：每扩展 ≤2 命令，具体功能用子命令参数指定，description 标注 help 用法；
     // 新增命令必须同步更新此清单（防 / 菜单噪音回归）
-    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link', 'tools', 'intervention']
+    const expected = ['auto', 'schedule', 'memory', 'plan', 'usage-diag', 'voice', 'link', 'tools', 'intervention', 'mode', 'webui']
     const actual = Object.keys(cmdMap).sort()
     const missing = expected.filter((c) => !cmdMap[c])
     const extra = actual.filter((c) => !expected.includes(c))
