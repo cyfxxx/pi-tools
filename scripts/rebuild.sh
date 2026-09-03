@@ -1353,7 +1353,7 @@ if [ -z "$PI_DIST" ]; then
 elif [ "$SKIP_PATCHES" = "1" ]; then
   warn "--skip-patches：跳过补丁版本校验与全部 TUI 补丁（临时逃生）"
 else
-# 版本关联校验（2026-08-19）：9 个 patch-*.mjs 头部声明 @target-version <major.minor>，
+# 版本关联校验（2026-08-19）：10 个 patch-*.mjs 头部声明 @target-version <major.minor>，
 # 与当前 pi 版本失配时显式失败——避免 pi update 后补丁静默失效（footer 无实时 token / 回车被吞等回退）
 if node "$PI_HOME/scripts/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
   ok "补丁目标版本匹配（$(node -e "console.log(require('$(dirname "$PI_DIST")/package.json').version)" 2>/dev/null)）"
@@ -1419,6 +1419,13 @@ if [ -f "$PI_HOME/scripts/patch-tab-arg-completion.mjs" ]; then
     || warn "Tab 参数补全补丁未应用（pi-tui 版本可能已改动）：斜杠命令有空格时 Tab 仍走文件补全，子命令需手动删空格重打空格触发"
 else
   warn "patch-tab-arg-completion.mjs 缺失，跳过"
+fi
+if [ -f "$PI_HOME/scripts/patch-autocomplete-startswith.mjs" ]; then
+  node "$PI_HOME/scripts/patch-autocomplete-startswith.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "Autocomplete startswith 类型守恒补丁（修复 value.startsWith 崩溃）" \
+    || warn "Autocomplete 补丁未应用（pi-tui 版本可能已改动）：补全时遇到非字符串值仍会崩溃"
+else
+  warn "patch-autocomplete-startswith.mjs 缺失，跳过"
 fi
 fi
 
