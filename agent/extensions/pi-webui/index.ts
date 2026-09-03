@@ -92,7 +92,7 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
   let wss: import('ws').WebSocketServer | null = null
 
   // ── 设备在线追踪 (复用 pi-link 状态) ──────────────
-  hub.register({ readyState: 1, send: () => {} } as any, selfDevice, false)
+  hub.register({ readyState: 1, send: () => {}, on: () => {} } as any, selfDevice, false)
 
   // ── 消息路由 ──────────────────────────────────────
   function handleUserMessage(msg: ChatMessage): void {
