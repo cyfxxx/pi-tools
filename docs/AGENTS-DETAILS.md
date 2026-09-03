@@ -76,10 +76,11 @@ subagent 双轨：mjs 测试 `cd agent/extensions/subagent && node --experimenta
 `patch-plan-tools.mjs`（--continue 恢复会话的工具 schema）
 `patch-tab-arg-completion.mjs`（tab 参数补全）
 `patch-autocomplete-startswith.mjs`（autocomplete value.startsWith 类型守恒，修复非字符串值导致崩溃）
+`patch-fuzzy-match-type.mjs`（fuzzyMatch text.toLowerCase 类型守恒，修复非字符串值导致崩溃）
 `patch-compaction-warm-prefix.mjs`（压缩摘要暖前缀重放，2026-08-26 终态：compaction.js 加 setCompactionWarmPrefixProvider 注册点 + completeSummarization 的 produce 内注入 onPayload 桥——buildParams 之后、发送之前用主请求最终 payload 整体替换（缓存键原文，零二次转换；context 级重放已退役：v1/v1.5 实测均二次转换崩溃）+ 包根导出/类型同步；pi-context 按模型门控注册素材（自动前缀缓存家族才启用，overflow/近窗禁用），素材必须用 lastRequestPayload.tools/messages（最终转换版，原始工具定义会 422 缺 type）；实测：/compact rewrite-bridge 生效（baseMsgs=165/tailLen≈9.5K/tools=43，压缩后主请求 input=253/cacheRead=47360））
 `patch-playwright-core.mjs`（Termux android→linux 平台补丁）
 
-共 10 个 patch 文件由 rebuild.sh 自动执行（幂等）：9 个无条件（上列除 playwright-core 外全部）+ `patch-playwright-core.mjs` 仅 Termux 条件执行；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行对应脚本）。
+共 11 个 patch 文件由 rebuild.sh 自动执行（幂等）：10 个无条件（上列除 playwright-core 外全部）+ `patch-playwright-core.mjs` 仅 Termux 条件执行；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行对应脚本）。
 
 footer 状态栏口径速查：`Σ/↑/↓`=会话累计（Σ=总输入=命中+未命中 / ↑=累计未命中输入 / ↓=累计输出）；`CH{x}/{y}%`=左实时（最近一轮）/右会话累计；context 区 `34.5k/200k`=实时/窗口（>40% 追加 ⚠ 提示重启前先压缩、>70% 黄、>90% 红，无括号百分比）；`¥`=成本人民币（参考汇率 6.77=2026-08 近 90 天中位数，常量在 patch-footer-format.mjs，改汇率后重跑自动更新 dist）。
 

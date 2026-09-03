@@ -1353,7 +1353,7 @@ if [ -z "$PI_DIST" ]; then
 elif [ "$SKIP_PATCHES" = "1" ]; then
   warn "--skip-patches：跳过补丁版本校验与全部 TUI 补丁（临时逃生）"
 else
-# 版本关联校验（2026-08-19）：10 个 patch-*.mjs 头部声明 @target-version <major.minor>，
+# 版本关联校验（2026-08-19）：11 个 patch-*.mjs 头部声明 @target-version <major.minor>，
 # 与当前 pi 版本失配时显式失败——避免 pi update 后补丁静默失效（footer 无实时 token / 回车被吞等回退）
 if node "$PI_HOME/scripts/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
   ok "补丁目标版本匹配（$(node -e "console.log(require('$(dirname "$PI_DIST")/package.json').version)" 2>/dev/null)）"
@@ -1426,6 +1426,13 @@ if [ -f "$PI_HOME/scripts/patch-autocomplete-startswith.mjs" ]; then
     || warn "Autocomplete 补丁未应用（pi-tui 版本可能已改动）：补全时遇到非字符串值仍会崩溃"
 else
   warn "patch-autocomplete-startswith.mjs 缺失，跳过"
+fi
+if [ -f "$PI_HOME/scripts/patch-fuzzy-match-type.mjs" ]; then
+  node "$PI_HOME/scripts/patch-fuzzy-match-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
+    && ok "Fuzzy match 类型守恒补丁（修复 text.toLowerCase 崩溃）" \
+    || warn "Fuzzy match 补丁未应用（pi-tui 版本可能已改动）：模糊匹配遇到非字符串值仍会崩溃"
+else
+  warn "patch-fuzzy-match-type.mjs 缺失，跳过"
 fi
 fi
 
