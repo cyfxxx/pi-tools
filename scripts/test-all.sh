@@ -153,15 +153,30 @@ cyn "== 文档一致性守门（doc-lint） =="
 "$NODE" "$PI_HOME/scripts/doc-lint.mjs" >/dev/null 2>&1
 report $? "doc-lint (README 工具/slash 命令清单一致)"
 
-cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载） =="
-"$NODE" -e "
-const fs = require('fs');
+cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载，settings.json 覆盖规则动态比对） =="
+"$NODE" -e '
+const fs = require("fs");
 const extDir = process.argv[1];
-const required = ['subagent','pi-context','plan-mode','pi-autopilot','pi-memory','pi-web-search','pi-browser','pi-tmux','pi-voice','pi-link','pi-intervention'];
-const missing = required.filter(e => !fs.existsSync(extDir + '/' + e + '/index.ts'));
-if (missing.length) { console.error('missing:', missing.join(', ')); process.exit(1); }
-" "$EXTS" >/dev/null 2>&1
-report $? "11 个扩展目录 index.ts 齐备"
+const cfgPath = process.argv[2];
+const ex = (n) => fs.existsSync(extDir + "/" + n + "/index.ts");
+const dirs = fs.readdirSync(extDir, { withFileTypes: true })
+  .filter(d => d.isDirectory() && !["tests", "types", "node_modules"].includes(d.name))
+  .map(d => d.name);
+let rules = [];
+try { rules = JSON.parse(fs.readFileSync(cfgPath, "utf-8")).extensions || []; } catch {}
+const excluded = new Set(rules.filter(r => r[0] === "!" || r[0] === "-").map(r => r.slice(1)));
+const forced = rules.filter(r => r[0] === "+").map(r => r.slice(1));
+const discovered = dirs.filter(ex).filter(n => !excluded.has(n));
+const missing = forced.filter(n => !ex(n));
+const idxLess = dirs.filter(n => !ex(n) && !excluded.has(n));
+const errs = [];
+if (missing.length) errs.push("forced-include 缺 index.ts: " + missing.join(","));
+if (idxLess.length) errs.push("目录缺 index.ts 且未被覆盖排除: " + idxLess.join(","));
+console.log("发现 " + discovered.length + " 个扩展: " + discovered.join(", "));
+if (rules.length) console.log("settings.json 覆盖规则(" + rules.length + "): " + rules.join(" "));
+if (errs.length) { console.error("ERR: " + errs.join(" | ")); process.exit(1); }
+' "$EXTS" "$PI_HOME/agent/settings.json"
+report $? "扩展目录 index.ts 齐备（动态发现 + 覆盖规则比对）"
 
 if [ "$FAILED" -gt 0 ]; then
   printf '\n\033[0;31m✗ 回归失败（%s 项）\033[0m\n' "$FAILED"
