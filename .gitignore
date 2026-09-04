@@ -93,6 +93,9 @@ logs/
 agent/.pi-tmux-registry.json
 agent/pi-voice.json
 
+# pi-webui 运行时数据（config.json 含明文 authToken、messages/ 聊天记录，不入库）
+/webui/
+
 
 # 类型链接与 wrapper 运行时锚点
 agent/extensions/node_modules/
