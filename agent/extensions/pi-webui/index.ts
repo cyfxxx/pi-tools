@@ -29,7 +29,7 @@ import { DEFAULT_CONFIG } from './types.ts'
 import { WsHub } from './ws-hub.ts'
 import { DeviceBridge, loadLinkConfig } from './device-bridge.ts'
 import { appendMessage, setMaxHistory } from './message-store.ts'
-import { extractFinalReply, isTrivialReply, createAgentReplyMessage } from './pi-agent-hook.ts'
+import { extractFinalReply, isTrivialReply, createAgentReplyMessage, resolveReplyTarget } from './pi-agent-hook.ts'
 import { createWebuiServer, mergeDeviceStatuses, type ServerContext } from './server.ts'
 import { nanoid } from './nanoid.ts'
 
@@ -94,19 +94,12 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
   const linkConfig = loadLinkConfig()
   const bridge = new DeviceBridge(linkConfig, selfDevice)
 
-  // 最近一次用户消息的目标会话（群聊=null / 私聊=设备名）。agent_end 回复沿用同一 target 路由，
-  // 避免私聊回复被硬编码为群聊广播。
-  let lastUserTarget: string | null = null
-
   let serverCtx: ServerContext | null = null
   let httpServer: ReturnType<typeof import('node:http').createServer> | null = null
   let wss: import('ws').WebSocketServer | null = null
 
   // ── 消息路由 ──────────────────────────────────────
   function handleUserMessage(msg: ChatMessage): void {
-    // 记录本次触发 agent 的目标会话，供 agent_end 回复沿用路由
-    lastUserTarget = msg.target
-
     if (msg.target === null) {
       // 群聊: 广播 + 送本地 agent（带来源标签）
       bridge.broadcastToDevices(msg)
@@ -137,14 +130,14 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
 
   // ── pi agent 钩子 ─────────────────────────────────
 
-  // agent_end: 捕获 agent 回复，作为聊天消息。回复路由沿用触发它的用户消息 target：
+  // agent_end: 捕获 agent 回复，作为聊天消息。回复路由由触发它的 user 消息来源标签决定：
   // 群聊→广播所有设备；私聊→回到对应设备会话并通知用户客户端。
+  // 来源用 resolveReplyTarget 从对话历史解析，而非“最近一次 target”全局状态（避免串话/竞态）。
   pi.on('agent_end', (event: { messages?: unknown[] }) => {
     const reply = extractFinalReply(event.messages ?? [])
     if (!reply || isTrivialReply(reply)) return
 
-    // 私聊回复 target 设为 'user'（发给用户），senderDevice 即对方设备名，前端据此路由到私聊会话
-    const isPrivate = lastUserTarget !== null && lastUserTarget !== 'group'
+    const isPrivate = resolveReplyTarget(event.messages ?? []) === 'user'
     const msg = createAgentReplyMessage(reply, selfDevice, isPrivate ? 'user' : null)
     appendMessage(msg)
     if (isPrivate) {

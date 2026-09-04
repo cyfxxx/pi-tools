@@ -218,14 +218,21 @@ export class DeviceBridge {
         if (was) this.onStatusChange?.()
       })
 
-      // 延迟标记在线，等待 SSH 实际连接成功
-      // 通过检测 stdout 第一行输出来判断连接建立
+      // 连接就绪判定：不盲标（此前固定 3s 无条件置 connected=true，
+      // 在 SSH 实际不可达时造成“假在线”瞬态——每 5s 重连+3s 盲标，刷新状态就变）。
+      // 改为：SSH 进程存活超过连接窗口（ConnectTimeout + 缓冲）才标 online，
+      // 即连接真建立（否则进程会在 ConnectTimeout 内因不可达而 close/error）。
+      const connectTimeoutMs = (cfg.sshArgs ?? []).some((a) => /^ConnectTimeout=/.test(a))
+        ? parseInt((cfg.sshArgs ?? []).find((a) => /^ConnectTimeout=/.test(a))!.split('=')[1], 10) * 1000
+        : 10000
+      const readyWindow = Math.max(connectTimeoutMs + 2000, 5000)
       const checkReady = setTimeout(() => {
+        // 进程仍存活（未 close/error 置 null）且尚未标 online → 连接真建立
         if (device.process && !device.connected) {
           device.connected = true
           this.onStatusChange?.()
         }
-      }, 3000)
+      }, readyWindow)
 
       proc.on('close', () => clearTimeout(checkReady))
     } catch (err) {

@@ -67,3 +67,26 @@ export function createAgentReplyMessage(
 export function agentReplyPrefix(): string {
   return '[pi] '
 }
+
+/**
+ * 从 agent_end 对话历史解析触发本次回复的最后一条 user 消息来源，决定回复路由：
+ * - 私聊来源标签（[来自 X 的私聊]）→ 返回 'user'（回复发给用户，前端按 senderDevice 路由到私聊会话）
+ * - 群聊来源标签 / 无标签历史消息 → 返回 null（群聊广播）
+ *
+ * 用对话历史而非“最近一次 target”全局状态，避免多消息排队异步时的串话/竞态
+ * （群聊消息的回复被错误路由到私聊）。
+ */
+export function resolveReplyTarget(messages: unknown[]): string | null {
+  if (!Array.isArray(messages)) return null
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i] as { role?: string; content?: unknown }
+    if (m?.role !== 'user') continue
+    const text = Array.isArray(m.content)
+      ? (m.content as Array<{ text?: string }>).map((c) => c?.text ?? '').join(' ').trim()
+      : typeof m.content === 'string' ? m.content.trim() : ''
+    if (!text) continue
+    if (/^\[来自\s+.+的私聊\]/.test(text)) return 'user'
+    return null
+  }
+  return null
+}

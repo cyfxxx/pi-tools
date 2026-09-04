@@ -295,8 +295,12 @@ function handleWsMessage(
   switch (envelope.type) {
     case 'chat': {
       const msg = envelope.payload as ChatMessage
-      // 补充来源信息
-      msg.senderDevice = sourceDevice
+      // 补充来源信息：senderDevice 统一为本机（WebUI 用户即本机设备），
+      // 与 REST 入口 senderDevice=selfDevice 对齐，否则前端私聊 filter 因 senderDevice='user'
+      // 匹配不到而不显示。注意：sender 保持 'user'（用户身份），不能改成本机名——
+      // 前端 ChatView 私聊条件2 依赖 sender==='user' 来识别“本机用户发出的消息”。
+      msg.senderDevice = ctx.selfDevice
+      if (!msg.sender) msg.sender = 'user'
       if (!msg.id) msg.id = nanoid()
       if (!msg.ts) msg.ts = Date.now()
 
