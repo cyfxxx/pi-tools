@@ -73,7 +73,7 @@ export function useWebSocket(
     ws.onerror = () => {
       ws.close()
     }
-  }, [authToken])
+  }, [deviceName, authToken])
 
   const handleEnvelope = useCallback((envelope: WsEnvelope) => {
     switch (envelope.type) {

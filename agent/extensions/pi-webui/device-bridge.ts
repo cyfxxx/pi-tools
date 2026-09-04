@@ -63,6 +63,8 @@ function hostname(): string {
 export class DeviceBridge {
   private devices = new Map<string, BridgeDevice>()
   private onMessage?: (msg: ChatMessage) => void
+  /** SSH 连接状态变化回调（用于推送最新设备列表） */
+  onStatusChange?: () => void
 
   constructor(
     private linkConfig: LinkConfig,
@@ -196,9 +198,11 @@ export class DeviceBridge {
       })
 
       proc.on('close', (code) => {
+        const was = device.connected
         device.connected = false
         device.process = null
         device.lastError = `exit code ${code}`
+        if (was) this.onStatusChange?.()
         // 自动重连 (延迟 5s)
         setTimeout(() => {
           if (!device.connected) {
@@ -208,8 +212,10 @@ export class DeviceBridge {
       })
 
       proc.on('error', (err) => {
+        const was = device.connected
         device.connected = false
         device.lastError = err.message.slice(0, 200)
+        if (was) this.onStatusChange?.()
       })
 
       // 延迟标记在线，等待 SSH 实际连接成功
@@ -217,6 +223,7 @@ export class DeviceBridge {
       const checkReady = setTimeout(() => {
         if (device.process && !device.connected) {
           device.connected = true
+          this.onStatusChange?.()
         }
       }, 3000)
 

@@ -32,9 +32,11 @@ export class WsHub {
     list.push(info)
     this.clients.set(device, list)
 
-    // 标记在线
-    this.deviceOnline.set(device, true)
-    this.broadcastPresence(device, true)
+    // 标记在线（浏览器占位身份 isUser 不计为设备，不参与在线广播）
+    if (!isUser) {
+      this.deviceOnline.set(device, true)
+      this.broadcastPresence(device, true)
+    }
 
     ws.on('close', () => {
       const arr = this.clients.get(device)
@@ -43,8 +45,10 @@ export class WsHub {
       if (idx !== -1) arr.splice(idx, 1)
       if (arr.length === 0) {
         this.clients.delete(device)
-        this.deviceOnline.set(device, false)
-        this.broadcastPresence(device, false)
+        if (!info.isUser) {
+          this.deviceOnline.set(device, false)
+          this.broadcastPresence(device, false)
+        }
       }
     })
 

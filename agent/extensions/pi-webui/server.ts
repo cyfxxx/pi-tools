@@ -37,8 +37,11 @@ export interface ServerContext {
   hub: WsHub
   staticDir: string
   selfDevice: string
-  /** 设备桥接 (用于获取 SSH 连接状态) */
-  bridge?: { getDeviceStatus(): Array<{ name: string; online: boolean; error?: string }> }
+  /** 设备桥接 (用于获取 SSH 连接状态；onStatusChange 由服务端接管用于推送设备列表) */
+  bridge?: {
+    getDeviceStatus(): Array<{ name: string; online: boolean; error?: string }>
+    onStatusChange?: () => void
+  }
   /** 外部提供的消息处理回调 */
   onUserMessage?: (msg: ChatMessage) => void
 }
@@ -237,6 +240,13 @@ export function createWebuiServer(
 
   // WebSocket
   const wss = new WebSocketServer({ server, path: '/ws' })
+
+  // SSH 桥接状态变化时，向所有客户端推送最新设备列表
+  if (ctx.bridge) {
+    ctx.bridge.onStatusChange = () => {
+      hub.broadcastDeviceList(mergeDeviceStatuses(hub, ctx.bridge, selfDevice))
+    }
+  }
 
   wss.on('connection', (ws, req) => {
     // 从 query 参数获取设备名和身份
