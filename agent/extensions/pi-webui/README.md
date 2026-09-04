@@ -88,6 +88,23 @@ pi-webui/
 └── ui/                   # 前端源码 (React/Vite)
 ```
 
+## 设备在线状态
+
+`server.ts` 的 `mergeDeviceStatuses()` 是**唯一**设备状态来源，`/api/devices` 与 WebSocket 初始 `device_list` 共用，与 `/webui status` 保持一致。合并规则：
+
+| 来源 | 覆盖设备 | 在线含义 |
+|------|----------|----------|
+| 本机 self | `selfDevice` | 恒在线（服务提供方） |
+| SSH 桥接 | pi-link 清单除 self | 目标设备 `pi --mode rpc` 子进程存活 |
+| WebSocket | 任意设备名 | 该设备以设备身份连上 `/ws` |
+
+实现约束（改动时勿回退）：
+
+- **以设备集合为遍历基准**：先 self，再 bridge 设备，最后补 hub 独有设备。不可只遍历 hub 状态，否则仅有 SSH 的远程设备与本机都会从列表消失
+- **浏览器占位身份 `device=user&user=1` 不是设备**：不计入 `deviceOnline`、不广播 `presence`，否则侧边栏多出 `user` 会话
+- **认证覆盖面**：仅 `/api/*` 需鉴权（`Authorization: Bearer <token>` 或 `?token=`），静态资源与首页放行；`/ws` 握手在 `wss.on('connection')` 内单独校 `?token=`，不匹配则 `close(4001)`。首次启动自动生成 token 写入 `config.json`
+- **`device_list` 需随状态变化推送**：bridge 的 `onStatusChange`（SSH 连上/断开）触发 `hub.broadcastDeviceList()`。仅在 WS 建连时发一次会停留在旧状态——bridge 延迟 3s 才标记在线，列表会一直显示离线
+
 ## 开发
 
 ```bash

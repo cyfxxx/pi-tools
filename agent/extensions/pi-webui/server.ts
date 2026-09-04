@@ -76,8 +76,8 @@ function sendJson(res: ServerResponse, status: number, data: unknown): void {
   res.end(JSON.stringify(data))
 }
 
-/** 设备在线状态合并结果 */
-interface DeviceStatusResult {
+/** 设备在线状态合并结果（/api/devices、WS device_list、/webui status 共用） */
+export interface DeviceStatusResult {
   name: string
   online: boolean
   wsConnected: boolean
@@ -92,7 +92,7 @@ interface DeviceStatusResult {
  * - hub 真实设备：WebSocket 在线状态
  * 过滤浏览器占位身份 'user' 及重复项。
  */
-function mergeDeviceStatuses(
+export function mergeDeviceStatuses(
   hub: WsHub,
   bridge: ServerContext['bridge'],
   selfDevice: string

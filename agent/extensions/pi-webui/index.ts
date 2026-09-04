@@ -30,7 +30,7 @@ import { WsHub } from './ws-hub.ts'
 import { DeviceBridge, loadLinkConfig } from './device-bridge.ts'
 import { appendMessage, setMaxHistory } from './message-store.ts'
 import { extractFinalReply, isTrivialReply, createAgentReplyMessage } from './pi-agent-hook.ts'
-import { createWebuiServer, type ServerContext } from './server.ts'
+import { createWebuiServer, mergeDeviceStatuses, type ServerContext } from './server.ts'
 import { nanoid } from './nanoid.ts'
 
 const CONFIG_PATH = join(homedir(), '.pi', 'webui', 'config.json')
@@ -184,19 +184,20 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
       }
 
       if (sub === 'status') {
-        const bridgeStatuses = bridge.getDeviceStatus()
-        const hubStatuses = hub.getAllDeviceStatus()
+        // 与 /api/devices、WS device_list 共用同一合并逻辑，避免 CLI 与网页不一致
+        const devices = mergeDeviceStatuses(hub, bridge, selfDevice)
         const lines = [
           `WebUI: ${httpServer ? '运行中' : '未启动'}`,
           `地址: http://${config.host}:${config.port}`,
           `Token: ${config.authToken.slice(0, 8)}...`,
           '',
           '设备状态:',
-          `  ${selfDevice} (本机) ● 在线`,
-          ...bridgeStatuses.map(s => {
-            const hubStatus = hubStatuses.find(h => h.name === s.name)
-            const wsConnected = hubStatus?.online ?? false
-            return `  ${s.name} ${s.online ? '● 在线' : '○ 离线'}${wsConnected ? ' (WS已连接)' : ''}${s.error ? ` (${s.error})` : ''}`
+          ...devices.map(d => {
+            const tags: string[] = []
+            if (d.wsConnected) tags.push('WS已连接')
+            if (d.sshConnected) tags.push('SSH已连接')
+            if (d.error) tags.push(d.error)
+            return `  ${d.name}${d.name === selfDevice ? ' (本机)' : ''} ${d.online ? '● 在线' : '○ 离线'}${tags.length ? ` (${tags.join(', ')})` : ''}`
           }),
         ]
         ctx.ui.notify(lines.join('\n'), 'info')
