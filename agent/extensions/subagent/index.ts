@@ -422,6 +422,26 @@ function resolveModelId(
 	return undefined;
 }
 
+// ── 任务风险分级（Anthropic 1σ/2σ/3σ 模式的轻量实现） ──
+export type RiskLevel = "1σ" | "2σ" | "3σ";
+
+/** 危险关键词：命中即升级为 3σ（高风险，禁止自动合入/需人工确认） */
+const HIGH_RISK_RE = /\brm\s+-[rRf]|DROP\s+TABLE|DROP\s+DATABASE|\bmigrate\b|\bbackup\b.*\bdelet|production|prod\b|\bdeploy\b.*\brollback/i
+/** 中风险关键词：命中升级为 2σ（中风险，AI 初审后抽检） */
+const MED_RISK_RE = /\bwrite\b|\bedit\b|\bbash\b.*\binstall\b|\bnpm\s+i\b|\bpip\s+install\b|\bchmod\b|\bchown\b|\bsystemctl\b/i
+
+export function classifyTaskRisk(task: string): RiskLevel {
+  if (HIGH_RISK_RE.test(task)) return "3σ"
+  if (MED_RISK_RE.test(task)) return "2σ"
+  return "1σ"
+}
+
+/** 风险等级对应的工具限制：3σ 限制写操作，2σ 记录日志 */
+export function riskToolRestrictions(level: RiskLevel): string[] | null {
+  if (level === "3σ") return ["read", "grep", "find", "ls"]  // 3σ 只读，需人工确认后解除
+  return null // 1σ/2σ 不限制工具
+}
+
 export const DEFAULT_SYSTEM_PROMPT = `你是通用子代理，在独立上下文中执行委派的任务。
 
 ## 工作方式
@@ -476,6 +496,33 @@ async function runSingleAgent(
 	return runSubprocessAgent(agent, defaultCwd, task, cwd, step, signal, onUpdate, makeDetails, currentModel);
 }
 
+/**
+ * 查找当前活跃的 plan.md（Anthropic 工件流转模式）。
+ * 扫描 plans/ 目录，取最新的 plan.md 文件内容（最多 2KB 注入上下文）。
+ */
+function findActivePlan(): string | null {
+	try {
+		const plansDir = path.join(os.homedir(), '.pi', 'plans')
+		if (!fs.existsSync(plansDir)) return null
+		const entries = fs.readdirSync(plansDir, { withFileTypes: true })
+			.filter(e => e.isDirectory() && e.name.startsWith('plan-'))
+		if (entries.length === 0) return null
+		// 按目录名排序（plan-YYYYMMDD-HHmmss），取最新
+		entries.sort((a, b) => b.name.localeCompare(a.name))
+		for (const entry of entries) {
+			const planPath = path.join(plansDir, entry.name, 'plan.md')
+			if (fs.existsSync(planPath)) {
+				const content = fs.readFileSync(planPath, 'utf-8')
+				// 截断到 2KB，防止上下文膨胀
+				return content.length > 2048 ? content.slice(0, 2048) + '\n...（已截断）' : content
+			}
+		}
+		return null
+	} catch {
+		return null
+	}
+}
+
 async function runSubprocessAgent(
 	agent: AgentConfig,
 	defaultCwd: string,
@@ -519,7 +566,13 @@ async function runSubprocessAgent(
 
 	try {
 		if (agent.systemPrompt.trim()) {
-			const tmp = await writePromptToTempFile(agent.name, buildAgentPrompt(agent));
+			// 工件流转（Anthropic 模式）：自动注入活跃的 plan.md 作为上游工件上下文
+			let fullPrompt = buildAgentPrompt(agent);
+			const activePlan = findActivePlan();
+			if (activePlan) {
+				fullPrompt += `\n\n---\n## 当前活跃计划（plan.md）\n以下是最新的执行计划，请确保你的工作对齐此计划：\n\n${activePlan}`;
+			}
+			const tmp = await writePromptToTempFile(agent.name, fullPrompt);
 			tmpPromptDir = tmp.dir;
 			tmpPromptPath = tmp.filePath;
 			args.push("--append-system-prompt", tmpPromptPath);
@@ -903,6 +956,10 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			if (params.agent && params.task) {
+				// 风险分级（Anthropic 1σ/2σ/3σ）：根据任务内容自动分级
+				const riskLevel = classifyTaskRisk(params.task);
+				const riskHint = riskLevel !== "1σ" ? ` [risk=${riskLevel}]` : "";
+
 				const result = await runSingleAgent(
 					ctx.cwd,
 					agents,
@@ -919,7 +976,7 @@ export default function (pi: ExtensionAPI) {
 				if (isError) {
 					const errorMsg = getResultOutput(result);
 					return {
-						content: [{ type: "text", text: `Agent ${result.stopReason || "failed"}: ${errorMsg}` }],
+						content: [{ type: "text", text: `Agent ${result.stopReason || "failed"}${riskHint}: ${errorMsg}` }],
 						details: makeDetails("single")([result]),
 						isError: true,
 					};
@@ -927,7 +984,7 @@ export default function (pi: ExtensionAPI) {
 				return {
 					// 审计 MEDIUM：single/chain 此前无字节封顶，超长子代理输出直入主会话
 					// 可挤爆上下文（parallel 已有 50KB cap）——同 cap 截断，完整输出仍在 details
-					content: [{ type: "text", text: truncateParallelOutput(getFinalOutput(result.messages) || "(no output)") }],
+					content: [{ type: "text", text: `${riskHint ? riskHint + " " : ""}${truncateParallelOutput(getFinalOutput(result.messages) || "(no output)")}` }],
 					details: makeDetails("single")([result]),
 				};
 			}
