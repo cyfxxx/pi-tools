@@ -203,6 +203,69 @@ export function recordToolEnable(group: string, via: "enable_tool" | "cmd"): voi
   }
 }
 
+// ── 工具调用结构化记录（证据链辅助，2026-09-04）──
+// 记录每次工具调用的完整元数据（名称、参数摘要、结果状态、耗时）到
+// agent/stats/tool-events.jsonl，供 pi-memory 证据链关联与 usage-stats 工具级耗时分析。
+// 与 ToolUseEvent（token 统计）互补：ToolUseEvent 记 token 量，此结构记调用语义。
+export interface ToolCallRecordEvent {
+  type: "tool-call";
+  ts: number;
+  tool: string;
+  /** 参数 JSON 截断至 maxArgLen（防超大 bash 命令/write 内容撑爆台账） */
+  args: string;
+  /** 结果摘要截断至 maxOutputLen */
+  result: string;
+  /** 成功/失败 */
+  ok: boolean;
+  /** 调用耗时 ms */
+  durationMs: number;
+}
+
+const MAX_TOOL_ARGS_LEN = 200;
+const MAX_TOOL_RESULT_LEN = 300;
+
+export function recordToolCallEvent(ev: {
+  tool: string;
+  args: Record<string, unknown>;
+  result?: string;
+  ok: boolean;
+  durationMs: number;
+}): void {
+  try {
+    const argsStr = JSON.stringify(ev.args ?? {}).slice(0, MAX_TOOL_ARGS_LEN);
+    const resultStr = (ev.result ?? "").slice(0, MAX_TOOL_RESULT_LEN);
+    const record: ToolCallRecordEvent = {
+      type: "tool-call",
+      ts: Date.now(),
+      tool: ev.tool,
+      args: argsStr,
+      result: resultStr,
+      ok: ev.ok,
+      durationMs: ev.durationMs,
+    };
+    appendFileSync(getToolEventsFile(), JSON.stringify(record) + "\n");
+  } catch {
+    // 记录失败静默
+  }
+}
+
+/** 读取工具调用记录（供 pi-memory 证据链与 usage-stats） */
+export function loadToolCallRecords(max = 5000): ToolCallRecordEvent[] {
+  try {
+    const lines = readFileSync(getToolEventsFile(), "utf-8").trim().split("\n").filter(Boolean);
+    const out: ToolCallRecordEvent[] = [];
+    for (const line of lines.slice(-max)) {
+      try {
+        const e = JSON.parse(line);
+        if (e && e.type === "tool-call") out.push(e);
+      } catch { /* 损坏行跳过 */ }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 /** 读取工具启用事件台账（供 usage-stats 等诊断工具） */
 export function loadToolEnableEvents(): ToolEnableEvent[] {
   try {

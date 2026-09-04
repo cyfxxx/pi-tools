@@ -1,0 +1,6 @@
+ M agent/extensions/pi-link/index.ts
+ M memory/entries.json
+?? .snapshots/
+?? memory/daily-results/results-localhost.jsonl
+?? packs/drafts/
+?? webui/

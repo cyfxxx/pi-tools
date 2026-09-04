@@ -16,16 +16,19 @@ describe('assertPlanSubagentAllowed 规划模式 subagent 拦截', () => {
     expect(assertPlanSubagentAllowed(input)).toBeNull()
   })
 
-  it('拒绝 worker/reviewer', () => {
+  it('允许 reviewer（盲审）', () => {
+    expect(assertPlanSubagentAllowed({ agent: 'reviewer', task: 'x' })).toBeNull()
+  })
+
+  it('拒绝 worker', () => {
     expect(assertPlanSubagentAllowed({ agent: 'worker', task: 'x' })).toBeTypeOf('string')
-    expect(assertPlanSubagentAllowed({ agent: 'reviewer', task: 'x' })).toMatch(/仅允许显式指定/)
   })
 
   it('拒绝未指定代理的默认 general-purpose（全工具可写）', () => {
-    expect(assertPlanSubagentAllowed({ task: 'x' })).toMatch(/仅允许显式指定/)
+    expect(assertPlanSubagentAllowed({ task: 'x' })).toMatch(/仅允许/)
   })
 
-  it('parallel/chain 混入非 scout 即拒绝', () => {
+  it('parallel/chain 混入非 scout/reviewer 即拒绝', () => {
     expect(assertPlanSubagentAllowed({ tasks: [{ agent: 'scout', task: 'a' }, { task: 'b' }] })).toMatch(/scout/)
     expect(assertPlanSubagentAllowed({ chain: [{ agent: 'worker', task: 'a' }] })).toMatch(/scout/)
   })

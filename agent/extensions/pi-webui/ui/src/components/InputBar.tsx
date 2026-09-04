@@ -3,15 +3,18 @@
  */
 
 import { useState, useRef, useCallback, type KeyboardEvent } from 'react'
+import type { ChatMessage } from '../lib/types'
 
 interface InputBarProps {
-  onSend: (text: string) => void
+  onSend: (text: string, replyTo?: string) => void
   onTyping: () => void
   disabled?: boolean
   placeholder?: string
+  replyTo?: ChatMessage
+  onClearReply?: () => void
 }
 
-export function InputBar({ onSend, onTyping, disabled, placeholder }: InputBarProps) {
+export function InputBar({ onSend, onTyping, disabled, placeholder, replyTo, onClearReply }: InputBarProps) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -19,20 +22,24 @@ export function InputBar({ onSend, onTyping, disabled, placeholder }: InputBarPr
   const handleSend = useCallback(() => {
     const trimmed = text.trim()
     if (!trimmed) return
-    onSend(trimmed)
+    onSend(trimmed, replyTo?.id)
     setText('')
+    onClearReply?.()
     // 重置 textarea 高度
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [text, onSend])
+  }, [text, onSend, replyTo?.id, onClearReply])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
-  }, [handleSend])
+    if (e.key === 'Escape' && replyTo) {
+      onClearReply?.()
+    }
+  }, [handleSend, replyTo, onClearReply])
 
   const handleChange = useCallback(() => {
     const value = textareaRef.current?.value ?? ''
@@ -55,6 +62,15 @@ export function InputBar({ onSend, onTyping, disabled, placeholder }: InputBarPr
 
   return (
     <div className="input-area">
+      {replyTo && (
+        <div className="reply-preview">
+          <div className="reply-preview-sender">
+            {replyTo.metadata?.piReplied ? `[pi] ${replyTo.senderDevice}` : replyTo.senderDevice}
+          </div>
+          <div className="reply-preview-content">{replyTo.content.slice(0, 60)}...</div>
+          <button className="reply-preview-close" onClick={onClearReply} title="取消引用">×</button>
+        </div>
+      )}
       <div className="input-wrapper">
         <textarea
           ref={textareaRef}
@@ -77,11 +93,4 @@ export function InputBar({ onSend, onTyping, disabled, placeholder }: InputBarPr
       </button>
     </div>
   )
-}
-
-interface InputBarProps {
-  onSend: (text: string) => void
-  onTyping: () => void
-  disabled?: boolean
-  placeholder?: string
 }

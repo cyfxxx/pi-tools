@@ -182,13 +182,32 @@ export default function (pi: ExtensionAPI): void {
       const parts = p.trim().split(/\s+/)
       const first = parts[0] ?? ''
       if (!p.includes(' ')) {
-        return ['send', 'status', 'help']
-          .filter((c) => c.startsWith(first))
-          .map((c) => ({ value: c + (c === 'send' ? ' ' : ''), label: c, description: c === 'send' ? '向设备发消息' : c === 'status' ? '设备清单与连通性' : '用法' }))
+        const base = ['send', 'status', 'watch', 'inbox', 'export-card', 'import-card', 'attach', 'help']
+          .filter(c => c.startsWith(first))
+        return base.map(c => ({
+          value: c + ' ',
+          label: c,
+          description: c === 'send' ? '向设备发消息' :
+                   c === 'status' ? '设备清单与连通性' :
+                   c === 'watch' ? '观察远程会话' :
+                   c === 'inbox' ? '读取远程信箱' :
+                   c === 'export-card' ? '生成设备卡片' :
+                   c === 'import-card' ? '导入设备卡片' :
+                   c === 'attach' ? '介入远程输入' :
+                   '用法'
+        }))
       }
       if (first === 'send' && parts.length === 2) {
         const sub = parts[1] ?? ''
-        return Object.keys(cfg.devices).filter((d) => d.startsWith(sub)).map((d) => ({
+        return Object.keys(cfg.devices).filter(d => d.startsWith(sub)).map(d => ({
+          value: d + ' ',
+          label: d,
+          description: describeDevice(d, cfg.devices[d]),
+        }))
+      }
+      if (first === 'watch' && parts.length === 2) {
+        const sub = parts[1] ?? ''
+        return Object.keys(cfg.devices).filter(d => d.startsWith(sub)).map(d => ({
           value: d + ' ',
           label: d,
           description: describeDevice(d, cfg.devices[d]),

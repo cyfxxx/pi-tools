@@ -1,0 +1,44 @@
+{
+  "default": "full",
+  "current": "full",
+  "modes": {
+    "full": {
+      "description": "完整模式 - 所有扩展和技能可用",
+      "extensions": [],
+      "skills": [],
+      "systemPrompt": null,
+      "appendSystemPrompt": null,
+      "thinking": null
+    },
+    "light": {
+      "description": "轻量模式 - 只保留搜索、计划模式和基础工具",
+      "extensions": [
+        "!pi-autopilot",
+        "!pi-intervention",
+        "!pi-voice",
+        "!subagent",
+        "!pi-link",
+        "!pi-browser",
+        "!pi-tmux",
+        "!pi-memory"
+      ],
+      "skills": [
+        "-skills/pi-translate-zh/SKILL.md",
+        "-skills/pi-backup/SKILL.md",
+        "-skills/pi-full-audit/SKILL.md",
+        "-skills/pi-repo-optimize/SKILL.md"
+      ],
+      "systemPrompt": null,
+      "appendSystemPrompt": "~/.pi/agent/modes/prompts/light-append.md",
+      "thinking": "low"
+    },
+    "quick": {
+      "description": "极简模式 - 只保留内置工具，无扩展无技能",
+      "extensions": ["!ALL"],
+      "skills": ["!ALL"],
+      "systemPrompt": null,
+      "appendSystemPrompt": "~/.pi/agent/modes/prompts/quick-append.md",
+      "thinking": "off"
+    }
+  }
+}

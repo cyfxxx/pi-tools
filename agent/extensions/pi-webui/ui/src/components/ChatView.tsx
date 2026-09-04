@@ -38,11 +38,11 @@ export function ChatView({
   onBack,
   onDeleted,
   onCleared,
-  onQuote,
 }: ChatViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [clearing, setClearing] = useState(false)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null)
 
   const handleClearChat = useCallback(async () => {
     setClearing(true)
@@ -57,6 +57,14 @@ export function ChatView({
   const handleDeleted = useCallback(() => {
     onDeleted?.()
   }, [onDeleted])
+
+  const handleClearReply = useCallback(() => {
+    setReplyTo(null)
+  }, [])
+
+  const handleQuote = useCallback((msg: ChatMessage) => {
+    setReplyTo(msg)
+  }, [])
 
   // 滚动到底部按钮
   useEffect(() => {
@@ -158,7 +166,7 @@ export function ChatView({
                 key={msg.id}
                 message={msg}
                 onDeleted={handleDeleted}
-                onQuote={onQuote}
+                onQuote={handleQuote}
               />
             )
           ))
@@ -187,6 +195,8 @@ export function ChatView({
         onTyping={onTyping}
         disabled={!connected}
         placeholder={chatId === 'group' ? '发送到群聊...' : `发送给 ${chatName}...`}
+        replyTo={replyTo ?? undefined}
+        onClearReply={handleClearReply}
       />
     </div>
   )

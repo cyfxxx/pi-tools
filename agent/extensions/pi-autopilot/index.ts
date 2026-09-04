@@ -18,6 +18,13 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
   pi.on('session_start', async () => {
     const config = await readAutopilotConfig()
 
+    // pi -p (print mode) 是一次性命令，不运行调度器，跳过锁获取
+    // 防止 subagent 子进程因锁冲突失败
+    const isPrintMode = process.argv.includes('--print') || process.argv.includes('-p')
+    if (isPrintMode) {
+      return
+    }
+
     // 会话锁（防多实例）
     const locked = await acquireSessionLock()
     if (!locked) {

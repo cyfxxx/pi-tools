@@ -1,0 +1,13 @@
+ M agent/extensions/pi-link/index.ts
+ M agent/extensions/pi-webui/device-bridge.ts
+ D agent/extensions/pi-webui/static/assets/index-CD66QDcm.js
+ M agent/extensions/pi-webui/static/index.html
+ M agent/extensions/pi-webui/ui/src/App.tsx
+ M agent/extensions/pi-webui/ui/src/hooks/useWebSocket.ts
+ M agent/extensions/pi-webui/ui/src/lib/api.ts
+ M memory/entries.json
+?? .snapshots/
+?? agent/extensions/pi-webui/static/assets/index-C5nKBaZ3.js
+?? memory/daily-results/results-localhost.jsonl
+?? packs/drafts/
+?? webui/

@@ -1,0 +1,13 @@
+ M agent/extensions/pi-autopilot/index.ts
+ M agent/extensions/pi-link/index.ts
+ M agent/extensions/pi-memory/extract.ts
+ M agent/extensions/pi-webui/device-bridge.ts
+ M agent/extensions/pi-webui/index.ts
+ M agent/extensions/pi-webui/pi-agent-hook.ts
+ M agent/extensions/pi-webui/server.ts
+ M agent/extensions/subagent/index.ts
+ M memory/entries.json
+ M packs/skill-integration/SKILL.md
+?? .snapshots/
+?? memory/daily-results/results-localhost.jsonl
+?? packs/drafts/

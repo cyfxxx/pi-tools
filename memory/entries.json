@@ -233,7 +233,7 @@
       "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-09-03T08:21:26.221Z",
-      "accessedAt": "2026-09-03T13:14:52.859Z",
+      "accessedAt": "2026-09-04T11:43:11.220Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -1733,7 +1733,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T07:20:00.317Z",
       "updatedAt": "2026-08-10T07:20:00.317Z",
-      "accessedAt": "2026-08-10T07:20:00.317Z",
+      "accessedAt": "2026-09-04T04:43:14.322Z",
       "observedAt": "2026-08-10T07:20:00.317Z",
       "deleted": false,
       "environments": [
@@ -2179,7 +2179,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T10:15:05.956Z",
       "updatedAt": "2026-08-10T10:15:05.956Z",
-      "accessedAt": "2026-08-10T10:15:05.956Z",
+      "accessedAt": "2026-09-04T04:43:14.322Z",
       "observedAt": "2026-08-10T10:15:05.956Z",
       "deleted": false,
       "environments": [
@@ -2453,7 +2453,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T23:16:51.279Z",
       "updatedAt": "2026-08-10T23:16:51.279Z",
-      "accessedAt": "2026-08-10T23:16:51.279Z",
+      "accessedAt": "2026-09-04T04:43:14.322Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
       "deleted": false,
       "environments": [
@@ -5659,7 +5659,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-09-03T08:21:20.952Z",
-      "accessedAt": "2026-09-03T13:14:52.859Z",
+      "accessedAt": "2026-09-04T11:43:11.220Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -12018,7 +12018,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-09-03T13:14:52.859Z",
+      "accessedAt": "2026-09-04T11:43:11.220Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -12199,7 +12199,7 @@
       "recurrence": 4,
       "createdAt": "2026-08-25T22:54:39.097Z",
       "updatedAt": "2026-09-03T08:20:11.300Z",
-      "accessedAt": "2026-09-03T13:14:52.859Z",
+      "accessedAt": "2026-09-04T11:43:11.220Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -16385,7 +16385,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-09-03T08:20:26.256Z",
-      "accessedAt": "2026-09-03T13:14:52.859Z",
+      "accessedAt": "2026-09-04T11:43:11.220Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux",
@@ -17070,7 +17070,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T02:01:33.439Z",
       "updatedAt": "2026-08-10T02:01:33.439Z",
-      "accessedAt": "2026-08-10T02:01:33.439Z",
+      "accessedAt": "2026-09-04T04:43:14.322Z",
       "observedAt": "2026-08-10T02:01:33.439Z",
       "deleted": false,
       "environments": [
@@ -17092,7 +17092,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T02:58:04.175Z",
       "updatedAt": "2026-08-10T02:58:04.175Z",
-      "accessedAt": "2026-08-10T02:58:04.175Z",
+      "accessedAt": "2026-09-04T04:43:14.322Z",
       "observedAt": "2026-08-10T02:58:04.175Z",
       "deleted": false,
       "environments": [
@@ -17114,31 +17114,8 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T05:47:03.339Z",
       "updatedAt": "2026-08-10T05:47:03.339Z",
-      "accessedAt": "2026-08-10T05:47:03.339Z",
+      "accessedAt": "2026-09-04T04:43:14.539Z",
       "observedAt": "2026-08-10T05:47:03.339Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ]
-    },
-    {
-      "id": "56d80807-b6e1-41f8-9718-b0da94ee1ceb",
-      "category": "fact",
-      "title": "patch-plan-tools 保留待验证",
-      "content": "用户决策：保留内核补丁 patch-plan-tools.mjs（刷新恢复会话工具 schema）+ AGENTS.md 文档说明；若后续确认不需要模型侧主动切换（用户 Ctrl+Alt+P 已完整），移除补丁回退方案 2 即可。当前结论：模型侧 plan_enter 仅新会话可用，日常使用不受影响。",
-      "tags": [
-        "plan-mode",
-        "补丁",
-        "决策",
-        "patch-plan-tools"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T05:59:08.973Z",
-      "updatedAt": "2026-08-10T05:59:08.973Z",
-      "accessedAt": "2026-08-10T05:59:08.973Z",
-      "observedAt": "2026-08-10T05:59:08.973Z",
       "deleted": false,
       "environments": [
         "all"
@@ -17455,7 +17432,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T02:49:34.877Z",
       "updatedAt": "2026-08-11T02:49:34.877Z",
-      "accessedAt": "2026-08-11T02:49:34.877Z",
+      "accessedAt": "2026-09-04T04:43:14.539Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
       "deleted": false,
       "environments": [
@@ -20227,6 +20204,281 @@
       ],
       "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
       "deleted": false
+    },
+    {
+      "id": "0301ef42-29c2-4184-a780-f0a90122d380",
+      "category": "fact",
+      "title": "用户中文交流习惯",
+      "content": "用户使用中文进行日常问候，表明可能处于中文语境下的pi会话",
+      "tags": [
+        "语言",
+        "习惯"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T03:59:24.722Z",
+      "updatedAt": "2026-09-04T03:59:24.722Z",
+      "accessedAt": "2026-09-04T03:59:24.722Z",
+      "observedAt": "2026-09-04T03:59:24.722Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06a8f-8217-7ca2-8650-c46a9f76fb1e",
+      "deleted": false
+    },
+    {
+      "id": "e009692c-e630-4c2b-a69c-b28f6e1fe6a4",
+      "category": "fact",
+      "title": "系统关键词提及",
+      "content": "用户在问候后输入'内核'，可能指代Linux系统内核或计算系统核心组件，作为后续交互的潜在上下文锚点",
+      "tags": [
+        "系统",
+        "关键词",
+        "上下文"
+      ],
+      "confidence": 0.5,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T03:59:24.722Z",
+      "updatedAt": "2026-09-04T03:59:24.722Z",
+      "accessedAt": "2026-09-04T03:59:24.722Z",
+      "observedAt": "2026-09-04T03:59:24.722Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06a8f-8217-7ca2-8650-c46a9f76fb1e",
+      "deleted": false
+    },
+    {
+      "id": "12f06868-2b5c-4c64-8752-65e4615f8974",
+      "category": "solutions",
+      "title": "AMD Radeon API thinking 参数报错修复",
+      "content": "调用 https://developer.amd.com.cn/radeon/api/v1/chat/completions 的 DeepSeek-V4-Flash 模型时，上游拒绝 payload 中的 thinking 字段，返回 HTTP 400，type=invalid_request_error，param=thinking，code=unsupported_parameter。修复方式：改用 reasoning_effort（或 reasoning.effort）控制推理强度，不要在 /v1/chat/completions 请求体中传 thinking。排查时先确认上游 OpenAI 兼容层对 thinking 参数的支持情况，再调整客户端参数名。",
+      "tags": [
+        "amd-radeon",
+        "api",
+        "openai-compat",
+        "thinking",
+        "reasoning_effort"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T04:24:09.246Z",
+      "updatedAt": "2026-09-04T04:24:09.246Z",
+      "accessedAt": "2026-09-04T04:24:09.246Z",
+      "observedAt": "2026-09-04T04:24:09.246Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06a90-cfc9-7005-a45b-573bd654df36",
+      "deleted": false
+    },
+    {
+      "id": "45eb963e-4909-4c63-8590-8beaf9c6e293",
+      "category": "fact",
+      "title": "AMD Radeon API 端点与模型",
+      "content": "AMD Radeon 推理 API 端点为 https://developer.amd.com.cn/radeon/api/v1/chat/completions，当前使用模型为 DeepSeek-V4-Flash，请求需带 Authorization: bearer-token 认证头，Content-Type: application/json。",
+      "tags": [
+        "amd",
+        "radeon",
+        "endpoint",
+        "deepseek"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T04:24:09.246Z",
+      "updatedAt": "2026-09-04T04:24:09.246Z",
+      "accessedAt": "2026-09-04T04:24:09.246Z",
+      "observedAt": "2026-09-04T04:24:09.246Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06a90-cfc9-7005-a45b-573bd654df36",
+      "deleted": false
+    },
+    {
+      "id": "e19b4484-bb87-4d0b-87cb-bb8ccf59de4d",
+      "category": "fact",
+      "title": "Pi WebUI 地址",
+      "content": "pi WebUI 已启动，可通过 http://192.168.8.176:3100 访问。",
+      "tags": [
+        "pi",
+        "WebUI",
+        "地址"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T04:40:04.447Z",
+      "updatedAt": "2026-09-04T04:40:04.447Z",
+      "accessedAt": "2026-09-04T04:40:04.447Z",
+      "observedAt": "2026-09-04T04:40:04.447Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06ab1-e636-7dfc-ba8d-384c47e4a8e7",
+      "deleted": false
+    },
+    {
+      "id": "dd7f6c21-eb4a-4978-9a78-59b98280af8e",
+      "category": "solutions",
+      "title": "todo 工具调用参数格式修正",
+      "content": "todo 工具要求扁平顶层参数结构：{\"action\": \"create\", \"subject\": \"...\", \"description\": \"...\"} 或 {\"action\": \"update\", \"id\": \"1\", \"status\": \"in_progress\"}。严禁使用 {\"arguments\": {...}} 嵌套格式，否则报 Validation failed: Missing required property 'action'。单条、并行调用均需保持扁平。",
+      "tags": [
+        "todo",
+        "工具调用",
+        "参数格式",
+        "验证失败"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T05:13:10.707Z",
+      "updatedAt": "2026-09-04T05:13:10.707Z",
+      "accessedAt": "2026-09-04T05:13:10.707Z",
+      "observedAt": "2026-09-04T05:13:10.707Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06ab7-24b2-7baf-8db0-6a74d9474c56",
+      "deleted": false
+    },
+    {
+      "id": "e8fe7ff2-e768-4af4-8d9b-7262086c60f9",
+      "category": "fact",
+      "title": "任务选择功能验证通过",
+      "content": "pi 的 todo 任务管理功能完整支持：create 创建、list 列表、get 按 id 查询、update 按 id 切换状态（pending/in_progress/completed）。4 个测试任务已创建留存，#4 当前为 in_progress。",
+      "tags": [
+        "todo",
+        "任务管理",
+        "功能验证"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T05:13:10.709Z",
+      "updatedAt": "2026-09-04T05:13:10.709Z",
+      "accessedAt": "2026-09-04T05:13:10.709Z",
+      "observedAt": "2026-09-04T05:13:10.709Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06ab7-24b2-7baf-8db0-6a74d9474c56",
+      "deleted": false
+    },
+    {
+      "id": "195e9d02-6fb8-43c3-8048-7008ba36f3c1",
+      "category": "procedure",
+      "title": "工具调用参数嵌套污染的恢复方法",
+      "content": "连续调用出现 arguments 多层嵌套导致验证失败时：1) 停止重试错误模板；2) 确认扁平顶层结构；3) 单条发送扁平参数恢复；4) 若持续污染，切换模型可解决序列化异常。",
+      "tags": [
+        "工具调用",
+        "故障恢复",
+        "模型切换"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T05:13:10.709Z",
+      "updatedAt": "2026-09-04T05:13:10.709Z",
+      "accessedAt": "2026-09-04T05:13:10.709Z",
+      "observedAt": "2026-09-04T05:13:10.709Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a06ab7-24b2-7baf-8db0-6a74d9474c56",
+      "deleted": false
+    },
+    {
+      "id": "8c722816-0e63-4467-b3fb-36fb09e370f8",
+      "category": "fact",
+      "title": "test",
+      "content": "content",
+      "tags": [],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 5,
+      "createdAt": "2026-09-04T09:09:22.820Z",
+      "updatedAt": "2026-09-04T11:43:11.137Z",
+      "accessedAt": "2026-09-04T11:43:11.137Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-04T09:09:22.820Z",
+      "deleted": false
+    },
+    {
+      "id": "34ad1066-0578-4177-bd07-e86a87c82cd1",
+      "category": "reference",
+      "title": "conflict-check.mjs 注册面核查要点（勿误判缺清单）",
+      "content": "核查扩展注册面是否同步时，agent/extensions/tests/conflict-check.mjs 有两处易误判：\n\n1. **命令清单存的是命令名，不是扩展名**。expected 数组形如 ['auto','schedule','memory','plan','voice','webui',...]，pi-webui 对应条目是 `webui`。用 `grep pi-webui conflict-check.mjs` 搜不到属正常，不代表未注册。\n\n2. **expectedListeners 是正向断言，非穷举校验**。它只断言\"列出的扩展确实监听了该事件\"（assert(actualExts.includes(e))），不要求某扩展必须出现。扩展监听 session_start/agent_end 而未写进该表不会失败，无需补。\n\n3. 工具/命令/事件/flag/shortcut 全部由脚本 **自动扫描** extensions/ 目录下的 .ts（正则 registerTool/registerCommand/pi.on/registerFlag/registerShortcut），新增扩展无需登记即被覆盖重复性检查。\n\n真正的硬编码清单在 scripts/test-all.sh 的「扩展自动发现完整性」required 数组（硬编码 11 个扩展名），新扩展不在其中则 index.ts 丢失不会被发现。pi-webui/pi-mode 等目前不在该数组。",
+      "tags": [
+        "pi",
+        "conflict-check",
+        "注册面",
+        "test-all",
+        "核查"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T09:10:10.973Z",
+      "updatedAt": "2026-09-04T09:10:10.973Z",
+      "accessedAt": "2026-09-04T09:10:10.973Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-04T09:10:10.973Z",
+      "deleted": false
+    },
+    {
+      "id": "f640c675-1fb7-4f1a-befa-45e239c7d679",
+      "category": "procedure",
+      "title": "pi-webui 消息路由三方契约（sender/senderDevice/chatId）",
+      "content": "pi-webui 消息路由靠三个字段配合，改动任一处必须同时对齐另两处，否则静默丢消息：\n\n1. **chatId（存储文件名 = 前端会话 id）= 对方设备名**\n   - 群聊：`group.json`（target=null）\n   - 私聊：`<对方设备名>.json`（本机与浏览器用户通信时即 `localhost.json`，不是 `user_user.json`）\n   - message-store.ts 规则：`target === null ? 'group' : (target === 'user' ? senderDevice : target)`\n\n2. **sender = 身份，senderDevice = 机器**\n   - 浏览器 WS 入口必须 `sender='user'`（保留身份）**且** `senderDevice=ctx.selfDevice`（归一本机名）\n   - 只改 senderDevice 会因前端过滤条件失配而不显示；把 sender 一起改成本机名会破坏条件2\n\n3. **前端 ChatView 私聊过滤（ui/src/components/ChatView.tsx）**\n   `(senderDevice===chatId && target==='user')            // 对方/agent 发给我\n    || (sender==='user' && senderDevice===selfDevice && target===chatId)  // 我发给对方`\n   前端 selfDevice 来自 `/api/config` 的 selfDevice，与后端 ctx.selfDevice 同源。\n\n4. **回复路由禁止用全局变量记\"上一次 target\"**\n   agent_end 是异步的，多条消息排队时会串话（群聊问题被回答到私聊）。\n   正确做法：pi-agent-hook.ts `resolveReplyTarget(messages)` 从对话历史倒序找最后一条\n   user 消息的来源标签判定（`[来自 X 的私聊]`→'user'，`[群聊]`/无标签→null 广播）。\n   来源标签在 index.ts 的 handleUserMessage 里注入：`pi.sendUserMessage('[群聊] '+content)`。",
+      "tags": [
+        "pi-webui",
+        "消息路由",
+        "chatId",
+        "回归",
+        "前端过滤"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T11:57:29.892Z",
+      "updatedAt": "2026-09-04T11:57:29.892Z",
+      "accessedAt": "2026-09-04T11:57:29.892Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-04T11:57:29.892Z",
+      "deleted": false
+    },
+    {
+      "id": "bbe03296-536a-4ebd-ae08-09b8ada4348f",
+      "category": "solutions",
+      "title": "pi-webui 设备在线状态抖动：SSH 就绪被固定 3s 盲标",
+      "content": "**症状**：WebUI 里设备在线状态\"刷新网页就变\"，忽在线忽离线。\n\n**根因**（device-bridge.ts）：SSH 进程 spawn 后用 `setTimeout(..., 3000)` **无条件**置\n`device.connected = true`，完全不检测 SSH 是否真建立。设备不可达时形成周期抖动：\nspawn → 3s 标 online（假在线）→ ConnectTimeout 后 exit 255 → offline → 5s 重连 → 再 3s 标 online。\n刷新页面落在窗口哪一段，就看到不同状态。\n\n**判据**：`GET /api/devices` 里 `\"error\":\"exit code 255\"` = SSH 连接层失败（不可达/超时），\n不是认证失败。手动 `ssh -o ConnectTimeout=8 -p <port> u@h 'echo ok'` 复现。\n255 + \"Connection timed out\" 通常是**网段不通**（如本机 192.168.8.x ↔ 设备 192.168.124.x），\n属环境问题，代码只能让它诚实显示离线。\n\n**修复**：就绪窗口取 `ConnectTimeout + 2s`（下限 5s），窗口结束时进程仍存活\n（未被 close/error 置 null）才标 online；close 事件 clearTimeout。\n效果：不可达设备恒定离线，可达设备连接建立后稳定在线，无瞬态。\n\n**验证手法**（无需截图，省 token）：\n`for i in $(seq 1 6); do curl -s -H \"Authorization: Bearer <token>\" http://<host>:3100/api/devices | ...; sleep 1; done`\n连续快照恒定不变即修复；若仍变化说明 SSH 真在抖。",
+      "tags": [
+        "pi-webui",
+        "device-bridge",
+        "SSH",
+        "在线状态",
+        "诊断"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-04T11:57:30.116Z",
+      "updatedAt": "2026-09-04T11:57:30.116Z",
+      "accessedAt": "2026-09-04T11:57:30.116Z",
+      "environments": [
+        "all"
+      ]
     }
   ]
 }

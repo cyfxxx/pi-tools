@@ -225,8 +225,10 @@ export function assertPlanSubagentAllowed(input: unknown): string | null {
   else if (Array.isArray(arg.chain)) agents.push(...arg.chain.map((t) => (t as { agent?: unknown })?.agent));
   else agents.push(arg.agent);
   const names = agents.map((a) => (typeof a === "string" ? a : ""));
-  if (names.some((n) => n !== "scout")) {
-    return `规划模式: subagent 仅允许显式指定只读的 scout 子代理（未指定或 worker/reviewer 均不可用，未指定会落到可写的 general-purpose）。使用 subagent agent="scout" 或退出规划模式。`;
+  // scout（只读调研）和 reviewer（只读审阅）均允许在规划模式使用
+  const ALLOWED_IN_PLAN = new Set(["scout", "reviewer"]);
+  if (names.some((n) => !ALLOWED_IN_PLAN.has(n))) {
+    return `规划模式: subagent 仅允许 scout（调研）和 reviewer（审阅）（未指定或 worker 均不可用，未指定会落到可写的 general-purpose）。使用 subagent agent="scout" 或 agent="reviewer"，或退出规划模式。`;
   }
   return null;
 }

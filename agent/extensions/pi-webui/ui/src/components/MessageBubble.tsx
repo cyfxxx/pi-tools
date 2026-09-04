@@ -79,9 +79,6 @@ export function MessageBubble({ message, onDeleted, onQuote }: MessageBubbleProp
   )
 }
 
-/**
- * 格式化时间
- */
 function formatTime(ts: number): string {
   const d = new Date(ts)
   const now = new Date()
