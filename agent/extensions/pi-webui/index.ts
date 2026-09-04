@@ -184,7 +184,8 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
       }
 
       if (sub === 'status') {
-        const statuses = bridge.getDeviceStatus()
+        const bridgeStatuses = bridge.getDeviceStatus()
+        const hubStatuses = hub.getAllDeviceStatus()
         const lines = [
           `WebUI: ${httpServer ? '运行中' : '未启动'}`,
           `地址: http://${config.host}:${config.port}`,
@@ -192,7 +193,11 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
           '',
           '设备状态:',
           `  ${selfDevice} (本机) ● 在线`,
-          ...statuses.map(s => `  ${s.name} ${s.online ? '● 在线' : '○ 离线'}${s.error ? ` (${s.error})` : ''}`),
+          ...bridgeStatuses.map(s => {
+            const hubStatus = hubStatuses.find(h => h.name === s.name)
+            const wsConnected = hubStatus?.online ?? false
+            return `  ${s.name} ${s.online ? '● 在线' : '○ 离线'}${wsConnected ? ' (WS已连接)' : ''}${s.error ? ` (${s.error})` : ''}`
+          }),
         ]
         ctx.ui.notify(lines.join('\n'), 'info')
         return
@@ -227,6 +232,7 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
       hub,
       staticDir,
       selfDevice,
+      bridge,
       onUserMessage: handleUserMessage,
     }
 
@@ -235,9 +241,6 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
     wss = result.wss
 
     httpServer.listen(config.port, config.host, async () => {
-      console.log(`[pi-webui] 服务启动: http://${config.host}:${config.port}`)
-      console.log(`[pi-webui] Token: ${config.authToken}`)
-
       // 启动设备桥接
       await bridge.startAll()
 
@@ -260,6 +263,10 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
   async function stopServer(): Promise<void> {
     await bridge.stopAll()
     if (wss) {
+      // 关闭所有 WebSocket 连接
+      wss.clients.forEach(ws => {
+        ws.close(1000, 'server shutdown')
+      })
       wss.close()
       wss = null
     }

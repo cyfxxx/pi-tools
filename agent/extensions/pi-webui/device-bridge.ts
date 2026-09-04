@@ -18,7 +18,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { ChatMessage } from './types.ts'
-import type { DeviceConfig } from '../../pi-link/config.ts'
+import type { DeviceConfig } from '../pi-link/config.ts'
 
 interface LinkConfig {
   devices: Record<string, DeviceConfig>
@@ -167,7 +167,6 @@ export class DeviceBridge {
       })
 
       device.process = proc
-      device.connected = true
       device.lastError = undefined
 
       // 监听 stdout (JSONL 响应)
@@ -213,11 +212,18 @@ export class DeviceBridge {
         device.lastError = err.message.slice(0, 200)
       })
 
-      console.log(`[pi-webui] 桥接已连接: ${device.name} (${user}@${host}:${port})`)
+      // 延迟标记在线，等待 SSH 实际连接成功
+      // 通过检测 stdout 第一行输出来判断连接建立
+      const checkReady = setTimeout(() => {
+        if (device.process && !device.connected) {
+          device.connected = true
+        }
+      }, 3000)
+
+      proc.on('close', () => clearTimeout(checkReady))
     } catch (err) {
       device.connected = false
       device.lastError = (err as Error).message.slice(0, 200)
-      console.warn(`[pi-webui] 桥接连接失败: ${device.name} — ${device.lastError}`)
     }
   }
 

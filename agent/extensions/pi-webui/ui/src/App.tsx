@@ -18,6 +18,7 @@ export function App() {
     { id: 'group', name: '群聊', type: 'group', unread: 0 },
   ])
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [wsInitialized, setWsInitialized] = useState(false)
 
   // 从 URL 获取 token
   useEffect(() => {
@@ -26,12 +27,16 @@ export function App() {
     setAuthToken(token)
 
     // 获取配置
-    fetchConfig()
-      .then(cfg => setConfig(cfg))
+    fetchConfig(token)
+      .then(cfg => {
+        setConfig(cfg)
+        setWsInitialized(true)
+      })
       .catch(() => {})
   }, [])
 
-  // WebSocket 连接
+  // WebSocket 连接 - 只有在配置加载完成后才初始化
+  const deviceName = wsInitialized && config ? 'user' : ''
   const {
     connected,
     messages,
@@ -40,7 +45,7 @@ export function App() {
     send,
     sendTyping,
     requestHistory,
-  } = useWebSocket(activeSession, authToken)
+  } = useWebSocket(activeSession, authToken, deviceName)
 
   // 根据设备列表更新会话列表
   useEffect(() => {

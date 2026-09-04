@@ -19,7 +19,8 @@ export interface UseWebSocketReturn {
 
 export function useWebSocket(
   chatId: string,
-  authToken: string
+  authToken: string,
+  deviceName: string
 ): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
   const [connected, setConnected] = useState(false)
@@ -32,11 +33,12 @@ export function useWebSocket(
 
   // 连接 WebSocket
   const connect = useCallback(() => {
+    if (!deviceName || !authToken) return
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const params = new URLSearchParams({
-      device: 'user',
+      device: deviceName,
       user: '1',
       token: authToken,
     })
@@ -169,12 +171,13 @@ export function useWebSocket(
 
   // 连接管理
   useEffect(() => {
+    if (!deviceName || !authToken) return
     connect()
     return () => {
       clearTimeout(reconnectTimer.current)
       wsRef.current?.close()
     }
-  }, [connect])
+  }, [connect, deviceName, authToken])
 
   // 定期清除过期 typing 指示
   useEffect(() => {

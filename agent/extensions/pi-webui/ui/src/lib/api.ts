@@ -6,8 +6,10 @@ import type { ChatMessage, AppConfig, DeviceStatus } from './types'
 
 const BASE = '' // 相对路径，同源
 
-export async function fetchConfig(): Promise<AppConfig> {
-  const res = await fetch(`${BASE}/api/config`)
+export async function fetchConfig(token?: string): Promise<AppConfig> {
+  const url = new URL(`${BASE}/api/config`, location.origin)
+  if (token) url.searchParams.set('token', token)
+  const res = await fetch(url.toString())
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }

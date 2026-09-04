@@ -37,6 +37,8 @@ export interface ServerContext {
   hub: WsHub
   staticDir: string
   selfDevice: string
+  /** 设备桥接 (用于获取 SSH 连接状态) */
+  bridge?: { getDeviceStatus(): Array<{ name: string; online: boolean; error?: string }> }
   /** 外部提供的消息处理回调 */
   onUserMessage?: (msg: ChatMessage) => void
 }
@@ -69,6 +71,69 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, staticDir: strin
 function sendJson(res: ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' })
   res.end(JSON.stringify(data))
+}
+
+/** 设备在线状态合并结果 */
+interface DeviceStatusResult {
+  name: string
+  online: boolean
+  wsConnected: boolean
+  sshConnected: boolean
+  error?: string
+}
+
+/**
+ * 合并设备在线状态：以设备集合为基准（本机 self + bridge 远程设备 + hub 真实设备）
+ * - 本机 self：恒在线（服务提供方）
+ * - bridge 设备：SSH 桥接在线状态
+ * - hub 真实设备：WebSocket 在线状态
+ * 过滤浏览器占位身份 'user' 及重复项。
+ */
+function mergeDeviceStatuses(
+  hub: WsHub,
+  bridge: ServerContext['bridge'],
+  selfDevice: string
+): DeviceStatusResult[] {
+  const hubStatuses = hub.getAllDeviceStatus()
+  const hubMap = new Map(hubStatuses.map(h => [h.name, h.online]))
+  const bridgeStatuses = bridge?.getDeviceStatus() ?? []
+  const bridgeMap = new Map(bridgeStatuses.map(b => [b.name, b]))
+
+  const devices: DeviceStatusResult[] = []
+  const seen = new Set<string>()
+
+  // 1. 本机 self 恒在线（提供服务的机器）
+  devices.push({ name: selfDevice, online: true, wsConnected: true, sshConnected: false })
+  seen.add(selfDevice)
+
+  // 2. bridge 管理的远程设备（SSH）
+  for (const b of bridgeStatuses) {
+    if (seen.has(b.name)) continue
+    devices.push({
+      name: b.name,
+      online: b.online,
+      wsConnected: hubMap.get(b.name) ?? false,
+      sshConnected: b.online,
+      error: b.error,
+    })
+    seen.add(b.name)
+  }
+
+  // 3. hub 中真实设备（排除浏览器占位身份 'user' 与已处理项）
+  for (const h of hubStatuses) {
+    if (seen.has(h.name) || h.name === 'user') continue
+    const b = bridgeMap.get(h.name)
+    devices.push({
+      name: h.name,
+      online: h.online || (b?.online ?? false),
+      wsConnected: h.online,
+      sshConnected: b?.online ?? false,
+      error: b?.error,
+    })
+    seen.add(h.name)
+  }
+
+  return devices
 }
 
 function checkAuth(req: IncomingMessage, config: WebuiConfig): boolean {
@@ -119,8 +184,9 @@ export function createWebuiServer(
     }
 
     if (url.pathname === '/api/devices') {
-      const statuses = hub.getAllDeviceStatus()
-      sendJson(res, 200, { devices: statuses, self: selfDevice })
+      // 合并 hub (WebSocket) 和 bridge (SSH) 状态，以设备集合为基准
+      const merged = mergeDeviceStatuses(hub, ctx.bridge, selfDevice)
+      sendJson(res, 200, { devices: merged, self: selfDevice })
       return
     }
 
@@ -188,8 +254,8 @@ export function createWebuiServer(
     hub.register(ws, device, isUser)
     onWsConnect?.(ws, device, isUser)
 
-    // 发送设备列表
-    const devices = hub.getAllDeviceStatus()
+    // 发送设备列表（合并 hub + bridge + self）
+    const devices = mergeDeviceStatuses(hub, ctx.bridge, selfDevice)
     const envelope: WsEnvelope = {
       type: 'device_list',
       payload: devices,
