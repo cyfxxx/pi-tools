@@ -2,84 +2,91 @@
  * 消息气泡
  */
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { ChatMessage } from '../lib/types'
-import { deleteMessage } from '../hooks/deleteMessage'
-import { clearChat } from '../hooks/clearChat'
+import { MessageContent } from './MessageContent'
 
 interface MessageBubbleProps {
   message: ChatMessage
   chatId: string
   selfDevice: string
+  selfName?: string
   onDeleted?: () => void
+  onQuote?: (msg: ChatMessage) => void
 }
 
-export function MessageBubble({ message, selfDevice, chatId, onDeleted }: MessageBubbleProps) {
+export function MessageBubble({ message, chatId, selfDevice, selfName, onDeleted, onQuote }: MessageBubbleProps) {
   const isSelf = message.sender === 'user'
   const isAgent = message.metadata?.piReplied
+  const [showActions, setShowActions] = useState(false)
 
-  const className = `message ${isSelf ? 'self' : isAgent ? 'agent' : 'other'}`
-  const [menuOpen, setMenuOpen] = useState(false)
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(message.content).catch(() => {})
+  }, [message.content])
 
-  const handleDelete = async () => {
-    setMenuOpen(false)
-    const ok = await deleteMessage(chatId ?? 'group', message.id)
-    if (ok && onDeleted) onDeleted()
-  }
+  const handleDelete = useCallback(() => {
+    deleteMessage(chatId, message.id).then(ok => {
+      if (ok && onDeleted) onDeleted()
+    })
+  }, [chatId, message.id, onDeleted])
+
+  const handleQuote = useCallback(() => {
+    onQuote?.(message)
+  }, [message, onQuote])
+
+  const displayName = isAgent
+    ? `[pi] ${message.senderDevice}`
+    : message.senderDevice
 
   return (
-    <div className={className} onClick={() => setMenuOpen(!menuOpen)}>
+    <div
+      className={`message ${isSelf ? 'self' : isAgent ? 'agent' : 'other'}`}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
       {!isSelf && (
-        <div className="message-sender">
-          {isAgent ? `[pi] ${message.senderDevice}` : message.senderDevice}
-        </div>
+        <div className="message-sender">{displayName}</div>
       )}
       <div className="message-bubble">
-        {message.content}
-        <div className="message-actions" style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-          <span className="message-time" style={{ fontSize: '0.75em', opacity: 0.7 }}>
-            {formatTime(message.ts)}
-          </span>
-        </div>
+        <MessageContent content={message.content} />
+        <div className="message-time">{formatTime(message.ts)}</div>
       </div>
-      {menuOpen && (
-        <div
-          className="message-menu"
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: '100%',
-            background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: 6,
-            padding: '4px 0',
-            minWidth: 100,
-            zIndex: 10,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}
-        >
+      {showActions && (
+        <div className="message-actions-bar">
           <button
-            onClick={handleDelete}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              border: 'none',
-              background: 'none',
-              padding: '6px 12px',
-              cursor: 'pointer',
-              color: '#d32f2f',
-              fontSize: '0.85em',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#f0f0f0')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+            className="message-action-btn"
+            title="复制消息"
+            onClick={handleCopy}
           >
-            🗑 删除
+            📋
+          </button>
+          <button
+            className="message-action-btn"
+            title="引用消息"
+            onClick={handleQuote}
+          >
+            ↪️
+          </button>
+          <button
+            className="message-action-btn"
+            title="删除消息"
+            onClick={handleDelete}
+          >
+            🗑
           </button>
         </div>
       )}
     </div>
   )
+}
+
+/**
+ * 删除一条消息
+ */
+function deleteMessage(chatId: string, id: string): Promise<boolean> {
+  return fetch(`/api/messages/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    .then(res => res.json())
+    .then((data: { ok: boolean }) => data.ok === true)
 }
 
 function formatTime(ts: number): string {

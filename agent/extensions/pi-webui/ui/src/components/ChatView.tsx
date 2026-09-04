@@ -6,6 +6,7 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import type { ChatMessage, DeviceStatus, TypingIndicator } from '../lib/types'
 import { MessageBubble } from './MessageBubble'
 import { InputBar } from './InputBar'
+import { SystemMessage } from './SystemMessage'
 
 interface ChatViewProps {
   chatId: string
@@ -20,6 +21,7 @@ interface ChatViewProps {
   onBack?: () => void
   onDeleted?: () => void
   onCleared?: () => void
+  onQuote?: (msg: { id: string; content: string }) => void
 }
 
 export function ChatView({
@@ -35,9 +37,11 @@ export function ChatView({
   onBack,
   onDeleted,
   onCleared,
+  onQuote,
 }: ChatViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [clearing, setClearing] = useState(false)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
 
   const handleClearChat = useCallback(async () => {
     setClearing(true)
@@ -53,12 +57,37 @@ export function ChatView({
     onDeleted?.()
   }, [onDeleted])
 
-  // 自动滚动到底部
+  // 滚动到底部按钮
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight
+    const el = containerRef.current
+    if (!el) return
+    const handleScroll = () => {
+      // 当用户手动滚动且未到底部时显示按钮
+      const scrollFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+      setShowScrollBtn(scrollFromBottom > 20)
     }
-  }, [messages])
+    el.addEventListener('scroll', handleScroll)
+    // 初始化：滚动到底部
+    el.scrollTop = el.scrollHeight
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    const el = containerRef.current
+    if (el) {
+      el.scrollTop = el.scrollHeight
+      setShowScrollBtn(false)
+    }
+  }, [])
+
+  // 自动滚动到底部（新消息到达时）
+  useEffect(() => {
+    const el = containerRef.current
+    if (el && !showScrollBtn) {
+      el.scrollTop = el.scrollHeight
+    }
+  }, [messages, showScrollBtn])
+
 
   // 过滤当前聊天的消息
   const filteredMessages = messages.filter(msg => {
@@ -121,13 +150,19 @@ export function ChatView({
           </div>
         ) : (
           filteredMessages.map(msg => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              chatId={chatId}
-              selfDevice={selfDevice}
-              onDeleted={handleDeleted}
-            />
+            msg.type === 'system' ? (
+              <SystemMessage key={msg.id} message={msg} />
+            ) : (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                chatId={chatId}
+                selfDevice={selfDevice}
+                selfName={selfDevice}
+                onDeleted={handleDeleted}
+                onQuote={onQuote}
+              />
+            )
           ))
         )}
       </div>
@@ -137,6 +172,17 @@ export function ChatView({
           <span>{chatTyping.map(t => t.user).join(', ')} 正在输入...</span>
         )}
       </div>
+
+      {showScrollBtn && (
+        <button
+          className="scroll-to-bottom-btn"
+          onClick={scrollToBottom}
+          title="滚动到底部"
+          aria-label="滚动到底部"
+        >
+          ↓
+        </button>
+      )}
 
       <InputBar
         onSend={onSend}

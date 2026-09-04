@@ -140,6 +140,11 @@ export function App() {
     setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, lastMessage: undefined, unread: 0 } : s))
   }, [activeSession])
 
+  // 引用消息：在输入框添加引用前缀
+  const handleQuote = useCallback((msg: { id: string; content: string }) => {
+    console.log('Quote:', msg)
+  }, [])
+
   return (
     <div className="app">
       <div className={`sidebar ${sidebarOpen ? '' : 'hidden'}`}>
@@ -164,6 +169,7 @@ export function App() {
         onBack={() => setSidebarOpen(true)}
         onDeleted={handleDeleted}
         onCleared={handleCleared}
+        onQuote={handleQuote}
       />
     </div>
   )
