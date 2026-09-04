@@ -17,7 +17,9 @@ import {
 	tickThinkingLevel,
 	proposeThinkingLevel,
 	LEVEL_LADDER,
+	inferTaskType,
 	type ThinkLevelState,
+	type TaskType,
 } from "./thinking-level.ts";
 import { recordTaskRecord } from "../../lib/task-record.ts";
 import {
@@ -928,6 +930,9 @@ export default function (pi: ExtensionAPI) {
 	// 杀掉内核重试轮。agent_settled 语义为"run 完全settled且无重试/压缩/排队续跑"
 	// （agent-session.js _emitAgentSettled），此点压缩不会打断任何内核后续动作。
 	pi.on("agent_settled", (_event, ctx) => {
+		// 任务类型推断（thinking 档位自适应）：从最近用户消息推断任务类型
+		const userRequest = extractUserRequest(lastContextMessages ?? []);
+		const taskType = inferTaskType(userRequest);
 		lastLevelSwitched = false;
 		// 工具事件聚合 + 30 天保留（节流 ≥60s 一次；prune 无删除不写盘，开销低）：
 		// 拉取远端事件文件后（git pull）这里会自然合并进聚合，不依赖单独同步步骤。
@@ -956,7 +961,7 @@ export default function (pi: ExtensionAPI) {
 			}
 			if (thinkState && typeof pi.setThinkingLevel === "function") {
 				try {
-					lastLevelSwitched = tickThinkingLevel(thinkState, ratio, (l) => pi.setThinkingLevel(l)) !== null;
+					lastLevelSwitched = tickThinkingLevel(thinkState, ratio, (l) => pi.setThinkingLevel(l), undefined, taskType) !== null;
 				} catch {
 					// 切档失败不阻塞主流程
 				}

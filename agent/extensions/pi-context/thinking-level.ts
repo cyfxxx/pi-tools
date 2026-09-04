@@ -28,6 +28,18 @@
 import { recordLevelChange } from "../../lib/usage-diag.ts";
 import { getBudgetReport } from "../../lib/context-budget.ts";
 
+// ── 任务类型推断（用于 thinking 档位自适应） ──
+export type TaskType = "explore" | "code" | "review" | "other";
+
+/** 根据任务内容推断类型：探索任务降档更快，代码任务恢复更快 */
+export function inferTaskType(task: string): TaskType {
+  const lower = task.toLowerCase();
+  if (/\bexplore|search|find|grep|discover|investigate\b/.test(lower)) return "explore";
+  if (/\breview|audit|check|analyze|verify\b/.test(lower)) return "review";
+  if (/\bwrite|edit|implement|fix|refactor|create|build\b/.test(lower)) return "code";
+  return "other";
+}
+
 /** 自动控制使用的档位阶梯（minimal/low 之间保护接口下限 = low，不落到 minimal/off） */
 export const LEVEL_LADDER = ["low", "medium", "high"] as const;
 export type AutoThinkLevel = (typeof LEVEL_LADDER)[number];
@@ -42,6 +54,14 @@ export const MIN_INTERVAL_MS = 90_000;
 export const CRITICAL_STREAK = 2;
 /** 连续 low 且稳定才升回（防抖） */
 export const LOW_STREAK = 3;
+
+/** 不同任务类型的降档/升回速率调整 */
+const TASK_TYPE_ADJUSTMENTS: Record<TaskType, { criticalStreakLimit: number; lowStreakLimit: number }> = {
+  explore: { criticalStreakLimit: 2, lowStreakLimit: 2 },   // 探索：更快降档，更快升回
+  code:    { criticalStreakLimit: 4, lowStreakLimit: 3 },   // 代码：更保守，避免频繁切档
+  review:  { criticalStreakLimit: 3, lowStreakLimit: 2 },   // 审阅：中等
+  other:   { criticalStreakLimit: CRITICAL_STREAK, lowStreakLimit: LOW_STREAK }, // 默认
+};
 
 export interface ThinkLevelState {
   /** 会话基调档位：初始化取运行时档位（clamp），升回上限，不随持久化漂移 */
@@ -90,14 +110,17 @@ export function pressureOf(ratio: number): "critical" | "low" | "mid" {
 
 /**
  * 每次 agent_settled 调用一次（附当前真实 tokens/window 比例）。返回切换到的档位；未切换返回 null。
+ * taskType 参数用于调整降档/升回速率：explore 任务更快降档，code 任务更保守。
  */
 export function tickThinkingLevel(
   state: ThinkLevelState,
   ratio: number,
   setLevel: (l: AutoThinkLevel) => void,
   now: number = Date.now(),
+  taskType: TaskType = "other",
 ): AutoThinkLevel | null {
   const p = pressureOf(ratio);
+  const adj = TASK_TYPE_ADJUSTMENTS[taskType] ?? TASK_TYPE_ADJUSTMENTS.other;
 
   if (now - state.lastSwitchTs < MIN_INTERVAL_MS) {
     // 死区内：不切换，也不累计连续信号（避免解除死区瞬间被旧信号误触发）
@@ -107,7 +130,7 @@ export function tickThinkingLevel(
   if (p === "critical") {
     state.criticalStreak += 1;
     state.lowStreak = 0;
-    if (state.criticalStreak >= CRITICAL_STREAK) {
+    if (state.criticalStreak >= adj.criticalStreakLimit) {
       const next = lower(state.current);
       if (next) {
         state.criticalStreak = 0;
@@ -122,7 +145,7 @@ export function tickThinkingLevel(
   if (p === "low") {
     state.lowStreak += 1;
     state.criticalStreak = 0;
-    if (state.lowStreak >= LOW_STREAK) {
+    if (state.lowStreak >= adj.lowStreakLimit) {
       const next = upper(state.current);
       if (next && idx(next) <= idx(state.base)) {
         state.lowStreak = 0;
