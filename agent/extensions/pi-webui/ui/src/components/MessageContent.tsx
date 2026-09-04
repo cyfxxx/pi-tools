@@ -21,7 +21,10 @@ function parseMarkdown(content: string): React.ReactNode[] {
     // 代码块
     if (block.startsWith('```')) {
       const lines = block.trim().split('\n')
-      const lang = lines[0].slice(3).trim() || 'text'
+      if (lines.length < 2) {
+        return <pre key={`code-${blockIndex}`} className="code-block"><code>{block}</code></pre>
+      }
+      const lang = lines[0]?.slice(3).trim() || 'text'
       const code = lines.slice(1, -1).join('\n')
       return <CodeBlock key={`code-${blockIndex}`} lang={lang} code={code} />
     }

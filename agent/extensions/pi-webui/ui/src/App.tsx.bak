@@ -45,6 +45,8 @@ export function App() {
     send,
     sendTyping,
     requestHistory,
+    deleteMessage,
+    clearChat,
   } = useWebSocket(activeSession, authToken, deviceName)
 
   // 根据设备列表更新会话列表

@@ -7,6 +7,7 @@ import type { ChatMessage, DeviceStatus, TypingIndicator } from '../lib/types'
 import { MessageBubble } from './MessageBubble'
 import { InputBar } from './InputBar'
 import { SystemMessage } from './SystemMessage'
+import { clearChat } from '../hooks/clearChat'
 
 interface ChatViewProps {
   chatId: string
@@ -156,9 +157,6 @@ export function ChatView({
               <MessageBubble
                 key={msg.id}
                 message={msg}
-                chatId={chatId}
-                selfDevice={selfDevice}
-                selfName={selfDevice}
                 onDeleted={handleDeleted}
                 onQuote={onQuote}
               />

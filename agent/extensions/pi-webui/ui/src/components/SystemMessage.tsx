@@ -9,25 +9,23 @@ interface SystemMessageProps {
 }
 
 export function SystemMessage({ message }: SystemMessageProps) {
-  // 解析系统消息内容
-  const { type, text } = parseSystemContent(message.content)
+  const { text, icon } = parseSystemContent(message.content)
 
   return (
     <div className="system-message" role="status" aria-live="polite">
-      <span className="system-icon">{type.icon}</span>
+      <span className="system-icon">{icon}</span>
       <span className="system-text">{text}</span>
     </div>
   )
 }
 
 interface SystemContent {
-  type: 'info' | 'join' | 'leave' | 'error' | 'warning'
+  type: string
   text: string
   icon: string
 }
 
 function parseSystemContent(content: string): SystemContent {
-  // 尝试解析 JSON 格式的系统消息
   try {
     const data = JSON.parse(content)
     if (data.type === 'join') {
@@ -47,6 +45,5 @@ function parseSystemContent(content: string): SystemContent {
     }
   } catch {}
 
-  // 兜底：纯文本
   return { type: 'info', text: content, icon: 'ℹ️' }
 }

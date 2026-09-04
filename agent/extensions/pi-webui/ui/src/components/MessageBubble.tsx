@@ -8,14 +8,11 @@ import { MessageContent } from './MessageContent'
 
 interface MessageBubbleProps {
   message: ChatMessage
-  chatId: string
-  selfDevice: string
-  selfName?: string
   onDeleted?: () => void
   onQuote?: (msg: ChatMessage) => void
 }
 
-export function MessageBubble({ message, chatId, selfDevice, selfName, onDeleted, onQuote }: MessageBubbleProps) {
+export function MessageBubble({ message, onDeleted, onQuote }: MessageBubbleProps) {
   const isSelf = message.sender === 'user'
   const isAgent = message.metadata?.piReplied
   const [showActions, setShowActions] = useState(false)
@@ -25,10 +22,12 @@ export function MessageBubble({ message, chatId, selfDevice, selfName, onDeleted
   }, [message.content])
 
   const handleDelete = useCallback(() => {
-    deleteMessage(chatId, message.id).then(ok => {
-      if (ok && onDeleted) onDeleted()
-    })
-  }, [chatId, message.id, onDeleted])
+    fetch(`/api/messages/${encodeURIComponent(message.id)}`, { method: 'DELETE' })
+      .then(res => res.json())
+      .then((data: { ok: boolean }) => {
+        if (data.ok && onDeleted) onDeleted()
+      })
+  }, [message.id, onDeleted])
 
   const handleQuote = useCallback(() => {
     onQuote?.(message)
@@ -81,14 +80,8 @@ export function MessageBubble({ message, chatId, selfDevice, selfName, onDeleted
 }
 
 /**
- * 删除一条消息
+ * 格式化时间
  */
-function deleteMessage(chatId: string, id: string): Promise<boolean> {
-  return fetch(`/api/messages/${encodeURIComponent(id)}`, { method: 'DELETE' })
-    .then(res => res.json())
-    .then((data: { ok: boolean }) => data.ok === true)
-}
-
 function formatTime(ts: number): string {
   const d = new Date(ts)
   const now = new Date()
