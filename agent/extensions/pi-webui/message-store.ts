@@ -61,9 +61,11 @@ function chatIdFromParticipants(a: string, b: string): string {
 
 /** 追加消息 */
 export function appendMessage(msg: ChatMessage): ChatMessage {
+  // chatId 统一为“对方设备名”（与前端私聊会话 id 对齐）：
+  // 群聊→group；私聊→对方设备名（target 为某设备时即 target；target 为 user 即 agent 回复，取发送方设备名）
   const chatId = msg.target === null
     ? 'group'
-    : chatIdFromParticipants(msg.sender, msg.target === 'user' ? msg.senderDevice : msg.target)
+    : msg.target === 'user' ? msg.senderDevice : msg.target
   const messages = readStore(chatId)
   messages.push(msg)
   while (messages.length > maxHistory) messages.shift()
