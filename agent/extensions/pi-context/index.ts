@@ -28,6 +28,7 @@ import {
 	recordPrune,
 	recordThinkingMeter,
 	recordToolCall,
+	recordToolCallEvent,
 	recordToolEnable,
 	recordToolUsage,
 	recordUsage,
@@ -301,6 +302,9 @@ export const DEHYDRATE_HINT = "\n→ 错误已精简；连续失败时优先参�
 
 /** 失败计数状态：同一工具连续失败（中间有成功即清零），会话级 */
 const failStreak = new Map<string, number>()
+
+/** 工具调用开始时间（用于计算 durationMs），会话级 */
+const toolCallStarts = new Map<string, number>()
 
 /** 更新失败连击：返回触发熔断的提示（第 FAIL_STREAK_LIMIT 次失败时；纯函数，便于测试） */
 export function updateFailStreak(
@@ -808,6 +812,14 @@ export default function (pi: ExtensionAPI) {
 		if (modified) return { messages };
 	});
 
+	// 工具调用结构化记录：tool_call 记录开始时间，tool_result 计算 durationMs 并落盘
+	// 用于 shadow-review 分析和工具性能监控
+	pi.on("tool_call", (event: { toolName?: string; arguments?: unknown }) => {
+		if (event.toolName) {
+			toolCallStarts.set(event.toolName, Date.now());
+		}
+	});
+
 	// R4：工具输出截断（确定性变换，稳定）+ 连续失败熔断（写入时追加提示）。
 	// bash/read 输出上限 5KB（最常见的超大输出源）；其他工具 20KB 兜底
 	// （防止未来新工具输出失控直达上下文，子代理等合理输出不受影响）。
@@ -822,6 +834,19 @@ export default function (pi: ExtensionAPI) {
 		} else {
 			updateFailStreak(failStreak, event.toolName, false);
 		}
+		// 结构化记录：计算 durationMs 并落盘到 tool-events.jsonl
+		const startMs = toolCallStarts.get(event.toolName);
+		if (startMs) {
+			toolCallStarts.delete(event.toolName);
+			try {
+				recordToolCallEvent({
+					tool: event.toolName,
+					ok: !event.isError,
+					durationMs: Date.now() - startMs,
+				});
+			} catch { /* 记录失败静默 */ }
+		}
+
 		if (!truncated && !hint) return;
 		return {
 			content: hint ? appendText(content, hint) : content,
