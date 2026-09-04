@@ -30,6 +30,8 @@ export type WsMessageType =
   | 'sync_response'
   | 'device_list'
   | 'ack'
+  | 'delete'
+  | 'clear'
 
 export interface WsEnvelope<T = unknown> {
   type: WsMessageType

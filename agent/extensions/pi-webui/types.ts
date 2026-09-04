@@ -39,6 +39,8 @@ export type WsMessageType =
   | 'sync_response'  // 历史消息响应
   | 'device_list'    // 设备列表更新
   | 'ack'            // 确认收到
+  | 'delete'         // 删除一条消息
+  | 'clear'          // 清空聊天
 
 export interface WsEnvelope<T = unknown> {
   type: WsMessageType
@@ -94,14 +96,4 @@ export const DEFAULT_CONFIG: WebuiConfig = {
 
 export function chatIdForGroup(): string {
   return 'group'
-}
-
-export function chatIdForPrivate(a: string, b: string): string {
-  return [a, b].sort().join(':')
-}
-
-export function chatIdParticipants(chatId: string): [string, string] | null {
-  if (chatId === 'group') return null
-  const parts = chatId.split(':')
-  return parts.length === 2 ? [parts[0], parts[1]] : null
 }

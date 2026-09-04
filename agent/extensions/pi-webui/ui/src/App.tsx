@@ -45,6 +45,8 @@ export function App() {
     send,
     sendTyping,
     requestHistory,
+    deleteMessage,
+    clearChat,
   } = useWebSocket(activeSession, authToken, deviceName)
 
   // 根据设备列表更新会话列表
@@ -129,6 +131,15 @@ export function App() {
 
   const activeSessionData = sessions.find(s => s.id === activeSession)
 
+  // 会话清理回调
+  const handleDeleted = useCallback(() => {
+    setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, lastMessage: undefined } : s))
+  }, [activeSession])
+
+  const handleCleared = useCallback(() => {
+    setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, lastMessage: undefined, unread: 0 } : s))
+  }, [activeSession])
+
   return (
     <div className="app">
       <div className={`sidebar ${sidebarOpen ? '' : 'hidden'}`}>
@@ -151,6 +162,8 @@ export function App() {
         onSend={handleSend}
         onTyping={handleTyping}
         onBack={() => setSidebarOpen(true)}
+        onDeleted={handleDeleted}
+        onCleared={handleCleared}
       />
     </div>
   )

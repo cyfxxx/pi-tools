@@ -1,11 +1,10 @@
 /**
  * pi-webui — 消息持久化 (JSON 文件)
  *
- * 消息按 chatId 分文件存储:
- *   ~/.pi/webui/messages/group.json
- *   ~/.pi/webui/messages/device:device.json
- *
- * 环形缓冲: 超过 maxHistory 条时裁剪最旧的
+ * 消息按 chatId 分文件存储（~/.pi/webui/messages/）:
+ *   group.json            群聊
+ *   <对方设备名>.json      私聊（与前端会话 id 对齐）
+ * 文件名用 encodeURIComponent 编码，与 chatId 双向可逆（设备名可含 - _ 等字符）。
  */
 
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, readdirSync } from 'node:fs'
@@ -21,8 +20,9 @@ export function setMaxHistory(n: number): void {
 }
 
 function msgFilePath(chatId: string): string {
-  const safe = chatId.replace(/:/g, '_')
-  return join(MSG_DIR, `${safe}.json`)
+  // 用 encodeURIComponent 而非 `:`→`_` 替换：后者与 listChatIds 的反向映射不可逆，
+  // chatId 改为设备名后会把 "a_b" 误还原为 "a:b"
+  return join(MSG_DIR, `${encodeURIComponent(chatId)}.json`)
 }
 
 function ensureDir(): void {
@@ -55,10 +55,6 @@ function writeStore(chatId: string, messages: ChatMessage[]): void {
   renameSync(tmp, p)
 }
 
-function chatIdFromParticipants(a: string, b: string): string {
-  return [a, b].sort().join(':')
-}
-
 /** 追加消息 */
 export function appendMessage(msg: ChatMessage): ChatMessage {
   // chatId 统一为“对方设备名”（与前端私聊会话 id 对齐）：
@@ -83,13 +79,30 @@ export function getMessages(chatId: string, opts?: { before?: number; limit?: nu
   return messages.slice(-limit)
 }
 
+/** 删除一条消息（按 id） */
+export function deleteMessage(chatId: string, id: string): boolean {
+  const messages = readStore(chatId)
+  const idx = messages.findIndex(m => m.id === id)
+  if (idx === -1) return false
+  messages.splice(idx, 1)
+  writeStore(chatId, messages)
+  return true
+}
+
+/** 清空一个聊天的所有消息 */
+export function clearChat(chatId: string): number {
+  const msgs = readStore(chatId)
+  writeStore(chatId, [])
+  return msgs.length
+}
+
 /** 获取所有有消息的 chatId 列表 */
 export function listChatIds(): string[] {
   ensureDir()
   try {
     return readdirSync(MSG_DIR)
       .filter(f => f.endsWith('.json'))
-      .map(f => f.replace('.json', '').replace(/_/g, ':'))
+      .map(f => decodeURIComponent(f.slice(0, -'.json'.length)))
   } catch {
     return []
   }

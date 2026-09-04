@@ -29,7 +29,7 @@ import { DEFAULT_CONFIG } from './types.ts'
 import { WsHub } from './ws-hub.ts'
 import { DeviceBridge, loadLinkConfig } from './device-bridge.ts'
 import { appendMessage, setMaxHistory } from './message-store.ts'
-import { extractFinalReply, isTrivialReply, createAgentReplyMessage, resolveReplyTarget } from './pi-agent-hook.ts'
+import { extractFinalReply, isTrivialReply, createAgentReplyMessage, WebuiTurnGate } from './pi-agent-hook.ts'
 import { createWebuiServer, mergeDeviceStatuses, type ServerContext } from './server.ts'
 import { nanoid } from './nanoid.ts'
 
@@ -94,6 +94,9 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
   const linkConfig = loadLinkConfig()
   const bridge = new DeviceBridge(linkConfig, selfDevice)
 
+  // 回复门控：登记 webui 注入的消息，agent_end 只外发能与之配对的 run（本地对话不外发）
+  const gate = new WebuiTurnGate()
+
   let serverCtx: ServerContext | null = null
   let httpServer: ReturnType<typeof import('node:http').createServer> | null = null
   let wss: import('ws').WebSocketServer | null = null
@@ -103,13 +106,17 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
     if (msg.target === null) {
       // 群聊: 广播 + 送本地 agent（带来源标签）
       bridge.broadcastToDevices(msg)
-      pi.sendUserMessage(`[群聊] ${msg.content}`, { deliverAs: 'followUp' })
+      const injected = `[群聊] ${msg.content}`
+      gate.mark(injected, 'group')
+      pi.sendUserMessage(injected, { deliverAs: 'followUp' })
     } else if (msg.target !== 'user' && msg.target !== selfDevice) {
       // 私聊 → 远程设备: 定向转发
       bridge.sendToDevice(msg.target, msg)
     } else if (msg.target === selfDevice) {
       // 私聊 → 本机: 送本地 agent（带来源标签）
-      pi.sendUserMessage(`[来自 ${msg.sender ?? 'user'} 的私聊] ${msg.content}`, { deliverAs: 'followUp' })
+      const injected = `[来自 ${msg.sender ?? 'user'} 的私聊] ${msg.content}`
+      gate.mark(injected, 'private')
+      pi.sendUserMessage(injected, { deliverAs: 'followUp' })
     }
   }
 
@@ -130,14 +137,21 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
 
   // ── pi agent 钩子 ─────────────────────────────────
 
-  // agent_end: 捕获 agent 回复，作为聊天消息。回复路由由触发它的 user 消息来源标签决定：
-  // 群聊→广播所有设备；私聊→回到对应设备会话并通知用户客户端。
-  // 来源用 resolveReplyTarget 从对话历史解析，而非“最近一次 target”全局状态（避免串话/竞态）。
+  // agent_end: 仅当本次 run 由 webui 消息触发时才外发回复（gate 配对注入文本与本次 run）。
+  // 本地 TUI / 其他扩展触发的对话一律不发，避免 agent 工作输出污染聊天记录、回复落错会话。
+  // 归属（群聊/私聊）由命中的登记条目决定，不读“最近一次 target”，避开 followUp 排队竞态。
   pi.on('agent_end', (event: { messages?: unknown[] }) => {
+    let origin = gate.claim(event.messages ?? [])
+    // 兜底：claim 未命中（如 run messages 不含注入文本），但有登记且本次 run 无新 user 消息
+    // → 将回复归属到最早的登记，避免回复丢失（比不外发更安全，用户能看到回复）
+    if (!origin && gate.size > 0 && !(event.messages ?? []).some(m => (m as {role?: string}).role === 'user')) {
+      origin = gate.shift()
+    }
+    if (!origin) return
     const reply = extractFinalReply(event.messages ?? [])
     if (!reply || isTrivialReply(reply)) return
 
-    const isPrivate = resolveReplyTarget(event.messages ?? []) === 'user'
+    const isPrivate = origin === 'private'
     const msg = createAgentReplyMessage(reply, selfDevice, isPrivate ? 'user' : null)
     appendMessage(msg)
     if (isPrivate) {
@@ -286,6 +300,7 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
   // ── 自动启动 ──────────────────────────────────────
   // 如果配置了 autoStart，则在 session_start 时自动启动
   pi.on('session_start', async () => {
+    gate.reset()
     if (existsSync(CONFIG_PATH)) {
       const cfg = loadConfig()
       if (cfg.port > 0) {

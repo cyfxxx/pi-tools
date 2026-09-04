@@ -15,6 +15,8 @@ export interface UseWebSocketReturn {
   send: (msg: ChatMessage) => void
   sendTyping: (chatId: string) => void
   requestHistory: (chatId: string, before?: number) => void
+  deleteMessage: (chatId: string, id: string) => Promise<boolean>
+  clearChat: (chatId: string) => Promise<number>
 }
 
 export function useWebSocket(
@@ -161,6 +163,22 @@ export function useWebSocket(
     }))
   }, [])
 
+  // 删除一条消息（HTTP REST）
+  const deleteMessage = useCallback(async (chatId: string, id: string): Promise<boolean> => {
+    const res = await fetch(`/api/messages/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    const data = await res.json() as { ok: boolean }
+    if (data.ok) requestHistory(chatId)
+    return data.ok === true
+  }, [requestHistory])
+
+  // 清空一个聊天
+  const clearChat = useCallback(async (chatId: string): Promise<number> => {
+    const res = await fetch(`/api/messages/clear?chatId=${encodeURIComponent(chatId)}`, { method: 'DELETE' })
+    const data = await res.json() as { deleted: number; ok?: boolean }
+    if (data.ok !== false) requestHistory(chatId)
+    return data.deleted ?? 0
+  }, [requestHistory])
+
   // 切换聊天时重新加载历史
   useEffect(() => {
     setMessages([])
@@ -188,5 +206,5 @@ export function useWebSocket(
     return () => clearInterval(timer)
   }, [])
 
-  return { connected, messages, devices, typing, send, sendTyping, requestHistory }
+  return { connected, messages, devices, typing, send, sendTyping, requestHistory, deleteMessage, clearChat }
 }

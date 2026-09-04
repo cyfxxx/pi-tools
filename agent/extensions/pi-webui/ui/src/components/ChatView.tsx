@@ -2,7 +2,7 @@
  * 聊天视图 — 消息流 + 输入框
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import type { ChatMessage, DeviceStatus, TypingIndicator } from '../lib/types'
 import { MessageBubble } from './MessageBubble'
 import { InputBar } from './InputBar'
@@ -18,6 +18,8 @@ interface ChatViewProps {
   onSend: (text: string) => void
   onTyping: () => void
   onBack?: () => void
+  onDeleted?: () => void
+  onCleared?: () => void
 }
 
 export function ChatView({
@@ -31,8 +33,25 @@ export function ChatView({
   onSend,
   onTyping,
   onBack,
+  onDeleted,
+  onCleared,
 }: ChatViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [clearing, setClearing] = useState(false)
+
+  const handleClearChat = useCallback(async () => {
+    setClearing(true)
+    try {
+      await clearChat(chatId)
+      onCleared?.()
+    } finally {
+      setClearing(false)
+    }
+  }, [chatId, onCleared])
+
+  const handleDeleted = useCallback(() => {
+    onDeleted?.()
+  }, [onDeleted])
 
   // 自动滚动到底部
   useEffect(() => {
@@ -74,6 +93,24 @@ export function ChatView({
             {!connected && ' · 连接中...'}
           </div>
         </div>
+        {filteredMessages.length > 0 && (
+          <button
+            className="clear-chat-btn"
+            onClick={handleClearChat}
+            disabled={clearing}
+            style={{
+              marginLeft: 'auto',
+              padding: '4px 10px',
+              fontSize: '0.8em',
+              background: clearing ? '#ccc' : '#f5f5f5',
+              border: '1px solid #ddd',
+              borderRadius: 4,
+              cursor: clearing ? 'wait' : 'pointer',
+            }}
+          >
+            {clearing ? '清理中...' : `清空 ${chatId === 'group' ? '群聊' : chatName}聊天`}
+          </button>
+        )}
       </div>
 
       <div className="messages-container" ref={containerRef}>
@@ -87,7 +124,9 @@ export function ChatView({
             <MessageBubble
               key={msg.id}
               message={msg}
+              chatId={chatId}
               selfDevice={selfDevice}
+              onDeleted={handleDeleted}
             />
           ))
         )}

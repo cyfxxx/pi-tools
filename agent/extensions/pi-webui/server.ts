@@ -15,8 +15,7 @@ import { join, extname } from 'node:path'
 import { WebSocketServer, type WebSocket } from 'ws'
 import type { ChatMessage, WebuiConfig, WsEnvelope } from './types.ts'
 import type { WsHub } from './ws-hub.ts'
-import { getMessages, appendMessage } from './message-store.ts'
-import { chatIdForGroup, chatIdForPrivate } from './types.ts'
+import { getMessages, appendMessage, deleteMessage, clearChat, listChatIds } from './message-store.ts'
 import { nanoid } from './nanoid.ts'
 
 const MIME_TYPES: Record<string, string> = {
@@ -193,6 +192,30 @@ export function createWebuiServer(
       return
     }
 
+    // DELETE /api/messages/:id  — 删除一条消息
+    if (url.pathname.startsWith('/api/messages/') && req.method === 'DELETE') {
+      const id = url.pathname.slice('/api/messages/'.length)
+      if (id) {
+        // 先匹配 id，失败再试 chatId
+        let deleted = false
+        for (const chatId of listChatIds()) {
+          if (deleteMessage(chatId, id)) { deleted = true; break }
+        }
+        sendJson(res, 200, { ok: deleted })
+      } else {
+        sendJson(res, 400, { error: 'missing id' })
+      }
+      return
+    }
+
+    // DELETE /api/messages/clear?chatId=...  — 清空一个聊天的所有消息
+    if (url.pathname === '/api/messages/clear' && req.method === 'DELETE') {
+      const chatId = url.searchParams.get('chatId') ?? 'group'
+      const count = clearChat(chatId)
+      sendJson(res, 200, { ok: true, chatId, deleted: count })
+      return
+    }
+
     if (url.pathname === '/api/send' && req.method === 'POST') {
       let body = ''
       req.on('data', (chunk) => { body += chunk })
@@ -337,6 +360,21 @@ function handleWsMessage(
         ts: Date.now(),
       }
       ws.send(JSON.stringify(response))
+      break
+    }
+    case 'delete': {
+      const { chatId, id } = envelope.payload as { chatId: string; id: string }
+      if (deleteMessage(chatId, id)) {
+        ws.send(JSON.stringify({ type: 'ack', payload: { action: 'delete', chatId, id }, ts: Date.now() }))
+      } else {
+        ws.send(JSON.stringify({ type: 'ack', payload: { action: 'delete', chatId, id, error: 'not found' }, ts: Date.now() }))
+      }
+      break
+    }
+    case 'clear': {
+      const chatId = (envelope.payload as { chatId: string }).chatId
+      clearChat(chatId)
+      ws.send(JSON.stringify({ type: 'ack', payload: { action: 'clear', chatId }, ts: Date.now() }))
       break
     }
   }
