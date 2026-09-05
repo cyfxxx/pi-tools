@@ -86,6 +86,22 @@ function getStaticDir(): string {
 }
 
 export default function piWebuiExtension(pi: ExtensionAPI): void {
+  // Check if we should run in server mode or client mode
+  // PI_WEBSUI_SERVER_MODE=false means we are in a subagent and should not start the server
+  const isServerMode = process.env.PI_WEBSUI_SERVER_MODE !== 'false';
+
+  if (!isServerMode) {
+    // Client mode: register command as no-op in subagent context
+    pi.registerCommand('webui', {
+      description: 'WebUI 客户端模式（不启动服务）',
+      handler: async () => {
+        pi.sendMessage({ customType: 'webui-status', content: '当前为客户端模式，无法启动服务', display: false })
+      },
+    });
+    // Return early - don't create hub, bridge, gate, or register message handlers
+    return;
+  }
+
   let config = loadConfig()
   setMaxHistory(config.maxMessageHistory)
 

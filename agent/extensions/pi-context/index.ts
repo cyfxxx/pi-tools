@@ -842,6 +842,7 @@ export default function (pi: ExtensionAPI) {
 			toolCallStarts.delete(event.toolName);
 			try {
 				recordToolCallEvent({
+					args: (event as any).args ?? {},
 					tool: event.toolName,
 					ok: !event.isError,
 					durationMs: Date.now() - startMs,

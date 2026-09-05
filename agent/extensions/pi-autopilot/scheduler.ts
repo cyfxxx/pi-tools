@@ -59,6 +59,7 @@ export async function maybeTriggerSummarizer(): Promise<void> {
     const proc = spawn(process.execPath, [join(homedir(), '.pi', 'scripts', 'task-summarizer.mjs')], {
       detached: true,
       stdio: ['ignore', logFd, logFd],
+      env: { ...process.env, PI_WEBSUI_SERVER_MODE: 'false' },
     })
     proc.unref()
     // 审计 LOW：detached+stdio 已让子进程接管 fd 副本，父进程句柄不再需要——
@@ -464,6 +465,7 @@ export class SessionScheduler {
         signal: controller.signal,
         cwd: process.cwd(),
         detached: process.platform !== 'win32',
+        env: { ...process.env, PI_WEBSUI_SERVER_MODE: 'false' },
       })
       // 审计 MEDIUM：subagent 长任务心跳——subagent 是独立 pi -p 进程，主会话
       // 无 turn_start 不置 busy 豁免，超长任务（>maxIdleMinutes）会被 isHanging
