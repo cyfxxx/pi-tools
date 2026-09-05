@@ -1,188 +1,221 @@
 # Pi 救援模式
 
-Pi 救援模式是一套冗余安全措施，用于在 Pi 进行自我修改和优化时发生崩溃或重启失败的情况下，自动或手动恢复系统。
+Pi 救援模式是一套智能崩溃分析与多层冗余恢复系统，在 Pi 自我修改或运行时发生崩溃时，自动分析原因并选择最合适的恢复策略。
 
 ## 概述
 
-当 Pi 在进行自我修改和优化时，可能会因为代码修改错误、配置文件损坏等原因导致崩溃。救援模式提供了多层次的恢复机制：
+系统由三个核心组件协作：
 
-1. **自动快照**：每次启动前自动保存当前状态
-2. **配置恢复**：崩溃时自动从快照或 git 恢复配置
-3. **救援模式 pi**：多次崩溃后启动最小化的 pi 程序来修复问题
+1. **崩溃分析器** (`pi-crash-analyzer.sh`)：分析 stderr 输出，分类崩溃类型
+2. **审计日志** (`pi-recovery-audit.sh`)：记录每次恢复的完整上下文
+3. **智能路由器** (`pi-wrapper.sh`)：根据崩溃类型选择恢复策略
 
-## 自动恢复流程
+## 恢复层级
+
+| 层级 | 触发条件 | 恢复动作 |
+|---|---|---|
+| **L1** | 崩溃 1-2 次 | 重试累积，不干预 |
+| **L2** | 崩溃 3+ 次 | 根据崩溃类型执行对应恢复（npm install / rebuild / 禁用扩展 / 恢复配置 / 清除代理 / kill 竞争 / 切换模型） |
+| **L3** | 崩溃 7+ 次 / 同类型连续失败 2 次 | 启动救援模式 pi（最小化配置，修复问题） |
+| **L4** | npm pi 损坏 / L3 失败 | 从本地源码缓存恢复（预编译 dist 覆盖 npm 安装） |
 
 ```
-崩溃 1-2 次: 等待用户手动处理
-崩溃 3-4 次: 回滚 lastGood 模型（现有逻辑）
-崩溃 5-6 次: 自动恢复配置文件（快照 → git）
-崩溃 7+ 次: 启动救援模式 pi
+pi 崩溃
+  ↓
+[1] 捕获 stderr 到临时文件
+  ↓
+[2] 分析器识别崩溃类型
+  ↓
+[3] 同类型连续失败 2 次？ → 是：升级策略
+  ↓
+[4] 根据类型执行对应恢复
+  ↓
+[5] 健康检查（pi --version + 最小化启动）
+  ↓
+[6] 成功 → 重启 / 失败 → 停止
 ```
+
+## 崩溃类型与恢复策略
+
+| 类型 | 识别模式 | 恢复动作 |
+|---|---|---|
+| `missing_module` | `ERR_MODULE_NOT_FOUND` | 重装 npm 依赖 |
+| `syntax_error` | `SyntaxError: Invalid or unexpected token` | rebuild 恢复补丁 |
+| `extension_fail` | `Failed to load extension` | 临时禁用问题扩展 |
+| `config_corrupt` | `JSON.parse` / settings 错误 | 从快照恢复配置 |
+| `proxy_error` | `Invalid URL protocol` / socks | 清除代理环境变量 |
+| `lock_contention` | `无法获取调度锁` | kill 竞争实例 |
+| `provider_error` | `503` / `server_error` | 切换 lastGood 模型 |
+| `node_compat` | `ERR_MODULE_NOT_FOUND` for `node:` 前缀 | 升级 Node.js |
+| `unknown` | 以上均不匹配 | 累积计数，达阈值升级 |
+
+## 防越修越坏机制
+
+1. **同类型连续失败检测**：同一崩溃类型连续失败 2 次 → 跳过该策略，升级到下一层
+2. **恢复前自动快照**：每次恢复前自动创建快照
+3. **恢复后健康检查**：`pi --version` + 最小化启动测试
+4. **审计日志**：记录每次恢复的完整上下文（类型、摘要、动作、结果、耗时）
+5. **最大恢复轮数**：单次启动最多 5 轮恢复循环，超出后停止并记录
 
 ## 文件结构
 
 ```
 ~/.pi/
-├── agent/
-│   ├── rescue/
-│   │   ├── rescue-config.json    # 救援模式配置
-│   │   ├── rescue-prompt.md      # 救援模式提示词
-│   │   └── README.md             # 本文档
-│   └── .pi-autopilot-crash.json  # 崩溃计数
-├── .snapshots/                   # 快照目录
-│   └── snapshot_YYYYMMDD_HHMMSS/
-│       ├── settings.json         # 配置快照
-│       ├── modes.json            # 模式配置快照
-│       ├── extensions.list       # 扩展列表快照
-│       ├── git-commit            # git 提交哈希
-│       └── git-status            # git 状态
+├── agent/rescue/
+│   ├── rescue-config.json      # 救援模式配置
+│   ├── rescue-prompt.md        # 救援模式提示词
+│   └── README.md               # 本文档
+├── logs/
+│   └── recovery-audit.jsonl    # 恢复审计日志（JSONL 格式）
+├── .snapshots/                 # 快照目录
+├── pi-source/                  # L4: git clone 源码（depth=1）
+├── pi-source-cache/            # L4: 预编译产物
+│   ├── version.json            # 版本信息
+│   ├── dist/                   # coding-agent 编译产物
+│   ├── npm-shrinkwrap.json     # 依赖锁定
+│   └── package.json            # 包描述
 └── scripts/
-    ├── pi-wrapper.sh             # 启动脚本（已增强）
-    ├── pi-snapshot.sh            # 快照管理脚本
-    └── pi-rescue.sh              # 手动救援脚本
+    ├── pi-wrapper.sh           # 启动脚本（智能恢复核心）
+    ├── pi-crash-analyzer.sh    # 崩溃类型分析器
+    ├── pi-recovery-audit.sh    # 审计日志模块
+    ├── pi-source-build.sh      # L4: 源码编译脚本
+    ├── pi-snapshot.sh          # 快照管理脚本
+    └── pi-rescue.sh            # 手动救援脚本
 ```
 
-## 救援模式 pi
+## 审计日志格式
 
-救援模式 pi 是一个最小化的 pi 实例，具有以下特点：
-
-- **无扩展**：不加载任何扩展，避免扩展问题导致崩溃
-- **无技能**：不加载任何技能，减少潜在问题
-- **专用提示词**：告诉 pi 它的职责是修复主程序问题
-- **低思考级别**：使用 low 思考级别，快速响应
-
-### 启动救援模式 pi
-
-**自动启动**：
-当连续崩溃达到 7 次时，pi-wrapper.sh 会自动启动救援模式 pi。
-
-**手动启动**：
-```bash
-# 使用救援脚本
-bash ~/.pi/scripts/pi-rescue.sh
-
-# 或直接启动
-node ~/.pi/agent/node_modules/.bin/pi \
-  --no-extensions \
-  --no-skills \
-  --append-system-prompt ~/.pi/agent/rescue/rescue-prompt.md
-```
-
-### 救援模式 pi 的职责
-
-1. **诊断问题**：分析崩溃日志和错误信息
-2. **修复配置**：恢复损坏的配置文件
-3. **恢复代码**：如果扩展代码被修改导致崩溃，恢复到正常状态
-4. **验证修复**：确保修复后主程序可以正常启动
-
-## 快照管理
-
-### 自动快照
-
-每次 pi 启动前会自动创建快照，保存以下内容：
-- `settings.json`：主配置文件
-- `modes.json`：模式配置
-- 扩展列表
-- git 状态
-
-### 手动快照管理
-
-使用 `pi-snapshot.sh` 脚本：
-
-```bash
-# 创建快照
-bash ~/.pi/scripts/pi-snapshot.sh create
-
-# 列出快照
-bash ~/.pi/scripts/pi-snapshot.sh list
-
-# 恢复快照
-bash ~/.pi/scripts/pi-snapshot.sh restore <snapshot-path>
-```
-
-## 手动救援
-
-使用 `pi-rescue.sh` 脚本进行手动救援：
-
-```bash
-bash ~/.pi/scripts/pi-rescue.sh
-```
-
-菜单选项：
-1. 查看崩溃日志
-2. 恢复配置文件
-3. 恢复到快照
-4. 重新安装依赖
-5. 重新运行 rebuild
-6. 启动救援模式 pi
-7. 退出
-
-## 配置
-
-### 救援阈值
-
-在 `pi-wrapper.sh` 中配置：
-
-```bash
-CRASH_THRESHOLD=3        # 回滚 lastGood 模型
-RESCUE_THRESHOLD=5       # 恢复配置文件
-RESCUE_PI_THRESHOLD=7    # 启动救援模式 pi
-```
-
-### 救援配置
-
-救援配置文件位于 `~/.pi/agent/rescue/rescue-config.json`：
+每次恢复操作写入 `~/.pi/logs/recovery-audit.jsonl`：
 
 ```json
 {
-  "description": "救援模式配置 - 用于修复主程序崩溃问题",
-  "extensions": [],
-  "skills": [],
-  "systemPrompt": null,
-  "appendSystemPrompt": "~/.pi/agent/rescue/rescue-prompt.md",
-  "thinking": "low"
+  "ts": 1788592001983,
+  "crashCount": 3,
+  "exitCode": 1,
+  "crashType": "missing_module",
+  "snippet": "Cannot find package '@earendil-works/pi-server'",
+  "action": "npm_install",
+  "success": true,
+  "consecutiveFail": false,
+  "durationMs": 103,
+  "detail": "installed 101 packages"
 }
+```
+
+查看最近恢复记录：
+```bash
+tail -5 ~/.pi/logs/recovery-audit.jsonl | python3 -m json.tool
+```
+
+## 健康检查
+
+恢复后自动执行：
+1. `pi --version`（10s 超时）
+2. `pi --no-extensions --no-skills --no-session -p '{"ok":true}'`（20s 超时）
+
+两项均通过才认为恢复成功。
+
+## 手动操作
+
+### 查看崩溃分析
+```bash
+# 分析指定日志文件
+bash ~/.pi/scripts/pi-crash-analyzer.sh /tmp/pi-crash-xxx.log
+
+# 查看恢复审计日志
+tail -10 ~/.pi/logs/recovery-audit.jsonl | python3 -m json.tool
+```
+
+### 手动救援
+```bash
+bash ~/.pi/scripts/pi-rescue.sh
+```
+
+### 查看快照
+```bash
+bash ~/.pi/scripts/pi-snapshot.sh list
+```
+
+### 手动构建 L4 缓存
+```bash
+# 首次构建（clone + build + bundle）
+bash ~/.pi/scripts/pi-source-build.sh
+
+# 强制重建（即使缓存已存在）
+bash ~/.pi/scripts/pi-source-build.sh --force
+
+# 不使用代理构建
+bash ~/.pi/scripts/pi-source-build.sh --no-proxy
+```
+
+### 查看 L4 缓存状态
+```bash
+cat ~/.pi/pi-source-cache/version.json | python3 -m json.tool
+```
+
+### 手动构建 L4 缓存
+```bash
+# 首次构建（clone + build + bundle）
+bash ~/.pi/scripts/pi-source-build.sh
+
+# 强制重建（即使缓存已存在）
+bash ~/.pi/scripts/pi-source-build.sh --force
+
+# 不使用代理构建
+bash ~/.pi/scripts/pi-source-build.sh --no-proxy
+```
+
+### 查看 L4 缓存状态
+```bash
+cat ~/.pi/pi-source-cache/version.json | python3 -m json.tool
+```
+
+## 配置
+
+### 阈值
+
+```bash
+CRASH_THRESHOLD=3           # 未达此值时重试累积
+RESCUE_PI_THRESHOLD=7       # 救援模式 pi 阈值
+MAX_RECOVERY_ROUNDS=5       # 单次启动最大恢复轮数
+CRASH_WINDOW_MS=86400000    # 崩溃计数时间窗（24h）
 ```
 
 ## 使用场景
 
-### 场景 1：扩展修改导致崩溃
+### 场景 1：npm 包损坏（missing_module）
 
-1. 用户修改了某个扩展的代码
-2. pi 启动后崩溃
-3. 连续崩溃 3 次后回滚 lastGood 模型
-4. 如果仍崩溃，连续崩溃 5 次后自动恢复配置
-5. 如果还崩溃，连续崩溃 7 次后启动救援模式 pi
-6. 在救援模式 pi 中修复扩展代码
-7. 重启主 pi
+1. pi 因缺少 `@earendil-works/pi-server` 崩溃
+2. 分析器识别为 `missing_module`
+3. 自动执行 `npm install` 重装依赖
+4. 健康检查通过 → 重启成功
 
-### 场景 2：配置文件损坏
+### 场景 2：扩展修改导致崩溃（extension_fail）
 
-1. 用户手动修改 settings.json 导致格式错误
-2. pi 启动后崩溃
-3. 自动从快照恢复 settings.json
-4. 重启 pi
+1. 用户修改扩展代码后 pi 崩溃
+2. 分析器识别为 `extension_fail`，提取扩展名
+3. 自动临时禁用问题扩展（`index.ts → index.ts.disabled`）
+4. 健康检查通过 → 重启，可在救援模式中修复扩展
 
-### 场景 3：自我修改失败
+### 场景 3：配置文件损坏（config_corrupt）
 
-1. pi 自动优化代码时修改错误
-2. 重启后崩溃
-3. 自动从 git 恢复配置
-4. 如果 git 恢复失败，启动救援模式 pi
-5. 在救援模式 pi 中修复代码
+1. settings.json 格式错误导致崩溃
+2. 分析器识别为 `config_corrupt`
+3. 自动从快照恢复配置
+4. 健康检查通过 → 重启成功
 
-## 注意事项
+### 场景 4：连续失败升级
 
-1. **快照保留**：默认保留最近 10 个快照，旧快照会自动清理
-2. **git 恢复**：只恢复配置文件，不恢复扩展代码
-3. **救援模式 pi**：不保存会话，退出后需要手动重启主 pi
-4. **版本兼容**：救援模式 pi 使用当前安装的 pi 版本，确保兼容性
+1. 同一崩溃类型连续失败 2 次
+2. 系统跳过该策略，升级到 L4 源码恢复
+3. 如果 L4 也失败 → 启动救援模式 pi
+4. 如果救援模式也失败 → 记录日志，停止恢复
 
-## 与现有机制的关系
+### 场景 5：npm pi 完全损坏（L4 源码恢复）
 
-救援模式与现有的崩溃恢复机制是互补的：
-
-- **现有机制**：回滚 lastGood 模型（3 次崩溃）
-- **救援模式**：恢复配置文件（5 次崩溃）+ 启动最小化 pi（7 次崩溃）
-
-这种分层设计确保了在不同严重程度的问题下都有对应的恢复措施。
+1. npm 安装的 pi 因磁盘损坏/误删/版本冲突完全不可用
+2. L2 的 `recover_missing_module`（npm install）也失败
+3. 自动触发 L4：检查 `pi-source-cache/` 预编译缓存
+4. 有缓存 → 直接覆盖 npm 安装的 dist 目录
+5. 无缓存 → 尝试实时构建（clone + build + bundle）
+6. 健康检查通过 → 重启成功

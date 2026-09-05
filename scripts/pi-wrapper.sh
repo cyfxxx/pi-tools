@@ -89,7 +89,14 @@ export PI_AUTOPILOT
 CRASH_THRESHOLD=3
 RESCUE_THRESHOLD=5  # 连续崩溃达 5 次触发配置恢复
 RESCUE_PI_THRESHOLD=7  # 连续崩溃达 7 次启动救援模式 pi
+MAX_RECOVERY_ROUNDS=5  # 单次启动最大恢复循环轮数
+PI_SOURCE_CACHE="$HOME/.pi/pi-source-cache"  # L4 源码编译缓存
 LAST_ROLLBACK_TS=0
+
+# 加载崩溃分析器和审计日志模块
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/pi-crash-analyzer.sh"
+source "$SCRIPT_DIR/pi-recovery-audit.sh"
 # 审计 MEDIUM 修复：崩溃计数时间窗（24h）——窗口外的旧计数清零，
 # 避免长期积累的正常使用（零散非零退出）被误判为连续崩溃触发回滚
 CRASH_WINDOW_MS=$((24 * 3600 * 1000))
@@ -323,6 +330,234 @@ EOF
     "$@"
   
   return $?
+}
+
+# ── 健康检查 ──
+
+# health_check
+# 恢复后验证 pi 是否能正常启动
+# 返回 0=健康 1=不健康
+health_check() {
+  echo "[pi-wrapper] 执行健康检查..." >&2
+
+  # 1. 快速检查：pi --version
+  if ! timeout 10 node "$PI_JS" --version >/dev/null 2>&1; then
+    echo "[pi-wrapper] 健康检查失败：pi --version 无法执行" >&2
+    return 1
+  fi
+
+  # 2. 最小化启动测试（无扩展/无技能/无会话）
+  local hc_log="/tmp/pi-health-check-$$.log"
+  if timeout 20 node "$PI_JS" --no-extensions --no-skills --no-session -p '{"ok":true}' >"$hc_log" 2>&1; then
+    echo "[pi-wrapper] 健康检查通过" >&2
+    rm -f "$hc_log"
+    return 0
+  else
+    echo "[pi-wrapper] 健康检查失败：最小化启动测试未通过" >&2
+    [ -f "$hc_log" ] && head -3 "$hc_log" >&2
+    rm -f "$hc_log"
+    return 1
+  fi
+}
+
+# ── 智能恢复函数 ──
+
+# get_pi_global_dir
+# 返回 npm 全局安装目录（pi-coding-agent 所在）
+get_pi_global_dir() {
+  local pi_bin_dir
+  pi_bin_dir="$(dirname "$(command -v pi 2>/dev/null || echo '')")"
+  if [ -d "$pi_bin_dir" ]; then
+    echo "$pi_bin_dir/../lib/node_modules/@earendil-works/pi-coding-agent"
+  else
+    echo "$HOME/.local/share/pi-node/node-v22.23.2-linux-x64/lib/node_modules/@earendil-works/pi-coding-agent"
+  fi
+}
+
+# get_failed_extension_name <log_file>
+# 从崩溃日志中提取失败扩展名
+get_failed_extension_name() {
+  local log_file="$1"
+  grep -oP 'Failed to load extension "?\K[^"]+' "$log_file" 2>/dev/null | head -1
+}
+
+# disable_extension <ext_name>
+# 临时禁用指定扩展（重命名 index.ts → index.ts.disabled）
+disable_extension() {
+  local ext_name="$1"
+  local ext_dir="$HOME/.pi/agent/extensions/$ext_name"
+  if [ -f "$ext_dir/index.ts" ]; then
+    mv "$ext_dir/index.ts" "$ext_dir/index.ts.disabled" 2>/dev/null
+    echo "[pi-wrapper] 已临时禁用扩展: $ext_name" >&2
+    return 0
+  fi
+  return 1
+}
+
+# recover_missing_module
+# 崩溃类型：missing_module — 重新安装 npm 依赖
+recover_missing_module() {
+  echo "[pi-wrapper] [恢复] 重装 npm 依赖..." >&2
+  local global_dir
+  global_dir="$(get_pi_global_dir)"
+  if [ -d "$global_dir" ]; then
+    npm install --prefix "$(dirname "$global_dir")" 2>&1 | tail -3 >&2
+  else
+    npm install -g @earendil-works/pi-coding-agent 2>&1 | tail -3 >&2
+  fi
+}
+
+# recover_syntax_error
+# 崩溃类型：syntax_error — 重跑 rebuild 恢复补丁
+recover_syntax_error() {
+  echo "[pi-wrapper] [恢复] 重跑 rebuild 恢复补丁..." >&2
+  if [ -x "$HOME/.pi/scripts/rebuild.sh" ]; then
+    bash "$HOME/.pi/scripts/rebuild.sh" 2>&1 | tail -5 >&2
+  else
+    echo "[pi-wrapper] rebuild.sh 不存在" >&2
+    return 1
+  fi
+}
+
+# recover_extension_fail <log_file>
+# 崩溃类型：extension_fail — 临时禁用问题扩展
+recover_extension_fail() {
+  local log_file="$1"
+  local ext_name
+  ext_name="$(get_failed_extension_name "$log_file")"
+  if [ -n "$ext_name" ]; then
+    echo "[pi-wrapper] [恢复] 临时禁用扩展: $ext_name" >&2
+    disable_extension "$ext_name"
+  else
+    echo "[pi-wrapper] [恢复] 无法确定问题扩展，尝试禁用所有扩展" >&2
+    for ext_dir in "$HOME/.pi/agent/extensions"/*/; do
+      [ -f "$ext_dir/index.ts" ] && mv "$ext_dir/index.ts" "$ext_dir/index.ts.disabled" 2>/dev/null
+    done
+  fi
+}
+
+# recover_config_corrupt
+# 崩溃类型：config_corrupt — 从快照恢复配置
+recover_config_corrupt() {
+  echo "[pi-wrapper] [恢复] 从快照恢复配置..." >&2
+  local latest_snapshot
+  latest_snapshot=$(ls -1d "$SNAPSHOT_DIR"/snapshot_* 2>/dev/null | tail -1)
+  if [ -n "$latest_snapshot" ] && restore_snapshot "$latest_snapshot"; then
+    return 0
+  fi
+  echo "[pi-wrapper] [恢复] 快照恢复失败，尝试 git 恢复..." >&2
+  restore_config_from_git
+}
+
+# recover_proxy_error
+# 崩溃类型：proxy_error — 清除代理环境变量
+recover_proxy_error() {
+  echo "[pi-wrapper] [恢复] 清除代理环境变量..." >&2
+  unset https_proxy http_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY 2>/dev/null
+  export https_proxy="" http_proxy="" HTTP_PROXY="" HTTPS_PROXY="" ALL_PROXY=""
+}
+
+# recover_lock_contention
+# 崩溃类型：lock_contention — kill 竞争实例
+recover_lock_contention() {
+  echo "[pi-wrapper] [恢复] 检测竞争实例..." >&2
+  local my_pid=$$
+  local killed=0
+  for pid in $(pgrep -f "pi-coding-agent/dist/cli.js" 2>/dev/null); do
+    if [ "$pid" != "$my_pid" ] && [ "$pid" != "$PPID" ]; then
+      echo "[pi-wrapper] [恢复] 终止竞争实例 PID=$pid" >&2
+      kill "$pid" 2>/dev/null && killed=$((killed + 1))
+    fi
+  done
+  if [ "$killed" -gt 0 ]; then
+    sleep 2
+    return 0
+  fi
+  return 1
+}
+
+# recover_provider_error
+# 崩溃类型：provider_error — 回滚 lastGood 模型
+recover_provider_error() {
+  echo "[pi-wrapper] [恢复] 回滚 lastGood 模型..." >&2
+  rollback_to_lastgood
+}
+
+# escalate_recovery <crash_type>
+# 升级恢复策略（同类型连续失败时）
+escalate_recovery() {
+  local crash_type="$1"
+  echo "[pi-wrapper] [升级] 崩溃类型 $crash_type 连续失败，升级恢复策略..." >&2
+  # 先尝试 L4 源码编译恢复
+  if recover_from_source; then
+    return 0
+  fi
+  # L4 失败则启动救援模式 pi
+  start_rescue_pi
+}
+
+# ── L4: 源码编译恢复 ──
+
+# recover_from_source
+# 从本地源码缓存恢复 pi（L4 最终手段）
+# 返回 0=成功 1=失败
+recover_from_source() {
+  echo "[pi-wrapper] [L4] 尝试源码编译恢复..." >&2
+
+  local cache_dist="$PI_SOURCE_CACHE/dist"
+  local cache_bundle="$cache_dist/bundle/cli.js"
+  local cache_version="$PI_SOURCE_CACHE/version.json"
+  local global_dir
+  global_dir="$(get_pi_global_dir)"
+  local npm_dist="$global_dir/dist"
+
+  # 检查缓存是否存在
+  if [ -f "$cache_bundle" ]; then
+    echo "[pi-wrapper] [L4] 找到预编译缓存" >&2
+    if [ -f "$cache_version" ]; then
+      local ver hash
+      ver=$(node -e "console.log(require('$cache_version').version||'?')" 2>/dev/null)
+      hash=$(node -e "console.log(require('$cache_version').gitHash||'?')" 2>/dev/null)
+      echo "[pi-wrapper] [L4] 缓存版本: $ver ($hash)" >&2
+    fi
+  else
+    # 无缓存：尝试实时构建
+    echo "[pi-wrapper] [L4] 无预编译缓存，尝试实时构建..." >&2
+    if [ -x "$HOME/.pi/scripts/pi-source-build.sh" ]; then
+      bash "$HOME/.pi/scripts/pi-source-build.sh" 2>&1 | tail -5 >&2
+      if [ ! -f "$cache_bundle" ]; then
+        echo "[pi-wrapper] [L4] 实时构建失败" >&2
+        return 1
+      fi
+      ok "[L4] 实时构建成功"
+    else
+      echo "[pi-wrapper] [L4] pi-source-build.sh 不存在" >&2
+      return 1
+    fi
+  fi
+
+  # 备份当前 dist
+  if [ -d "$npm_dist" ]; then
+    local backup_dir="${npm_dist}.bak.$(date +%s)"
+    cp -r "$npm_dist" "$backup_dir" 2>/dev/null
+    echo "[pi-wrapper] [L4] 已备份当前 dist: $backup_dir" >&2
+  fi
+
+  # 覆盖 dist
+  rm -rf "$npm_dist"
+  cp -r "$cache_dist" "$npm_dist"
+  if [ $? -ne 0 ]; then
+    echo "[pi-wrapper] [L4] dist 覆盖失败" >&2
+    # 尝试恢复备份
+    [ -d "$backup_dir" ] && cp -r "$backup_dir" "$npm_dist" 2>/dev/null
+    return 1
+  fi
+
+  # 复制 npm-shrinkwrap.json（如有）
+  [ -f "$PI_SOURCE_CACHE/npm-shrinkwrap.json" ] && cp "$PI_SOURCE_CACHE/npm-shrinkwrap.json" "$global_dir/"
+
+  echo "[pi-wrapper] [L4] 已从源码缓存恢复 pi" >&2
+  return 0
 }
 
 init_crash_file() {
@@ -585,11 +820,13 @@ while true; do
   fi
   
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
+  
+  # 捕获 stderr 到临时文件用于崩溃分析
+  CRASH_LOG="/tmp/pi-crash-$$.log"
   if [ -f "$PI_JS" ] && echo "$PI_JS" | grep -q '\.js$'; then
-    node "$PI_JS" "$@"
+    node "$PI_JS" "$@" 2>"$CRASH_LOG"
   else
-    # fallback: 尝试直接运行（可能走 wrapper 循环）
-    "$PI_JS" "$@"
+    "$PI_JS" "$@" 2>"$CRASH_LOG"
   fi
   EXIT_CODE=$?
   echo "[pi-wrapper] Pi 已退出 (code: $EXIT_CODE)" >&2
@@ -598,10 +835,11 @@ while true; do
   echo "[pi-wrapper] 状态: action=$ACTION" >&2
 
   if [ "$ACTION" = "none" ] || [ -z "$ACTION" ]; then
-    # 审计 MEDIUM 修复：排除用户主动退出（130=Ctrl+C SIGINT、143=SIGTERM）——
-    # 此前一律计崩溃，正常手动退出累计 3 次即误触发 lastGood 回滚+自动重启
+    # 排除用户主动退出（130=Ctrl+C、143=SIGTERM）
     if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 130 ] && [ "$EXIT_CODE" -ne 143 ]; then
-      # 非正常退出（崩溃）：累计计数，达到阈值回滚 lastGood；24h 窗口外旧计数清零
+      # ── 崩溃处理：基于原因分析的智能恢复 ──
+      
+      # 累计崩溃计数
       crash_count=$(read_crash_count)
       crash_ts=$(read_crash_ts)
       now_ms=$(date +%s%3N)
@@ -610,68 +848,127 @@ while true; do
       fi
       crash_count=$((crash_count + 1))
       write_crash_count "$crash_count"
-      echo "[pi-wrapper] 检测到崩溃 (第 ${crash_count} 次)" >&2
       
-      # 崩溃恢复策略：根据崩溃次数采取不同的恢复措施
-      if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
-        # 崩溃 7+ 次：启动救援模式 pi（最小化配置）
-        echo "[pi-wrapper] 连续崩溃 ${crash_count} 次，启动救援模式 pi..." >&2
-        start_rescue_pi
-        echo "[pi-wrapper] 救援模式 pi 已退出，重置崩溃计数" >&2
-        write_crash_count 0
+      # 分析崩溃原因
+      CRASH_TYPE=$(analyze_crash "$CRASH_LOG")
+      CRASH_SNIPPET=$(get_crash_snippet "$CRASH_LOG")
+      echo "[pi-wrapper] 崩溃分析: 类型=$CRASH_TYPE (第 ${crash_count} 次)" >&2
+      
+      # 检查恢复轮数
+      RECOVERY_ROUNDS=$((${RECOVERY_ROUNDS:-0} + 1))
+      if [ "$RECOVERY_ROUNDS" -gt "$MAX_RECOVERY_ROUNDS" ]; then
+        echo "[pi-wrapper] 已达最大恢复轮数($MAX_RECOVERY_ROUNDS)，停止恢复" >&2
+        audit_begin "$CRASH_TYPE" "$CRASH_SNIPPET" "$crash_count" "$EXIT_CODE"
+        audit_end "max_rounds_reached" "false" "超过最大恢复轮数"
+        rm -f "$CRASH_LOG"
         break
-      elif [ "$crash_count" -ge "$RESCUE_THRESHOLD" ]; then
-        # 崩溃 5-6 次：尝试恢复配置文件
-        echo "[pi-wrapper] 连续崩溃 ${crash_count} 次，尝试恢复配置..." >&2
-        
-        # 先尝试从快照恢复
-        local latest_snapshot=$(ls -1d "$SNAPSHOT_DIR"/snapshot_* 2>/dev/null | tail -1)
-        if [ -n "$latest_snapshot" ] && restore_snapshot "$latest_snapshot"; then
-          echo "[pi-wrapper] 已从快照恢复配置，1 秒后重启..." >&2
-          sleep 1
-          set -- "${ORIG_ARGS[@]}" "--continue"
-          continue
-        fi
-        
-        # 快照恢复失败，尝试从 git 恢复
-        if restore_config_from_git; then
-          echo "[pi-wrapper] 已从 git 恢复配置，1 秒后重启..." >&2
-          sleep 1
-          set -- "${ORIG_ARGS[@]}" "--continue"
-          continue
-        fi
-        
-        # git 恢复也失败，启动救援模式
-        echo "[pi-wrapper] 配置恢复失败，启动救援模式 pi..." >&2
-        start_rescue_pi
-        echo "[pi-wrapper] 救援模式 pi 已退出，重置崩溃计数" >&2
-        write_crash_count 0
-        break
-      elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
-        # 崩溃 3-4 次：回滚 lastGood 模型（现有逻辑）
-        if rollback_to_lastgood; then
-          echo "[pi-wrapper] 回滚后 1 秒重启..." >&2
-          sleep 1
-          set -- "${ORIG_ARGS[@]}" "--continue"
-          continue
-        fi
       fi
       
-      echo "[pi-wrapper] 崩溃次数未达阈值或回滚失败，停止" >&2
-      break
+      # 写审计日志（恢复前）
+      audit_begin "$CRASH_TYPE" "$CRASH_SNIPPET" "$crash_count" "$EXIT_CODE"
+      
+      # 检查是否同类型连续失败
+      if was_consecutive_fail "$CRASH_TYPE"; then
+        echo "[pi-wrapper] 崩溃类型 $crash_type 连续失败，升级恢复策略" >&2
+        escalate_recovery "$CRASH_TYPE"
+        audit_end "escalate_recovery" "$?" "同类型连续失败，升级到救援模式"
+        if health_check; then
+          echo "[pi-wrapper] 升级恢复后健康检查通过，重启..." >&2
+          rm -f "$CRASH_LOG"
+          sleep 1
+          set -- "${ORIG_ARGS[@]}" "--continue"
+          continue
+        fi
+        echo "[pi-wrapper] 升级恢复后健康检查失败，停止" >&2
+        rm -f "$CRASH_LOG"
+        break
+      fi
+      
+      # 根据崩溃类型选择恢复策略
+      RECOVERY_OK=false
+      case "$CRASH_TYPE" in
+        missing_module)
+          if recover_missing_module; then
+            RECOVERY_OK=true
+          else
+            # npm install 失败，尝试 L4 源码恢复
+            echo "[pi-wrapper] npm install 失败，尝试 L4 源码恢复..." >&2
+            recover_from_source && RECOVERY_OK=true
+          fi
+          ;;
+        syntax_error)
+          recover_syntax_error && RECOVERY_OK=true
+          ;;
+        extension_fail)
+          recover_extension_fail "$CRASH_LOG" && RECOVERY_OK=true
+          ;;
+        config_corrupt)
+          recover_config_corrupt && RECOVERY_OK=true
+          ;;
+        proxy_error)
+          recover_proxy_error && RECOVERY_OK=true
+          ;;
+        lock_contention)
+          recover_lock_contention && RECOVERY_OK=true
+          ;;
+        provider_error)
+          recover_provider_error && RECOVERY_OK=true
+          ;;
+        *)
+          # unknown 类型：未达阈值时重试，达阈值时升级
+          if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
+            echo "[pi-wrapper] 未知崩溃类型，启动 L4 源码恢复 + 救援模式 pi..." >&2
+            recover_from_source || start_rescue_pi
+            RECOVERY_OK=$?
+          elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
+            # 尝试 L4 源码恢复作为中间手段
+            if recover_from_source; then
+              RECOVERY_OK=true
+            else
+              recover_provider_error && RECOVERY_OK=true
+            fi
+          else
+            echo "[pi-wrapper] 未知崩溃类型(${crash_count}/${CRASH_THRESHOLD})，1 秒后重试..." >&2
+            audit_end "retry" "true" "未知类型，重试累积"
+            rm -f "$CRASH_LOG"
+            sleep 1
+            set -- "${ORIG_ARGS[@]}"
+            continue
+          fi
+          ;;
+      esac
+      
+      # 健康检查
+      if [ "$RECOVERY_OK" = true ] && health_check; then
+        audit_end "$CRASH_TYPE" "true" "恢复成功，健康检查通过"
+        echo "[pi-wrapper] 恢复成功，重启..." >&2
+        rm -f "$CRASH_LOG"
+        sleep 1
+        set -- "${ORIG_ARGS[@]}" "--continue"
+        continue
+      else
+        audit_end "$CRASH_TYPE" "false" "恢复失败或健康检查不通过"
+        echo "[pi-wrapper] 恢复失败，停止" >&2
+        rm -f "$CRASH_LOG"
+        break
+      fi
     fi
+    
     # 正常退出：记录 lastGood 并清零崩溃计数
     save_lastgood
     write_crash_count 0
     SNAPSHOT_CREATED=0
+    RECOVERY_ROUNDS=0
     echo "[pi-wrapper] 正常退出，不重启" >&2
+    rm -f "$CRASH_LOG"
     break
   fi
 
   # 有意的重启（模型切换/会话切换/挂死恢复）：清零崩溃计数
   write_crash_count 0
+  RECOVERY_ROUNDS=0
 
-  # Read target info from state file (from the restartLog that was set before shutdown)
+  # Read target info from state file
   TARGET_SESSION=$(read_state_field "targetSession")
   TARGET_MODEL=$(read_state_field "targetModel")
 
@@ -680,20 +977,15 @@ while true; do
 
   # Reset extra args each iteration to avoid accumulation
   EXTRA_ARGS=()
-  # 注意：不要在这里 unset TARGET_SESSION/TARGET_MODEL——下方分支判断依赖它们
-  # （2026-08-15 审计发现：unset 先于判断致 switch_session/set_model 分支恒假，
-  # 模型切换/会话切换/崩溃回滚静默降级为 --continue）
 
   if [ "$ACTION" = "switch_session" ] && [ -n "$TARGET_SESSION" ]; then
     EXTRA_ARGS+=(--session "$TARGET_SESSION")
     echo "[pi-wrapper] 目标: 会话 $TARGET_SESSION" >&2
   elif [ "$ACTION" = "set_model" ] && [ -n "$TARGET_MODEL" ]; then
     EXTRA_ARGS+=(--model "$TARGET_MODEL")
-    # Also add --continue to resume session
     EXTRA_ARGS+=(--continue)
     echo "[pi-wrapper] 目标: 模型 $TARGET_MODEL" >&2
   else
-    # Plain restart: continue with most recent session
     EXTRA_ARGS+=(--continue)
     echo "[pi-wrapper] 目标: 恢复最近会话" >&2
   fi
@@ -706,4 +998,5 @@ while true; do
   set -- "${ORIG_ARGS[@]}" "${EXTRA_ARGS[@]}"
 done
 
+rm -f "$CRASH_LOG"
 exit "$EXIT_CODE"

@@ -1483,6 +1483,44 @@ if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
   done
 fi
 
+# L4 源码编译缓存（可选）
+if [ -f "$PI_HOME/scripts/pi-source-build.sh" ]; then
+  title "Phase 5" "L4 源码编译缓存"
+  # 仅在缓存不存在或源码有更新时构建
+  CACHE_DIR="$PI_HOME/pi-source-cache"
+  SOURCE_DIR="$PI_HOME/pi-source"
+  NEED_BUILD=0
+  if [ ! -f "$CACHE_DIR/dist/bundle/cli.js" ]; then
+    NEED_BUILD=1
+    info "无缓存，首次构建"
+  elif [ -d "$SOURCE_DIR/.git" ]; then
+    # 检查源码是否有更新
+    cd "$SOURCE_DIR"
+    LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null)
+    # fetch 最新 hash（不 merge）
+    git fetch origin main --quiet 2>/dev/null
+    REMOTE_HASH=$(git rev-parse origin/main 2>/dev/null)
+    cd "$PI_HOME"
+    if [ "$LOCAL_HASH" != "$REMOTE_HASH" ] 2>/dev/null; then
+      NEED_BUILD=1
+      info "源码有更新 ($LOCAL_HASH → $REMOTE_HASH)"
+    fi
+  fi
+  if [ "$NEED_BUILD" = "1" ]; then
+    bash "$PI_HOME/scripts/pi-source-build.sh" 2>&1 | while IFS= read -r line; do
+      if echo "$line" | grep -q "✓"; then
+        ok "${line#  }"
+      elif echo "$line" | grep -q "✗"; then
+        fail "${line#  }"
+      elif echo "$line" | grep -q "⚠"; then
+        warn "${line#  }"
+      fi
+    done
+  else
+    ok "缓存已是最新"
+  fi
+fi
+
 verify
 VERR=$?
 
@@ -1495,6 +1533,7 @@ echo "  安装浏览器:      cd $PI_HOME/agent && npx cloakbrowser install"
 echo "  安装定时调度:    $PI_HOME/scripts/install-cron.sh"
 echo "  Whisper 转写:    $PI_HOME/scripts/pi-whisper.sh {start|stop|status}"
 echo "  wrapper 自愈:    $PI_HOME/scripts/install-wrapper.sh --ensure"
+echo "  L4 源码构建:     $PI_HOME/scripts/pi-source-build.sh [--force]"
 echo "  循环任务:        /loop 5m <prompt>"
 echo "  定时任务:        /schedule cron \"0 9 * * 1-5\" <prompt>"
 echo "  提醒:            /remind +30m <prompt>"
