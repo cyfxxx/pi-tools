@@ -456,7 +456,10 @@ export class SessionScheduler {
         if (process.platform === 'win32') {
           try { spawn('taskkill', ['/PID', String(proc.pid), '/T', '/F'], { windowsHide: true }) } catch { /* ignore */ }
         } else {
-          try { process.kill(-proc.pid!, 'SIGKILL') } catch { try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ } }
+          if (proc.pid !== undefined) {
+            try { process.kill(-proc.pid, 'SIGKILL') } catch { /* ignore */ }
+          }
+          try { proc.kill('SIGKILL') } catch { /* 进程可能已退出 */ }
         }
       }, timeout)
       const { cmd, args } = resolvePiSpawn()

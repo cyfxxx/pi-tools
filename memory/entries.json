@@ -233,7 +233,7 @@
       "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-09-03T08:21:26.221Z",
-      "accessedAt": "2026-09-04T11:43:11.220Z",
+      "accessedAt": "2026-09-06T04:49:26.049Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -5659,7 +5659,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-09-03T08:21:20.952Z",
-      "accessedAt": "2026-09-04T11:43:11.220Z",
+      "accessedAt": "2026-09-06T04:49:26.049Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -12018,7 +12018,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-09-04T11:43:11.220Z",
+      "accessedAt": "2026-09-06T03:42:33.059Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -12199,7 +12199,7 @@
       "recurrence": 4,
       "createdAt": "2026-08-25T22:54:39.097Z",
       "updatedAt": "2026-09-03T08:20:11.300Z",
-      "accessedAt": "2026-09-04T11:43:11.220Z",
+      "accessedAt": "2026-09-06T04:34:09.856Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -15583,7 +15583,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:35.004Z",
       "updatedAt": "2026-08-30T08:50:35.004Z",
-      "accessedAt": "2026-08-30T08:50:35.004Z",
+      "accessedAt": "2026-09-06T04:49:26.049Z",
       "observedAt": "2026-08-30T08:50:35.004Z",
       "environments": [
         "wsl2"
@@ -15630,7 +15630,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:52:06.761Z",
       "updatedAt": "2026-08-30T08:52:06.761Z",
-      "accessedAt": "2026-08-30T08:52:06.761Z",
+      "accessedAt": "2026-09-06T04:49:26.049Z",
       "observedAt": "2026-08-30T08:52:06.761Z",
       "environments": [
         "wsl2"
@@ -16385,7 +16385,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-09-03T08:20:26.256Z",
-      "accessedAt": "2026-09-04T11:43:11.220Z",
+      "accessedAt": "2026-09-06T04:49:26.049Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux",
@@ -20400,10 +20400,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 5,
+      "recurrence": 13,
       "createdAt": "2026-09-04T09:09:22.820Z",
-      "updatedAt": "2026-09-04T11:43:11.137Z",
-      "accessedAt": "2026-09-04T11:43:11.137Z",
+      "updatedAt": "2026-09-06T04:49:26.020Z",
+      "accessedAt": "2026-09-06T04:49:26.020Z",
       "environments": [
         "all"
       ],
@@ -20478,7 +20478,53 @@
       "accessedAt": "2026-09-04T11:57:30.116Z",
       "environments": [
         "all"
-      ]
+      ],
+      "observedAt": "2026-09-04T11:57:30.116Z",
+      "deleted": false
+    },
+    {
+      "id": "9736de43-0a75-46ba-bcc3-7f23e1c0d2f3",
+      "category": "procedure",
+      "title": "批次2基线红项修复流程",
+      "content": "1. 在项目根目录执行 `git pull --rebase` 确保代码为最新。\n2. 运行基准测试脚本以定位批次2的红项：`bash ~/.pi/scripts/golden-tasks.sh --batch=2`（或相应参数），记录输出中标记为红色的断言。\n3. 根据红项提示在相应模块修复代码或配置；常见修复包括更新依赖版本、调整 TypeScript 编译选项、修正冲突的脚本路径。\n4. 修复后再次运行基准测试确保所有断言全部通过，输出包含 `batch2 全绿`。\n5. 将修复提交并推送：`git add . && git commit -m \"fix: batch2 baseline red items\" && git push`。\n6. 在 `/root/.pi/docs/SELF-OPTIMIZING-ROADMAP.md` 或相应项目文档中记录此次修复要点，以便后续快速复现。",
+      "tags": [
+        "baseline",
+        "red-fix",
+        "batch2"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T03:47:15.740Z",
+      "updatedAt": "2026-09-06T03:47:15.740Z",
+      "accessedAt": "2026-09-06T03:47:15.740Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-06T03:47:15.740Z",
+      "deleted": false
+    },
+    {
+      "id": "fa403861-2ca1-43e7-a5f8-a06076bd9b68",
+      "category": "solutions",
+      "title": "基线红项快速定位技巧",
+      "content": "在运行基准测试时，使用 `bash ~/.pi/scripts/golden-tasks.sh --batch=2` 可仅执行批次2的断言，快速定位红项；配合 `grep -i 'FAIL'` 过滤输出，便于定位具体失败点。",
+      "tags": [
+        "golden",
+        "batch2",
+        "debug"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T03:47:19.120Z",
+      "updatedAt": "2026-09-06T03:47:19.120Z",
+      "accessedAt": "2026-09-06T03:47:19.120Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-06T03:47:19.120Z",
+      "deleted": false
     }
   ]
 }

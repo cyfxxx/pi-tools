@@ -45,12 +45,12 @@ node scripts/usage-stats.mjs      # 跨会话缓存命中统计（幂等，输�
 - **git push**：remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL；勿提交 auth.json/settings.json/models.json（已 git ignore）
 - **后台任务（禁止阻塞前台）**：tmux_run 启动后**立即结束回合**（notify 默认自动唤醒：命令自然结束会话自动退出触发通知；Ctrl-C 中断/长驻命令会话保留，供 tmux_send 交互）；同轮内禁止 tmux_wait；确需等待只用 pattern= 匹配完成标志且 timeout≤60s；tmux_run 默认自动退出，until_exit 可直接用；仅用户明确要求"等它完成"时例外；无 tmux 环境用 nohup 记 PID
 - 旧扩展名（pi-web-toolkit / pi-router / pi-admin / pi-scheduler）已融合更名，禁止引用
-- **补丁生命周期**：9 个 patch 文件由 rebuild.sh 自动执行（幂等）：8 个无条件 + patch-playwright-core.mjs 仅 Termux 条件；pi update 后需重跑 rebuild.sh（wrapper 内执行 pi update 时 L3 钩子自动 rebuild）。清单见 docs/AGENTS-DETAILS.md
+- **补丁生命周期**：12 个 patch 文件由 rebuild.sh 自动执行（幂等）：11 个无条件 + patch-playwright-core.mjs 仅 Termux 条件；pi update 后需重跑 rebuild.sh（wrapper 内执行 pi update 时 L3 钩子自动 rebuild）。清单见 docs/AGENTS-DETAILS.md
 - **已知噪音（勿误判）**：pi-voice 回车键冲突警告属设计行为，无需处理。见 docs/AGENTS-DETAILS.md
 
 ## 深度文档（指向）
 
 - **扩展文档**：`extensions/<name>/README.md`
-- **扩展名称**：**pi-context**（上下文管理）、**plan-mode**（计划模式）、**pi-autopilot**（定时调度）、**pi-tmux**（后台任务）、 **pi-link**（多设备互联）、**pi-intervention**（干预捕获）、**pi-memory**（记忆管理）、**pi-web-search**（网络搜索）、**pi-browser**（浏览器操作）、**subagent**（子代理）、**pi-voice**（语音输入）
+- **扩展名称**：**pi-context**（上下文管理）、**plan-mode**（计划模式）、**pi-autopilot**（定时调度）、**pi-tmux**（后台任务）、 **pi-link**（多设备互联）、**pi-intervention**（干预捕获）、**pi-memory**（记忆管理）、**pi-web-search**（网络搜索）、**pi-browser**（浏览器操作）、**subagent**（子代理）、**pi-voice**（语音输入）、**pi-mode**（模式切换）、**pi-webui**（WebUI 聊天界面）
 - **后台任务（pi-bg.sh）**：`scripts/README-pi-bg.md`（四件套隔离：--no-session + --no-extensions + 软只读工具集（含 bash，写保护仅提示词级非沙箱）+ 独立日志）
 - **Pi官方文档**：https://pi.dev/docs/latest

@@ -25,6 +25,8 @@
 │   │   ├── registry.ts        注册/清理统一封装
 │   │   ├── config.ts          配置分层合并
 │   │   ├── task-record.ts     结构化任务记录（logs/task-records.jsonl）
+│   │   ├── hook-registry.ts   扩展钩子注册表
+│   │   ├── shadow-review.ts   影子代码审查
 │   │   └── TOKEN-BUDGET.md    使用文档
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-search/     网络搜索（SearXNG 私密搜索 + Bing 备选 + HTTP 抓取）
@@ -32,11 +34,13 @@
 │   │   ├── pi-browser/       浏览器自动化（CloakBrowser，自 pi-web-toolkit 拆出）
 │   │   ├── plan-mode/         计划模式（TUI 计划/任务管理）
 │   │   ├── pi-memory/         跨会话持久记忆（自主学习闭环）
+│   │   ├── pi-mode/           模式切换（full/light/quick/自定义）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-tmux/           tmux 会话管理（后台任务/长任务）
 │   │   ├── pi-voice/          语音交流（Termux：录音转写 + TTS 朗读）
 │   │   ├── pi-link/           多设备互联（ssh 通道 + 远程 pi RPC，link_send/link_status）
 │   │   ├── pi-intervention/   干预捕获（abort 快照/corrective prompt 关联/interventions.jsonl）
+│   │   ├── pi-webui/          WebUI 聊天界面（多设备同步 + WebSocket 桥接）
 │   │   └── pi-context/        token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
@@ -84,7 +88,7 @@
 │   ├── test-all.sh            一键全量回归（测试+类型+冲突检查）
 │   ├── pi-whisper.sh          whisper 常驻服务管理（start/stop/status/restart）
 │   ├── whisper-server.py      faster-whisper HTTP 服务（127.0.0.1:18766）
-│   ├── patch-*.mjs            TUI 补丁 9 个：footer×4 / voice-enter 回车拦截 / compaction-warm-prefix 暖前缀重放 / plan-tools / tab-arg-completion 由 rebuild.sh Phase 3 无条件执行；playwright-core 仅 Termux 条件执行
+│   ├── patch-*.mjs            TUI 补丁 12 个：footer×4 / voice-enter 回车拦截 / compaction-warm-prefix 暖前缀重放 / plan-tools / tab-arg-completion / autocomplete-startswith / fuzzy-match-type / truncate-type 由 rebuild.sh Phase 3 无条件执行；playwright-core 仅 Termux 条件执行
 │   ├── docker-rebuild-test.sh  Docker 干净环境重建回归（clone→rebuild→判定，分支可指定）
 │   ├── pi-bench.sh             用量基准（usage/timing/compare）
 │   ├── smoke-test.sh           冒烟测试（rebuild 依赖其第 1 项）
@@ -325,7 +329,7 @@ bash scripts/pi-snapshot.sh list     # 列出快照
 bash scripts/pi-snapshot.sh restore <path>  # 恢复快照
 ```
 
-详细说明见 `docs/RESCUE-MODE.md`。
+详细说明见 `agent/rescue/README.md`。
 
 ### 自管理
 

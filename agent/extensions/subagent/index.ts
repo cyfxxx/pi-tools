@@ -583,10 +583,17 @@ async function runSubprocessAgent(
 
 		const exitCode = await new Promise<number>((resolve) => {
 			const invocation = getPiInvocation(args);
+			// 审计 HIGH 修复：过滤敏感环境变量，防止 API 密钥/令牌泄露给子进程
+			const SENSITIVE_ENV = /^(ANTHROPIC_API_KEY|OPENAI_API_KEY|GOOGLE_API_KEY|AWS_SECRET|PI_SESSION_ID|PI_AUTH|PI_API_KEY)/i;
+			const filteredEnv: Record<string, string> = {};
+			for (const [k, v] of Object.entries(process.env)) {
+				if (v !== undefined && !SENSITIVE_ENV.test(k)) filteredEnv[k] = v;
+			}
 			const proc = spawn(invocation.command, invocation.args, {
 				cwd: cwd ?? defaultCwd,
 				shell: false,
 				stdio: ["ignore", "pipe", "pipe"],
+				env: filteredEnv,
 			});
 			// 整体超时兜底：provider 挂起（请求永不返回）时子进程无限运行、
 			// 用户不中止则常驻孤儿（最多 MAX_CONCURRENCY 个）。30 分钟上限

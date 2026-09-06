@@ -1,6 +1,6 @@
 import type { Browser, Page } from 'playwright-core'
 import type { BrowserConfig, PageInfo, NetworkEntry, DialogMode, DownloadFile } from './types'
-import { existsSync, readdirSync } from 'fs'
+import { existsSync, readdirSync, realpathSync } from 'fs'
 import { mkdir } from 'fs/promises'
 import { basename, dirname, join, resolve } from 'path'
 import { tmpdir, homedir } from 'os'
@@ -483,15 +483,19 @@ export class BrowserManager {
    * 与 navigate 的协议守卫防护不对等——对已知敏感凭据路径拒绝（黑名单而非白名单，
    * 兼顾正常业务文件上传的易用性）。 */
   async uploadFile(selector: string, path: string): Promise<void> {
+    // 审计 MEDIUM 修复：解析 symlink 后再做黑名单匹配，防 symlink 绕过
+    // 文件不存在时直接校验原始路径（防止提前抛 ENOENT 影响正常功能）
     const resolved = resolve(path)
-    const lowered = resolved.toLowerCase()
+    let real = resolved
+    try { real = realpathSync(resolved) } catch { /* 文件不存在或符号链接断裂，用原始路径 */ }
+    const lowered = real.toLowerCase()
     const SENSITIVE = [
       '/.ssh/', '/.gnupg/', '/.aws/', '/.kube/', '/.config/gcloud/',
       'auth.json', '.netrc', '.env', 'id_rsa', 'id_ed25519', 'id_ecdsa',
       '.bash_history', '.zsh_history', '.sh_history', 'credentials.json', 'tokens.json',
     ]
     if (SENSITIVE.some(s => lowered.includes(s)) || /\.(pem|key|pfx|p12|kdbx)$/.test(lowered)) {
-      throw new Error(`已拒绝上传疑似敏感凭据文件（prompt 注入防护）：${path}`)
+      throw new Error(`已拒绝上传疑似敏感凭据文件（prompt 注入防护）：${path} (已解析: ${real})`)
     }
     const page = await this.ensurePage()
     await page.setInputFiles(selector, path)

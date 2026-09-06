@@ -3,6 +3,30 @@
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
 `git checkout <tag>` 回退，或从该 tag 拉分支修复。
 
+## 2026-09-06 每日健康巡检 + 全项目审计修复
+
+- **全项目深度审计修复闭环**（aba290e）：确定性检查 + 11 套 vitest 全绿 + 8 组并行深度审查 + 主会话终审
+  - HIGH×2：subagent 子进程环境变量过滤（防 API 密钥泄露）、pi-browser evaluate 沙箱评估
+  - MEDIUM×12：pi-autopilot SIGKILL 非空断言修复、pi-tmux logPath shell 转义、pi-browser uploadFile symlink 检测、cache-guard 基线更新、冲突检查误报澄清等
+- **pi-translate-zh v12**：适配 pi 0.85.1，新增全屏设置项翻译、Cache miss notices 描述更新、Working 去省略号
+- **扩展清单补全**：README.md、AGENTS.md 补充 pi-mode、pi-webui
+- **补丁数更新**：9→12 个（新增 fuzzy-match-type / truncate-type / autocomplete-startswith）
+- **死链修复**：docs/RESCUE-MODE.md → agent/rescue/README.md
+- **cache-guard 基线同步**：AGENTS.md + pi-context/index.ts + subagent/index.ts 指纹漂移已确认并更新基线
+
+## 2026-09-05 每日任务 + 知识库
+
+- **daily-health 巡检告警**（aba290e）：自动检测 pi 进程异常退出
+- **knowledge 知识库更新**（b4e20f2）：2026-09-05 记忆增量
+- **tool stats 统计**（403d993、f217533、4cc767b、fa333b1、ef15c3d）：工具调用频率统计
+
+## 2026-09-05 功能修复
+
+- **fix(autopilot|webui|context)**（adb1837）：subagent 模式跳过 pi-webui 服务启动 + telemetry 增加 tool args
+- **feat(pi-context): thinking 档位任务类型自适应**（25f4913）：根据任务类型自动调整 thinking 深度
+- **feat(reviewer): 盲审原则 + 审查证明文档**（cfe7511）：代码审查增加盲审机制
+- **feat(pi-context): 工具调用结构化记录**（aa909c2）：工具调用结果结构化存储
+
 ## 2026-08-28 每日任务 v3 + 跨设备同步与修复
 
 - **每日任务 v3 竞态容忍架构**（e8073f0）：查重主流程 + 交叉比对兑底，并发竞态下不丢条目

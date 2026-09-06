@@ -4,9 +4,14 @@
  */
 
 import { execFile, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, writeSync, closeSync, statSync, readdirSync, renameSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, writeSync, closeSync, statSync, readdirSync, renameSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, isAbsolute, resolve } from 'node:path'
+
+/** shell 单引号安全转义：将 ' 替换为 '\''，整体用单引号包裹。 */
+function shellSingleQuote(str: string): string {
+  return "'" + str.replace(/'/g, "'\\''") + "'"
+}
 
 export const SESSION_PREFIX = 'pi-'
 const NAME_RE = /^[a-zA-Z0-9_-]{1,40}$/
@@ -490,7 +495,8 @@ export async function startSession(
 
   // 2. pipe-pane 落盘日志（-o 追加）；审计修复：cat >> 无限增长——设置前先超限单代轮转
   rotateLogIfLarge(opts, name)
-  const pipeCmd = `cat >> ${JSON.stringify(logPathFor(opts, name))}`
+  const logPath = logPathFor(opts, name)
+  const pipeCmd = `cat >> ${shellSingleQuote(logPath)}`
   await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
 
   // 3. 注入命令并回车（Windows 后端：bash -c 已执行命令——跳过避免 stdin EPIPE）
