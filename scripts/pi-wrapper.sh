@@ -364,7 +364,7 @@ health_check() {
   #    能捕获 SyntaxError / missing export 等 dist 损坏问题。
   #    --no-extensions 排除扩展干扰，只验证核心代码完整性。
   local hc_log="/tmp/pi-health-check-$$.log"
-  if timeout 30 node "$PI_JS" --no-extensions --no-skills --no-session -p 'Say exactly: ok' >"$hc_log" 2>&1; then
+  if timeout 60 node "$PI_JS" --no-extensions --no-skills --no-session -p 'Say exactly: ok' >"$hc_log" 2>&1; then
     echo "[pi-wrapper] 健康检查通过" >&2
     rm -f "$hc_log"
     return 0
@@ -609,6 +609,8 @@ recover_from_source() {
   fi
 
   echo "[pi-wrapper] [L4] 已从源码缓存恢复 pi" >&2
+  # 等待文件系统同步，避免健康检查时模块加载不完整
+  sleep 2
   return 0
 }
 
