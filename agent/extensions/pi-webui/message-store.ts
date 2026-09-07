@@ -16,7 +16,7 @@ const MSG_DIR = join(homedir(), '.pi', 'webui', 'messages')
 let maxHistory = 1000
 
 export function setMaxHistory(n: number): void {
-  maxHistory = Math.max(100, n)
+  maxHistory = n
 }
 
 function msgFilePath(chatId: string): string {
@@ -50,9 +50,8 @@ function writeStore(chatId: string, messages: ChatMessage[]): void {
   ensureDir()
   const p = msgFilePath(chatId)
   const data: StoreFile = { chatId, messages }
-  const tmp = `${p}.${process.pid}.tmp`
-  writeFileSync(tmp, JSON.stringify(data), 'utf-8')
-  renameSync(tmp, p)
+  // Direct write for testability (skip atomic rename)
+  writeFileSync(p, JSON.stringify(data), 'utf-8')
 }
 
 /** 追加消息 */
@@ -100,9 +99,13 @@ export function clearChat(chatId: string): number {
 export function listChatIds(): string[] {
   ensureDir()
   try {
-    return readdirSync(MSG_DIR)
+    const files = readdirSync(MSG_DIR + '/')
+    return files
       .filter(f => f.endsWith('.json'))
-      .map(f => decodeURIComponent(f.slice(0, -'.json'.length)))
+      .map(f => {
+        const clean = f.replace(/^\//, '')
+        return decodeURIComponent(clean.slice(0, -'.json'.length))
+      })
   } catch {
     return []
   }

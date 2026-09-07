@@ -21,7 +21,6 @@ export interface UseWebSocketReturn {
 
 export function useWebSocket(
   chatId: string,
-  authToken: string,
   deviceName: string
 ): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null)
@@ -33,16 +32,14 @@ export function useWebSocket(
   const chatIdRef = useRef(chatId)
   chatIdRef.current = chatId
 
-  // 连接 WebSocket
   const connect = useCallback(() => {
-    if (!deviceName || !authToken) return
+    if (!deviceName) return
     if (wsRef.current?.readyState === WebSocket.OPEN) return
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const params = new URLSearchParams({
       device: deviceName,
       user: '1',
-      token: authToken,
     })
     const url = `${protocol}//${location.host}/ws?${params}`
 
@@ -51,7 +48,6 @@ export function useWebSocket(
 
     ws.onopen = () => {
       setConnected(true)
-      // 请求当前聊天的历史消息
       ws.send(JSON.stringify({
         type: 'sync_request',
         payload: { chatId: chatIdRef.current, limit: 50 },
@@ -68,21 +64,19 @@ export function useWebSocket(
 
     ws.onclose = () => {
       setConnected(false)
-      // 自动重连
       reconnectTimer.current = setTimeout(connect, 3000)
     }
 
     ws.onerror = () => {
       ws.close()
     }
-  }, [deviceName, authToken])
+  }, [deviceName])
 
   const handleEnvelope = useCallback((envelope: WsEnvelope) => {
     switch (envelope.type) {
       case 'chat': {
         const msg = envelope.payload as ChatMessage
         setMessages(prev => {
-          // 去重
           if (prev.some(m => m.id === msg.id)) return prev
           return [...prev, msg]
         })
@@ -106,11 +100,9 @@ export function useWebSocket(
       case 'typing': {
         const payload = envelope.payload as TypingIndicator
         setTyping(prev => {
-          // 替换或追加
           const filtered = prev.filter(t => !(t.chatId === payload.chatId && t.user === payload.user))
           return [...filtered, { ...payload, ts: Date.now() }]
         })
-        // 3s 后自动清除
         setTimeout(() => {
           setTyping(prev => prev.filter(t => t.ts !== payload.ts))
         }, 3000)
@@ -133,7 +125,6 @@ export function useWebSocket(
     }
   }, [])
 
-  // 发送消息
   const send = useCallback((msg: ChatMessage) => {
     if (wsRef.current?.readyState !== WebSocket.OPEN) return
     wsRef.current.send(JSON.stringify({
@@ -143,7 +134,6 @@ export function useWebSocket(
     }))
   }, [])
 
-  // 发送正在输入
   const sendTyping = useCallback((chatId: string) => {
     if (wsRef.current?.readyState !== WebSocket.OPEN) return
     wsRef.current.send(JSON.stringify({
@@ -153,7 +143,6 @@ export function useWebSocket(
     }))
   }, [])
 
-  // 请求历史消息
   const requestHistory = useCallback((chatId: string, before?: number) => {
     if (wsRef.current?.readyState !== WebSocket.OPEN) return
     wsRef.current.send(JSON.stringify({
@@ -163,7 +152,6 @@ export function useWebSocket(
     }))
   }, [])
 
-  // 删除一条消息（HTTP REST）
   const deleteMessage = useCallback(async (chatId: string, id: string): Promise<boolean> => {
     const res = await fetch(`/api/messages/${encodeURIComponent(id)}`, { method: 'DELETE' })
     const data = await res.json() as { ok: boolean }
@@ -171,7 +159,6 @@ export function useWebSocket(
     return data.ok === true
   }, [requestHistory])
 
-  // 清空一个聊天
   const clearChat = useCallback(async (chatId: string): Promise<number> => {
     const res = await fetch(`/api/messages/clear?chatId=${encodeURIComponent(chatId)}`, { method: 'DELETE' })
     const data = await res.json() as { deleted: number; ok?: boolean }
@@ -179,7 +166,6 @@ export function useWebSocket(
     return data.deleted ?? 0
   }, [requestHistory])
 
-  // 切换聊天时重新加载历史
   useEffect(() => {
     setMessages([])
     if (connected) {
@@ -187,17 +173,15 @@ export function useWebSocket(
     }
   }, [chatId, connected, requestHistory])
 
-  // 连接管理
   useEffect(() => {
-    if (!deviceName || !authToken) return
+    if (!deviceName) return
     connect()
     return () => {
       clearTimeout(reconnectTimer.current)
       wsRef.current?.close()
     }
-  }, [connect, deviceName, authToken])
+  }, [connect, deviceName])
 
-  // 定期清除过期 typing 指示
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now()

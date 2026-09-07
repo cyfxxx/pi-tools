@@ -120,26 +120,75 @@ function enterPatchApplied(): boolean {
 
 function detectDistFromPath(explicit?: string): string {
   if (explicit && existsSync(join(explicit, 'modes', 'interactive', 'interactive-mode.js'))) return explicit
+  
   // 兜底：扫描本机 pi-node 安装目录（避免硬编码路径跨机失效）
   try {
+    // 通用路径：~/.local/share/pi-node
     const piNodeDir = join(homedir(), '.local', 'share', 'pi-node')
-    for (const d of readdirSync(piNodeDir)) {
-      const cand = join(piNodeDir, d, 'lib', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist')
-      if (existsSync(join(cand, 'modes', 'interactive', 'interactive-mode.js'))) return cand
+    if (existsSync(piNodeDir)) {
+      for (const d of readdirSync(piNodeDir)) {
+        const cand = join(piNodeDir, d, 'lib', 'node_modules', '@earendil-works', 'pi-coding-agent', 'dist')
+        if (existsSync(join(cand, 'modes', 'interactive', 'interactive-mode.js'))) return cand
+      }
     }
   } catch {
     // fall through
   }
+  
+  // 尝试通过 'pi' 命令查找安装路径
   try {
-    const bin = execFileSync('which', ['pi'], { encoding: 'utf-8' }).trim()
+    // 跨平台查找 pi 命令
+    let bin: string
+    if (process.platform === 'win32') {
+      // Windows: 使用 where 命令
+      bin = execFileSync('where', ['pi'], { encoding: 'utf-8', windowsHide: true }).trim().split('\n')[0]
+    } else {
+      // Unix-like: 使用 which 命令
+      bin = execFileSync('which', ['pi'], { encoding: 'utf-8' }).trim()
+    }
+    
     if (bin) {
-      const resolved = execFileSync('readlink', ['-f', bin], { encoding: 'utf-8' }).trim()
+      // 解析符号链接得到真实路径
+      let resolved: string
+      if (process.platform === 'win32') {
+        // Windows: 使用 PowerShell 解析符号链接
+        try {
+          const escapedBin = bin.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+          const psCmd = '(Get-Item "' + escapedBin + '").Target'
+          resolved = execFileSync(
+            'powershell',
+            ['-NoProfile', '-Command', psCmd],
+            { encoding: 'utf-8', windowsHide: true }
+          ).trim()
+          // 如果不是符号链接，Target 为空字符串或返回原路径
+          if (!resolved || !existsSync(resolved)) {
+            resolved = bin
+          }
+        } catch {
+          // PowerShell 失败，使用原始路径
+          resolved = bin
+        }
+      } else {
+        // Unix-like: 使用 readlink -f
+        resolved = execFileSync('readlink', ['-f', bin], { encoding: 'utf-8' }).trim()
+      }
+      
+      // 检查解析后的路径是否指向 pi 安装目录
       const m = resolved.match(/(.*node_modules\/@earendil-works\/pi-coding-agent\/)/)
-      if (m && existsSync(join(m[1], 'dist', 'modes', 'interactive', 'interactive-mode.js'))) return join(m[1], 'dist')
+      if (m && existsSync(join(m[1], 'dist', 'modes', 'interactive', 'interactive-mode.js'))) {
+        return join(m[1], 'dist')
+      }
     }
   } catch {
     // fall through
   }
+  
+  // 最后尝试使用环境变量
+  const envDist = process.env.PI_DIST
+  if (envDist && existsSync(join(envDist, 'modes', 'interactive', 'interactive-mode.js'))) {
+    return envDist
+  }
+  
   return '/nonexistent'
 }
 

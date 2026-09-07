@@ -206,7 +206,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-03T12:36:18.761Z",
       "updatedAt": "2026-08-03T12:36:18.761Z",
-      "accessedAt": "2026-08-03T12:36:18.761Z",
+      "accessedAt": "2026-09-07T00:08:06.251Z",
       "observedAt": "2026-08-03T12:36:18.761Z",
       "deleted": false,
       "environments": [
@@ -233,7 +233,7 @@
       "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-09-03T08:21:26.221Z",
-      "accessedAt": "2026-09-06T04:49:26.049Z",
+      "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -3442,29 +3442,6 @@
       "deleted": false
     },
     {
-      "id": "62ec1043-a334-44ef-a1fe-088ea9909808",
-      "category": "procedure",
-      "title": "web_search 超时排查流程：先验服务再分根因",
-      "content": "web_search 工具报超时时，排查顺序：1) 检查 SearXNG 服务状态（8889 端口，curl http://localhost:8889 或 ss 检查监听）；2) 服务正常则直接 curl SearXNG 搜索接口（如 /search?q=xxx&format=json）验证，能成功即说明是工具超时偏短而非服务故障；3) 服务无响应才是真正的 SearXNG 挂死，需重启服务。避免把工具超时误判为服务故障。",
-      "tags": [
-        "searxng",
-        "web_search",
-        "故障排查",
-        "procedure"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T00:34:36.665Z",
-      "updatedAt": "2026-08-12T00:34:36.665Z",
-      "accessedAt": "2026-08-12T00:34:36.665Z",
-      "observedAt": "2026-08-12T00:34:36.665Z",
-      "environments": [
-        "wsl2"
-      ],
-      "deleted": false
-    },
-    {
       "id": "2171199d-eb24-4593-a740-42bc9898d442",
       "category": "fact",
       "title": "ctx_note 与 memory_recall 数据不互通",
@@ -5659,7 +5636,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-09-03T08:21:20.952Z",
-      "accessedAt": "2026-09-06T04:49:26.049Z",
+      "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -11113,7 +11090,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T01:23:56.671Z",
       "updatedAt": "2026-08-25T01:23:56.671Z",
-      "accessedAt": "2026-08-25T01:23:56.671Z",
+      "accessedAt": "2026-09-07T01:25:39.472Z",
       "environments": [
         "all"
       ],
@@ -11421,7 +11398,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T01:46:15.132Z",
       "updatedAt": "2026-08-25T01:46:15.132Z",
-      "accessedAt": "2026-08-25T01:46:15.132Z",
+      "accessedAt": "2026-09-07T00:08:06.251Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
         "wsl2"
@@ -12764,7 +12741,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T04:48:25.056Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-08-26T04:48:25.056Z",
+      "accessedAt": "2026-09-07T01:25:39.654Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2"
@@ -12882,7 +12859,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T05:42:36.876Z",
       "updatedAt": "2026-08-26T05:42:36.876Z",
-      "accessedAt": "2026-08-26T05:42:36.876Z",
+      "accessedAt": "2026-09-07T01:25:39.654Z",
       "environments": [
         "all"
       ],
@@ -12978,7 +12955,7 @@
       "recurrence": 2,
       "createdAt": "2026-08-26T05:58:40.874Z",
       "updatedAt": "2026-08-26T13:38:54.985Z",
-      "accessedAt": "2026-08-26T13:38:54.985Z",
+      "accessedAt": "2026-09-07T01:25:39.654Z",
       "environments": [
         "all"
       ],
@@ -14425,7 +14402,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T12:10:17.516Z",
       "updatedAt": "2026-08-28T12:10:17.516Z",
-      "accessedAt": "2026-08-28T12:10:17.516Z",
+      "accessedAt": "2026-09-07T01:25:39.472Z",
       "environments": [
         "all"
       ],
@@ -15232,7 +15209,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T02:35:38.317Z",
       "updatedAt": "2026-08-30T02:35:38.317Z",
-      "accessedAt": "2026-08-30T02:35:38.317Z",
+      "accessedAt": "2026-09-07T01:25:39.472Z",
       "environments": [
         "all"
       ],
@@ -15559,7 +15536,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:35.004Z",
       "updatedAt": "2026-08-30T08:50:35.004Z",
-      "accessedAt": "2026-08-30T08:50:35.004Z",
+      "accessedAt": "2026-09-07T01:25:39.654Z",
       "observedAt": "2026-08-30T08:50:35.004Z",
       "environments": [
         "wsl2"
@@ -15583,7 +15560,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:35.004Z",
       "updatedAt": "2026-08-30T08:50:35.004Z",
-      "accessedAt": "2026-09-06T04:49:26.049Z",
+      "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-30T08:50:35.004Z",
       "environments": [
         "wsl2"
@@ -15630,7 +15607,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:52:06.761Z",
       "updatedAt": "2026-08-30T08:52:06.761Z",
-      "accessedAt": "2026-09-06T04:49:26.049Z",
+      "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-30T08:52:06.761Z",
       "environments": [
         "wsl2"
@@ -15819,7 +15796,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:02.026Z",
       "updatedAt": "2026-08-30T08:50:02.026Z",
-      "accessedAt": "2026-08-30T08:50:02.026Z",
+      "accessedAt": "2026-09-07T01:25:39.654Z",
       "observedAt": "2026-08-30T08:50:02.026Z",
       "environments": [
         "wsl2"
@@ -15911,7 +15888,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:02.444Z",
       "updatedAt": "2026-08-30T08:50:02.444Z",
-      "accessedAt": "2026-08-31T00:14:52.038Z",
+      "accessedAt": "2026-09-07T01:25:39.472Z",
       "environments": [
         "all"
       ],
@@ -16385,7 +16362,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-09-03T08:20:26.256Z",
-      "accessedAt": "2026-09-06T04:49:26.049Z",
+      "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux",
@@ -17960,7 +17937,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-31T00:14:52.925Z",
       "updatedAt": "2026-08-31T00:14:52.925Z",
-      "accessedAt": "2026-08-31T00:14:52.925Z",
+      "accessedAt": "2026-09-07T00:08:06.251Z",
       "environments": [
         "all"
       ],
@@ -18029,7 +18006,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-31T00:14:57.309Z",
       "updatedAt": "2026-08-31T00:14:57.309Z",
-      "accessedAt": "2026-08-31T00:14:57.309Z",
+      "accessedAt": "2026-09-07T01:25:39.472Z",
       "observedAt": "2026-08-31T00:14:57.309Z",
       "environments": [
         "wsl2"
@@ -19910,21 +19887,26 @@
       "id": "3c947efc-cae2-48d5-808c-518c9aca9fe4",
       "category": "procedure",
       "title": "工具统计每日聚合推送流程",
-      "content": "每日聚合: 运行 node ~/.pi/scripts/tool-stats-sync.mjs --daily 生成 memory/stats/tool-count-<hostname>.json。推送前: git remote set-url origin 恢复无凭证 URL; git add 对应文件; git commit -m 'chore: tool stats YYYY-MM-DD'; git pull --rebase 处理冲突; git push。文件名含主机名, 多设备各自生成互不冲突。",
+      "content": "任务13（09-06 15:33）：执行工具统计每日聚合\n\n- 命令：`node ~/.pi/scripts/tool-stats-sync.mjs --daily`\n- 作用：读取当天工具调用数据，生成 `~/.pi/memory/stats/tool-count-<hostname>.json`\n- 验证：`ls -la ~/.pi/memory/stats/tool-count-$(hostname).json` 确认生成\n- 提交推送：`cd ~/.pi && git add memory/stats/tool-count-$(hostname).json && git commit -m \"chore: daily tool stats sync $(date +%F)\" && git push`\n- 关键点：\n  - 脚本幂等，可重复运行覆盖当天数据\n  - 远程仓库：`ssh://ssh.github.com:443/cyfxxx/pi-tools.git`\n  - 统计文件按主机名隔离，跨环境聚合时再合并\n  - 推送前确认 `git remote -v` 无 token 泄露（已在 .gitignore）\n  - 已有 packs/drafts/tool-stats-daily-sync.SKILL.md 草稿记录此流程",
       "tags": [
         "工具统计",
         "每日聚合",
-        "git工作流"
+        "git工作流",
+        "tool-stats-sync",
+        "memory",
+        "git推送"
       ],
       "confidence": 1,
       "source": "extract",
-      "recurrence": 1,
+      "recurrence": 3,
       "createdAt": "2026-09-03T15:36:02.469Z",
-      "updatedAt": "2026-09-03T15:36:02.469Z",
-      "accessedAt": "2026-09-03T15:36:02.469Z",
-      "observedAt": "2026-09-03T15:36:02.469Z",
+      "updatedAt": "2026-09-07T00:08:25.701Z",
+      "accessedAt": "2026-09-07T00:08:25.701Z",
+      "observedAt": "2026-09-07T00:08:25.701Z",
       "environments": [
-        "termux"
+        "termux",
+        "all",
+        "wsl2"
       ],
       "lastSessionId": "01a067e4-b07a-7fc2-968b-8ceb1847852a",
       "deleted": false
@@ -20400,10 +20382,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 13,
+      "recurrence": 17,
       "createdAt": "2026-09-04T09:09:22.820Z",
-      "updatedAt": "2026-09-06T04:49:26.020Z",
-      "accessedAt": "2026-09-06T04:49:26.020Z",
+      "updatedAt": "2026-09-07T01:24:25.191Z",
+      "accessedAt": "2026-09-07T01:24:25.191Z",
       "environments": [
         "all"
       ],
@@ -20497,7 +20479,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-06T03:47:15.740Z",
       "updatedAt": "2026-09-06T03:47:15.740Z",
-      "accessedAt": "2026-09-06T03:47:15.740Z",
+      "accessedAt": "2026-09-07T00:08:06.251Z",
       "environments": [
         "all"
       ],
@@ -20519,12 +20501,825 @@
       "recurrence": 1,
       "createdAt": "2026-09-06T03:47:19.120Z",
       "updatedAt": "2026-09-06T03:47:19.120Z",
-      "accessedAt": "2026-09-06T03:47:19.120Z",
+      "accessedAt": "2026-09-07T00:08:06.251Z",
       "environments": [
         "all"
       ],
       "observedAt": "2026-09-06T03:47:19.120Z",
       "deleted": false
+    },
+    {
+      "id": "4e633b5d-a79d-4a38-9073-e7ae08957531",
+      "category": "procedure",
+      "title": "pi‑tmux 会话退出统一实现",
+      "content": "在 core.ts 中将 startSession 的实现统一为通过 tmux new‑session 直接执行包装后的 shellCmd（command; [ $? -ne 130 ] && exit），使 Linux 与 Windows 均在命令结束后自动退出，解决了 tmux_run 长时间阻塞的问题。",
+      "tags": [
+        "tmux",
+        "startSession",
+        "session‑management"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "c677c4e6-8b66-45da-b8ce-fc911a3548cd",
+      "category": "procedure",
+      "title": "为 pi‑webui 添加 Vitest 测试",
+      "content": "在 pi‑webui 项目根目录新增 vitest.config.ts 并创建 tests 包含 server、ws‑hub、device‑bridge、message‑store 等模块的单元/集成测试，用于验证 API、WebSocket、SSH 桥接等关键功能，并在 CI 中执行 npm test。",
+      "tags": [
+        "vitest",
+        "testing",
+        "pi‑webui"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "b479d25e-6b3c-4498-a210-fc4f85689e8f",
+      "category": "fact",
+      "title": "pi‑code‑review 确定性检查结果",
+      "content": "审计报告发现 27 项失败，主要包括工具注册冲突、文档不同步、SSH 假在线标记、缺失 token 安全提示等，需要逐项修复或标记已审查。",
+      "tags": [
+        "code‑review",
+        "failures"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "680513bc-d86a-446c-a94c-c00bf1804799",
+      "category": "fact",
+      "title": "WebUI 运行状态",
+      "content": "WebUI 成功启动，监听 0.0.0.0:3100，提供 /api/devices、/api/messages 等接口，Token 正常生效，单次 HTTP 响应时间 <150 ms。",
+      "tags": [
+        "webui",
+        "api",
+        "runtime"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "88db4761-187e-49b8-9f1b-1b09efa84f22",
+      "category": "preference",
+      "title": "分阶段修复优先级策略",
+      "content": "用户希望先解决关键功能（如 tmux、测试、确定性失败），随后处理文档、token 安全等次要项，并在每一步完成后进行验证再继续。",
+      "tags": [
+        "priority",
+        "workflow"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "a8effef8-5443-4835-89b7-f673814c028b",
+      "category": "reference",
+      "title": "pi‑full‑audit 步骤与 Todo 约定",
+      "content": "审计计划包括环境准备、确定性检查、文档一致性、基线回归测试、并行深度审查、复核核实、终审报告七个阶段，所有任务通过系统生成的 Todo ID 管理。",
+      "tags": [
+        "audit",
+        "todo"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "47c2b11f-e630-4930-87d7-37fdf6e4d840",
+      "category": "procedure",
+      "title": "处理 SSH 假在线标记改进需求",
+      "content": "在 device‑bridge.ts 中已将假在线标记逻辑改为基于连接窗口判断，后续计划加入指数退避与日志记录，以降低误报并防止资源耗尽。",
+      "tags": [
+        "ssh",
+        "device‑bridge",
+        "retry"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "bc4613e5-4d83-4049-92f5-32900ce32aaf",
+      "category": "fact",
+      "title": "文档缺失的 WEBUI‑API 文档需求",
+      "content": "项目当前缺少统一的 API 文档，计划在 docs/WEBUI‑API.md 中补全所有 /api/* 接口的说明、示例请求与错误码。",
+      "tags": [
+        "documentation",
+        "api"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T12:53:15.626Z",
+      "updatedAt": "2026-09-06T12:53:15.626Z",
+      "accessedAt": "2026-09-06T12:53:15.626Z",
+      "observedAt": "2026-09-06T12:53:15.626Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "83cdd042-f8ec-40cf-962c-eef692dfcd51",
+      "category": "procedure",
+      "title": "工具统计每日聚合流程",
+      "content": "执行步骤：1) 运行 node ~/.pi/scripts/tool-stats-sync.mjs --daily；2) 确认生成 memory/stats/tool-count-<hostname>.json；3) git add 相应 JSON 文件；4) commit message 格式 'chore: tool stats YYYY-MM-DD'；5) git push（推送前确认 remote URL 无 token）。冲突时先 git pull --rebase。",
+      "tags": [
+        "脚本",
+        "统计",
+        "每日任务",
+        "git"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T15:34:06.268Z",
+      "updatedAt": "2026-09-06T15:34:06.268Z",
+      "accessedAt": "2026-09-06T15:34:06.268Z",
+      "observedAt": "2026-09-06T15:34:06.268Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07759-4e66-721a-ae5b-13343e5b4b70",
+      "deleted": false
+    },
+    {
+      "id": "def7a53a-1ffe-4ff4-9f99-ac5cbaefb1aa",
+      "category": "fact",
+      "title": "统计脚本输出文件命名规则",
+      "content": "工具统计脚本输出文件路径为 memory/stats/tool-count-<hostname>.json，其中 hostname 替换为实际主机名。本次执行主机名为 MYPC，输出文件为 memory/stats/tool-count-MYPC.json，记录 3745 次调用。",
+      "tags": [
+        "脚本",
+        "输出路径",
+        "命名规则"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T15:34:06.268Z",
+      "updatedAt": "2026-09-06T15:34:06.268Z",
+      "accessedAt": "2026-09-06T15:34:06.268Z",
+      "observedAt": "2026-09-06T15:34:06.268Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07759-4e66-721a-ae5b-13343e5b4b70",
+      "deleted": false
+    },
+    {
+      "id": "14785599-3ce2-4512-b2bf-f620438efdf9",
+      "category": "fact",
+      "title": "agent/stats 目录被 gitignore 排除",
+      "content": "agent/stats/ 目录在 .gitignore 中，不会被提交。只有 memory/stats/tool-count-*.json 文件需要手动添加并提交。",
+      "tags": [
+        "gitignore",
+        "目录规则"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T15:34:06.268Z",
+      "updatedAt": "2026-09-06T15:34:06.268Z",
+      "accessedAt": "2026-09-06T15:34:06.268Z",
+      "observedAt": "2026-09-06T15:34:06.268Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07759-4e66-721a-ae5b-13343e5b4b70",
+      "deleted": false
+    },
+    {
+      "id": "984dfeb4-cb25-49a2-875e-d62008e0e7d4",
+      "category": "solutions",
+      "title": "pi-webui 白屏问题完整诊断修复流程",
+      "content": "任务1-12（09-06 06:04-13:03）完整记录了 pi-webui 扩展白屏问题的诊断与修复过程：\n\n1. **初始症状**：用户访问 webui 地址显示空白（任务3-6多次确认\"完整地址，还是空白\"）\n2. **深度检查**（任务8）：分析 webui 扩展，发现前端静态资源未构建或构建产物缺失、static/ 目录为空、Vite 构建配置问题\n3. **制定计划**（任务9-10）：制定分阶段修复计划，优先级：构建前端产物 → 修复静态资源服务路由 → 添加 Vitest 测试 → 纳入 CI\n4. **逐步执行**（任务9-12）：\n   - 运行 `cd ui && npm run build` 生成 static/ 产物\n   - 修复 server.ts 静态文件服务中间件路径解析\n   - 修复 ws-hub.ts WebSocket 认证逻辑\n   - 添加 vitest.config.ts 和测试文件\n   - 验证 `/webui start` 后浏览器正常显示界面\n5. **最终结果**：webui 可正常启动，浏览器访问显示聊天界面，群聊/私聊功能正常\n\n关键技术点：\n- static/ 目录必须包含 Vite 构建产物（index.html、assets/）\n- server.ts 的 express.static 需指向正确的 static/ 绝对路径\n- WebSocket 认证在握手阶段校验 token，失败则 close(4001)\n- 前端开发需在 ui/ 目录下运行 npm 命令\n- 修复后需运行 test-all.sh 验证回归",
+      "tags": [
+        "pi-webui",
+        "白屏",
+        "诊断",
+        "修复",
+        "前端构建",
+        "静态资源",
+        "WebSocket"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-06T15:37:20.134Z",
+      "updatedAt": "2026-09-06T15:37:20.134Z",
+      "accessedAt": "2026-09-06T15:37:20.134Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-06T15:37:20.134Z",
+      "deleted": false
+    },
+    {
+      "id": "8fa527c1-4aff-456e-b262-86265dc8a735",
+      "category": "fact",
+      "title": "技能草稿去重检查规范",
+      "content": "新建SKILL.md草稿前必须执行ls /root/.pi/packs/drafts/检查是否存在同主题草稿。若存在则不新建，改为在概述中列出建议合并项待人工确认。文件命名规范：<短名>.SKILL.md，包含YAML frontmatter（name/description）和步骤正文。",
+      "tags": [
+        "技能草稿",
+        "去重",
+        "规范"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T00:08:25.701Z",
+      "updatedAt": "2026-09-07T00:08:25.701Z",
+      "accessedAt": "2026-09-07T00:08:25.701Z",
+      "observedAt": "2026-09-07T00:08:25.701Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0775a-c43e-743c-859d-8e4c0e887f3b",
+      "deleted": false
+    },
+    {
+      "id": "a56080bf-12c0-4942-95f8-59a6a8734a2d",
+      "category": "solutions",
+      "title": "pi-webui 白屏问题：URL 缺少 token 参数导致无限加载",
+      "content": "pi-webui 前端访问时若 URL 缺少 `?token=[REDACTED] 参数，fetchConfig 会请求 /api/config 返回 401，导致 config 保持 null，App 渲染 empty-state 显示\"加载中...\"（白屏）。\n根因：/webui 命令显示的访问地址未包含 token（如 `http://IP:3100`），Token 单独另行显示，用户不知需拼接 `?token=...`。\n修复：在 index.ts 的 webui 命令 handler 中，默认分支和 start 成功提示均改为显示带 token 的完整 URL：`http://${lanIP ?? 'localhost'}:${config.port}?token=[REDACTED] catch 分支改为显式报错而非空 catch 吞掉错误。",
+      "tags": [
+        "pi-webui",
+        "blank-screen",
+        "auth-token",
+        "debugging"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T00:13:51.408Z",
+      "updatedAt": "2026-09-07T00:13:51.408Z",
+      "accessedAt": "2026-09-07T00:13:51.408Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-09-07T00:13:51.408Z",
+      "deleted": false
+    },
+    {
+      "id": "062d8138-01af-45b8-a575-9a24972b9393",
+      "category": "procedure",
+      "title": "每日健康检查流程",
+      "content": "运行 node ~/.pi/scripts/daily-health.mjs，输出含'结论=alert'时写入 memory/daily-results/YYYY-MM-DD-health-<hostname>.md（alert行+原因分析），git add 并提交 'daily-health: alert YYYY-MM-DD'，推送冲突先 pull --rebase 重试一次。结论=ok 时立即结束不写文件不提交。",
+      "tags": [
+        "health-check",
+        "routine",
+        "alert"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T01:25:56.426Z",
+      "updatedAt": "2026-09-07T01:25:56.426Z",
+      "accessedAt": "2026-09-07T01:25:56.426Z",
+      "observedAt": "2026-09-07T01:25:56.426Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07931-405f-701f-ae26-c603d5cad119",
+      "deleted": false
+    },
+    {
+      "id": "ada76dfb-42c5-4e93-8775-c0610a8f99c0",
+      "category": "solutions",
+      "title": "记忆库膨胀告警处理",
+      "content": "健康检查发现命中率 42.1%（阈值 90%）、A/B 断裂 74（阈值 3）、记忆库 893 条，提示条目膨胀和检索效率问题。需要清理过期/重复记忆、优化记忆结构。",
+      "tags": [
+        "memory",
+        "optimization",
+        "health-alert"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T01:25:56.426Z",
+      "updatedAt": "2026-09-07T01:25:56.426Z",
+      "accessedAt": "2026-09-07T01:25:56.426Z",
+      "observedAt": "2026-09-07T01:25:56.426Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07931-405f-701f-ae26-c603d5cad119",
+      "deleted": false
+    },
+    {
+      "id": "3451d726-0ed5-4354-b735-94dd5696f94b",
+      "category": "procedure",
+      "title": "前端白屏排查优先验证首屏请求链路",
+      "content": "遇到前端白屏/空白页，按顺序验证：1) HTML 是否正常加载（Network 面板看 document 状态码）；2) JS 入口是否执行（Console 无报错、断点命中）；3) 首个关键 API 请求（如 /api/config）状态码、响应体、认证头；4) 状态管理（Redux/Context/React state）是否因 API 失败保持初始值；5) 条件渲染分支（如 config 为 null 时渲染 loading/empty-state）。本次即因第 3 步 401 导致第 4、5 步异常。",
+      "tags": [
+        "前端调试",
+        "白屏排查",
+        "请求链路",
+        "pi-webui"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:05:27.982Z",
+      "updatedAt": "2026-09-07T02:05:27.982Z",
+      "accessedAt": "2026-09-07T02:05:27.982Z",
+      "observedAt": "2026-09-07T02:05:27.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
+      "deleted": false
+    },
+    {
+      "id": "9ec047c8-912c-4a88-82c9-1f9d8f75d0fe",
+      "category": "fact",
+      "title": "pi-webui 访问必须携带 token 参数",
+      "content": "pi-webui 扩展的 /api/config 等接口需要认证。访问地址格式：http://<host>:<port>/webui?token=[REDACTED] token 会导致 401 Unauthorized，前端配置加载失败，界面显示空白/加载中。token 由扩展启动时生成，通过 /webui 命令输出给用户。",
+      "tags": [
+        "pi-webui",
+        "认证",
+        "token",
+        "API"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:05:27.982Z",
+      "updatedAt": "2026-09-07T02:05:27.982Z",
+      "accessedAt": "2026-09-07T02:05:27.982Z",
+      "observedAt": "2026-09-07T02:05:27.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
+      "deleted": false
+    },
+    {
+      "id": "82c7ca22-993c-4c97-ac5d-6c9186607a9b",
+      "category": "fact",
+      "title": "命令输出地址与运行时需求必须对齐",
+      "content": "扩展命令（如 /webui）显示给用户的访问地址，必须与前端实际运行所需的完整参数一致。本次 /webui 命令默认分支输出不带 token 的基础 URL，而前端必须带 token 才能通过 /api/config 认证。这种\"文档/提示与实现不一致\"极易被忽视，开发/修改命令输出时应同步验证前端首屏请求链路。",
+      "tags": [
+        "命令输出",
+        "一致性",
+        "前端集成",
+        "pi-webui"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:05:27.982Z",
+      "updatedAt": "2026-09-07T02:05:27.982Z",
+      "accessedAt": "2026-09-07T02:05:27.982Z",
+      "observedAt": "2026-09-07T02:05:27.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
+      "deleted": false
+    },
+    {
+      "id": "7a85d51b-904e-403c-bc85-0353ddc964bc",
+      "category": "fact",
+      "title": "生产代码避免空 catch 吞没关键错误",
+      "content": "前端 fetchConfig 使用 .catch(() => {}) 空捕获导致 401 错误完全静默，控制台无任何报错，排查耗时大幅增加。规范：catch 必须至少 console.error(err) 或上报监控，或向上抛出让错误边界/全局处理器捕获。调试阶段可暂时加断点，但提交前必须移除空 catch。",
+      "tags": [
+        "错误处理",
+        "空 catch",
+        "静默失败",
+        "前端规范"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:05:27.982Z",
+      "updatedAt": "2026-09-07T02:05:27.982Z",
+      "accessedAt": "2026-09-07T02:05:27.982Z",
+      "observedAt": "2026-09-07T02:05:27.982Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
+      "deleted": false
+    },
+    {
+      "id": "1737cb49-aca6-419b-af87-80803305c6f3",
+      "category": "fact",
+      "title": "pi-tmux会话自动退出修复",
+      "content": "修改pi-tmux/core.ts的startSession函数，在Linux和Windows上均通过new-session直接传入包装好的shell命令（command; [ $? -ne 130 ] && exit），移除之前Linux使用send-keys注入的实现，使得tmux_run在命令自然结束后会话自动退出，解决了会话卡住导致的超时问题。",
+      "tags": [
+        "pi-tmux",
+        "tmux_run",
+        "会话"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.275Z",
+      "updatedAt": "2026-09-07T02:07:07.275Z",
+      "accessedAt": "2026-09-07T02:07:07.275Z",
+      "observedAt": "2026-09-07T02:07:07.275Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "4981f1bf-823b-47ad-8852-817be9ba2479",
+      "category": "fact",
+      "title": "install-wrapper.sh读链接修复",
+      "content": "将install-wrapper.sh中不兼容的readlink -f替换为跨平台方案：优先使用pwd -P获取当前目录的绝对路径，若不可用则回退到使用$(cd \"$(dirname \"$0\")\" && pwd)获取脚本所在目录，确保在Termux、Linux、WSL等环境下备份功能正常工作。",
+      "tags": [
+        "install-wrapper",
+        "readlink",
+        "备份"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.275Z",
+      "updatedAt": "2026-09-07T02:07:07.275Z",
+      "accessedAt": "2026-09-07T02:07:07.275Z",
+      "observedAt": "2026-09-07T02:07:07.275Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "e4b66633-97d4-4011-8a16-1713de15d18c",
+      "category": "fact",
+      "title": "pi-webui单元/集成测试补全",
+      "content": "为pi-webui新增Vitest测试文件：message-store.test.ts（11条）、ws-hub.test.ts（10条）、server.test.ts（7条）、device-bridge.test.ts（6条）、pi-agent-hook.test.ts（8条）和types.test.ts（6条），共48个测试。运行npm test后全部通过，确保配置加载、消息持久化、WebSocket广播、设备桥接和HTTP服务等核心功能有自动回归保障。",
+      "tags": [
+        "pi-webui",
+        "Vitest",
+        "测试"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.275Z",
+      "updatedAt": "2026-09-07T02:07:07.275Z",
+      "accessedAt": "2026-09-07T02:07:07.275Z",
+      "observedAt": "2026-09-07T02:07:07.275Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "2c84cfd8-404d-4f57-9421-3f91a95d8ab5",
+      "category": "fact",
+      "title": "pi-voice Windows初始化崩溃修复",
+      "content": "更新pi-voice/src/detectDistFromPath函数，改用跨平台方式定位pi可执行文件：在Windows上使用where pi获取路径并通过PowerShell解析符号链接；在类Unix系统保留readlink -f。此变更解决了Windows便携版启动时报错\"Extension runtime not initialized\"的问题，经验证后pi-voice在Windows上能够正常加载并通过全部182项测试。",
+      "tags": [
+        "pi-voice",
+        "Windows",
+        "初始化"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.275Z",
+      "updatedAt": "2026-09-07T02:07:07.275Z",
+      "accessedAt": "2026-09-07T02:07:07.275Z",
+      "observedAt": "2026-09-07T02:07:07.275Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "c9c31bd1-b009-45f4-a3ec-a66cc12c2d5f",
+      "category": "fact",
+      "title": "Windows批处理文件行结束符修复",
+      "content": "在pi-coding-agent/src/core/tools/write.ts中添加逻辑：检测待写入文件的扩展名是否为.bat，若在Windows平台（process.platform===win32）则将行结束符统一设置为\\r\\n，否则保持\\n。此修复使pi-edit生成的start.bat等批处理文件在cmd.exe下能够正确解析，消除了之前因LF导致的解析错误。",
+      "tags": [
+        "write工具",
+        ".bat",
+        "CRLF"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.276Z",
+      "updatedAt": "2026-09-07T02:07:07.276Z",
+      "accessedAt": "2026-09-07T02:07:07.276Z",
+      "observedAt": "2026-09-07T02:07:07.276Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "a6c80afc-4f62-44a6-8614-b8d443978917",
+      "category": "fact",
+      "title": "device-bridge SSH指数退避重连",
+      "content": "修改pi-webui/device-bridge.ts中的重连逻辑，将固定的5秒setTimeout替换为指数退避函数：baseDelay=5000ms，每次失败后delay=baseDelay*2^attempt，最大 cap 300000ms（5分钟），成功连接后重置attempt。此变更降低了SSH频繁重连对系统资源的消耗，并提高了网络不稳定环境下的恢复力。",
+      "tags": [
+        "device-bridge",
+        "SSH",
+        "重连",
+        "退避"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.276Z",
+      "updatedAt": "2026-09-07T02:07:07.276Z",
+      "accessedAt": "2026-09-07T02:07:07.276Z",
+      "observedAt": "2026-09-07T02:07:07.276Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "afcf288e-6c7a-4635-98b3-1c91c23dea00",
+      "category": "fact",
+      "title": "pi-webui扩展功能正常但缺少测试",
+      "content": "审计发现pi-webui扩展通过TypeScript类型检查，API端点（/api/devices、/api/messages等）和WebSocket功能均能正常工作，但根目录下没有*.test.ts文件，导致Vitest报告\"No test files found\"。此缺失意味着代码改动缺乏自动回归保障，后续需补全单元/集成测试以确保稳定性。",
+      "tags": [
+        "pi-webui",
+        "功能验证",
+        "测试缺失"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.276Z",
+      "updatedAt": "2026-09-07T02:07:07.276Z",
+      "accessedAt": "2026-09-07T02:07:07.276Z",
+      "observedAt": "2026-09-07T02:07:07.276Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "dfbad0aa-09f5-4155-8a3e-296a6a5f9065",
+      "category": "fact",
+      "title": "跨平台脚本避免readlink -f",
+      "content": "在多平台环境（Termux、WSL2、Linux、Windows）中，readlink -f命令并非普遍可用，依赖它会导致脚本失败。应使用跨平台方案：在Node.js中使用path.resolve和process.platform判断；在shell脚本中使用pwd -P或结合cd与pwd获取绝对路径。此教训已应用于install-wrapper.sh和pi-voice的路径检测修复中。",
+      "tags": [
+        "跨平台",
+        "readlink",
+        "脚本"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T02:07:07.276Z",
+      "updatedAt": "2026-09-07T02:07:07.276Z",
+      "accessedAt": "2026-09-07T02:07:07.276Z",
+      "observedAt": "2026-09-07T02:07:07.276Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
+      "deleted": false
+    },
+    {
+      "id": "d66f3d75-6b35-41cf-9171-76b8dac6451b",
+      "category": "procedure",
+      "title": "空壳任务记录处置纪律",
+      "content": "当任务记录显示工具调用存在但out=0（零产出）时，判定为空壳投喂记录，按纪律不虚构经验、不写草稿，直接给出结论性分析即可。",
+      "tags": [
+        "任务处理",
+        "空壳识别",
+        "处置纪律"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T03:37:08.313Z",
+      "updatedAt": "2026-09-07T03:37:08.313Z",
+      "accessedAt": "2026-09-07T03:37:08.313Z",
+      "observedAt": "2026-09-07T03:37:08.313Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07977-7db3-7401-9824-73643bc42555",
+      "deleted": false
+    },
+    {
+      "id": "5ed957d5-d068-45ca-9b0b-43f9e448a2b6",
+      "category": "fact",
+      "title": "pi-webui 实际运行端口为 3101",
+      "content": "pi-webui 部署在 100.117.170.110:3101，Vite 开发服务器运行，返回 HTML 页面正常，node/vite 进程监听 3101 端口。此前误记为 3100 端口，访问时需使用 3101。",
+      "tags": [
+        "pi-webui",
+        "端口",
+        "3101",
+        "Vite",
+        "部署"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T05:12:28.864Z",
+      "updatedAt": "2026-09-07T05:12:28.864Z",
+      "accessedAt": "2026-09-07T05:12:28.864Z",
+      "observedAt": "2026-09-07T05:12:28.864Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
+      "deleted": false
+    },
+    {
+      "id": "fee2535c-ca67-463b-9a11-9c4cb78cfccc",
+      "category": "fact",
+      "title": "服务IP为 WSL2 地址 100.117.170.110",
+      "content": "pi-webui 及对应服务的对外 IP 为 100.117.170.110，结合项目多环境约定判断为 WSL2 环境 IP，外部或宿主机访问需注意网络可达性。",
+      "tags": [
+        "WSL2",
+        "IP",
+        "网络",
+        "环境"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T05:12:28.864Z",
+      "updatedAt": "2026-09-07T05:12:28.864Z",
+      "accessedAt": "2026-09-07T05:12:28.864Z",
+      "observedAt": "2026-09-07T05:12:28.864Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
+      "deleted": false
+    },
+    {
+      "id": "d1782793-f1ee-4a77-bb53-1ba33d894dc8",
+      "category": "solutions",
+      "title": "排除端口错误导致的加载中问题",
+      "content": "步骤：1) 用 node/vite 进程确认实际监听端口（3101）；2) 检查 HTML 返回是否正常；3) 引导用户更换端口访问。结果：3101 端口服务可达，但前端加载中仍复现，排除纯端口错误，需进一步排查前端资源或 Vite 构建链路。",
+      "tags": [
+        "pi-webui",
+        "加载中",
+        "端口排查",
+        "Vite"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T05:12:28.864Z",
+      "updatedAt": "2026-09-07T05:12:28.864Z",
+      "accessedAt": "2026-09-07T05:12:28.864Z",
+      "observedAt": "2026-09-07T05:12:28.864Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
+      "deleted": false
+    },
+    {
+      "id": "21c1e42e-9e20-47a7-81ca-2cc342811780",
+      "category": "fact",
+      "title": "端口可达不等于前端渲染正常",
+      "content": "Vite 服务返回 HTML 只说明后端可达，前端加载中可能由 JS/CSS 资源加载失败、HMR 配置、跨域或浏览器缓存引起。后续排查应关注 Network 面板静态资源请求与 Console 报错。",
+      "tags": [
+        "Vite",
+        "前端",
+        "加载中",
+        "排查经验"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T05:12:28.864Z",
+      "updatedAt": "2026-09-07T05:12:28.864Z",
+      "accessedAt": "2026-09-07T05:12:28.864Z",
+      "observedAt": "2026-09-07T05:12:28.864Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
+      "deleted": false
+    },
+    {
+      "id": "d96bbfa0-27d4-4410-a0c1-5b08735ca9db",
+      "category": "fact",
+      "title": "Pi WebUI 访问地址",
+      "content": "Pi WebUI 运行在 http://100.117.170.110:3100，Token 已配置完成。",
+      "tags": [
+        "pi",
+        "webui",
+        "network"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T05:12:58.390Z",
+      "updatedAt": "2026-09-07T05:12:58.390Z",
+      "accessedAt": "2026-09-07T05:12:58.390Z",
+      "observedAt": "2026-09-07T05:12:58.390Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07a46-2b2d-71dd-966a-22cb34ed0e4c",
+      "deleted": false
+    },
+    {
+      "id": "dc5196a4-a87b-4d72-b083-2e18c3b14895",
+      "category": "fact",
+      "title": "Pi WebUI 固定访问地址",
+      "content": "Pi WebUI 通过 Tailscale 网络在 100.117.170.110:3100 固定暴露，Token 为动态生成（示例：MpJtyn2UI8STRwGUJOAr02nJGP3AkB6A）。适用于跨设备访问 Pi 会话。",
+      "tags": [
+        "pi-webui",
+        "tailscale",
+        "network"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-07T05:14:12.484Z",
+      "updatedAt": "2026-09-07T05:14:12.484Z",
+      "accessedAt": "2026-09-07T05:14:12.484Z",
+      "observedAt": "2026-09-07T05:14:12.484Z",
+      "environments": [
+        "wsl2"
+      ],
+      "lastSessionId": "01a07a48-0348-711a-acb6-1b0e53f88450"
     }
   ]
 }

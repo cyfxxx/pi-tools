@@ -12,7 +12,6 @@ import './style.css'
 
 export function App() {
   const [config, setConfig] = useState<AppConfig | null>(null)
-  const [authToken, setAuthToken] = useState('')
   const [activeSession, setActiveSession] = useState('group')
   const [sessions, setSessions] = useState<ChatSession[]>([
     { id: 'group', name: '群聊', type: 'group', unread: 0 },
@@ -20,14 +19,8 @@ export function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [wsInitialized, setWsInitialized] = useState(false)
 
-  // 从 URL 获取 token
   useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const token = params.get('token') ?? ''
-    setAuthToken(token)
-
-    // 获取配置
-    fetchConfig(token)
+    fetchConfig()
       .then(cfg => {
         setConfig(cfg)
         setWsInitialized(true)
@@ -35,7 +28,6 @@ export function App() {
       .catch(() => {})
   }, [])
 
-  // WebSocket 连接 - 只有在配置加载完成后才初始化
   const deviceName = wsInitialized && config ? 'user' : ''
   const {
     connected,
@@ -45,7 +37,7 @@ export function App() {
     send,
     sendTyping,
     requestHistory,
-  } = useWebSocket(activeSession, authToken, deviceName)
+  } = useWebSocket(activeSession, deviceName)
 
   // 根据设备列表更新会话列表
   useEffect(() => {

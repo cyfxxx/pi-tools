@@ -32,6 +32,8 @@ interface BridgeDevice {
   process: ChildProcess | null
   connected: boolean
   lastError?: string
+  /** 指数退避当前延迟（毫秒），持久化以跨重连保持 */
+  backoff?: number
 }
 
 interface DeviceProcess {
@@ -203,12 +205,17 @@ export class DeviceBridge {
         device.process = null
         device.lastError = `exit code ${code}`
         if (was) this.onStatusChange?.()
-        // 自动重连 (延迟 5s)
-        setTimeout(() => {
-          if (!device.connected) {
-            this.startDevice(device).catch(() => {})
-          }
-        }, 5000)
+        // 自动重连 (指数退避: 5s, 10s, 20s, 40s... 上限 5min)
+        // 使用 device.backoff 持久化当前退避值，跨重连保持
+        const maxBackoff = 5 * 60 * 1000
+        if (!device.backoff) device.backoff = 5000
+        const attemptReconnect = () => {
+          if (device.connected) return
+          this.startDevice(device).catch(() => {})
+          device.backoff = Math.min(device.backoff * 2, maxBackoff)
+          setTimeout(attemptReconnect, device.backoff)
+        }
+        setTimeout(attemptReconnect, device.backoff)
       })
 
       proc.on('error', (err) => {
@@ -230,6 +237,8 @@ export class DeviceBridge {
         // 进程仍存活（未 close/error 置 null）且尚未标 online → 连接真建立
         if (device.process && !device.connected) {
           device.connected = true
+          // 连接成功，重置退避
+          device.backoff = undefined
           this.onStatusChange?.()
         }
       }, readyWindow)

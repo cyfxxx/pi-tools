@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "title": "每日健康检查触发告警",
+    "decisions": [
+      "daily-health.mjs 脚本输出结论=alert时写入日志文件并提交"
+    ],
+    "facts": [
+      "当前命中率 42.1%，低于 90% 阈值",
+      "A/B 断裂值为 74，超过 3 的告警阈值",
+      "记忆库有 893 条条目，存在膨胀/检索效率问题"
+    ],
+    "prefs": [],
+    "lessons": [
+      "daily-health.mjs 脚本位于 ~/.pi/scripts/，日志追加到 logs/daily-health.log",
+      "告警文件路径格式：memory/daily-results/YYYY-MM-DD-health-<hostname>.md",
+      "git commit message 格式：'daily-health: alert YYYY-MM-DD'"
+    ],
+    "fullText": "执行每日健康检查脚本 daily-health.mjs，结果触发告警。命中率和 A/B 断裂指标均超出阈值，记忆库膨胀至 893 条。已将告警信息写入 memory/daily-results/2026-09-07-health-<hostname>.md 并提交推送。"
+  },
+  "memories": [
+    {
+      "category": "procedure",
+      "title": "每日健康检查流程",
+      "content": "运行 node ~/.pi/scripts/daily-health.mjs，输出含'结论=alert'时写入 memory/daily-results/YYYY-MM-DD-health-<hostname>.md（alert行+原因分析），git add 并提交 'daily-health: alert YYYY-MM-DD'，推送冲突先 pull --rebase 重试一次。结论=ok 时立即结束不写文件不提交。",
+      "tags": ["health-check", "routine", "alert"],
+      "confidence": 0.95
+    },
+    {
+      "category": "solutions",
+      "title": "记忆库膨胀告警处理",
+      "content": "健康检查发现命中率 42.1%（阈值 90%）、A/B 断裂 74（阈值 3）、记忆库 893 条，提示条目膨胀和检索效率问题。需要清理过期/重复记忆、优化记忆结构。",
+      "tags": ["memory", "optimization", "health-alert"],
+      "confidence": 0.9
+    }
+  ]
+}

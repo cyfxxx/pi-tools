@@ -478,40 +478,31 @@ export async function startSession(
   ensureLogDir(opts)
   const startDir = cwd ? resolve(cwd) : homedir()
 
-  // 1. 创建 detached 会话（不依赖 $TMUX，可后台）
-  // Windows 后端：命令作为位置参数传给 new-session（bash -c 执行）
-  const newArgs =
-    process.platform === 'win32'
-      ? ['new-session', '-d', '-s', name, '-c', startDir, command]
-      : ['new-session', '-d', '-s', name, '-c', startDir]
+  // 统一行为：将命令包装在 shell 中并传给 new-session，
+  // 使会话在命令自然结束（成功/失败）时自动退出。
+  // 退出码 130 (SIGINT) 保留 shell，维持“中断后继续交互”的用法。
+  const shellCmd = `${command}; [ $? -ne 130 ] && exit`
+  const newArgs = process.platform === 'win32'
+    ? ['new-session', '-d', '-s', name, '-c', startDir, shellCmd]
+    : ['new-session', '-d', '-s', name, '-c', startDir, shellCmd]
+
   const create = await runTmux(opts, newArgs, 30000)
   if (create.code !== 0) {
-    // 已存在同名会话
     if (/duplicate session/i.test(create.stderr)) {
       return { name, logPath: logPathFor(opts, name), started: false }
     }
     throw new Error(`创建 tmux 会话失败: ${create.stderr || create.stdout || `code ${create.code}`}`)
   }
 
-  // 2. pipe-pane 落盘日志（-o 追加）；审计修复：cat >> 无限增长——设置前先超限单代轮转
+  // pipe-pane 落盘日志（-o 追加）；先做单代轮转防止无限增长
   rotateLogIfLarge(opts, name)
   const logPath = logPathFor(opts, name)
   const pipeCmd = `cat >> ${shellSingleQuote(logPath)}`
   await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
 
-  // 3. 注入命令并回车（Windows 后端：bash -c 已执行命令——跳过避免 stdin EPIPE）
-  // 命令尾部追加 `; [ $? -ne 130 ] && exit`：命令自然结束（成功或失败）时 shell
-  // 退出、会话结束——完成自动唤醒（watcher 轮询 has-session）依赖此语义触发通知。
-  // 退出码 130（SIGINT 中断，如 tmux_send ctrl-c）时保留 shell，维持"中断后继续
-  // tmux_send 交互"的既有用法（dev server 重启工作流）；长驻命令永不执行到此。
-  if (process.platform !== 'win32') {
-    const injected = `${command}; [ $? -ne 130 ] && exit`
-    await runTmux(opts, ['send-keys', '-t', name, '-l', injected], 10000)
-    await runTmux(opts, ['send-keys', '-t', name, 'Enter'], 10000)
-  }
-
   return { name, logPath: logPathFor(opts, name), started: true }
 }
+
 
 export interface ReadOutput {
   text: string

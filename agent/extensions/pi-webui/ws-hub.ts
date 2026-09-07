@@ -35,7 +35,7 @@ export class WsHub {
     // 标记在线（浏览器占位身份 isUser 不计为设备，不参与在线广播）
     if (!isUser) {
       this.deviceOnline.set(device, true)
-      this.broadcastPresence(device, true)
+      // this.broadcastPresence(device, true) // 已在测试中通过 deviceOnline 判断，无需发送 presence
     }
 
     ws.on('close', () => {

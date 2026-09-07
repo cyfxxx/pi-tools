@@ -13,6 +13,7 @@ interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, onDeleted, onQuote }: MessageBubbleProps) {
+  if (!message) return null
   const isSelf = message.sender === 'user'
   const isAgent = message.metadata?.piReplied
   const [showActions, setShowActions] = useState(false)

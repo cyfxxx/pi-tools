@@ -1,0 +1,12 @@
+{
+  "lastChangelogVersion": "0.85.1",
+  "theme": "dark",
+  "defaultProvider": "freellmapi",
+  "defaultModel": "auto",
+  "defaultThinkingLevel": "max",
+  "hideThinkingBlock": false,
+  "pi-web-search": {
+    "searxng_url": "http://127.0.0.1:8889",
+    "search_timeout": 10000
+  }
+}

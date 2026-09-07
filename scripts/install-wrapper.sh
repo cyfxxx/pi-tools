@@ -39,6 +39,8 @@ WRAPPER_MARKER="由 install-wrapper.sh 安装"
 
 # ── 枚举所有可能的 pi 入口（去重、保持存在性）──
 list_pi_bins() {
+  # Updated list_pi_bins to avoid using readlink -f which resolves symlinks to real files.
+  # This preserves the original symlink path for proper backup handling.
   {
     command -v pi 2>/dev/null || true
     ls "$HOME/.local/share/pi-node"/*/bin/pi 2>/dev/null || true
@@ -53,7 +55,7 @@ list_pi_bins() {
       # 用 readlink -f 解析后的真实路径做去重 key。
       # 若直接输出解析结果，install_one 拿到的将是真实文件（如 dist/cli.js），
       # readlink 备份会失败报"不是 symlink，无法备份"。
-      echo "$p|$(readlink -f "$p" 2>/dev/null || echo "$p")"
+      echo "$p|$(readlink "$p" 2>/dev/null || echo "$p")"
     fi
   done | sort -u -t'|' -k2 | cut -d'|' -f1
 }
