@@ -360,21 +360,35 @@ health_check() {
     return 1
   fi
 
-  # 2. 完整模块加载测试：-p 会触发完整 CLI 初始化链（含 dist/ 下所有模块 import），
+  # 2. 完整模块加载测试（无扩展）：-p 会触发完整 CLI 初始化链（含 dist/ 下所有模块 import），
   #    能捕获 SyntaxError / missing export 等 dist 损坏问题。
   #    --no-extensions 排除扩展干扰，只验证核心代码完整性。
   local hc_log="/tmp/pi-health-check-$$.log"
-  if timeout 60 node "$PI_JS" --no-extensions --no-skills --no-session -p 'Say exactly: ok' >"$hc_log" 2>&1; then
-    echo "[pi-wrapper] 健康检查通过" >&2
-    rm -f "$hc_log"
-    return 0
-  else
+  if ! timeout 60 node "$PI_JS" --no-extensions --no-skills --no-session -p 'Say exactly: ok' >"$hc_log" 2>&1; then
     local hc_exit=$?
-    echo "[pi-wrapper] 健康检查失败：完整启动测试未通过 (exit $hc_exit)" >&2
+    echo "[pi-wrapper] 健康检查失败：核心模块加载未通过 (exit $hc_exit)" >&2
     [ -f "$hc_log" ] && head -5 "$hc_log" >&2
     rm -f "$hc_log"
     return 1
   fi
+  rm -f "$hc_log"
+
+  # 3. 扩展加载测试（有扩展）：验证扩展不会导致崩溃
+  #    仅在恢复 extension_fail 后执行，避免常规启动时不必要的延迟
+  if [ "${TEST_WITH_EXTENSIONS:-0}" = "1" ]; then
+    local ext_log="/tmp/pi-health-check-ext-$$.log"
+    if ! timeout 30 node "$PI_JS" --no-skills --no-session -p 'Say exactly: ok' >"$ext_log" 2>&1; then
+      local ext_exit=$?
+      echo "[pi-wrapper] 健康检查失败：扩展加载未通过 (exit $ext_exit)" >&2
+      [ -f "$ext_log" ] && head -10 "$ext_log" >&2
+      rm -f "$ext_log"
+      return 1
+    fi
+    rm -f "$ext_log"
+  fi
+
+  echo "[pi-wrapper] 健康检查通过" >&2
+  return 0
 }
 
 # ── 智能恢复函数 ──
@@ -955,6 +969,8 @@ while true; do
           ;;
         extension_fail)
           recover_extension_fail "$CRASH_LOG" && RECOVERY_OK=true
+          # 恢复后用带扩展的健康检查验证
+          [ "$RECOVERY_OK" = true ] && TEST_WITH_EXTENSIONS=1
           ;;
         config_corrupt)
           recover_config_corrupt && RECOVERY_OK=true
@@ -969,7 +985,7 @@ while true; do
           recover_provider_error && RECOVERY_OK=true
           ;;
         *)
-          # unknown 类型：未达阈值时重试，达阈值时升级
+          # unknown 类型：逐级升级恢复策略
           if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
             echo "[pi-wrapper] 未知崩溃类型，启动 L4 源码恢复 + 救援模式 pi..." >&2
             if recover_from_source; then
@@ -978,11 +994,14 @@ while true; do
               start_rescue_pi "$CRASH_LOG" && RECOVERY_OK=true
             fi
           elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
-            # 尝试 L4 源码恢复作为中间手段
-            if recover_from_source; then
+            # 先尝试禁用扩展（常见根因：扩展运行时崩溃）
+            echo "[pi-wrapper] 未知崩溃类型，尝试禁用扩展..." >&2
+            if recover_extension_fail "$CRASH_LOG"; then
               RECOVERY_OK=true
+              TEST_WITH_EXTENSIONS=1
             else
-              recover_provider_error && RECOVERY_OK=true
+              # 扩展禁用失败，尝试 L4 源码恢复
+              recover_from_source && RECOVERY_OK=true
             fi
           else
             echo "[pi-wrapper] 未知崩溃类型(${crash_count}/${CRASH_THRESHOLD})，1 秒后重试..." >&2

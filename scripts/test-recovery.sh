@@ -253,8 +253,8 @@ else
   fail "健康检查未使用完整启动测试"
 fi
 
-if grep -q "timeout 30" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
-  ok "健康检查超时 30s"
+if grep -q "timeout 60" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
+  ok "健康检查超时 60s"
 else
   fail "健康检查超时配置异常"
 fi
@@ -266,6 +266,42 @@ if grep -q "缓存版本.*npm 版本.*不匹配" "$SCRIPT_DIR/pi-wrapper.sh" 2>/
   ok "L4 恢复包含版本验证"
 else
   fail "L4 恢复缺少版本验证"
+fi
+
+# ── 测试 9: 崩溃分析器增强 ──
+section "测试 9: 崩溃分析器增强"
+
+if grep -q "TypeError.*extensions/" "$SCRIPT_DIR/pi-crash-analyzer.sh" 2>/dev/null; then
+  ok "崩溃分析器识别扩展运行时错误"
+else
+  fail "崩溃分析器缺少扩展运行时错误识别"
+fi
+
+if grep -q "TypeError.*dist/" "$SCRIPT_DIR/pi-crash-analyzer.sh" 2>/dev/null; then
+  ok "崩溃分析器识别 dist 损坏错误"
+else
+  fail "崩溃分析器缺少 dist 损坏错误识别"
+fi
+
+# ── 测试 10: unknown 类型处理 ──
+section "测试 10: unknown 类型处理"
+
+if grep -q "未知崩溃类型，尝试禁用扩展" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
+  ok "unknown 类型先尝试禁用扩展"
+else
+  fail "unknown 类型未尝试禁用扩展"
+fi
+
+if grep -q "TEST_WITH_EXTENSIONS=1" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
+  ok "扩展恢复后启用扩展健康检查"
+else
+  fail "扩展恢复后未启用扩展健康检查"
+fi
+
+if grep -q "TEST_WITH_EXTENSIONS" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null && grep -q "health_check" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
+  ok "健康检查支持扩展测试"
+else
+  fail "健康检查未支持扩展测试"
 fi
 
 # ── 汇总 ──

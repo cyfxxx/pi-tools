@@ -49,6 +49,12 @@ analyze_crash() {
     return
   fi
 
+  # 2b. 扩展运行时崩溃（TypeError/ReferenceError 在扩展文件中）
+  if echo "$content" | grep -qE "(TypeError|ReferenceError|SyntaxError).*extensions/"; then
+    echo "$CRASH_EXTENSION_FAIL"
+    return
+  fi
+
   # 3. 语法错误（dist 文件损坏）— 排除 API 错误中的 JSON 片段
   #    仅匹配本地文件路径上下文的 SyntaxError（如 dist/utils/xxx.js:2）
   if echo "$content" | grep -qE "SyntaxError: Invalid or unexpected token|Unexpected token|ParseError"; then
@@ -58,6 +64,12 @@ analyze_crash() {
       return
     fi
     # 否则可能是 API 响应解析错误，不归为 syntax_error
+  fi
+
+  # 3b. TypeError/ReferenceError 在 dist 文件中（dist 损坏）
+  if echo "$content" | grep -qE "(TypeError|ReferenceError).*(dist/|node_modules/@earendil-works/)"; then
+    echo "$CRASH_SYNTAX_ERROR"
+    return
   fi
 
   # 4. Provider/API 错误（5xx/429/网络问题）— 提前到 config_corrupt 之前
