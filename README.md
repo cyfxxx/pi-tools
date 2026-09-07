@@ -83,7 +83,6 @@
 │   ├── pi-wrapper.sh          进程外生命周期管理器（自动重启 + 救援模式）
 │   ├── install-wrapper.sh     wrapper 安装/卸载
 │   ├── pi-orig.sh             绕过 wrapper 直启（故障逃生）
-│   ├── pi-snapshot.sh         快照管理（创建/恢复/列出）
 │   ├── pi-rescue.sh           手动救援脚本（交互式修复）
 │   ├── test-all.sh            一键全量回归（测试+类型+冲突检查）
 │   ├── pi-whisper.sh          whisper 常驻服务管理（start/stop/status/restart）
@@ -320,13 +319,6 @@ echo "$PI_DIST"
 **手动救援**：
 ```bash
 bash scripts/pi-rescue.sh    # 手动救援脚本
-```
-
-**快照管理**：
-```bash
-bash scripts/pi-snapshot.sh create   # 创建快照
-bash scripts/pi-snapshot.sh list     # 列出快照
-bash scripts/pi-snapshot.sh restore <path>  # 恢复快照
 ```
 
 详细说明见 `agent/rescue/README.md`。

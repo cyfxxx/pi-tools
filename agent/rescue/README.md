@@ -80,8 +80,8 @@ pi 崩溃
     ├── pi-crash-analyzer.sh    # 崩溃类型分析器
     ├── pi-recovery-audit.sh    # 审计日志模块
     ├── pi-source-build.sh      # L4: 源码编译脚本
-    ├── pi-snapshot.sh          # 快照管理脚本
-    └── pi-rescue.sh            # 手动救援脚本
+    ├── pi-rescue.sh            # 手动救援脚本
+    └── test-recovery.sh        # 冗余系统测试套件
 ```
 
 ## 审计日志格式
@@ -147,11 +147,6 @@ tail -10 ~/.pi/logs/recovery-audit.jsonl | python3 -m json.tool
 ### 手动救援
 ```bash
 bash ~/.pi/scripts/pi-rescue.sh
-```
-
-### 查看快照
-```bash
-bash ~/.pi/scripts/pi-snapshot.sh list
 ```
 
 ### 手动构建 L4 缓存
