@@ -970,8 +970,11 @@ while true; do
           # unknown 类型：未达阈值时重试，达阈值时升级
           if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
             echo "[pi-wrapper] 未知崩溃类型，启动 L4 源码恢复 + 救援模式 pi..." >&2
-            recover_from_source || start_rescue_pi "$CRASH_LOG"
-            RECOVERY_OK=$?
+            if recover_from_source; then
+              RECOVERY_OK=true
+            else
+              start_rescue_pi "$CRASH_LOG" && RECOVERY_OK=true
+            fi
           elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
             # 尝试 L4 源码恢复作为中间手段
             if recover_from_source; then
