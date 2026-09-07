@@ -85,6 +85,8 @@ function getStaticDir(): string {
   return join(dirname(new URL(import.meta.url).pathname), 'static')
 }
 
+export { loadConfig, DEFAULT_CONFIG, nanoid }
+
 export default function piWebuiExtension(pi: ExtensionAPI): void {
   // Check if we should run in server mode or client mode
   // PI_WEBSUI_SERVER_MODE=false means we are in a subagent and should not start the server
@@ -281,19 +283,29 @@ export default function piWebuiExtension(pi: ExtensionAPI): void {
       // 启动设备桥接
       await bridge.startAll()
 
-      const lanIP = detectLanIP()
-      const msg = `WebUI 已启动\n地址: http://${lanIP ?? 'localhost'}:${config.port}\nToken: ${config.authToken}`
-      pi.sendMessage({ customType: 'webui-status', content: msg, display: false })
+      // 发送启动通知（可能因 context 过期失败，静默忽略）
+      try {
+        const lanIP = detectLanIP()
+        const msg = `WebUI 已启动\n地址: http://${lanIP ?? 'localhost'}:${config.port}\nToken: ${config.authToken}`
+        pi.sendMessage({ customType: 'webui-status', content: msg, display: false })
+      } catch {
+        // context 已过期，忽略（服务已正常启动）
+      }
     })
 
     httpServer.on('error', (err) => {
       console.error(`[pi-webui] 启动失败:`, err.message)
       httpServer = null
-      pi.sendMessage({
-        customType: 'webui-status',
-        content: `WebUI 启动失败: ${err.message}`,
-        display: false,
-      })
+      // 发送错误通知（可能因 context 过期失败，静默忽略）
+      try {
+        pi.sendMessage({
+          customType: 'webui-status',
+          content: `WebUI 启动失败: ${err.message}`,
+          display: false,
+        })
+      } catch {
+        // context 已过期，忽略
+      }
     })
   }
 
