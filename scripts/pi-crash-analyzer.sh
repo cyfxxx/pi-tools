@@ -50,9 +50,12 @@ analyze_crash() {
   fi
 
   # 2b. 扩展运行时崩溃（TypeError/ReferenceError 在扩展文件中）
-  if echo "$content" | grep -qE "(TypeError|ReferenceError|SyntaxError).*extensions/"; then
-    echo "$CRASH_EXTENSION_FAIL"
-    return
+  #     错误信息可能跨多行，需要分别检查类型和路径
+  if echo "$content" | grep -qE "TypeError|ReferenceError|SyntaxError"; then
+    if echo "$content" | grep -qE "extensions/"; then
+      echo "$CRASH_EXTENSION_FAIL"
+      return
+    fi
   fi
 
   # 3. 语法错误（dist 文件损坏）— 排除 API 错误中的 JSON 片段
@@ -67,9 +70,12 @@ analyze_crash() {
   fi
 
   # 3b. TypeError/ReferenceError 在 dist 文件中（dist 损坏）
-  if echo "$content" | grep -qE "(TypeError|ReferenceError).*(dist/|node_modules/@earendil-works/)"; then
-    echo "$CRASH_SYNTAX_ERROR"
-    return
+  #     错误信息可能跨多行，需要分别检查类型和路径
+  if echo "$content" | grep -qE "TypeError|ReferenceError"; then
+    if echo "$content" | grep -qE "dist/|node_modules/@earendil-works/"; then
+      echo "$CRASH_SYNTAX_ERROR"
+      return
+    fi
   fi
 
   # 4. Provider/API 错误（5xx/429/网络问题）— 提前到 config_corrupt 之前
