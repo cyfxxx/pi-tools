@@ -45,7 +45,7 @@ export interface ServerContext {
   onUserMessage?: (msg: ChatMessage) => void
 }
 
-function serveStatic(req: IncomingMessage, res: ServerResponse, staticDir: string): boolean {
+export function serveStatic(req: IncomingMessage, res: ServerResponse, staticDir: string): boolean {
   let urlPath = req.url?.split('?')[0] ?? '/'
   if (urlPath === '/') urlPath = '/index.html'
 
@@ -63,7 +63,18 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, staticDir: strin
   }
 
   const ext = extname(filePath)
-  const mime = MIME_TYPES[ext] ?? 'application/octet-stream'
+  const mime = MIME_TYPES[ext]
+  // 如果未知扩展或没有对应 MIME，视为未找到文件，走 SPA fallback
+  if (!mime) {
+    const indexPath = join(staticDir, 'index.html')
+    if (existsSync(indexPath)) {
+      const content = readFileSync(indexPath)
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(content)
+      return true
+    }
+    return false
+  }
   const content = readFileSync(filePath)
   res.writeHead(200, { 'Content-Type': mime })
   res.end(content)
@@ -138,7 +149,7 @@ export function mergeDeviceStatuses(
   return devices
 }
 
-function checkAuth(req: IncomingMessage, config: WebuiConfig): boolean {
+export function checkAuth(req: IncomingMessage, config: WebuiConfig): boolean {
   if (!config.authToken) return true
   const auth = req.headers.authorization
   if (auth === `Bearer ${config.authToken}`) return true
