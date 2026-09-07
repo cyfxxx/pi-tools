@@ -97,6 +97,11 @@ LAST_ROLLBACK_TS=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/pi-crash-analyzer.sh"
 source "$SCRIPT_DIR/pi-recovery-audit.sh"
+
+# 输出函数（从 pi-source-build.sh 移植，供 L4 恢复使用）
+ok()   { echo -e "\033[0;32m✓\033[0m $1" >&2; }
+fail() { echo -e "\033[0;31m✗\033[0m $1" >&2; }
+warn() { echo -e "\033[0;33m⚠\033[0m $1" >&2; }
 # 审计 MEDIUM 修复：崩溃计数时间窗（24h）——窗口外的旧计数清零，
 # 避免长期积累的正常使用（零散非零退出）被误判为连续崩溃触发回滚
 CRASH_WINDOW_MS=$((24 * 3600 * 1000))
@@ -303,8 +308,10 @@ restore_config_from_git() {
   fi
 }
 
-# 启动救援模式 pi：使用最小化配置启动
+# 启动救援模式 pi：使用最小化配置启动，但保留核心工具（bash/edit/write）
+# 用于自动诊断和修复崩溃问题
 start_rescue_pi() {
+  local crash_log="${1:-}"
   echo "[pi-wrapper] 启动救援模式 pi..." >&2
   
   # 确保救援配置存在
@@ -322,11 +329,18 @@ start_rescue_pi() {
 EOF
   fi
   
-  # 使用救援配置启动 pi
+  # 构建救援指令：传递崩溃日志路径，让 pi 直接分析
+  local rescue_instruction="读取崩溃日志并修复 pi。"
+  if [ -n "$crash_log" ] && [ -f "$crash_log" ]; then
+    rescue_instruction="崩溃日志在 $crash_log，请读取分析并修复 pi。"
+  fi
+  
+  # 启动救援模式 pi（保留核心工具，禁用扩展避免干扰）
   node "$PI_JS" \
     --no-extensions \
     --no-skills \
     --append-system-prompt "$RESCUE_PROMPT" \
+    -p "$rescue_instruction" \
     "$@"
   
   return $?
@@ -340,21 +354,24 @@ EOF
 health_check() {
   echo "[pi-wrapper] 执行健康检查..." >&2
 
-  # 1. 快速检查：pi --version
+  # 1. 快速检查：pi --version（验证 Node 可执行 + 入口文件存在）
   if ! timeout 10 node "$PI_JS" --version >/dev/null 2>&1; then
     echo "[pi-wrapper] 健康检查失败：pi --version 无法执行" >&2
     return 1
   fi
 
-  # 2. 最小化启动测试（无扩展/无技能/无会话）
+  # 2. 完整模块加载测试：-p 会触发完整 CLI 初始化链（含 dist/ 下所有模块 import），
+  #    能捕获 SyntaxError / missing export 等 dist 损坏问题。
+  #    --no-extensions 排除扩展干扰，只验证核心代码完整性。
   local hc_log="/tmp/pi-health-check-$$.log"
-  if timeout 20 node "$PI_JS" --no-extensions --no-skills --no-session -p '{"ok":true}' >"$hc_log" 2>&1; then
+  if timeout 30 node "$PI_JS" --no-extensions --no-skills --no-session -p 'Say exactly: ok' >"$hc_log" 2>&1; then
     echo "[pi-wrapper] 健康检查通过" >&2
     rm -f "$hc_log"
     return 0
   else
-    echo "[pi-wrapper] 健康检查失败：最小化启动测试未通过" >&2
-    [ -f "$hc_log" ] && head -3 "$hc_log" >&2
+    local hc_exit=$?
+    echo "[pi-wrapper] 健康检查失败：完整启动测试未通过 (exit $hc_exit)" >&2
+    [ -f "$hc_log" ] && head -5 "$hc_log" >&2
     rm -f "$hc_log"
     return 1
   fi
@@ -483,17 +500,18 @@ recover_provider_error() {
   rollback_to_lastgood
 }
 
-# escalate_recovery <crash_type>
+# escalate_recovery <crash_type> [crash_log]
 # 升级恢复策略（同类型连续失败时）
 escalate_recovery() {
   local crash_type="$1"
+  local crash_log="${2:-}"
   echo "[pi-wrapper] [升级] 崩溃类型 $crash_type 连续失败，升级恢复策略..." >&2
   # 先尝试 L4 源码编译恢复
   if recover_from_source; then
     return 0
   fi
-  # L4 失败则启动救援模式 pi
-  start_rescue_pi
+  # L4 失败则启动救援模式 pi（传递崩溃日志供分析）
+  start_rescue_pi "$crash_log"
 }
 
 # ── L4: 源码编译恢复 ──
@@ -515,9 +533,10 @@ recover_from_source() {
   if [ -f "$cache_bundle" ]; then
     echo "[pi-wrapper] [L4] 找到预编译缓存" >&2
     if [ -f "$cache_version" ]; then
-      local ver hash
+      local ver hash build_ts
       ver=$(node -e "console.log(require('$cache_version').version||'?')" 2>/dev/null)
       hash=$(node -e "console.log(require('$cache_version').gitHash||'?')" 2>/dev/null)
+      build_ts=$(node -e "console.log(require('$cache_version').buildTs||0)" 2>/dev/null)
       echo "[pi-wrapper] [L4] 缓存版本: $ver ($hash)" >&2
     fi
   else
@@ -533,6 +552,20 @@ recover_from_source() {
     else
       echo "[pi-wrapper] [L4] pi-source-build.sh 不存在" >&2
       return 1
+    fi
+  fi
+
+  # 版本验证：检查缓存版本是否与当前 npm 安装版本匹配
+  if [ -f "$cache_version" ]; then
+    local npm_pkg_json="$global_dir/package.json"
+    if [ -f "$npm_pkg_json" ]; then
+      local npm_ver cache_ver
+      npm_ver=$(node -e "console.log(require('$npm_pkg_json').version||'?')" 2>/dev/null)
+      cache_ver=$(node -e "console.log(require('$cache_version').version||'?')" 2>/dev/null)
+      if [ "$npm_ver" != "$cache_ver" ] && [ "$npm_ver" != "?" ] && [ "$cache_ver" != "?" ]; then
+        echo "[pi-wrapper] [L4] 警告: 缓存版本 ($cache_ver) 与 npm 版本 ($npm_ver) 不匹配" >&2
+        echo "[pi-wrapper] [L4] 继续恢复，但可能存在兼容性问题" >&2
+      fi
     fi
   fi
 
@@ -555,6 +588,25 @@ recover_from_source() {
 
   # 复制 npm-shrinkwrap.json（如有）
   [ -f "$PI_SOURCE_CACHE/npm-shrinkwrap.json" ] && cp "$PI_SOURCE_CACHE/npm-shrinkwrap.json" "$global_dir/"
+
+  # 同步源码构建依赖：源码 dist 引用 @earendil-works/* 包的新 API，
+  # 但 npm 安装的嵌套 node_modules 可能是旧版本。将源码的 workspace 包
+  # 复制到 global_dir/node_modules 确保 API 兼容。
+  local src_nm="$HOME/.pi/pi-source/node_modules/@earendil-works"
+  local dst_nm="$global_dir/node_modules/@earendil-works"
+  if [ -d "$src_nm" ]; then
+    mkdir -p "$dst_nm"
+    for pkg_dir in "$src_nm"/*/; do
+      local pkg_name
+      pkg_name=$(basename "$pkg_dir")
+      # 只同步 coding-agent 实际依赖的包
+      if [ -d "$pkg_dir/dist" ]; then
+        rm -rf "$dst_nm/$pkg_name" 2>/dev/null
+        cp -r "$pkg_dir" "$dst_nm/$pkg_name" 2>/dev/null
+      fi
+    done
+    echo "[pi-wrapper] [L4] 已同步源码构建依赖" >&2
+  fi
 
   echo "[pi-wrapper] [L4] 已从源码缓存恢复 pi" >&2
   return 0
@@ -869,8 +921,8 @@ while true; do
       
       # 检查是否同类型连续失败
       if was_consecutive_fail "$CRASH_TYPE"; then
-        echo "[pi-wrapper] 崩溃类型 $crash_type 连续失败，升级恢复策略" >&2
-        escalate_recovery "$CRASH_TYPE"
+        echo "[pi-wrapper] 崩溃类型 $CRASH_TYPE 连续失败，升级恢复策略" >&2
+        escalate_recovery "$CRASH_TYPE" "$CRASH_LOG"
         audit_end "escalate_recovery" "$?" "同类型连续失败，升级到救援模式"
         if health_check; then
           echo "[pi-wrapper] 升级恢复后健康检查通过，重启..." >&2
@@ -918,7 +970,7 @@ while true; do
           # unknown 类型：未达阈值时重试，达阈值时升级
           if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
             echo "[pi-wrapper] 未知崩溃类型，启动 L4 源码恢复 + 救援模式 pi..." >&2
-            recover_from_source || start_rescue_pi
+            recover_from_source || start_rescue_pi "$CRASH_LOG"
             RECOVERY_OK=$?
           elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
             # 尝试 L4 源码恢复作为中间手段

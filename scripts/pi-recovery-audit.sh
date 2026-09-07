@@ -93,24 +93,34 @@ audit_end() {
   _AUDIT_TS_START=0
 }
 
-# was_consecutive_fail <crash_type>
-# 检查指定崩溃类型是否上一次也是失败的
+# was_consecutive_fail <crash_type> [check_count]
+# 检查指定崩溃类型在最近 N 条记录中是否连续失败
+# check_count: 检查最近几条记录（默认 3）
 # 返回 0=是连续失败 1=不是
 was_consecutive_fail() {
   local check_type="$1"
+  local check_count="${2:-3}"
   if [ ! -f "$AUDIT_LOG" ]; then
     return 1
   fi
-  local last_type last_success
-  last_type=$(tail -1 "$AUDIT_LOG" 2>/dev/null | node -e "
-    try { const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.crashType||''); }
-    catch(e){ console.log(''); }" 2>/dev/null || echo "")
-  last_success=$(tail -1 "$AUDIT_LOG" 2>/dev/null | node -e "
-    try { const d=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(d.success||false); }
-    catch(e){ console.log('false'); }" 2>/dev/null || echo "false")
-  if [ "$last_type" = "$check_type" ] && [ "$last_success" = "false" ]; then
-    return 0
-  fi
+  # 用 node 一次读取最近 N 条记录，检查是否有同类型连续失败
+  local result
+  result=$(tail -n "$check_count" "$AUDIT_LOG" | node -e "
+    const lines = require('fs').readFileSync(0,'utf8').trim().split('\n').filter(Boolean);
+    const checkType = process.argv[1];
+    let consecutiveFail = false;
+    for (const line of lines) {
+      try {
+        const d = JSON.parse(line);
+        if (d.crashType === checkType && d.success === false) {
+          consecutiveFail = true;
+          break;
+        }
+      } catch(e) {}
+    }
+    process.stdout.write(consecutiveFail ? '1' : '0');
+  " "$check_type" 2>/dev/null || echo "0")
+  [ "$result" = "1" ] && return 0
   return 1
 }
 

@@ -49,33 +49,39 @@ analyze_crash() {
     return
   fi
 
-  # 3. 语法错误（dist 文件损坏）
+  # 3. 语法错误（dist 文件损坏）— 排除 API 错误中的 JSON 片段
+  #    仅匹配本地文件路径上下文的 SyntaxError（如 dist/utils/xxx.js:2）
   if echo "$content" | grep -qE "SyntaxError: Invalid or unexpected token|Unexpected token|ParseError"; then
-    echo "$CRASH_SYNTAX_ERROR"
+    # 如果错误发生在本地文件（含 dist/ 或 node_modules/），视为 syntax_error
+    if echo "$content" | grep -qE "(dist/|node_modules/).*SyntaxError|SyntaxError.*(dist/|node_modules/)"; then
+      echo "$CRASH_SYNTAX_ERROR"
+      return
+    fi
+    # 否则可能是 API 响应解析错误，不归为 syntax_error
+  fi
+
+  # 4. Provider/API 错误（5xx/429/网络问题）— 提前到 config_corrupt 之前
+  #    匹配 HTTP 状态码、provider 错误关键词、网络错误
+  if echo "$content" | grep -qE "50[0-9]|429|server_error|provider_error|provider_bad_req|rate.limit|Upstream request failed|ECONNREFUSED|ETIMEDOUT|fetch failed|All .* providers? rejected|All .* attempt.* failed"; then
+    echo "$CRASH_PROVIDER_ERROR"
     return
   fi
 
-  # 4. 配置文件损坏
-  if echo "$content" | grep -qE "JSON\.parse|SyntaxError.*JSON|settings.*corrupt|config.*invalid|Unexpected token.*in JSON"; then
+  # 5. 配置文件损坏 — 仅匹配明确的本地配置文件错误
+  if echo "$content" | grep -qE "settings\.json.*corrupt|config.*invalid.*json|settings\.json.*SyntaxError|Unexpected token.*in JSON.*settings"; then
     echo "$CRASH_CONFIG_CORRUPT"
     return
   fi
 
-  # 5. 代理/URL 错误
+  # 6. 代理/URL 错误
   if echo "$content" | grep -qE "Invalid URL protocol|socks.*proxy|http_proxy|PROXY_URL"; then
     echo "$CRASH_PROXY_ERROR"
     return
   fi
 
-  # 6. 调度锁竞争
+  # 7. 调度锁竞争
   if echo "$content" | grep -qE "无法获取调度锁|already.*held|lock.*contention|EADDRINUSE"; then
     echo "$CRASH_LOCK_CONTENTION"
-    return
-  fi
-
-  # 7. Provider/API 错误（503/网络问题）
-  if echo "$content" | grep -qE "503|server_error|Upstream request failed|ECONNREFUSED|ETIMEDOUT|fetch failed"; then
-    echo "$CRASH_PROVIDER_ERROR"
     return
   fi
 
