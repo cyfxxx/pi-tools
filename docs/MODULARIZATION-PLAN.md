@@ -2,7 +2,24 @@
 
 **日期**: 2026-09-07  
 **基线提交**: `17d3a99` (remove pi-webui extension)  
+**状态**: 部分完成 — Phase 1-5 已执行（2026-09-08），Phase 6-7 部分完成  
 **目标**: 将 .pi 目录从"扁平散落"重构为"按扩展内聚"，方便独立调整、分享扩展
+
+## 已完成项（2026-09-08）
+
+- ✅ Phase 1: 配置文件移入扩展目录（pi-link/config/、pi-voice/config/、pi-autopilot/config/）
+- ✅ Phase 2: 脚本移入扩展目录（26个脚本 → extension/scripts/，symlink 到 scripts/）
+- ✅ Phase 3: 运行时状态文件移入扩展目录（.notify-state.json、.pi-tmux-registry.json 等）
+- ✅ Phase 4: lib/index.ts 统一导出
+- ✅ Phase 5: 代码和文档中的路径引用更新（storage.ts、pi-cron.sh、daily-health.mjs、ntfy-relay.js、core.ts、pi-context/index.ts 等）
+- ✅ symlink 修复：scripts/ 下25个断裂 symlink 相对路径修正
+- ✅ pi-webui 移除、pi-source-cache 加入 .gitignore
+
+## 待完成项
+
+- ⬜ `.pi-autopilot-config.json` 移入 `extensions/pi-autopilot/config/`（需确认多写入者兼容性）
+- ⬜ `.pi-admin-state.json` 重命名为 `.pi-autopilot-state.json`（消除旧扩展名残留）
+- ⬜ Phase 7: 文档全面更新（目录结构图、各扩展 README）
 
 ---
 

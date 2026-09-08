@@ -66,7 +66,7 @@
 - 教训：勿把 usage-stats 会话分段的 ctx 起止误读为同会话内压缩史；判断压缩/裁剪必须以会话内 compaction 事件为准。
 
 ## 2026-08-20 P1：opencode-go fallback 窗口 1M→160K（缓存断链根因，roadmap §4）
-- 状态: done（待重启 pi 进程后加载生效）
+- **状态: ⛔ 已回滚（2026-08-20 更正）** — 归因错误，详见上方更正块
 
 ### Before
 - 根因链：opencode-go 是内核不完整识别的自定义 provider（getContextUsage() undefined）→ pi-context fallback 默认窗口 1M（PI_CONTEXT_WINDOW_FALLBACK）→ auto-compact 80% 阈值=800K。实测网关约在上下文 130–155K 强制裁剪（cacheRead 自 -130K 骤降 -1K），pi 永远等不到 800K → 每次长会话多次断链、46–130K 全量重发（本会话 4 次断链、浪费 ~40 万 tokens；10:19 单轮 130K 重发）。

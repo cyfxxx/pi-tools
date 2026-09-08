@@ -8,7 +8,7 @@
 | 轴 | 含义 | 现有关键资产 |
 |---|---|---|
 | 感知/交互（全能的面） | 输入输出渠道多样化 | 文本、语音（pi-voice）、浏览器（pi-browser）、搜索（pi-web-search/SearXNG）、多设备（pi-link）、截图分析 |
-| 记忆/学习（沉淀） | 跨会话积累、知识检索 | pi-memory（529 条目/21 摘要，环境标签+去重）、会话摘要、note-store |
+| 记忆/学习（沉淀） | 跨会话积累、知识检索 | pi-memory（≥529 条目/≥21 摘要，快照值，环境标签+去重）、会话摘要、note-store |
 | 行动/自治（做事） | 持续运转、自动执行 | pi-autopilot（定时/看门狗/failover/预算）、pi-tmux 后台、subagent、plan-mode |
 | 自我优化（核心差异化） | 测量→改进→验证→回滚闭环 | usage-stats.mjs、usage-diag、cache-guard、test-all.sh、9 patch 脚本、pi-backup |
 
