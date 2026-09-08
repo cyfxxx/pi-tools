@@ -7,6 +7,7 @@ export type PolicyAction =
   | { type: 'failover'; target: FallbackModel; note: string }
   | { type: 'suspend_task'; note: string }
   | { type: 'fail'; note: string }
+  | { type: 'verify_and_retry'; nCandidates: number; note: string }
 
 export interface FailureInfo {
   stderr: string
@@ -31,6 +32,7 @@ export function decide(
   const suspendAfter = policy.suspendAfter ?? 5
   const timeoutFactor = policy.timeoutFactor ?? 2
   const maxFailovers = policy.maxFailovers ?? 1
+  const verifyAfter = policy.verifyAfter ?? 1
   // failover 熔断：连续切换模型超过上限后不再切（防双模型链 ping-pong 无限重启，
   // 每次 failover 都写 set_model 重启请求，代价高且无收敛）。仅拦截 failover，不影响 retry。
   const failoverBlocked = (task.failoverCount ?? 0) >= maxFailovers
@@ -52,6 +54,10 @@ export function decide(
   }
 
   if (errClass === 'timeout') {
+    // 超时：达到验证阈值时启用 Best-of-N 验证
+    if (task.failCount >= verifyAfter && task.failCount < (task.retries || 0)) {
+      return { type: 'verify_and_retry', nCandidates: 3, note: `超时（${Math.round(info.durationMs / 1000)}s），启用 Best-of-N 验证重试` }
+    }
     // 超时：若还有重试额度则重试；重试次数足够时考虑切更快模型
     if (task.failCount < (task.retries || 0)) {
       return { type: 'retry', note: `超时（${Math.round(info.durationMs / 1000)}s），按重试计划执行` }
@@ -79,6 +85,11 @@ export function decide(
       return { type: 'retry', note: `provider 故障第 ${task.failCount} 次，重试` }
     }
     return { type: 'fail', note: `provider 故障（第 ${task.failCount} 次）：重试额度已用尽（retries=${task.retries || 0}），未达 failoverAfter=${failoverAfter} 阈值，任务失败` }
+  }
+
+  // 未知错误：达到验证阈值时启用 Best-of-N
+  if (task.failCount >= verifyAfter && task.failCount < suspendAfter) {
+    return { type: 'verify_and_retry', nCandidates: 3, note: `连续失败 ${task.failCount} 次，启用 Best-of-N 验证重试` }
   }
 
   // 未知错误

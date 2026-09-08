@@ -9,14 +9,23 @@ import { consumeRestartLog } from './state.ts'
 import { readAutopilotConfig } from './autoconfig.ts'
 import { collectPendingTasks, clearPending, clearAllPending, wasAbnormalShutdown, MAX_RECOVERY_ATTEMPTS } from './queue.ts'
 import { setTurnBusy, touchActivity } from './watchdog.ts'
+import { ProgressTracker } from './verifier.ts'
 
 export default function piAutopilotExtension(pi: ExtensionAPI): void {
   let scheduler = new SessionScheduler(pi)
   let notified = false
   let requeued = false
+  // ProgressTracker：验证启用时逐步骤评分，提前放弃无望任务
+  let progressTracker: ProgressTracker | null = null
 
   pi.on('session_start', async () => {
     const config = await readAutopilotConfig()
+
+    // 初始化 ProgressTracker（验证启用时）
+    if (config.verifier?.enabled) {
+      progressTracker = new ProgressTracker(config.verifier.threshold * 0.5) // 提前终止阈值 = 通过阈值的一半
+      console.log('[pi-autopilot] ProgressTracker 已启用（验证模式）')
+    }
 
     // pi -p (print mode) 是一次性命令，不运行调度器，跳过锁获取
     // 防止 subagent 子进程因锁冲突失败
@@ -153,6 +162,19 @@ export default function piAutopilotExtension(pi: ExtensionAPI): void {
   })
   pi.on('turn_end', async () => {
     setTurnBusy(false)
+    // ProgressTracker：回合结束时重置（每个回合独立追踪）
+    if (progressTracker) progressTracker.reset()
+  })
+
+  // ProgressTracker：工具执行后评分（验证启用时）
+  pi.on('tool_result', async (event: { toolName?: string; result?: string; isError?: boolean }) => {
+    if (!progressTracker || !event.toolName) return
+    const resultText = event.result || (event.isError ? 'error' : 'success')
+    const score = progressTracker.step(event.toolName, resultText)
+    // 提前终止：分数过低时标记（由 shouldAbort 消费）
+    if (progressTracker.shouldAbort()) {
+      console.log(`[pi-autopilot] ProgressTracker: 任务分数过低 (${score.toFixed(2)})，建议终止`)
+    }
   })
 
   // 主会话空闲（回合结束）＝注入的任务已执行完成：先最终化注入式任务

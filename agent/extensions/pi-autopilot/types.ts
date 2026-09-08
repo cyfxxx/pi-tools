@@ -75,6 +75,37 @@ export interface AutopilotPolicy {
   timeoutFactor?: number
   /** failover 熔断：同一任务连续切换模型次数上限（防双模型 ping-pong 无限重启），默认 1 */
   maxFailovers?: number
+  /** 验证触发阈值：失败 N 次后启用 Best-of-N 验证（默认 1） */
+  verifyAfter?: number
+}
+
+// ── Verifier 配置（LLM-as-a-Verifier 集成） ──────────────────────
+export interface VerifierConfig {
+  /** 启用验证（默认 false） */
+  enabled: boolean
+  /** 候选数量（默认 3） */
+  nCandidates: number
+  /** 失败 N 次后启用验证（默认 1，即首次失败后验证） */
+  verifyAfter: number
+  /** 最低通过分数（0-1，默认 0.6） */
+  threshold: number
+  /** 单次验证最大成本 $（默认 0.01） */
+  maxCostPerVerify: number
+  /** 日志级别：none = 不记录 / summary = 聚合统计 / full = 每次验证详细记录 */
+  logLevel: 'none' | 'summary' | 'full'
+  /** 验证提示词模板（可选，覆盖默认） */
+  judgePrompt?: string
+}
+
+export function defaultVerifierConfig(): VerifierConfig {
+  return {
+    enabled: false,
+    nCandidates: 3,
+    verifyAfter: 1,
+    threshold: 0.6,
+    maxCostPerVerify: 0.01,
+    logLevel: 'summary',
+  }
 }
 
 export interface AutopilotConfig {
@@ -84,6 +115,8 @@ export interface AutopilotConfig {
   requeueOnRestart: boolean
   budget: AutopilotBudget
   policy: AutopilotPolicy
+  /** LLM-as-a-Verifier 配置（可选，不配置则不启用验证） */
+  verifier?: VerifierConfig
 }
 
 export interface TelemetryEntry {
@@ -97,6 +130,14 @@ export interface TelemetryEntry {
   outputLen: number
   estCost: number
   errClass: ErrorClass | null
+  /** v2: 是否经过 Best-of-N 验证 */
+  verified?: boolean
+  /** v2: 验证选中的候选索引（0-based） */
+  verifiedIndex?: number
+  /** v2: 验证器打分（0-1） */
+  verifiedScore?: number
+  /** v2: 验证候选数 */
+  verifiedCandidates?: number
 }
 
 export interface TelemetryStore {

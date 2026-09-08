@@ -8,6 +8,8 @@ import { readAutopilotConfig } from './autoconfig.ts'
 import { decide, classifyError, currentModel, isLocalModel } from './policy.ts'
 import { planFailover, executeFailover } from './failover.ts'
 import { appendRun, estimateCost } from './telemetry.ts'
+import { bestOfN, recordVerification } from './verifier.ts'
+import { computeSummary, saveSummary } from './verifier-logger.ts'
 import { syncSeedTasks } from './seeds.ts'
 import { checkBudget } from './budget.ts'
 import { triggerHangRecovery, touchActivity } from './watchdog.ts'
@@ -279,6 +281,50 @@ export class SessionScheduler {
         case 'fail':
           await updateTaskAfterRun(task.id, 'failed', finalAction.note, Date.now() - startedAt)
           break
+        case 'verify_and_retry': {
+          // Best-of-N 验证重试：生成 N 个候选，用 LLM 评分选最优
+          await updateTaskAfterRun(task.id, 'failed', `验证前: ${finalAction.note}`, Date.now() - startedAt)
+          if (config.verifier?.enabled && config.enabled) {
+            try {
+              const generateFn = async (prompt: string): Promise<string> => {
+                // 通过 subagent 生成候选
+                const { cmd, args } = resolvePiSpawn()
+                return new Promise<string>((resolve, reject) => {
+                  const proc = spawn(cmd, [...args, '-p', prompt], {
+                    stdio: ['ignore', 'pipe', 'pipe'],
+                    cwd: process.cwd(),
+                    env: { ...process.env, PI_WEBSUI_SERVER_MODE: 'false' },
+                  })
+                  let stdout = ''
+                  proc.stdout.on('data', (d: Buffer) => { stdout += d.toString() })
+                  proc.on('close', (code) => {
+                    if (code === 0) resolve(stdout.trim())
+                    else reject(new Error(`候选生成失败: exit ${code}`))
+                  })
+                  proc.on('error', reject)
+                })
+              }
+              const result = await bestOfN(generateFn, task.prompt, config.verifier)
+              recordVerification(result, task.id, task.name, config.verifier, estimateCost(provider, model, task.prompt.length, 0), `${provider}/${model}`, result.passed ? 'success' : 'failed')
+              // 更新遥测（标记 verified）
+              await appendRun({
+                ts: new Date().toISOString(), taskId: task.id, taskName: task.name,
+                model, provider, result: result.passed ? 'success' : 'failed',
+                durationMs: Date.now() - startedAt, outputLen: 0,
+                estCost: estimateCost(provider, model, task.prompt.length, 0),
+                errClass: null,
+                verified: true, verifiedIndex: result.bestIndex,
+                verifiedScore: result.scores[result.bestIndex]?.score,
+                verifiedCandidates: result.scores.length,
+              })
+              // 刷新聚合统计
+              try { saveSummary(computeSummary()) } catch { /* 静默 */ }
+            } catch (vErr) {
+              console.error(`[pi-autopilot] 验证重试失败: ${(vErr as Error).message}`)
+            }
+          }
+          break
+        }
         case 'failover': {
           const plan = await planFailover(config.fallbackModels, provider, model)
           await updateTaskAfterRun(task.id, 'failed', `failover: ${finalAction.note}`, Date.now() - startedAt)

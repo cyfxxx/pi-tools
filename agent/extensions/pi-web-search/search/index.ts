@@ -4,6 +4,10 @@ import { searchWeb } from './impl'
 import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
 import { estimateTokens } from '../../../lib/token-budget.ts'
 
+// 导出并发工具（供批量抓取场景使用）
+export { createConcurrencyLimiter, batchFetch } from './concurrency'
+export type { ConcurrencyLimiter, BatchFetchOptions, BatchFetchResult } from './concurrency'
+
 type RecordUsage = (name: string, tokens: number) => void
 
 export function registerSearchTools(pi: ExtensionAPI, config: SearchConfig, recordUsage: RecordUsage): void {

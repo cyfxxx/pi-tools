@@ -7,6 +7,7 @@ import { readAutopilotConfig, writeAutopilotConfig } from './autoconfig.ts'
 import { readTelemetry, statsByModel, statsByTask, todayRuns, todayCost } from './telemetry.ts'
 import { planFailover, executeFailover } from './failover.ts'
 import { currentModel } from './policy.ts'
+import { computeSummary, formatReport, loadSummary } from './verifier-logger.ts'
 
 export function registerTools(pi: ExtensionAPI): void {
   // ── autopilot_status：融合 agent 状态 + 调度统计 + 预算 ──────────
@@ -478,6 +479,107 @@ export function registerTools(pi: ExtensionAPI): void {
       }
 
       return { content: [{ type: 'text', text: `未知操作: ${action}` }], details: null }
+    },
+  })
+
+  // ── verify_report：验证统计报告 ──────────────────────────────────
+  pi.registerTool({
+    name: 'verify_report',
+    label: '验证统计报告',
+    description: '查看 LLM-as-a-Verifier 验证功能的统计数据：通过率、成本倍数、边际收益、成功率对比。',
+    parameters: { type: 'object', properties: {} },
+    execute: async () => {
+      const summary = loadSummary()
+      if (!summary || summary.totalVerifications === 0) {
+        // 尝试刷新
+        const fresh = computeSummary()
+        return { content: [{ type: 'text', text: formatReport(fresh) }], details: null }
+      }
+      return { content: [{ type: 'text', text: formatReport(summary) }], details: null }
+    },
+  })
+
+  // ── verify_config：验证配置 ──────────────────────────────────────
+  pi.registerTool({
+    name: 'verify_config',
+    label: '验证配置',
+    description: '查看或修改 LLM-as-a-Verifier 验证配置。不传参数时返回当前配置。',
+    parameters: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', description: '启用/禁用验证' },
+        nCandidates: { type: 'number', description: '候选数量（2-5）' },
+        verifyAfter: { type: 'number', description: '失败 N 次后启用验证' },
+        threshold: { type: 'number', description: '最低通过分数（0-1）' },
+        logLevel: { type: 'string', enum: ['none', 'summary', 'full'], description: '日志级别' },
+      },
+    },
+    execute: async (_toolCallId, params) => {
+      const config = await readAutopilotConfig()
+      const verifier = config.verifier || { enabled: false, nCandidates: 3, verifyAfter: 1, threshold: 0.6, maxCostPerVerify: 0.01, logLevel: 'summary' }
+
+      // 无参数：返回当前配置
+      if (Object.keys(params).length === 0) {
+        return { content: [{ type: 'text', text: `验证配置:\n  enabled: ${verifier.enabled}\n  nCandidates: ${verifier.nCandidates}\n  verifyAfter: ${verifier.verifyAfter}\n  threshold: ${verifier.threshold}\n  maxCostPerVerify: $${verifier.maxCostPerVerify}\n  logLevel: ${verifier.logLevel}` }], details: null }
+      }
+
+      // 更新配置
+      if (params.enabled !== undefined) verifier.enabled = params.enabled as boolean
+      if (params.nCandidates !== undefined) verifier.nCandidates = Math.min(5, Math.max(2, params.nCandidates as number))
+      if (params.verifyAfter !== undefined) verifier.verifyAfter = params.verifyAfter as number
+      if (params.threshold !== undefined) verifier.threshold = Math.min(1, Math.max(0, params.threshold as number))
+      if (params.logLevel !== undefined) verifier.logLevel = params.logLevel as 'none' | 'summary' | 'full'
+
+      config.verifier = verifier
+      await writeAutopilotConfig(config)
+      return { content: [{ type: 'text', text: `已更新验证配置:\n  enabled: ${verifier.enabled}\n  nCandidates: ${verifier.nCandidates}\n  verifyAfter: ${verifier.verifyAfter}\n  threshold: ${verifier.threshold}\n  logLevel: ${verifier.logLevel}` }], details: null }
+    },
+  })
+
+  // ── verify_test：手动验证测试 ────────────────────────────────────
+  pi.registerTool({
+    name: 'verify_test',
+    label: '手动验证测试',
+    description: '对指定提示词执行一次 Best-of-N 验证测试，展示各候选评分。仅测试不调度。',
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: '要测试的提示词' },
+        nCandidates: { type: 'number', description: '候选数量（默认 3）' },
+      },
+      required: ['prompt'],
+    },
+    execute: async (_toolCallId, params) => {
+      const prompt = params.prompt as string
+      const n = Math.min(5, Math.max(2, (params.nCandidates as number) || 3))
+      const config = await readAutopilotConfig()
+      if (!config.verifier?.enabled) {
+        return { content: [{ type: 'text', text: '验证功能未启用。使用 /verify config enabled:true 启用。' }], details: null }
+      }
+
+      const { bestOfN } = await import('./verifier.ts')
+      const result = await bestOfN(
+        async (p) => `[候选测试: ${p.slice(0, 30)}...]`,
+        prompt,
+        { ...config.verifier, nCandidates: n },
+      )
+
+      const lines = [
+        `─── Best-of-N 验证测试 ───`,
+        `提示词: ${prompt.slice(0, 80)}...`,
+        `候选数: ${n}`,
+        `通过: ${result.passed ? '是' : '否'} (阈值: ${config.verifier.threshold})`,
+        `耗时: ${result.durationMs}ms`,
+        '',
+        '候选评分:',
+      ]
+      for (const s of result.scores) {
+        const marker = s.index === result.bestIndex ? ' ← 最优' : ''
+        lines.push(`  候选 ${s.index + 1}: ${(s.score * 100).toFixed(1)}%${marker}`)
+        lines.push(`    ${s.reasoning}`)
+      }
+      lines.push(`\n结论: ${result.reasoning}`)
+      return { content: [{ type: 'text', text: lines.join('\n') }], details: null }
     },
   })
 }

@@ -29,6 +29,9 @@ export interface MemoryEntry {
   /** v6: 关联条目 id（双向）。入库时按标题 bigram-jaccard 自动建链（A-MEM 卡片盒思想，
    *  与 memory-lifecycle 聚合候选同口径）；取零工具 schema 变化，不影响注入面 */
   links?: string[]
+  /** v7: 内容 SHA-256 哈希（前16位）。入库时自动计算，用于快速去重——
+   *  精确匹配跳过昂贵的 Jaccard 相似度计算（wechat-article-exporter 启发） */
+  contentHash?: string
 }
 
 export interface SummaryEntry {

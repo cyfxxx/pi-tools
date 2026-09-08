@@ -1,18 +1,44 @@
 import type { SearchConfig, SearchResponse, SearchResultItem } from './types'
 
+// ── 错误分类（wechat-article-exporter 启发）────────────────────
+// 5xx / 网络错误 → 可重试（服务端临时故障或连接问题）
+// 4xx / 非重试状态码 → 立即失败（客户端错误，重试无意义）
+// 429 → 特殊处理：读取 Retry-After 头，否则指数退避
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504])
+
 async function fetchWithRetry(
   url: string,
   opts: { signal: AbortSignal; headers: Record<string, string> },
-  maxRetries = 1,
+  maxRetries = 3,
 ): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const res = await fetch(url, opts)
-      if (res.ok || attempt >= maxRetries) return res
-      await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+
+      // 4xx（非429）→ 立即失败，不重试
+      if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+        return res
+      }
+
+      // 5xx / 429 / OK → 返回（429 也返回，由调用方决定是否再试）
+      if (res.ok || RETRYABLE_STATUS.has(res.status)) {
+        if (res.ok || attempt >= maxRetries) return res
+
+        // 429: 读 Retry-After 头，否则指数退避
+        const retryAfter = res.headers.get('Retry-After')
+        const delayMs = retryAfter
+          ? Math.min(parseInt(retryAfter, 10) * 1000, 10000)
+          : Math.min(500 * Math.pow(2, attempt), 8000)
+        await new Promise(r => setTimeout(r, delayMs))
+        continue
+      }
+
+      return res
     } catch (e) {
       if (attempt >= maxRetries) throw e
-      await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+      // 网络错误：指数退避（500ms → 1s → 2s → 4s，上限8s）
+      const delayMs = Math.min(500 * Math.pow(2, attempt), 8000)
+      await new Promise(r => setTimeout(r, delayMs))
     }
   }
   throw new Error('重试耗尽')
@@ -58,7 +84,7 @@ export async function searchWeb(
         signal: controller.signal,
         headers: { Accept: 'application/json', 'User-Agent': 'pi-web-toolkit/1.0' },
       },
-      1,
+      3,
     )
 
     if (!res.ok) {

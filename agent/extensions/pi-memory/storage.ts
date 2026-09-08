@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, cpSync } from 'node:fs'
 import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, createHash } from 'node:crypto'
 import type {
   MemoryEntry,
   MemoryStore,
@@ -184,6 +184,7 @@ export function loadEntries(): MemoryEntry[] {
 }
 
 // v1 → v2：补充 observedAt；兼容旧 source 取值
+// v7：为旧条目补充 contentHash（惰性迁移，首次触及时计算）
 function migrateEntry(e: MemoryEntry): MemoryEntry {
   if (!e.observedAt) e.observedAt = e.createdAt
   if (!e.id) e.id = randomUUID()
@@ -192,6 +193,10 @@ function migrateEntry(e: MemoryEntry): MemoryEntry {
   // qualityScore 排序失效——归一化为 observedAt，仍非法则当前时间
   if (!e.accessedAt || Number.isNaN(new Date(e.accessedAt).getTime())) {
     e.accessedAt = (e.observedAt && !Number.isNaN(new Date(e.observedAt).getTime())) ? e.observedAt : new Date().toISOString()
+  }
+  // v7: 惰性计算 contentHash（旧条目首次迁移时补算，避免一次性全量重算）
+  if (!e.contentHash && e.content) {
+    e.contentHash = computeContentHash(e.content)
   }
   return e
 }
@@ -426,12 +431,14 @@ export function storeEntry(
 ): { entries: MemoryEntry[]; action: 'created' | 'merged' | 'updated' } {
   const live = activeEntries(entries)
 
+  // 1) 精确标题匹配（原有逻辑）
   const titleMatch = live.findIndex(
     e => e.title.toLowerCase() === entry.title.toLowerCase(),
   )
   if (titleMatch !== -1) {
     const e = live[titleMatch]
     e.content = entry.content
+    e.contentHash = computeContentHash(entry.content)
     e.tags = [...new Set([...e.tags, ...entry.tags])]
     e.environments = mergeEnvironments(e.environments, entry.environments)
     e.confidence = Math.max(e.confidence, entry.confidence)
@@ -443,16 +450,12 @@ export function storeEntry(
     return { entries: merged, action: 'updated' }
   }
 
-  const contentTokens = tokenize(entry.content)
-  const mergeIdx = live.findIndex(e => {
-    const existingTokens = tokenize(e.content)
-    return jaccardSimilarity(contentTokens, existingTokens) > 0.7
-  })
-  if (mergeIdx !== -1) {
-    const e = live[mergeIdx]
-    if (contentTokens.length > tokenize(e.content).length) {
-      e.content = entry.content
-    }
+  // 2) 内容哈希精确匹配（v7 新增：O(1) 快速去重，替代昂贵的 Jaccard）
+  const newHash = computeContentHash(entry.content)
+  const hashMatch = live.findIndex(e => e.contentHash && e.contentHash === newHash)
+  if (hashMatch !== -1) {
+    const e = live[hashMatch]
+    // 哈希匹配 = 内容完全相同，合并标签和环境即可
     e.tags = [...new Set([...e.tags, ...entry.tags])]
     e.environments = mergeEnvironments(e.environments, entry.environments)
     e.confidence = Math.max(e.confidence, entry.confidence)
@@ -464,6 +467,33 @@ export function storeEntry(
     return { entries: merged, action: 'merged' }
   }
 
+  // 3) Jaccard 相似度模糊匹配（原有逻辑，作为哈希未命中时的 fallback）
+  const contentTokens = tokenize(entry.content)
+  const mergeIdx = live.findIndex(e => {
+    // 跳过已有哈希的条目（哈希不同 = 内容不同，无需 Jaccard）
+    if (e.contentHash) return false
+    const existingTokens = tokenize(e.content)
+    return jaccardSimilarity(contentTokens, existingTokens) > 0.7
+  })
+  if (mergeIdx !== -1) {
+    const e = live[mergeIdx]
+    if (contentTokens.length > tokenize(e.content).length) {
+      e.content = entry.content
+    }
+    e.contentHash = computeContentHash(e.content)
+    e.tags = [...new Set([...e.tags, ...entry.tags])]
+    e.environments = mergeEnvironments(e.environments, entry.environments)
+    e.confidence = Math.max(e.confidence, entry.confidence)
+    e.recurrence += 1
+    e.updatedAt = entry.updatedAt
+    e.accessedAt = entry.accessedAt
+    if (entry.lastSessionId) e.lastSessionId = entry.lastSessionId
+    const merged = saveEntries(entries)
+    return { entries: merged, action: 'merged' }
+  }
+
+  // 4) 全新条目
+  entry.contentHash = newHash
   entries.push(entry)
   autoLinkNewEntry(entries, entry)
   const merged2 = saveEntries(entries)
@@ -479,6 +509,7 @@ export function applyMem0Action(
 ): { entries: MemoryEntry[]; applied: boolean } {
   switch (action) {
     case 'ADD': {
+      candidate.contentHash = computeContentHash(candidate.content)
       entries.push(candidate)
       autoLinkNewEntry(entries, candidate)
       const merged = saveEntries(entries)
@@ -489,6 +520,7 @@ export function applyMem0Action(
       if (idx === -1) return { entries, applied: false }
       const e = entries[idx]
       e.content = candidate.content
+      e.contentHash = computeContentHash(candidate.content)
       e.tags = [...new Set([...e.tags, ...candidate.tags])]
       e.confidence = Math.max(e.confidence, candidate.confidence)
       e.recurrence += 1
@@ -608,6 +640,14 @@ export function getStats(entries: MemoryEntry[]): MemoryStats {
     summaries: loadSummaries().length,
     superseded,
   }
+}
+
+// ── 内容哈希去重（v7，wechat-article-exporter 启发）────────────
+// SHA-256 前16位：碰撞概率极低（2^64 空间），O(1) 精确匹配替代 O(n) Jaccard 计算。
+// 入库时自动计算并写入 contentHash 字段；匹配时优先精确哈希，失败才走 Jaccard。
+
+export function computeContentHash(content: string): string {
+  return createHash('sha256').update(content).digest('hex').slice(0, 16)
 }
 
 // ── 词法工具 ─────────────────────────────────────────────────
