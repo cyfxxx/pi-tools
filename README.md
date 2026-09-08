@@ -31,16 +31,29 @@
 │   ├── extensions/            自定义扩展
 │   │   ├── pi-web-search/     网络搜索（SearXNG 私密搜索 + Bing 备选 + HTTP 抓取）
 │   │   ├── pi-autopilot/      自主运行（定时任务 + 自管理 + 失败自愈：failover/看门狗/遥测/预算）
-│   │   ├── pi-browser/       浏览器自动化（CloakBrowser，自 pi-web-toolkit 拆出）
+│   │   │   ├── config/        扩展专用配置（.pi-autopilot-config.json, notify.json）
+│   │   │   ├── scripts/       扩展专用脚本（knowledge-fetch, ntfy-relay, pi-notify）
+│   │   │   └── tests/
+│   │   ├── pi-browser/        浏览器自动化（CloakBrowser，自 pi-web-toolkit 拆出）
+│   │   │   └── scripts/       扩展专用脚本（patch-playwright-core）
 │   │   ├── plan-mode/         计划模式（TUI 计划/任务管理）
+│   │   │   └── scripts/       扩展专用脚本（patch-plan-tools）
 │   │   ├── pi-memory/         跨会话持久记忆（自主学习闭环）
+│   │   │   └── scripts/       扩展专用脚本（memory-lifecycle）
 │   │   ├── pi-mode/           模式切换（full/light/quick/自定义）
 │   │   ├── subagent/          子代理（delegate 给专门 agent）
 │   │   ├── pi-tmux/           tmux 会话管理（后台任务/长任务）
+│   │   │   └── scripts/       扩展专用脚本（pi-bg, tmux-fix）
 │   │   ├── pi-voice/          语音交流（Termux：录音转写 + TTS 朗读）
+│   │   │   ├── config/        扩展专用配置（pi-voice.json）
+│   │   │   └── scripts/       扩展专用脚本（pi-whisper, pi-sherpa, whisper-server）
 │   │   ├── pi-link/           多设备互联（ssh 通道 + 远程 pi RPC，link_send/link_status）
+│   │   │   ├── config/        扩展专用配置（pi-link.json）
+│   │   │   ├── scripts/       扩展专用脚本（pi-link-entry, pi-link-keys）
+│   │   │   └── tests/
 │   │   ├── pi-intervention/   干预捕获（abort 快照/corrective prompt 关联/interventions.jsonl）
 │   │   └── pi-context/        token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
+│   │       └── scripts/       扩展专用脚本（9 个 patch-*.mjs）
 │   ├── agents/                agent 定义（子代理模板）
 │   │   ├── scout.md              快速代码探测，返回压缩上下文
 │   │   ├── worker.md             通用执行 agent

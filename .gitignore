@@ -75,14 +75,20 @@ memory/stats/tool-use-*.jsonl
 
 # pi-scheduler 运行时数据
 agent/scheduled-tasks.json
+agent/extensions/pi-autopilot/scheduled-tasks.json
 
 # pi-autopilot 运行时数据（config.json 入库共享，见 AGENTS.md 多环境约定）
 agent/.pi-autopilot-telemetry.json
 agent/.pi-autopilot-lastgood.json
 agent/.pi-autopilot-crash.json
+agent/extensions/pi-autopilot/.pi-autopilot-telemetry.json
+agent/extensions/pi-autopilot/.pi-autopilot-lastgood.json
+agent/extensions/pi-autopilot/.pi-autopilot-crash.json
+agent/extensions/pi-autopilot/.pi-admin-state.json
 
 # pi-context 用量诊断运行时数据
 agent/.usage-diag.jsonl
+agent/extensions/pi-context/.usage-diag.jsonl
 
 # 跨会话统计（cache-guard/工具指纹/用量聚合，运行时数据不入库）
 agent/stats/
@@ -91,7 +97,9 @@ agent/stats/
 # 含 logs/scheduler/、logs/*.out 等全部子路径）
 logs/
 agent/.pi-tmux-registry.json
+agent/extensions/pi-tmux/.pi-tmux-registry.json
 agent/pi-voice.json
+agent/extensions/pi-voice/config/pi-voice.json
 
 # pi-webui 运行时数据（config.json 含明文 authToken、messages/ 聊天记录，不入库）
 /webui/
@@ -149,9 +157,13 @@ _recovery-*/
 
 # 通知配置（可能含 token）
 agent/notify.json
+agent/extensions/pi-autopilot/config/notify.json
 agent/.notify-state.json
+agent/extensions/pi-autopilot/.notify-state.json
 
 # ntfy-relay 运行时状态（不入库）
 agent/.ntfy-relay-state.json
 agent/.ntfy-relay.pid
+agent/extensions/pi-autopilot/.ntfy-relay-state.json
+agent/extensions/pi-autopilot/.ntfy-relay.pid
 agent/.ntfy-inbox.json

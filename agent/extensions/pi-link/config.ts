@@ -65,6 +65,9 @@ export function defaultConfig(): LinkConfig {
 export function configPath(): string {
   const env = process.env.PI_LINK_CONFIG
   if (env) return env
+  // 优先读扩展内 config/，兼容旧路径 ~/.pi/pi-link.json (symlink)
+  const extPath = join(homedir(), '.pi', 'agent', 'extensions', 'pi-link', 'config', 'pi-link.json')
+  if (existsSync(extPath)) return extPath
   return join(homedir(), '.pi', 'pi-link.json')
 }
 

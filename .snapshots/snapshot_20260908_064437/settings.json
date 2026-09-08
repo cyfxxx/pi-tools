@@ -1,0 +1,30 @@
+{
+  "lastChangelogVersion": "0.84.4",
+  "defaultProvider": "freellmapi",
+  "defaultModel": "auto",
+  "defaultThinkingLevel": "max",
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "packages": [],
+  "hideThinkingBlock": false,
+  "collapseChangelog": true,
+  "defaultProjectTrust": "ask",
+  "compaction": {
+    "reserveTokens": 32768,
+    "keepRecentTokens": 20000
+  },
+  "skills": [
+    "+skills/pi-translate-zh/SKILL.md",
+    "+skills/pi-backup/SKILL.md",
+    "+skills/pi-code-review/SKILL.md",
+    "+skills/pi-full-audit/SKILL.md"
+  ],
+  "theme": "dark",
+  "pi-browser": {
+    "headless": true
+  },
+  "pi-web-search": {
+    "searxng_url": "http://127.0.0.1:8889",
+    "search_timeout": 30000
+  }
+}

@@ -1,0 +1,64 @@
+ M agent/extensions/pi-link/config.ts
+ M agent/extensions/pi-voice/config.ts
+ D agent/extensions/pi-web-search/start-searxng.sh
+ M memory/entries.json
+ T scripts/knowledge-fetch.py
+ T scripts/memory-lifecycle.mjs
+ T scripts/ntfy-relay.js
+ T scripts/ntfy-relay.sh
+ T scripts/patch-autocomplete-startswith.mjs
+ T scripts/patch-compaction-warm-prefix.mjs
+ T scripts/patch-footer-cache.mjs
+ T scripts/patch-footer-format.mjs
+ T scripts/patch-footer-live-context.mjs
+ T scripts/patch-footer-restart-hint.mjs
+ T scripts/patch-fuzzy-match-type.mjs
+ T scripts/patch-plan-tools.mjs
+ T scripts/patch-playwright-core.mjs
+ T scripts/patch-tab-arg-completion.mjs
+ T scripts/patch-truncate-type.mjs
+ T scripts/patch-voice-enter.mjs
+ T scripts/pi-bg.sh
+ T scripts/pi-link-entry.sh
+ T scripts/pi-link-keys.sh
+ T scripts/pi-notify.sh
+ T scripts/pi-sherpa-server.py
+ T scripts/pi-sherpa.sh
+ T scripts/pi-whisper.sh
+ T scripts/tmux-fix.sh
+ T scripts/whisper-server.py
+?? .migration-snapshot/
+?? .snapshots/snapshot_20260905_082011/
+?? .snapshots/snapshot_20260905_090511/
+?? .snapshots/snapshot_20260905_120028/
+?? .snapshots/snapshot_20260905_120101/
+?? .snapshots/snapshot_20260905_120306/
+?? .snapshots/snapshot_20260905_133506/
+?? .snapshots/snapshot_20260905_140818/
+?? .snapshots/snapshot_20260905_140939/
+?? .snapshots/snapshot_20260905_141931/
+?? .snapshots/snapshot_20260905_141939/
+?? .snapshots/snapshot_20260908_064437/
+?? agent/extensions/pi-autopilot/.notify-state.json
+?? agent/extensions/pi-autopilot/.ntfy-relay-state.json
+?? agent/extensions/pi-autopilot/.ntfy-relay.pid
+?? agent/extensions/pi-autopilot/.pi-admin-state.json
+?? agent/extensions/pi-autopilot/.pi-autopilot-crash.json
+?? agent/extensions/pi-autopilot/.pi-autopilot-lastgood.json
+?? agent/extensions/pi-autopilot/.pi-autopilot-telemetry.json
+?? agent/extensions/pi-autopilot/config/
+?? agent/extensions/pi-autopilot/scheduled-tasks.json
+?? agent/extensions/pi-autopilot/scripts/
+?? agent/extensions/pi-browser/scripts/
+?? agent/extensions/pi-context/.usage-diag.jsonl
+?? agent/extensions/pi-context/scripts/
+?? agent/extensions/pi-link/scripts/
+?? agent/extensions/pi-memory/scripts/
+?? agent/extensions/pi-tmux/.pi-tmux-registry.json
+?? agent/extensions/pi-tmux/scripts/
+?? agent/extensions/pi-voice/config/
+?? agent/extensions/pi-voice/scripts/
+?? agent/extensions/pi-web-search/scripts/
+?? agent/extensions/plan-mode/scripts/
+?? agent/lib/index.ts
+?? docs/MODULARIZATION-PLAN.md
