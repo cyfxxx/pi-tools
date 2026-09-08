@@ -101,6 +101,9 @@ agent/extensions/pi-tmux/.pi-tmux-registry.json
 agent/pi-voice.json
 agent/extensions/pi-voice/config/pi-voice.json
 
+# 源码编译缓存（pi-source-build.sh 产物，可从源码重建，不入库）
+pi-source-cache/
+
 # pi-webui 运行时数据（config.json 含明文 authToken、messages/ 聊天记录，不入库）
 /webui/
 
