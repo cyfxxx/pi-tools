@@ -1,8 +1,12 @@
 # 自动生成的 session 文件
 agent/sessions/
 
+# 快照（运行时数据，不入库）
+.snapshots/
+
 # npm 安装的依赖（统一根：agent/package.json → agent/node_modules，11 扩展共享）
 agent/node_modules/
+node_modules/
 # agent/package-lock.json 入库：CI（.github/workflows/ci.yml:20 cache-dependency-path）依赖该文件，勿忽略
 # 防护：个别扩展若出现独立依赖，不入库（rebuild 时应清理回统一根）
 agent/extensions/*/node_modules/
@@ -15,6 +19,7 @@ agent/auth.json
 agent/trust.json
 
 # pi 自动生成的计划文件
+data/plans/
 plans/
 .restore_progress
 
@@ -52,16 +57,23 @@ agent/models.json
 .env.*
 
 # pi-intervention 干预快照（运行时数据，不入库）
+data/memory/interventions.jsonl
 memory/interventions.jsonl
 
 # pi-memory 数据：笔记+记忆+摘要+检查点
 # 排除项：原始对话提取/临时提取（含对话全文，可能含敏感内容如 PAT 明文）
+data/memory/extract-sessions/
+data/memory/pending-extracts/
+data/memory/.extract-lock
+data/memory/extract-tracker.json
 memory/extract-sessions/
 memory/pending-extracts/
 memory/.extract-lock
 memory/extract-tracker.json
 # 多环境隔离（P1）：notes/summaries 为会话级/环境特定数据，不入库（避免多机 pull/push 互相覆盖）
 # entries.json（长期记忆）仍入库共享，冲突时以最新 push 为准
+data/memory/notes.json
+data/memory/summaries.json
 memory/notes.json
 memory/summaries.json
 agent/models-store.json
@@ -71,6 +83,7 @@ agent/models-store.json
 # 每日聚合计数文件 memory/stats/tool-count-<device>.json（--daily 生成，精简入库）。
 # 合并视图: node scripts/tool-stats-sync.mjs（post-merge/手动）；任务结果同步:
 # memory/daily-results/results-<device>.jsonl（append-only 入库，见 pi-autopilot results.ts）
+data/memory/stats/tool-use-*.jsonl
 memory/stats/tool-use-*.jsonl
 
 # pi-scheduler 运行时数据
@@ -95,6 +108,7 @@ agent/stats/
 
 # 运行时日志（pi-tmux/pi-voice/pi-bg/scheduler/wrapper/selfcheck 时间戳等全部运行时数据，不入库；
 # 含 logs/scheduler/、logs/*.out 等全部子路径）
+data/logs/
 logs/
 agent/.pi-tmux-registry.json
 agent/extensions/pi-tmux/.pi-tmux-registry.json
@@ -113,6 +127,7 @@ agent/extensions/node_modules/
 scripts/.pi-cli-path
 
 # pi-memory 压缩检查点（瞬时快照，时效性数据，不入库）
+data/memory/checkpoints/
 memory/checkpoints/
 
 # pi-backup 配置变更基线（gitignored 配置的 sha256 快照，不入库）

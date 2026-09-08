@@ -1,0 +1,65 @@
+{"ts":"2026-09-03T15:33:50.849Z","device":"localhost","taskId":"52aeb8b8-c84a-41f2-82a7-3979e922c5ec","taskName":"tool-stats-daily","result":"success","output":"","durationMs":228287}
+{"ts":"2026-09-03T23:30:53.571Z","device":"localhost","taskId":"52aeb8b8-c84a-41f2-82a7-3979e922c5ec","taskName":"tool-stats-daily","result":"failed","output":"逻辑错误: [pi-wrapper] 启动 Pi... (js: /root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js)\n[pi-autopilot] 无法获取调度锁，另一个 Pi 实例可能已持有\nnode:events:497\n    ","durationMs":36019}
+{"ts":"2026-09-03T23:32:22.792Z","device":"localhost","taskId":"52aeb8b8-c84a-41f2-82a7-3979e922c5ec","taskName":"tool-stats-daily","result":"failed","output":"逻辑错误: [pi-wrapper] 启动 Pi... (js: /root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js)\n[pi-autopilot] 无法获取调度锁，另一个 Pi 实例可能已持有\nnode:events:497\n    ","durationMs":35244}
+{"ts":"2026-09-03T23:52:47.146Z","device":"localhost","taskId":"e44aadcc-de64-46b6-906a-c3d49440b67c","taskName":"daily-health","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-04T00:20:54.128Z","device":"localhost","taskId":"c511c07e-d004-4a39-8b36-226ca0ed5999","taskName":"knowledge-subscribe","result":"failed","output":"逻辑错误: [pi-wrapper] 启动 Pi... (js: /root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js)\n[pi-autopilot] 无法获取调度锁，另一个 Pi 实例可能已持有\nnode:events:497\n    ","durationMs":36030}
+{"ts":"2026-09-04T01:07:04.420Z","device":"localhost","taskId":"7fad2a0e-6524-4939-92d5-42a89fbbfabe","taskName":"daily-review","result":"failed","output":"provider 故障且未配置 fallbackModels，任务失败","durationMs":105806}
+{"ts":"2026-09-04T08:20:40.616Z","device":"localhost","taskId":"c511c07e-d004-4a39-8b36-226ca0ed5999","taskName":"knowledge-subscribe","result":"failed","output":"逻辑错误: [pi-wrapper] 启动 Pi... (js: /root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js)\n[pi-autopilot] 无法获取调度锁，另一个 Pi 实例可能已持有\nnode:events:497\n    ","durationMs":30112}
+{"ts":"2026-09-04T09:05:40.500Z","device":"localhost","taskId":"7fad2a0e-6524-4939-92d5-42a89fbbfabe","taskName":"daily-review","result":"failed","output":"逻辑错误: [pi-wrapper] 启动 Pi... (js: /root/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js)\n[pi-autopilot] 无法获取调度锁，另一个 Pi 实例可能已持有\nnode:events:497\n    ","durationMs":23713}
+{"ts":"2026-09-08T08:21:44.942Z","device":"localhost","taskId":"e44aadcc-de64-46b6-906a-c3d49440b67c","taskName":"daily-health","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T08:23:27.286Z","device":"localhost","taskId":"7fad2a0e-6524-4939-92d5-42a89fbbfabe","taskName":"daily-review","result":"success","output":"","durationMs":137745}
+{"ts":"2026-09-08T08:24:03.641Z","device":"localhost","taskId":"52aeb8b8-c84a-41f2-82a7-3979e922c5ec","taskName":"tool-stats-daily","result":"success","output":"","durationMs":174333}
+{"ts":"2026-09-08T08:27:35.161Z","device":"localhost","taskId":"c511c07e-d004-4a39-8b36-226ca0ed5999","taskName":"knowledge-subscribe","result":"success","output":"","durationMs":385599}
+{"ts":"2026-09-08T13:35:10.904Z","device":"localhost","taskId":"ef83f5a1-ffb4-412d-8df0-cbf6349a8243","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T13:43:40.437Z","device":"localhost","taskId":"ef83f5a1-ffb4-412d-8df0-cbf6349a8243","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T15:33:28.631Z","device":"localhost","taskId":"58effa5f-0dcc-40c1-8e3c-93eab23f1776","taskName":"tool-stats-daily","result":"success","output":"","durationMs":180274}
+{"ts":"2026-09-08T16:07:56.261Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T16:07:56.326Z","device":"localhost","taskId":"19a69d05-6783-404a-81de-2bfe0f2c0e32","taskName":"dup-name","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:16:55.990Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:22:22.116Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:27:44.760Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:33:26.749Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:38:52.093Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:44:17.941Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T17:57:07.701Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:03:44.305Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:09:37.541Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:15:38.343Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:21:20.172Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:28:00.822Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:33:16.514Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:38:44.522Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:44:16.509Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:49:46.031Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T18:55:16.994Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:00:47.139Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:06:17.941Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:11:47.565Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:17:19.968Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:23:19.506Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:28:48.092Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:34:25.949Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:40:01.255Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:45:40.297Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:51:21.418Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T19:57:17.028Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:03:28.167Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:08:55.972Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:14:41.682Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:20:25.548Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:26:07.557Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:31:32.428Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:36:47.314Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:42:26.761Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:48:09.974Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:53:35.760Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T20:59:03.029Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:05:42.450Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:11:44.453Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:18:11.464Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:24:36.677Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:30:49.955Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:36:26.165Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:42:07.245Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:47:34.570Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}
+{"ts":"2026-09-08T21:53:06.975Z","device":"localhost","taskId":"af4a04bc-ecad-4a37-aba7-78f19b90de1d","taskName":"keep","result":"success","output":"注入式任务完成（主会话回合结束回写）","durationMs":0}

@@ -1,16 +1,37 @@
 /**
- * pi 共享库统一导出
+ * lib/ — 兼容层（已重构至 core/ + services/）
  *
- * 跨扩展共用模块，由 pi-context、pi-web-search、pi-browser、pi-memory、plan-mode 等引用。
- * 各扩展可通过 `import { ... } from '../../lib/index.ts'` 使用。
+ * 此文件保留以兼容现有 import 路径。
+ * 新代码应直接从 core/ 或 services/ 导入。
+ *
+ * 重构映射：
+ *   lib/config.ts        → core/config.ts
+ *   lib/registry.ts      → core/registry.ts
+ *   lib/hook-registry.ts → core/hook-registry.ts
+ *   lib/secrets.ts       → core/secrets.ts (新增)
+ *   lib/context-budget.ts → services/token-budget/context-budget.ts
+ *   lib/prune.ts         → services/token-budget/prune.ts
+ *   lib/auto-compact.ts  → services/token-budget/auto-compact.ts
+ *   lib/output-archive.ts → services/token-budget/output-archive.ts
+ *   lib/usage-diag.ts    → services/diagnostics/usage-diag.ts
+ *   lib/task-record.ts   → services/diagnostics/task-record.ts
+ *   lib/shadow-review.ts → services/shadow-review.ts
+ *   lib/note-store.ts    → services/note-store.ts
+ *   lib/token-budget.ts  → services/token-budget/context-budget.ts (兼容 re-export)
  */
-export * from './context-budget.ts'
-export * from './prune.ts'
-export * from './auto-compact.ts'
-export * from './usage-diag.ts'
-export * from './task-record.ts'
-export * from './note-store.ts'
-export * from './output-archive.ts'
-export * from './registry.ts'
-export * from './config.ts'
-export * from './hook-registry.ts'
+
+// Layer 0: core/
+export * from '../core/config.ts'
+export * from '../core/registry.ts'
+export * from '../core/hook-registry.ts'
+export * from '../core/secrets.ts'
+
+// Layer 1: services/
+export * from '../services/token-budget/context-budget.ts'
+export * from '../services/token-budget/prune.ts'
+export * from '../services/token-budget/auto-compact.ts'
+export * from '../services/token-budget/output-archive.ts'
+export * from '../services/diagnostics/usage-diag.ts'
+export * from '../services/diagnostics/task-record.ts'
+export * from '../services/shadow-review.ts'
+export * from '../services/note-store.ts'
