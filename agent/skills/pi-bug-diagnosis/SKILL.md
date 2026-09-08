@@ -1,6 +1,6 @@
 ---
 name: pi-bug-diagnosis
-description: 硬 bug 与性能回退的分阶段诊断纪律（改编自 mattpocock/skills diagnosing-bugs，MIT）。用户说"诊断""debug""反复出现""难复现""性能回退""突然变慢/报错"时触发。核心：先建紧反馈回路（红能力/确定性/快速），禁止无回路直接猜假设。
+description: 硬 bug 与性能回退的分阶段诊断纪律。用户说"诊断""debug""反复出现""难复现""性能回退""突然变慢/报错"时触发。核心：先建紧反馈回路（红能力/确定性/快速），禁止无回路直接猜假设。
 version: v1.0
 ---
 
