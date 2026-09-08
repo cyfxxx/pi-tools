@@ -425,16 +425,54 @@ disable_extension() {
   return 1
 }
 
-# recover_missing_module
-# 崩溃类型：missing_module — 重新安装 npm 依赖
+# recover_missing_module [crash_log]
+# 崩溃类型：missing_module — 重新安装缺失的 npm 包
+# 从崩溃日志提取具体包名，精准安装；避免盲目 reinstall 整个包（会删手工修复的依赖）
 recover_missing_module() {
-  echo "[pi-wrapper] [恢复] 重装 npm 依赖..." >&2
+  local crash_log="${1:-}"
+  echo "[pi-wrapper] [恢复] 重装缺失依赖..." >&2
+
   local global_dir
   global_dir="$(get_pi_global_dir)"
-  if [ -d "$global_dir" ]; then
-    npm install --prefix "$(dirname "$global_dir")" 2>&1 | tail -3 >&2
+
+  # 从崩溃日志提取缺失的包名（格式: Cannot find package '<name>'）
+  local missing_pkg=""
+  if [ -n "$crash_log" ] && [ -f "$crash_log" ]; then
+    missing_pkg=$(grep -oP "Cannot find package '\K[^']+" "$crash_log" 2>/dev/null | head -1)
+  fi
+
+  if [ -n "$missing_pkg" ]; then
+    echo "[pi-wrapper] 缺失包: $missing_pkg" >&2
+    # 1. 安装到 pi-coding-agent 的 node_modules
+    if [ -d "$global_dir" ]; then
+      cd "$global_dir" && npm install "$missing_pkg" 2>&1 | tail -3 >&2
+    else
+      npm install -g "$missing_pkg" 2>&1 | tail -3 >&2
+    fi
+    # 2. 写入 package.json 防止下次 reinstall 被删
+    if [ -f "$global_dir/package.json" ]; then
+      if ! grep -q "$missing_pkg" "$global_dir/package.json" 2>/dev/null; then
+        local pkg_ver
+        pkg_ver=$(node -e "try{console.log(require('$missing_pkg/package.json').version)}catch{}" 2>/dev/null || echo "")
+        if [ -n "$pkg_ver" ]; then
+          node -e "
+const fs=require('fs'),p='$global_dir/package.json';
+const pkg=JSON.parse(fs.readFileSync(p));
+pkg.dependencies=pkg.dependencies||{};
+pkg.dependencies['$missing_pkg']='$pkg_ver';
+fs.writeFileSync(p,JSON.stringify(pkg,null,2));
+" 2>/dev/null && echo "[pi-wrapper] 已将 $missing_pkg@$pkg_ver 写入 package.json" >&2
+        fi
+      fi
+    fi
   else
-    npm install -g @earendil-works/pi-coding-agent 2>&1 | tail -3 >&2
+    # 无法提取包名，降级为重装 pi-coding-agent
+    echo "[pi-wrapper] 无法识别缺失包，重装 pi-coding-agent..." >&2
+    if [ -d "$global_dir" ]; then
+      npm install --prefix "$global_dir" 2>&1 | tail -3 >&2
+    else
+      npm install -g @earendil-works/pi-coding-agent 2>&1 | tail -3 >&2
+    fi
   fi
 }
 
@@ -956,7 +994,7 @@ while true; do
       RECOVERY_OK=false
       case "$CRASH_TYPE" in
         missing_module)
-          if recover_missing_module; then
+          if recover_missing_module "$CRASH_LOG"; then
             RECOVERY_OK=true
           else
             # npm install 失败，尝试 L4 源码恢复
