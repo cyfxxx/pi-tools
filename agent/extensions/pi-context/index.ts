@@ -448,7 +448,7 @@ let lastProviderContextTokens = 0
 //   PI_CONTEXT_IDLE_MS（默认 600000=10 分钟；<=0 禁用空闲窗门）
 //   PI_CONTEXT_TASK_GATE（默认 on；off 禁用任务门）
 //   PI_CONTEXT_PLANS_DIR（默认 ~/.pi/plans，测试注入用）
-//   PI_CONTEXT_TMUX_REGISTRY（默认 ~/.pi/agent/.pi-tmux-registry.json，测试注入用）
+//   PI_CONTEXT_TMUX_REGISTRY（默认 ~/.pi/agent/extensions/pi-tmux/.pi-tmux-registry.json，测试注入用）
 const ABSOLUTE_TOKENS = (() => {
   const raw = process.env.PI_CONTEXT_ABSOLUTE_TOKENS
   const n = raw ? Number(raw) : NaN
@@ -485,7 +485,7 @@ let taskDoneAt = 0
 function tmuxRegistryPath(): string {
   return (
     process.env.PI_CONTEXT_TMUX_REGISTRY ||
-    join(process.env.PI_HOME || homedir(), ".pi", "agent", ".pi-tmux-registry.json")
+    join(process.env.PI_HOME || homedir(), ".pi", "agent", "extensions", "pi-tmux", ".pi-tmux-registry.json")
   )
 }
 /** 门2b：本会话产生的后台任务（registry 中 owner=本会话 id 的条目，tmux 仍存活）。

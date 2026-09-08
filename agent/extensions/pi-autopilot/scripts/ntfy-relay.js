@@ -6,7 +6,7 @@
 // 用法: node scripts/ntfy-relay.js            # 守护（断线自动重连）
 //       node scripts/ntfy-relay.js --check    # 预览将执行的动作，不注入
 //       node scripts/ntfy-relay.js --once     # 拉取历史一条并处理（除 --check 外会注入）
-// 配置: agent/ntfy-relay.json（可空 {}；topic 缺省从 notify.json 的通道 template 自动解析）
+// 配置: agent/extensions/pi-autopilot/config/ntfy-relay.json（可空 {}；topic 缺省从 notify.json 的通道 template 自动解析）
 const https = require('https')
 const http = require('http')
 const fs = require('fs')
@@ -17,7 +17,7 @@ const { createInterface } = require('readline')
 const HOME = process.env.HOME || '.'
 const AGENT = path.join(HOME, '.pi', 'agent')
 const LOGF = path.join(HOME, '.pi', 'logs', 'ntfy-relay.log')
-const RELAY_CFG = path.join(AGENT, 'ntfy-relay.json')
+const RELAY_CFG = path.join(AGENT, 'extensions', 'pi-autopilot', 'config', 'ntfy-relay.json')
 const NOTIFY_CFG = path.join(AGENT, 'notify.json')
 const LINK_STATE = path.join(HOME, '.pi', 'pi-link-state.json')
 const INBOX = path.join(AGENT, 'ntfy-inbox.json')
@@ -56,7 +56,7 @@ function loadCfg() {
   }
 }
 const cfg = loadCfg()
-if (!cfg.topic) { console.error('未解析到 ntfy 主题（通知 notify.json 或配置 agent/ntfy-relay.json.topic）'); process.exit(2) }
+if (!cfg.topic) { console.error('未解析到 ntfy 主题（通知 notify.json 或配置 agent/extensions/pi-autopilot/config/ntfy-relay.json.topic）'); process.exit(2) }
 
 // ── 持久状态（去重）──
 let st = { lastId: '', seen: {}, n: 0 }

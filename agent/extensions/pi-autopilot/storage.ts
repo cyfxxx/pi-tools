@@ -13,11 +13,11 @@ let lockPid: string | null = null
 // __setAgentDir 晚于本模块初始化，固化值永远指向默认目录（同 state.ts PI_ADMIN_STATE_FILE
 // 同型问题）。改为每次动态读取，测试环境可正常隔离。
 export function tasksPath(): string {
-  return join(getAgentDir(), 'scheduled-tasks.json')
+  return join(getAgentDir(), 'extensions', 'pi-autopilot', 'scheduled-tasks.json')
 }
 
 export function lockPath(): string {
-  return join(getAgentDir(), 'scheduler.lock')
+  return join(getAgentDir(), 'extensions', 'pi-autopilot', 'scheduler.lock')
 }
 
 function logsDir(): string {

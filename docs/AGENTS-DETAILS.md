@@ -39,7 +39,7 @@
 ## 运行时数据与 git 忽略（不入库，多环境隔离）
 
 - `plans/` — plan-mode 生成的计划目录（每计划独立 .git 仓库，供计划内 git 操作）；git 忽略
-- `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/ntfy-relay/pi-voice（通知与语音配置）、scheduled-tasks.json（调度数据）、`.pi-autopilot-telemetry/lastgood/crash.json` 三项运行时状态（config 入库共享）、`.pi-tmux-registry.json`、`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、pi-crash.log
+- `agent/` 根散落运行时/配置文件：settings/models/auth（配置，每环境独立）、notify/pi-voice（通知与语音配置）。扩展运行时状态已整合至各自扩展目录：`extensions/pi-autopilot/` 下 `scheduled-tasks.json`（调度数据）、`.pi-autopilot-telemetry/lastgood/crash.json`（遥测/回滚/崩溃状态）、`config/ntfy-relay.json`（relay 配置）；`extensions/pi-tmux/` 下 `.pi-tmux-registry.json`（会话注册表）。`.usage-diag.jsonl`（用量诊断，lib/usage-diag.ts MAX_LINES=20000 自动截断）、`pi-crash.log`
 - `memory/stats/` — 跨设备工具使用统计：【同步】tool-use-*.jsonl 原始事件仅本机（git 忽略，臃肿不入库）；跨设备改同步每日聚合计数文件 tool-count-<device>.json（tool-stats-sync.mjs --daily 生成，精简入库），工具默认启用决策依据
 - `pi-link.json` — pi-link 设备清单（**gitignored，不入库**，含内网地址；新机重建或从原机拷贝）与运行时状态（pi-link-active/state/outbox，每次连接刷新，不入库）
 - ctx-lite/ 与 skill-store/ 已清理（分别并入 pi-memory 与 packs/）

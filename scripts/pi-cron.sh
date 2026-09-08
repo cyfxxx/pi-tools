@@ -6,8 +6,8 @@ set -u
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
 AGENT_DIR="$PI_HOME/agent"
-TASKS_FILE="$AGENT_DIR/scheduled-tasks.json"
-LOCK_FILE="$AGENT_DIR/scheduler.lock"
+TASKS_FILE="$AGENT_DIR/extensions/pi-autopilot/scheduled-tasks.json"
+LOCK_FILE="$AGENT_DIR/extensions/pi-autopilot/scheduler.lock"
 LOG_DIR="$PI_HOME/logs/scheduler"
 MAX_RUN_TIME="${PI_SCHEDULER_TIMEOUT:-300}"
 # 数值校验：PI_SCHEDULER_TIMEOUT 可控，非纯数字回退默认（防直插 Python 字面量位注入）

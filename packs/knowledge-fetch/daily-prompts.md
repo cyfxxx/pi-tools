@@ -16,4 +16,4 @@
 
 ## 应用方式（每台新设备/存量设备）
 
-编辑 `agent/scheduled-tasks.json`：knowledge-subscribe 改名 daily-task 并替换 prompt 为上文；daily-review 替换 prompt 为上文。id 不变，仅 name/prompt/updatedAt 变。改后无需重启，scheduler 下轮读取生效。
+编辑 `agent/extensions/pi-autopilot/scheduled-tasks.json`：knowledge-subscribe 改名 daily-task 并替换 prompt 为上文；daily-review 替换 prompt 为上文。id 不变，仅 name/prompt/updatedAt 变。改后无需重启，scheduler 下轮读取生效。

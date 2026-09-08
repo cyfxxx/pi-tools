@@ -100,7 +100,7 @@ tmux 未安装时，所有工具返回**清晰的可修复错误**（含各系�
 ## 数据
 
 - 日志：`~/.pi/logs/tmux/<会话>.log`（git 忽略）
-- 注册表：`~/.pi/agent/.pi-tmux-registry.json`（记录本扩展创建的会话，用于退出清理）
+- 注册表：`~/.pi/agent/extensions/pi-tmux/.pi-tmux-registry.json`（记录本扩展创建的会话，用于退出清理）
 
 ## 开发
 

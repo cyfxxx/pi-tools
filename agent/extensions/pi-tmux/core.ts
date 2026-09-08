@@ -640,7 +640,7 @@ export interface Registry {
 
 function registryPath(): string {
   const piHome = process.env.PI_HOME || join(homedir(), '.pi')
-  return join(piHome, 'agent', '.pi-tmux-registry.json')
+  return join(piHome, 'agent', 'extensions', 'pi-tmux', '.pi-tmux-registry.json')
 }
 
 export function loadRegistry(): Registry {

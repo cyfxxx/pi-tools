@@ -53,4 +53,4 @@ else
 fi
 echo
 echo "提示: 若之前 pi 会话被结束，请重新启动 pi（tmux attach -t main 或直接 pi）。"
-echo "      之后 relay 可用 tmux 注入（改 agent/ntfy-relay.json 为 {\"injectMode\":\"tmux\"}）。"
+echo "      之后 relay 可用 tmux 注入（改 agent/extensions/pi-autopilot/config/ntfy-relay.json 为 {\"injectMode\":\"tmux\"}）。"

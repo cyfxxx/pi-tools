@@ -341,7 +341,7 @@ bash scripts/pi-rescue.sh    # 手动救援脚本
 
 **策略/预算仅 `/auto policy` 命令可写**（工具只读，防止 Agent 自我豁免）。
 
-**配置：** `.pi-autopilot-config.json`（首次自动生成）；状态/遥测：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`。
+**配置：** `.pi-autopilot-config.json`（首次自动生成）；状态/遥测：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/extensions/pi-autopilot/` 下）。
 
 **安装：**
 ```bash

@@ -27,7 +27,7 @@
 | 记忆 | `memory/` | pi-memory 持久记忆数据（如存在；已含原 ctx-lite 数据） |
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
-| 调度任务 | `agent/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
+| 调度任务 | `agent/extensions/pi-autopilot/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
 | 调度脚本 | `scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
 | pi-link 设备清单 | `pi-link.json` | 多设备互联配置（host/user/port，gitignored 每环境独立，归档必须带走） |
 | pi-link 公钥合集 | `deploy/keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
@@ -55,7 +55,7 @@
 | Termux 配置 | `deploy/tmux/termux.properties` | Termux 键盘栏 extra-keys 等副本（源 `~/.termux/termux.properties`，存在时收录；语音快捷键依赖） |
 | tmux 部署文档 | `docs/alacritty-tmux-setup.md` | WSL2/Alacritty 部署问题与修复汇总 |
 | tmux 运行数据目录 | `logs/tmux/` | pi-tmux 会话日志（运行时数据，默认排除且 `--full` 也不纳入） |
-| tmux 会话注册表 | `agent/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
+| tmux 会话注册表 | `agent/extensions/pi-tmux/.pi-tmux-registry.json` | pi-tmux 会话元数据（名称/日志路径/命令；tmux 会话不可跨机恢复，运行时数据） |
 | pi-link 运行时 | `pi-link-active.json`、`pi-link-state.json`、`pi-link-outbox.json` | 活跃时间戳/远程状态/信箱（每设备运行时数据，与 memory 同类隔离，不随 git 同步） |
 
 > **tmux/Termux 配置收录方式**：外部配置（`~/.tmux.conf`、`~/.config/alacritty/alacritty.toml`、`~/.termux/termux.properties`）以副本形式收在仓库内 `deploy/tmux/` 目录——**git 同步（sync/clone）直接携带**，本地归档也直接收录 `deploy/tmux/` 目录（不再单独收集外部路径）；`restore`/`clone` 后写回原路径：
@@ -84,7 +84,7 @@
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
 | 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
 | 运行时状态 | `agent/.pi-admin-state.json` | pi-autopilot 重启状态标记（wrapper 契约） | 不可备份恢复 |
-| 自主运行状态 | `agent/.pi-autopilot-config.json`、`.pi-autopilot-telemetry.json`、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json` | pi-autopilot 配置/遥测/回滚快照 | 可重建，不恢复 |
+| 自主运行状态 | `agent/extensions/pi-autopilot/.pi-autopilot-config.json`、`.pi-autopilot-telemetry.json`、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json` | pi-autopilot 配置/遥测/回滚快照 | 可重建，不恢复 |
 | 模型配置 | `agent/models.json`（pi ≥0.84 为 `agent/models-store.json`） | provider/模型定义（机器特定，含 provider 密钥） | 默认不备份（与 settings.json 一同漏出会导致新设备无可用模型），需备份用 `pi-backup create --with-auth`；新设备经 scp 或 restore 提供 |
 
 ### 按需包含

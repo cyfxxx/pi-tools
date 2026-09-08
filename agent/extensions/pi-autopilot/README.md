@@ -73,9 +73,9 @@
 
 调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（阈值硬编码 0.4；pi-context 侧重启压缩阈值为 100K，见其 README），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。重启照常执行（提示不阻断），避免用户毫不知情地烧掉一次全量重新计费。
 
-运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/` 下）。
+运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/extensions/pi-autopilot/` 下）。
 
-**调度锁**：`agent/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用）。
+**调度锁**：`agent/extensions/pi-autopilot/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用）。
 
 ## 数据流
 

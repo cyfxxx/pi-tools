@@ -119,7 +119,7 @@ function main() {
 
   // 种子-任务失配：seeds 声明但本地未注册，或 schedule 漂移（对账“已存在不覆盖”需要人工/回顾同步）
   const SEEDS = join(HOME, '.pi', 'agent', 'scheduled-seeds.json')
-  const TASKS = join(HOME, '.pi', 'agent', 'scheduled-tasks.json')
+  const TASKS = join(HOME, '.pi', 'agent', 'extensions', 'pi-autopilot', 'scheduled-tasks.json')
   let seedDrift = 0
   try {
     const seeds = JSON.parse(readFileSync(SEEDS, 'utf8')).tasks || []
