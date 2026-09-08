@@ -1,1 +1,1 @@
-../../extensions/pi-voice/scripts/pi-sherpa-server.py
+../agent/extensions/pi-voice/scripts/pi-sherpa-server.py

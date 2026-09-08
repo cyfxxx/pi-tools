@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-footer-format.mjs
+../agent/extensions/pi-context/scripts/patch-footer-format.mjs

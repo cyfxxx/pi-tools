@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-tab-arg-completion.mjs
+../agent/extensions/pi-context/scripts/patch-tab-arg-completion.mjs

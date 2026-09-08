@@ -1,1 +1,1 @@
-../../extensions/pi-memory/scripts/memory-lifecycle.mjs
+../agent/extensions/pi-memory/scripts/memory-lifecycle.mjs

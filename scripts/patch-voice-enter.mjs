@@ -1,1 +1,1 @@
-../../extensions/pi-voice/scripts/patch-voice-enter.mjs
+../agent/extensions/pi-voice/scripts/patch-voice-enter.mjs

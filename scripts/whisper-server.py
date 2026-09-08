@@ -1,1 +1,1 @@
-../../extensions/pi-voice/scripts/whisper-server.py
+../agent/extensions/pi-voice/scripts/whisper-server.py

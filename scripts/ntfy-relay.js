@@ -1,1 +1,1 @@
-../../extensions/pi-autopilot/scripts/ntfy-relay.js
+../agent/extensions/pi-autopilot/scripts/ntfy-relay.js

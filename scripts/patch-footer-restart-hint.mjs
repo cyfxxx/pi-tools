@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-footer-restart-hint.mjs
+../agent/extensions/pi-context/scripts/patch-footer-restart-hint.mjs

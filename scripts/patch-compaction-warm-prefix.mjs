@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-compaction-warm-prefix.mjs
+../agent/extensions/pi-context/scripts/patch-compaction-warm-prefix.mjs

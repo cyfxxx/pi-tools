@@ -1,1 +1,1 @@
-../../extensions/pi-browser/scripts/patch-playwright-core.mjs
+../agent/extensions/pi-browser/scripts/patch-playwright-core.mjs

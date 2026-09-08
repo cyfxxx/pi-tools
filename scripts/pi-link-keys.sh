@@ -1,1 +1,1 @@
-../../extensions/pi-link/scripts/pi-link-keys.sh
+../agent/extensions/pi-link/scripts/pi-link-keys.sh

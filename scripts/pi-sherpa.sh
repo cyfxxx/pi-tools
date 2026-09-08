@@ -1,1 +1,1 @@
-../../extensions/pi-voice/scripts/pi-sherpa.sh
+../agent/extensions/pi-voice/scripts/pi-sherpa.sh

@@ -1,1 +1,1 @@
-../../extensions/pi-tmux/scripts/tmux-fix.sh
+../agent/extensions/pi-tmux/scripts/tmux-fix.sh

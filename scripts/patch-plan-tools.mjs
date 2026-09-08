@@ -1,1 +1,1 @@
-../../extensions/plan-mode/scripts/patch-plan-tools.mjs
+../agent/extensions/plan-mode/scripts/patch-plan-tools.mjs

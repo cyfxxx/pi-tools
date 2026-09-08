@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-footer-live-context.mjs
+../agent/extensions/pi-context/scripts/patch-footer-live-context.mjs

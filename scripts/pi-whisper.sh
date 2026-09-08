@@ -1,1 +1,1 @@
-../../extensions/pi-voice/scripts/pi-whisper.sh
+../agent/extensions/pi-voice/scripts/pi-whisper.sh

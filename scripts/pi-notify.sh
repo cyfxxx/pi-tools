@@ -1,1 +1,1 @@
-../../extensions/pi-autopilot/scripts/pi-notify.sh
+../agent/extensions/pi-autopilot/scripts/pi-notify.sh

@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-truncate-type.mjs
+../agent/extensions/pi-context/scripts/patch-truncate-type.mjs

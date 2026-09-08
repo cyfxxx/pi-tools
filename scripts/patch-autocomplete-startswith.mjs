@@ -1,1 +1,1 @@
-../../extensions/pi-context/scripts/patch-autocomplete-startswith.mjs
+../agent/extensions/pi-context/scripts/patch-autocomplete-startswith.mjs

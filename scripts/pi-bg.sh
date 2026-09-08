@@ -1,1 +1,1 @@
-../../extensions/pi-tmux/scripts/pi-bg.sh
+../agent/extensions/pi-tmux/scripts/pi-bg.sh
