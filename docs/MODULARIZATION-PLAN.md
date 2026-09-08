@@ -13,6 +13,70 @@
 3. **运行时状态混杂**: `.notify-state.json`、`.pi-tmux-registry.json` 等状态文件在 `agent/` 根目录
 4. **lib/ 导出不清晰**: `token-budget.ts` 是 `context-budget.ts` 的兼容层，命名混乱
 
+---
+
+## 分层设计原则（2026-09-08 确立）
+
+### 五层架构
+
+```
+┌─────────────────────────────────────────────┐
+│  用户配置层 (Config)                          │
+│  settings.json / models.json / auth.json     │
+├─────────────────────────────────────────────┤
+│  技能包层 (Packs)                             │
+│  packs/<name>/  — 外部技能包、社区贡献         │
+├─────────────────────────────────────────────┤
+│  技能层 (Skills)                              │
+│  agent/skills/<name>/  — 内置技能             │
+├─────────────────────────────────────────────┤
+│  扩展层 (Extensions)                          │
+│  agent/extensions/<name>/  — 功能扩展         │
+├─────────────────────────────────────────────┤
+│  核心层 (Core)                                │
+│  pi-coding-agent npm dist/  — 运行时          │
+└─────────────────────────────────────────────┘
+```
+
+### 分层职责
+
+| 层 | 目录 | 职责 | 归属规则 |
+|----|------|------|----------|
+| Core | `pi-coding-agent/dist/` | CLI 入口、扩展加载、会话管理 | npm 包，不直接修改 |
+| Extensions | `agent/extensions/<name>/` | 功能模块（调度/语音/搜索/tmux 等） | 每个扩展自包含 |
+| Skills | `agent/skills/<name>/` | 用户可安装的技能包 | 按需加载 |
+| Packs | `packs/<name>/` | 外部/社区技能包 | 独立分发 |
+| Config | `agent/settings.json` 等 | 用户配置 | 每环境独立 |
+
+### 模块化要求
+
+1. **扩展自包含**: 每个扩展的配置、脚本、状态文件必须在 `extensions/<name>/` 下
+   - 配置: `extensions/<name>/config/` 或 `extensions/<name>/*.json`
+   - 脚本: `extensions/<name>/scripts/`（通过 symlink 到 `scripts/` 供外部发现）
+   - 状态: `extensions/<name>/.<name>-*.json`（运行时数据）
+
+2. **禁止散落**: 扩展文件不得出现在 `agent/` 根目录或 `scripts/` 根目录
+   - 例外: `agent/settings.json`、`agent/modes.json`、`agent/models.json`、`agent/auth.json` 等共用配置
+   - 例外: `agent/AGENTS.md`、`agent/APPEND_SYSTEM.md` 等共用文档
+
+3. **向后兼容**: 移动文件后必须在旧路径保留 symlink，过渡期结束后清理
+
+4. **路径引用**: 代码和文档必须引用文件的规范路径（新位置），不得引用 symlink 路径（旧位置）
+
+5. **gitignore 对称**: 新旧路径都应加入 .gitignore（运行时数据不入库）
+
+### 非原生目录处理
+
+| 目录 | 性质 | 处理策略 |
+|------|------|----------|
+| `packs/` | 外部技能包 | 保留独立格式，不强制迁移到 skills/ |
+| `plans/` | 计划快照 | gitignore，定期清理 |
+| `deploy/` | 部署配置 | 保留（运维必需） |
+| `searxng/` | 搜索服务 | 保留（独立服务） |
+| `portable/` | Windows 分发 | 保留（独立用途） |
+| `pi-source/` | 源码目录 | 空目录，可删除 |
+| `pi-source-cache/` | 编译缓存 | gitignore，可重建 |
+
 ## 目标结构
 
 ```
