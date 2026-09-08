@@ -980,6 +980,7 @@ while true; do
         audit_end "escalate_recovery" "$?" "同类型连续失败，升级到救援模式"
         if health_check; then
           echo "[pi-wrapper] 升级恢复后健康检查通过，重启..." >&2
+          RECOVERY_ROUNDS=0
           rm -f "$CRASH_LOG"
           sleep 1
           set -- "${ORIG_ARGS[@]}" "--continue"
@@ -990,37 +991,75 @@ while true; do
         break
       fi
       
-      # 根据崩溃类型选择恢复策略
+      # 根据崩溃类型选择恢复策略（每种类型有完整升级链）
       RECOVERY_OK=false
       case "$CRASH_TYPE" in
         missing_module)
+          # L1: 精准安装缺失包
           if recover_missing_module "$CRASH_LOG"; then
             RECOVERY_OK=true
-          else
-            # npm install 失败，尝试 L4 源码恢复
-            echo "[pi-wrapper] npm install 失败，尝试 L4 源码恢复..." >&2
-            recover_from_source && RECOVERY_OK=true
+          # L2: 源码恢复
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          # L3: 救援模式 pi（兜底）
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
           fi
           ;;
         syntax_error)
-          recover_syntax_error && RECOVERY_OK=true
+          if recover_syntax_error; then
+            RECOVERY_OK=true
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
+          fi
           ;;
         extension_fail)
-          recover_extension_fail "$CRASH_LOG" && RECOVERY_OK=true
-          # 恢复后用带扩展的健康检查验证
-          [ "$RECOVERY_OK" = true ] && TEST_WITH_EXTENSIONS=1
+          if recover_extension_fail "$CRASH_LOG"; then
+            RECOVERY_OK=true
+            TEST_WITH_EXTENSIONS=1
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
+          fi
           ;;
         config_corrupt)
-          recover_config_corrupt && RECOVERY_OK=true
+          if recover_config_corrupt; then
+            RECOVERY_OK=true
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
+          fi
           ;;
         proxy_error)
-          recover_proxy_error && RECOVERY_OK=true
+          if recover_proxy_error; then
+            RECOVERY_OK=true
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
+          fi
           ;;
         lock_contention)
-          recover_lock_contention && RECOVERY_OK=true
+          if recover_lock_contention; then
+            RECOVERY_OK=true
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
+          fi
           ;;
         provider_error)
-          recover_provider_error && RECOVERY_OK=true
+          if recover_provider_error; then
+            RECOVERY_OK=true
+          elif recover_from_source; then
+            RECOVERY_OK=true
+          elif start_rescue_pi "$CRASH_LOG"; then
+            RECOVERY_OK=true
+          fi
           ;;
         *)
           # unknown 类型：逐级升级恢复策略
@@ -1028,18 +1067,18 @@ while true; do
             echo "[pi-wrapper] 未知崩溃类型，启动 L4 源码恢复 + 救援模式 pi..." >&2
             if recover_from_source; then
               RECOVERY_OK=true
-            else
-              start_rescue_pi "$CRASH_LOG" && RECOVERY_OK=true
+            elif start_rescue_pi "$CRASH_LOG"; then
+              RECOVERY_OK=true
             fi
           elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
-            # 先尝试禁用扩展（常见根因：扩展运行时崩溃）
-            echo "[pi-wrapper] 未知崩溃类型，尝试禁用扩展..." >&2
+            echo "[pi-wrapper] 未知崩溃类型，尝试扩展恢复 → 源码恢复 → 救援模式 pi..." >&2
             if recover_extension_fail "$CRASH_LOG"; then
               RECOVERY_OK=true
               TEST_WITH_EXTENSIONS=1
-            else
-              # 扩展禁用失败，尝试 L4 源码恢复
-              recover_from_source && RECOVERY_OK=true
+            elif recover_from_source; then
+              RECOVERY_OK=true
+            elif start_rescue_pi "$CRASH_LOG"; then
+              RECOVERY_OK=true
             fi
           else
             echo "[pi-wrapper] 未知崩溃类型(${crash_count}/${CRASH_THRESHOLD})，1 秒后重试..." >&2
@@ -1056,6 +1095,7 @@ while true; do
       if [ "$RECOVERY_OK" = true ] && health_check; then
         audit_end "$CRASH_TYPE" "true" "恢复成功，健康检查通过"
         echo "[pi-wrapper] 恢复成功，重启..." >&2
+        RECOVERY_ROUNDS=0
         rm -f "$CRASH_LOG"
         sleep 1
         set -- "${ORIG_ARGS[@]}" "--continue"

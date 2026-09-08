@@ -325,7 +325,7 @@ fi
 # ── 测试 10: unknown 类型处理 ──
 section "测试 10: unknown 类型处理"
 
-if grep -q "未知崩溃类型，尝试禁用扩展" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
+if grep -q "未知崩溃类型，尝试扩展恢复" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
   ok "unknown 类型先尝试禁用扩展"
 else
   fail "unknown 类型未尝试禁用扩展"
@@ -356,7 +356,7 @@ else
 fi
 
 # 检查 unknown 类型处理使用 if/else 正确赋值
-if grep -A5 "未知崩溃类型，尝试禁用扩展" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null | grep -q "RECOVERY_OK=true"; then
+if grep -A5 "未知崩溃类型，尝试扩展恢复" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null | grep -q "RECOVERY_OK=true"; then
   ok "unknown 类型正确赋值 RECOVERY_OK=true"
 else
   fail "unknown 类型赋值方式异常"
@@ -364,8 +364,8 @@ fi
 
 # 检查所有 recovery 函数都正确设置 RECOVERY_OK
 # 注意：某些函数使用 if/then 结构，RECOVERY_OK 在下一行
-for pattern in "recover_missing_module" "recover_syntax_error.*RECOVERY_OK=true" "recover_extension_fail.*RECOVERY_OK=true" "recover_config_corrupt.*RECOVERY_OK=true" "recover_proxy_error.*RECOVERY_OK=true" "recover_lock_contention.*RECOVERY_OK=true" "recover_provider_error.*RECOVERY_OK=true"; do
-  if grep -q "$pattern" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null; then
+for pattern in "recover_missing_module" "recover_syntax_error" "recover_extension_fail" "recover_config_corrupt" "recover_proxy_error" "recover_lock_contention" "recover_provider_error"; do
+  if grep -q "$pattern" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null && grep -A2 "$pattern" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null | grep -q "RECOVERY_OK=true"; then
     ok "恢复函数正确赋值: $(echo $pattern | cut -d'.' -f1)"
   else
     fail "恢复函数赋值异常: $(echo $pattern | cut -d'.' -f1)"
@@ -405,7 +405,7 @@ fi
 section "测试 13: 恢复策略优先级"
 
 # unknown 类型在 CRASH_THRESHOLD 时应先尝试禁用扩展
-unknown_section=$(sed -n '/未知崩溃类型，尝试禁用扩展/,/^        \ esac/p' "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null)
+unknown_section=$(sed -n '/未知崩溃类型，尝试扩展恢复/,/^        \ esac/p' "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null)
 if echo "$unknown_section" | grep -q "recover_extension_fail"; then
   ok "unknown 类型优先尝试禁用扩展"
 else
@@ -419,11 +419,17 @@ else
   fail "unknown 类型缺少 L4 降级"
 fi
 
-# missing_module 在 npm install 失败后应尝试 L4
-if grep -A5 "npm install 失败" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null | grep -q "recover_from_source"; then
+# missing_module 在 npm install 失败后应尝试 L4，再尝试救援模式 pi
+if grep -A10 "missing_module)" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null | grep -q "recover_from_source"; then
   ok "missing_module 降级到 L4 源码恢复"
 else
   fail "missing_module 缺少 L4 降级"
+fi
+
+if grep -A15 "missing_module)" "$SCRIPT_DIR/pi-wrapper.sh" 2>/dev/null | grep -q "start_rescue_pi"; then
+  ok "missing_module 兜底救援模式 pi"
+else
+  fail "missing_module 缺少救援模式 pi 兜底"
 fi
 
 # ── 测试 14: 崩溃日志捕获 ──
