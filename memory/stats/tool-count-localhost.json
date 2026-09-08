@@ -1,16 +1,16 @@
 {
   "device": "localhost",
-  "generatedAt": "2026-09-08T08:22:53.684Z",
+  "generatedAt": "2026-09-08T15:31:27.649Z",
   "windowDays": 30,
-  "totalCalls": 1566,
+  "totalCalls": 1931,
   "tools": {
     "bash": {
-      "calls": 865,
+      "calls": 1010,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788438171066,
-      "lastTs": 1788855771997
+      "lastTs": 1788881485524
     },
     "ask_user": {
       "calls": 5,
@@ -21,12 +21,12 @@
       "lastTs": 1788508445326
     },
     "read": {
-      "calls": 295,
+      "calls": 436,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788438666943,
-      "lastTs": 1788855765236
+      "lastTs": 1788881414015
     },
     "todo": {
       "calls": 54,
@@ -85,20 +85,20 @@
       "lastTs": 1788515562633
     },
     "write": {
-      "calls": 23,
+      "calls": 26,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788440634747,
-      "lastTs": 1788536136375
+      "lastTs": 1788855952809
     },
     "edit": {
-      "calls": 141,
+      "calls": 164,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788440915890,
-      "lastTs": 1788585286631
+      "lastTs": 1788880867941
     },
     "memory_recall": {
       "calls": 2,
@@ -125,12 +125,12 @@
       "lastTs": 1788535958545
     },
     "memory_search": {
-      "calls": 10,
+      "calls": 16,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788442548798,
-      "lastTs": 1788855772933
+      "lastTs": 1788855877334
     },
     "memory_forget": {
       "calls": 6,
@@ -141,28 +141,28 @@
       "lastTs": 1788443130571
     },
     "ls": {
-      "calls": 11,
+      "calls": 21,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788443932244,
-      "lastTs": 1788855737251
+      "lastTs": 1788878114486
     },
     "grep": {
-      "calls": 26,
+      "calls": 41,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788444055300,
-      "lastTs": 1788588612969
+      "lastTs": 1788878955472
     },
     "memory_store": {
-      "calls": 7,
+      "calls": 29,
       "input": 0,
       "cacheRead": 0,
       "cacheWrite": 0,
       "firstTs": 1788449721152,
-      "lastTs": 1788523050256
+      "lastTs": 1788880996403
     },
     "admin_restart": {
       "calls": 16,
