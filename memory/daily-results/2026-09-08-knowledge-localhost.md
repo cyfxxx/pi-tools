@@ -1,0 +1,3 @@
+新增条目: 60 条 | 分布: 安全漏洞 (CISA/GitHub/FreeBuf/知乎) 24, AI新闻 12, 科技数码 6, 生活热点 6, 重要新闻 6, 其他 6
+入库标题: CVE-2026-58644 Microsoft SharePoint Deserialization Vulnerability / CVE-2026-25089 Fortinet FortiSandbox Command Injection / CVE-2026-46817 Oracle E-Business Suite Privilege Management / CVE-2026-56155 Microsoft ADFS Access Control / CVE-2026-86516 mocknest-serverless Vulnerability
+summary 路径: ~/.pi/logs/knowledge/summary-2026-09-08.md
