@@ -7,7 +7,7 @@ import { CONFIG_FILE, defaultAutopilotConfig } from './types.ts'
 const AGENT_DIR = getAgentDir()
 
 export function configPath(): string {
-  return join(AGENT_DIR, CONFIG_FILE)
+  return join(AGENT_DIR, 'extensions', 'pi-autopilot', CONFIG_FILE)
 }
 
 export async function readAutopilotConfig(): Promise<AutopilotConfig> {

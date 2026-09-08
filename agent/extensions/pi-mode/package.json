@@ -1,0 +1,12 @@
+{
+  "name": "pi-mode",
+  "version": "1.0.0",
+  "private": true,
+  "description": "模式切换扩展 — 支持在不同使用场景间快速切换配置（扩展/技能/系统提示词/思考级别）",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

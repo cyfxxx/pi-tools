@@ -65,7 +65,7 @@ test_analyzer "extension_fail" \
 
 test_analyzer "extension_runtime_error" \
   "TypeError: Class constructor WebSocketServer cannot be invoked without 'new'
-    at createWebuiServer (/root/.pi/agent/extensions/pi-webui/server.ts:276:39)" \
+    at createServer (/root/.pi/agent/extensions/pi-browser/server.ts:276:39)" \
   "extension_fail"
 
 test_analyzer "extension_typeerror" \

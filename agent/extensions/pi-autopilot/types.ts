@@ -57,7 +57,7 @@ export interface TaskStore {
   tasks: Task[]
 }
 
-// ── 自主运行配置（agent/.pi-autopilot-config.json） ────────────────
+// ── 自主运行配置（extensions/pi-autopilot/.pi-autopilot-config.json） ────────────────
 export interface FallbackModel {
   provider: string
   model: string

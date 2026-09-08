@@ -1,0 +1,12 @@
+{
+  "name": "pi-intervention",
+  "version": "1.0.0",
+  "private": true,
+  "description": "干预捕获扩展 — abort 快照留存与 corrective prompt 关联，为意图差分析与 LoRA 训练数据提供底座",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
