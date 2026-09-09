@@ -234,6 +234,97 @@ pi 启动时可能打印 `Extension shortcut conflict: 'return'/'shift+enter' is
 - 2026-08-15：全量回归 until_exit 阻塞 420 秒（命令尾部 bash 仍存活会话不退出，until_exit 注定等满超时）
 - 2026-08-22 已修复：core.ts 注入命令尾部追加 `; [ $? -ne 130 ] && exit`——命令自然结束（成功/失败）会话自动退出，notify 自动唤醒与 until_exit 均恢复正常；Ctrl-C 中断（退出码 130）保留 shell 供继续交互
 
+## 工具分层与优化指南（2026-09-09）
+
+### 工具分层架构
+
+Pi 使用三层工具架构，按使用频率和重要性分层：
+
+| 层级 | 说明 | schema 注入 | 示例 |
+|------|------|-------------|------|
+| **L0 核心** | 每轮必需的工具 | 每轮完整注入 | read, bash, edit, memory_store |
+| **L1 休眠** | 按需启用的工具 | 不注入，需 `enable_tool()` | browser-core, admin, autopilot |
+| **L2 完整** | 低频/高级工具 | 不注入，需显式启用 | browser-full, verify, link |
+
+### 核心工具选择原则
+
+**保留核心的标准：**
+1. **高频使用**：30 天内调用 ≥10 次
+2. **功能独特**：无法被其他工具替代
+3. **核心能力**：文件操作、用户交互、重启等基础能力
+4. **Schema 极小**：如 admin_restart（<100 token）
+
+**移入休眠的标准：**
+1. **低频使用**：30 天内调用 <5 次
+2. **可替代**：功能可由 bash/脚本/其他工具替代
+3. **专业场景**：仅特定工作流需要（如验证器开发）
+4. **Schema 较大**：占用大量 token 但使用率低
+
+### 当前工具分组（2026-09-09）
+
+**核心常驻（21 工具）：**
+- 文件操作：read, bash, edit, write, grep, find, ls（7）
+- 规划：todo, plan_exit（2）
+- 子代理：subagent（1）
+- 记忆：memory_store, memory_search, memory_forget, ctx_exec（4）
+- Web：web_search, fetch_url（2）
+- Tmux：tmux_run, tmux_read, tmux_stop（3）
+- 管理：admin_restart（1）
+- 交互：ask_user（1）
+
+**休眠组（11 组，45 工具）：**
+- plan（1）：plan_enter
+- browser-core（3）：navigate, evaluate, click
+- browser-advanced（3）：wait_for, network, find
+- browser-full（12）：screenshot, type, scroll, extract, select_option, dialog, download, upload, cookies, close, pdf, help
+- memory-advanced（5）：ctx_note, ctx_list, ctx_snap, memory_recall, memory_stats
+- tmux-advanced（3）：status, send, wait
+- admin（7）：status, list_models, set_model, get_config, set_config, list_sessions, switch_session
+- autopilot（5）：status, stats, policy, failover, schedule_task
+- verify（3）：report, config, test
+- link（2）：send, status
+- web-fallback（1）：web_fetch
+
+### 新增工具规范
+
+**添加新工具前必须回答：**
+1. 这个工具解决什么问题？能否用现有工具组合解决？
+2. 预期使用频率是多少？（高/中/低）
+3. Schema 大小是多少 token？
+4. 是否有独特的 API/能力，无法被 bash/脚本替代？
+
+**新工具默认分类：**
+- 未在 CORE_TOOLS 或 SLEEPING_GROUPS 中的工具自动归为核心（computeActiveTools 逻辑）
+- 新扩展应显式将其工具加入 SLEEPING_GROUPS，避免自动归为核心
+
+**添加流程：**
+1. 在扩展的 tools.ts 中注册工具
+2. 在 tool-groups.ts 的 SLEEPING_GROUPS 中添加分组
+3. 如果是高频工具，考虑加入 CORE_TOOLS
+4. 更新相关文档
+
+### 缓存友好约束
+
+1. **工具列表变化 = 前缀缓存断裂**：enable_tool() 是低频操作，会话内保持固定
+2. **禁止每轮动态启停**：会导致每轮缓存重算
+3. **启用状态是进程内存态**：pi 重启后恢复默认分层
+4. **休眠组简介是静态的**：buildSleepingSummary() 内容不依赖启用状态
+
+### 工具使用统计
+
+统计文件：`data/stats/tool-count-<device>.json`
+同步脚本：`scripts/tool-stats-sync.mjs --daily`
+
+**分析维度：**
+- 30 天调用次数
+- 首末使用时间
+- 跨设备使用情况
+
+**优化决策依据：**
+- 调用次数 <5 → 考虑移入休眠
+- 调用次数 =0 → 考虑移除或保留（检查功能独特性）
+- 调用次数 >10 → 考虑提升为核心
+
 ## 旧命令名（已移除，禁止引用）
 
 /tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart

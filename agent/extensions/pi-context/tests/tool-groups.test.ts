@@ -54,7 +54,8 @@ describe('tool-groups: computeActiveTools', () => {
   })
 
   it('启用多组全部恢复', () => {
-    const active = computeActiveTools(all, new Set(['browser-core', 'browser-full', 'admin', 'autopilot', 'link', 'verify', 'web-fallback']))
+    const allGroups = SLEEPING_GROUPS.map(g => g.name)
+    const active = computeActiveTools(all, new Set(allGroups))
     expect(active).toHaveLength(all.length)
   })
 

@@ -27,41 +27,47 @@ export interface ToolGroup {
   tools: string[]
 }
 
-/** 核心常驻工具（schema 每轮完整注入） */
+/** 核心常驻工具（schema 每轮完整注入，约 21 工具） */
 export const CORE_TOOLS: string[] = [
-  // 内置（文件操作核心）
+  // 内置（文件操作核心，7 工具）
   'read', 'bash', 'edit', 'write', 'grep', 'find', 'ls',
-  // plan-mode（规划核心）
-  'todo', 'plan_enter', 'plan_exit',
-  // subagent（代理核心）
+  // plan-mode（规划核心：todo 是任务追踪入口，plan_exit 是退出规划模式必需）
+  'todo', 'plan_exit',
+  // subagent（代理核心：委派任务是核心能力）
   'subagent',
-  // pi-memory（上下文与记忆核心：跨会话持久化能力）
-  'ctx_exec', 'ctx_note', 'ctx_list', 'ctx_snap',
-  'memory_store', 'memory_search', 'memory_recall', 'memory_stats', 'memory_forget',
-  // pi-web-search（精简：web_fetch 是 SearXNG 降级备选，移入休眠）
+  // pi-memory（精简：仅保留高频核心，其余移入 memory-advanced 休眠组）
+  'memory_store', 'memory_search', 'memory_forget', 'ctx_exec',
+  // pi-web-search（fetch_url 是独立 HTTP 获取，保留）
   'web_search', 'fetch_url',
-  // pi-tmux（后台任务核心：send 是交互入口，保留）
-  'tmux_run', 'tmux_status', 'tmux_read', 'tmux_send', 'tmux_stop', 'tmux_wait',
-  // browser 核心高频（2026-09-09 提升：evaluate/click/wait_for 使用频率高）
-  'browser_wait_for', 'browser_network', 'browser_find',
-  // 高频单工具：admin_restart 常驻——重启高频且 schema 极小，
-  // 每次 enable_tool("admin") 只为重启需多一轮交互 + 前缀缓存重算，不划算
+  // pi-tmux（精简：仅保留核心操作，其余移入 tmux-advanced 休眠组）
+  'tmux_run', 'tmux_read', 'tmux_stop',
+  // admin_restart（高频单工具：重启高频且 schema 极小）
   'admin_restart',
-  // 用户交互核心（2026-09-09 提升：ask_user 是核心交互能力）
+  // ask_user（用户交互核心）
   'ask_user',
 ]
 
 /** 休眠工具组（schema 不注入；enable_tool("<name>") 启用，本会话内保持） */
 export const SLEEPING_GROUPS: ToolGroup[] = [
-  // browser-core：高频浏览器操作（3 工具），按需启用节省 token
-  // 注意：browser_wait_for 已提升为核心常驻（使用频率高，6 次调用）
+  // plan：规划扩展（1 工具），需要进入规划模式时启用
+  {
+    name: 'plan',
+    description: '规划模式：进入只读探索模式（1 工具）',
+    tools: ['plan_enter'],
+  },
+  // browser-core：浏览器基础操作（3 工具），按需启用节省 token
   {
     name: 'browser-core',
-    description: '浏览器核心：导航/执行/点击（3 工具）',
+    description: '浏览器基础：导航/执行/点击（3 工具）',
     tools: ['browser_navigate', 'browser_evaluate', 'browser_click'],
   },
+  // browser-advanced：浏览器高级操作（3 工具），需要等待/网络/Shadow DOM 时启用
+  {
+    name: 'browser-advanced',
+    description: '浏览器高级：等待/网络请求/Shadow DOM 查找（3 工具）',
+    tools: ['browser_wait_for', 'browser_network', 'browser_find'],
+  },
   // browser-full：完整浏览器操作（12 工具），低频使用时启用
-  // 注意：browser_wait_for/network/find 已提升为核心常驻（使用频率高）
   {
     name: 'browser-full',
     description: '浏览器完整：截图/类型/滚动/提取/选择/对话/下载/上传/Cookie/关闭/PDF/帮助（12 工具）',
@@ -71,6 +77,18 @@ export const SLEEPING_GROUPS: ToolGroup[] = [
       'browser_download', 'browser_upload', 'browser_cookies', 'browser_close',
       'browser_pdf', 'browser_help',
     ],
+  },
+  // memory-advanced：记忆扩展工具（5 工具），需要跨会话笔记/历史查询时启用
+  {
+    name: 'memory-advanced',
+    description: '记忆扩展：笔记存储/列表/快照/历史召回/统计（5 工具）',
+    tools: ['ctx_note', 'ctx_list', 'ctx_snap', 'memory_recall', 'memory_stats'],
+  },
+  // tmux-advanced：Tmux 扩展工具（3 工具），需要状态查询/交互/等待时启用
+  {
+    name: 'tmux-advanced',
+    description: 'Tmux 扩展：状态查询/发送输入/等待完成（3 工具）',
+    tools: ['tmux_status', 'tmux_send', 'tmux_wait'],
   },
   // admin：Agent 管理（6 工具），admin_restart 已提升为核心常驻
   {
