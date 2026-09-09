@@ -64,6 +64,26 @@ import {
   type WakeSession,
 } from './core'
 
+/** 检测当前是否为 Termux 环境 */
+function detectIsTermux(): boolean {
+  // 方法1：检查 termux-microphone-record 命令是否存在
+  try {
+    execFileSync('which', ['termux-microphone-record'], { stdio: 'ignore' })
+    return true
+  } catch {
+    // 不存在
+  }
+  // 方法2：检查环境变量 PREFIX（Termux 特有）
+  if (process.env.PREFIX?.includes('com.termux')) {
+    return true
+  }
+  // 方法3：检查 /data/data/com.termux 目录
+  if (existsSync('/data/data/com.termux')) {
+    return true
+  }
+  return false
+}
+
 /** 听写回车防抖窗口（ms）：连击只处理一次 */
 const ENTER_DEBOUNCE_MS = 800
 /** reply 兜底重试：加载期/会话替换窗口 runtime 未绑定，sendMessage 抛桩错——延迟补发，超限丢弃 */
@@ -194,6 +214,14 @@ function detectDistFromPath(explicit?: string): string {
 
 export default function (pi: ExtensionAPI): void {
   config = loadConfig()
+  
+  // Termux 环境默认禁用 voice 扩展（录音/TTS 体验差，资源占用高）
+  // Linux/Windows 环境正常启用
+  if (config.platform === 'termux' || (config.platform === 'auto' && detectIsTermux())) {
+    // Termux 环境：不注册任何工具/命令/快捷键，完全跳过
+    return
+  }
+  
   ttsEnabled = config.ttsEnabled
   // 启动即清理残留：进程重启后必然无进行中录音，tmpDir 全部残留（m4a/wav）立即删除；
   // 另清理重启/崩溃遗留的孤儿录音进程（幂等：无录音时 -q 输出 No recording to stop 且 exit 0），
