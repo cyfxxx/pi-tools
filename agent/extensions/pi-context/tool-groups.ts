@@ -1,6 +1,6 @@
-// ── 工具分层与按需加载（2026-08-18） ──
-// 背景：45 个扩展工具的全量 schema 每轮注入（~5K token），工具增长成本线性。
-// 方案：核心工具完整 schema 常驻；休眠工具组（browser/admin/autopilot/link）
+// ── 工具分层与按需加载（2026-09-09 优化） ──
+// 背景：66 个扩展工具的全量 schema 每轮注入（~13K token），工具增长成本线性。
+// 方案：核心工具完整 schema 常驻；休眠工具组（browser-core/browser-full/admin/autopilot/verify/link）
 // 不注入 schema，仅在 system prompt 中保留 1 行简介，需要时由模型调用
 // enable_tool("组名") 启用（本会话内保持）。
 //
@@ -12,6 +12,13 @@
 // 3. 启用状态是进程内存态：pi 重启后恢复默认分层（休眠组回到休眠）。
 // 4. 名单维护：CORE_TOOLS 之外的未知工具（未来新扩展）默认自动进入核心
 //    （applyToolLayering 用 getAllTools 全集减去休眠组，不依赖名单完整性）。
+//
+// 2026-09-09 优化说明：
+// - 将 14 个未分组工具移入正确的休眠组（browser-wait_for/network/find 保留核心）
+// - 拆分 browser 组为 browser-core（高频）和 browser-full（低频）
+// - 新增 verify 组（验证器开发工具）
+// - 从未使用的核心工具分析：ctx_note/ctx_list/tmux_send/memory_stats 功能独特保留
+// - ask_user 加入核心常驻（用户交互是核心能力）
 
 export interface ToolGroup {
   name: string
@@ -22,42 +29,59 @@ export interface ToolGroup {
 
 /** 核心常驻工具（schema 每轮完整注入） */
 export const CORE_TOOLS: string[] = [
-  // 内置
+  // 内置（文件操作核心）
   'read', 'bash', 'edit', 'write', 'grep', 'find', 'ls',
-  // plan-mode
+  // plan-mode（规划核心）
   'todo', 'plan_enter', 'plan_exit',
-  // subagent
+  // subagent（代理核心）
   'subagent',
-  // pi-memory（ctx + memory 全系：记忆是常驻能力）
+  // pi-memory（上下文与记忆核心：跨会话持久化能力）
   'ctx_exec', 'ctx_note', 'ctx_list', 'ctx_snap',
   'memory_store', 'memory_search', 'memory_recall', 'memory_stats', 'memory_forget',
-  // pi-web-search
-  'web_search', 'fetch_url', 'web_fetch',
-  // pi-tmux（后台任务高频）
+  // pi-web-search（精简：web_fetch 是 SearXNG 降级备选，移入休眠）
+  'web_search', 'fetch_url',
+  // pi-tmux（后台任务核心：send 是交互入口，保留）
   'tmux_run', 'tmux_status', 'tmux_read', 'tmux_send', 'tmux_stop', 'tmux_wait',
-  // 高频单工具（2026-08-25）：admin_restart 常驻——重启高频且 schema 极小，
+  // browser 核心高频（2026-09-09 提升：evaluate/click/wait_for 使用频率高）
+  'browser_wait_for', 'browser_network', 'browser_find',
+  // 高频单工具：admin_restart 常驻——重启高频且 schema 极小，
   // 每次 enable_tool("admin") 只为重启需多一轮交互 + 前缀缓存重算，不划算
   'admin_restart',
+  // 用户交互核心（2026-09-09 提升：ask_user 是核心交互能力）
+  'ask_user',
 ]
 
 /** 休眠工具组（schema 不注入；enable_tool("<name>") 启用，本会话内保持） */
 export const SLEEPING_GROUPS: ToolGroup[] = [
+  // browser-core：高频浏览器操作（3 工具），按需启用节省 token
+  // 注意：browser_wait_for 已提升为核心常驻（使用频率高，6 次调用）
   {
-    name: 'browser',
-    description: '网页浏览/截图/点击/提取（8 工具）',
+    name: 'browser-core',
+    description: '浏览器核心：导航/执行/点击（3 工具）',
+    tools: ['browser_navigate', 'browser_evaluate', 'browser_click'],
+  },
+  // browser-full：完整浏览器操作（12 工具），低频使用时启用
+  // 注意：browser_wait_for/network/find 已提升为核心常驻（使用频率高）
+  {
+    name: 'browser-full',
+    description: '浏览器完整：截图/类型/滚动/提取/选择/对话/下载/上传/Cookie/关闭/PDF/帮助（12 工具）',
     tools: [
-      'browser_navigate', 'browser_screenshot', 'browser_click', 'browser_type',
-      'browser_scroll', 'browser_extract', 'browser_evaluate', 'browser_close',
+      'browser_screenshot', 'browser_type', 'browser_scroll', 'browser_extract',
+      'browser_select_option', 'browser_dialog',
+      'browser_download', 'browser_upload', 'browser_cookies', 'browser_close',
+      'browser_pdf', 'browser_help',
     ],
   },
+  // admin：Agent 管理（6 工具），admin_restart 已提升为核心常驻
   {
     name: 'admin',
-    description: 'Agent 管理：状态/模型/配置/会话（7 工具；admin_restart 已提升为核心常驻）',
+    description: 'Agent 管理：状态/模型/配置/会话（6 工具；admin_restart 已提升为核心常驻）',
     tools: [
       'admin_status', 'admin_list_models', 'admin_set_model', 'admin_get_config',
       'admin_set_config', 'admin_list_sessions', 'admin_switch_session',
     ],
   },
+  // autopilot：自主运行（5 工具），开发/运维时启用
   {
     name: 'autopilot',
     description: '自主运行：状态/遥测/策略/failover/定时任务（5 工具）',
@@ -66,10 +90,23 @@ export const SLEEPING_GROUPS: ToolGroup[] = [
       'schedule_task',
     ],
   },
+  // verify：LLM 验证器开发工具（3 工具），仅开发/调优时启用
+  {
+    name: 'verify',
+    description: 'LLM 验证器：统计/配置/测试（3 工具，仅开发调优时启用）',
+    tools: ['verify_report', 'verify_config', 'verify_test'],
+  },
+  // link：多设备互联（2 工具），跨设备协作时启用
   {
     name: 'link',
     description: '多设备互联：跨设备委派/查询（2 工具）',
     tools: ['link_send', 'link_status'],
+  },
+  // web-fallback：降级备选搜索（1 工具），SearXNG 不可用时启用
+  {
+    name: 'web-fallback',
+    description: '降级搜索：无 SearXNG 时的 HTTP 搜索备选（1 工具）',
+    tools: ['web_fetch'],
   },
 ]
 

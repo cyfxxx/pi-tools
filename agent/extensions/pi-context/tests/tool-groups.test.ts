@@ -45,15 +45,16 @@ describe('tool-groups: computeActiveTools', () => {
   })
 
   it('启用单组只恢复该组工具', () => {
-    const active = computeActiveTools(all, new Set(['browser']))
+    const active = computeActiveTools(all, new Set(['browser-core']))
     expect(active).toContain('browser_navigate')
-    expect(active).toContain('browser_close')
+    expect(active).toContain('browser_evaluate')
+    expect(active).not.toContain('browser_close') // browser_close 在 browser-full
     expect(active).not.toContain('admin_status')
     expect(active).not.toContain('link_send')
   })
 
   it('启用多组全部恢复', () => {
-    const active = computeActiveTools(all, new Set(['browser', 'admin', 'autopilot', 'link']))
+    const active = computeActiveTools(all, new Set(['browser-core', 'browser-full', 'admin', 'autopilot', 'link', 'verify', 'web-fallback']))
     expect(active).toHaveLength(all.length)
   })
 
@@ -69,10 +70,13 @@ describe('tool-groups: 缓存友好性', () => {
     const s1 = buildSleepingSummary()
     const s2 = buildSleepingSummary()
     expect(s1).toBe(s2)
-    expect(s1).toContain('browser')
+    expect(s1).toContain('browser-core')
+    expect(s1).toContain('browser-full')
     expect(s1).toContain('admin')
     expect(s1).toContain('autopilot')
+    expect(s1).toContain('verify')
     expect(s1).toContain('link')
+    expect(s1).toContain('web-fallback')
     // 无时间戳/精确数值（缓存友好约束）
     expect(s1).not.toMatch(/\d{4}-\d{2}-\d{2}/)
   })
