@@ -2967,34 +2967,6 @@
       "contentHash": "bc0eb5366aa5f934"
     },
     {
-      "id": "992c1a54-f740-4833-bd50-3579d02ed93c",
-      "category": "fact",
-      "title": "WSLg 音频桥 bug 确认: rdp-source 启动即阻塞, 循环重启无效（Win11 24H2 实测）",
-      "content": "WSL2 的 WSLg 音频桥 bug（2026-08-11 在 Win11 24H2 26100 + 最新 WSL 实测）：pulseaudio 启动时 module-rdp-source 同步 connect 到 /mnt/wslg/PulseAudioRDPSource 即阻塞，进程变单线程（Threads:1）卡死，wslg 监督机制循环重启（PID 21↔40 轮换）依然卡死，日志文件 21:19 后不再更新。已穷尽手段均无效：wsl --update、wsl --shutdown 重启、Windows 麦克风隐私权限同意（全局 Allow）、Windows 侧启动录音机激活麦克风通道、--system 进入 utility VM kill -9 强制重启。Windows 侧 Realtek 麦克风硬件 OK。可用操作路径：/mnt/c/Windows/System32/wsl.exe --system 进入 wslg 实例管理进程；PulseServer socket 真身在 /mnt/wslg/runtime-dir/pulse/native。结论：WSLg 麦克风转发在此环境彻底不可用，pi-voice 语音输入/输出走 Termux（Android）方案，或 Windows 侧录音后 curl POST 127.0.0.1:18766 转写（转写链路可用）。",
-      "tags": [
-        "wslg",
-        "audio",
-        "pulseaudio",
-        "pi-voice",
-        "bug",
-        "microphone",
-        "wsl",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T13:27:03.630Z",
-      "updatedAt": "2026-08-11T13:27:03.630Z",
-      "accessedAt": "2026-08-11T13:27:03.630Z",
-      "environments": [
-        "wsl2"
-      ],
-      "observedAt": "2026-08-11T13:27:03.630Z",
-      "deleted": false,
-      "contentHash": "0582e9b2e49b4e53"
-    },
-    {
       "id": "940fd971-46a6-413c-8cee-e4909ed9804a",
       "category": "fact",
       "title": "WSL2 麦克风链路已通: 根因是 Windows 权限弹窗未处理而非 WSLg bug",
@@ -3376,30 +3348,6 @@
       "contentHash": "e9313433355d5a8a"
     },
     {
-      "id": "f4bfe459-145e-4b22-a6c3-346ca98b0a35",
-      "category": "fact",
-      "title": "测试条目 memory-test-20260812 检索不到",
-      "content": "2026-08-12 用户用 memory_store 保存测试条目（标记 memory-test-20260812，内容为'重建验证'专用标记），随后 memory_recall 语义检索'重建验证'未命中。排查中手动复现评分该条目排名第 1，但实际函数搜索不到，疑似运行时加载的模块非当前源码。排查未完成，结论未定，后续会话可继续验证。",
-      "tags": [
-        "pi-memory",
-        "bug",
-        "调试",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T00:38:50.462Z",
-      "updatedAt": "2026-08-12T00:38:50.462Z",
-      "accessedAt": "2026-08-12T00:38:50.462Z",
-      "observedAt": "2026-08-12T00:38:50.462Z",
-      "environments": [
-        "wsl2"
-      ],
-      "deleted": false,
-      "contentHash": "579ce9bec3b425c2"
-    },
-    {
       "id": "860c7bed-4291-41c0-944e-0fa737fe1524",
       "category": "fact",
       "title": "read 工具读取文件可能被截断",
@@ -3421,30 +3369,6 @@
       ],
       "deleted": false,
       "contentHash": "1e1d1ab371e7656c"
-    },
-    {
-      "id": "32cda2ba-a9b3-48e8-bd75-56b439da152d",
-      "category": "procedure",
-      "title": "内存检索异常排查流程",
-      "content": "排查 memory_recall 搜不到已存储条目的流程：1) 确认检索为实时读取无索引；2) 检查 tokenize 分词（bigram）能否匹配；3) 检查 activeEntries 过滤是否包含新条目；4) 手动复现 searchEntries 评分流程打印分数；5) 若函数行为与源码不符，确认源码完整后写逐字符相同的副本函数做对照实验，区分数据问题与模块加载问题（如旧版本代码被加载）。",
-      "tags": [
-        "pi-memory",
-        "排查",
-        "流程",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T00:38:50.462Z",
-      "updatedAt": "2026-08-12T00:38:50.462Z",
-      "accessedAt": "2026-08-12T00:38:50.462Z",
-      "observedAt": "2026-08-12T00:38:50.462Z",
-      "environments": [
-        "wsl2"
-      ],
-      "deleted": false,
-      "contentHash": "f8c86cf779f11838"
     },
     {
       "id": "eb91dd70-bd35-4691-aa15-80c405278f39",
@@ -6470,31 +6394,6 @@
       "contentHash": "e374fc8150f717c4"
     },
     {
-      "id": "064ee064-3d9c-4142-8e71-4ce531269d4b",
-      "category": "fact",
-      "title": "便携版提交走 portable-win 分支（不推 master）",
-      "content": "pi-tools 仓库分支约定（2026-08-14）：便携版（Windows）相关提交推送独立分支 `portable-win`（远程 refs/heads/portable-win，HEAD 6fd2049），**禁止推送到主线 master**（master 停在 ca283a88，不含便携版提交）。本地 E:\\pi-portable 已在 portable-win 分支（跟踪 origin/portable-win）。主仓库 ~/.pi 仍在 master。WSL 侧修复便携版后：check-restart.js 状态文件路径改为候选目录（PI_CODING_AGENT_DIR → USERPROFILE\\.pi\\agent → USERPROFILE\\agent，pi-autopilot 写 getAgentDir()/.pi-admin-state.json）；footer.js 补丁已还原原版（崩溃嫌疑，保持原版）。",
-      "tags": [
-        "git",
-        "branch",
-        "portable-win",
-        "pi-tools",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-14T15:05:13.074Z",
-      "updatedAt": "2026-08-14T15:05:13.074Z",
-      "accessedAt": "2026-08-14T15:05:13.074Z",
-      "environments": [
-        "windows"
-      ],
-      "observedAt": "2026-08-14T15:05:13.074Z",
-      "deleted": false,
-      "contentHash": "22fd07630bc77fe4"
-    },
-    {
       "id": "de76f5ed-d0ac-4062-8cb6-cd5a711788db",
       "category": "fact",
       "title": "pi-tools 主线稳定版 stable-20260814（回退锚点）",
@@ -7052,32 +6951,6 @@
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
       "contentHash": "d73525cb5fa1963c"
-    },
-    {
-      "id": "f943185c-51e1-4484-b255-06e3974ba8e4",
-      "category": "fact",
-      "title": "merge-test 分支全项目审计缺陷清单（待修复）",
-      "content": "pi-full-audit 审查 pi-tools merge-test 分支（2026-08-15，master×portable-win 合并测试版）发现并经复核确认的关键缺陷：①pi-wrapper.sh:366-381 TARGET_SESSION/TARGET_MODEL 读取后被 unset，switch_session/set_model 分支恒假——模型切换/会话切换/崩溃回滚静默降级为 --continue 恢复最近会话（HIGH）；②pi-autopilot failover 无熔断，双模型链 ping-pong 无限重启（HIGH，当前 failover 未配置未触发）；③pi-memory extract 子进程 pi -p 无 PI_MEMORY_EXTRACT 守卫，session_start 并发消费 pending 队列（HIGH）；④extract cooldown/锁竞争 skip 计 attempts，3 次 skip 删未处理 job（HIGH）；⑤merge.ts OPPOSITE_PAIRS 子串包含（能⊂不能）致双重否定互判矛盾删条目（MEDIUM）。审查还发现 review.sh --all 模式对 ~/.pi 自身失效（排除规则 */.pi/* 误伤扫描根）。修复状态：均未修复，待用户批准修复计划。",
-      "tags": [
-        "audit",
-        "pi-wrapper",
-        "pi-autopilot",
-        "pi-memory",
-        "缺陷清单",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-15T12:51:35.930Z",
-      "updatedAt": "2026-08-15T12:51:35.930Z",
-      "accessedAt": "2026-09-03T05:38:43.997Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-15T12:51:35.930Z",
-      "deleted": false,
-      "contentHash": "8b3df9e58140c66b"
     },
     {
       "id": "30b01bcc-cb2b-4c8c-9673-0ff7db90efe4",
@@ -7908,57 +7781,6 @@
       "observedAt": "2026-08-19T11:56:37.715Z",
       "deleted": false,
       "contentHash": "f72a1b5a8e9d0e81"
-    },
-    {
-      "id": "1b937b26-e1f3-4e1e-bf93-43ebf67a3312",
-      "category": "reference",
-      "title": "pi harness triggerTurn 队列机理与 patch 评估（调研结论）",
-      "content": "【调研 2026-08-19】pi 主程序 triggerTurn 消息投递机理（dist/core/agent-session.js + @earendil-works/pi-agent-core/dist/agent.js + agent-loop.js）：1) idle 时 sendCustomMessage({triggerTurn:true}) → 直接 await _runAgentPrompt 立即触发新回合（无积压）;2) streaming 时 → agent.steer/followUp 入 PendingMessageQueue，主循环每轮 turn_end 后 getSteeringMessages 轮询消费，回合结束（shouldStopAfterTurn 后不再轮询 queue）残留消息由 _handlePostAgentRun 的 agent.hasQueuedMessages() 捕获 → agent.continue() 延续新回合;3) agent_end 处理器入队的消息同走延续路径（CHANGELOG #5115 已修复）。待办实测\"6 会话完成延迟 40-100min 批量通知\"的确切根因在静态代码未复现（idle/streaming 两路径理论均即时），最可疑：notification 触发的新回合模型快速结束无实质输出，或 interactive-mode idle 门控压后——需实测复现（模拟 6 会话场景）才能定性。patch 可行性：边界较清晰的落点是 _handlePostAgentRun 的 hasQueuedMessages 分支（agent-session.js:797）——延续前检查队列中 custom 消息 timestamp 过期（>5min）丢弃/合并;风险中高（agent-session.js 是核心文件，patch 破坏影响所有扩展，dist 有 .bak 惯例需遵守，rebuild.sh Phase 3 自动执行需重跑验证）。结论：技术可行，但先复现定性再动，列入待办。",
-      "tags": [
-        "pi内部",
-        "harness",
-        "triggerTurn",
-        "队列",
-        "patch",
-        "needs_verification"
-      ],
-      "confidence": 0.75,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-19T11:56:37.888Z",
-      "updatedAt": "2026-08-19T11:56:37.888Z",
-      "accessedAt": "2026-08-19T11:56:37.888Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-19T11:56:37.888Z",
-      "deleted": false,
-      "contentHash": "d677397921d15a44"
-    },
-    {
-      "id": "b8151c62-9a0e-4c2b-ba97-2b1251fe3c0d",
-      "category": "solutions",
-      "title": "待办: 复现验证 triggerTurn 通知延迟机理后评估 patch",
-      "content": "【待办】复现验证 triggerTurn 通知延迟机理（2026-08-19 调研后立案，优先级：低-中）。背景：pi-tmux 完成通知实测延迟 40-100min 批量出现（6 会话），扩展侧已做合并+ack 降冗；harness 侧 idle 直接触发新回合、streaming 走 steer 队列+延续，静态代码两路径理论均即时，根因未复现。待做：模拟多会话完成场景实测——①idle 时 watcher 触发是否立即新回合且模型有可见输出；②streaming 时入队消息是否在 agent_end 后被延续处理；③TUI idle 门控是否压后。定性后再决定是否写 patch（候选落点：agent-session.js:797 _handlePostAgentRun 的 hasQueuedMessages 分支，对积压 custom 消息做 timestamp 过期丢弃/合并）。约束：agent-session.js 是核心文件，patch 前备份（dist 已有 .bak 惯例）、写完跑 rebuild + 全量回归；不能破坏\"回合进行中不打断\"设计。",
-      "tags": [
-        "待办",
-        "harness",
-        "triggerTurn",
-        "patch",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-19T11:56:49.683Z",
-      "updatedAt": "2026-08-19T11:56:49.683Z",
-      "accessedAt": "2026-08-19T11:56:49.683Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-19T11:56:49.683Z",
-      "deleted": false,
-      "contentHash": "7f34e7d564560fb7"
     },
     {
       "id": "eea6d660-9a65-4dcb-b4d6-7a958d9ed3c7",
@@ -10810,32 +10632,6 @@
       "contentHash": "91a09ef7bb593e38"
     },
     {
-      "id": "74f00cee-06c5-4edb-b931-3c31a8623dee",
-      "category": "solutions",
-      "title": "知识订阅空档期判断方法",
-      "content": "知识订阅 08-21/22/23 连续三日无 md 产出，logs/knowledge/ 目录仅 08-20 与 08-24 有文件，且 scheduler 日志无对应任务记录——据此判断为任务未运行而非执行失败（失败应有报错记录）。排查方法：对照 scheduler 日志查任务记录，目录文件日期反推执行情况。遗留待办：确认知识订阅触发机制（调度/手动）是否按预期执行，避免连续空档期。",
-      "tags": [
-        "知识订阅",
-        "scheduler",
-        "排查",
-        "空档",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T12:21:36.168Z",
-      "updatedAt": "2026-08-24T12:21:36.168Z",
-      "accessedAt": "2026-08-24T12:21:36.168Z",
-      "observedAt": "2026-08-24T12:21:36.168Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a033b1-511c-762c-b592-e8ef63f58356",
-      "deleted": false,
-      "contentHash": "82b225c1ea3ec2da"
-    },
-    {
       "id": "5ed2a5ee-b367-4bab-97a5-dd6fa57f0127",
       "category": "habit",
       "title": "失败学习存储克制原则",
@@ -12510,33 +12306,6 @@
       "contentHash": "99a9674013c35617"
     },
     {
-      "id": "2a1e6c54-6541-4dae-b9ea-ed6d9ea45482",
-      "category": "solutions",
-      "title": "pi全面检查任务单轮收敛执行法",
-      "content": "pi 全项目深度审计可单轮收敛完成：test-all.sh 承担全部确定性检查与回归测试，审查类工作交 subagent 并行分工，最终只输出极简分级报告。2026-08-26 实测 55 次工具调用完成全流程，缓存命中约 59K tokens、输出仅 1.9K，无返工痕迹。适用于同类「全面检查/深度审计」任务的低成本高收敛执行。",
-      "tags": [
-        "pi",
-        "审计",
-        "subagent",
-        "token优化",
-        "执行模式",
-        "needs_verification"
-      ],
-      "confidence": 0.75,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-26T01:59:29.951Z",
-      "updatedAt": "2026-08-26T01:59:29.952Z",
-      "accessedAt": "2026-08-26T01:59:29.952Z",
-      "observedAt": "2026-08-26T01:59:29.952Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03bc7-2eb4-7049-9414-c5f45361a75c",
-      "deleted": false,
-      "contentHash": "ca3589572907b30d"
-    },
-    {
       "id": "c4269253-8948-4d79-b9a6-b7a9d784dfd4",
       "category": "procedure",
       "title": "SKILL.md草稿去重纪律",
@@ -12560,31 +12329,6 @@
       "lastSessionId": "01a03bc7-2eb4-7049-9414-c5f45361a75c",
       "deleted": false,
       "contentHash": "3d5475e310637b3d"
-    },
-    {
-      "id": "f1526413-0969-462d-9ea6-9c8dfbf397d8",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-73570 Zimbra 未认证命令注入在野利用 2026-08-26",
-      "content": "Zimbra Collaboration Suite (ZCS) 存在 OS 命令注入漏洞 CVE-2026-73570（CISA 已遭利用列表，2026-08-21 披露），未认证攻击者可执行任意命令，邮件服务器面临入侵风险。修复版本 10.1.20，需立即升级。（来源：CISA 官方群 + FreeBuf 早报双源确认）URL: https://www.freebuf.com/news/497109.html",
-      "tags": [
-        "knowledge",
-        "2026-08-26",
-        "security",
-        "cve",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-26T02:49:24.845Z",
-      "updatedAt": "2026-08-26T02:49:24.845Z",
-      "accessedAt": "2026-08-31T00:15:00.912Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-26T02:49:24.845Z",
-      "deleted": false,
-      "contentHash": "a649c770718b9f74"
     },
     {
       "id": "e34e6369-6d66-4950-a8fb-22c4a4f32eee",
@@ -14391,32 +14135,6 @@
       "contentHash": "d266d96e953b3792"
     },
     {
-      "id": "7f7f4c7b-af23-47f4-821e-a9aaf149eb18",
-      "category": "solutions",
-      "title": "autopilot summarizer模型不支持停摆",
-      "content": "pi-autopilot 的 summarizer 组件因所配模型不支持而停摆，表现为调度链中 summarizer 无输出。排查方向：确认 summarizer 所用模型是否在受支持列表内，更换为受支持模型可恢复。2026-08-28 会话仅确认该故障模式，具体修复步骤细节待补。",
-      "tags": [
-        "pi-autopilot",
-        "summarizer",
-        "故障排查",
-        "模型支持",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-28T08:31:03.106Z",
-      "updatedAt": "2026-08-28T08:31:03.106Z",
-      "accessedAt": "2026-08-28T08:31:03.106Z",
-      "observedAt": "2026-08-28T08:31:03.106Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a046ff-f619-7687-9070-bb61af0e48b4",
-      "deleted": false,
-      "contentHash": "d245b828be531eb8"
-    },
-    {
       "id": "972db277-f86a-4386-b781-8e3e514b6902",
       "category": "procedure",
       "title": "SKILL草稿判定三标准",
@@ -14913,60 +14631,6 @@
       "contentHash": "ddd74c4474e2098f"
     },
     {
-      "id": "521e6170-f51e-4864-81fc-4ddf98179230",
-      "category": "fact",
-      "title": "知识订阅: CVE-2026-63077 JetBrains TeamCity 反序列化漏洞已遭利用",
-      "content": "CVE-2026-63077（2026-08-05 公布，CISA 标记已遭利用）: JetBrains TeamCity 反序列化不可信数据漏洞。TeamCity 广泛用于 CI/CD，失陷即构建管道失陷。自托管 TeamCity 实例应立即升级并排查异常构建任务。来源: CISA KEV 群 2026-08-29 订阅",
-      "tags": [
-        "knowledge",
-        "订阅",
-        "knowledge-subscribe-2026-08-29",
-        "CVE",
-        "TeamCity",
-        "CI-CD",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T01:30:07.382Z",
-      "updatedAt": "2026-08-29T01:30:07.382Z",
-      "accessedAt": "2026-08-29T01:30:07.382Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-29T01:30:07.382Z",
-      "deleted": false,
-      "contentHash": "056cb9703de1a6f9"
-    },
-    {
-      "id": "dacd8a0c-f649-4260-9a84-cbf06c6c1d05",
-      "category": "fact",
-      "title": "知识订阅: CVE-2025-62593 Ray 代码注入漏洞已遭利用（AI 基础设施）",
-      "content": "CVE-2025-62593（CISA 标记已遭利用/勒索）: Ray（Ray-Project）代码注入漏洞可致远程代码执行。Ray 是分布式 AI/LLM 训练与推理基础设施，开发环境中暴露的管理端口是主要攻击面。跑 AI 集群的 Linux 服务器须升级 Ray 且不将 dashboard 暴露公网。来源: CISA KEV 群 2026-08-29 订阅",
-      "tags": [
-        "knowledge",
-        "订阅",
-        "knowledge-subscribe-2026-08-29",
-        "CVE",
-        "Ray",
-        "AI基础设施",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T01:30:07.497Z",
-      "updatedAt": "2026-08-29T01:30:07.497Z",
-      "accessedAt": "2026-08-29T01:30:07.497Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-29T01:30:07.497Z",
-      "deleted": false,
-      "contentHash": "27ea00cf4f4a14d5"
-    },
-    {
       "id": "339cdd4e-6dfa-4897-af19-a3034e20dbf0",
       "category": "fact",
       "title": "知识订阅: Linux 服务器勒索病毒国家正式预警",
@@ -15093,35 +14757,6 @@
       "observedAt": "2026-08-29T02:20:57.306Z",
       "deleted": false,
       "contentHash": "24892666306dba44"
-    },
-    {
-      "id": "382d7369-f6fa-430a-96d4-269178cb4e75",
-      "category": "reference",
-      "title": "GitHub 自进化 agent 项目调研结论（2026-08-29）",
-      "content": "2026-08-29 调研 GitHub 自进化 agent 项目（GitHub API + jsdelivr 实测核实）。与本系统最同构：AHE（china-qijizhifeng/agentic-harness-engineering）=可观测性驱动进化 harness 组件（prompt/工具/技能/记忆），基座固定，evaluate→analyze→improve×10 轮；memU（NevaMind-AI/memU 14k★）自动技能提取六步管线，关键增量=第3步先读既有技能再决定 patch/新建+sidecar 直挖原始会话日志；OpenViking（volcengine 34k★）=Context Database 文件系统范式+LOD 分层+Self-Iteration（本项目 ROADMAP 4.5 已本地化其 L0）；EvoMap/evolver GEP 论文（arXiv:2604.15097）实证：文档式 skill 包控制信号不稳定稀疏，紧凑 Gene 表示最强抗扰动，经验结晶后 token 先升后降；MemOS 四层=L1 traces/L2 policies/L3 world models/结晶 Skills。pi-memory 已验证缺口：①检索命中不回写 accessedAt（MemoryBank 访问强化缺失）②pi-intervention↔pi-memory 零联动（Reflexion 反思闭环缺失，最大单点机会）③缺 ExpeL 式多教训归纳升级。风险：DGM 实锤 agent 博弈评价器作弊——golden 脚本在 agent 写权限内是守门漏洞。pi 领先点：环境标签、缓存命中度量、archive 回滚纪律。",
-      "tags": [
-        "调研",
-        "自进化",
-        "agent",
-        "AHE",
-        "memU",
-        "OpenViking",
-        "GEP",
-        "借鉴",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T02:52:01.320Z",
-      "updatedAt": "2026-08-29T02:52:01.320Z",
-      "accessedAt": "2026-08-29T02:52:01.320Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-29T02:52:01.320Z",
-      "deleted": false,
-      "contentHash": "8bfbaf49a369df6d"
     },
     {
       "id": "9220cc05-d09a-4886-bb84-05132d389136",
@@ -15300,31 +14935,6 @@
       "contentHash": "a9da575744d88198"
     },
     {
-      "id": "d5cf727d-e911-4cb7-8e3f-3b554abae1ef",
-      "category": "solutions",
-      "title": "test-all.sh 全量回归勿放 tmux 会话运行",
-      "content": "现象：`bash scripts/test-all.sh` 放在 tmux_run 中运行，9 个 vitest 套件全过后在 tsc 阶段会话被静默终止（日志无 TEST_ALL_EXIT，无报错输出），前台重跑则完整通过。原因未定（疑 OOM 或 pi-tmux 测试套件 kill-session 波及宿主会话）。约定：全量回归用前台 bash（timeout≥1200s）或 nohup，不要放 tmux_run；分层快检 --only 在 tmux 中无此问题（2026-09-02 实测）。",
-      "tags": [
-        "test-all",
-        "tmux",
-        "回归验证",
-        "pi-tmux",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T07:20:24.700Z",
-      "updatedAt": "2026-08-29T07:20:24.700Z",
-      "accessedAt": "2026-08-29T07:20:24.700Z",
-      "environments": [
-        "linux"
-      ],
-      "observedAt": "2026-08-29T07:20:24.700Z",
-      "deleted": false,
-      "contentHash": "a7298f392987b776"
-    },
-    {
       "id": "3713e222-2701-4582-b394-98ed22c84ff6",
       "category": "fact",
       "title": "pi-voice 待办: 切换 Linux 后测试实时流式输出",
@@ -15450,31 +15060,6 @@
       "observedAt": "2026-08-29T15:39:29.195Z",
       "deleted": false,
       "contentHash": "91c8eaedb8ee2e79"
-    },
-    {
-      "id": "468e9053-4a16-404d-afe6-ed0050ac0538",
-      "category": "solutions",
-      "title": "autopilot restart_hang 挂死自愈已验证有效",
-      "content": "08-29 实测：会话挂死（186 分钟无活动）触发 autopilot 自动 restart_hang 重启恢复，恢复后用户仅说\"继续\"即成功衔接原任务上下文（累计 217K tokens 长会话续上）。结论：长会话挂死不必人工干预，restart_hang 自愈可靠；用户侧只需恢复后发一句继续指令。",
-      "tags": [
-        "autopilot",
-        "restart_hang",
-        "挂死恢复",
-        "看门狗",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-30T02:35:37.996Z",
-      "updatedAt": "2026-08-30T02:35:37.996Z",
-      "accessedAt": "2026-08-30T02:35:37.996Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-30T02:35:37.996Z",
-      "deleted": false,
-      "contentHash": "9bc9da9136929b09"
     },
     {
       "id": "e8d3f1b6-95dd-4830-8717-193a7a9cd416",
@@ -15970,58 +15555,6 @@
       "lastSessionId": "01a051da-9630-7f0c-8fb8-974cbd3f5acc",
       "deleted": false,
       "contentHash": "1c83ed7fc157a9a0"
-    },
-    {
-      "id": "20ee7d2c-8516-478d-910b-cef62ebc368e",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-53362 Linux内核IPv6提权已遭利用 2026-08-30",
-      "content": "CVE-2026-53362：Linux 内核 IPv6 网络子系统未指定漏洞，可导致权限提升。已列入 CISA KEV（已遭利用/勒索）目录，2026-08-27 收录，需关注发行版补丁。来源：CISA 官方群。URL: https://www.cve.org/CVERecord?id=CVE-2026-53362",
-      "tags": [
-        "knowledge",
-        "安全漏洞",
-        "CISA-KEV",
-        "2026-08-30",
-        "Linux内核",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-30T08:49:30.577Z",
-      "updatedAt": "2026-08-30T08:49:30.577Z",
-      "accessedAt": "2026-08-30T08:49:30.577Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-30T08:49:30.577Z",
-      "deleted": false,
-      "contentHash": "66fdc8b5b6ca0df2"
-    },
-    {
-      "id": "4a6b37ad-4886-4206-a122-eaf2cde4ad43",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-66384 JFrog Artifactory路径穿越已遭利用 2026-08-30",
-      "content": "CVE-2026-66384：JFrog Artifactory 目录限制不当（路径穿越），认证攻击者可访问受限目录内文件。已列入 CISA KEV（已遭利用/勒索）目录，2026-08-27 收录，使用 Artifactory 的需排查升级。来源：CISA 官方群。URL: https://www.cve.org/CVERecord?id=CVE-2026-66384",
-      "tags": [
-        "knowledge",
-        "安全漏洞",
-        "CISA-KEV",
-        "2026-08-30",
-        "JFrog",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-30T08:49:30.625Z",
-      "updatedAt": "2026-08-30T08:49:30.625Z",
-      "accessedAt": "2026-08-30T08:49:30.625Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-30T08:49:30.625Z",
-      "deleted": false,
-      "contentHash": "b35c25dccaf057ca"
     },
     {
       "id": "f75d7568-dc70-4ce5-ada9-f26d2d32e4c0",
@@ -18465,31 +17998,6 @@
       "contentHash": "1c1d9c9a81a1a5a9"
     },
     {
-      "id": "abc1db56-237a-4b09-a44a-8ec49728391c",
-      "category": "solutions",
-      "title": "空壳投喂根因与应对策略",
-      "content": "任务记录中 tools/hit/out 全零的轮次多为\"空壳投喂\"：08-26 第三次再现（8 轮中 7 轮全零），hit=250000 是封顶伪影而非真实缓存命中；08-30 首次观察到空壳内容回显\"会话记忆提取器提示词\"本身，根因在上游提取脚本把自己的提示词当对话内容输出。应对：该现象已有记忆记录时不重复存储；修复上游脚本前，蒸馏结果需人工甄别。",
-      "tags": [
-        "空壳投喂",
-        "会话提取",
-        "封顶伪影",
-        "needs_verification"
-      ],
-      "confidence": 0.75,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-31T00:14:57.309Z",
-      "updatedAt": "2026-08-31T00:14:57.309Z",
-      "accessedAt": "2026-08-31T00:14:57.309Z",
-      "observedAt": "2026-08-31T00:14:57.309Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
-      "deleted": false,
-      "contentHash": "8bdb0eb659eda750"
-    },
-    {
       "id": "e44dd630-6226-40ea-a03e-08ff36a8a24f",
       "category": "fact",
       "title": "任务记录统计格式",
@@ -18840,31 +18348,6 @@
       "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
       "deleted": false,
       "contentHash": "4200d82fbc69d19f"
-    },
-    {
-      "id": "9924adfe-15ab-47e9-9901-fc83cc3874f3",
-      "category": "habit",
-      "title": "破坏性操作先确认再执行",
-      "content": "用户的协作习惯：涉及 git reset 等破坏性/大规模操作时，助手先给出完整方案与备选，征求同意（用户简短回复\"执行\"批准）后才动手；用户不要求时不做。本会话分叉收敛即按此流程完成，重置前自动备份（导出本地版本快照）。",
-      "tags": [
-        "协作习惯",
-        "git",
-        "流程",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-31T00:15:34.001Z",
-      "updatedAt": "2026-08-31T00:15:34.001Z",
-      "accessedAt": "2026-08-31T00:15:34.001Z",
-      "observedAt": "2026-08-31T00:15:34.001Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
-      "deleted": false,
-      "contentHash": "2ef80888e1d0816d"
     },
     {
       "id": "281e6ea1-dda4-4f5d-984d-9053090e74eb",
@@ -19255,136 +18738,6 @@
       "contentHash": "8f37a17f30aaf5e0"
     },
     {
-      "id": "3bbb4e6d-a610-4841-b947-76837af1ebad",
-      "category": "solutions",
-      "title": "系统崩溃冗余措施失效分析",
-      "content": "当 pi 系统发生崩溃时，Opencode 进行了修复，但已有的冗余措施（如自动重启、故障转移）未能生效，导致系统不稳定。需要重新设计更全面的崩溃恢复机制。",
-      "tags": [
-        "pi",
-        "崩溃",
-        "冗余措施",
-        "故障恢复",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:00:55.650Z",
-      "updatedAt": "2026-09-03T06:00:55.650Z",
-      "accessedAt": "2026-09-03T06:00:55.650Z",
-      "observedAt": "2026-09-03T06:00:55.650Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
-      "deleted": false,
-      "contentHash": "ea8700227a8bf9e8"
-    },
-    {
-      "id": "8b3c8c31-1929-4f27-ab10-4b8ea2c9b8d5",
-      "category": "procedure",
-      "title": "pi-context 真实窗口尺寸逻辑调整",
-      "content": "系统已加载新 pi-context 逻辑，档位压力基准采用真实窗口尺寸，而非固定参数。降档阈值调整为 90%，触发系统重启以确保参数生效。",
-      "tags": [
-        "pi-context",
-        "真实窗口",
-        "档位压力",
-        "逻辑调整",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:00:55.650Z",
-      "updatedAt": "2026-09-03T06:00:55.650Z",
-      "accessedAt": "2026-09-03T06:00:55.650Z",
-      "observedAt": "2026-09-03T06:00:55.650Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
-      "deleted": false,
-      "contentHash": "1e672bc613246963"
-    },
-    {
-      "id": "f89acada-25d9-49a2-90c5-cd6c9581ee3b",
-      "category": "procedure",
-      "title": "游戏资源分层迭代策略",
-      "content": "优先使用免费素材，先完成世界地图设计（三层结构：完整世界地图、大洲/大洋、精简地物），然后再处理角色和物品资源，实现高效迭代开发。",
-      "tags": [
-        "游戏开发",
-        "资源迭代",
-        "地图设计",
-        "美术优化",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:00:55.650Z",
-      "updatedAt": "2026-09-03T06:00:55.650Z",
-      "accessedAt": "2026-09-03T06:00:55.650Z",
-      "observedAt": "2026-09-03T06:00:55.650Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
-      "deleted": false,
-      "contentHash": "ff327bc4046dd80f"
-    },
-    {
-      "id": "eaaf6cfc-faa3-4f61-ab81-66cc067d8629",
-      "category": "solutions",
-      "title": "地图高亮比例优化方案",
-      "content": " coastline 高亮显示比例过大时尤其影响小岛屿显示效果。建议查找专业地形变化地图以优化显示效果，降低高亮区域比例到更自然水平。",
-      "tags": [
-        "地图优化",
-        "高亮比例",
-        "地形显示",
-        "显示效果",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:00:55.650Z",
-      "updatedAt": "2026-09-03T06:00:55.650Z",
-      "accessedAt": "2026-09-03T06:00:55.650Z",
-      "observedAt": "2026-09-03T06:00:55.650Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
-      "deleted": false,
-      "contentHash": "0ab5ae6311e298d1"
-    },
-    {
-      "id": "26ccb242-d493-465a-96b2-c77fac9fa953",
-      "category": "habit",
-      "title": "系统思考档位动态调整",
-      "content": "系统思考档位可以根据真实可用窗口动态调整，用户可以手动设置或依赖自动调节逻辑（75%/90%阈值）。需定期清理会话文件以保持系统性能。",
-      "tags": [
-        "思考档位",
-        "动态调整",
-        "会话清理",
-        "系统优化",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:00:55.650Z",
-      "updatedAt": "2026-09-03T06:00:55.650Z",
-      "accessedAt": "2026-09-03T06:00:55.650Z",
-      "observedAt": "2026-09-03T06:00:55.650Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065c5-bab3-7550-9f08-4d652a53c3f8",
-      "deleted": false,
-      "contentHash": "57a344d7ad327b67"
-    },
-    {
       "id": "fd5746b1-36a9-4c41-ba5c-091d72fce9c8",
       "category": "solutions",
       "title": "空壳任务记录判定与处置流程",
@@ -19477,53 +18830,6 @@
       "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
       "deleted": false,
       "contentHash": "fe7046eaa4065119"
-    },
-    {
-      "id": "21db4b53-daba-48be-82a3-a2e663eff642",
-      "category": "procedure",
-      "title": "空壳任务记录判定",
-      "content": "判定任务记录为空壳：内容仅为命令输出结果或混乱日志，缺乏结构化任务描述。",
-      "tags": [
-        "task-record",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:32:59.788Z",
-      "updatedAt": "2026-09-03T06:32:59.788Z",
-      "accessedAt": "2026-09-03T06:32:59.788Z",
-      "observedAt": "2026-09-03T06:32:59.788Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
-      "deleted": false,
-      "contentHash": "dbe33992d21810c5"
-    },
-    {
-      "id": "eb4bd016-f39a-4a85-98ec-510127559e2c",
-      "category": "procedure",
-      "title": "entries.json拉取冲突三方比对流程",
-      "content": "拉取entries.json时发生冲突，执行三方比对：基础版本、本地修改、远程修改，合并后解决冲突。",
-      "tags": [
-        "memory",
-        "conflict",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:32:59.788Z",
-      "updatedAt": "2026-09-03T06:32:59.788Z",
-      "accessedAt": "2026-09-03T06:32:59.788Z",
-      "observedAt": "2026-09-03T06:32:59.788Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a065d8-964c-74f0-82c3-e2aeea0cec10",
-      "deleted": false,
-      "contentHash": "0e126245c5f04e44"
     },
     {
       "id": "1acb34d8-226f-4c75-854c-01a1721d3228",
@@ -20013,86 +19319,6 @@
       "contentHash": "af3538e0bbf8c4e8"
     },
     {
-      "id": "d1f720d9-8774-4474-b117-e35e70c842f2",
-      "category": "solutions",
-      "title": "agent 根目录直跑 vitest 污染真实状态文件事故与守门",
-      "content": "从 ~/.pi/agent 根直跑 vitest 绕过扩展 vitest.config.ts 别名，getAgentDir() 解析到真实目录，watchdog.test.ts 写入真实状态文件。守门：1) 必须在扩展目录下运行 vitest（如 extensions/pi-autopilot/）；2) 测试用临时目录环境变量隔离（PI_ADMIN_STATE_FILE、PI_CONTEXT_STATE_FILE）；3) CI/本地 test-all.sh 已强制扩展级测试，禁止根目录测试。",
-      "tags": [
-        "vitest",
-        "testing",
-        "state-pollution",
-        "guard",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:21:31.888Z",
-      "updatedAt": "2026-09-03T08:21:31.888Z",
-      "accessedAt": "2026-09-03T08:21:31.888Z",
-      "environments": [
-        "all"
-      ],
-      "links": [
-        "15986526-f641-4994-874d-b6b6c8537fdc"
-      ],
-      "observedAt": "2026-09-03T08:21:31.888Z",
-      "deleted": false,
-      "contentHash": "4848dab01df3d547"
-    },
-    {
-      "id": "f2ee8378-1095-4260-a331-54f9329dc172",
-      "category": "solutions",
-      "title": "扩展命令补全修复",
-      "content": "修复 pi 扩展 slash 命令的子命令补全功能（getArgumentCompletions），确保 help/-h/--help 与子命令参数正确补全。符合扩展命令整合规范：同一扩展 slash 命令 ≤2 个，子命令参数实现。",
-      "tags": [
-        "pi",
-        "extension",
-        "completion",
-        "slash-command",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:33:46.861Z",
-      "updatedAt": "2026-09-03T08:33:46.861Z",
-      "accessedAt": "2026-09-03T08:33:46.861Z",
-      "observedAt": "2026-09-03T08:33:46.861Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
-      "deleted": false,
-      "contentHash": "6e72337c0c5505d9"
-    },
-    {
-      "id": "3edce463-e292-49ac-a8c9-970bae1ba368",
-      "category": "procedure",
-      "title": "entries.json 冲突三方比对",
-      "content": "处理 pi-memory entries.json 多环境冲突时，采用三方比对法：基于共同祖先、本地变更、远程变更三方合并，避免直接覆盖导致记忆丢失。entries.json 入库共享，其余运行时数据隔离。",
-      "tags": [
-        "pi-memory",
-        "git",
-        "conflict-resolution",
-        "multi-env",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:33:46.862Z",
-      "updatedAt": "2026-09-03T08:33:46.862Z",
-      "accessedAt": "2026-09-03T08:33:46.862Z",
-      "observedAt": "2026-09-03T08:33:46.862Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
-      "deleted": false,
-      "contentHash": "661d3d25c0ac7142"
-    },
-    {
       "id": "32598d61-c364-42ab-9faf-2bfffd1f96e4",
       "category": "solutions",
       "title": "install-wrapper readlink bug 修复",
@@ -20117,83 +19343,6 @@
       "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
       "deleted": false,
       "contentHash": "f43ed763816dab59"
-    },
-    {
-      "id": "affa5922-030b-4d43-b073-7f8065c04d9f",
-      "category": "procedure",
-      "title": "pi-autopilot 状态隔离",
-      "content": "确保 pi-autopilot 定时调度/看门狗/failover/预算功能的状态文件按环境隔离存储，避免多设备同步配置时状态污染。状态文件不入库，仅配置文件共享。",
-      "tags": [
-        "pi-autopilot",
-        "state-isolation",
-        "multi-device",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:33:46.862Z",
-      "updatedAt": "2026-09-03T08:33:46.862Z",
-      "accessedAt": "2026-09-03T08:33:46.862Z",
-      "observedAt": "2026-09-03T08:33:46.862Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
-      "deleted": false,
-      "contentHash": "82734fc6f4686f83"
-    },
-    {
-      "id": "5cec2803-cfd6-43ac-8d1e-b3b9c8da652c",
-      "category": "solutions",
-      "title": "rebuild 后台执行回退",
-      "content": "修复 rebuild.sh 后台执行时 tmux_run 默认自动退出导致的同步等待问题，改用 pattern= 匹配完成标志且 timeout≤60s，或显式使用 until_exit 仅限自然退出命令。禁止阻塞前台。",
-      "tags": [
-        "rebuild",
-        "tmux",
-        "background",
-        "async",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:33:46.862Z",
-      "updatedAt": "2026-09-03T08:33:46.862Z",
-      "accessedAt": "2026-09-03T08:33:46.862Z",
-      "observedAt": "2026-09-03T08:33:46.862Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
-      "deleted": false,
-      "contentHash": "1fcf30715177f085"
-    },
-    {
-      "id": "7963a177-7955-42f4-a455-69357891270d",
-      "category": "solutions",
-      "title": "vitest 根目录污染守门",
-      "content": "在 test-all.sh 中增加 cache-guard 检查，防止 vitest 运行时向项目根目录写入临时文件/缓存，污染工作树。守门机制在 --fast 模式下跳过。",
-      "tags": [
-        "vitest",
-        "test-all",
-        "cache-guard",
-        "pollution",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:33:46.862Z",
-      "updatedAt": "2026-09-03T08:33:46.862Z",
-      "accessedAt": "2026-09-03T08:33:46.862Z",
-      "observedAt": "2026-09-03T08:33:46.862Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0665a-0ca8-7688-8700-3963630da8f9",
-      "deleted": false,
-      "contentHash": "9a6c64fca8853f0c"
     },
     {
       "id": "9f582395-f36c-4576-ac0f-28b40cf72d7e",
@@ -20473,32 +19622,6 @@
       "lastSessionId": "01a067e4-b07a-7fc2-968b-8ceb1847852a",
       "deleted": false,
       "contentHash": "a6eb3ae5386df3fa"
-    },
-    {
-      "id": "a8dae1a1-2d7b-49f2-9b6b-884e8a7bf164",
-      "category": "solutions",
-      "title": "webui 启动异常排查清单",
-      "content": "webui 启动异常排查要点：1) token 验证失效/未生成 → 检查启动参数是否传递 token、环境变量 PI_WEBUI_TOKEN 是否设置、认证中间件是否正确加载；2) TUI 界面被连接信息阻塞 → 检查 webui 进程是否在前台运行（应后台化）、日志输出是否重定向、是否占用 stdin/stdout 干扰 pi 主进程；3) 端口冲突/重复启动 → lsof -i :<port> 检查；4) 进程管理 → 建议用 tmux_run 后台启动（notify=true 自动唤醒），避免阻塞主会话。",
-      "tags": [
-        "webui",
-        "token",
-        "tui",
-        "debug",
-        "background",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T15:36:06.915Z",
-      "updatedAt": "2026-09-03T15:36:06.915Z",
-      "accessedAt": "2026-09-03T15:36:06.915Z",
-      "environments": [
-        "linux"
-      ],
-      "observedAt": "2026-09-03T15:36:06.915Z",
-      "deleted": false,
-      "contentHash": "fcfb4b6dad753f78"
     },
     {
       "id": "242c5064-1131-4f3e-a0c9-7f11e1f35ddd",
@@ -20788,31 +19911,6 @@
       "contentHash": "f08c7f463ef285d4"
     },
     {
-      "id": "e009692c-e630-4c2b-a69c-b28f6e1fe6a4",
-      "category": "fact",
-      "title": "系统关键词提及",
-      "content": "用户在问候后输入'内核'，可能指代Linux系统内核或计算系统核心组件，作为后续交互的潜在上下文锚点",
-      "tags": [
-        "系统",
-        "关键词",
-        "上下文",
-        "needs_verification"
-      ],
-      "confidence": 0.5,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T03:59:24.722Z",
-      "updatedAt": "2026-09-04T03:59:24.722Z",
-      "accessedAt": "2026-09-04T03:59:24.722Z",
-      "observedAt": "2026-09-04T03:59:24.722Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a06a8f-8217-7ca2-8650-c46a9f76fb1e",
-      "deleted": false,
-      "contentHash": "b8f906fac16357e8"
-    },
-    {
       "id": "12f06868-2b5c-4c64-8752-65e4615f8974",
       "category": "solutions",
       "title": "AMD Radeon API thinking 参数报错修复",
@@ -20959,27 +20057,6 @@
       "lastSessionId": "01a06ab7-24b2-7baf-8db0-6a74d9474c56",
       "deleted": false,
       "contentHash": "bef01bb5e749586b"
-    },
-    {
-      "id": "8c722816-0e63-4467-b3fb-36fb09e370f8",
-      "category": "fact",
-      "title": "test",
-      "content": "content",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "manual",
-      "recurrence": 25,
-      "createdAt": "2026-09-04T09:09:22.820Z",
-      "updatedAt": "2026-09-09T05:02:44.151Z",
-      "accessedAt": "2026-09-09T05:02:44.151Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-04T09:09:22.820Z",
-      "deleted": false,
-      "contentHash": "ed7002b439e9ac84"
     },
     {
       "id": "34ad1066-0578-4177-bd07-e86a87c82cd1",
@@ -21492,32 +20569,6 @@
       "contentHash": "175b945ec61fec8e"
     },
     {
-      "id": "3451d726-0ed5-4354-b735-94dd5696f94b",
-      "category": "procedure",
-      "title": "前端白屏排查优先验证首屏请求链路",
-      "content": "遇到前端白屏/空白页，按顺序验证：1) HTML 是否正常加载（Network 面板看 document 状态码）；2) JS 入口是否执行（Console 无报错、断点命中）；3) 首个关键 API 请求（如 /api/config）状态码、响应体、认证头；4) 状态管理（Redux/Context/React state）是否因 API 失败保持初始值；5) 条件渲染分支（如 config 为 null 时渲染 loading/empty-state）。本次即因第 3 步 401 导致第 4、5 步异常。",
-      "tags": [
-        "前端调试",
-        "白屏排查",
-        "请求链路",
-        "pi-webui",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:05:27.982Z",
-      "updatedAt": "2026-09-07T02:05:27.982Z",
-      "accessedAt": "2026-09-07T02:05:27.982Z",
-      "observedAt": "2026-09-07T02:05:27.982Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
-      "deleted": false,
-      "contentHash": "d0494b3db0ce8ee0"
-    },
-    {
       "id": "9ec047c8-912c-4a88-82c9-1f9d8f75d0fe",
       "category": "fact",
       "title": "pi-webui 访问必须携带 token 参数",
@@ -21541,58 +20592,6 @@
       "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
       "deleted": false,
       "contentHash": "ad08e46f8dc9e485"
-    },
-    {
-      "id": "82c7ca22-993c-4c97-ac5d-6c9186607a9b",
-      "category": "fact",
-      "title": "命令输出地址与运行时需求必须对齐",
-      "content": "扩展命令（如 /webui）显示给用户的访问地址，必须与前端实际运行所需的完整参数一致。本次 /webui 命令默认分支输出不带 token 的基础 URL，而前端必须带 token 才能通过 /api/config 认证。这种\"文档/提示与实现不一致\"极易被忽视，开发/修改命令输出时应同步验证前端首屏请求链路。",
-      "tags": [
-        "命令输出",
-        "一致性",
-        "前端集成",
-        "pi-webui",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:05:27.982Z",
-      "updatedAt": "2026-09-07T02:05:27.982Z",
-      "accessedAt": "2026-09-07T02:05:27.982Z",
-      "observedAt": "2026-09-07T02:05:27.982Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
-      "deleted": false,
-      "contentHash": "836aa5e8ab8dc87d"
-    },
-    {
-      "id": "7a85d51b-904e-403c-bc85-0353ddc964bc",
-      "category": "fact",
-      "title": "生产代码避免空 catch 吞没关键错误",
-      "content": "前端 fetchConfig 使用 .catch(() => {}) 空捕获导致 401 错误完全静默，控制台无任何报错，排查耗时大幅增加。规范：catch 必须至少 console.error(err) 或上报监控，或向上抛出让错误边界/全局处理器捕获。调试阶段可暂时加断点，但提交前必须移除空 catch。",
-      "tags": [
-        "错误处理",
-        "空 catch",
-        "静默失败",
-        "前端规范",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:05:27.982Z",
-      "updatedAt": "2026-09-07T02:05:27.982Z",
-      "accessedAt": "2026-09-07T02:05:27.982Z",
-      "observedAt": "2026-09-07T02:05:27.982Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
-      "deleted": false,
-      "contentHash": "6e648784bcebe114"
     },
     {
       "id": "1737cb49-aca6-419b-af87-80803305c6f3",
@@ -21788,31 +20787,6 @@
       "contentHash": "4d90d7a401a1254c"
     },
     {
-      "id": "d66f3d75-6b35-41cf-9171-76b8dac6451b",
-      "category": "procedure",
-      "title": "空壳任务记录处置纪律",
-      "content": "当任务记录显示工具调用存在但out=0（零产出）时，判定为空壳投喂记录，按纪律不虚构经验、不写草稿，直接给出结论性分析即可。",
-      "tags": [
-        "任务处理",
-        "空壳识别",
-        "处置纪律",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T03:37:08.313Z",
-      "updatedAt": "2026-09-07T03:37:08.313Z",
-      "accessedAt": "2026-09-07T03:37:08.313Z",
-      "observedAt": "2026-09-07T03:37:08.313Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07977-7db3-7401-9824-73643bc42555",
-      "deleted": false,
-      "contentHash": "8488cfdf6596ce14"
-    },
-    {
       "id": "5ed957d5-d068-45ca-9b0b-43f9e448a2b6",
       "category": "fact",
       "title": "pi-webui 实际运行端口为 3101",
@@ -21839,32 +20813,6 @@
       "contentHash": "b29045c627e936b2"
     },
     {
-      "id": "fee2535c-ca67-463b-9a11-9c4cb78cfccc",
-      "category": "fact",
-      "title": "服务IP为 WSL2 地址 100.117.170.110",
-      "content": "pi-webui 及对应服务的对外 IP 为 100.117.170.110，结合项目多环境约定判断为 WSL2 环境 IP，外部或宿主机访问需注意网络可达性。",
-      "tags": [
-        "WSL2",
-        "IP",
-        "网络",
-        "环境",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T05:12:28.864Z",
-      "updatedAt": "2026-09-07T05:12:28.864Z",
-      "accessedAt": "2026-09-07T05:12:28.864Z",
-      "observedAt": "2026-09-07T05:12:28.864Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
-      "deleted": false,
-      "contentHash": "2e2fe4032d9ba718"
-    },
-    {
       "id": "d1782793-f1ee-4a77-bb53-1ba33d894dc8",
       "category": "solutions",
       "title": "排除端口错误导致的加载中问题",
@@ -21888,32 +20836,6 @@
       "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
       "deleted": false,
       "contentHash": "773ffd182818096d"
-    },
-    {
-      "id": "21c1e42e-9e20-47a7-81ca-2cc342811780",
-      "category": "fact",
-      "title": "端口可达不等于前端渲染正常",
-      "content": "Vite 服务返回 HTML 只说明后端可达，前端加载中可能由 JS/CSS 资源加载失败、HMR 配置、跨域或浏览器缓存引起。后续排查应关注 Network 面板静态资源请求与 Console 报错。",
-      "tags": [
-        "Vite",
-        "前端",
-        "加载中",
-        "排查经验",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T05:12:28.864Z",
-      "updatedAt": "2026-09-07T05:12:28.864Z",
-      "accessedAt": "2026-09-07T05:12:28.864Z",
-      "observedAt": "2026-09-07T05:12:28.864Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
-      "deleted": false,
-      "contentHash": "454d9ae8d3cc5542"
     },
     {
       "id": "d96bbfa0-27d4-4410-a0c1-5b08735ca9db",
@@ -22435,82 +21357,6 @@
       "contentHash": "9df71d77b4d86f2d"
     },
     {
-      "id": "e2819216-95d9-4da2-ad38-ee1057ff954e",
-      "category": "procedure",
-      "title": "每日回顾多设备对比流程",
-      "content": "每日回顾需读取 memory/daily-results/ 下全部设备的任务结果（含 knowledge-*.md 知识订阅摘要），对比各设备执行情况，识别遗漏与信息不对称。路径：/root/.pi/memory/daily-results/。",
-      "tags": [
-        "每日回顾",
-        "多设备同步",
-        "memory",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T15:22:39.983Z",
-      "updatedAt": "2026-09-08T15:22:39.983Z",
-      "accessedAt": "2026-09-08T15:22:39.983Z",
-      "observedAt": "2026-09-08T15:22:39.983Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0813b-449a-7253-92d2-f713b1e66812",
-      "deleted": false,
-      "contentHash": "776769b68e79e88d"
-    },
-    {
-      "id": "6c2e9fd8-b2a5-456f-a454-e10e9eddc5f5",
-      "category": "procedure",
-      "title": "工具统计每日聚合与推送",
-      "content": "运行 node /root/.pi/scripts/tool-stats-sync.mjs --daily 生成 memory/stats/tool-count-<hostname>.json，确认文件生成后提交推送。由 Scheduler 任务 tool-stats-daily 触发。",
-      "tags": [
-        "工具统计",
-        "自动化",
-        "scheduler",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T15:22:39.983Z",
-      "updatedAt": "2026-09-08T15:22:39.983Z",
-      "accessedAt": "2026-09-08T15:22:39.983Z",
-      "observedAt": "2026-09-08T15:22:39.983Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0813b-449a-7253-92d2-f713b1e66812",
-      "deleted": false,
-      "contentHash": "cdfdff40af02ddf7"
-    },
-    {
-      "id": "aef4a236-351c-4c36-9acc-6924bc573466",
-      "category": "procedure",
-      "title": "零 LLM 知识订阅抓取流程",
-      "content": "执行 python3 /root/.pi/agent/extensions/pi-autopilot/scripts/knowledge-fetch.py 抓取官方源/RSS 最新内容，若当日有新增则处理日志。由 Scheduler 任务 knowledge-subscribe 触发，全程无 LLM 参与。",
-      "tags": [
-        "知识订阅",
-        "RSS",
-        "零LLM",
-        "pi-autopilot",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T15:22:39.983Z",
-      "updatedAt": "2026-09-08T15:22:39.983Z",
-      "accessedAt": "2026-09-08T15:22:39.983Z",
-      "observedAt": "2026-09-08T15:22:39.983Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0813b-449a-7253-92d2-f713b1e66812",
-      "deleted": false,
-      "contentHash": "6533c03076716232"
-    },
-    {
       "id": "13acfe31-abcf-44bb-839b-8f3b608388fe",
       "category": "fact",
       "title": "Scheduler 管理的三类每日任务",
@@ -22909,5 +21755,5 @@
       "contentHash": "405d510f47fc1bcc"
     }
   ],
-  "updatedAt": "2026-09-09T06:08:56.860625Z"
+  "updatedAt": "2026-09-09T06:34:49.253616Z"
 }
