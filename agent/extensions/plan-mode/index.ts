@@ -343,12 +343,13 @@ export default function planModeExtension(pi: ExtensionAPI): void {
     name: "ask_user",
     label: "向用户提问",
     description:
-      "向用户提问并获取选择回答。当需要用户决策、确认下一步操作、或获取用户偏好时使用此工具。返回用户选择的选项标签。",
+      "向用户提问并获取选择回答。当需要用户决策、确认下一步操作、或获取用户偏好时使用此工具。返回用户选择的选项标签，或用户输入的补充说明。",
     promptSnippet: "向用户提问并获取选择回答",
     promptGuidelines: [
       "需要用户决策时使用此工具。问题应清晰明确，选项应互斥且完整。",
       "选项标签应简洁（1-5个词），描述可选但建议提供以帮助用户理解。",
-      "工具返回用户选择的选项标签，可用于后续逻辑分支。",
+      "工具返回用户选择的选项标签，或用户输入的补充说明（以「其他:」开头）。",
+      "如用户选择「其他（请说明）」，工具直接返回用户输入的内容，无需二次确认。",
     ],
     parameters: {
       type: "object",
@@ -412,16 +413,13 @@ export default function planModeExtension(pi: ExtensionAPI): void {
         };
       }
 
-      // 提取选项标签
-      const optionLabels = options.map((opt) => opt.label);
+      const OTHER_OPTION = "其他（请说明）";
+      const optionLabels = [...options.map((opt) => opt.label), OTHER_OPTION];
       const title = header ? `${header}: ${question}` : question;
 
-      // 单选模式：支持确认/修改
+      // 单选模式
       if (!multiple) {
-        let finalChoice: string | undefined;
-        
         while (true) {
-          // 显示选择器
           const choice = await ctx.ui.select(title, optionLabels);
 
           if (choice === undefined) {
@@ -431,54 +429,36 @@ export default function planModeExtension(pi: ExtensionAPI): void {
             };
           }
 
-          // 显示确认对话框
-          const confirmTitle = `确认选择: ${choice}`;
-          const confirmOptions = ["确认", "修改", "退出选择"];
-          const confirmChoice = await ctx.ui.select(confirmTitle, confirmOptions);
-
-          if (confirmChoice === "确认") {
-            finalChoice = choice;
-            break;
-          } else if (confirmChoice === "修改") {
-            // 继续循环，重新选择
-            continue;
-          } else if (confirmChoice === "退出选择") {
-            // 退出选择，让用户说明原因
-            const reason = await ctx.ui.editor("退出选择，请说明原因：", "");
+          // 用户选择"其他"：直接弹出输入框
+          if (choice === OTHER_OPTION) {
+            const reason = await ctx.ui.editor("请说明你的选择：", "");
             if (reason && reason.trim()) {
               return {
-                content: [{ type: "text" as const, text: `退出选择: ${reason.trim()}` }],
+                content: [{ type: "text" as const, text: `其他: ${reason.trim()}` }],
                 details: null,
               };
-            } else {
-              // 用户未输入原因，继续循环
-              continue;
             }
-          } else {
-            // 用户取消确认
-            return {
-              content: [{ type: "text" as const, text: "用户取消了选择" }],
-              details: null,
-            };
+            // 用户未输入，继续循环
+            continue;
           }
-        }
 
-        return {
-          content: [{ type: "text" as const, text: finalChoice! }],
-          details: null,
-        };
+          // 用户选择具体选项：直接返回，无需二次确认
+          return {
+            content: [{ type: "text" as const, text: choice }],
+            details: null,
+          };
+        }
       }
 
       // 多选模式：支持选择/取消单个选项，直到选择"完成"
       const selected: string[] = [];
       
       while (true) {
-        // 构建选项列表：已选选项（带✓标记）+ 未选选项 + "完成选择" + "取消全部" + "退出选择"
+        // 构建选项列表：已选选项（带✓标记）+ 未选选项 + "其他（请说明）" + "完成选择" + "取消全部"
         const selectedOptions = selected.map((label) => `✓ ${label}`);
-        const availableOptions = optionLabels.filter((label) => !selected.includes(label));
-        const selectOptions = [...selectedOptions, ...availableOptions, "完成选择", "取消全部", "退出选择"];
+        const availableOptions = options.map((opt) => opt.label).filter((label) => !selected.includes(label));
+        const selectOptions = [...selectedOptions, ...availableOptions, OTHER_OPTION, "完成选择", "取消全部"];
         
-        // 显示选择器
         const choice = await ctx.ui.select(title, selectOptions);
 
         if (choice === undefined) {
@@ -490,10 +470,8 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 
         if (choice === "完成选择") {
           if (selected.length === 0) {
-            // 没有选择任何选项，提示用户
             continue;
           }
-          // 返回已选择的选项，用逗号分隔
           return {
             content: [{ type: "text" as const, text: selected.join(", ") }],
             details: null,
@@ -505,34 +483,23 @@ export default function planModeExtension(pi: ExtensionAPI): void {
           continue;
         }
 
-        if (choice === "退出选择") {
-          // 退出选择，让用户说明原因
-          const reason = await ctx.ui.editor("退出选择，请说明原因：", "");
+        // 用户选择"其他"：直接弹出输入框
+        if (choice === OTHER_OPTION) {
+          const reason = await ctx.ui.editor("请说明你的补充信息：", "");
           if (reason && reason.trim()) {
-            return {
-              content: [{ type: "text" as const, text: `退出选择: ${reason.trim()}` }],
-              details: null,
-            };
-          } else {
-            // 用户未输入原因，继续循环
-            continue;
+            // 多选模式下，将补充信息追加到已选列表
+            selected.push(`其他: ${reason.trim()}`);
           }
+          continue;
         }
 
         // 处理选择/取消：移除 ✓ 前缀获取实际标签
         const actualLabel = choice.startsWith("✓ ") ? choice.slice(2) : choice;
         
-        if (actualLabel === "完成选择" || actualLabel === "取消全部" || actualLabel === "退出选择") {
-          // ignore, already handled above
-          continue;
-        }
-        
         if (selected.includes(actualLabel)) {
-          // 已选择的选项：取消选择
           const index = selected.indexOf(actualLabel);
           selected.splice(index, 1);
         } else {
-          // 未选择的选项：添加选择
           selected.push(actualLabel);
         }
       }
