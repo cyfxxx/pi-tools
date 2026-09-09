@@ -14,7 +14,8 @@
 | 技能 | `agent/skills/*/` | 所有已安装技能（SKILL.md 及附属文件） |
 | 扩展源码 | `agent/extensions/*/` | 扩展源码，排除 `node_modules/`、`dist/`、`.git/` |
 | 扩展冲突测试 | `agent/extensions/tests/` | conflict-check 等扩展级测试脚本 |
-| 共享库 | `agent/lib/` | 共享库源码（context-budget/token-budget/prune/note-store/TOKEN-BUDGET.md） |
+| 分层基础 | `agent/core/` | Layer 0 基础层（config, registry, hook-registry, secrets） |
+| 分层服务 | `agent/services/` | Layer 1 服务层（token-budget, diagnostics, shadow-review, note-store） |
 | 子代理定义 | `agent/agents/` | 子代理模板（scout/worker/reviewer.md） |
 | Prompt 模板 | `agent/prompts/` | pi 全局 prompt templates（`*.md` 注册为 `/name` 斜杠命令） |
 | 用户键位 | `agent/keybindings.json` | pi 用户级键位配置（存在时） |
@@ -24,7 +25,7 @@
 | npm 配置 | `agent/package.json` | npm 包声明 |
 | 仓库配置 | `.gitignore` | git 忽略规则 |
 | 仓库文档 | `README.md` | 说明文档 |
-| 记忆 | `memory/` | pi-memory 持久记忆数据（如存在；已含原 ctx-lite 数据） |
+| 记忆 | `data/memory/` | pi-memory 持久记忆数据（如存在；已含原 ctx-lite 数据） |
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
 | 调度任务 | `agent/extensions/pi-autopilot/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
@@ -78,11 +79,11 @@
 | Python 虚拟环境 | `searxng/venv/` | SearXNG Python 依赖 | `python3 -m venv venv && pip install` |
 | SearXNG 源码 | `searxng/repo/` | SearXNG 原始项目 | `git clone` |
 | 日志 | `searxng/searxng.log` | 运行时日志 | 不可重建，不恢复 |
-| 调度日志 | `logs/scheduler/` | 离线执行日志 | 不可重建，不恢复 |
+| 调度日志 | `data/logs/scheduler/` | 离线执行日志 | 不可重建，不恢复 |
 | npm lock | `agent/package-lock.json` | npm 锁定文件 | 由 `npm install` 生成 |
 | 扩展 lock | `agent/extensions/*/package-lock.json` | 扩展 npm 锁定文件 | 由 `npm install` 生成 |
 | 运行时缓存 | `context-mode/` | 上下文模式缓存 | 不可重建，不恢复 |
-| 计划文件 | `plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
+| 计划文件 | `data/plans/` | pi 自动生成的计划 | 不可重建，不恢复 |
 | 运行时状态 | `agent/.pi-admin-state.json` | pi-autopilot 重启状态标记（wrapper 契约） | 不可备份恢复 |
 | 自主运行状态 | `agent/extensions/pi-autopilot/.pi-autopilot-config.json`、`.pi-autopilot-telemetry.json`、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json` | pi-autopilot 配置/遥测/回滚快照 | 可重建，不恢复 |
 | 模型配置 | `agent/models.json`（pi ≥0.84 为 `agent/models-store.json`） | provider/模型定义（机器特定，含 provider 密钥） | 默认不备份（与 settings.json 一同漏出会导致新设备无可用模型），需备份用 `pi-backup create --with-auth`；新设备经 scp 或 restore 提供 |
