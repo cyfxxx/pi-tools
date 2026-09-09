@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { loadDiagLines } from '../../../lib/usage-diag.ts'
+import { loadDiagLines } from '../../../services/diagnostics/usage-diag.ts'
 
 // 后台任务门（2026-08-24）：mock node:child_process 的 spawnSync，供 tmux
 // list-sessions 的存在性断言；默认 PI_CONTEXT_TMUX_REGISTRY 指向空文件，不触发

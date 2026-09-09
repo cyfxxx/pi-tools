@@ -48,11 +48,13 @@ function makeTask(overrides: Record<string, unknown> = {}): Record<string, unkno
 }
 
 async function writeTasksFile(tasks: Array<Record<string, unknown>>): Promise<void> {
-  await writeFile(join(TEST_DIR, 'scheduled-tasks.json'), JSON.stringify({ version: 3, settings: {}, tasks }), 'utf-8')
+  const { mkdir } = await import('fs/promises')
+  await mkdir(join(TEST_DIR, 'extensions', 'pi-autopilot'), { recursive: true })
+  await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), JSON.stringify({ version: 3, settings: {}, tasks }), 'utf-8')
 }
 
 async function readTasksFile(): Promise<Record<string, unknown>> {
-  return JSON.parse(await readFile(join(TEST_DIR, 'scheduled-tasks.json'), 'utf-8'))
+  return JSON.parse(await readFile(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), 'utf-8'))
 }
 
 async function fillTelemetry(n: number): Promise<void> {
@@ -274,7 +276,7 @@ describe('scheduler: enabled 门控（2026-08-25 审计 HIGH 修复）', () => {
   it('enabled=false 时 tick 不触发到期任务（修复前任务照跑且预算检查被跳过）', async () => {
     const task = makeTask({ id: 'gated1' })
     await writeTasksFile([task])
-    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: false }), 'utf-8')
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', '.pi-autopilot-config.json'), JSON.stringify({ enabled: false }), 'utf-8')
     await fillTelemetry(0)
     const sent: string[] = []
     const { SessionScheduler } = await import('../scheduler.ts')
@@ -295,7 +297,7 @@ describe('scheduler: enabled 门控（2026-08-25 审计 HIGH 修复）', () => {
     const task = makeTask({ id: 'gated2' })
     await writeTasksFile([task])
     // 前一用例残留 enabled=false，显式写 true 隔离
-    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: true }), 'utf-8')
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', '.pi-autopilot-config.json'), JSON.stringify({ enabled: true }), 'utf-8')
     await fillTelemetry(0)
     const sent: string[] = []
     const { SessionScheduler } = await import('../scheduler.ts')
@@ -312,7 +314,7 @@ describe('scheduler: enabled 门控（2026-08-25 审计 HIGH 修复）', () => {
     trig.mockResolvedValue(true)
     const task = makeTask({ id: 'wd1' })
     await writeTasksFile([task])
-    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: false }), 'utf-8')
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', '.pi-autopilot-config.json'), JSON.stringify({ enabled: false }), 'utf-8')
     await fillTelemetry(0)
     const { SessionScheduler } = await import('../scheduler.ts')
     const shutdowns: number[] = []
@@ -341,7 +343,7 @@ describe('scheduler: abort 回合不闭环 success（2026-08-25 审计实测修�
   it('markRunAborted(true) 后 finalizeInjected 仅推进 nextRun，不记 success/不删 once/不发 webhook', async () => {
     const task = makeTask({ id: 'abort1', type: 'once', schedule: '+10m', notifyOnCompletion: true })
     await writeTasksFile([task])
-    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({ enabled: true }), 'utf-8')
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', '.pi-autopilot-config.json'), JSON.stringify({ enabled: true }), 'utf-8')
     await fillTelemetry(0)
     const { SessionScheduler } = await import('../scheduler.ts')
     const pi = { sendUserMessage: async () => {}, shutdown: () => {} }
@@ -385,7 +387,7 @@ describe('scheduler: 注入环境故障不触发 failover（审计修复）', ()
     const task = makeTask({ id: 'env1', failCount: 2 })
     await writeTasksFile([task])
     await fillTelemetry(0)
-    await writeFile(join(TEST_DIR, '.pi-autopilot-config.json'), JSON.stringify({
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', '.pi-autopilot-config.json'), JSON.stringify({
       fallbackModels: [{ provider: 'p2', model: 'm2' }],
     }), 'utf-8')
 

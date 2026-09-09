@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest'
-import { mergeLayers, loadUserConfig } from '../../../lib/config.ts'
+import { mergeLayers, loadUserConfig } from '../../../core/config.ts'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'

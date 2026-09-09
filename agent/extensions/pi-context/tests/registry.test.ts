@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { createRegistry, composeDisposers } from '../../../lib/registry.ts'
+import { createRegistry, composeDisposers } from '../../../core/registry.ts'
 
 describe('registry: 登记/清理（dsh effect 借鉴）', () => {
   it('register 返回 disposer，dispose 后条目消失', () => {

@@ -20,7 +20,7 @@ import {
   type UsageRecord,
   type ThinkingMeterEvent,
   type ToolUseEvent,
-} from '../../../lib/usage-diag.ts'
+} from '../../../services/diagnostics/usage-diag.ts'
 
 let dir: string
 const ORIG_ENV = { ...process.env }

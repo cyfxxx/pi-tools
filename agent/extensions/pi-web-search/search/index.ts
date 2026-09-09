@@ -1,8 +1,8 @@
 import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, AgentToolResult } from '@earendil-works/pi-coding-agent'
 import type { SearchConfig } from './types'
 import { searchWeb } from './impl'
-import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
-import { estimateTokens } from '../../../lib/token-budget.ts'
+import { recordOutput, pruneToolOutput } from '../../../services/token-budget/prune.ts'
+import { estimateTokens } from '../../../services/token-budget/context-budget.ts'
 
 // 导出并发工具（供批量抓取场景使用）
 export { createConcurrencyLimiter, batchFetch } from './concurrency'

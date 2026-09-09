@@ -300,7 +300,7 @@ describe('软删墓碑与导入防护（2026-08-25 审计修复）', () => {
 describe('migration (v1 → v3)', () => {
   it('fills default fields for legacy tasks', async () => {
     const { readTasks } = await import('../storage')
-    const p = join(TEST_DIR, 'scheduled-tasks.json')
+    const p = join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json')
     const { writeFile } = await import('fs/promises')
     await writeFile(p, JSON.stringify({
       version: 1,
@@ -316,7 +316,7 @@ describe('migration (v1 → v3)', () => {
     expect(t.failCount).toBe(0)
     expect(t.pendingInject).toBe(false)
     expect(t.maxRunTime).toBe(300)
-    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    await rm(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), { force: true })
   })
 })
 
@@ -459,7 +459,7 @@ describe('export / import', () => {
     const { readFile } = await import('fs/promises')
     const exported = JSON.parse(await readFile(outPath, 'utf-8'))
     expect(exported.tasks).toHaveLength(2)
-    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    await rm(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), { force: true })
     const res = await importTasks(outPath)
     expect(res.imported).toBe(2)
     expect(res.skipped).toEqual([])
@@ -496,24 +496,28 @@ describe('审计修复回归', () => {
   it('readTasks 损坏时留档 .corrupt-* 再返回空，而非静默吞掉证据', async () => {
     const { writeFile, readdir, rm } = await import('fs/promises')
     // 先清掉其他用例残留的任务文件，隔离本用例
-    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
-    await writeFile(join(TEST_DIR, 'scheduled-tasks.json'), '{"version":2,"tasks":[{"id":"broken"', 'utf-8') // 截断 JSON
+    await rm(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), { force: true })
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), '{"version":2,"tasks":[{"id":"broken"', 'utf-8') // 截断 JSON
     const store = await readTasks()
     expect(store.tasks).toEqual([])
-    const files = await readdir(TEST_DIR)
+    const files = await readdir(join(TEST_DIR, 'extensions', 'pi-autopilot'))
     expect(files.some(f => f.includes('scheduled-tasks.json.corrupt-'))).toBe(true)
   })
 
   it('readTasks 文件不存在（首次运行）不留档、静默返回空', async () => {
     const { rm, readdir } = await import('fs/promises')
-    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    await rm(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), { force: true })
     // 清理上一用例留档的 .corrupt-*，隔离本用例断言
-    for (const f of await readdir(TEST_DIR)) {
-      if (f.includes('.corrupt-')) await rm(join(TEST_DIR, f), { force: true })
-    }
+    const subDir = join(TEST_DIR, 'extensions', 'pi-autopilot')
+    try {
+      const files = await readdir(subDir)
+      for (const f of files) {
+        if (f.includes('.corrupt-')) await rm(join(subDir, f), { force: true })
+      }
+    } catch {}
     const store = await readTasks()
     expect(store.tasks).toEqual([])
-    const files = await readdir(TEST_DIR)
+    const files = await readdir(subDir)
     expect(files.some(f => f.includes('.corrupt-'))).toBe(false)
   })
 })

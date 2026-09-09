@@ -8,7 +8,7 @@ import {
   getOutputReport,
   resetOutputBudget,
   resetAllBudgets,
-} from '../../../lib/context-budget.ts'
+} from '../../../services/token-budget/context-budget.ts'
 
 // 回归：跨扩展共享（jiti moduleCache:false 隔离修复）与累计语义/emoji 校准
 describe('context-budget: 跨实例共享（jiti 隔离修复）', () => {

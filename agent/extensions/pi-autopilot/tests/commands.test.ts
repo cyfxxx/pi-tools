@@ -87,7 +87,9 @@ describe('/auto failover --exec（审计修复：shutdown + process.exit 兜底�
 // 陈旧副本可被 runNow 写回复活。改用 listTasks()（内部过滤 deleted）
 describe('/schedule run（deleted 墓碑过滤，审计修复）', () => {
   it('deleted 任务按不存在处理；存活任务正常触发', async () => {
-    await writeFile(join(TEST_DIR, 'scheduled-tasks.json'), JSON.stringify({
+    const { mkdir } = await import('fs/promises')
+    await mkdir(join(TEST_DIR, 'extensions', 'pi-autopilot'), { recursive: true })
+    await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), JSON.stringify({
       version: 3,
       settings: {},
       tasks: [

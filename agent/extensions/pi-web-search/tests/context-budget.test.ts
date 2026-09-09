@@ -13,7 +13,7 @@ import {
   getOutputReport,
   recordCacheUsage,
   getCacheStats,
-} from '../../../lib/context-budget'
+} from '../../../services/token-budget/context-budget'
 
 describe('context-budget: estimateTokens', () => {
   beforeEach(() => resetAllBudgets())

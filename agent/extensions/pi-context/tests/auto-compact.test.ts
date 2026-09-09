@@ -7,7 +7,7 @@ import {
   LARGE_WINDOW_RATIO,
   SMALL_WINDOW_RATIO,
   DEFAULT_COOLDOWN_MS,
-} from '../../../lib/auto-compact.ts'
+} from '../../../services/token-budget/auto-compact.ts'
 
 describe('auto-compact: 阈值计算', () => {
   it('1M 大窗口模型 → 80% 触发（对齐 dsh thresholdRatio 0.8，deepseek-v4 关键场景）', () => {

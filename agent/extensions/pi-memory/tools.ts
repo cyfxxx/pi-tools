@@ -12,8 +12,8 @@ import {
 import { join } from 'node:path'
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent'
 import { Type } from 'typebox'
-import { recordToolUsage, estimateTokens } from '../../lib/token-budget.ts'
-import { recordOutput, pruneToolOutput } from '../../lib/prune.ts'
+import { recordToolUsage, estimateTokens } from '../../services/token-budget/context-budget.ts'
+import { recordOutput, pruneToolOutput } from '../../services/token-budget/prune.ts'
 import type { MemoryEntry, MemoryCategory } from './types.ts'
 import {
   loadEntries,

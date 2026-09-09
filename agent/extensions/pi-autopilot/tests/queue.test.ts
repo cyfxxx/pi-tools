@@ -22,7 +22,7 @@ const base = {
 
 describe('pendingInject marking', () => {
   beforeEach(async () => {
-    await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+    await rm(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), { force: true })
     await rm(join(TEST_DIR, '.pi-autopilot-crash.json'), { force: true })
   })
 

@@ -271,8 +271,10 @@ export class SessionScheduler {
         outputLen,
         durationMs: Date.now() - startedAt,
       })
-      // 环境故障降级：failover 换模型重启不解决 sendUserMessage 不可用，降为普通失败
-      const finalAction = envFailure && action.type === 'failover'
+      // 环境故障降级：failover 换模型重启不解决 sendUserMessage 不可用，降为普通失败。
+      // verify_and_retry 同理：主会话未挂载时 Best-of-N 验证也无意义（子进程 spawn 与
+      // 注入无关），一并降级为 fail，note 标注抑制原因。
+      const finalAction = envFailure && (action.type === 'failover' || action.type === 'verify_and_retry')
         ? { type: 'fail' as const, note: `${action.note}（注入环境故障，failover 已抑制）` }
         : action
 

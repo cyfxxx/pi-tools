@@ -1,8 +1,8 @@
 import type { ExtensionAPI, ExtensionContext, AgentToolUpdateCallback, AgentToolResult } from '@earendil-works/pi-coding-agent'
 import type { BrowserConfig } from './types'
 import { BrowserManager } from './impl'
-import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
-import { estimateTokens } from '../../../lib/token-budget.ts'
+import { recordOutput, pruneToolOutput } from '../../../services/token-budget/prune.ts'
+import { estimateTokens } from '../../../services/token-budget/context-budget.ts'
 import { readFile } from 'fs/promises'
 import { fileURLToPath } from 'url'
 

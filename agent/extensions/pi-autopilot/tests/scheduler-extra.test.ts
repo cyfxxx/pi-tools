@@ -35,7 +35,9 @@ function makeTask(overrides: Record<string, unknown> = {}): Record<string, unkno
 }
 
 async function writeTasksFile(tasks: Array<Record<string, unknown>>): Promise<void> {
-  await writeFile(join(TEST_DIR, 'scheduled-tasks.json'), JSON.stringify({ version: 3, settings: {}, tasks }), 'utf-8')
+  const { mkdir } = await import('fs/promises')
+  await mkdir(join(TEST_DIR, 'extensions', 'pi-autopilot'), { recursive: true })
+  await writeFile(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), JSON.stringify({ version: 3, settings: {}, tasks }), 'utf-8')
 }
 
 describe('maybeTriggerSummarizer 节流（任务完成即沉淀，2026-08-24）', () => {
@@ -153,7 +155,7 @@ describe('fireTask 失败决策：decide 前从 store 重读 failCount（审计 
     proc.emit('close', 1)
     await p
 
-    const saved = JSON.parse(await readFile(join(TEST_DIR, 'scheduled-tasks.json'), 'utf8')) as {
+    const saved = JSON.parse(await readFile(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), 'utf8')) as {
       tasks: Array<{ id: string; enabled: boolean; failCount: number; lastResult: string | null }>
     }
     const after = saved.tasks.find(t => t.id === 'dc1')!

@@ -430,7 +430,12 @@ export type SessionProbe = 'alive' | 'gone' | 'unknown'
  * （完成唤醒 watcher）对 unknown 必须保守判存活跳过本轮，防止误报会话结束。
  */
 export function classifySessionProbe(r: TmuxRunResult): SessionProbe {
-  if (r.code === 0) return 'alive'
+  if (r.code === 0) {
+    // "access not allowed" 可能在会话不存在或客户端无权限时出现（容器/CI 环境常见），
+    // 与 "can't find session" 同义——判 gone，不误报 alive。
+    if (/access not allowed/i.test(r.stderr)) return 'gone'
+    return 'alive'
+  }
   if (r.code === 1 && /can't find session/i.test(r.stderr)) return 'gone'
   return 'unknown'
 }

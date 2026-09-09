@@ -42,7 +42,7 @@ beforeEach(async () => {
   __resetSeedCache()
   __resetDriftSig()
   // 清残留：任务存储与种子文件都可能被上一用例写入
-  await rm(join(TEST_DIR, 'scheduled-tasks.json'), { force: true })
+  await rm(join(TEST_DIR, 'extensions', 'pi-autopilot', 'scheduled-tasks.json'), { force: true })
   await rm(join(TEST_DIR, 'scheduled-seeds.json'), { force: true })
 })
 

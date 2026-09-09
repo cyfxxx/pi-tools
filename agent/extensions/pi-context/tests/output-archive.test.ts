@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { mkdtempSync, readFileSync, existsSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { archiveOutput, archivedStub } from '../../../lib/output-archive.ts'
-import { pruneToolOutput } from '../../../lib/context-budget.ts'
+import { archiveOutput, archivedStub } from '../../../services/token-budget/output-archive.ts'
+import { pruneToolOutput } from '../../../services/token-budget/context-budget.ts'
 
 // 归档目录指向临时目录，避免污染真实 ~/.pi/logs/tool-outputs（必须在首个用例前生效）
 const tmp = mkdtempSync(join(tmpdir(), 'ov-archive-'))

@@ -56,7 +56,7 @@ function otherInstanceWrite(reg: { sessions: Record<string, RegistryEntry> }): v
 beforeEach(() => {
   testHome = mkdtempSync(join(tmpdir(), 'pi-tmux-reg-home-'))
   process.env.PI_HOME = testHome
-  registryFile = join(testHome, 'agent', '.pi-tmux-registry.json')
+  registryFile = join(testHome, 'agent', 'extensions', 'pi-tmux', '.pi-tmux-registry.json')
   execFileMock.mockReset()
   fsState.failRegistryWrite = false
 })

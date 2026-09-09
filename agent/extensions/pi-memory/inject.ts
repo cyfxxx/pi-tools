@@ -1,7 +1,7 @@
 import type { MemoryEntry, SummaryEntry } from './types.ts'
 import { activeEntries } from './storage.ts'
 import { qualityScore, mmrDiversify, roundRobinBySession, buildDoc } from './retrieval.ts'
-import { estimateTokens, truncateByTokens } from '../../lib/context-budget.ts'
+import { estimateTokens, truncateByTokens } from '../../services/token-budget/context-budget.ts'
 import { detectEnvironment, isEnvVisible, type RuntimeEnv } from './env.ts'
 
 export const INJECT_TAG = 'pi-memory-injection'

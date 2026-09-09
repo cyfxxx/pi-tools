@@ -25,8 +25,8 @@
  * （合法值为 off/minimal/low/medium/high，无 max），自动切档会在 settings 落盘——
  * 属预期（自适应档位取代人工固定档）。
  */
-import { recordLevelChange } from "../../lib/usage-diag.ts";
-import { getBudgetReport } from "../../lib/context-budget.ts";
+import { recordLevelChange } from "../../services/diagnostics/usage-diag.ts";
+import { getBudgetReport } from "../../services/token-budget/context-budget.ts";
 
 // ── 任务类型推断（用于 thinking 档位自适应） ──
 export type TaskType = "explore" | "code" | "review" | "other";

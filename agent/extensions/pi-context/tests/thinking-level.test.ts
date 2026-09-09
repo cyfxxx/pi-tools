@@ -13,7 +13,7 @@ import {
   MIN_INTERVAL_MS,
   type AutoThinkLevel,
 } from '../thinking-level.ts'
-import { loadDiagLines } from '../../../lib/usage-diag.ts'
+import { loadDiagLines } from '../../../services/diagnostics/usage-diag.ts'
 
 let dir: string
 

@@ -11,7 +11,7 @@ import {
   KEEP_RECENT_TURNS,
   messageText,
   type PruneMessage,
-} from '../../../lib/prune.ts'
+} from '../../../services/token-budget/prune.ts'
 
 function toolResult(text: string): PruneMessage {
   return { role: 'toolResult', content: [{ type: 'text', text }] }

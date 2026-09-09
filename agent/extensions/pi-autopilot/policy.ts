@@ -54,12 +54,12 @@ export function decide(
   }
 
   if (errClass === 'timeout') {
-    // 超时：达到验证阈值时启用 Best-of-N 验证
-    if (task.failCount >= verifyAfter && task.failCount < (task.retries || 0)) {
-      return { type: 'verify_and_retry', nCandidates: 3, note: `超时（${Math.round(info.durationMs / 1000)}s），启用 Best-of-N 验证重试` }
-    }
-    // 超时：若还有重试额度则重试；重试次数足够时考虑切更快模型
+    // 超时：若还有重试额度则重试；达到验证阈值（failCount > verifyAfter）时
+    // 启用 Best-of-N 验证重试（仅在仍有重试额度时生效）。
     if (task.failCount < (task.retries || 0)) {
+      if (task.failCount > verifyAfter) {
+        return { type: 'verify_and_retry', nCandidates: 3, note: `超时（${Math.round(info.durationMs / 1000)}s），启用 Best-of-N 验证重试` }
+      }
       return { type: 'retry', note: `超时（${Math.round(info.durationMs / 1000)}s），按重试计划执行` }
     }
     if (fallbackModels.length > 0) {
