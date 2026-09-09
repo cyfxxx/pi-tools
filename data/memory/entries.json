@@ -10,7 +10,8 @@
         "pi-tmux",
         "tmux",
         "extension",
-        "auto-notify"
+        "auto-notify",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -35,7 +36,8 @@
         "uv",
         "venv",
         "windows",
-        "migration"
+        "migration",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -99,106 +101,6 @@
       "contentHash": "eee49a6b5910fb93"
     },
     {
-      "id": "1521d1f6-5c35-4884-b447-27953227e074",
-      "category": "reference",
-      "title": "/ 命令精简 30→13（2026-07 重构）",
-      "content": "按'保留无需模型参与的确定性命令，模型可代劳的并入/移除'原则精简扩展命令。移除: admin:status/model/session/config（内置 /model /settings /resume 替代）、auto:stats（并入 auto:status --stats）、memory:digest（自动提取）、ctx-lite:* 三命令、ping、plandiff/planqa（并入 planview --diff/--qa）。合并: loop/remind 并入 schedule 子命令; memory:search/stats/prune/summary 与 cleanup（承接 ctx-lite）统一为 /memory。保留 13 个: auto:status/auto:policy/auto:failover/auto:pause/auto:resume/admin:restart/schedule/memory/plan/planclear/planresume/planview/todos。同步更新 conflict-check.mjs、extensions.test.ts、README/SKILL.md，全量回归通过。",
-      "tags": [
-        "命令精简",
-        "扩展",
-        "ui"
-      ],
-      "confidence": 0.95,
-      "createdAt": "2026-08-03T12:32:10.198028+00:00",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessCount": 0,
-      "lastAccessedAt": null,
-      "referenceCount": 0,
-      "superseded": false,
-      "supersededBy": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
-      "sourceSessions": [],
-      "observedAt": "2026-08-03T12:32:10.198028+00:00",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "accessedAt": "2026-08-03T12:32:10.198028+00:00",
-      "recurrence": 0,
-      "contentHash": "7fcbb5badb4447e4"
-    },
-    {
-      "id": "9ba77085-7fc5-4b36-98e4-17cd230462ae",
-      "category": "preference",
-      "title": "用户偏好: /命令精简原则",
-      "content": "用户对 pi / 命令的取舍原则：主要保留不需要模型参与（确定性操作）的命令；需要模型参与、可通过对话完成的命令，除非必要否则整合或移除。新增命令时须遵循此原则评估。",
-      "tags": [
-        "pi",
-        "命令",
-        "用户偏好"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-03T12:36:18.760Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-03T12:36:18.760Z",
-      "observedAt": "2026-08-03T12:36:18.760Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "947be7fa-cc35-4304-8f8f-49e446d598b6",
-      "contentHash": "b89a81ad214ef7fc"
-    },
-    {
-      "id": "8135fb1e-e09f-4553-a063-f138ca2a77eb",
-      "category": "fact",
-      "title": "pi命令精简结果30→13",
-      "content": "pi 扩展命令从 30 个精简为 13 个：移除 admin:status/model/session/config、auto:stats、memory:digest、ctx-lite:status/cleanup/forget、ping、plandiff/planqa。保留：auto:status/policy/failover/pause/resume、admin:restart、schedule、memory、plan/planclear/planresume/planview/todos。",
-      "tags": [
-        "pi",
-        "命令",
-        "重构"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-03T12:36:18.760Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-03T12:36:18.761Z",
-      "observedAt": "2026-08-03T12:36:18.761Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
-      "contentHash": "7231ce1b24d9d914"
-    },
-    {
-      "id": "6b87ae38-5f1f-480e-a6ec-c7fb16b01b85",
-      "category": "fact",
-      "title": "命令合并映射表",
-      "content": "loop/remind 并入 /schedule loop|remind 子命令；memory:search/stats/prune/summary 统一为 /memory 子命令，ctx-lite:cleanup/forget 功能并入 /memory cleanup [--keep=N] [--dry-run] [--all]；plandiff/planqa 并入 /planview --diff|--qa。原 handler 逻辑完整迁移。",
-      "tags": [
-        "pi",
-        "命令",
-        "映射"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-03T12:36:18.761Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-03T12:36:18.761Z",
-      "observedAt": "2026-08-03T12:36:18.761Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
-      "contentHash": "635d1b8d6ac829a7"
-    },
-    {
       "id": "e0a1406c-1a6d-49b0-85ef-94804123f067",
       "category": "procedure",
       "title": "命令变更回归验证流程",
@@ -242,7 +144,7 @@
       "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-09-03T08:21:26.221Z",
-      "accessedAt": "2026-09-08T17:15:08.563Z",
+      "accessedAt": "2026-09-09T05:02:44.252Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -272,30 +174,6 @@
         "all"
       ],
       "contentHash": "462c6619e31d5bae"
-    },
-    {
-      "id": "a2cdcd62-e7c4-4d74-97e0-69f918616d09",
-      "category": "fact",
-      "title": "用户 PAT 已泄露需撤销",
-      "content": "用户在会话中直接提供了 GitHub Personal Access Token（ghp_ 开头）用于一次性推送。虽未落盘且已推送完成，但 token 明文出现在对话记录中，存在泄露风险。后续会话若涉及 GitHub 操作，应提醒用户到 GitHub Settings 撤销并重建该 token。",
-      "tags": [
-        "安全",
-        "token",
-        "github"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-03T13:33:21.832Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-03T13:33:21.832Z",
-      "observedAt": "2026-08-03T13:33:21.832Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "27a1dd18-f103-4ef1-a100-1b3db6efc3e7",
-      "contentHash": "81f03806b0a1151e"
     },
     {
       "id": "947be7fa-cc35-4304-8f8f-49e446d598b6",
@@ -473,7 +351,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-04T02:09:14.120Z",
       "updatedAt": "2026-08-04T02:09:14.120Z",
-      "accessedAt": "2026-08-04T02:09:14.120Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-08-04T02:09:14.120Z",
       "deleted": false,
       "environments": [
@@ -512,7 +390,8 @@
       "tags": [
         "pi仓库",
         "目录结构",
-        "文档偏差"
+        "文档偏差",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -619,30 +498,6 @@
       "contentHash": "bb78985735f2db6e"
     },
     {
-      "id": "8de6cde3-d222-464b-9a18-fc42de2f537c",
-      "category": "fact",
-      "title": "tmux 会话不自动退出",
-      "content": "tmux 会话中命令执行完后会话保持存活（回到 shell 提示符），这是 tmux 正常行为；tmux_wait until_exit 会因此超时，属预期。长任务跑完需显式 tmux_stop 释放资源；tmux_send Ctrl+C 可中断运行中任务，日志出现 ^C 即生效。",
-      "tags": [
-        "tmux",
-        "经验",
-        "行为特性"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-05T15:04:03.663Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-05T15:04:03.663Z",
-      "observedAt": "2026-08-05T15:04:03.663Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022",
-      "contentHash": "0b4e76c934437227"
-    },
-    {
       "id": "c6b04b78-8ade-4605-8666-839a6b2f05be",
       "category": "fact",
       "title": "pi 扩展 .ts 直接加载",
@@ -681,7 +536,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-09T12:36:19.648Z",
       "updatedAt": "2026-08-09T12:36:19.648Z",
-      "accessedAt": "2026-08-09T12:36:19.648Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-08-09T12:36:19.648Z",
       "deleted": false,
       "environments": [
@@ -847,7 +702,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-09T12:37:14.757Z",
       "updatedAt": "2026-08-09T12:37:14.757Z",
-      "accessedAt": "2026-08-09T12:37:14.757Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "observedAt": "2026-08-09T12:37:14.757Z",
       "deleted": false,
       "environments": [
@@ -1108,7 +963,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-09T14:52:13.231Z",
       "updatedAt": "2026-08-09T14:52:13.231Z",
-      "accessedAt": "2026-08-30T02:51:00.370Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "observedAt": "2026-08-09T14:52:13.231Z",
       "deleted": false,
       "environments": [
@@ -1374,30 +1229,6 @@
         "all"
       ],
       "contentHash": "781c0ddca8f5a6f3"
-    },
-    {
-      "id": "f5dd85ba-2ec7-4179-94f7-235d28933220",
-      "category": "fact",
-      "title": "tmux 孤儿 socket 根因",
-      "content": "proot 下 tmux server 被 kill 后 socket 文件残留（内核不清理）→ 所有 tmux 命令报 access not allowed 且 exit 0。修复：kill server + rm -rf /tmp/tmux-* 重建。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状自动清理，pi 在 tmux 内时跳过防误杀）。\nproot 下 tmux server 被 kill 后 socket 文件残留（内核不清理），后续所有 tmux 命令报 access not allowed 且 exit 0。pi-wrapper.sh 已加 ensure_tmux 自愈（每次 pi 启动检测症状清理重建，pi 在 tmux 内时跳过防误杀）。定位方法：kill server + 清理 /tmp/tmux-* 后重建。",
-      "tags": [
-        "tmux",
-        "proot",
-        "自愈"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T01:05:58.947Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T01:05:58.947Z",
-      "observedAt": "2026-08-10T01:05:58.947Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "c1b80f12-dde1-4f32-b15d-174d8d4d066b",
-      "contentHash": "609fdc169b92188e"
     },
     {
       "id": "74b41a71-d52f-4a47-8218-fd30f158a409",
@@ -2073,31 +1904,6 @@
       "contentHash": "d2aa1fa7f2413aa8"
     },
     {
-      "id": "d670a554-3c41-4f58-9bce-a3358533a088",
-      "category": "fact",
-      "title": "todo 降频提醒实现 81cac46",
-      "content": "pi-autopilot/plan-mode 相关：agent_end 校验钩子，仅当满足'本轮有工具操作但完全没碰 todo 工具 + 存在未完成任务'时才注入一次提醒，模型主动更新过 todo 不打扰；计划模式不提醒、同轮不重复。opencode 本身无定时提醒功能，其机制是每轮把 todo 状态注入 context 靠提示词纪律保证同步。",
-      "tags": [
-        "pi",
-        "todo",
-        "提醒",
-        "opencode"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T10:04:10.970Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T10:04:10.970Z",
-      "observedAt": "2026-08-10T10:04:10.970Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "82d4c1ef-9c02-483a-aa7f-407a9463c757",
-      "contentHash": "bd79fe935e3db831"
-    },
-    {
       "id": "949b2466-f53f-46f0-9343-619f6c1e6175",
       "category": "procedure",
       "title": "调试工具 schema 的决定性证据法",
@@ -2519,32 +2325,6 @@
       "contentHash": "666a78bd4e70f298"
     },
     {
-      "id": "b199a75f-d939-4906-8c2f-937de0c3a080",
-      "category": "fact",
-      "title": "pi 恢复会话工具 schema 缺陷与补丁",
-      "content": "pi 内核中 --continue TUI 恢复会话的工具函数 schema 来自持久化旧快照，不含新注册的扩展工具（如 plan_enter/plan_exit），扩展层 setActiveTools/refreshTools 都无法绕过；而 --print 新进程正常。已写内核补丁 patch-plan-tools.mjs（agent-session.js prepareNextTurn 处检测快照缺注册工具时用 _refreshToolRegistry 刷新）并注册到 rebuild.sh（提交 63d0dc6），补丁已加载但验证受阻，用户选择保留补丁、接受现状（快捷键切换）。\npi 内核缺陷：--continue 恢复会话的工具 schema 来自持久化旧快照，新注册的扩展工具（如 plan_enter）不可见；--print 新进程正常。扩展层 setActiveTools/session_start/agent_start 均更新了 state.tools 但 schema 不随其更新。已写内核补丁 patch-plan-tools.mjs（在 prepareNextTurnWithContext 刷新工具 schema）并注册到 rebuild.sh（提交 63d0dc6），文档说明：后续不需要可回退方案 2（接受现状，用户快捷键切换）。\npi 内核 --continue 恢复会话时，模型函数调用 schema 来自持久化旧快照，新注册的扩展工具不进入 schema（state.tools 含但 schema 不含）。模型只能调用 schema 内工具，症状是调用持续退化为 bash；决定性证据是会话 jsonl 中该工具 tool_calls 记录为 0。已写内核补丁：在 agent-session.js prepareNextTurnWithContext 中用 _refreshToolRegistry 刷新（patch-agent-session-tools.mjs，已注册 rebuild.sh）。\npi 内核 --continue 恢复的会话，模型工具 schema 来自会话创建时的持久化快照，不包含之后新注册的扩展工具（如 plan_enter/plan_exit）；新建会话（pi / --print）则自动包含。表现为：模型反复尝试调用该类工具时输出退化为 bash，会话文件 tool_calls 记录 0 次。扩展层 setActiveTools/session_start/agent_start 均无法改变已存在会话的固定 schema。",
-      "tags": [
-        "pi",
-        "内核补丁",
-        "工具注入",
-        "plan-mode",
-        "agent-session"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-10T23:16:51.279Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-10T23:16:51.279Z",
-      "observedAt": "2026-08-10T23:16:51.279Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "supersededBy": "949b2466-f53f-46f0-9343-619f6c1e6175",
-      "contentHash": "71118ef36d9addbf"
-    },
-    {
       "id": "2a027aae-1fcc-4b92-911f-c824b63b912a",
       "category": "fact",
       "title": "plan_enter/plan_exit 模型侧切换工具设计",
@@ -2803,7 +2583,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T02:49:34.877Z",
       "updatedAt": "2026-08-11T02:49:34.877Z",
-      "accessedAt": "2026-08-11T02:49:34.877Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-08-11T02:49:34.877Z",
       "deleted": false,
       "environments": [
@@ -2906,56 +2686,6 @@
       "contentHash": "6fbf162a34c619ea"
     },
     {
-      "id": "a59b45bd-4532-458a-b330-026286200140",
-      "category": "fact",
-      "title": "pi-voice 重试与音量诊断",
-      "content": "pi-voice dictation.ts：startRecording 启动失败（exit 0+无文件）自动等 2s（MediaRecorderService 释放时间）重试一次，仍失败才报错并透传 termux 真实输出；重试逻辑在状态机层实现（core 内换 child 会导致 stop 时 kill 不到新进程）。空转写调 detectAudioLevel（ffmpeg volumedetect），max_volume<-45dB 提示'未检测到声音信号'，否则提示'未识别到语音内容'。",
-      "tags": [
-        "pi-voice",
-        "录音",
-        "诊断",
-        "重试"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-11T03:32:17.685Z",
-      "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "0cc13027-df87-453c-86e5-6424ea1ee714",
-      "contentHash": "e8ca8643f85326a6"
-    },
-    {
-      "id": "ece90703-de96-42ca-b03f-f39030ba43c8",
-      "category": "fact",
-      "title": "proot 环境重启机制",
-      "content": "proot 环境杀 pi 后无守护自动拉起，必须靠 pi-wrapper.sh：先写 ~/.pi/agent/.pi-admin-state.json（action=restart）再杀 pi 进程，wrapper 读 state 后以 --continue 恢复会话；只杀不写 state 则 wrapper 直接退出。需确认 wrapper PID 与 pi 子进程 PID（不能杀到 wrapper）。admin_restart 工具在某次重启后从工具集消失，当前环境不可用，重启只能手动走此流程。",
-      "tags": [
-        "重启",
-        "pi-wrapper",
-        "proot",
-        "运维"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-11T03:32:17.685Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-11T03:32:17.685Z",
-      "observedAt": "2026-08-11T03:32:17.685Z",
-      "deleted": false,
-      "environments": [
-        "termux"
-      ],
-      "supersededBy": "338c5ba2-9b62-4b00-bb60-10046a3f34c5",
-      "contentHash": "58d6b02dfde44b74"
-    },
-    {
       "id": "fbb73cf4-ba6a-48be-a28f-9988d9d551bf",
       "category": "preference",
       "title": "一级命令 description 简短化",
@@ -3018,7 +2748,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T03:32:17.685Z",
       "updatedAt": "2026-08-11T03:32:17.685Z",
-      "accessedAt": "2026-08-30T02:35:25.292Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
       "deleted": false,
       "environments": [
@@ -3168,7 +2898,8 @@
         "procedure",
         "blackbox",
         "development",
-        "lessons"
+        "lessons",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -3192,7 +2923,8 @@
         "fact",
         "pi-voice",
         "lessons",
-        "blackbox"
+        "blackbox",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -3218,7 +2950,8 @@
         "pulseaudio",
         "pi-voice",
         "bug",
-        "microphone"
+        "microphone",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -3245,7 +2978,8 @@
         "pi-voice",
         "bug",
         "microphone",
-        "wsl"
+        "wsl",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -3271,7 +3005,8 @@
         "microphone",
         "pi-voice",
         "pulseaudio",
-        "troubleshooting"
+        "troubleshooting",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -3648,7 +3383,8 @@
       "tags": [
         "pi-memory",
         "bug",
-        "调试"
+        "调试",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -3694,7 +3430,8 @@
       "tags": [
         "pi-memory",
         "排查",
-        "流程"
+        "流程",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -3739,7 +3476,8 @@
       "tags": [
         "tmux",
         "status-bar",
-        "坑"
+        "坑",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -3869,7 +3607,7 @@
       "accessedAt": "2026-08-12T04:22:22.547Z",
       "observedAt": "2026-08-12T04:22:22.547Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "deleted": false,
       "contentHash": "3393a3c9d6689f5c"
@@ -3971,31 +3709,6 @@
       "contentHash": "5527f1a8566d69a3"
     },
     {
-      "id": "d46403d3-11dc-4972-b6bc-51c1403462ee",
-      "category": "fact",
-      "title": "plan-mode 退出后扩展工具失效缺陷",
-      "content": "plan-mode 扩展在退出计划模式（/plan exit 或执行模式完成）时，setActiveTools 被硬编码为 9 个内置工具（read/bash/edit/write/todo/web_search/fetch_url/subagent/plan_enter），导致所有扩展工具（admin_restart、memory_*、ctx_*、tmux_*、schedule_task 等）在本次会话内永久失效，需重启恢复。修复方案：替换为 restoreAllTools() 恢复全部注册工具。",
-      "tags": [
-        "plan-mode",
-        "tools",
-        "bug",
-        "extension"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T04:30:08.118Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-12T04:30:08.118Z",
-      "observedAt": "2026-08-12T04:30:08.118Z",
-      "environments": [
-        "termux"
-      ],
-      "deleted": false,
-      "supersededBy": "949b2466-f53f-46f0-9343-619f6c1e6175",
-      "contentHash": "d07050441782ab97"
-    },
-    {
       "id": "a8013dec-29a7-484a-8e6d-624d3b957bb9",
       "category": "procedure",
       "title": "pi-voice 超时自动转写交付到输入框",
@@ -4060,7 +3773,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T09:42:37.848Z",
       "updatedAt": "2026-08-12T09:42:37.848Z",
-      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
@@ -4084,7 +3797,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T09:42:37.848Z",
       "updatedAt": "2026-08-12T09:42:37.848Z",
-      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
@@ -4108,7 +3821,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T09:42:37.848Z",
       "updatedAt": "2026-08-12T09:42:37.848Z",
-      "accessedAt": "2026-08-12T09:42:37.848Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "observedAt": "2026-08-12T09:42:37.848Z",
       "environments": [
         "termux"
@@ -4229,7 +3942,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-08-12T14:50:07.175Z",
-      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux"
@@ -4354,7 +4067,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-12T14:50:07.175Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux"
@@ -4372,7 +4085,8 @@
         "git",
         "github",
         "ssh",
-        "推送"
+        "推送",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -4511,32 +4225,6 @@
       "contentHash": "35108d977fb6fdf5"
     },
     {
-      "id": "7dc2ef26-d5fe-435e-9f71-d99dddfb58c1",
-      "category": "fact",
-      "title": "扩展命令整合结果与守门规则",
-      "content": "2026-08-10 完成扩展命令整合：/voice <start|stop|cancel|tts|doctor|model|bench|help>（修复 help 误触发录音）、/auto <status|policy|failover|pause|resume|restart|help> + /schedule、/plan <enter|exit|clear|resume|view|todos|help>（无参数保留 toggle）。旧命令名 /tts、/planclear、/planresume、/planview、/todos、/auto:*、/admin:restart 全部移除不保留别名。conflict-check.mjs 新增守门：命令白名单+每扩展≤2命令+必须 help，新命令未同步清单直接报错。",
-      "tags": [
-        "pi",
-        "命令整合",
-        "conflict-check",
-        "扩展规范"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T16:03:30.224Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-12T16:03:30.224Z",
-      "observedAt": "2026-08-12T16:03:30.224Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fe999-60e1-7378-8cd9-657a4ac741a3",
-      "deleted": false,
-      "supersededBy": "891a7fbf-6c6b-4a30-8eae-fd26ec3a848f",
-      "contentHash": "8b3aba689bea64d4"
-    },
-    {
       "id": "ff3ae7b5-c3fa-46a6-a03e-bee00f3db00a",
       "category": "fact",
       "title": "pi-bg.sh 后台任务脚本四件套隔离",
@@ -4570,7 +4258,8 @@
         "git",
         "github",
         "proxy",
-        "网络"
+        "网络",
+        "needs_verification"
       ],
       "confidence": 0.5,
       "source": "extract",
@@ -4734,32 +4423,6 @@
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
       "contentHash": "732755c73bbaefa0"
-    },
-    {
-      "id": "030fa28c-ba52-4be2-9da8-1b3b54f31a6b",
-      "category": "fact",
-      "title": "restart_hang 看门狗阈值与配置",
-      "content": "pi-autopilot 看门狗 restart_hang 触发条件：maxIdleMinutes（默认 30 分钟）内无 session_start/用户输入/任务执行即判挂死重启。配置持久化于 ~/.pi/agent/.pi-autopilot-config.json，文件不存在时 readAutopilotConfig 按 {默认, ...配置} 合并回落默认值——记忆声称的 120 因文件不存在从未生效。2026-08 本环境已设为 maxIdleMinutes=60 并入库共享（git 排除区移除，无密钥；各环境可本地改不推送）。\n连续 6 次 restart_hang（31-50 分钟无活动），由 pi-autopilot 看门狗正常触发（maxIdleMinutes=30），锁修复后看门狗持续运行、触发稳定可靠。重启频繁主因是用户离开超 30 分钟；可 /auto:policy set maxIdleMinutes 60 调大阈值，不影响稳定性。",
-      "tags": [
-        "autopilot",
-        "看门狗",
-        "配置",
-        "restart_hang"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T00:06:13.074Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-13T00:06:13.074Z",
-      "observedAt": "2026-08-13T00:06:13.074Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
-      "deleted": false,
-      "supersededBy": "a47507ac-dee0-4648-946a-40dda377b158",
-      "contentHash": "cf94d87e5762e558"
     },
     {
       "id": "d7679ffe-1d67-47be-9f5c-6b54a4a660c3",
@@ -5594,7 +5257,8 @@
         "github",
         "push",
         "deploy-key",
-        "ssh"
+        "ssh",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -5608,32 +5272,6 @@
       "observedAt": "2026-08-13T09:37:51.589Z",
       "deleted": false,
       "contentHash": "fdd02da977a7ae3c"
-    },
-    {
-      "id": "7ce4ee7c-9cd1-4376-81e0-7f584c6453db",
-      "category": "solutions",
-      "title": "tsconfig paths 根治：每设备 tsconfig.local.json",
-      "content": "pi-tools 多设备共享 tsconfig.json 曾含环境 paths 被误提交互相覆盖。根治方案（6d96b64）：共享 tsconfig.json 不再含 paths（\"paths\": {}），每设备 tsconfig.local.json 由 rebuild Phase 2-D 生成（extends 共享配置 + 本机 pi 安装根 paths），gitignored 不提交；test-all.sh 自动优先 tsconfig.local.json。本机手动生成方式：按 Phase 2-D 逻辑创建。",
-      "tags": [
-        "pi-tools",
-        "tsconfig",
-        "多环境",
-        "rebuild"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-13T12:17:18.122Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-13T12:17:18.122Z",
-      "observedAt": "2026-08-13T12:17:18.122Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "019fedf5-10c3-7dc8-bceb-d4ed1f1def3f",
-      "deleted": false,
-      "supersededBy": "3d3dab2c-e66e-4049-8558-67ef9f6fe00e",
-      "contentHash": "7bdd8b41947aa4d0"
     },
     {
       "id": "d384b56e-4de2-4bcd-b1e5-d9ee7ef49abd",
@@ -5651,7 +5289,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
       "updatedAt": "2026-08-13T12:17:18.122Z",
-      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
@@ -5701,7 +5339,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T12:17:18.122Z",
       "updatedAt": "2026-08-13T12:17:18.122Z",
-      "accessedAt": "2026-08-13T12:17:18.122Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "observedAt": "2026-08-13T12:17:18.122Z",
       "environments": [
         "termux"
@@ -5752,7 +5390,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T16:02:02.698Z",
       "updatedAt": "2026-08-13T16:02:02.698Z",
-      "accessedAt": "2026-08-13T16:02:02.698Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "observedAt": "2026-08-13T16:02:02.698Z",
       "environments": [
         "termux"
@@ -5777,7 +5415,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-08-13T16:02:02.699Z",
-      "accessedAt": "2026-08-30T02:51:00.370Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "termux"
@@ -5802,7 +5440,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-08-13T16:02:02.699Z",
-      "accessedAt": "2026-09-03T13:35:48.772Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "termux"
@@ -5853,7 +5491,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-08-13T16:02:02.699Z",
-      "accessedAt": "2026-08-13T16:02:02.699Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "termux"
@@ -5880,7 +5518,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-09-03T08:21:20.952Z",
-      "accessedAt": "2026-09-08T17:15:08.563Z",
+      "accessedAt": "2026-09-09T05:02:44.252Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -6304,33 +5942,6 @@
       "contentHash": "cbd770fd4bbd0a91"
     },
     {
-      "id": "9f133b6c-1e94-4513-859c-fe8a877f3d97",
-      "category": "fact",
-      "title": "tmux_run 会话永不退出",
-      "content": "tmux_run 启动的后台任务会话默认不会自动退出（除非命令本身结束或手动 kill）。tmux_wait 等待完成时应设 until_exit=false 并配合 pattern 轮询日志关键字，不要用 until_exit=true 阻塞等待；不阻塞场景用 tmux_run 后下轮 tmux_read 看进度。",
-      "tags": [
-        "tmux",
-        "后台任务"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-14T04:40:26.077Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-14T04:40:26.077Z",
-      "observedAt": "2026-08-14T04:40:26.077Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
-      "deleted": false,
-      "supersededBy": "2b6ffb89-146b-4d69-9559-52a55bbcf022",
-      "links": [
-        "b248e38f-6e45-4d87-8b69-877e5844ab5c"
-      ],
-      "contentHash": "436d8d951935ea8b"
-    },
-    {
       "id": "6889040c-45e6-4e94-b37b-8e2d1471823e",
       "category": "fact",
       "title": "pi 仓库审计基线全绿",
@@ -6509,32 +6120,6 @@
       "observedAt": "2026-08-14T09:28:18.758Z",
       "deleted": false,
       "contentHash": "2244e98270a1ba42"
-    },
-    {
-      "id": "966a1c16-e391-47f0-b6c0-1a4fea59b977",
-      "category": "solutions",
-      "title": "pi 会话 cwd 编码跨平台恢复",
-      "content": "pi 会话目录按 cwd 编码组织（sessions/--<路径>--/）：WSL /root→--root--，Windows E:\\pi-portable→--E-pi-portable--（不存在），cwd 不同则 --continue 找不到会话、直接进新会话。解法：启动器固定 cd 到包内 workspace/ 使 cwd 恒定（会话目录 --E-pi-portable-workspace--），并将原环境会话文件预置到该编码目录，--continue 即可跨平台恢复同一会话。",
-      "tags": [
-        "pi",
-        "会话恢复",
-        "cwd",
-        "便携pi"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-14T09:28:18.758Z",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-14T09:28:18.758Z",
-      "observedAt": "2026-08-14T09:28:18.758Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
-      "deleted": false,
-      "supersededBy": "a733e0e8-cc27-459e-a88e-3c457080ad42",
-      "contentHash": "794d2dd5e28fa05b"
     },
     {
       "id": "a8c35c98-420e-4813-bf9d-54da97f85c1e",
@@ -6867,25 +6452,6 @@
       "contentHash": "e0e2ec7df35ac0a2"
     },
     {
-      "title": "pi 会话目录 cwd 编码与跨平台复制",
-      "confidence": 0.95,
-      "observedAt": "2026-08-14T14:14:46.196Z",
-      "id": "307141dd-4475-4b3a-8ea0-24396b9f71e2",
-      "category": "fact",
-      "content": "pi 会话目录按 cwd 编码组织（sessions/--<路径>--/）：WSL /root→--root--，Windows E:\\pi-portable→--E--pi-portable--（冒号和反斜杠各编码一个 '-'）。跨平台恢复同一会话：把原环境会话 .jsonl 复制到目标环境对应编码目录同名覆盖，start.bat --continue 即可恢复。本次已把 WSL 当前会话（5.67MB）复制到便携版，便携版旧版本备份为 .bak-win 可恢复。",
-      "tags": [
-        "sessions",
-        "portable",
-        "cross-platform"
-      ],
-      "deleted": false,
-      "supersededBy": "a733e0e8-cc27-459e-a88e-3c457080ad42",
-      "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-14T14:14:46.196Z",
-      "recurrence": 0,
-      "contentHash": "45bf63ee27b35c08"
-    },
-    {
       "title": "便携版与 WSL 双环境 git 同步流程",
       "confidence": 0.9,
       "observedAt": "2026-08-14T14:14:46.196Z",
@@ -6912,7 +6478,8 @@
         "git",
         "branch",
         "portable-win",
-        "pi-tools"
+        "pi-tools",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7301,7 +6868,8 @@
         "portable",
         "git",
         "skip-worktree",
-        "实例瘦身"
+        "实例瘦身",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7495,7 +7063,8 @@
         "pi-wrapper",
         "pi-autopilot",
         "pi-memory",
-        "缺陷清单"
+        "缺陷清单",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7520,7 +7089,8 @@
         "pi-context",
         "prune",
         "前缀缓存",
-        "DeepSeek"
+        "DeepSeek",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7691,7 +7261,8 @@
         "pi-voice",
         "pi-tmux",
         "超时判定",
-        "SIGTERM"
+        "SIGTERM",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7715,7 +7286,8 @@
         "缓存",
         "DeepSeek",
         "压缩",
-        "usage-diag"
+        "usage-diag",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7915,7 +7487,8 @@
         "dsh",
         "缓存",
         "prompt-cache",
-        "研究"
+        "研究",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -7938,7 +7511,8 @@
       "tags": [
         "audit",
         "pi-full-audit",
-        "baseline"
+        "baseline",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8231,7 +7805,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T07:13:56.813Z",
       "updatedAt": "2026-08-19T07:13:56.813Z",
-      "accessedAt": "2026-08-30T02:35:24.968Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "environments": [
         "all"
       ],
@@ -8255,7 +7829,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T07:13:56.890Z",
       "updatedAt": "2026-08-19T07:13:56.890Z",
-      "accessedAt": "2026-08-31T00:14:51.703Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "environments": [
         "all"
       ],
@@ -8345,7 +7919,8 @@
         "harness",
         "triggerTurn",
         "队列",
-        "patch"
+        "patch",
+        "needs_verification"
       ],
       "confidence": 0.75,
       "source": "manual",
@@ -8369,7 +7944,8 @@
         "待办",
         "harness",
         "triggerTurn",
-        "patch"
+        "patch",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8394,7 +7970,8 @@
         "断裂归因",
         "pi-memory",
         "注入块",
-        "usage-stats"
+        "usage-stats",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8419,7 +7996,8 @@
         "todo",
         "记忆",
         "工作流",
-        "缓存"
+        "缓存",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8449,7 +8027,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T12:40:29.977Z",
       "updatedAt": "2026-08-19T12:40:29.977Z",
-      "accessedAt": "2026-08-19T12:40:29.977Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "environments": [
         "all"
       ],
@@ -8592,7 +8170,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T21:36:09.543Z",
       "updatedAt": "2026-08-19T21:36:09.543Z",
-      "accessedAt": "2026-08-19T21:36:09.543Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-08-19T21:36:09.543Z",
       "environments": [
         "termux"
@@ -8640,7 +8218,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T21:36:09.544Z",
       "updatedAt": "2026-08-19T21:36:09.544Z",
-      "accessedAt": "2026-08-19T21:36:09.545Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "observedAt": "2026-08-19T21:36:09.545Z",
       "environments": [
         "termux"
@@ -8680,14 +8258,15 @@
       "tags": [
         "self-optimize",
         "workflow",
-        "ticket"
+        "ticket",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-20T01:37:15.581Z",
       "updatedAt": "2026-08-20T01:37:15.581Z",
-      "accessedAt": "2026-08-20T01:37:15.581Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "environments": [
         "all"
       ],
@@ -8729,7 +8308,8 @@
         "缓存",
         "opencode-go",
         "auto-compact",
-        "排障"
+        "排障",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8754,7 +8334,8 @@
         "缓存",
         "TTL",
         "排障",
-        "误诊记录"
+        "误诊记录",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8778,7 +8359,8 @@
         "notify",
         "ntfy",
         "推送",
-        "通知链路"
+        "通知链路",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8802,7 +8384,8 @@
         "research",
         "kv-cache",
         "context",
-        "quant.cpp"
+        "quant.cpp",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -8851,7 +8434,8 @@
         "provider",
         "max_tokens",
         "deepseek",
-        "限制"
+        "限制",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8876,7 +8460,8 @@
         "实测",
         "归因",
         "审计",
-        "误报"
+        "误报",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8901,7 +8486,8 @@
         "缓存命中",
         "usage-diag",
         "注入面",
-        "性能优化"
+        "性能优化",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -8949,7 +8535,8 @@
         "self-optimize",
         "thinking",
         "task-summary",
-        "skill-store"
+        "skill-store",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -10352,7 +9939,7 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -10402,7 +9989,7 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11231,7 +10818,8 @@
         "知识订阅",
         "scheduler",
         "排查",
-        "空档"
+        "空档",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -11303,7 +10891,8 @@
       "tags": [
         "定时任务",
         "排障",
-        "知识订阅"
+        "知识订阅",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -11400,7 +10989,8 @@
         "cache",
         "efficiency",
         "exploration",
-        "batching"
+        "batching",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -11448,7 +11038,8 @@
         "pi-autopilot",
         "scheduler",
         "异常检测",
-        "token 浪费"
+        "token 浪费",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -11472,14 +11063,15 @@
         "经验沉淀",
         "scheduler",
         "日志解读",
-        "pi-autopilot"
+        "pi-autopilot",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-24T23:35:16.895Z",
       "updatedAt": "2026-08-24T23:35:16.895Z",
-      "accessedAt": "2026-09-08T17:28:50.456Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "environments": [
         "all"
       ],
@@ -11519,7 +11111,8 @@
       "tags": [
         "pi-autopilot",
         "scheduler",
-        "usage-stats"
+        "usage-stats",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -11566,7 +11159,8 @@
       "tags": [
         "会话巡检",
         "usage-stats",
-        "健康检查"
+        "健康检查",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -11645,7 +11239,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T02:49:31.074Z",
       "updatedAt": "2026-08-25T02:49:31.074Z",
-      "accessedAt": "2026-08-25T02:49:31.074Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "environments": [
         "all"
       ],
@@ -11662,7 +11256,8 @@
         "pi-autopilot",
         "scheduled-tasks",
         "多写者竞态",
-        "根因"
+        "根因",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -11744,7 +11339,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T05:17:51.892Z",
       "updatedAt": "2026-08-25T05:17:51.892Z",
-      "accessedAt": "2026-08-25T05:17:51.892Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-08-25T05:17:51.892Z",
       "environments": [
         "termux"
@@ -12163,7 +11758,8 @@
         "缓存命中",
         "上下文剪裁",
         "token 成本",
-        "pi-context"
+        "pi-context",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -12186,7 +11782,8 @@
       "tags": [
         "browser-harness",
         "评估结论",
-        "浏览器扩展"
+        "浏览器扩展",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -12307,7 +11904,8 @@
         "node_modules",
         "统一根架构",
         "清理",
-        "WSL2"
+        "WSL2",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -12332,7 +11930,8 @@
         "token消耗",
         "usage-stats",
         "abort",
-        "遥测"
+        "遥测",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -12478,7 +12077,8 @@
         "经验沉淀",
         "空壳记录",
         "提取脚本",
-        "零沉淀"
+        "零沉淀",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -12516,7 +12116,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-09-08T17:15:08.563Z",
+      "accessedAt": "2026-09-09T05:02:44.252Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -12704,7 +12304,7 @@
       "recurrence": 4,
       "createdAt": "2026-08-25T22:54:39.097Z",
       "updatedAt": "2026-09-03T08:20:11.300Z",
-      "accessedAt": "2026-09-08T17:15:08.563Z",
+      "accessedAt": "2026-09-09T05:02:44.252Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -12773,7 +12373,8 @@
         "logging",
         "diagnosis",
         "context",
-        "pi-context"
+        "pi-context",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -12869,7 +12470,8 @@
         "pi-full-audit",
         "审计",
         "效率",
-        "subagent"
+        "subagent",
+        "needs_verification"
       ],
       "confidence": 0.75,
       "source": "manual",
@@ -12917,7 +12519,8 @@
         "审计",
         "subagent",
         "token优化",
-        "执行模式"
+        "执行模式",
+        "needs_verification"
       ],
       "confidence": 0.75,
       "source": "extract",
@@ -12967,7 +12570,8 @@
         "knowledge",
         "2026-08-26",
         "security",
-        "cve"
+        "cve",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -12991,7 +12595,8 @@
         "knowledge",
         "2026-08-26",
         "security",
-        "supply-chain"
+        "supply-chain",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13015,7 +12620,8 @@
         "knowledge",
         "2026-08-26",
         "security",
-        "windows"
+        "windows",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13039,7 +12645,8 @@
         "knowledge",
         "2026-08-26",
         "ai-security",
-        "prompt-injection"
+        "prompt-injection",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13063,7 +12670,8 @@
         "knowledge",
         "2026-08-26",
         "space",
-        "spacex"
+        "spacex",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13087,7 +12695,8 @@
         "pi-autopilot",
         "每日任务",
         "wsl2",
-        "调度"
+        "调度",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13137,7 +12746,8 @@
         "守门",
         "dsh",
         "借鉴",
-        "蒸馏"
+        "蒸馏",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13161,7 +12771,8 @@
         "经验沉淀",
         "任务记录",
         "判读",
-        "数据质量"
+        "数据质量",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13211,7 +12822,8 @@
         "压缩",
         "缓存",
         "dsh",
-        "patch"
+        "patch",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13386,7 +12998,9 @@
       "category": "solutions",
       "title": "bash heredoc 注入 JS 代码时转义陷阱: \\n 变真实换行导致编译失败",
       "content": "用 `python3 - <<EOF` 向 JS 文件注入含 \"\\n\" 的字符串字面量时，未加引号的 heredoc 会让 bash 先做转义处理：源码里写 \"\\\\n\" 传入 python 后变成 \"\\n\"（python 层面即真实换行转义），写入 JS 文件就是真实换行符 → JS 字符串跨行 → 模块编译失败/进程崩溃（2026-08-26 实测：patch 探针注入导致 pi 重启崩溃）。规避：① heredoc 定界符加引号 `<<'EOF'`；② 或 python 里用 chr(92)+'n' / raw string；③ 或用 edit/write 工具直接改文件。注入后必跑 node --check 验证语法再重启。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.7,
       "source": "manual",
       "recurrence": 1,
@@ -13516,7 +13130,7 @@
       "recurrence": 2,
       "createdAt": "2026-08-26T05:58:40.874Z",
       "updatedAt": "2026-08-26T13:38:54.985Z",
-      "accessedAt": "2026-09-07T01:25:39.654Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "environments": [
         "all"
       ],
@@ -13541,7 +13155,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T06:10:37.423Z",
       "updatedAt": "2026-08-26T06:10:37.423Z",
-      "accessedAt": "2026-09-08T08:24:28.012Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "environments": [
         "all"
       ],
@@ -13737,7 +13351,8 @@
         "调研线索",
         "embedded-dev",
         "pid",
-        "上游候选"
+        "上游候选",
+        "needs_verification"
       ],
       "confidence": 0.5,
       "source": "manual",
@@ -13811,7 +13426,8 @@
         "session-health",
         "token-efficiency",
         "context-cache",
-        "abort"
+        "abort",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13835,7 +13451,8 @@
         "docs",
         "audit",
         "maintenance",
-        "checklist"
+        "checklist",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -13883,7 +13500,8 @@
         "packs",
         "skills",
         "开源项目",
-        "候选"
+        "候选",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -14034,7 +13652,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-27T12:53:00.219Z",
       "updatedAt": "2026-08-27T12:53:00.219Z",
-      "accessedAt": "2026-08-27T12:53:00.219Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "environments": [
         "termux"
       ],
@@ -14077,7 +13695,8 @@
         "订阅",
         "漏洞",
         "Redis",
-        "RCE"
+        "RCE",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -14102,7 +13721,8 @@
         "订阅",
         "漏洞",
         "硬件攻击",
-        "NVIDIA"
+        "NVIDIA",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -14127,7 +13747,8 @@
         "订阅",
         "AI",
         "Nvidia",
-        "并购"
+        "并购",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -14178,7 +13799,8 @@
         "autopilot",
         "每日任务",
         "scheduled-tasks",
-        "补跑"
+        "补跑",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -14202,7 +13824,8 @@
         "daily-review",
         "daily-results",
         "跨设备",
-        "任务结果"
+        "任务结果",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -14252,7 +13875,8 @@
         "并发竞态",
         "entries.json",
         "冲突",
-        "daily-results"
+        "daily-results",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -14673,14 +14297,15 @@
         "pi-autopilot",
         "summarizer",
         "故障排查",
-        "配置"
+        "配置",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-28T06:14:28.869Z",
       "updatedAt": "2026-08-28T06:14:28.869Z",
-      "accessedAt": "2026-08-28T06:14:28.869Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "environments": [
         "all"
       ],
@@ -14749,7 +14374,8 @@
         "distillation",
         "memory-hygiene",
         "quality-control",
-        "经验沉淀"
+        "经验沉淀",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -14773,7 +14399,8 @@
         "pi-autopilot",
         "summarizer",
         "故障排查",
-        "模型支持"
+        "模型支持",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -14906,7 +14533,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T11:05:59.480Z",
       "updatedAt": "2026-08-28T11:05:59.480Z",
-      "accessedAt": "2026-09-08T08:24:37.287Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "environments": [
         "all"
       ],
@@ -14922,7 +14549,8 @@
       "tags": [
         "pi-full-audit",
         "审计优化",
-        "技能维护"
+        "技能维护",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -14946,14 +14574,15 @@
         "pi-memory",
         "TUI",
         "文案清理",
-        "模块下线"
+        "模块下线",
+        "needs_verification"
       ],
       "confidence": 0.65,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-28T11:09:47.884Z",
       "updatedAt": "2026-08-28T11:09:47.884Z",
-      "accessedAt": "2026-08-28T11:09:47.884Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "environments": [
         "all"
       ],
@@ -14978,7 +14607,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-28T11:36:44.728Z",
       "updatedAt": "2026-08-28T11:36:44.729Z",
-      "accessedAt": "2026-09-03T13:35:48.772Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "environments": [
         "all"
       ],
@@ -14996,7 +14625,8 @@
         "seeds",
         "多设备",
         "架构",
-        "调度"
+        "调度",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15020,7 +14650,8 @@
         "git-sync",
         "multi-device",
         "memory-governance",
-        "daily-health"
+        "daily-health",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15075,7 +14706,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-29T01:28:55.570Z",
       "updatedAt": "2026-08-29T01:28:55.570Z",
-      "accessedAt": "2026-08-29T01:28:55.570Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "environments": [
         "all"
       ],
@@ -15238,7 +14869,8 @@
         "订阅",
         "knowledge-subscribe-2026-08-29",
         "agent-harness",
-        "安全"
+        "安全",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15264,7 +14896,8 @@
         "knowledge-subscribe-2026-08-29",
         "AI产业",
         "NVIDIA",
-        "HuggingFace"
+        "HuggingFace",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15290,7 +14923,8 @@
         "knowledge-subscribe-2026-08-29",
         "CVE",
         "TeamCity",
-        "CI-CD"
+        "CI-CD",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15316,7 +14950,8 @@
         "knowledge-subscribe-2026-08-29",
         "CVE",
         "Ray",
-        "AI基础设施"
+        "AI基础设施",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15342,7 +14977,8 @@
         "knowledge-subscribe-2026-08-29",
         "勒索软件",
         "Linux",
-        "备份"
+        "备份",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15416,7 +15052,8 @@
         "pi-update",
         "rebuild",
         "网络",
-        "npm"
+        "npm",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15441,7 +15078,8 @@
         "闭环审查",
         "autopilot",
         "VISION",
-        "audit"
+        "audit",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15469,7 +15107,8 @@
         "memU",
         "OpenViking",
         "GEP",
-        "借鉴"
+        "借鉴",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15493,7 +15132,8 @@
         "调试",
         "测试",
         "edit",
-        "教训"
+        "教训",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15519,7 +15159,8 @@
         "kimi-k3",
         "glm-5",
         "qwen3.8",
-        "2026"
+        "2026",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -15542,7 +15183,8 @@
       "tags": [
         "经验沉淀",
         "空壳判定",
-        "token计量"
+        "token计量",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15566,14 +15208,15 @@
         "memory",
         "归档",
         "知识管理",
-        "pi-memory"
+        "pi-memory",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-08-29T06:48:16.785Z",
       "updatedAt": "2026-08-29T06:48:16.785Z",
-      "accessedAt": "2026-08-29T06:48:16.785Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "environments": [
         "all"
       ],
@@ -15590,7 +15233,8 @@
         "工作流",
         "优化",
         "subagent",
-        "缓存"
+        "缓存",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15614,7 +15258,8 @@
         "seeds",
         "portable",
         "对账",
-        "同步"
+        "同步",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15638,7 +15283,8 @@
         "系统提示词",
         "压缩",
         "缓存友好",
-        "APPEND_SYSTEM"
+        "APPEND_SYSTEM",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15662,7 +15308,8 @@
         "test-all",
         "tmux",
         "回归验证",
-        "pi-tmux"
+        "pi-tmux",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15718,7 +15365,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-29T12:11:41.972Z",
       "updatedAt": "2026-08-29T12:11:41.972Z",
-      "accessedAt": "2026-08-29T12:11:41.972Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "environments": [
         "all"
       ],
@@ -15813,7 +15460,8 @@
         "autopilot",
         "restart_hang",
         "挂死恢复",
-        "看门狗"
+        "看门狗",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15837,7 +15485,8 @@
         "经验沉淀",
         "空壳记录",
         "异常判定",
-        "统计故障"
+        "统计故障",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -15861,7 +15510,8 @@
         "daily-health",
         "scheduler",
         "定时任务",
-        "健康度量"
+        "健康度量",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -16029,7 +15679,8 @@
         "干预教训",
         "工具异常",
         "诊断优先",
-        "reflexion"
+        "reflexion",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -16053,7 +15704,8 @@
         "干预教训",
         "挂死误判",
         "autopilot",
-        "reflexion"
+        "reflexion",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -16077,7 +15729,8 @@
         "隔离纪律",
         "对账",
         "跨条目反思",
-        "insight"
+        "insight",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -16101,7 +15754,8 @@
         "pi-sdk",
         "扩展开发",
         "streamingBehavior",
-        "报错处理"
+        "报错处理",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -16252,7 +15906,8 @@
         "book-to-skill",
         "packs",
         "开源项目",
-        "待核实"
+        "待核实",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -16326,7 +15981,8 @@
         "安全漏洞",
         "CISA-KEV",
         "2026-08-30",
-        "Linux内核"
+        "Linux内核",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -16351,7 +16007,8 @@
         "安全漏洞",
         "CISA-KEV",
         "2026-08-30",
-        "JFrog"
+        "JFrog",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -16376,7 +16033,8 @@
         "安全漏洞",
         "Redis",
         "2026-08-30",
-        "RCE"
+        "RCE",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -16401,7 +16059,8 @@
         "科技新闻",
         "AI",
         "2026-08-30",
-        "NVIDIA"
+        "NVIDIA",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -16426,7 +16085,8 @@
         "安全漏洞",
         "物联网",
         "2026-08-30",
-        "人形机器人"
+        "人形机器人",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -16569,7 +16229,8 @@
         "复检",
         "usage-stats",
         "缓存健康",
-        "token 节约"
+        "token 节约",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -16624,7 +16285,7 @@
       "recurrence": 1,
       "createdAt": "2026-07-31T13:00:27.399Z",
       "updatedAt": "2026-07-31T13:00:27.399Z",
-      "accessedAt": "2026-07-31T13:00:27.399Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-07-31T13:00:27.399Z",
       "deleted": false,
       "environments": [
@@ -16941,7 +16602,8 @@
       "tags": [
         "网络",
         "环境",
-        "web_search"
+        "web_search",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -17071,7 +16733,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-09-03T08:20:26.256Z",
-      "accessedAt": "2026-09-08T17:15:08.563Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux",
@@ -17387,7 +17049,8 @@
         "windows",
         "pi",
         "junction",
-        "architecture"
+        "architecture",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -17411,7 +17074,8 @@
         "repo",
         "structure",
         "pi-tools",
-        "deploy"
+        "deploy",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -18044,7 +17708,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T10:16:05.357Z",
       "updatedAt": "2026-08-10T10:16:05.357Z",
-      "accessedAt": "2026-08-10T10:16:05.357Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-08-10T10:16:05.357Z",
       "deleted": false,
       "environments": [
@@ -18068,7 +17732,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T23:16:51.279Z",
       "updatedAt": "2026-08-10T23:16:51.279Z",
-      "accessedAt": "2026-08-10T23:16:51.279Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "observedAt": "2026-08-10T23:16:51.279Z",
       "deleted": false,
       "environments": [
@@ -18250,7 +17914,8 @@
       "tags": [
         "github",
         "push",
-        "pi-tools"
+        "pi-tools",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -18274,7 +17939,8 @@
         "github",
         "push",
         "token",
-        "v2ray"
+        "v2ray",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -18305,7 +17971,7 @@
       "recurrence": 2,
       "createdAt": "2026-08-10T23:19:51.166Z",
       "updatedAt": "2026-08-12T04:30:08.118Z",
-      "accessedAt": "2026-09-03T13:22:41.987Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-08-12T04:30:08.118Z",
       "deleted": false,
       "environments": [
@@ -18597,7 +18263,7 @@
       "accessedAt": "2026-08-13T12:17:11.634Z",
       "observedAt": "2026-08-13T12:17:11.634Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -18621,7 +18287,7 @@
       "accessedAt": "2026-08-13T12:17:11.634Z",
       "observedAt": "2026-08-13T12:17:11.634Z",
       "environments": [
-        "wsl2"
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -18707,7 +18373,8 @@
       "tags": [
         "golden-tasks",
         "回归基准",
-        "防退化"
+        "防退化",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -18730,7 +18397,8 @@
       "tags": [
         "知识订阅",
         "knowledge-fetch",
-        "每日例行"
+        "每日例行",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -18756,7 +18424,8 @@
       "tags": [
         "每日例行",
         "token优化",
-        "后台会话"
+        "后台会话",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -18803,7 +18472,8 @@
       "tags": [
         "空壳投喂",
         "会话提取",
-        "封顶伪影"
+        "封顶伪影",
+        "needs_verification"
       ],
       "confidence": 0.75,
       "source": "extract",
@@ -18984,7 +18654,8 @@
         "knowledge",
         "2026-08-31",
         "科技",
-        "航天"
+        "航天",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "manual",
@@ -19178,7 +18849,8 @@
       "tags": [
         "协作习惯",
         "git",
-        "流程"
+        "流程",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -19565,7 +19237,8 @@
         "pi-autopilot",
         "plan-mode",
         "系统重启",
-        "功能验证"
+        "功能验证",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19590,7 +19263,8 @@
         "pi",
         "崩溃",
         "冗余措施",
-        "故障恢复"
+        "故障恢复",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19615,7 +19289,8 @@
         "pi-context",
         "真实窗口",
         "档位压力",
-        "逻辑调整"
+        "逻辑调整",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19640,7 +19315,8 @@
         "游戏开发",
         "资源迭代",
         "地图设计",
-        "美术优化"
+        "美术优化",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19665,7 +19341,8 @@
         "地图优化",
         "高亮比例",
         "地形显示",
-        "显示效果"
+        "显示效果",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19690,7 +19367,8 @@
         "思考档位",
         "动态调整",
         "会话清理",
-        "系统优化"
+        "系统优化",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19711,7 +19389,9 @@
       "category": "solutions",
       "title": "空壳任务记录判定与处置流程",
       "content": "经验判定：tools=0、hit=0、out=0 即为空壳记录，无可提炼内容；不存memory、不写SKILL草稿，防止污染记忆库",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -19733,7 +19413,9 @@
       "category": "solutions",
       "title": "tmux_run 会话不退出",
       "content": "pi-tmux 的 tmux_run 实现：new-session 创建会话但不执行命令，命令经 send-keys 注入交互 bash；命令执行完后 shell 不退出 → 修复：在 send-keys 后执行 'exec bash -c \"exit 0\"' 使 shell 正常退出",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -19755,7 +19437,9 @@
       "category": "solutions",
       "title": "pi 重启机制：proot 下 wrapper 自动拉起",
       "content": "2026-08-10 实证：proot 环境重启 pi 无需人工干预；写入 ~/.pi/.pi-admin-state.json（action=restart + reason），再 SIGTERM 触发自动重启流程",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -19800,7 +19484,8 @@
       "title": "空壳任务记录判定",
       "content": "判定任务记录为空壳：内容仅为命令输出结果或混乱日志，缺乏结构化任务描述。",
       "tags": [
-        "task-record"
+        "task-record",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19823,7 +19508,8 @@
       "content": "拉取entries.json时发生冲突，执行三方比对：基础版本、本地修改、远程修改，合并后解决冲突。",
       "tags": [
         "memory",
-        "conflict"
+        "conflict",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -19846,14 +19532,15 @@
       "content": "修复install-wrapper.sh中readlink未正确解析符号链接路径的bug，改为使用readlink -f确保绝对路径。",
       "tags": [
         "script",
-        "bugfix"
+        "bugfix",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-09-03T06:32:59.788Z",
       "updatedAt": "2026-09-03T06:32:59.788Z",
-      "accessedAt": "2026-09-03T06:32:59.788Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "observedAt": "2026-09-03T06:32:59.788Z",
       "environments": [
         "termux"
@@ -20129,7 +19816,8 @@
         "规范",
         "检查清单",
         "扩展开发",
-        "命令规范"
+        "命令规范",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -20280,7 +19968,8 @@
         "extension",
         "completion",
         "slash-command",
-        "getArgumentCompletions"
+        "getArgumentCompletions",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -20304,7 +19993,8 @@
         "pi-autopilot",
         "state-isolation",
         "environment-variable",
-        "testing"
+        "testing",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -20331,7 +20021,8 @@
         "vitest",
         "testing",
         "state-pollution",
-        "guard"
+        "guard",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -20358,7 +20049,8 @@
         "pi",
         "extension",
         "completion",
-        "slash-command"
+        "slash-command",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -20383,7 +20075,8 @@
         "pi-memory",
         "git",
         "conflict-resolution",
-        "multi-env"
+        "multi-env",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -20408,14 +20101,15 @@
         "install-wrapper",
         "readlink",
         "compat",
-        "termux"
+        "termux",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-09-03T08:33:46.862Z",
       "updatedAt": "2026-09-03T08:33:46.862Z",
-      "accessedAt": "2026-09-03T08:33:46.862Z",
+      "accessedAt": "2026-09-09T05:41:58.203Z",
       "observedAt": "2026-09-03T08:33:46.862Z",
       "environments": [
         "termux"
@@ -20432,7 +20126,8 @@
       "tags": [
         "pi-autopilot",
         "state-isolation",
-        "multi-device"
+        "multi-device",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -20457,7 +20152,8 @@
         "rebuild",
         "tmux",
         "background",
-        "async"
+        "async",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -20482,7 +20178,8 @@
         "vitest",
         "test-all",
         "cache-guard",
-        "pollution"
+        "pollution",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -20513,7 +20210,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-03T12:34:31.576Z",
       "updatedAt": "2026-09-03T12:34:31.576Z",
-      "accessedAt": "2026-09-03T12:34:31.576Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "observedAt": "2026-09-03T12:34:31.576Z",
       "environments": [
         "termux"
@@ -20635,7 +20332,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-03T13:57:09.005Z",
       "updatedAt": "2026-09-03T13:57:09.005Z",
-      "accessedAt": "2026-09-03T13:57:09.005Z",
+      "accessedAt": "2026-09-09T05:59:39.494Z",
       "observedAt": "2026-09-03T13:57:09.005Z",
       "environments": [
         "termux"
@@ -20682,7 +20379,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-03T13:57:09.006Z",
       "updatedAt": "2026-09-03T13:57:09.006Z",
-      "accessedAt": "2026-09-03T13:57:09.006Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-09-03T13:57:09.006Z",
       "environments": [
         "termux"
@@ -20700,7 +20397,8 @@
         "git",
         "pi-config",
         "remote",
-        "push"
+        "push",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -20786,7 +20484,8 @@
         "token",
         "tui",
         "debug",
-        "background"
+        "background",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -20817,7 +20516,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-03T19:05:01.700Z",
       "updatedAt": "2026-09-03T19:05:01.700Z",
-      "accessedAt": "2026-09-03T19:05:01.700Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
       "observedAt": "2026-09-03T19:05:01.700Z",
       "environments": [
         "termux"
@@ -20843,7 +20542,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-03T19:05:01.701Z",
       "updatedAt": "2026-09-03T19:05:01.701Z",
-      "accessedAt": "2026-09-08T08:22:48.740Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "observedAt": "2026-09-03T19:05:01.701Z",
       "environments": [
         "termux"
@@ -20980,7 +20679,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-04T02:55:55.111Z",
       "updatedAt": "2026-09-04T02:55:55.111Z",
-      "accessedAt": "2026-09-04T02:55:55.111Z",
+      "accessedAt": "2026-09-09T05:59:38.837Z",
       "observedAt": "2026-09-04T02:55:55.111Z",
       "environments": [
         "termux"
@@ -21071,7 +20770,8 @@
       "content": "用户使用中文进行日常问候，表明可能处于中文语境下的pi会话",
       "tags": [
         "语言",
-        "习惯"
+        "习惯",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -21095,7 +20795,8 @@
       "tags": [
         "系统",
         "关键词",
-        "上下文"
+        "上下文",
+        "needs_verification"
       ],
       "confidence": 0.5,
       "source": "extract",
@@ -21264,13 +20965,15 @@
       "category": "fact",
       "title": "test",
       "content": "content",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 24,
+      "recurrence": 25,
       "createdAt": "2026-09-04T09:09:22.820Z",
-      "updatedAt": "2026-09-08T17:15:08.494Z",
-      "accessedAt": "2026-09-08T17:15:08.494Z",
+      "updatedAt": "2026-09-09T05:02:44.151Z",
+      "accessedAt": "2026-09-09T05:02:44.151Z",
       "environments": [
         "all"
       ],
@@ -21345,7 +21048,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-04T11:57:30.116Z",
       "updatedAt": "2026-09-04T11:57:30.116Z",
-      "accessedAt": "2026-09-04T11:57:30.116Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "environments": [
         "all"
       ],
@@ -21361,7 +21064,8 @@
       "tags": [
         "baseline",
         "red-fix",
-        "batch2"
+        "batch2",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -21384,7 +21088,8 @@
       "tags": [
         "golden",
         "batch2",
-        "debug"
+        "debug",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -21407,7 +21112,8 @@
       "tags": [
         "tmux",
         "startSession",
-        "session‑management"
+        "session‑management",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -21548,7 +21254,8 @@
       "tags": [
         "ssh",
         "device‑bridge",
-        "retry"
+        "retry",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -21671,7 +21378,8 @@
         "修复",
         "前端构建",
         "静态资源",
-        "WebSocket"
+        "WebSocket",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -21719,7 +21427,8 @@
         "pi-webui",
         "blank-screen",
         "auth-token",
-        "debugging"
+        "debugging",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -21791,7 +21500,8 @@
         "前端调试",
         "白屏排查",
         "请求链路",
-        "pi-webui"
+        "pi-webui",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -21841,7 +21551,8 @@
         "命令输出",
         "一致性",
         "前端集成",
-        "pi-webui"
+        "pi-webui",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -21866,7 +21577,8 @@
         "错误处理",
         "空 catch",
         "静默失败",
-        "前端规范"
+        "前端规范",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -22083,7 +21795,8 @@
       "tags": [
         "任务处理",
         "空壳识别",
-        "处置纪律"
+        "处置纪律",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -22134,7 +21847,8 @@
         "WSL2",
         "IP",
         "网络",
-        "环境"
+        "环境",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -22184,7 +21898,8 @@
         "Vite",
         "前端",
         "加载中",
-        "排查经验"
+        "排查经验",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
@@ -22253,7 +21968,9 @@
       "category": "solutions",
       "title": "tool-count-localhost.json 生成流程（本地工具统计计数）",
       "content": "在 ~/memory/stats/ 写入 tool-count-<hostname>.json 作为本地每日工具调用明细分片，含轮次/工具名/hit/out 等。与远程同步脚本（tool-stats-daily-sync.SKILL.md）隔离；本地文件为调试与审计基本单元，远程仓库（ssh://ssh.github.com:443/cyfxxx/pi-tools.git）封 token，推送前用 git remote -v 校验。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22275,7 +21992,9 @@
       "category": "procedure",
       "title": "执行 daily-health 并追加日志的流水",
       "content": "每日健康度量 Core Command：`node ~/.pi/scripts/daily-health.mjs`。输出结论行并自动追加本机 logs/daily-health.log；勿做其他事（重复执行/并行运行无额外输出，仅日志）。适用于定期检查任务（如 09-03 18:41, 09-05 00:10, 09-08 08:21）。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22297,7 +22016,9 @@
       "category": "solutions",
       "title": "pi-webui 私聊消息未被 agent 接收的处理",
       "content": "私聊消息必须通过后端路由写入 user_message 或 system_message 并标注 source=user-source 或 system-source-group 等标识；不可直接打印到控制台。修复方法：在后端插入或重构读取路由，确保前端看到的聊天记录与后端存储一致，并在 UI 上对来自“user”的消息做区分展示/标签（避免用户看不到自己的消息）。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22316,7 +22037,9 @@
       "category": "solutions",
       "title": "webui 设备在线状态实时推送修复方案",
       "content": "设备在线状态刷新时会出现震荡：仅本机在线但 status 显示混在线，刷新后状态变化闪烁。原因：未实时推送 device_list 或推送时机与实时状态不同步。修复：在 isUser 不计入设备在线的前提下，在状态变化时通过 WebSocket 推送实时 device_list；推送过程中延迟同步（如 session_start/通过 agent/device_status 监听）。修复方法：修改相关路由与发送逻辑，确保 device_list 显示与实际在线状态实时一致。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22335,7 +22058,9 @@
       "category": "procedure",
       "title": "webui 私聊消息数量标识与清理流程",
       "content": "私聊/群聊页面修复显示消息数量标识与消息清理功能。流程：1) 在消息列表页面按会话/频道预置数量徽标标注未读/总数；2) 进入后更新/隐藏数量标识；3) 提供“清理旧消息”按钮（可按数量/时间自动清空）；4) 避免消息堆积导致的性能下降与历史记录损坏。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22354,7 +22079,9 @@
       "category": "solutions",
       "title": "webui 消息引用与联动清理的设计原则",
       "content": "webui 私聊/群聊需要同时配置消息引用（引用上一条/多条并高亮）与消息清理（退回旧消息）。设计原则：1) 引用不删除原消息，仅展示索引与片段；2) 清理可按时间/数量异步执行（支持批量回退）；3) 用户进入会话后数量标识消失；4) 清理优先级低于当前显示的历史记录，清理后需保持引用数据可溯源（必要时用标签/状态标记旧消息）。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22373,7 +22100,9 @@
       "category": "solutions",
       "title": "私聊验收的标准测试清单",
       "content": "webui 私聊验收需逐项核对：1) 发送后可见可见回显；2) 消息记录持久化；3) 清晰的“来自 user 的私聊”等标识；4) Alt+Up 可查看/编辑队列中的 queued messages；5) Alt+Down 可弹出编辑。包含空测试“私聊验收B”（12/29 21:22, 轮1）。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22392,7 +22121,9 @@
       "category": "solutions",
       "title": "chore/docs 更新前 gitignore 与 push 检查",
       "content": "文档更新或配置变更后，先检查相关文件是否被加入 .gitignore（避免敏感 commit）；查 git remote -v 确保无泄露 token；git add/commit/push 三步执行其中 git push 时若 remote 含 token 易被检出历史，应策略迁移：git remote set-url origin 去凭证 URL，git push后再恢复。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22411,7 +22142,9 @@
       "category": "solutions",
       "title": "webui 引用模型 API 的 fetchConfig 修复流程",
       "content": "前端 fetchConfig 若缺少 token 会导致配置不加载，页面空白。修复：在 Fe fetchConfig 时注入正确的 Authorization 头或使用 Bearer token；前端调用 API 时若状态为 401/302 先检查 token 来源并自动重试或提示。修复后重新构建前端（npm run build）。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22430,7 +22163,9 @@
       "category": "solutions",
       "title": "多个 webui 修复策略：单轮聚焦一类问题",
       "content": "webui 涉及消息/设备/配置等多维问题时，采用单轮聚焦原则：每轮只修复一类问题（如仅设备在线状态，或仅消息显示/引用/flink），修复后立即单次验证再继续下一类。修复套用同一流程：单轮只修一个症状/一类机制，随后提供简单验收（如“都修复好了吗”），避免混杂降低可复现性。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22449,7 +22184,9 @@
       "category": "solutions",
       "title": "会话挂死超时自动重启的补救机制",
       "content": "Agent 会话挂死（如无工具调用超过约 187 分钟）可通过自动重启恢复。已见案例：09-03 18:41 轮1 restart_hang（187 分钟无活动），09-04 21:22 轮1 restart_hang。重启后需检查会话状态与主要任务继续点，必要时重新拉起关键服务。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22468,7 +22205,9 @@
       "category": "solutions",
       "title": "webui 消息清理与显示数量标识的 Discord 风格实现",
       "content": "webui 私聊/群聊跟随 Discord 风格设计：会话内顶部显示消息数量/徽标统计，进入后自动隐藏；提供“清理旧消息”入口（按数量/时间回退）与历史筛选；每条消息附带引用按钮（Alt+Up）与退回按钮。可在前端提取与 attachment 自动对应生成引用键值（pin 时间重置生成新引用）。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22487,7 +22226,9 @@
       "category": "solutions",
       "title": "任务选择功能的限定与补充规则",
       "content": "任务选择功能中，用户只能从模型选项中选其一；若所有选项均有严重问题，用户无直接补充说明入口。改进建议：在选项列表下方提供“跳过任务选择，直接说明问题”或“修改任务类型/参数以重试”等跳过/补充入口，避免死循环。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22506,7 +22247,9 @@
       "category": "solutions",
       "title": "知识订阅定时任务执行记录",
       "content": "knowledge-subscribe 为零 LLM 流程，直接从官方/RSS 源抓取并按标题 hash 去重。成功案例：2026-09-05 03:49 执行，新增 60 条知识条目到 logs/knowledge/2026-09-05.md。标志：“knowledge-subscribe 定时任务执行成功”。特殊指令“run”时意图不明确，需列出定时任务清单供用户选择。",
-      "tags": [],
+      "tags": [
+        "needs_verification"
+      ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
@@ -22572,7 +22315,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-08T08:25:10.116Z",
       "updatedAt": "2026-09-08T08:25:10.116Z",
-      "accessedAt": "2026-09-08T08:25:10.116Z",
+      "accessedAt": "2026-09-09T05:41:59.031Z",
       "environments": [
         "all"
       ],
@@ -22699,7 +22442,8 @@
       "tags": [
         "每日回顾",
         "多设备同步",
-        "memory"
+        "memory",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -22723,7 +22467,8 @@
       "tags": [
         "工具统计",
         "自动化",
-        "scheduler"
+        "scheduler",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -22748,7 +22493,8 @@
         "知识订阅",
         "RSS",
         "零LLM",
-        "pi-autopilot"
+        "pi-autopilot",
+        "needs_verification"
       ],
       "confidence": 0.7,
       "source": "extract",
@@ -22825,7 +22571,8 @@
         "knowledge-subscribe",
         "zero-llm",
         "rss",
-        "automation"
+        "automation",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
@@ -22852,14 +22599,15 @@
         "empty-task",
         "filter",
         "scheduler",
-        "memory-hygiene"
+        "memory-hygiene",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-09-08T15:23:16.330Z",
       "updatedAt": "2026-09-08T15:23:16.330Z",
-      "accessedAt": "2026-09-08T17:28:50.456Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "environments": [
         "all"
       ],
@@ -22908,7 +22656,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-08T15:38:01.835Z",
       "updatedAt": "2026-09-08T15:38:01.835Z",
-      "accessedAt": "2026-09-08T17:28:50.456Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "observedAt": "2026-09-08T15:38:01.835Z",
       "environments": [
         "termux"
@@ -23055,7 +22803,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-08T18:22:35.264Z",
       "updatedAt": "2026-09-08T18:22:35.264Z",
-      "accessedAt": "2026-09-08T18:22:35.264Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "observedAt": "2026-09-08T18:22:35.264Z",
       "environments": [
         "termux"
@@ -23079,7 +22827,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-08T19:30:07.403Z",
       "updatedAt": "2026-09-08T19:30:07.403Z",
-      "accessedAt": "2026-09-08T19:30:07.403Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "observedAt": "2026-09-08T19:30:07.403Z",
       "environments": [
         "termux"
@@ -23120,19 +22868,22 @@
       "tags": [
         "Scheduler",
         "噪音过滤",
-        "任务蒸馏"
+        "任务蒸馏",
+        "needs_verification"
       ],
       "confidence": 0.6,
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-09-08T20:05:51.173Z",
       "updatedAt": "2026-09-08T20:05:51.173Z",
-      "accessedAt": "2026-09-08T20:05:51.173Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "observedAt": "2026-09-08T20:05:51.173Z",
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a0828e-7097-75d2-a9ec-543d07605990"
+      "lastSessionId": "01a0828e-7097-75d2-a9ec-543d07605990",
+      "deleted": false,
+      "contentHash": "e42db06c34ebaf28"
     },
     {
       "id": "ae592b46-224d-4dd8-9dca-bd4d5045a657",
@@ -23148,12 +22899,15 @@
       "recurrence": 1,
       "createdAt": "2026-09-08T20:05:51.173Z",
       "updatedAt": "2026-09-08T20:05:51.173Z",
-      "accessedAt": "2026-09-08T20:05:51.173Z",
+      "accessedAt": "2026-09-09T05:41:57.978Z",
       "observedAt": "2026-09-08T20:05:51.173Z",
       "environments": [
         "termux"
       ],
-      "lastSessionId": "01a0828e-7097-75d2-a9ec-543d07605990"
+      "lastSessionId": "01a0828e-7097-75d2-a9ec-543d07605990",
+      "deleted": false,
+      "contentHash": "405d510f47fc1bcc"
     }
-  ]
+  ],
+  "updatedAt": "2026-09-09T06:08:56.860625Z"
 }
