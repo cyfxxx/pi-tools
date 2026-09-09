@@ -4,7 +4,7 @@
 #
 # 用法: source pi-recovery-audit.sh  (由 pi-wrapper.sh 加载)
 
-AUDIT_LOG="${AUDIT_LOG:-$HOME/.pi/logs/recovery-audit.jsonl}"
+AUDIT_LOG="${AUDIT_LOG:-$HOME/.pi/data/logs/recovery-audit.jsonl}"
 AUDIT_DIR="$(dirname "$AUDIT_LOG")"
 
 # 确保日志目录存在

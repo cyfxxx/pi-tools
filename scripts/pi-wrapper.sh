@@ -102,6 +102,20 @@ source "$SCRIPT_DIR/pi-recovery-audit.sh"
 ok()   { echo -e "\033[0;32m✓\033[0m $1" >&2; }
 fail() { echo -e "\033[0;31m✗\033[0m $1" >&2; }
 warn() { echo -e "\033[0;33m⚠\033[0m $1" >&2; }
+
+# 保留崩溃日志用于调试
+preserve_crash_log() {
+  local crash_log="${1:-}"
+  if [ -n "$crash_log" ] && [ -f "$crash_log" ] && [ -s "$crash_log" ]; then
+    local preserve_dir="$HOME/.pi/data/logs/crash-logs"
+    mkdir -p "$preserve_dir"
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local preserve_file="$preserve_dir/crash_${timestamp}_$$.log"
+    cp "$crash_log" "$preserve_file" 2>/dev/null
+    echo "[pi-wrapper] 崩溃日志已保留: $preserve_file" >&2
+  fi
+  rm -f "$crash_log"
+}
 # 审计 MEDIUM 修复：崩溃计数时间窗（24h）——窗口外的旧计数清零，
 # 避免长期积累的正常使用（零散非零退出）被误判为连续崩溃触发回滚
 CRASH_WINDOW_MS=$((24 * 3600 * 1000))
@@ -560,9 +574,13 @@ escalate_recovery() {
   echo "[pi-wrapper] [升级] 崩溃类型 $crash_type 连续失败，升级恢复策略..." >&2
   # 先尝试 L4 源码编译恢复
   if recover_from_source; then
-    return 0
+    # L4 成功，验证健康状态
+    if health_check; then
+      return 0
+    fi
+    echo "[pi-wrapper] [升级] L4 恢复后健康检查失败，尝试救援模式..." >&2
   fi
-  # L4 失败则启动救援模式 pi（传递崩溃日志供分析）
+  # L4 失败或健康检查失败，启动救援模式 pi（传递崩溃日志供分析）
   start_rescue_pi "$crash_log"
 }
 
@@ -663,6 +681,18 @@ recover_from_source() {
   echo "[pi-wrapper] [L4] 已从源码缓存恢复 pi" >&2
   # 等待文件系统同步，避免健康检查时模块加载不完整
   sleep 2
+
+  # 验证恢复后的 dist 是否可用（快速检查模块加载）
+  if ! timeout 10 node "$npm_dist/cli.js" --version >/dev/null 2>&1; then
+    echo "[pi-wrapper] [L4] 恢复后验证失败，尝试恢复备份..." >&2
+    if [ -d "$backup_dir" ]; then
+      rm -rf "$npm_dist"
+      cp -r "$backup_dir" "$npm_dist"
+      echo "[pi-wrapper] [L4] 已恢复备份 dist" >&2
+    fi
+    return 1
+  fi
+
   return 0
 }
 
@@ -966,7 +996,7 @@ while true; do
         echo "[pi-wrapper] 已达最大恢复轮数($MAX_RECOVERY_ROUNDS)，停止恢复" >&2
         audit_begin "$CRASH_TYPE" "$CRASH_SNIPPET" "$crash_count" "$EXIT_CODE"
         audit_end "max_rounds_reached" "false" "超过最大恢复轮数"
-        rm -f "$CRASH_LOG"
+        preserve_crash_log "$CRASH_LOG"
         break
       fi
       
@@ -981,13 +1011,13 @@ while true; do
         if health_check; then
           echo "[pi-wrapper] 升级恢复后健康检查通过，重启..." >&2
           RECOVERY_ROUNDS=0
-          rm -f "$CRASH_LOG"
+          preserve_crash_log "$CRASH_LOG"
           sleep 1
           set -- "${ORIG_ARGS[@]}" "--continue"
           continue
         fi
         echo "[pi-wrapper] 升级恢复后健康检查失败，停止" >&2
-        rm -f "$CRASH_LOG"
+        preserve_crash_log "$CRASH_LOG"
         break
       fi
       
@@ -1083,7 +1113,7 @@ while true; do
           else
             echo "[pi-wrapper] 未知崩溃类型(${crash_count}/${CRASH_THRESHOLD})，1 秒后重试..." >&2
             audit_end "retry" "true" "未知类型，重试累积"
-            rm -f "$CRASH_LOG"
+            preserve_crash_log "$CRASH_LOG"
             sleep 1
             set -- "${ORIG_ARGS[@]}"
             continue
@@ -1096,14 +1126,14 @@ while true; do
         audit_end "$CRASH_TYPE" "true" "恢复成功，健康检查通过"
         echo "[pi-wrapper] 恢复成功，重启..." >&2
         RECOVERY_ROUNDS=0
-        rm -f "$CRASH_LOG"
+        preserve_crash_log "$CRASH_LOG"
         sleep 1
         set -- "${ORIG_ARGS[@]}" "--continue"
         continue
       else
         audit_end "$CRASH_TYPE" "false" "恢复失败或健康检查不通过"
         echo "[pi-wrapper] 恢复失败，停止" >&2
-        rm -f "$CRASH_LOG"
+        preserve_crash_log "$CRASH_LOG"
         break
       fi
     fi
@@ -1114,7 +1144,7 @@ while true; do
     SNAPSHOT_CREATED=0
     RECOVERY_ROUNDS=0
     echo "[pi-wrapper] 正常退出，不重启" >&2
-    rm -f "$CRASH_LOG"
+    preserve_crash_log "$CRASH_LOG"
     break
   fi
 
@@ -1152,5 +1182,5 @@ while true; do
   set -- "${ORIG_ARGS[@]}" "${EXTRA_ARGS[@]}"
 done
 
-rm -f "$CRASH_LOG"
+preserve_crash_log "$CRASH_LOG"
 exit "$EXIT_CODE"
