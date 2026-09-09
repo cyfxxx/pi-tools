@@ -383,30 +383,6 @@
       "contentHash": "1aab33afa3355578"
     },
     {
-      "id": "648f3e7c-a471-4386-9edd-8af9d16c3ec2",
-      "category": "fact",
-      "title": "ctx-lite/plans 目录未记录",
-      "content": "/root/.pi 下存在 ctx-lite/ 和 plans/ 目录，但 AGENTS.md 目录结构未描述它们；ctx-lite 疑似 pi-memory 迁移时的历史遗留（session_start 中提及 ctx-lite 迁移），plans/ 用途不明，属轻微文档偏差。agents/ 下 reviewer/scout 两个中文模板未被 AGENTS.md 提及。",
-      "tags": [
-        "pi仓库",
-        "目录结构",
-        "文档偏差",
-        "needs_verification"
-      ],
-      "confidence": 0.7,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-04T02:09:14.120Z",
-      "updatedAt": "2026-08-04T02:09:14.120Z",
-      "accessedAt": "2026-08-04T02:09:14.120Z",
-      "observedAt": "2026-08-04T02:09:14.120Z",
-      "deleted": false,
-      "environments": [
-        "all"
-      ],
-      "contentHash": "60bc8edfa78e6b3c"
-    },
-    {
       "id": "c7fcb46b-83f4-44a3-84af-a5415250f461",
       "category": "fact",
       "title": "技能目录自动扫描机制",
@@ -13856,31 +13832,6 @@
       ]
     },
     {
-      "id": "e42e3599-54c2-4963-bc98-09796c8ef93b",
-      "category": "fact",
-      "title": "knowledge 安全 WatchGuard Dimension 12项漏洞集中披露 2026-08-28",
-      "content": "WatchGuard Dimension 集中披露 12 项漏洞（GitHub 安全公告，2026-08-28 分两批）：高危认证后 SQL 注入×2（CVE-2026-78612 计划报告/78614 审计报告）、高危无 CSRF 防护的管理员口令篡改（CVE-2026-78610）、critical 会话标识未脱敏写入诊断日志（CVE-2026-78174，低权限者可劫持会话）、存储/反射 XSS×3（78616/78615/78195）、盲 SSRF×3（78500/78498/78499，数据库/邮件/FTP 测试配置）、登录端点默认无限速无锁定（78617）、业务逻辑缺陷（78618）。使用 WatchGuard Dimension 的环境应立即升级。（来源：GitHub 安全公告）URL: https://github.com/advisories/GHSA-8xpm-cmp9-mq75",
-      "tags": [
-        "knowledge",
-        "安全",
-        "漏洞",
-        "WatchGuard",
-        "CVE"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-28T05:58:55.154Z",
-      "updatedAt": "2026-08-28T05:58:55.154Z",
-      "accessedAt": "2026-08-31T00:14:51.772Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-28T05:58:55.154Z",
-      "deleted": false,
-      "contentHash": "394303aaeb5cd96b"
-    },
-    {
       "id": "6f01541c-134c-4d8e-a5e8-7ec2144e90a5",
       "category": "fact",
       "title": "knowledge 安全 OpenAI披露AI代理利用0day入侵Hugging Face 2026-08-28",
@@ -13932,56 +13883,6 @@
       "observedAt": "2026-08-28T05:58:55.573Z",
       "deleted": false,
       "contentHash": "3a040732acdd3a00"
-    },
-    {
-      "id": "1a935a3a-26b7-4854-92d6-4af52cd90a6c",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-8452 Citrix NetScaler内存边界漏洞已遭利用 2026-08-26",
-      "content": "CISA KEV 新增（2026-08-26）：CVE-2026-8452，Citrix NetScaler ADC/Gateway 内存缓冲区操作约束不当漏洞，已被标记「已遭利用/勒索」。NetScaler 属高价值边界设备（历史重大利用事件频发），公网暴露实例需尽快升级。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-8452",
-      "tags": [
-        "knowledge",
-        "安全",
-        "CVE",
-        "NetScaler",
-        "KEV"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-28T05:58:55.653Z",
-      "updatedAt": "2026-08-28T05:58:55.653Z",
-      "accessedAt": "2026-08-31T00:14:51.703Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-28T05:58:55.653Z",
-      "deleted": false,
-      "contentHash": "64ab5137e98a9150"
-    },
-    {
-      "id": "0ec49703-d567-44ed-a3bd-a8172df9f218",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-60004 Gitea代码注入已遭利用 2026-08-25",
-      "content": "CISA KEV 新增（2026-08-25）：CVE-2026-60004，Gitea 代码注入漏洞——拥有仓库写权限的攻击者可向服务端发送恶意 patch 执行代码，已被标记「已遭利用/勒索」。自托管 Gitea 实例应立即升级并收敛仓库写权限。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-60004",
-      "tags": [
-        "knowledge",
-        "安全",
-        "CVE",
-        "Gitea",
-        "KEV"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-28T05:58:55.754Z",
-      "updatedAt": "2026-08-28T05:58:55.754Z",
-      "accessedAt": "2026-08-28T05:58:55.754Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-28T05:58:55.754Z",
-      "deleted": false,
-      "contentHash": "9dc33fd423441c03"
     },
     {
       "id": "984d5181-579d-44e1-904a-8df809664d34",
@@ -14454,55 +14355,6 @@
       "observedAt": "2026-08-29T01:28:55.688Z",
       "deleted": false,
       "contentHash": "20dab2880b646fd5"
-    },
-    {
-      "id": "2f901bd0-444e-4c32-94ff-1ccf025b3330",
-      "category": "fact",
-      "title": "knowledge 安全 CISA KEV批次：macOS/Cisco ASA/Windows WinSock 等6项在野利用 2026-08-29",
-      "content": "CISA KEV 本批新增 6 项「已遭利用/勒索」漏洞（CISA 官方群，2026-08-29 抓取）：①CVE-2026-65400 Apple macOS 认证不当，网络攻击者可认证至 ScreenConnect 相关组件；②CVE-2026-20349 Cisco Secure Firewall ASA/FTD heap inspection，边界防火墙设备高危；③CVE-2026-68820 Windows WinSock 辅助功能驱动（AFD）UAF，授权攻击者可利用；④CVE-2025-62593 Ray 代码注入致 RCE（开发依赖场景风险）；⑤CVE-2026-72898 Metabase 未认证 SQL 注入；⑥CVE-2026-8037 Progress LoadMaster 未认证命令注入。涉及操作系统内核、边界防火墙、BI 平台与负载均衡，运维需按资产排查升级。URL: https://www.cve.org/CVERecord?id=CVE-2026-65400 等",
-      "tags": [
-        "knowledge",
-        "security",
-        "cve",
-        "kev",
-        "cisa"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T01:29:04.520Z",
-      "updatedAt": "2026-08-29T01:29:04.520Z",
-      "accessedAt": "2026-08-31T00:15:00.912Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-29T01:29:04.520Z",
-      "deleted": false,
-      "contentHash": "cc1e5711514f6c43"
-    },
-    {
-      "id": "9da864e9-fb55-4388-adf9-b84c7b3ab878",
-      "category": "fact",
-      "title": "knowledge 安全 MongoDB BI Connector 三漏洞集中披露（含TLS验证缺陷）2026-08-29",
-      "content": "MongoDB Connector for BI 集中披露 3 项漏洞（GitHub 安全公告，2026-08-29）：①CVE-2026-81532（high）BI ODBC 驱动 positioned update SQL 注入，可提交 SQL 的应用用户可利用；②CVE-2026-81533（medium）ODBC 驱动处理特定 SQL 语句时内存安全问题；③CVE-2026-81518（high）mongosqld 配置 client CA 文件时监听器在 TLS 握手未强制客户端证书，认证约束失效。BI 数据接入链路组件，自托管 MongoDB BI 场景需升级。URL: https://github.com/advisories/GHSA-ggj7-6w53-qw2v 等",
-      "tags": [
-        "knowledge",
-        "security",
-        "cve",
-        "mongodb"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-29T01:29:04.727Z",
-      "updatedAt": "2026-08-29T01:29:04.727Z",
-      "accessedAt": "2026-08-30T02:35:24.968Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-29T01:29:04.727Z",
-      "deleted": false,
-      "contentHash": "b4e08353d355ddf5"
     },
     {
       "id": "e7f012d5-3ab2-461b-9a86-e0653d4e36e5",
@@ -15114,64 +14966,6 @@
       "observedAt": "2026-08-30T02:35:38.317Z",
       "deleted": false,
       "contentHash": "25805d3f7bb53c20"
-    },
-    {
-      "id": "4334ae1e-80ba-42c9-b1e6-59ffcebf055b",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-50522 SharePoint 反序列化RCE已遭利用 2026-08-30",
-      "content": "Microsoft SharePoint 反序列化不可信数据漏洞（CVE-2026-50522，CISA KEV 已遭利用/勒索标记，2026-07-22 披露）：未授权攻击者可远程执行代码。SharePoint 属广泛部署的企业协作平台，建议立即检查版本并应用补丁。（来源：CISA官方群 via knowledge-fetch）URL: https://www.cve.org/CVERecord?id=CVE-2026-50522",
-      "tags": [
-        "knowledge",
-        "CVE",
-        "SharePoint",
-        "Microsoft",
-        "RCE",
-        "CISA-KEV",
-        "漏洞"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-30T02:36:03.543Z",
-      "updatedAt": "2026-08-30T02:36:03.543Z",
-      "accessedAt": "2026-08-30T02:36:03.543Z",
-      "environments": [
-        "all"
-      ],
-      "links": [
-        "45b5be21-8a91-44b8-93c7-60e056d3b139",
-        "83f4f449-a1fc-4481-bf8d-fc81e0cbfde4"
-      ],
-      "observedAt": "2026-08-30T02:36:03.543Z",
-      "deleted": false,
-      "contentHash": "bd8778a272e0f6ab"
-    },
-    {
-      "id": "aedfbc0f-7945-4568-ae6d-706a919bde2e",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-15369 WooCommerce 插件critical权限提升 2026-08-30",
-      "content": "WordPress 插件 Custom User Registration Fields for WooCommerce 权限提升漏洞（CVE-2026-15369，GitHub 安全公告 sev=critical，2026-08-29 披露）：特定版本可被利用实现权限提升，WordPress 电商站点需尽快更新插件。（来源：GitHub安全公告 via knowledge-fetch）URL: https://github.com/advisories/GHSA-8fc6-vv8j-hx7j",
-      "tags": [
-        "knowledge",
-        "CVE",
-        "WordPress",
-        "WooCommerce",
-        "权限提升",
-        "critical",
-        "漏洞"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-30T02:36:03.723Z",
-      "updatedAt": "2026-08-30T02:36:03.723Z",
-      "accessedAt": "2026-08-30T02:36:03.723Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-30T02:36:03.723Z",
-      "deleted": false,
-      "contentHash": "7651523a7bd7e431"
     },
     {
       "id": "f5f93b86-3c9c-4a02-8911-8d616cc00dd3",
@@ -16150,29 +15944,6 @@
       ],
       "deleted": false,
       "contentHash": "f0475f46b4f35e73"
-    },
-    {
-      "id": "f5525747-9761-41b7-82a1-30b90d58eb4a",
-      "category": "fact",
-      "title": "测试记忆-重建验证专用标记",
-      "content": "memory-test-20260812 重建验证专用标记：用于验证重建/恢复流程后记忆库是否正常工作。若本条目可被检索到，说明记忆库已成功恢复。",
-      "tags": [
-        "测试",
-        "重建验证",
-        "标记"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-12T00:35:09.428Z",
-      "updatedAt": "2026-08-12T00:35:09.428Z",
-      "accessedAt": "2026-08-12T00:35:09.428Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-08-12T00:35:09.428Z",
-      "deleted": false,
-      "contentHash": "0f117b5e6063fbfd"
     },
     {
       "id": "9086729c-0284-4f17-894d-8cd7ca023597",
@@ -18044,64 +17815,6 @@
       "contentHash": "d2d27fa3c0a2b893"
     },
     {
-      "id": "83f4f449-a1fc-4481-bf8d-fc81e0cbfde4",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-59310 VMware vCenter路径遍历已遭利用 2026-08-31",
-      "content": "CISA KEV 新增（2026-08-18 披露，08-31 抓取）：CVE-2026-59310，Broadcom VMware vCenter 路径遍历漏洞，已被标记「已遭利用/勒索」。具有 vCenter 网络访问权限的攻击者可利用该漏洞，存在越权访问风险。vCenter 是虚拟化管理核心，公网暴露或内网核心区实例需尽快升级。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-59310",
-      "tags": [
-        "knowledge",
-        "2026-08-31",
-        "安全",
-        "漏洞",
-        "CISA KEV",
-        "VMware"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-31T00:15:13.493Z",
-      "updatedAt": "2026-08-31T00:15:13.493Z",
-      "accessedAt": "2026-08-31T00:15:13.493Z",
-      "environments": [
-        "all"
-      ],
-      "links": [
-        "4334ae1e-80ba-42c9-b1e6-59ffcebf055b"
-      ],
-      "observedAt": "2026-08-31T00:15:13.493Z",
-      "deleted": false,
-      "contentHash": "c4fc4a6bcf44cad9"
-    },
-    {
-      "id": "43fd5109-8be2-4764-ac55-e9ea013247bc",
-      "category": "fact",
-      "title": "knowledge 安全 CVE-2026-33824 Microsoft IKE双重释放RCE已遭利用 2026-08-31",
-      "content": "CISA KEV 新增（2026-08-18 披露，08-31 抓取）：CVE-2026-33824，Microsoft Internet Key Exchange (IKE) Service Extensions 双重释放（double free）漏洞，已被标记「已遭利用/勒索」。可导致远程代码执行，Windows 核心网络服务（IPsec/IKE）受影响，需关注补丁星期二更新。（来源：CISA 官方群）URL: https://www.cve.org/CVERecord?id=CVE-2026-33824",
-      "tags": [
-        "knowledge",
-        "2026-08-31",
-        "安全",
-        "漏洞",
-        "CISA KEV",
-        "Microsoft"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-08-31T00:15:13.554Z",
-      "updatedAt": "2026-08-31T00:15:13.554Z",
-      "accessedAt": "2026-08-31T00:15:13.554Z",
-      "environments": [
-        "all"
-      ],
-      "links": [
-        "399f2b8a-fd97-4b3c-8fb1-9c994eca562f"
-      ],
-      "observedAt": "2026-08-31T00:15:13.554Z",
-      "deleted": false,
-      "contentHash": "2767644306b45fca"
-    },
-    {
       "id": "022790c1-742e-4f59-8b53-57198230ef81",
       "category": "fact",
       "title": "knowledge 安全 ServiceNow连爆3个CVSS 10.0漏洞无需登录接管 2026-08-31",
@@ -18880,30 +18593,6 @@
       "contentHash": "769a3d3d7810324d"
     },
     {
-      "id": "3f7a49fe-32d7-4d06-8e22-0127fce54601",
-      "category": "fact",
-      "title": "快照目录大小",
-      "content": "未跟踪目录.snapshots/约239K，session/约12K，webui/约23K。虽然当前占用较小，但会话中提到今日已生成10个快照，缺乏自动清理机制时长期可能导致磁盘占用增长。",
-      "tags": [
-        "快照",
-        "存储",
-        "目录大小"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T06:41:08.619Z",
-      "updatedAt": "2026-09-03T06:41:08.619Z",
-      "accessedAt": "2026-09-03T06:41:08.619Z",
-      "observedAt": "2026-09-03T06:41:08.619Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
-      "deleted": false,
-      "contentHash": "13c7fabaf1367702"
-    },
-    {
       "id": "b5092329-c28f-446a-8080-cf21862449be",
       "category": "fact",
       "title": "snapshot清理需求",
@@ -18996,29 +18685,6 @@
       "contentHash": "c1aa4d70e2d2b97e"
     },
     {
-      "id": "1ab89f97-0522-4bac-b18b-1aed9e314a06",
-      "category": "fact",
-      "title": "pi-webui静态资源完整",
-      "content": "agent/extensions/pi-webui/static目录包含index.html以及打包后的JS和CSS产物文件，表明前端资源已成功构建。",
-      "tags": [
-        "pi-webui",
-        "static"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T07:24:30.228Z",
-      "updatedAt": "2026-09-03T07:24:30.228Z",
-      "accessedAt": "2026-09-03T07:24:30.228Z",
-      "observedAt": "2026-09-03T07:24:30.228Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
-      "deleted": false,
-      "contentHash": "25cc4b14e25a36e1"
-    },
-    {
       "id": "165f76f5-92ca-40ff-9801-3e42e4b6f801",
       "category": "solutions",
       "title": "快速测试套件失败定位",
@@ -19064,28 +18730,6 @@
       "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
       "deleted": false,
       "contentHash": "f4f194f4d1a48403"
-    },
-    {
-      "id": "265bf9e0-2bff-4858-84f8-7a478547c491",
-      "category": "procedure",
-      "title": "端到端冒烟测试通过",
-      "content": "通过pi-wrapper.sh启动pi后，成功执行/mode切换模式和/webui打开聊天界面，表明系统核心功能正常。",
-      "tags": [
-        "smoke-test"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T07:24:30.228Z",
-      "updatedAt": "2026-09-03T07:24:30.228Z",
-      "accessedAt": "2026-09-03T07:24:30.228Z",
-      "observedAt": "2026-09-03T07:24:30.228Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a06588-5c62-7815-b13e-6fc47a331458",
-      "deleted": false,
-      "contentHash": "1b14999b29317f2f"
     },
     {
       "id": "405a46f8-144b-42e3-800e-9169650dd1be",
@@ -19165,33 +18809,6 @@
       "contentHash": "b5e1020501ea766e"
     },
     {
-      "id": "46c8441a-4a13-4c18-831d-8fc2bb5e46bd",
-      "category": "fact",
-      "title": "4个扩展命令补全已修复",
-      "content": "pi-webui(/webui)：新增补全支持 start/stop/status/help；pi-intervention(/intervention)：修复补全支持 recent/stats/help；pi-link(/link)：扩展补全支持 send/status/watch/inbox/export-card/import-card/attach/help，含设备名补全；pi-context(/tools)：新增补全支持 list/enable/help，含工具组名补全(browser/admin/autopilot/link)。",
-      "tags": [
-        "extension",
-        "fix",
-        "webui",
-        "intervention",
-        "link",
-        "context"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:08:24.184Z",
-      "updatedAt": "2026-09-03T08:08:24.184Z",
-      "accessedAt": "2026-09-03T08:08:24.184Z",
-      "observedAt": "2026-09-03T08:08:24.184Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
-      "deleted": false,
-      "contentHash": "fd093d78cace5442"
-    },
-    {
       "id": "316cdce9-57fb-4374-99a2-1f24452048b4",
       "category": "procedure",
       "title": "扩展命令规范性全量检查流程",
@@ -19264,31 +18881,6 @@
       "lastSessionId": "01a06629-1a92-71b7-b7ce-fb1c98d4b46c",
       "deleted": false,
       "contentHash": "0106f16e0314226c"
-    },
-    {
-      "id": "7ee6e3fa-71e1-4150-87c2-91a170b5bda3",
-      "category": "solutions",
-      "title": "扩展命令补全规范修复：4个扩展添加 getArgumentCompletions",
-      "content": "任务：修复 4 个扩展（/webui /intervention /link /tools）的多级子命令补全不规范问题。执行：为所有多级子命令扩展添加标准 getArgumentCompletions 实现；采用前缀过滤防止补全弹窗无法关闭。关键点：子命令补全必须实现前缀过滤，否则 Tab 补全弹窗无法关闭；pi-tmux 测试存在预先失败，与本次修复无关。项目共有 11 个扩展在 /root/.pi/agent/extensions/。",
-      "tags": [
-        "extension",
-        "completion",
-        "slash-command",
-        "getArgumentCompletions",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T08:19:59.809Z",
-      "updatedAt": "2026-09-03T08:19:59.809Z",
-      "accessedAt": "2026-09-03T08:19:59.809Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-03T08:19:59.809Z",
-      "deleted": false,
-      "contentHash": "281bc14b0d11d5ef"
     },
     {
       "id": "bae1d68d-c333-4181-9184-758e193f8c6f",
@@ -19541,22 +19133,27 @@
       "id": "ec94f20d-defa-4b95-877a-40c2104ddcc9",
       "category": "procedure",
       "title": ".pi 配置仓库远程推送流程",
-      "content": ".pi 配置仓库 remote 为 ssh://ssh.github.com:443/cyfxxx/pi-tools.git（SSH 端口 443 穿透防火墙），用户 cyfxxx 有写权限。推送前需确认：1) 进入 ~/.pi 目录；2) git remote -v 确认 remote 无 token；3) git push 直接推送。auth.json/settings.json/models.json 已在 .gitignore 中，不跨机覆盖。.pi-autopilot-config.json 入库共享（无密钥）。",
+      "content": ".pi 配置仓库 remote 为 ssh://ssh.github.com:443/cyfxxx/pi-tools.git（SSH 端口 443 穿透防火墙），用户 cyfxxx 有写权限。推送前需确认：1) 进入 ~/.pi 目录；2) git remote -v 确认 remote 无 token；3) git push 直接推送。auth.json/settings.json/models.json 已在 .gitignore 中，不跨机覆盖。.pi-autopilot-config.json 入库共享（无密钥）。\n\n---\n\n远程仓库：cyfxxx/pi-tools（SSH端口443）。推送前检查：git remote -v确认地址、ssh -T git@github.com验证连通性、确认settings.json/models.json/auth.json未被跟踪（已gitignore）。配置文件每环境独立，仅.pi-autopilot-config.json共享入库。推送命令：cd /root/.pi && git push。",
       "tags": [
-        "git",
+        "环境隔离",
         "pi-config",
+        "SSH",
         "remote",
-        "push",
-        "needs_verification"
+        "git",
+        "git推送",
+        "needs_verification",
+        "pi配置",
+        "push"
       ],
-      "confidence": 0.6,
+      "confidence": 0.9,
       "source": "manual",
       "recurrence": 1,
       "createdAt": "2026-09-03T15:35:20.952Z",
-      "updatedAt": "2026-09-03T15:35:20.952Z",
+      "updatedAt": "2026-09-09T12:20:57.936190Z",
       "accessedAt": "2026-09-03T15:35:20.952Z",
       "environments": [
-        "linux"
+        "linux",
+        "termux"
       ],
       "observedAt": "2026-09-03T15:35:20.952Z",
       "deleted": false,
@@ -19624,57 +19221,6 @@
       "contentHash": "a6eb3ae5386df3fa"
     },
     {
-      "id": "242c5064-1131-4f3e-a0c9-7f11e1f35ddd",
-      "category": "procedure",
-      "title": ".pi配置仓库远程推送流程",
-      "content": "远程仓库：cyfxxx/pi-tools（SSH端口443）。推送前检查：git remote -v确认地址、ssh -T git@github.com验证连通性、确认settings.json/models.json/auth.json未被跟踪（已gitignore）。配置文件每环境独立，仅.pi-autopilot-config.json共享入库。推送命令：cd /root/.pi && git push。",
-      "tags": [
-        "pi配置",
-        "git推送",
-        "SSH",
-        "环境隔离"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T19:05:01.700Z",
-      "updatedAt": "2026-09-03T19:05:01.700Z",
-      "accessedAt": "2026-09-09T05:41:58.727Z",
-      "observedAt": "2026-09-03T19:05:01.700Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
-      "deleted": false,
-      "contentHash": "e5e1948bd5127a6c"
-    },
-    {
-      "id": "acdf6e22-0efc-4f5a-a203-7f845c48aaf0",
-      "category": "solutions",
-      "title": "WebUI启动异常排查清单",
-      "content": "现象：1)token验证失效，无token生成，直接访问地址即进入；2)启动后TUI持续显示连接信息导致pi无法使用。排查点：a)检查token生成逻辑与环境变量传递；b)WebUI进程是否占用stdout/stderr阻塞TUI——需用nohup或tmux后台运行并重定向输出；c)端口冲突检查（lsof -i:<port>）；d)建议启动脚本增加&后台化与日志文件重定向，避免污染pi主进程终端。",
-      "tags": [
-        "WebUI",
-        "token验证",
-        "TUI阻塞",
-        "后台化",
-        "端口冲突"
-      ],
-      "confidence": 0.8,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T19:05:01.701Z",
-      "updatedAt": "2026-09-03T19:05:01.701Z",
-      "accessedAt": "2026-09-09T05:41:59.031Z",
-      "observedAt": "2026-09-03T19:05:01.701Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
-      "deleted": false,
-      "contentHash": "36d8c3c038759331"
-    },
-    {
       "id": "7c437506-2b51-49db-84f8-927a797229ce",
       "category": "reference",
       "title": "tool-stats-daily-sync草稿技能",
@@ -19698,30 +19244,6 @@
       "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
       "deleted": false,
       "contentHash": "9e9339566541a06a"
-    },
-    {
-      "id": "53e26d6d-8503-44d5-8a37-2acca5f164d9",
-      "category": "procedure",
-      "title": "pi-webui 启动验证流程",
-      "content": "验证修复：1) 删除 ~/.pi/webui/config.json 触发首次生成；2) 启动 webui 观察控制台输出 token；3) 浏览器无 token 访问应显示 401/登录页；4) 带 token 访问可进入 UI；5) TUI 界面不应显示启动连接信息。",
-      "tags": [
-        "pi-webui",
-        "verification",
-        "testing"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T19:09:30.774Z",
-      "updatedAt": "2026-09-03T19:09:30.774Z",
-      "accessedAt": "2026-09-03T19:09:30.774Z",
-      "observedAt": "2026-09-03T19:09:30.774Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
-      "deleted": false,
-      "contentHash": "66476f8f9825f1c4"
     },
     {
       "id": "b2cdc41a-5a76-4a6d-b603-996b99de8628",
@@ -19766,125 +19288,6 @@
       "lastSessionId": "01a068a8-0b84-7969-b3f0-012daf5482d5",
       "deleted": false,
       "contentHash": "49b228cbacf5be43"
-    },
-    {
-      "id": "53222f97-b36c-4dfe-b8cf-233c0f266403",
-      "category": "fact",
-      "title": "webui 问题修复",
-      "content": "webui 问题已修复：1) loadConfig() 逻辑修复，首次启动自动生成 32 位 token 并写入 ~/.pi/webui/config.json；2) 所有 pi.sendMessage(..., { display: true }) 改为 display:false，仅控制台打印不污染 TUI；3) DeviceBridge 桥接日志移除，避免 TUI 刷屏。TypeScript 编译通过，认证校验通过 Authorization: Bearer <token> 或 ?token=[REDACTED]",
-      "tags": [],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-03T19:13:39.206Z",
-      "updatedAt": "2026-09-03T19:13:39.206Z",
-      "accessedAt": "2026-09-03T19:13:39.206Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-03T19:13:39.206Z",
-      "deleted": false,
-      "contentHash": "3a66ae99f62b7041"
-    },
-    {
-      "id": "3fa950bf-4b0d-4f3c-805e-e7a0e3fbcd04",
-      "category": "solutions",
-      "title": "pi-webui 设备列表重复与消息路由修复",
-      "content": "1) 删除 hub.register(virtualWs, selfDevice, false) 虚拟注册，避免显示两台设备；2) handleUserMessage 中群聊/私聊消息同时转发给其他设备并送给本地 agent 处理（pi.sendUserMessage）；3) 私聊 target===selfDevice 时回流给发送者。文件：agent/extensions/pi-webui/src/index.ts",
-      "tags": [
-        "pi-webui",
-        "device",
-        "message-routing",
-        "agent"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T02:55:55.111Z",
-      "updatedAt": "2026-09-04T02:55:55.111Z",
-      "accessedAt": "2026-09-09T05:59:38.837Z",
-      "observedAt": "2026-09-04T02:55:55.111Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
-      "deleted": false,
-      "contentHash": "fe536800763fb716"
-    },
-    {
-      "id": "8b4d3ca7-745e-4871-b120-2a67d4528bb7",
-      "category": "solutions",
-      "title": "pi-webui 前端设备名显示与 Hook 规则修复",
-      "content": "前端 WebSocket 连接使用固定 deviceName:'user' 区分人类用户，selfDevice:'localhost' 为 pi 本机。修复 React Hook 条件调用错误：始终调用 useWebSocket，在组件内部通过 deviceName 参数守卫连接时机。文件：agent/extensions/pi-webui/ui/src/App.tsx, hooks/useWebSocket.ts",
-      "tags": [
-        "pi-webui",
-        "frontend",
-        "react-hooks",
-        "device-name"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T02:55:55.111Z",
-      "updatedAt": "2026-09-04T02:55:55.111Z",
-      "accessedAt": "2026-09-04T02:55:55.111Z",
-      "observedAt": "2026-09-04T02:55:55.111Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
-      "deleted": false,
-      "contentHash": "d15bd4cdc8f6ce71"
-    },
-    {
-      "id": "af196bdd-d603-4158-b8ce-522d76ff5d75",
-      "category": "fact",
-      "title": "pi-webui 配置与访问信息",
-      "content": "配置文件：~/.pi/webui/config.json，含 authToken (32位 nanoid)。服务监听 0.0.0.0:3100。认证支持查询参数 ?token= 或 Header Authorization: Bearer。访问示例：http://192.168.8.176:3100/?token=[REDACTED]",
-      "tags": [
-        "pi-webui",
-        "config",
-        "access",
-        "port"
-      ],
-      "confidence": 1,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T02:55:55.111Z",
-      "updatedAt": "2026-09-04T02:55:55.111Z",
-      "accessedAt": "2026-09-04T02:55:55.111Z",
-      "observedAt": "2026-09-04T02:55:55.111Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
-      "deleted": false,
-      "contentHash": "c4aa7dfb06ee1129"
-    },
-    {
-      "id": "92cffdb7-105e-40a6-aa01-acc6bf3128cc",
-      "category": "procedure",
-      "title": "pi-webui 前端构建与部署流程",
-      "content": "前端源码在 agent/extensions/pi-webui/ui/，构建命令：cd ui && npm run build。产物输出至 ../static/，文件名带 hash（如 index-BBkCYg5R.js）。修改前端代码后需重新构建并重启 pi 服务生效。",
-      "tags": [
-        "pi-webui",
-        "frontend",
-        "build",
-        "deploy"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T02:55:55.111Z",
-      "updatedAt": "2026-09-04T02:55:55.111Z",
-      "accessedAt": "2026-09-04T02:55:55.111Z",
-      "observedAt": "2026-09-04T02:55:55.111Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a0678d-86ee-7d40-b76a-a3b7f1a55265",
-      "deleted": false,
-      "contentHash": "b504f2c58cca63fa"
     },
     {
       "id": "0301ef42-29c2-4184-a780-f0a90122d380",
@@ -19962,30 +19365,6 @@
       "contentHash": "9b41dd06b8f56c6b"
     },
     {
-      "id": "e19b4484-bb87-4d0b-87cb-bb8ccf59de4d",
-      "category": "fact",
-      "title": "Pi WebUI 地址",
-      "content": "pi WebUI 已启动，可通过 http://192.168.8.176:3100 访问。",
-      "tags": [
-        "pi",
-        "WebUI",
-        "地址"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T04:40:04.447Z",
-      "updatedAt": "2026-09-04T04:40:04.447Z",
-      "accessedAt": "2026-09-04T04:40:04.447Z",
-      "observedAt": "2026-09-04T04:40:04.447Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a06ab1-e636-7dfc-ba8d-384c47e4a8e7",
-      "deleted": false,
-      "contentHash": "43334904abcc54df"
-    },
-    {
       "id": "dd7f6c21-eb4a-4978-9a78-59b98280af8e",
       "category": "solutions",
       "title": "todo 工具调用参数格式修正",
@@ -20057,81 +19436,6 @@
       "lastSessionId": "01a06ab7-24b2-7baf-8db0-6a74d9474c56",
       "deleted": false,
       "contentHash": "bef01bb5e749586b"
-    },
-    {
-      "id": "34ad1066-0578-4177-bd07-e86a87c82cd1",
-      "category": "reference",
-      "title": "conflict-check.mjs 注册面核查要点（勿误判缺清单）",
-      "content": "核查扩展注册面是否同步时，agent/extensions/tests/conflict-check.mjs 有两处易误判：\n\n1. **命令清单存的是命令名，不是扩展名**。expected 数组形如 ['auto','schedule','memory','plan','voice','webui',...]，pi-webui 对应条目是 `webui`。用 `grep pi-webui conflict-check.mjs` 搜不到属正常，不代表未注册。\n\n2. **expectedListeners 是正向断言，非穷举校验**。它只断言\"列出的扩展确实监听了该事件\"（assert(actualExts.includes(e))），不要求某扩展必须出现。扩展监听 session_start/agent_end 而未写进该表不会失败，无需补。\n\n3. 工具/命令/事件/flag/shortcut 全部由脚本 **自动扫描** extensions/ 目录下的 .ts（正则 registerTool/registerCommand/pi.on/registerFlag/registerShortcut），新增扩展无需登记即被覆盖重复性检查。\n\n真正的硬编码清单在 scripts/test-all.sh 的「扩展自动发现完整性」required 数组（硬编码 11 个扩展名），新扩展不在其中则 index.ts 丢失不会被发现。pi-webui/pi-mode 等目前不在该数组。",
-      "tags": [
-        "pi",
-        "conflict-check",
-        "注册面",
-        "test-all",
-        "核查"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T09:10:10.973Z",
-      "updatedAt": "2026-09-04T09:10:10.973Z",
-      "accessedAt": "2026-09-04T09:10:10.973Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-04T09:10:10.973Z",
-      "deleted": false,
-      "contentHash": "25feed8eedaa415e"
-    },
-    {
-      "id": "f640c675-1fb7-4f1a-befa-45e239c7d679",
-      "category": "procedure",
-      "title": "pi-webui 消息路由三方契约（sender/senderDevice/chatId）",
-      "content": "pi-webui 消息路由靠三个字段配合，改动任一处必须同时对齐另两处，否则静默丢消息：\n\n1. **chatId（存储文件名 = 前端会话 id）= 对方设备名**\n   - 群聊：`group.json`（target=null）\n   - 私聊：`<对方设备名>.json`（本机与浏览器用户通信时即 `localhost.json`，不是 `user_user.json`）\n   - message-store.ts 规则：`target === null ? 'group' : (target === 'user' ? senderDevice : target)`\n\n2. **sender = 身份，senderDevice = 机器**\n   - 浏览器 WS 入口必须 `sender='user'`（保留身份）**且** `senderDevice=ctx.selfDevice`（归一本机名）\n   - 只改 senderDevice 会因前端过滤条件失配而不显示；把 sender 一起改成本机名会破坏条件2\n\n3. **前端 ChatView 私聊过滤（ui/src/components/ChatView.tsx）**\n   `(senderDevice===chatId && target==='user')            // 对方/agent 发给我\n    || (sender==='user' && senderDevice===selfDevice && target===chatId)  // 我发给对方`\n   前端 selfDevice 来自 `/api/config` 的 selfDevice，与后端 ctx.selfDevice 同源。\n\n4. **回复路由禁止用全局变量记\"上一次 target\"**\n   agent_end 是异步的，多条消息排队时会串话（群聊问题被回答到私聊）。\n   正确做法：pi-agent-hook.ts `resolveReplyTarget(messages)` 从对话历史倒序找最后一条\n   user 消息的来源标签判定（`[来自 X 的私聊]`→'user'，`[群聊]`/无标签→null 广播）。\n   来源标签在 index.ts 的 handleUserMessage 里注入：`pi.sendUserMessage('[群聊] '+content)`。",
-      "tags": [
-        "pi-webui",
-        "消息路由",
-        "chatId",
-        "回归",
-        "前端过滤"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T11:57:29.892Z",
-      "updatedAt": "2026-09-04T11:57:29.892Z",
-      "accessedAt": "2026-09-04T11:57:29.892Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-04T11:57:29.892Z",
-      "deleted": false,
-      "contentHash": "c134da3bbdacf515"
-    },
-    {
-      "id": "bbe03296-536a-4ebd-ae08-09b8ada4348f",
-      "category": "solutions",
-      "title": "pi-webui 设备在线状态抖动：SSH 就绪被固定 3s 盲标",
-      "content": "**症状**：WebUI 里设备在线状态\"刷新网页就变\"，忽在线忽离线。\n\n**根因**（device-bridge.ts）：SSH 进程 spawn 后用 `setTimeout(..., 3000)` **无条件**置\n`device.connected = true`，完全不检测 SSH 是否真建立。设备不可达时形成周期抖动：\nspawn → 3s 标 online（假在线）→ ConnectTimeout 后 exit 255 → offline → 5s 重连 → 再 3s 标 online。\n刷新页面落在窗口哪一段，就看到不同状态。\n\n**判据**：`GET /api/devices` 里 `\"error\":\"exit code 255\"` = SSH 连接层失败（不可达/超时），\n不是认证失败。手动 `ssh -o ConnectTimeout=8 -p <port> u@h 'echo ok'` 复现。\n255 + \"Connection timed out\" 通常是**网段不通**（如本机 192.168.8.x ↔ 设备 192.168.124.x），\n属环境问题，代码只能让它诚实显示离线。\n\n**修复**：就绪窗口取 `ConnectTimeout + 2s`（下限 5s），窗口结束时进程仍存活\n（未被 close/error 置 null）才标 online；close 事件 clearTimeout。\n效果：不可达设备恒定离线，可达设备连接建立后稳定在线，无瞬态。\n\n**验证手法**（无需截图，省 token）：\n`for i in $(seq 1 6); do curl -s -H \"Authorization: Bearer <token>\" http://<host>:3100/api/devices | ...; sleep 1; done`\n连续快照恒定不变即修复；若仍变化说明 SSH 真在抖。",
-      "tags": [
-        "pi-webui",
-        "device-bridge",
-        "SSH",
-        "在线状态",
-        "诊断"
-      ],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-04T11:57:30.116Z",
-      "updatedAt": "2026-09-04T11:57:30.116Z",
-      "accessedAt": "2026-09-09T05:41:59.031Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-04T11:57:30.116Z",
-      "deleted": false,
-      "contentHash": "7244fb2a31eca6ac"
     },
     {
       "id": "9736de43-0a75-46ba-bcc3-7f23e1c0d2f3",
@@ -20207,30 +19511,6 @@
       "contentHash": "2efc82a57dbbc778"
     },
     {
-      "id": "c677c4e6-8b66-45da-b8ce-fc911a3548cd",
-      "category": "procedure",
-      "title": "为 pi‑webui 添加 Vitest 测试",
-      "content": "在 pi‑webui 项目根目录新增 vitest.config.ts 并创建 tests 包含 server、ws‑hub、device‑bridge、message‑store 等模块的单元/集成测试，用于验证 API、WebSocket、SSH 桥接等关键功能，并在 CI 中执行 npm test。",
-      "tags": [
-        "vitest",
-        "testing",
-        "pi‑webui"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-06T12:53:15.626Z",
-      "updatedAt": "2026-09-06T12:53:15.626Z",
-      "accessedAt": "2026-09-06T12:53:15.626Z",
-      "observedAt": "2026-09-06T12:53:15.626Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
-      "deleted": false,
-      "contentHash": "7925d62c664a3731"
-    },
-    {
       "id": "b479d25e-6b3c-4498-a210-fc4f85689e8f",
       "category": "fact",
       "title": "pi‑code‑review 确定性检查结果",
@@ -20252,30 +19532,6 @@
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
       "contentHash": "e72d4183edc6544d"
-    },
-    {
-      "id": "680513bc-d86a-446c-a94c-c00bf1804799",
-      "category": "fact",
-      "title": "WebUI 运行状态",
-      "content": "WebUI 成功启动，监听 0.0.0.0:3100，提供 /api/devices、/api/messages 等接口，Token 正常生效，单次 HTTP 响应时间 <150 ms。",
-      "tags": [
-        "webui",
-        "api",
-        "runtime"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-06T12:53:15.626Z",
-      "updatedAt": "2026-09-06T12:53:15.626Z",
-      "accessedAt": "2026-09-06T12:53:15.626Z",
-      "observedAt": "2026-09-06T12:53:15.626Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
-      "deleted": false,
-      "contentHash": "28cab8a68b292c30"
     },
     {
       "id": "88db4761-187e-49b8-9f1b-1b09efa84f22",
@@ -20347,29 +19603,6 @@
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
       "contentHash": "63fe3b4f7882e0f4"
-    },
-    {
-      "id": "bc4613e5-4d83-4049-92f5-32900ce32aaf",
-      "category": "fact",
-      "title": "文档缺失的 WEBUI‑API 文档需求",
-      "content": "项目当前缺少统一的 API 文档，计划在 docs/WEBUI‑API.md 中补全所有 /api/* 接口的说明、示例请求与错误码。",
-      "tags": [
-        "documentation",
-        "api"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-06T12:53:15.626Z",
-      "updatedAt": "2026-09-06T12:53:15.626Z",
-      "accessedAt": "2026-09-06T12:53:15.626Z",
-      "observedAt": "2026-09-06T12:53:15.626Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
-      "deleted": false,
-      "contentHash": "a7e3d57415d50b5d"
     },
     {
       "id": "83cdd042-f8ec-40cf-962c-eef692dfcd51",
@@ -20444,34 +19677,6 @@
       "contentHash": "cd3fcdbd44a966b3"
     },
     {
-      "id": "984dfeb4-cb25-49a2-875e-d62008e0e7d4",
-      "category": "solutions",
-      "title": "pi-webui 白屏问题完整诊断修复流程",
-      "content": "任务1-12（09-06 06:04-13:03）完整记录了 pi-webui 扩展白屏问题的诊断与修复过程：\n\n1. **初始症状**：用户访问 webui 地址显示空白（任务3-6多次确认\"完整地址，还是空白\"）\n2. **深度检查**（任务8）：分析 webui 扩展，发现前端静态资源未构建或构建产物缺失、static/ 目录为空、Vite 构建配置问题\n3. **制定计划**（任务9-10）：制定分阶段修复计划，优先级：构建前端产物 → 修复静态资源服务路由 → 添加 Vitest 测试 → 纳入 CI\n4. **逐步执行**（任务9-12）：\n   - 运行 `cd ui && npm run build` 生成 static/ 产物\n   - 修复 server.ts 静态文件服务中间件路径解析\n   - 修复 ws-hub.ts WebSocket 认证逻辑\n   - 添加 vitest.config.ts 和测试文件\n   - 验证 `/webui start` 后浏览器正常显示界面\n5. **最终结果**：webui 可正常启动，浏览器访问显示聊天界面，群聊/私聊功能正常\n\n关键技术点：\n- static/ 目录必须包含 Vite 构建产物（index.html、assets/）\n- server.ts 的 express.static 需指向正确的 static/ 绝对路径\n- WebSocket 认证在握手阶段校验 token，失败则 close(4001)\n- 前端开发需在 ui/ 目录下运行 npm 命令\n- 修复后需运行 test-all.sh 验证回归",
-      "tags": [
-        "pi-webui",
-        "白屏",
-        "诊断",
-        "修复",
-        "前端构建",
-        "静态资源",
-        "WebSocket",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-06T15:37:20.134Z",
-      "updatedAt": "2026-09-06T15:37:20.134Z",
-      "accessedAt": "2026-09-06T15:37:20.134Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-06T15:37:20.134Z",
-      "deleted": false,
-      "contentHash": "e1afd085b8a2c4b6"
-    },
-    {
       "id": "8fa527c1-4aff-456e-b262-86265dc8a735",
       "category": "fact",
       "title": "技能草稿去重检查规范",
@@ -20494,31 +19699,6 @@
       "lastSessionId": "01a0775a-c43e-743c-859d-8e4c0e887f3b",
       "deleted": false,
       "contentHash": "51f08709b0dca1f4"
-    },
-    {
-      "id": "a56080bf-12c0-4942-95f8-59a6a8734a2d",
-      "category": "solutions",
-      "title": "pi-webui 白屏问题：URL 缺少 token 参数导致无限加载",
-      "content": "pi-webui 前端访问时若 URL 缺少 `?token=[REDACTED] 参数，fetchConfig 会请求 /api/config 返回 401，导致 config 保持 null，App 渲染 empty-state 显示\"加载中...\"（白屏）。\n根因：/webui 命令显示的访问地址未包含 token（如 `http://IP:3100`），Token 单独另行显示，用户不知需拼接 `?token=...`。\n修复：在 index.ts 的 webui 命令 handler 中，默认分支和 start 成功提示均改为显示带 token 的完整 URL：`http://${lanIP ?? 'localhost'}:${config.port}?token=[REDACTED] catch 分支改为显式报错而非空 catch 吞掉错误。",
-      "tags": [
-        "pi-webui",
-        "blank-screen",
-        "auth-token",
-        "debugging",
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T00:13:51.408Z",
-      "updatedAt": "2026-09-07T00:13:51.408Z",
-      "accessedAt": "2026-09-07T00:13:51.408Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-07T00:13:51.408Z",
-      "deleted": false,
-      "contentHash": "7e89fc6ea7bea6df"
     },
     {
       "id": "062d8138-01af-45b8-a575-9a24972b9393",
@@ -20569,31 +19749,6 @@
       "contentHash": "175b945ec61fec8e"
     },
     {
-      "id": "9ec047c8-912c-4a88-82c9-1f9d8f75d0fe",
-      "category": "fact",
-      "title": "pi-webui 访问必须携带 token 参数",
-      "content": "pi-webui 扩展的 /api/config 等接口需要认证。访问地址格式：http://<host>:<port>/webui?token=[REDACTED] token 会导致 401 Unauthorized，前端配置加载失败，界面显示空白/加载中。token 由扩展启动时生成，通过 /webui 命令输出给用户。",
-      "tags": [
-        "pi-webui",
-        "认证",
-        "token",
-        "API"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:05:27.982Z",
-      "updatedAt": "2026-09-07T02:05:27.982Z",
-      "accessedAt": "2026-09-07T02:05:27.982Z",
-      "observedAt": "2026-09-07T02:05:27.982Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a0772e-6409-70fc-af19-4c96d5bfcae7",
-      "deleted": false,
-      "contentHash": "ad08e46f8dc9e485"
-    },
-    {
       "id": "1737cb49-aca6-419b-af87-80803305c6f3",
       "category": "fact",
       "title": "pi-tmux会话自动退出修复",
@@ -20640,30 +19795,6 @@
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
       "contentHash": "c6395f4e4869e3a3"
-    },
-    {
-      "id": "e4b66633-97d4-4011-8a16-1713de15d18c",
-      "category": "fact",
-      "title": "pi-webui单元/集成测试补全",
-      "content": "为pi-webui新增Vitest测试文件：message-store.test.ts（11条）、ws-hub.test.ts（10条）、server.test.ts（7条）、device-bridge.test.ts（6条）、pi-agent-hook.test.ts（8条）和types.test.ts（6条），共48个测试。运行npm test后全部通过，确保配置加载、消息持久化、WebSocket广播、设备桥接和HTTP服务等核心功能有自动回归保障。",
-      "tags": [
-        "pi-webui",
-        "Vitest",
-        "测试"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:07:07.275Z",
-      "updatedAt": "2026-09-07T02:07:07.275Z",
-      "accessedAt": "2026-09-07T02:07:07.275Z",
-      "observedAt": "2026-09-07T02:07:07.275Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
-      "deleted": false,
-      "contentHash": "a76b60f4e5d05340"
     },
     {
       "id": "2c84cfd8-404d-4f57-9421-3f91a95d8ab5",
@@ -20714,55 +19845,6 @@
       "contentHash": "ab44c0d82e2adec1"
     },
     {
-      "id": "a6c80afc-4f62-44a6-8614-b8d443978917",
-      "category": "fact",
-      "title": "device-bridge SSH指数退避重连",
-      "content": "修改pi-webui/device-bridge.ts中的重连逻辑，将固定的5秒setTimeout替换为指数退避函数：baseDelay=5000ms，每次失败后delay=baseDelay*2^attempt，最大 cap 300000ms（5分钟），成功连接后重置attempt。此变更降低了SSH频繁重连对系统资源的消耗，并提高了网络不稳定环境下的恢复力。",
-      "tags": [
-        "device-bridge",
-        "SSH",
-        "重连",
-        "退避"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:07:07.276Z",
-      "updatedAt": "2026-09-07T02:07:07.276Z",
-      "accessedAt": "2026-09-07T02:07:07.276Z",
-      "observedAt": "2026-09-07T02:07:07.276Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
-      "deleted": false,
-      "contentHash": "058bca282963617d"
-    },
-    {
-      "id": "afcf288e-6c7a-4635-98b3-1c91c23dea00",
-      "category": "fact",
-      "title": "pi-webui扩展功能正常但缺少测试",
-      "content": "审计发现pi-webui扩展通过TypeScript类型检查，API端点（/api/devices、/api/messages等）和WebSocket功能均能正常工作，但根目录下没有*.test.ts文件，导致Vitest报告\"No test files found\"。此缺失意味着代码改动缺乏自动回归保障，后续需补全单元/集成测试以确保稳定性。",
-      "tags": [
-        "pi-webui",
-        "功能验证",
-        "测试缺失"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T02:07:07.276Z",
-      "updatedAt": "2026-09-07T02:07:07.276Z",
-      "accessedAt": "2026-09-07T02:07:07.276Z",
-      "observedAt": "2026-09-07T02:07:07.276Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
-      "deleted": false,
-      "contentHash": "72ebdd99424152b0"
-    },
-    {
       "id": "dfbad0aa-09f5-4155-8a3e-296a6a5f9065",
       "category": "fact",
       "title": "跨平台脚本避免readlink -f",
@@ -20785,105 +19867,6 @@
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
       "contentHash": "4d90d7a401a1254c"
-    },
-    {
-      "id": "5ed957d5-d068-45ca-9b0b-43f9e448a2b6",
-      "category": "fact",
-      "title": "pi-webui 实际运行端口为 3101",
-      "content": "pi-webui 部署在 100.117.170.110:3101，Vite 开发服务器运行，返回 HTML 页面正常，node/vite 进程监听 3101 端口。此前误记为 3100 端口，访问时需使用 3101。",
-      "tags": [
-        "pi-webui",
-        "端口",
-        "3101",
-        "Vite",
-        "部署"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T05:12:28.864Z",
-      "updatedAt": "2026-09-07T05:12:28.864Z",
-      "accessedAt": "2026-09-07T05:12:28.864Z",
-      "observedAt": "2026-09-07T05:12:28.864Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
-      "deleted": false,
-      "contentHash": "b29045c627e936b2"
-    },
-    {
-      "id": "d1782793-f1ee-4a77-bb53-1ba33d894dc8",
-      "category": "solutions",
-      "title": "排除端口错误导致的加载中问题",
-      "content": "步骤：1) 用 node/vite 进程确认实际监听端口（3101）；2) 检查 HTML 返回是否正常；3) 引导用户更换端口访问。结果：3101 端口服务可达，但前端加载中仍复现，排除纯端口错误，需进一步排查前端资源或 Vite 构建链路。",
-      "tags": [
-        "pi-webui",
-        "加载中",
-        "端口排查",
-        "Vite"
-      ],
-      "confidence": 0.8,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T05:12:28.864Z",
-      "updatedAt": "2026-09-07T05:12:28.864Z",
-      "accessedAt": "2026-09-07T05:12:28.864Z",
-      "observedAt": "2026-09-07T05:12:28.864Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a079f3-264b-73bb-b3ce-d4b84f84835e",
-      "deleted": false,
-      "contentHash": "773ffd182818096d"
-    },
-    {
-      "id": "d96bbfa0-27d4-4410-a0c1-5b08735ca9db",
-      "category": "fact",
-      "title": "Pi WebUI 访问地址",
-      "content": "Pi WebUI 运行在 http://100.117.170.110:3100，Token 已配置完成。",
-      "tags": [
-        "pi",
-        "webui",
-        "network"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T05:12:58.390Z",
-      "updatedAt": "2026-09-07T05:12:58.390Z",
-      "accessedAt": "2026-09-07T05:12:58.390Z",
-      "observedAt": "2026-09-07T05:12:58.390Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07a46-2b2d-71dd-966a-22cb34ed0e4c",
-      "deleted": false,
-      "contentHash": "20ff5c64a6a9f362"
-    },
-    {
-      "id": "dc5196a4-a87b-4d72-b083-2e18c3b14895",
-      "category": "fact",
-      "title": "Pi WebUI 固定访问地址",
-      "content": "Pi WebUI 通过 Tailscale 网络在 100.117.170.110:3100 固定暴露，Token 为动态生成（示例：MpJtyn2UI8STRwGUJOAr02nJGP3AkB6A）。适用于跨设备访问 Pi 会话。",
-      "tags": [
-        "pi-webui",
-        "tailscale",
-        "network"
-      ],
-      "confidence": 0.9,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-09-07T05:14:12.484Z",
-      "updatedAt": "2026-09-07T05:14:12.484Z",
-      "accessedAt": "2026-09-07T05:14:12.484Z",
-      "observedAt": "2026-09-07T05:14:12.484Z",
-      "environments": [
-        "wsl2"
-      ],
-      "lastSessionId": "01a07a48-0348-711a-acb6-1b0e53f88450",
-      "deleted": false,
-      "contentHash": "1b682f1edcc66777"
     },
     {
       "id": "344adf2a-72f5-43bd-9831-87df46adcd58",
@@ -20934,111 +19917,6 @@
       "contentHash": "e20261bedbc2188e"
     },
     {
-      "id": "c2be9e14-285b-4891-9b39-2c4ecbf6d857",
-      "category": "solutions",
-      "title": "pi-webui 私聊消息未被 agent 接收的处理",
-      "content": "私聊消息必须通过后端路由写入 user_message 或 system_message 并标注 source=user-source 或 system-source-group 等标识；不可直接打印到控制台。修复方法：在后端插入或重构读取路由，确保前端看到的聊天记录与后端存储一致，并在 UI 上对来自“user”的消息做区分展示/标签（避免用户看不到自己的消息）。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.193Z",
-      "updatedAt": "2026-09-08T08:24:04.193Z",
-      "accessedAt": "2026-09-08T08:24:04.193Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.193Z",
-      "deleted": false,
-      "contentHash": "442cab340f3a17f1"
-    },
-    {
-      "id": "2601cb0a-c95e-41b5-92be-662987560a01",
-      "category": "solutions",
-      "title": "webui 设备在线状态实时推送修复方案",
-      "content": "设备在线状态刷新时会出现震荡：仅本机在线但 status 显示混在线，刷新后状态变化闪烁。原因：未实时推送 device_list 或推送时机与实时状态不同步。修复：在 isUser 不计入设备在线的前提下，在状态变化时通过 WebSocket 推送实时 device_list；推送过程中延迟同步（如 session_start/通过 agent/device_status 监听）。修复方法：修改相关路由与发送逻辑，确保 device_list 显示与实际在线状态实时一致。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.330Z",
-      "updatedAt": "2026-09-08T08:24:04.330Z",
-      "accessedAt": "2026-09-08T08:24:04.330Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.330Z",
-      "deleted": false,
-      "contentHash": "ec73d715bcb55e24"
-    },
-    {
-      "id": "9bc5d312-6c09-4aa4-b0ea-3180f6593e4f",
-      "category": "procedure",
-      "title": "webui 私聊消息数量标识与清理流程",
-      "content": "私聊/群聊页面修复显示消息数量标识与消息清理功能。流程：1) 在消息列表页面按会话/频道预置数量徽标标注未读/总数；2) 进入后更新/隐藏数量标识；3) 提供“清理旧消息”按钮（可按数量/时间自动清空）；4) 避免消息堆积导致的性能下降与历史记录损坏。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.458Z",
-      "updatedAt": "2026-09-08T08:24:04.458Z",
-      "accessedAt": "2026-09-08T08:24:04.458Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.458Z",
-      "deleted": false,
-      "contentHash": "ee0f7dd1529ef2e0"
-    },
-    {
-      "id": "f051b962-387a-43e2-afa3-1a433d4989e4",
-      "category": "solutions",
-      "title": "webui 消息引用与联动清理的设计原则",
-      "content": "webui 私聊/群聊需要同时配置消息引用（引用上一条/多条并高亮）与消息清理（退回旧消息）。设计原则：1) 引用不删除原消息，仅展示索引与片段；2) 清理可按时间/数量异步执行（支持批量回退）；3) 用户进入会话后数量标识消失；4) 清理优先级低于当前显示的历史记录，清理后需保持引用数据可溯源（必要时用标签/状态标记旧消息）。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.577Z",
-      "updatedAt": "2026-09-08T08:24:04.577Z",
-      "accessedAt": "2026-09-08T08:24:04.577Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.577Z",
-      "deleted": false,
-      "contentHash": "f2150f95cbd0623e"
-    },
-    {
-      "id": "86456ee4-165e-4e25-b4a1-f5c4d37cc97f",
-      "category": "solutions",
-      "title": "私聊验收的标准测试清单",
-      "content": "webui 私聊验收需逐项核对：1) 发送后可见可见回显；2) 消息记录持久化；3) 清晰的“来自 user 的私聊”等标识；4) Alt+Up 可查看/编辑队列中的 queued messages；5) Alt+Down 可弹出编辑。包含空测试“私聊验收B”（12/29 21:22, 轮1）。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.687Z",
-      "updatedAt": "2026-09-08T08:24:04.687Z",
-      "accessedAt": "2026-09-08T08:24:04.687Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.687Z",
-      "deleted": false,
-      "contentHash": "2e23dde9b807f05b"
-    },
-    {
       "id": "21a4ca47-7c0e-4dea-9455-266d288a0786",
       "category": "solutions",
       "title": "chore/docs 更新前 gitignore 与 push 检查",
@@ -21060,48 +19938,6 @@
       "contentHash": "01a97f83c738163d"
     },
     {
-      "id": "ad34ae72-7a6c-4530-b937-68c453286233",
-      "category": "solutions",
-      "title": "webui 引用模型 API 的 fetchConfig 修复流程",
-      "content": "前端 fetchConfig 若缺少 token 会导致配置不加载，页面空白。修复：在 Fe fetchConfig 时注入正确的 Authorization 头或使用 Bearer token；前端调用 API 时若状态为 401/302 先检查 token 来源并自动重试或提示。修复后重新构建前端（npm run build）。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.878Z",
-      "updatedAt": "2026-09-08T08:24:04.878Z",
-      "accessedAt": "2026-09-08T08:24:04.878Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.878Z",
-      "deleted": false,
-      "contentHash": "667ba527233bb079"
-    },
-    {
-      "id": "17da61f6-e86a-4adb-88de-bf0ec0ae3ab3",
-      "category": "solutions",
-      "title": "多个 webui 修复策略：单轮聚焦一类问题",
-      "content": "webui 涉及消息/设备/配置等多维问题时，采用单轮聚焦原则：每轮只修复一类问题（如仅设备在线状态，或仅消息显示/引用/flink），修复后立即单次验证再继续下一类。修复套用同一流程：单轮只修一个症状/一类机制，随后提供简单验收（如“都修复好了吗”），避免混杂降低可复现性。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:04.973Z",
-      "updatedAt": "2026-09-08T08:24:04.973Z",
-      "accessedAt": "2026-09-08T08:24:04.973Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:04.973Z",
-      "deleted": false,
-      "contentHash": "d988c27828a96447"
-    },
-    {
       "id": "9c0c5671-034a-412c-ad76-eba9816d61f6",
       "category": "solutions",
       "title": "会话挂死超时自动重启的补救机制",
@@ -21121,27 +19957,6 @@
       "observedAt": "2026-09-08T08:24:05.066Z",
       "deleted": false,
       "contentHash": "76566c303e75511c"
-    },
-    {
-      "id": "09f399c1-aaf5-4de6-b5f7-6ace2e7bf5bc",
-      "category": "solutions",
-      "title": "webui 消息清理与显示数量标识的 Discord 风格实现",
-      "content": "webui 私聊/群聊跟随 Discord 风格设计：会话内顶部显示消息数量/徽标统计，进入后自动隐藏；提供“清理旧消息”入口（按数量/时间回退）与历史筛选；每条消息附带引用按钮（Alt+Up）与退回按钮。可在前端提取与 attachment 自动对应生成引用键值（pin 时间重置生成新引用）。",
-      "tags": [
-        "needs_verification"
-      ],
-      "confidence": 0.6,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:24:05.161Z",
-      "updatedAt": "2026-09-08T08:24:05.161Z",
-      "accessedAt": "2026-09-08T08:24:05.161Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:24:05.161Z",
-      "deleted": false,
-      "contentHash": "8e8c4545ad6b2f1f"
     },
     {
       "id": "86a568d4-ebff-49ce-8d7b-c4e9463f7c15",
@@ -21184,107 +19999,6 @@
       "observedAt": "2026-09-08T08:24:05.338Z",
       "deleted": false,
       "contentHash": "706a626b6f46d81e"
-    },
-    {
-      "id": "8ecb837f-dc4f-46b0-aa91-6fdd6c175299",
-      "category": "fact",
-      "title": "CVE-2026-58644 Microsoft SharePoint Deserialization Vulnerability",
-      "content": "CVE-2026-58644 Microsoft SharePoint Deserialization of Untrusted Data Vulnerability (2026-07-16) - CISA 官方群 [已遭利用/勒索] Microsoft SharePoint contains a deserialization of untrusted data vulnerability that allows an unauthorized attacker to execute co",
-      "tags": [],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:25:09.753Z",
-      "updatedAt": "2026-09-08T08:25:09.753Z",
-      "accessedAt": "2026-09-08T08:25:09.753Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:25:09.753Z",
-      "deleted": false,
-      "links": [
-        "b54b890e-8ebc-4359-8bd0-b9a29183147e"
-      ],
-      "contentHash": "9b8e6e4e4deefffc"
-    },
-    {
-      "id": "05a6cd86-e91c-4087-b62f-7f9f4d16896d",
-      "category": "fact",
-      "title": "CVE-2026-25089 Fortinet FortiSandbox Command Injection Vulnerability",
-      "content": "CVE-2026-25089 Fortinet FortiSandbox OS Command Injection Vulnerability (2026-07-16) - CISA 官方群 [已遭利用/勒索] Fortinet FortiSandbox, FortiSandbox Cloud, and FortiSandbox PaaS contain an OS command injection vulnerability that allows an unau",
-      "tags": [],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:25:09.963Z",
-      "updatedAt": "2026-09-08T08:25:09.963Z",
-      "accessedAt": "2026-09-08T08:25:09.963Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:25:09.963Z",
-      "deleted": false,
-      "contentHash": "8b96e76ee04db095"
-    },
-    {
-      "id": "e794fb5e-cafd-4d03-ab3a-dc6881c6fc09",
-      "category": "fact",
-      "title": "CVE-2026-46817 Oracle E-Business Suite Privilege Management Vulnerability",
-      "content": "CVE-2026-46817 Oracle E-Business Suite Improper Privilege Management Vulnerability (2026-07-15) - CISA 官方群 [已遭利用/勒索] Oracle E-Business Suite contains an improper privilege management vulnerability that allows an unauthenticated attacker with netwo",
-      "tags": [],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:25:10.116Z",
-      "updatedAt": "2026-09-08T08:25:10.116Z",
-      "accessedAt": "2026-09-09T05:41:59.031Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:25:10.116Z",
-      "deleted": false,
-      "contentHash": "f386884efae19ae9"
-    },
-    {
-      "id": "b54b890e-8ebc-4359-8bd0-b9a29183147e",
-      "category": "fact",
-      "title": "CVE-2026-56155 Microsoft ADFS Access Control Vulnerability",
-      "content": "CVE-2026-56155 Microsoft Active Directory Federation Services Insufficient Granularity of Access Control Vulnerability (2026-07-14) - CISA 官方群 [已遭利用/勒索] Microsoft Active Directory Federation Services contains an insufficient granularity of access control vulnerability that allows an",
-      "tags": [],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:25:10.240Z",
-      "updatedAt": "2026-09-08T08:25:10.240Z",
-      "accessedAt": "2026-09-08T08:25:10.240Z",
-      "environments": [
-        "all"
-      ],
-      "links": [
-        "8ecb837f-dc4f-46b0-aa91-6fdd6c175299"
-      ],
-      "observedAt": "2026-09-08T08:25:10.240Z",
-      "deleted": false,
-      "contentHash": "b3c272d721b62061"
-    },
-    {
-      "id": "07c1322d-015d-4cd2-b357-daba1453460f",
-      "category": "fact",
-      "title": "CVE-2026-86516 mocknest-serverless Vulnerability",
-      "content": "CVE-2026-86516 A vulnerability was detected in elenavanengelenmaslova mocknest-serverless 0.9.0 (2026-09-08) - GitHub安全公告 [sev=medium] CVE-2026-86516 A vulnerability was detected in elenavanengelenmaslova mocknest-serverless 0.9.0. The affected element is an unknown fun",
-      "tags": [],
-      "confidence": 1,
-      "source": "manual",
-      "recurrence": 1,
-      "createdAt": "2026-09-08T08:25:10.365Z",
-      "updatedAt": "2026-09-08T08:25:10.365Z",
-      "accessedAt": "2026-09-08T08:25:10.365Z",
-      "environments": [
-        "all"
-      ],
-      "observedAt": "2026-09-08T08:25:10.365Z",
-      "deleted": false,
-      "contentHash": "14ba8297f50bdd44"
     },
     {
       "id": "b8539db8-7e41-4552-af37-750351b22082",
@@ -21753,7 +20467,61 @@
       "lastSessionId": "01a0828e-7097-75d2-a9ec-543d07605990",
       "deleted": false,
       "contentHash": "405d510f47fc1bcc"
+    },
+    {
+      "id": "242c5064-1131-4f3e-a0c9-7f11e1f35ddd",
+      "category": "procedure",
+      "title": ".pi配置仓库远程推送流程",
+      "content": "远程仓库：cyfxxx/pi-tools（SSH端口443）。推送前检查：git remote -v确认地址、ssh -T git@github.com验证连通性、确认settings.json/models.json/auth.json未被跟踪（已gitignore）。配置文件每环境独立，仅.pi-autopilot-config.json共享入库。推送命令：cd /root/.pi && git push。\n\n---\n\n.pi 配置仓库 remote 为 ssh://ssh.github.com:443/cyfxxx/pi-tools.git（SSH 端口 443 穿透防火墙），用户 cyfxxx 有写权限。推送前需确认：1) 进入 ~/.pi 目录；2) git remote -v 确认 remote 无 token；3) git push 直接推送。auth.json/settings.json/models.json 已在 .gitignore 中，不跨机覆盖。.pi-autopilot-config.json 入库共享（无密钥）。",
+      "tags": [
+        "git推送",
+        "remote",
+        "git",
+        "环境隔离",
+        "pi配置",
+        "push",
+        "SSH",
+        "pi-config",
+        "needs_verification"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 2,
+      "createdAt": "2026-09-03T19:05:01.700Z",
+      "updatedAt": "2026-09-09T07:05:56.994656Z",
+      "accessedAt": "2026-09-09T05:41:58.727Z",
+      "observedAt": "2026-09-03T19:05:01.700Z",
+      "environments": [
+        "termux",
+        "linux"
+      ],
+      "lastSessionId": "01a067e8-00df-71d5-8006-c064e2cd8dec",
+      "deleted": false,
+      "contentHash": "e5e1948bd5127a6c"
+    },
+    {
+      "id": "f5525747-9761-41b7-82a1-30b90d58eb4a",
+      "category": "fact",
+      "title": "测试记忆-重建验证专用标记",
+      "content": "memory-test-20260812 重建验证专用标记：用于验证重建/恢复流程后记忆库是否正常工作。若本条目可被检索到，说明记忆库已成功恢复。",
+      "tags": [
+        "测试",
+        "重建验证",
+        "标记"
+      ],
+      "confidence": 1,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-08-12T00:35:09.428Z",
+      "updatedAt": "2026-08-12T00:35:09.428Z",
+      "accessedAt": "2026-08-12T00:35:09.428Z",
+      "environments": [
+        "all"
+      ],
+      "observedAt": "2026-08-12T00:35:09.428Z",
+      "deleted": false,
+      "contentHash": "0f117b5e6063fbfd"
     }
   ],
-  "updatedAt": "2026-09-09T06:34:49.253616Z"
+  "updatedAt": "2026-09-09T12:24:03.814895Z"
 }
