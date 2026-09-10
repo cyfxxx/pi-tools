@@ -34,8 +34,12 @@
     },
     "quick": {
       "description": "极简模式 - 只保留内置工具，无扩展无技能",
-      "extensions": ["!ALL"],
-      "skills": ["!ALL"],
+      "extensions": [
+        "!ALL"
+      ],
+      "skills": [
+        "!ALL"
+      ],
       "systemPrompt": null,
       "appendSystemPrompt": "~/.pi/agent/modes/prompts/quick-append.md",
       "thinking": "off"

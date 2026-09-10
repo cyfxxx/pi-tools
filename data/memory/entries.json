@@ -3036,7 +3036,8 @@
       "accessedAt": "2026-08-31T00:14:14.190Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "7e25dea4d04f1cb0"
@@ -3060,7 +3061,8 @@
       "accessedAt": "2026-08-11T13:54:24.746Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "e797b59f0e6e8676"
@@ -3084,7 +3086,8 @@
       "accessedAt": "2026-08-11T13:54:24.746Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "3b84e055c24d8824"
@@ -3108,7 +3111,8 @@
       "accessedAt": "2026-08-11T13:54:24.746Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "a6566fa6e30d22ba"
@@ -3131,7 +3135,8 @@
       "accessedAt": "2026-08-12T00:30:04.734Z",
       "observedAt": "2026-08-12T00:30:04.734Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "b9b702f515a08054"
@@ -3154,7 +3159,8 @@
       "accessedAt": "2026-08-12T00:30:04.734Z",
       "observedAt": "2026-08-12T00:30:04.734Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "29d5370087225fc1"
@@ -3177,7 +3183,8 @@
       "accessedAt": "2026-08-12T00:30:53.465Z",
       "observedAt": "2026-08-12T00:30:53.465Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "a75e5ce94a4fa594"
@@ -3200,7 +3207,8 @@
       "accessedAt": "2026-08-12T00:30:53.465Z",
       "observedAt": "2026-08-12T00:30:53.465Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "18e8b9495c01617e"
@@ -3224,7 +3232,8 @@
       "accessedAt": "2026-08-12T00:33:43.458Z",
       "observedAt": "2026-08-12T00:33:43.458Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "3bd35e95300cefb1"
@@ -3248,7 +3257,8 @@
       "accessedAt": "2026-08-12T00:33:43.458Z",
       "observedAt": "2026-08-12T00:33:43.458Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "b1e33017f21d77a6"
@@ -3271,7 +3281,8 @@
       "accessedAt": "2026-08-12T00:34:36.665Z",
       "observedAt": "2026-08-12T00:34:36.665Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "a81fbecc839137c3"
@@ -3295,7 +3306,8 @@
       "accessedAt": "2026-08-12T00:35:18.326Z",
       "observedAt": "2026-08-12T00:35:18.326Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "0921257e0774d3d9"
@@ -3318,7 +3330,8 @@
       "accessedAt": "2026-08-12T00:38:50.461Z",
       "observedAt": "2026-08-12T00:38:50.461Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "e9313433355d5a8a"
@@ -3341,7 +3354,8 @@
       "accessedAt": "2026-08-12T00:38:50.462Z",
       "observedAt": "2026-08-12T00:38:50.462Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "1e1d1ab371e7656c"
@@ -3363,7 +3377,8 @@
       "accessedAt": "2026-08-12T00:40:46.287Z",
       "observedAt": "2026-08-12T00:40:46.287Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "41cd0efac0f2c368"
@@ -3411,7 +3426,8 @@
       "accessedAt": "2026-08-12T04:22:22.546Z",
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "7d83fe66ae4f94d0"
@@ -3435,7 +3451,8 @@
       "accessedAt": "2026-08-12T04:22:22.546Z",
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "34243de837266fc5"
@@ -3483,7 +3500,8 @@
       "accessedAt": "2026-08-12T04:22:22.546Z",
       "observedAt": "2026-08-12T04:22:22.546Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "2cb20d1ce2266055"
@@ -3530,7 +3548,8 @@
       "accessedAt": "2026-08-12T04:22:22.547Z",
       "observedAt": "2026-08-12T04:22:22.547Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "ef1757fee0d9e805"
@@ -4268,7 +4287,8 @@
       "accessedAt": "2026-08-12T16:08:32.735Z",
       "observedAt": "2026-08-12T16:08:32.735Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4292,7 +4312,8 @@
       "accessedAt": "2026-08-12T16:08:32.735Z",
       "observedAt": "2026-08-12T16:08:32.735Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4343,7 +4364,8 @@
       "accessedAt": "2026-08-13T00:06:13.074Z",
       "observedAt": "2026-08-13T00:06:13.074Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4368,7 +4390,8 @@
       "accessedAt": "2026-08-13T00:06:13.074Z",
       "observedAt": "2026-08-13T00:06:13.074Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4664,7 +4687,8 @@
       "accessedAt": "2026-08-13T04:01:11.358Z",
       "observedAt": "2026-08-13T04:01:11.358Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4688,7 +4712,8 @@
       "accessedAt": "2026-08-13T04:01:11.358Z",
       "observedAt": "2026-08-13T04:01:11.358Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4815,7 +4840,8 @@
       "accessedAt": "2026-08-13T04:28:28.982Z",
       "observedAt": "2026-08-13T04:28:28.982Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4841,7 +4867,8 @@
       "accessedAt": "2026-08-13T04:28:28.982Z",
       "observedAt": "2026-08-13T04:28:28.982Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4866,7 +4893,8 @@
       "accessedAt": "2026-08-13T04:28:28.982Z",
       "observedAt": "2026-08-13T04:28:28.982Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -4891,7 +4919,8 @@
       "accessedAt": "2026-08-13T04:28:28.982Z",
       "observedAt": "2026-08-13T04:28:28.982Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -5042,7 +5071,8 @@
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -5066,7 +5096,8 @@
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -5091,7 +5122,8 @@
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -5116,7 +5148,8 @@
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -5141,7 +5174,8 @@
       "accessedAt": "2026-08-13T07:07:53.438Z",
       "observedAt": "2026-08-13T07:07:53.438Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -5785,7 +5819,8 @@
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
@@ -5810,7 +5845,8 @@
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
@@ -5835,7 +5871,8 @@
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
@@ -5859,7 +5896,8 @@
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
@@ -5910,7 +5948,8 @@
       "accessedAt": "2026-08-14T08:31:00.967Z",
       "observedAt": "2026-08-14T08:31:00.967Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
       "deleted": false,
@@ -5935,7 +5974,8 @@
       "accessedAt": "2026-08-14T08:31:00.967Z",
       "observedAt": "2026-08-14T08:31:00.967Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
       "deleted": false,
@@ -6088,7 +6128,8 @@
       "accessedAt": "2026-08-14T09:28:18.758Z",
       "observedAt": "2026-08-14T09:28:18.758Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb97-4f2b-7045-b109-410605b8176e",
       "deleted": false,
@@ -6503,7 +6544,8 @@
       "accessedAt": "2026-08-15T11:09:56.619Z",
       "observedAt": "2026-08-15T11:09:56.619Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -6528,7 +6570,8 @@
       "accessedAt": "2026-08-15T11:09:56.619Z",
       "observedAt": "2026-08-15T11:09:56.619Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -6801,7 +6844,8 @@
       "accessedAt": "2026-08-15T12:10:00.463Z",
       "observedAt": "2026-08-15T12:10:00.463Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -6825,7 +6869,8 @@
       "accessedAt": "2026-08-15T12:10:00.463Z",
       "observedAt": "2026-08-15T12:10:00.463Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -6922,7 +6967,8 @@
       "accessedAt": "2026-08-15T12:10:00.463Z",
       "observedAt": "2026-08-15T12:10:00.463Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -6972,7 +7018,8 @@
       "accessedAt": "2026-08-15T14:52:49.701Z",
       "observedAt": "2026-08-15T14:52:49.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -6996,7 +7043,8 @@
       "accessedAt": "2026-08-15T14:52:49.701Z",
       "observedAt": "2026-08-15T14:52:49.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -7021,7 +7069,8 @@
       "accessedAt": "2026-08-15T14:52:49.701Z",
       "observedAt": "2026-08-15T14:52:49.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -7071,7 +7120,8 @@
       "accessedAt": "2026-08-15T14:52:49.701Z",
       "observedAt": "2026-08-15T14:52:49.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0009f-33f7-796b-8a16-a7a28f1fe9bc",
       "deleted": false,
@@ -8418,7 +8468,8 @@
       "accessedAt": "2026-08-22T04:15:50.184Z",
       "observedAt": "2026-08-22T04:15:50.184Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
       "deleted": false,
@@ -8443,7 +8494,8 @@
       "accessedAt": "2026-08-22T04:15:50.184Z",
       "observedAt": "2026-08-22T04:15:50.184Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
       "deleted": false,
@@ -8492,7 +8544,8 @@
       "accessedAt": "2026-08-22T04:15:50.184Z",
       "observedAt": "2026-08-22T04:15:50.184Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
       "deleted": false,
@@ -8517,7 +8570,8 @@
       "accessedAt": "2026-08-22T04:15:50.184Z",
       "observedAt": "2026-08-22T04:15:50.184Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02792-daf3-76c1-beb3-e581af1bc92b",
       "deleted": false,
@@ -8645,7 +8699,8 @@
       "accessedAt": "2026-08-22T06:37:26.366Z",
       "observedAt": "2026-08-22T06:37:26.366Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0282f-4ac2-7e64-8494-008fd374e81f",
       "deleted": false,
@@ -8770,7 +8825,8 @@
       "accessedAt": "2026-08-24T02:04:28.970Z",
       "observedAt": "2026-08-24T02:04:28.970Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
       "deleted": false,
@@ -8795,7 +8851,8 @@
       "accessedAt": "2026-08-24T02:04:28.970Z",
       "observedAt": "2026-08-24T02:04:28.970Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
       "deleted": false,
@@ -8819,7 +8876,8 @@
       "accessedAt": "2026-08-24T02:04:28.970Z",
       "observedAt": "2026-08-24T02:04:28.970Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
       "deleted": false,
@@ -8867,7 +8925,8 @@
       "accessedAt": "2026-08-24T02:04:28.970Z",
       "observedAt": "2026-08-24T02:04:28.970Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
       "deleted": false,
@@ -8890,7 +8949,8 @@
       "accessedAt": "2026-08-24T02:04:28.970Z",
       "observedAt": "2026-08-24T02:04:28.970Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e84-a0ed-791b-80c3-7e24dbc7bb51",
       "deleted": false,
@@ -8914,7 +8974,8 @@
       "accessedAt": "2026-08-24T02:05:26.489Z",
       "observedAt": "2026-08-24T02:05:26.489Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
       "deleted": false,
@@ -8938,7 +8999,8 @@
       "accessedAt": "2026-08-24T02:05:26.489Z",
       "observedAt": "2026-08-24T02:05:26.489Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
       "deleted": false,
@@ -8961,7 +9023,8 @@
       "accessedAt": "2026-08-24T02:05:26.489Z",
       "observedAt": "2026-08-24T02:05:26.489Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a02e9d-8361-7822-8f6e-ec61e8231856",
       "deleted": false,
@@ -9010,7 +9073,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9035,7 +9099,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9059,7 +9124,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9083,7 +9149,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9107,7 +9174,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9131,7 +9199,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9155,7 +9224,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9180,7 +9250,8 @@
       "accessedAt": "2026-08-24T02:47:18.579Z",
       "observedAt": "2026-08-24T02:47:18.579Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03182-495a-7dc1-9a3d-9a7ed5e37e1a",
       "deleted": false,
@@ -9398,7 +9469,8 @@
       "accessedAt": "2026-08-24T05:57:31.789Z",
       "observedAt": "2026-08-24T05:57:31.789Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
       "deleted": false,
@@ -9422,7 +9494,8 @@
       "accessedAt": "2026-08-24T05:57:31.789Z",
       "observedAt": "2026-08-24T05:57:31.789Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
       "deleted": false,
@@ -9446,7 +9519,8 @@
       "accessedAt": "2026-08-24T05:57:31.789Z",
       "observedAt": "2026-08-24T05:57:31.789Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
       "deleted": false,
@@ -9470,7 +9544,8 @@
       "accessedAt": "2026-08-24T05:57:31.789Z",
       "observedAt": "2026-08-24T05:57:31.789Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
       "deleted": false,
@@ -9494,7 +9569,8 @@
       "accessedAt": "2026-08-24T05:57:31.789Z",
       "observedAt": "2026-08-24T05:57:31.789Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
       "deleted": false,
@@ -9518,7 +9594,8 @@
       "accessedAt": "2026-08-24T05:57:31.789Z",
       "observedAt": "2026-08-24T05:57:31.789Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a031a9-a955-75d8-92cf-9db261332aa0",
       "deleted": false,
@@ -9542,7 +9619,8 @@
       "accessedAt": "2026-08-24T05:58:18.531Z",
       "observedAt": "2026-08-24T05:58:18.531Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false,
@@ -9567,7 +9645,8 @@
       "accessedAt": "2026-08-24T05:58:18.531Z",
       "observedAt": "2026-08-24T05:58:18.531Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false,
@@ -9591,7 +9670,8 @@
       "accessedAt": "2026-08-24T05:58:18.531Z",
       "observedAt": "2026-08-24T05:58:18.531Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false,
@@ -9615,7 +9695,8 @@
       "accessedAt": "2026-08-24T05:58:18.531Z",
       "observedAt": "2026-08-24T05:58:18.531Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false,
@@ -9639,7 +9720,8 @@
       "accessedAt": "2026-08-24T05:58:18.531Z",
       "observedAt": "2026-08-24T05:58:18.531Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false,
@@ -9662,7 +9744,8 @@
       "accessedAt": "2026-08-24T05:58:18.531Z",
       "observedAt": "2026-08-24T05:58:18.531Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03210-3731-7ed3-9606-0856d55f496d",
       "deleted": false,
@@ -9687,7 +9770,8 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -9712,7 +9796,8 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -9762,7 +9847,8 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -9812,7 +9898,8 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -9837,7 +9924,8 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -9862,7 +9950,8 @@
       "accessedAt": "2026-08-24T07:23:28.875Z",
       "observedAt": "2026-08-24T07:23:28.875Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -9981,7 +10070,8 @@
       "accessedAt": "2026-08-12T00:40:46.287Z",
       "observedAt": "2026-08-12T00:40:46.287Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "c3369cd5b82be0df"
@@ -10187,30 +10277,6 @@
       "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
       "deleted": false,
       "contentHash": "389b23d2f2665f9a"
-    },
-    {
-      "id": "5bd05245-bf81-466f-91b4-3398a0d90755",
-      "category": "fact",
-      "title": "记忆库规模统计（2026-08-24）",
-      "content": "pi 记忆库（~/.pi/memory/）2026-08-24 时点：总条目 499（活跃 472，被取代 25），占用 0.25MB/2MB，冷数据 0；分类分布 fact 243、solutions 89、procedure 72、preference 34、reference 25、habit 9；会话摘要 5 条，时间跨度 2026-07-31~2026-08-24；备份文件 entries.json.bak-20260818 与 summaries.json.bak-20260820 各一份。",
-      "tags": [
-        "记忆库",
-        "统计",
-        "pi-memory"
-      ],
-      "confidence": 0.95,
-      "source": "extract",
-      "recurrence": 1,
-      "createdAt": "2026-08-24T10:38:11.771Z",
-      "updatedAt": "2026-08-24T10:38:11.771Z",
-      "accessedAt": "2026-08-24T10:38:11.771Z",
-      "observedAt": "2026-08-24T10:38:11.771Z",
-      "environments": [
-        "termux"
-      ],
-      "lastSessionId": "01a03319-4d17-7727-ba3a-99419a172b26",
-      "deleted": false,
-      "contentHash": "3c47ceb4a21cec91"
     },
     {
       "id": "4c54c2a2-c587-4062-b92a-42dfcd7316fd",
@@ -11164,7 +11230,8 @@
       "accessedAt": "2026-08-25T01:46:15.132Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11189,7 +11256,8 @@
       "accessedAt": "2026-08-25T01:46:15.132Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11214,7 +11282,8 @@
       "accessedAt": "2026-08-25T01:46:15.132Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11239,7 +11308,8 @@
       "accessedAt": "2026-08-25T01:46:15.132Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11264,7 +11334,8 @@
       "accessedAt": "2026-09-07T00:08:06.251Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11341,7 +11412,8 @@
       "accessedAt": "2026-08-25T01:58:10.919Z",
       "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11367,7 +11439,8 @@
       "accessedAt": "2026-08-25T01:58:10.919Z",
       "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11392,7 +11465,8 @@
       "accessedAt": "2026-08-25T01:58:10.919Z",
       "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11467,7 +11541,8 @@
       "accessedAt": "2026-08-25T01:58:10.919Z",
       "observedAt": "2026-08-25T01:58:10.919Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03257-bacf-7494-93bd-e82f98458963",
       "deleted": false,
@@ -11785,7 +11860,8 @@
       "accessedAt": "2026-08-25T07:18:10.486Z",
       "observedAt": "2026-08-25T07:18:10.486Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
       "deleted": false,
@@ -11810,7 +11886,8 @@
       "accessedAt": "2026-08-30T08:59:59.320Z",
       "observedAt": "2026-08-25T07:18:10.486Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
       "deleted": false,
@@ -11834,7 +11911,8 @@
       "accessedAt": "2026-08-25T07:18:10.486Z",
       "observedAt": "2026-08-25T07:18:10.486Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a037a9-3381-764b-a842-6774385bac63",
       "deleted": false,
@@ -11920,7 +11998,8 @@
       "accessedAt": "2026-08-25T08:27:24.585Z",
       "observedAt": "2026-08-25T08:27:24.585Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
       "deleted": false,
@@ -11945,7 +12024,8 @@
       "accessedAt": "2026-08-25T08:27:24.585Z",
       "observedAt": "2026-08-25T08:27:24.585Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
       "deleted": false,
@@ -11970,7 +12050,8 @@
       "accessedAt": "2026-08-25T08:27:24.585Z",
       "observedAt": "2026-08-25T08:27:24.585Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
       "deleted": false,
@@ -12577,7 +12658,8 @@
       "accessedAt": "2026-08-26T04:41:37.701Z",
       "observedAt": "2026-08-26T04:41:37.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03c27-d1f4-70c6-9fbd-51530aa1e93c",
       "deleted": false,
@@ -12602,7 +12684,8 @@
       "accessedAt": "2026-08-26T04:41:37.701Z",
       "observedAt": "2026-08-26T04:41:37.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03c27-d1f4-70c6-9fbd-51530aa1e93c",
       "deleted": false,
@@ -12628,7 +12711,8 @@
       "accessedAt": "2026-09-07T01:25:39.654Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03c4b-4f4e-71d6-8a17-f247f76ae23d",
       "deleted": false,
@@ -12653,7 +12737,8 @@
       "accessedAt": "2026-08-26T04:48:25.056Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03c4b-4f4e-71d6-8a17-f247f76ae23d",
       "deleted": false,
@@ -12678,7 +12763,8 @@
       "accessedAt": "2026-08-26T04:48:25.056Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03c4b-4f4e-71d6-8a17-f247f76ae23d",
       "deleted": false,
@@ -12707,7 +12793,8 @@
       "accessedAt": "2026-08-26T05:28:16.617Z",
       "observedAt": "2026-08-26T05:28:16.617Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03c88-fdf9-7026-b44e-a50356a8d6e2",
       "deleted": false,
@@ -15245,7 +15332,8 @@
       "accessedAt": "2026-09-07T01:25:39.654Z",
       "observedAt": "2026-08-30T08:50:35.004Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03e49-ac66-79cd-b746-c140f42ae843",
       "deleted": false,
@@ -15270,7 +15358,8 @@
       "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-30T08:50:35.004Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03e49-ac66-79cd-b746-c140f42ae843",
       "deleted": false,
@@ -15296,7 +15385,8 @@
       "accessedAt": "2026-08-30T08:50:35.004Z",
       "observedAt": "2026-08-30T08:50:35.004Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03e49-ac66-79cd-b746-c140f42ae843",
       "deleted": false,
@@ -15320,7 +15410,8 @@
       "accessedAt": "2026-09-07T01:24:25.239Z",
       "observedAt": "2026-08-30T08:52:06.761Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051da-9630-7f0c-8fb8-974cbd3f5acc",
       "deleted": false,
@@ -15341,10 +15432,11 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:52:06.761Z",
       "updatedAt": "2026-08-30T08:52:06.761Z",
-      "accessedAt": "2026-08-30T08:52:06.761Z",
+      "accessedAt": "2026-09-10T02:32:11.726Z",
       "observedAt": "2026-08-30T08:52:06.761Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051da-9630-7f0c-8fb8-974cbd3f5acc",
       "deleted": false,
@@ -15470,7 +15562,8 @@
       "accessedAt": "2026-09-07T01:25:39.654Z",
       "observedAt": "2026-08-30T08:50:02.026Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03e03-f3b9-7e00-b3a3-3f5b6cc96f4a",
       "deleted": false,
@@ -15517,7 +15610,8 @@
       "accessedAt": "2026-08-30T08:50:02.026Z",
       "observedAt": "2026-08-30T08:50:02.026Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03e03-f3b9-7e00-b3a3-3f5b6cc96f4a",
       "deleted": false,
@@ -15540,7 +15634,8 @@
       "accessedAt": "2026-08-30T08:50:02.026Z",
       "observedAt": "2026-08-30T08:50:02.026Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a03e03-f3b9-7e00-b3a3-3f5b6cc96f4a",
       "deleted": false,
@@ -15940,7 +16035,8 @@
       "accessedAt": "2026-08-12T00:33:43.458Z",
       "observedAt": "2026-08-12T00:33:43.458Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "f0475f46b4f35e73"
@@ -15963,7 +16059,8 @@
       "accessedAt": "2026-08-12T00:39:50.457Z",
       "observedAt": "2026-08-12T00:39:50.457Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "deleted": false,
       "contentHash": "f093e1abaa498ea5"
@@ -16116,7 +16213,8 @@
       "accessedAt": "2026-08-13T04:01:11.358Z",
       "observedAt": "2026-08-13T04:01:11.358Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -16263,7 +16361,8 @@
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
@@ -16287,7 +16386,8 @@
       "accessedAt": "2026-08-14T04:40:26.077Z",
       "observedAt": "2026-08-14T04:40:26.077Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ffb75-72f6-7214-9fc9-ff4e6f38a29d",
       "deleted": false,
@@ -17351,7 +17451,8 @@
       "accessedAt": "2026-08-13T00:06:13.074Z",
       "observedAt": "2026-08-13T00:06:13.074Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -17472,7 +17573,8 @@
       "accessedAt": "2026-08-13T12:17:11.634Z",
       "observedAt": "2026-08-13T12:17:11.634Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -17496,7 +17598,8 @@
       "accessedAt": "2026-08-13T12:17:11.634Z",
       "observedAt": "2026-08-13T12:17:11.634Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -17519,7 +17622,8 @@
       "accessedAt": "2026-08-13T12:17:11.634Z",
       "observedAt": "2026-08-13T12:17:11.634Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -17543,7 +17647,8 @@
       "accessedAt": "2026-08-13T12:17:11.634Z",
       "observedAt": "2026-08-13T12:17:11.634Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "019ff5b7-0e00-7ef9-aaa8-29c463f4cc0d",
       "deleted": false,
@@ -17639,7 +17744,8 @@
       "accessedAt": "2026-08-30T09:08:51.422Z",
       "observedAt": "2026-08-30T09:08:51.422Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051dc-6004-7c1c-a9e9-766a17b917fb",
       "deleted": false,
@@ -17663,7 +17769,8 @@
       "accessedAt": "2026-08-30T09:08:51.422Z",
       "observedAt": "2026-08-30T09:08:51.422Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051dc-6004-7c1c-a9e9-766a17b917fb",
       "deleted": false,
@@ -17762,7 +17869,8 @@
       "accessedAt": "2026-09-07T01:25:39.472Z",
       "observedAt": "2026-08-31T00:14:57.309Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
       "deleted": false,
@@ -17785,7 +17893,8 @@
       "accessedAt": "2026-08-31T00:14:57.309Z",
       "observedAt": "2026-08-31T00:14:57.309Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
       "deleted": false,
@@ -17808,7 +17917,8 @@
       "accessedAt": "2026-08-31T00:14:57.309Z",
       "observedAt": "2026-08-31T00:14:57.309Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051db-a5a1-75e8-a7cd-c4a76d4aa0d6",
       "deleted": false,
@@ -17958,7 +18068,8 @@
       "accessedAt": "2026-08-31T00:15:34.001Z",
       "observedAt": "2026-08-31T00:15:34.001Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
       "deleted": false,
@@ -17983,7 +18094,8 @@
       "accessedAt": "2026-08-31T00:15:34.001Z",
       "observedAt": "2026-08-31T00:15:34.001Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
       "deleted": false,
@@ -18007,7 +18119,8 @@
       "accessedAt": "2026-08-31T00:15:34.001Z",
       "observedAt": "2026-08-31T00:15:34.001Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
       "deleted": false,
@@ -18032,7 +18145,8 @@
       "accessedAt": "2026-08-31T00:15:34.001Z",
       "observedAt": "2026-08-31T00:15:34.001Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
       "deleted": false,
@@ -18056,7 +18170,8 @@
       "accessedAt": "2026-08-31T00:15:34.001Z",
       "observedAt": "2026-08-31T00:15:34.001Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a051d9-a309-7180-a77f-6576a03082ad",
       "deleted": false,
@@ -19527,7 +19642,8 @@
       "accessedAt": "2026-09-06T12:53:15.626Z",
       "observedAt": "2026-09-06T12:53:15.626Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
@@ -19550,7 +19666,8 @@
       "accessedAt": "2026-09-06T12:53:15.626Z",
       "observedAt": "2026-09-06T12:53:15.626Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
@@ -19573,7 +19690,8 @@
       "accessedAt": "2026-09-06T12:53:15.626Z",
       "observedAt": "2026-09-06T12:53:15.626Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
@@ -19598,7 +19716,8 @@
       "accessedAt": "2026-09-06T12:53:15.626Z",
       "observedAt": "2026-09-06T12:53:15.626Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
@@ -19623,7 +19742,8 @@
       "accessedAt": "2026-09-06T15:34:06.268Z",
       "observedAt": "2026-09-06T15:34:06.268Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07759-4e66-721a-ae5b-13343e5b4b70",
       "deleted": false,
@@ -19647,7 +19767,8 @@
       "accessedAt": "2026-09-06T15:34:06.268Z",
       "observedAt": "2026-09-06T15:34:06.268Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07759-4e66-721a-ae5b-13343e5b4b70",
       "deleted": false,
@@ -19670,7 +19791,8 @@
       "accessedAt": "2026-09-06T15:34:06.268Z",
       "observedAt": "2026-09-06T15:34:06.268Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07759-4e66-721a-ae5b-13343e5b4b70",
       "deleted": false,
@@ -19694,7 +19816,8 @@
       "accessedAt": "2026-09-07T00:08:25.701Z",
       "observedAt": "2026-09-07T00:08:25.701Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a0775a-c43e-743c-859d-8e4c0e887f3b",
       "deleted": false,
@@ -19718,7 +19841,8 @@
       "accessedAt": "2026-09-07T01:25:56.426Z",
       "observedAt": "2026-09-07T01:25:56.426Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07931-405f-701f-ae26-c603d5cad119",
       "deleted": false,
@@ -19742,7 +19866,8 @@
       "accessedAt": "2026-09-07T01:25:56.426Z",
       "observedAt": "2026-09-07T01:25:56.426Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07931-405f-701f-ae26-c603d5cad119",
       "deleted": false,
@@ -19790,7 +19915,8 @@
       "accessedAt": "2026-09-07T02:07:07.275Z",
       "observedAt": "2026-09-07T02:07:07.275Z",
       "environments": [
-        "wsl2"
+        "wsl2",
+        "termux"
       ],
       "lastSessionId": "01a07625-60d3-769a-98c0-1f518563a3ae",
       "deleted": false,
@@ -20521,7 +20647,346 @@
       "observedAt": "2026-08-12T00:35:09.428Z",
       "deleted": false,
       "contentHash": "0f117b5e6063fbfd"
+    },
+    {
+      "id": "7e04fcba-141f-42a8-a381-cd2acad47c55",
+      "category": "solutions",
+      "title": "entries.json 清理中 crash 恢复流程",
+      "content": "清理 /root/.pi/data/memory/entries.json 时若 Python 脚本因 file 反复写入不一致中间态而 crash，恢复方法：从最近正确 commit（如 a77ee03）checkout 重建，再按分类步骤（删 webui→删 test/debug→删 064ee064→打 needs_verification 标签→合并 procedure→纠错环境标签）顺序重放。验证用 python3 验证 JSON 有效性与条目计数。",
+      "tags": [
+        "pi-memory",
+        "entries.json",
+        "crash-recovery",
+        "清理优化"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "7d3efe6ed813d9a5"
+    },
+    {
+      "id": "f7bc8fd0-d27b-4555-9c5a-fc428c663640",
+      "category": "fact",
+      "title": "pi-memory entries.json 优化后最终状态",
+      "content": "2026-01 清理后 entries.json 共 842 条（从 957 删 115）。低置信度 conf<0.8 共 120 条全标 needs_verification。环境分布：all 371 / termux 221 / wsl2 69 / termux+wsl2 150 / 其他 11。类别分布：fact 376 / solutions 198 / procedure 165 / reference 45 / preference 45 / habit 13。WebUI 相关 0 条，064ee064 已删，superseded 0 条。",
+      "tags": [
+        "pi-memory",
+        "entries.json",
+        "记忆库状态"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "e3cf6946df033fde"
+    },
+    {
+      "id": "da9e1bb4-549d-4d41-90a4-7423168d911b",
+      "category": "fact",
+      "title": "Termux 与 WSL2 是完全不同的环境",
+      "content": "Termux 是安卓设备中的 Linux 容器环境，WSL2 是 Windows 中的 Linux 子系统环境，两者完全不同。pi-memory 记忆条目的 environments 字段不可将两者混用或误标。清理中发现 192 条误标为 wsl2 实为 termux，已纠正；35 条 wsl2+termux 双标签恢复为 wsl2。",
+      "tags": [
+        "环境隔离",
+        "termux",
+        "wsl2",
+        "pi-memory"
+      ],
+      "confidence": 1,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "45bcb618fac38e80",
+      "links": [
+        "71e87434-6652-482b-b452-516b47c857fe"
+      ]
+    },
+    {
+      "id": "c8a5e628-5f62-4d46-a906-560e18252160",
+      "category": "fact",
+      "title": "防御性 webui 引用保留无害",
+      "content": "conflict-check.mjs 第160行仍含 'webui' 预期命令、pi-autopilot/scheduler.ts 三处 PI_WEBSUI_SERVER_MODE=false 注入，均属防御性编码（防止已删除扩展误引用 / 防 proot 子进程重启 pi-webui 导致 EADDRINUSE），保留无害。如需修正可删除预期数组中 webui，建议加注释说明通用性。",
+      "tags": [
+        "conflict-check",
+        "scheduler",
+        "防御性编码",
+        "webui"
+      ],
+      "confidence": 0.8,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "29c3f3b03a8d16b9"
+    },
+    {
+      "id": "4194bea9-8833-4fe3-b9a3-75f37be83b55",
+      "category": "preference",
+      "title": "记忆库清理优先策略",
+      "content": "用户对 entries.json 清理的偏好：已移除扩展相关记忆全删（非保留）；低置信度条目先打 needs_verification 标签保留待人工审核，不直接删；同主题 procedure 合并去重；环境标签必须精确匹配实际环境；所有修改完成后必须 git commit 并推送到 ssh://ssh.github.com:443/cyfxxx/pi-tools.git。",
+      "tags": [
+        "pi-memory",
+        "清理策略",
+        "用户偏好"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "8e3c0906cdcafcb7"
+    },
+    {
+      "id": "233764c7-f0b0-43d8-8403-455c2a3fcee8",
+      "category": "reference",
+      "title": "pi-tools 远程仓库地址",
+      "content": "pi-tools 记忆库远程仓库：ssh://ssh.github.com:443/cyfxxx/pi-tools.git。推送前若 remote 含 token 须先 git remote set-url origin 恢复无凭证 URL。清理优化的三次 commit：ec945e2、a77ee03、dfaac30。",
+      "tags": [
+        "git",
+        "pi-tools",
+        "远程仓库"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "71228b814cd05f05"
+    },
+    {
+      "id": "051d0f3f-ca59-4101-b84f-09b1c6ba42f6",
+      "category": "procedure",
+      "title": "entries.json 低置信度条目标签流程",
+      "content": "对 /root/.pi/data/memory/entries.json 中 confidence<0.8 的条目，统一添加 needs_verification:true 标签保留待人工审核，不直接删除。用 python3 脚本遍历 entries 列表，判断 e.get('confidence',1)<0.8，设置标签后写回。验证用计数对比。该流程在本会话对 120 条成功应用。",
+      "tags": [
+        "pi-memory",
+        "低置信度",
+        "needs_verification"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "3236784ea815e625"
+    },
+    {
+      "id": "825c60d7-bab9-42cc-940d-500f8a5ecb11",
+      "category": "solutions",
+      "title": "环境标签批量纠错流程",
+      "content": "entries.json 中误标环境的条目批量纠正：用 python3 遍历 entries，对 environments 字段含 wsl2 但实际应属 termux 的条目（192 条）改为 ['termux']；对 wsl2+termux 双标签但内容通用属 wsl2 的条目（35 条）恢复为 ['wsl2']。关键前提：Termux 与 WSL2 完全不同，须按当前实际运行环境判断，不可凭条目内容猜测。",
+      "tags": [
+        "pi-memory",
+        "环境标签",
+        "termux",
+        "wsl2"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-09T12:54:12.901Z",
+      "updatedAt": "2026-09-09T12:54:12.901Z",
+      "accessedAt": "2026-09-09T12:54:12.901Z",
+      "observedAt": "2026-09-09T12:54:12.901Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a084ac-b952-7505-8110-9a8193f28e9a",
+      "deleted": false,
+      "contentHash": "07c3c1c72b01ca2e"
+    },
+    {
+      "id": "cf9464c4-2a04-4f6d-b6fb-9772cacd2571",
+      "category": "procedure",
+      "title": "记忆批量清理核验流程",
+      "content": "批量清理长期记忆时，先按“删除、合并、纠正、保留”分类并记录条目 ID、environment、confidence 和处理理由；每批修改后立即复查，确认目标 ID 与用户要求一致，再提交推送。用户纠正 ID 时以纠正后的 ID 为准并重新核验，禁止把 Termux 与 WSL2 混标。",
+      "tags": [
+        "memory-cleanup",
+        "verification",
+        "termux",
+        "wsl2"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-10T02:32:21.130Z",
+      "updatedAt": "2026-09-10T02:32:21.130Z",
+      "accessedAt": "2026-09-10T02:32:21.130Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "85891d4ab1c0cd8b",
+      "observedAt": "2026-09-10T02:32:21.130Z",
+      "deleted": false
+    },
+    {
+      "id": "7a0b4662-ced5-4c1d-aaf6-8c067be44e51",
+      "category": "procedure",
+      "title": "已移除扩展记忆清理",
+      "content": "清理已移除扩展相关记忆时，先用扩展历史名称、别名和关联功能词搜索全部条目；区分“扩展专用记忆”和“可迁移的通用经验”。删除前者，迁移后者并标注依赖；最后用名称和功能词各复查一次，确认没有残留。",
+      "tags": [
+        "memory-cleanup",
+        "removed-extension"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-10T02:32:21.245Z",
+      "updatedAt": "2026-09-10T02:32:21.246Z",
+      "accessedAt": "2026-09-10T02:32:21.246Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "00b7a5a0447c1a6e",
+      "observedAt": "2026-09-10T02:32:21.245Z",
+      "deleted": false
+    },
+    {
+      "id": "c1a803f8-602f-4544-958a-04a194868f1a",
+      "category": "solutions",
+      "title": "崩溃修复交付闭环",
+      "content": "处理 pi 崩溃或会话挂死时，先确认运行环境并分开处理 Termux 与 WSL2；检查管理员状态、日志、Git 状态和相关会话，再做针对性修复。修复后运行确定性回归，再执行 commit/push；清理会话时保留当前会话，并在重启后复查服务与当前会话状态。",
+      "tags": [
+        "crash",
+        "restart",
+        "termux",
+        "wsl2",
+        "git"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-10T02:32:21.300Z",
+      "updatedAt": "2026-09-10T02:32:21.300Z",
+      "accessedAt": "2026-09-10T02:32:21.300Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "23f2c9f73c9b132d",
+      "observedAt": "2026-09-10T02:32:21.300Z",
+      "deleted": false
+    },
+    {
+      "id": "4db5e596-7da9-4377-9e83-af98a79574ae",
+      "category": "procedure",
+      "title": "重启恢复后验证",
+      "content": "自动或人工重启后不要直接假定服务正常：先确认管理员状态、关键配置完整性和当前会话可操作性，再重放尚未完成的操作，并记录重启原因。",
+      "tags": [
+        "restart",
+        "verification"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-10T02:32:21.354Z",
+      "updatedAt": "2026-09-10T02:32:21.354Z",
+      "accessedAt": "2026-09-10T02:32:21.354Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "51699833da31b837",
+      "observedAt": "2026-09-10T02:32:21.354Z",
+      "deleted": false
+    },
+    {
+      "id": "0b2f1150-2e6f-4adc-8a6c-9d1bcb07059e",
+      "category": "procedure",
+      "title": "golden-fast 判定流程",
+      "content": "运行防退化快速基准时执行 bash ~/.pi/scripts/golden-tasks.sh --fast；只有 F1-F5 全部通过才输出一行“golden-fast 全绿”并结束。任一断言失败时保留失败断言和原始输出，不继续做无关操作。",
+      "tags": [
+        "golden-tasks",
+        "regression",
+        "verification"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-10T02:32:21.410Z",
+      "updatedAt": "2026-09-10T02:32:21.410Z",
+      "accessedAt": "2026-09-10T02:32:21.410Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "1c4d908f958d6209",
+      "observedAt": "2026-09-10T02:32:21.410Z",
+      "deleted": false
+    },
+    {
+      "id": "71e87434-6652-482b-b452-516b47c857fe",
+      "category": "solutions",
+      "title": "Termux 与 WSL2 环境隔离",
+      "content": "Termux 与 WSL2 是不同运行环境：entries.json 的 environment 字段必须按实际宿主环境写入，不能因两者都是 Linux 就批量转换。批量纠错后按 environment 分组统计，并抽查修正条目。",
+      "tags": [
+        "environment",
+        "termux",
+        "wsl2",
+        "entries-json"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-10T02:32:21.486Z",
+      "updatedAt": "2026-09-10T02:32:21.486Z",
+      "accessedAt": "2026-09-10T02:32:21.486Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "605b386fb543d77d",
+      "links": [
+        "da9e1bb4-549d-4d41-90a4-7423168d911b"
+      ]
     }
-  ],
-  "updatedAt": "2026-09-09T12:24:03.814895Z"
+  ]
 }

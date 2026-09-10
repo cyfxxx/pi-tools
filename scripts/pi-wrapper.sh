@@ -865,12 +865,29 @@ resolve_mode() {
     new_args+=("$arg")
   done
 
+  # 没有 -m/--mode 时，fallback 到 modes.json 的 current 字段
+  if [ -z "$mode_name" ]; then
+    local current_mode
+    current_mode=$(node -e "
+      const fs = require('fs');
+      try {
+        const modes = JSON.parse(fs.readFileSync('$HOME/.pi/agent/modes.json', 'utf-8'));
+        console.log(modes.current || modes.default || 'full');
+      } catch(e) { console.log('full'); }
+    " 2>/dev/null)
+    if [ -n "$current_mode" ] && [ "$current_mode" != "full" ]; then
+      mode_name="$current_mode"
+      echo "[pi-wrapper] 无 -m 參數，fallback 到 modes.json current: $mode_name" >&2
+    fi
+  fi
+
+  # 沒有模式參數，直接返回
   if [ -z "$mode_name" ]; then
     eval "set -- \"\$@\""
     return
   fi
 
-  # 读取 modes.json 并翻译为 CLI 标志
+  # 讀取 modes.json
   local modes_file="$HOME/.pi/agent/modes.json"
   if [ ! -f "$modes_file" ]; then
     echo "[pi-wrapper] 模式配置文件不存在: $modes_file" >&2
@@ -891,7 +908,7 @@ resolve_mode() {
 
   local extra_args=()
 
-  # 扩展处理：!ALL 禁用所有扩展
+  # 扩展：!ALL
   local no_ext
   no_ext=$(echo "$mode_config" | node -e "
     const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
@@ -901,7 +918,7 @@ resolve_mode() {
     extra_args+=("--no-extensions")
   fi
 
-  # 技能处理：!ALL 禁用所有技能
+  # 技能：!ALL
   local no_skills
   no_skills=$(echo "$mode_config" | node -e "
     const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
@@ -911,43 +928,42 @@ resolve_mode() {
     extra_args+=("--no-skills")
   fi
 
-  # 系统提示词处理
+  # 系统提示词
   local sys_prompt
   sys_prompt=$(echo "$mode_config" | node -e "
     const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
     console.log(m.systemPrompt||'');
   " 2>/dev/null)
   if [ -n "$sys_prompt" ] && [ "$sys_prompt" != "null" ]; then
-    # 展开 ~ 为 $HOME
     sys_prompt="${sys_prompt/#\~\//$HOME/}"
     extra_args+=("--system-prompt" "$sys_prompt")
   fi
 
-  # 追加系统提示词处理
+  # 追加系统提示词
   local append_prompt
   append_prompt=$(echo "$mode_config" | node -e "
     const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
     console.log(m.appendSystemPrompt||'');
   " 2>/dev/null)
   if [ -n "$append_prompt" ] && [ "$append_prompt" != "null" ]; then
-    # 展开 ~ 为 $HOME
     append_prompt="${append_prompt/#\~\//$HOME/}"
     extra_args+=("--append-system-prompt" "$append_prompt")
   fi
 
-  # 设置环境变量供扩展使用
+  # 设置环境变量
   export PI_AGENT_MODE="$mode_name"
   echo "[pi-wrapper] 启用模式: $mode_name" >&2
 
-  # 合并参数：先插入模式参数，再跟原始参数
+  # 合并参数：模式标志 + 剩余原始参数（去掉 -m/--mode）
   set -- "${extra_args[@]}" "${new_args[@]}"
 }
-
 while true; do
   ensure_tmux
   ensure_cron
-  # 解析 --mode 参数并应用模式配置
+  # 解析 --mode/-m 參數並應用模式配置
   resolve_mode "$@"
+  
+  
   
   # 启动前创建快照（仅在首次启动或崩溃恢复后）
   if [ "${SNAPSHOT_CREATED:-}" != "1" ]; then
