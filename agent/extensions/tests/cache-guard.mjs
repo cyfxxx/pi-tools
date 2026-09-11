@@ -95,7 +95,7 @@ for (const [label, relPath] of INJECTION_SURFACE) {
 console.log(dynHits > 0 ? `  （注入面共 ${dynHits} 处动态源，白名单：usage-diag 记录/内部计时——非注入拼接）` : '  ✓ 注入面无动态时间/随机源')
 
 // ---- 3. 阈值契约（HIGH）----
-const pruneSrc = readFileSync(join(ROOT, 'lib/prune.ts'), 'utf8')
+const pruneSrc = readFileSync(join(ROOT, 'services/token-budget/prune.ts'), 'utf8')
 const num = (s) => Number(String(s).replace(/[,_]/g, ''))
 const protect = num((pruneSrc.match(/PRUNE_PROTECT_TOKENS\s*=\s*(\d[\d_]*)/) || [])[1] || 0)
 const mind = num((pruneSrc.match(/PRUNE_MINIMUM_TOKENS\s*=\s*(\d[\d_]*)/) || [])[1] || 0)

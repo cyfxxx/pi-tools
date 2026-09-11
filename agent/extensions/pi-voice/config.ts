@@ -114,8 +114,8 @@ export const DEFAULTS: VoiceConfig = {
   sherpaScript: join(homedir(), '.pi', 'scripts', 'pi-sherpa.sh'),
 }
 
-// 优先读扩展内 config/，兼容旧路径 (symlink)
-const EXT_CONFIG_PATH = join(homedir(), '.pi', 'agent', 'extensions', 'pi-voice', 'config', 'pi-voice.json')
+// 优先读扩展内 defaults/，兼容旧路径 (symlink)
+const EXT_CONFIG_PATH = join(homedir(), '.pi', 'agent', 'extensions', 'pi-voice', 'defaults', 'pi-voice.json')
 const CONFIG_PATH = existsSync(EXT_CONFIG_PATH) ? EXT_CONFIG_PATH : join(homedir(), '.pi', 'agent', 'pi-voice.json')
 
 function envBool(value: string | undefined, fallback: boolean): boolean {

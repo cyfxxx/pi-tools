@@ -42,9 +42,9 @@
 ### 3. 自管理
 
 命令：`/auto restart`（重启需确认）
-工具：`admin_status` `admin_list_models` `admin_set_model` `admin_list_sessions` `admin_switch_session` `admin_get_config` `admin_set_config` `admin_restart`
+工具：`admin_status` `admin_list_models` `admin_set_model` `admin_list_sessions` `admin_switch_session` `admin_get_config` `admin_set_config` `admin_restart` `verify_report` `verify_config` `verify_test`
 
-休眠组 `autopilot`（默认不注入，`enable_tool("autopilot")` 启用）：`autopilot_status`（运行状态/遥测）`autopilot_stats`（调度统计）`autopilot_failover`（failover 策略查看）`autopilot_policy`（策略只读查询）`schedule_task`（任务创建/管理）。共 13 个工具（8 admin_* + 5 autopilot/schedule）。
+休眠组 `autopilot`（默认不注入，`enable_tool("autopilot")` 启用）：`autopilot_status`（运行状态/遥测）`autopilot_stats`（调度统计）`autopilot_failover`（failover 策略查看）`autopilot_policy`（策略只读查询）`schedule_task`（任务创建/管理）。共 16 个工具（8 admin_* + 5 autopilot/schedule + 3 verify_*）。
 
 状态/统计：`/auto status [--stats]`（--stats 附加遥测统计） `/auto policy` `/auto failover [--exec]` `/auto pause` `/auto resume`（`/auto help` 查看全部用法）
 

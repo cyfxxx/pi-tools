@@ -16,6 +16,7 @@ import { join, basename } from 'node:path'
 const ROOT = join(import.meta.dirname, '..')
 const EXT_DIR = join(ROOT, 'agent', 'extensions')
 const SKIP = new Set(['node_modules', 'tests', 'types', 'lib'])
+const SKIP_FILES = new Set(['tool-groups.ts']) // 组定义文件，非工具注册
 
 let failures = 0
 
@@ -26,7 +27,7 @@ function srcFiles(dir) {
     if (e.isDirectory()) {
       if (e.name === 'node_modules' || e.name === 'tests') continue
       out.push(...srcFiles(p))
-    } else if (/\.(ts|mjs)$/.test(e.name)) {
+    } else if (/\.(ts|mjs)$/.test(e.name) && !SKIP_FILES.has(e.name)) {
       out.push(p)
     }
   }

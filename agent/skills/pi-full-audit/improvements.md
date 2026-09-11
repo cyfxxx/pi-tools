@@ -2,7 +2,9 @@
 
 > 格式：`日期 | 触发任务 | 偏差/发现 | 建议改动`（证据导向：命令/路径/现象）
 
-- （空）
+- 2026-09-11 | 全项目修复闭环 | cache-guard 引用 `lib/prune.ts` 但文件已迁移至 `services/token-budget/prune.ts` | 建议在 SKILL.md 第 1 步或 cache-guard 脚本注释中提醒：注入面文件清单需随重构同步更新
+- 2026-09-11 | 全项目修复闭环 | pi-voice 测试因 Termux 检测在非 Termux 机器上误判失败 | 建议在 SKILL.md 第 2 步补充：有环境检测逻辑的扩展，测试须显式 mock 平台环境变量（如 `PI_VOICE_PLATFORM`）
+- 2026-09-11 | 全项目修复闭环 | doc-lint 误报 tool-groups.ts 组名为工具名 | 建议在 doc-lint.mjs 中排除 `tool-groups.ts` 或区分 tool registration vs group definition 模式
 
 # 已合并（保留最近 3 条批次摘要）
 

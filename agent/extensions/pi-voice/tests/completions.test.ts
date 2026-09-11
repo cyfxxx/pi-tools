@@ -1,5 +1,15 @@
 // /voice 参数补全回归测试：顶层子命令与 device 二级补全必须可见（d30acbc 修复点）
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+
+const savedPlatform = process.env.PI_VOICE_PLATFORM
+
+beforeAll(() => {
+  process.env.PI_VOICE_PLATFORM = 'linux'
+})
+afterAll(() => {
+  if (savedPlatform === undefined) delete process.env.PI_VOICE_PLATFORM
+  else process.env.PI_VOICE_PLATFORM = savedPlatform
+})
 
 async function loadVoiceCommands() {
   const commands: Record<string, { getArgumentCompletions?: (p: string) => unknown[] | null; handler?: unknown }> = {}

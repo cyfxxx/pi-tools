@@ -97,3 +97,11 @@
 
 ### 2026-08-28 收尾（技能加载优化落地）
 - **read 工具默认单次行数有限**：SKILL.md 仅 27KB 却读了 8 次——根因是未显式给 limit 参数（默认 ~65 行/次），非文件超 50KB。读已知大文件首读就带 `limit: 300`；运行检查章节已外置 RUNTIME-CHECK.md（按需加载，主文件 294→229 行）。
+
+### 2026-09-11 全项目修复闭环（pi-context tsc + pi-voice 测试 + cache-guard + doc-lint）
+- **pi-coding-agent API 兼容性问题**：`setCompactionWarmPrefixProvider` 在当前版本不存在，但代码已有 try-catch 降级。修复方式：移除顶层 import，改为动态 `await import()` + `typeof` 检查。教训：新 API 补丁必须考虑版本兼容，动态导入 + 类型守卫是安全模式。
+- **目录与文件同名冲突**：pi-voice 有 `config/` 目录和 `config.ts` 文件，ESM 解析优先目录 → `ERR_MODULE_NOT_FOUND`（目录无 index.ts）。修复：重命名目录为 `defaults/`。教训：扩展内目录名避开与 `.ts` 文件同名；新建扩展前 grep 检查同名冲突。
+- **Termux 检测污染测试环境**：本机有 `/data/data/com.termux` 目录和 `termux-microphone-record` 命令（非 Termux 系统），`detectIsTermux()` 返回 true → 扩展 bail out 不注册命令 → 测试全 fail。修复：测试 `beforeAll` 设置 `PI_VOICE_PLATFORM=linux`。教训：有环境检测逻辑的扩展，测试必须显式 mock 平台环境变量。
+- **cache-guard 阈值检查路径过时**：脚本引用 `lib/prune.ts` 但实际文件已迁移至 `services/token-budget/prune.ts`。修复：更新脚本路径。教训：cache-guard 注入面文件清单需随重构同步更新。
+- **doc-lint 工具名检测包含 group name**：`tool-groups.ts` 中 `name: 'verify'` 是组名非工具名，但被 doc-lint 的 `name: 'xxx'` 正则匹配 → 误报。修复：更新 README 列出工具。教训：doc-lint 的工具名启发式需区分 tool registration 与 tool group definition；或在正则中排除 `tool-groups.ts`。
+- **read 工具默认 limit 导致大文件多次读取**：SKILL.md 231 行读了多次（默认 ~65 行/次）。教训：读已知大文件首读就给 `limit: 300`。

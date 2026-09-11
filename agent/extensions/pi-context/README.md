@@ -28,7 +28,7 @@
 
 **机制**（`tool-groups.ts`）：
 - **核心常驻 29 个**：内置 7 + todo/plan 3 + subagent + ctx 4 + memory 5 + web 3 + tmux 6——schema 每轮完整注入
-- **休眠 4 组 23 个**：`browser`（8）/ `admin`（8）/ `autopilot`（含 schedule_task，5）/ `link`（2）——schema 不注入，system prompt 保留 1 行简介
+- **休眠 5 组 26 个**：`browser`（8）/ `admin`（8）/ `autopilot`（含 schedule_task，5）/ `link`（2）/ `verify`（3）——schema 不注入，system prompt 保留 1 行简介
 - **启用**：模型调用 `enable_tool("<组名>")` 或 `/tools enable <组名>` → `setActiveTools(全部 − 未启用休眠组)` → 本会话内保持；`/tools list` 查看状态
 - **未知工具自动保留**：`computeActiveTools` 用 `getAllTools()` 全集减去休眠组——未来新扩展的工具默认进核心，无需维护名单
 
