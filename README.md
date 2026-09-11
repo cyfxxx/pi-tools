@@ -63,7 +63,7 @@
 │   │   │   └── tests/
 │   │   ├── pi-intervention/      # 干预捕获（abort 快照/corrective prompt 关联/interventions.jsonl）
 │   │   └── pi-context/           # token 优化中枢（已融合 pi-router：路由策略注入 + thinking 剪枝/compaction 去重/输出截断 + 缓存统计）
-│   │       ├── scripts/          # 扩展专用脚本（9 个 patch-*.mjs + tool-stats-sync + usage-stats + task-summarizer）
+│   │       ├── scripts/          # 扩展专用脚本（核心基础设施（rebuild.sh/test-all.sh/daily-health.mjs/pi-wrapper.sh/usage-stats.mjs/task-summarizer.mjs/check-cache-impact.sh），扩展专用脚本需在各自 extension/scripts/）
 │   │       └── tests/
 │   │
 │   ├── agents/                   # Layer 4: Agent 编排层
@@ -248,7 +248,7 @@ python3 -c "import json; json.load(open('agent/settings.json'))" && echo "settin
 python3 -c "import yaml; yaml.safe_load(open('searxng/settings.yml'))" && echo "settings.yml OK"
 
 # 端到端冒烟
-bash scripts/smoke-test.sh
+bash scripts/utils/smoke-test.sh
 
 # 核心依赖
 ls agent/bin/fd agent/bin/rg && echo "binaries OK"
@@ -302,7 +302,7 @@ timeout 90 pi -p "回复 OK" && echo "smoke OK"
 
 **手动救援**：
 ```bash
-bash scripts/pi-rescue.sh    # 手动救援脚本
+bash scripts/test/test-recovery.sh    # 手动救援测试
 ```
 
 ### 自管理
@@ -313,8 +313,8 @@ bash scripts/pi-rescue.sh    # 手动救援脚本
 
 **安装：**
 ```bash
-bash scripts/install-cron.sh           # 安装 crontab（每分钟）
-bash scripts/install-systemd.sh        # 或安装 systemd timer
+bash scripts/install/install-cron.sh           # 安装 crontab（每分钟）
+bash scripts/install/install-systemd.sh        # 或安装 systemd timer
 ```
 
 ## 持久记忆（pi-memory）

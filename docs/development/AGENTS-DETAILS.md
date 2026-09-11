@@ -39,7 +39,7 @@
 12 个独立扩展，每个扩展自包含：
 
 - `pi-context/` — Token 优化中枢（已融合 pi-router）
-  - `scripts/` — 扩展专用脚本（9 个 patch-*.mjs + tool-stats-sync + usage-stats + task-summarizer）
+  - `scripts/` — 核心基础设施（rebuild.sh/test-all.sh/daily-health.mjs/pi-wrapper.sh/usage-stats.mjs/task-summarizer.mjs/check-cache-impact.sh），扩展专用脚本需在各自 extension/scripts/
   - `tests/` — 92 用例
 - `pi-autopilot/` — 自主运行（定时任务 + 自管理 + 失败自愈）
   - `config/` — .pi-autopilot-config.json, notify.json
