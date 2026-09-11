@@ -7,6 +7,7 @@ export default defineConfig({
       '@earendil-works/pi-coding-agent': resolve(__dirname, 'tests/__mocks__/pi-coding-agent.ts'),
       '@earendil-works/pi-tui': resolve(__dirname, 'tests/__mocks__/pi-tui.ts'),
     },
+    extensions: ['.ts', '.js', '.mjs', '.json'],
   },
   test: {
     globals: true,

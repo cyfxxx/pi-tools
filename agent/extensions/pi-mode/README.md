@@ -132,3 +132,7 @@ pi --mode full      # 以完整模式启动（默认）
 - 思考级别可立即生效
 - 启动时非 full 模式会在 TUI 顶部显示模式提示
 - `!ALL` 会禁用所有扩展/技能，请谨慎使用
+
+## 开发经验
+
+开发过程中遇到的问题和解决方案，请参考 [LESSONS-LEARNED.md](./LESSONS-LEARNED.md)。

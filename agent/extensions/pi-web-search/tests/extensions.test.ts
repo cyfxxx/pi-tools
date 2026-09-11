@@ -149,7 +149,7 @@ describe('pi-context extension', () => {
 
 // ─── pi-autopilot (融合 pi-admin + pi-scheduler) ──────────────
 describe('pi-autopilot extension', () => {
-  it('registers 13 tools: 8 admin_* + 4 autopilot_* + schedule_task', async () => {
+  it('registers 16 tools: 8 admin_* + 4 autopilot_* + schedule_task + 3 verify_*', async () => {
     const pi = mockPi()
     const main = (await import('../../pi-autopilot/index')).default
     await main(pi as any)
@@ -160,6 +160,7 @@ describe('pi-autopilot extension', () => {
       'admin_status', 'admin_switch_session',
       'autopilot_failover', 'autopilot_policy', 'autopilot_stats', 'autopilot_status',
       'schedule_task',
+      'verify_config', 'verify_report', 'verify_test',
     ].sort())
   })
 

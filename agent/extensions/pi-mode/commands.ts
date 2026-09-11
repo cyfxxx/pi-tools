@@ -34,17 +34,25 @@ const MODE_HELP = `用法:
 export function registerCommands(pi: ExtensionAPI): void {
   pi.registerCommand('mode', {
     description: '查看/切换当前模式（/mode help 查看用法）',
-    getArgumentCompletions: () => {
-      const names = listModeNames()
-      return names.map((name) => ({
-        value: name,
-        label: name,
-        description: getModeConfig(name)?.description || '',
-      }))
+    getArgumentCompletions: (prefix) => {
+      const first = (prefix?.trim().split(/\s+/)[0] ?? "").toLowerCase()
+      const items = [
+        { value: 'list', label: 'list', description: '列出所有可用模式' },
+        { value: 'help', label: 'help', description: '显示帮助信息' },
+        ...listModeNames().map((name) => ({
+          value: name,
+          label: name,
+          description: (getModeConfig(name) || {}).description || '',
+        })),
+      ]
+      if (!prefix?.includes(' ')) {
+        return items.filter((i) => i.value.startsWith(first))
+      }
+      return items
     },
     handler: async (args: string, ctx) => {
       const parts = args.trim().split(/\s+/)
-      const subcmd = parts[0]?.toLowerCase() || ''
+      const subcmd = (parts[0] || '').toLowerCase()
 
       // help
       if (subcmd === 'help' || subcmd === '-h' || subcmd === '--help') {
@@ -77,7 +85,7 @@ export function registerCommands(pi: ExtensionAPI): void {
         const defaultMode = getDefaultMode()
         ctx.ui.notify(
           `当前模式: ${currentName}\n` +
-          `描述: ${config?.description ?? '未知'}\n` +
+          `描述: ${(config || {}).description || '未知'}\n` +
           `默认模式: ${defaultMode}\n\n` +
           `使用 /mode <name> 切换模式，/mode list 查看所有模式，/mode help 查看帮助`,
           'info',

@@ -30,6 +30,6 @@
     "pi-voice/**/*.ts",
     "pi-link/**/*.ts",
     "pi-intervention/**/*.ts",
-    "pi-mode/**/*.ts",
+    "pi-mode/**/*.ts"
   ]
 }

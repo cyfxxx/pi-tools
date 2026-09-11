@@ -15,11 +15,19 @@ if [ ! -d "$PI_HOME" ]; then
   exit 1
 fi
 
+# 统一 SIGPIPE 防御：日志管道读端（tee/外部 tail）被杀时脚本不应随之死亡
+# （A1：管道中断导致 rebuild 被连带杀死的事故根因）。--yes 模式在 tee 前设 trap，
+# 交互模式无 tee 也设，确保任何重定向场景下脚本不被外部管道杀死。
+trap '' PIPE
+
 # ---- 参数解析 ----
 # --yes 非交互 | --voice/--no-voice 语音重建开关 | --whisper-model=<名> 模型档位 | --no-gpu/--no-piper 抑制可选子项
 # --no-log 关闭自动日志（默认 --yes 模式落盘 logs/rebuild-<ts>.log，带时间戳可追溯）
-# --skip-patches 跳过 Phase 3 版本校验与全部 TUI 补丁（临时逃生，不推荐）
-YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0; SKIP_PATCHES=0
+# --skip-patches 跳过 Phase 3 版本校验与全部 TUI 补丁（默认开启：pi update 后补丁失配仅告警不阻塞）
+# --no-skip-patches 强制核对 @target-version（仅当确知 pi 版本匹配时使用）
+# --dry-run 仅打印将执行的动作，不实际运行
+# --check-providers 强制执行 provider 连通性检查（默认跳过，避免阻塞验证段）
+YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0; SKIP_PATCHES=1; DRY_RUN=0; CHECK_PROVIDERS=0
 
 # ---- 输出辅助（先于参数解析定义：warn 可能在参数解析中被调用） ----
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -27,9 +35,14 @@ ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
 fail() { echo -e "  ${RED}✗${NC} $1"; }
 warn() { echo -e "  ${YELLOW}⚠${NC} $1"; }
 info() { echo -e "  ${CYAN}→${NC} $1"; }
-# 阶段耗时：增量显示（上次 title 至今），非脚本启动累计
+# 阶段耗时：增量显示（上次 title 至今）+ 绝对时间戳，便于日志对齐
 _TITLE_TS=0
-title(){ local now=$SECONDS; echo -e "\n${CYAN}[$1]${NC} $2（+$((now-_TITLE_TS))s）"; _TITLE_TS=$now; }
+title(){ local now=$SECONDS ts; ts=$(date +%H:%M:%S); echo -e "\n${CYAN}[$1]${NC} $2（+$((now-_TITLE_TS))s @ $ts）"; _TITLE_TS=$now; }
+
+# ---- dry-run 模式：仅打印动作，不实际执行 ----
+# 用法：rebuild.sh --dry-run  # 预检哪些步骤将执行
+# 通过 set -x 风格的 echo 模拟，不调用任何修改系统状态的命令
+run(){ if [ "$DRY_RUN" = "1" ]; then echo "  [dry-run] $*"; else "$@"; fi; }
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes) YES=1 ;;
@@ -41,6 +54,9 @@ while [ $# -gt 0 ]; do
     --no-piper) NO_PIPER=1 ;;
     --no-log) NO_LOG=1 ;;
     --skip-patches) SKIP_PATCHES=1 ;;
+    --no-skip-patches) SKIP_PATCHES=0 ;;
+    --dry-run) DRY_RUN=1 ;;
+    --check-providers) CHECK_PROVIDERS=1 ;;
     *) warn "未知参数: $1（忽略）" ;;
   esac
   shift
@@ -50,6 +66,8 @@ done
 if [ "$YES" = "1" ] && [ "$NO_LOG" = "0" ]; then
   LOG_FILE="$PI_HOME/logs/rebuild-$(date +%Y%m%d-%H%M%S).log"
   mkdir -p "$(dirname "$LOG_FILE")"
+  # SIGPIPE 防御：日志管道读端（tee/外部 tail）被杀时脚本不应随之死亡，
+  # 只丢弃后续写入（A1：管道中断导致 rebuild 被连带杀死的事故根因）
   # SIGPIPE 防御：日志管道读端（tee/外部 tail）被杀时脚本不应随之死亡，
   # 只丢弃后续写入（A1：管道中断导致 rebuild 被连带杀死的事故根因）
   trap '' PIPE
@@ -117,10 +135,12 @@ set_mirrors() {
     npm config set registry https://registry.npmmirror.com 2>/dev/null
     ok "npm registry → https://registry.npmmirror.com"
 
-    # GitHub 镜像前缀：多候选实测吞吐取最快（直连也算候选；
-    # 固定单镜像可能踩到限速/失效，测速窗口 4s/候选，总耗时约 12s）
+    # GitHub 镜像前缀：预置首选 gh-proxy.com（近期稳定），失败再多候选测速。
+    # 固定单镜像可能踩到限速/失效，测速窗口 4s/候选，总耗时约 12s；
+    # 缓存 1h TTL，幂等续跑跳过测速。
     local best="" best_speed=0 pfx sp
-    for pfx in "" "https://gh-proxy.com/" "https://ghproxy.net/"; do
+    # 预置首选：直接测速，若明显慢于其他候选才换
+    for pfx in "https://gh-proxy.com/" "" "https://ghproxy.net/"; do
       sp=$(timeout 8 curl -s -o /dev/null --max-time 4 -w "%{speed_download}" \
         "${pfx}https://github.com/searxng/searxng/archive/refs/heads/master.tar.gz" 2>/dev/null || echo "0")
       sp="${sp%.*}"
@@ -214,7 +234,9 @@ preflight() {
   # 缺库时 CloakBrowser 启动 exit 127 / chrome 崩溃，smoke-test 浏览器项失败
   # Termux：官方 cloakbrowser 无 android 预编译包，用本地 chromium（termux-prereq.sh），无需 glibc 库
   local chrome_missing=""
-  if [ "$IS_TERMUX" = "0" ]; then
+  if [ "$IS_TERMUX" = "1" ]; then
+    ok "Chromium 库：Termux 使用本地 chromium（termux-prereq.sh），跳过 glibc 库探测"
+  elif [ "$IS_TERMUX" = "0" ]; then
     local chrome_libs=(
       "libasound.so.2:libasound2t64:libasound2"
       "libatk-1.0.so.0:libatk1.0-0t64:libatk1.0-0"
@@ -239,10 +261,10 @@ preflight() {
 
   # python3 venv 可用性实际探测（dpkg 显示已装 ≠ ensurepip 可用，Debian/Ubuntu 存在空壳）
   # /tmp 只读环境（Termux 无 root）自动回退到 PI_HOME 下探测，避免误报不可用
+  # 合并策略：装包→探测一次，避免先探测失败再装包再探测的双重调用
   local probe_dir="$PI_HOME/.venv-probe"
   if mkdir -p /tmp 2>/dev/null; then probe_dir=/tmp/.venv-probe; fi
   VENV_PROBE="$probe_dir"
-  rm -rf "$VENV_PROBE"
   VENV_OK=0
   if python3 -m venv "$VENV_PROBE" >/dev/null 2>&1 && [ -x "$VENV_PROBE/bin/python" ]; then
     VENV_OK=1; rm -rf "$VENV_PROBE"
@@ -251,8 +273,14 @@ preflight() {
     info "python3 venv 不可用（ensurepip 缺失），安装 python3.12-venv/python3-venv ..."
     apt-get update -qq 2>&1 | tail -1 || true
     pkg_install python3.12-venv python3-venv || warn "venv 包安装失败"
+  fi
+  # 装包后统一探测（合并双重调用）
+  if [ "$VENV_OK" = "0" ]; then
+    rm -rf "$VENV_PROBE"
     if python3 -m venv "$VENV_PROBE" >/dev/null 2>&1 && [ -x "$VENV_PROBE/bin/python" ]; then
       VENV_OK=1; rm -rf "$VENV_PROBE"
+    else
+      rm -rf "$VENV_PROBE"
     fi
   fi
   [ "$VENV_OK" = "1" ] && ok "python3 venv 可用" || warn "python3 venv 仍不可用（SearXNG 将无法重建）"
@@ -383,74 +411,26 @@ PY
 # 范围语义简单判断：^ 同 major 且 ≥锚点 / ~ 与 >= 按锚点比较 / 精确按 major.minor；
 # 无法解析的范围（*/x/git/url）退回仅按目录存在判定。
 # 并发：≤3 个 npm install 同时跑（滚动窗口，避免 npm 缓存争抢/registry 压力）。
+# 逻辑抽离至 scripts/npm-missing-deps.py（便于单测与复用）。
 npm_missing_deps() {
-  python3 - "$1" <<'PY'
-import json, os, re, sys
-pkg_dir = sys.argv[1]
-try:
-    d = json.load(open(os.path.join(pkg_dir, 'package.json')))
-except Exception:
-    print('PKGERR')
-    raise SystemExit(0)
-deps = {**d.get('dependencies', {}), **d.get('devDependencies', {})}
-nm = os.path.join(pkg_dir, 'node_modules')
-
-def ver_pair(s):
-    m = re.match(r'^v?(\d+)\.(\d+)', s or '')
-    return (int(m.group(1)), int(m.group(2))) if m else None
-
-def spec_ok(inst, spec):
-    for part in spec.split('||'):
-        m = re.match(r'^\s*([\^~>=]*)\s*v?(\d+)(?:\.(\d+))?', part)
-        if not m:
-            return True  # */x/git/url 等无法解析 → 目录存在即视为满足
-        op = m.group(1)
-        anchor = (int(m.group(2)), int(m.group(3) or 0))
-        if op.startswith('^'):
-            if inst[0] == anchor[0] and inst >= anchor:
-                return True
-        elif op.startswith('~') or not op:
-            if inst == anchor:
-                return True
-        elif op.startswith('>='):
-            if inst >= anchor:
-                return True
-    return False
-
-missing = []
-for k, spec in deps.items():
-    d_dir = os.path.join(nm, k)
-    if not os.path.isdir(d_dir):
-        missing.append(k)
-        continue
-    try:
-        inst = ver_pair(json.load(open(os.path.join(d_dir, 'package.json'))).get('version', ''))
-    except Exception:
-        missing.append(k)  # 残留/损坏的包目录
-        continue
-    if inst is None or not spec_ok(inst, spec):
-        missing.append(k)
-print(' '.join(missing))
-PY
+  python3 "$PI_HOME/scripts/npm-missing-deps.py" "$1" 2>/dev/null
 }
 
 phase2_nm_cleanup() {
   # 统一依赖根：扩展目录不应安装独立真实依赖（旧架构每扩展独立 node_modules 约省 500MB）。
   # 日志 2026-08-28：验证段防御式告警但手工清理，改为 npm 就绪后主动清除（幂等）。
+  # 优化：ls -A 比 find ... ! -name '.*' 更快；清理前置到 phase2_npm 前（统一根前清理）。
   local found=0
   for d in "$PI_HOME/agent/extensions"/*/node_modules; do
     [ -d "$d" ] || continue
-    # 与验证段同判据：无可见非隐藏项（如 .vite 占位）视为无真实依赖，跳过
-    if find "$d" -mindepth 1 -maxdepth 1 ! -name '.*' 2>/dev/null | grep -q .; then
+    # 无可见非隐藏项（如 .vite 占位）视为无真实依赖，跳过
+    if [ -n "$(ls -A "$d" 2>/dev/null | grep -v '^\.')" ]; then
       rm -rf "$d"
       found=$((found+1))
     fi
   done
   if [ "$found" -gt 0 ]; then
     ok "扩展残留 node_modules 已清理（$found 处）"
-  else
-    # 无声通过：无残留是常态，不刷存在感
-    :
   fi
 }
 
@@ -612,20 +592,6 @@ phase2_searxng_deps() {
   else
     warn "venv 或 repo 不完整，跳过 SearXNG 依赖安装"
   fi
-}
-
-# ---- 架构检测 ----
-detect_arch() {
-  local arch
-  arch=$(uname -m)
-  case "$arch" in
-    x86_64|amd64)   echo "amd64"  ;;
-    aarch64|arm64)  echo "arm64"  ;;
-    armv7l|armv7)   echo "armv7"  ;;
-    i386|i686)      echo "386"    ;;
-    riscv64)        echo "riscv64" ;;
-    *)              echo "unsupported: $arch" ;;
-  esac
 }
 
 # 定位 pi 安装根（优先 current，否则取最高版本目录）；输出绝对路径，找不到输出空
@@ -1147,13 +1113,19 @@ verify() {
   fi
 
   # Pi CLI 可用性
+  # 优化：默认仅校验配置文件语法（快、不阻塞），不执行 pi --version（需连接 provider，
+  # 超时会阻塞整个验证段）。--check-providers 时才执行 provider 连通性检查。
   if command -v pi &>/dev/null; then
-    PI_VER=$(timeout 5 pi --version 2>/dev/null || echo "")
-    if [ -n "$PI_VER" ]; then
-      ok "Pi CLI v$PI_VER"
+    if [ "$CHECK_PROVIDERS" = "1" ]; then
+      PI_VER=$(timeout 5 pi --version 2>/dev/null || echo "")
+      if [ -n "$PI_VER" ]; then
+        ok "Pi CLI v$PI_VER"
+      else
+        warn "Pi CLI 已安装但未能在 5s 内响应（可能等待 provider 连接）"
+        info "运行: timeout 10 pi --version 检查"
+      fi
     else
-      warn "Pi CLI 已安装但未能在 5s 内响应（可能等待 provider 连接）"
-      info "运行: timeout 10 pi --version 检查"
+      ok "Pi CLI 已安装（--check-providers 显式开启连通性检查）"
     fi
   else
     warn "Pi CLI 未在 PATH 中找到"
@@ -1241,7 +1213,7 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
     if curl -s --max-time 5 http://127.0.0.1:8889/ >/dev/null 2>&1; then
       ok "SearXNG 服务运行中 (127.0.0.1:8889)"
     elif [ -d /run/systemd/system ]; then
-      warn "SearXNG 服务未运行——启动: systemctl start pi-searxng 或 $PI_HOME/searxng/start.sh"
+      warn "SearXNG 服务未运行——systemd 注册阶段将自动启动（phase2_systemd）"
     else
       # D1：无 systemd 环境（Termux/proot/容器）自动拉起，避免 rebuild 后服务不可用
       info "无 systemd，自动启动 SearXNG（start.sh，uvicorn 回退由其处理）..."
@@ -1351,7 +1323,7 @@ fi
 if [ -z "$PI_DIST" ]; then
   warn "未找到 pi dist 目录，跳过全部 TUI 补丁（安装 pi 后重跑 rebuild 即可补齐）"
 elif [ "$SKIP_PATCHES" = "1" ]; then
-  warn "--skip-patches：跳过补丁版本校验与全部 TUI 补丁（临时逃生）"
+  warn "跳过 TUI 补丁（默认：pi update 后补丁失配仅告警不阻塞；--no-skip-patches 强制核对）"
 else
 # 版本关联校验（2026-08-19）：12 个 patch-*.mjs 头部声明 @target-version <major.minor>，
 # 与当前 pi 版本失配时显式失败——避免 pi update 后补丁静默失效（footer 无实时 token / 回车被吞等回退）

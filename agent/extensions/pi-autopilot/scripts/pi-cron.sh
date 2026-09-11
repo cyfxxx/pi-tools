@@ -522,7 +522,7 @@ print(d['prompt'], end='')
     local out_file="/tmp/pi-cron-out.$$.$RANDOM"
     local EXEC_START
     EXEC_START=$(date +%s%N)
-    PI_UNATTENDED=1 timeout "$task_timeout" "$PI_BIN" -p "$task_prompt" > "$out_file" 2>&1
+    PI_UNATTENDED=1 timeout "$task_timeout" "$PI_BIN" --no-session -p "$task_prompt" > "$out_file" 2>&1
     EXIT_CODE=$?
     local EXEC_MS
     EXEC_MS=$(( ($(date +%s%N) - EXEC_START) / 1000000 ))
@@ -545,6 +545,29 @@ print(d['prompt'], end='')
     update_task "$task_id" "$RESULT" "$update_input" "$NEXT_RUN" "$EXEC_MS"
     rm -f "$update_input"
     write_log "$task_name" "$RESULT" "$OUTPUT"
+
+    # 重试耗尽通知（2026-09-10）：失败且重试额度用尽时写入待通知文件，
+    # 下次 pi 在线时 wrapper 会注入主会话通知用户。
+    if [ "$RESULT" = "failed" ]; then
+      python3 -c "
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        data = json.load(f)
+    for t in data.get('tasks', []):
+        if t.get('id') == sys.argv[2]:
+            retries = t.get('retries', 0)
+            fail_count = t.get('failCount', 0)
+            if retries > 0 and fail_count >= retries:
+                notif_file = sys.argv[3]
+                entry = {'taskName': t.get('name',''), 'failCount': fail_count, 'retries': retries, 'output': sys.argv[4][:200]}
+                with open(notif_file, 'a') as f:
+                    f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+            break
+except Exception:
+    pass
+" "$TASKS_FILE" "$task_id" "$PI_HOME/logs/scheduler/pending-notifications.jsonl" "$OUTPUT"
+    fi
 
     # 通知
     if [ "$task_notify" = "True" ] || [ "$task_notify" = "true" ]; then

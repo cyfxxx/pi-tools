@@ -93,6 +93,38 @@ export class SessionScheduler {
     // unref（2026-08-28）：定时器不应阻止进程退出——提取器等 pi -p 一次性进程
     // 若加载本扩展且锁获取成功，无 unref 的 interval 会挂住 event loop 致永不退出
     this.timer.unref()
+    // 消费离线模式下的待通知（pi-cron.sh 写入的失败通知）
+    this.consumePendingNotifications().catch(() => {})
+  }
+
+  /**
+   * 消费离线 cron 写入的待通知文件（2026-09-10）：
+   * pi-cron.sh 在任务失败且重试耗尽时追加 JSONL 条目到 pending-notifications.jsonl，
+   * pi 启动后由 scheduler 一次性读取并注入主会话，然后清空文件。
+   */
+  private async consumePendingNotifications(): Promise<void> {
+    try {
+      const notifFile = join(homedir(), '.pi', 'logs', 'scheduler', 'pending-notifications.jsonl')
+      if (!existsSync(notifFile)) return
+      const content = readFileSync(notifFile, 'utf8').trim()
+      if (!content) return
+      const lines = content.split('\n').filter(Boolean)
+      if (lines.length === 0) return
+      const messages = lines.map(line => {
+        try {
+          const entry = JSON.parse(line)
+          return `⚠️ [离线] 任务「${entry.taskName}」连续失败 ${entry.failCount} 次（retries=${entry.retries}），已耗尽重试额度`
+        } catch { return null }
+      }).filter(Boolean)
+      if (messages.length > 0) {
+        await this.pi.sendUserMessage?.(
+          `[Scheduler] 以下任务在离线期间失败:\n${messages.join('\n')}`,
+          { deliverAs: 'followUp' }
+        )
+      }
+      // 清空文件
+      writeFileSync(notifFile, '')
+    } catch { /* 消费失败静默 */ }
   }
 
   stop(): void {
@@ -280,9 +312,21 @@ export class SessionScheduler {
 
       switch (finalAction.type) {
         case 'retry':
-        case 'fail':
+        case 'fail': {
           await updateTaskAfterRun(task.id, 'failed', finalAction.note, Date.now() - startedAt)
+          // 重试耗尽通知（2026-09-10）：连续失败达到 retries 阈值后通知主会话，
+          // 让用户感知任务异常而非静默失败。仅在 retries>0 且确实耗尽时触发。
+          try {
+            const freshTask = (await readTasks()).tasks.find(x => x.id === task.id)
+            if (freshTask && freshTask.retries > 0 && freshTask.failCount >= freshTask.retries) {
+              await this.pi.sendUserMessage?.(
+                `[Scheduler] ⚠️ 任务「${task.name}」连续失败 ${freshTask.failCount} 次（retries=${freshTask.retries}），已耗尽重试额度。最近错误: ${finalAction.note}`,
+                { deliverAs: 'followUp' }
+              )
+            }
+          } catch { /* 通知失败静默 */ }
           break
+        }
         case 'verify_and_retry': {
           // Best-of-N 验证重试：生成 N 个候选，用 LLM 评分选最优
           await updateTaskAfterRun(task.id, 'failed', `验证前: ${finalAction.note}`, Date.now() - startedAt)
@@ -365,6 +409,13 @@ export class SessionScheduler {
           await updateTask(task.id, { enabled: false })
           await updateTaskAfterRun(task.id, 'failed', finalAction.note, Date.now() - startedAt)
           await sendWebhook(task, 'suspended', finalAction.note)
+          // 任务暂停通知主会话：连续失败达 suspendAfter 阈值，任务被自动禁用
+          try {
+            await this.pi.sendUserMessage?.(
+              `[Scheduler] 🛑 任务「${task.name}」因连续失败 ${finalAction.note}，已被自动暂停。使用 /schedule enable ${task.name} 可恢复。`,
+              { deliverAs: 'followUp' }
+            )
+          } catch { /* 通知失败静默 */ }
           break
       }
     } finally {
@@ -511,7 +562,7 @@ export class SessionScheduler {
         }
       }, timeout)
       const { cmd, args } = resolvePiSpawn()
-      const proc = spawn(cmd, [...args, '-p', renderPrompt(task.prompt)], {
+      const proc = spawn(cmd, [...args, '--no-session', '-p', renderPrompt(task.prompt)], {
         stdio: ['ignore', 'pipe', 'pipe'],
         signal: controller.signal,
         cwd: process.cwd(),

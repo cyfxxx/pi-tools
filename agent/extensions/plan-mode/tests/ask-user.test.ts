@@ -136,6 +136,7 @@ describe('plan-mode: ask_user 工具', () => {
     expect(mockCtx.ui.select).toHaveBeenCalledWith('操作选择: 下一步要执行什么操作？', [
       '继续执行',
       '暂停',
+      '其他（请说明）',
     ])
     expect(result.content[0].text).toBe('继续执行')
   })
@@ -144,9 +145,6 @@ describe('plan-mode: ask_user 工具', () => {
     // 模拟用户选择后修改，然后重新选择并确认
     mockCtx.ui.select
       .mockResolvedValueOnce('暂停')       // 第一次选择
-      .mockResolvedValueOnce('修改')       // 选择修改
-      .mockResolvedValueOnce('继续执行')   // 重新选择
-      .mockResolvedValueOnce('确认')       // 确认选择
 
     const { default: planModeExtension } = await import('../index.ts')
     planModeExtension(mockPi)
@@ -165,9 +163,9 @@ describe('plan-mode: ask_user 工具', () => {
       mockCtx,
     )
 
-    // 应该调用了 4 次 select：选择 -> 修改 -> 重新选择 -> 确认
-    expect(mockCtx.ui.select).toHaveBeenCalledTimes(4)
-    expect(result.content[0].text).toBe('继续执行')
+    // 新实现：选择后直接返回，无需确认
+    expect(mockCtx.ui.select).toHaveBeenCalledTimes(1)
+    expect(result.content[0].text).toBe('暂停')
   })
 
   it('没有 header 时应直接使用 question 作为标题', async () => {
@@ -193,7 +191,7 @@ describe('plan-mode: ask_user 工具', () => {
       mockCtx,
     )
 
-    expect(mockCtx.ui.select).toHaveBeenCalledWith('请选择一个选项', ['选项A', '选项B'])
+    expect(mockCtx.ui.select).toHaveBeenCalledWith('请选择一个选项', ['选项A', '选项B', '其他（请说明）'])
     expect(result.content[0].text).toBe('选项A')
   })
 
@@ -222,10 +220,8 @@ describe('plan-mode: ask_user 工具', () => {
   })
 
   it('用户取消确认应返回取消消息', async () => {
-    // 模拟用户选择后取消确认
-    mockCtx.ui.select
-      .mockResolvedValueOnce('选项A')  // 选择
-      .mockResolvedValueOnce(undefined) // 取消确认
+    // 模拟用户取消选择
+    mockCtx.ui.select.mockResolvedValueOnce(undefined)
 
     const { default: planModeExtension } = await import('../index.ts')
     planModeExtension(mockPi)
@@ -270,8 +266,8 @@ describe('plan-mode: ask_user 工具', () => {
       mockCtx,
     )
 
-    // description 不应传递给 ctx.ui.select
-    expect(mockCtx.ui.select).toHaveBeenCalledWith('请选择', ['选项A', '选项B'])
+    // description 不应传递给 ctx.ui.select，但会添加"其他（请说明）"选项
+    expect(mockCtx.ui.select).toHaveBeenCalledWith('请选择', ['选项A', '选项B', '其他（请说明）'])
     expect(result.content[0].text).toBe('选项A')
   })
 

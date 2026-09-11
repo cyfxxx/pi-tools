@@ -95,6 +95,8 @@ bash scripts/test-all.sh --fast   # 快速模式
 | 执行跟踪 | `docs/design/SELF-OPTIMIZING-ROADMAP.md` |
 | 模块化方案 | `docs/maintenance/MODULARIZATION-PLAN.md` |
 | Pi 官方文档 | https://pi.dev/docs/latest |
+| 扩展开发经验 | `extensions/pi-mode/LESSONS-LEARNED.md` |
+| 自动修复系统 | `scripts/README-recovery.md` |
 
 ## 已知噪音
 
