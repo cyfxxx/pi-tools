@@ -5,7 +5,7 @@
 # 其他设备首个 pull 前执行本脚本，避免 "Your local changes ... would be overwritten"
 # delete/modify 冲突：解除本地跟踪（工作区 jsonl 保留，历史数据不丢），随后 git pull 干净合并。
 #
-# 用法: bash scripts/migrate-tool-events.sh   （在 ~/.pi 仓库根执行；幂等）
+# 用法: bash scripts/maintenance/migrate-tool-events.sh   （在 ~/.pi 仓库根执行；幂等）
 
 set -u
 cd "$(dirname "$0")/.." || exit 1

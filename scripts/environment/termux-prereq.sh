@@ -2,7 +2,7 @@
 # ============================================================
 # termux-prereq.sh — Termux/Android 平台重建前置依赖
 # 仅 Termux 环境需要；其他平台（proot/WSL/原生 Linux）运行会直接退出，无副作用。
-# 用法: bash scripts/termux-prereq.sh
+# 用法: bash scripts/environment/termux-prereq.sh
 # ============================================================
 set -uo pipefail
 

@@ -29,11 +29,11 @@
  *   退化数据（input+cacheRead=0 的轮）不参与判定。
  *
  * 用法：
- *   node scripts/lesson-miner.mjs                     # 输出异常会话时间线（默认最多 25 个，按严重度排序）
- *   node scripts/lesson-miner.mjs --limit 0           # 展开全部异常会话
- *   node scripts/lesson-miner.mjs --limit 10          # 只看最严重的 10 个
- *   node scripts/lesson-miner.mjs --out report.txt    # 报告同时写入文件（唯一允许的副作用）
- *   PI_AGENT_DIR=/path node scripts/lesson-miner.mjs  # 覆盖数据基线目录（默认 ~/.pi/agent）
+ *   node scripts/maintenance/lesson-miner.mjs                     # 输出异常会话时间线（默认最多 25 个，按严重度排序）
+ *   node scripts/maintenance/lesson-miner.mjs --limit 0           # 展开全部异常会话
+ *   node scripts/maintenance/lesson-miner.mjs --limit 10          # 只看最严重的 10 个
+ *   node scripts/maintenance/lesson-miner.mjs --out report.txt    # 报告同时写入文件（唯一允许的副作用）
+ *   PI_AGENT_DIR=/path node scripts/maintenance/lesson-miner.mjs  # 覆盖数据基线目录（默认 ~/.pi/agent）
  *
  * 幂等：默认纯只读，重复运行无副作用（--out 除外）。
  */
@@ -53,7 +53,7 @@ const ANOMALY_WASTE = 300_000     // 浪费 token 阈值（A+B，超过视为异
 
 const args = process.argv.slice(2)
 function usage() {
-  console.log(`用法: node scripts/lesson-miner.mjs [--limit N] [--out PATH]
+  console.log(`用法: node scripts/maintenance/lesson-miner.mjs [--limit N] [--out PATH]
   --limit N   展开异常会话数量上限（默认 25；0 = 全部展开）
   --out PATH  报告同时写入 PATH（唯一可选副作用；默认仅 stdout）
   环境变量 PI_AGENT_DIR 覆盖数据基线目录（默认 ~/.pi/agent）

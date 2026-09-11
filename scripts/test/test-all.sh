@@ -150,7 +150,7 @@ report $? "cache-guard (注入面指纹/阈值契约/动态源)"
 
 
 cyn "== 文档一致性守门（doc-lint） =="
-"$NODE" "$PI_HOME/scripts/doc-lint.mjs" >/dev/null 2>&1
+"$NODE" "$PI_HOME/scripts/maintenance/doc-lint.mjs" >/dev/null 2>&1
 report $? "doc-lint (README 工具/slash 命令清单一致)"
 
 cyn "== 扩展自动发现完整性（pi 0.83+ 从目录自动加载，settings.json 覆盖规则动态比对） =="

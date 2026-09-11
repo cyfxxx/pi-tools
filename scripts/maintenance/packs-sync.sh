@@ -2,8 +2,8 @@
 # 第三方技能包同步：从 GitHub 原项目拉取 packs/<名>（本仓库不托管第三方内容）
 # 供其他设备在 clone 本仓库后重建环境时复用；packs/ 不入 git。
 # 用法:
-#   bash scripts/packs-sync.sh            # 同步清单内全部包
-#   bash scripts/packs-sync.sh reverse-skill  # 仅同步指定包
+#   bash scripts/maintenance/packs-sync.sh            # 同步清单内全部包
+#   bash scripts/maintenance/packs-sync.sh reverse-skill  # 仅同步指定包
 set -euo pipefail
 
 PACKS_DIR="$(cd "$(dirname "$0")/.." && pwd)/packs"

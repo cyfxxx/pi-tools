@@ -411,9 +411,9 @@ PY
 # 范围语义简单判断：^ 同 major 且 ≥锚点 / ~ 与 >= 按锚点比较 / 精确按 major.minor；
 # 无法解析的范围（*/x/git/url）退回仅按目录存在判定。
 # 并发：≤3 个 npm install 同时跑（滚动窗口，避免 npm 缓存争抢/registry 压力）。
-# 逻辑抽离至 scripts/npm-missing-deps.py（便于单测与复用）。
+# 逻辑抽离至 scripts/maintenance/npm-missing-deps.py（便于单测与复用）。
 npm_missing_deps() {
-  python3 "$PI_HOME/scripts/npm-missing-deps.py" "$1" 2>/dev/null
+  python3 "$PI_HOME/scripts/maintenance/npm-missing-deps.py" "$1" 2>/dev/null
 }
 
 phase2_nm_cleanup() {

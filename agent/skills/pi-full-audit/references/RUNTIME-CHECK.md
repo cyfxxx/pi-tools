@@ -34,7 +34,7 @@
    - `todo update`（plan-mode）→ 观察状态条/overlay 即时刷新 + 该轮 input
    - bash 大输出轮 in≈50K 属 DeepSeek 侧缓存现象（消息序列无断裂，请求级 hash 验证法确认），不算注入回归
    - 验证模板（2026-08-14 实测）：记忆变化轮 in=40-92 token 命中 100%；连续相邻请求逐消息 hash 全同
-   - 基准工具：`bash agent/extensions/pi-context/scripts/pi-bench.sh usage`（聚合报告）`timing`（关键计时）`compare <基准>`（退化检测）
+   - 基准工具：`bash scripts/maintenance/pi-bench.sh usage`（聚合报告）`timing`（关键计时）`compare <基准>`（退化检测）
 
 ### 判定基准（2026-08-14 实测沉淀）
 

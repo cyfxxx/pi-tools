@@ -168,7 +168,7 @@ tail -5 ~/.pi/logs/recovery-audit.jsonl | python3 -m json.tool
 ### 查看崩溃分析
 ```bash
 # 分析指定日志文件
-bash ~/.pi/scripts/pi-crash-analyzer.sh /tmp/pi-crash-xxx.log
+bash ~/.pi/scripts/crash-recovery/pi-crash-analyzer.sh /tmp/pi-crash-xxx.log
 
 # 查看恢复审计日志
 tail -10 ~/.pi/logs/recovery-audit.jsonl | python3 -m json.tool
@@ -176,7 +176,7 @@ tail -10 ~/.pi/logs/recovery-audit.jsonl | python3 -m json.tool
 
 ### 手动救援
 ```bash
-bash ~/.pi/scripts/pi-rescue.sh
+bash ~/.pi/scripts/crash-recovery/pi-rescue.sh
 ```
 
 ### 手动构建 L4 缓存
@@ -261,7 +261,7 @@ bash /tmp/test-recovery.sh
 
 # 测试崩溃分析器
 echo 'ERR_MODULE_NOT_FOUND: test' > /tmp/test.log
-bash ~/.pi/scripts/pi-crash-analyzer.sh /tmp/test.log
+bash ~/.pi/scripts/crash-recovery/pi-crash-analyzer.sh /tmp/test.log
 
 # 查看测试结果
 cat ~/.pi/logs/recovery-audit.jsonl | tail -5

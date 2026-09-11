@@ -43,10 +43,10 @@
 | 回归测试脚本 | `scripts/test/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
 | 重建回归脚本 | `scripts/maintenance/docker-rebuild-test.sh` | Docker 干净环境重建回归（clone→rebuild→判定） |
 | 核心补丁 | `agent/extensions/*/scripts/patch-*.mjs`（pi-context、pi-voice、plan-mode、pi-browser 等扩展各自的补丁） | rebuild.sh Phase 3 自动执行；**漏备份则 restore 后 rebuild 无法打补丁** |
-| 用量基准 | `scripts/pi-bench.sh` | usage/timing/compare 基准工具 |
+| 用量基准 | `scripts/maintenance/pi-bench.sh` | usage/timing/compare 基准工具 |
 | 后台任务脚本 | `agent/extensions/pi-tmux/scripts/pi-bg.sh` + `scripts/docs/README-pi-bg.md` | 后台任务四件套隔离 + 文档 |
-| 冒烟测试 | `scripts/smoke-test.sh` | rebuild 依赖其第 1 项 |
-| Termux 前置 | `scripts/termux-prereq.sh` | Termux 前置依赖安装（rebuild 依赖） |
+| 冒烟测试 | `scripts/test/smoke-test.sh` | rebuild 依赖其第 1 项 |
+| Termux 前置 | `scripts/environment/termux-prereq.sh` | Termux 前置依赖安装（rebuild 依赖） |
 | 多环境文档 | `docs/ENVIRONMENTS.md` | 多环境识别/切换流程/数据隔离表 |
 | Whisper 服务脚本 | `agent/extensions/pi-voice/scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
 | Whisper 服务源码 | `agent/extensions/pi-voice/scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |

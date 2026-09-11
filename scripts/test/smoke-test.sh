@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # smoke-test.sh — 重建后端到端冒烟测试
 # 覆盖：SearXNG / pi-web-search 配置 / whisper 转写 / 浏览器 / tmux / 记忆 / autopilot 调度 / TUI 补丁 / 状态循环
-# 用法: bash scripts/smoke-test.sh
+# 用法: bash scripts/test/smoke-test.sh
 # 退出码: 0=全部通过或跳过，1=有失败
 set -uo pipefail
 

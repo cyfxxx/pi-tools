@@ -20,8 +20,8 @@
  *     test-all/golden-tasks/daily-health/verify-patches 有未提交改动 → alert（改动即提交是仓库纪律）
  *
  * 用法：
- *   node scripts/daily-health.mjs           # 计算并追加 logs/daily-health.log
- *   node scripts/daily-health.mjs --print   # 只输出不落盘（dry）
+ *   node scripts/maintenance/daily-health.mjs           # 计算并追加 logs/daily-health.log
+ *   node scripts/maintenance/daily-health.mjs --print   # 只输出不落盘（dry）
  */
 import { readFileSync, statSync, existsSync, appendFileSync, readdirSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -137,7 +137,7 @@ function main() {
 
   // 守门脚本防篡改（DGM 教训：agent 可能博弈/修改评价器）：关键守门脚本若有未提交改动 → alert。
   // 正常流程改动即提交（LOG 纪律），07:50 时点未提交即异常；新增未跟踪文件不在此列。
-  const GUARD_SCRIPTS = ['scripts/test-all.sh', 'scripts/golden-tasks.sh', 'scripts/daily-health.mjs', 'scripts/verify-patches.mjs']
+  const GUARD_SCRIPTS = ['scripts/test/test-all.sh', 'scripts/maintenance/golden-tasks.sh', 'scripts/maintenance/daily-health.mjs', 'scripts/maintenance/verify-patches.mjs']
   try {
     const out = execFileSync('git', ['-C', join(HOME, '.pi'), 'status', '--porcelain', '--', ...GUARD_SCRIPTS], { encoding: 'utf8', timeout: 5000 })
     const dirty = out.split('\n').map(l => l.slice(3).trim()).filter(Boolean)

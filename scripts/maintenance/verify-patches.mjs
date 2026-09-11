@@ -9,7 +9,7 @@
  * 版本语义：补丁文件头声明 `@target-version 0.84`（major.minor）。当前 pi 0.84.x
  * 任意 patch 级均视为匹配（minor 内补丁保持幂等跳过语义）。
  *
- * 用法：node scripts/verify-patches.mjs [pi-coding-agent dist 目录]
+ * 用法：node scripts/maintenance/verify-patches.mjs [pi-coding-agent dist 目录]
  *   （参数缺省读 PI_DIST 环境变量）
  *   exit 0 = 全部匹配；exit 1 = 存在失配（供 rebuild.sh Phase 3 判定）；exit 2 = 用法错误
  */
