@@ -2,28 +2,29 @@
 
 ## 概述
 
-`pi-wrapper.sh` 内置崩溃检测与自动恢复机制，在 pi 进程异常退出时分析原因并尝试修复。
+`pi-wrapper.sh` 内置崩溃检测与自动恢复机制。崩溃发生时，wrapper 仅负责检查、分类、启动修复进程；实际修复操作由 pi 自身完成（要么用当前 pi 修外部问题，要么用源码缓存的 pi 修坏的 pi）。这样既避免了脚本误修复，又让用户能在 TUI 中看到修复过程。
 
-## 崩溃类型
+## 崩溃分类
 
-| 类型 | 匹配模式 | 恢复策略 |
-|------|---------|---------|
-| `missing_module` | ERR_MODULE_NOT_FOUND | 重装缺失包 / 源码恢复 |
-| `syntax_error` | SyntaxError (dist 文件) | 重跑 rebuild |
-| `extension_fail` | Failed to load extension | 智能禁用 / 恢复 |
-| `config_corrupt` | settings.json 损坏 | 快照恢复 / git 恢复 |
-| `proxy_error` | 代理配置错误 | 清除代理变量 |
-| `lock_contention` | EADDRINUSE / 锁竞争 | kill 竞争实例 |
-| `provider_error` | 5xx / 429 / API 错误 | 指数退避重试 |
-| `cli_argument_error` | Unknown option / invalid flag | 自动修复参数 |
-| `network_error` | ECONNREFUSED / ETIMEDOUT | 指数退避重试 |
-| `permission_error` | EACCES / permission denied | 修复文件权限 |
-| `oom_error` | JavaScript heap out of memory | 清理内存 / 增加限制 |
-| `disk_full` | ENOSPC / No space left on device | 清理磁盘空间 |
-| `timeout_error` | 进程超时 / 挂死 | 强制终止并重启 |
-| `unknown` | 未匹配类型 | 逐级升级策略 |
+wrapper 先根据崩溃日志将崩溃分为三类：
 
-## 恢复升级链
+- `transient`：临时性错误（API 5xx/429、网络超时、ECONNREFUSED 等），只需指数退避重试，不需要修复。
+- `external`：pi 核心正常，问题在于外部因素（扩展/配置/依赖/权限/磁盘）。此时用当前 pi（`--no-extensions --no-skills`）作为修复者，读取崩溃日志并自行修复外部问题。
+- `pi_self`：pi 核心自身损坏（dist 文件语法错误、缺失、核心模块依赖不匹配等）。此时用源码缓存中的 pi（已编译好的 dist）作为修复者，去修复坏的 pi。（修复过程同样由 pi 完成，wrapper 只负责启动。）
+
+## 恢复升级链（新逻辑）
+
+1. **分类崩溃**：wrapper 用纯日志关键词判断 crash 类别（transient / external / pi_self），秒级完成，不启动 pi。
+2. **启动修复 pi**：
+   - 对 transient：直接指数退避重试（不启动修复 pi）。
+   - 对 external：wrapper 启动当前 pi（`--no-extensions --no-skills`），传入修复指令让它读崩溃日志并修外部问题。（修复成功后重新启用被禁用的扩展。）
+   - 对 pi_self：wrapper 先确认源码缓存的 pi 是否存在（不存在则尝试实时构建），再启动该 pi 作为修复者，让它修复坏的 pi。（修复成功后同样会重新启用扩展。）
+3. **健康检查**：修复后 wrapper 执行健康检查（无扩展启动 + 扩展加载测试），通过则视为恢复成功；失败则尝试其他策略或升级。
+4. **熔断器与重试**：连续失败达到阈值时触发熔断器，避免无限循环。
+
+## 原有恢复链（作为回退）
+
+如果新逻辑的修复 pi 失败，wrapper 会回退到原有的细粒度恢复链，以保证兼容性：
 
 ```
 L1: 精准恢复（针对具体崩溃类型）
@@ -112,8 +113,8 @@ cat ~/.pi/data/disabled-extensions.json
 
 ## 相关文件
 
-- `pi-wrapper.sh` - 生命周期管理、崩溃恢复
-- `pi-crash-analyzer.sh` - 崩溃类型分析器
+- `pi-wrapper.sh` - 生命周期管理、崩溃恢复（新增分类与启动修复 pi 的逻辑）
+- `pi-crash-analyzer.sh` - 崩溃类型分析器（新增 transient/external/pi_self 分类）
 - `pi-recovery-audit.sh` - 审计日志模块
 - `~/.pi/data/logs/recovery-audit.jsonl` - 审计日志
 - `~/.pi/data/circuit-breaker.json` - 熔断器状态
