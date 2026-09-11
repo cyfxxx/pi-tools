@@ -144,6 +144,16 @@ function main() {
     if (dirty.length) reasons.push(`守门脚本有未提交改动: ${dirty.join(', ')}`)
   } catch { /* git 不可用时静默，不阻塞主指标 */ }
 
+  // 工具统计同步检查：验证 tool-count-*.json 存在且非空
+  let toolStatsOk = true
+  try {
+    const STATS_DIR = join(HOME, '.pi', 'memory', 'stats')
+    if (existsSync(STATS_DIR)) {
+      const countFiles = readdirSync(STATS_DIR).filter(f => f.startsWith('tool-count-') && f.endsWith('.json'))
+      if (countFiles.length === 0) { toolStatsOk = false; reasons.push('工具统计缺失(无 tool-count-*.json)') }
+    } else { toolStatsOk = false; reasons.push('工具统计目录不存在') }
+  } catch { /* 统计目录不存在不阻塞 */ }
+
   // alert 判据：样本充足（≥3 会话）才判命中率；A/B 断裂独立判
   if (sessions.length >= 3 && hit !== null && hit < 0.9) reasons.push(`命中率 ${(hit * 100).toFixed(1)}%<90%`)
   if (totAB > 3) reasons.push(`A/B 断裂 ${totAB}>3`)

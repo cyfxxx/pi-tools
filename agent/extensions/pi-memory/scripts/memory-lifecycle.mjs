@@ -70,6 +70,33 @@ const now = Date.now()
 const live = entries.filter(e => e && !e.deleted)
 const ageDays = e => (now - new Date(e.accessedAt || e.updatedAt || e.createdAt).getTime()) / 86400000
 
+// ---- 0. 空壳过滤（workticket-empty-heartbeat-filter：tools=0/hit=0 的心跳任务）----
+function isEmptyHeartbeat(e) {
+  const content = String(e.content || '')
+  // 心跳任务特征：tools=0, hit=0, 输出仅含心跳文本
+  if ((e.tools ?? 0) === 0 && (e.hit ?? 0) === 0 && /\[Scheduler\]\s*keep/i.test(content)) return true
+  return false
+}
+const emptyHeartbeats = live.filter(isEmptyHeartbeat)
+
+// ---- 0.5 环境隔离检查（workticket-env-termux-wsl2：Termux 与 WSL2 标签验证）----
+function checkEnvironmentTags(e) {
+  const tags = e.tags || []
+  const content = String(e.content || '')
+  const hasTermux = tags.includes('termux') || /termux/i.test(content)
+  const hasWsl2 = tags.includes('wsl2') || /wsl2/i.test(content)
+  // 如果同时包含 termux 和 wsl2 标签，可能是标签错误
+  if (hasTermux && hasWsl2) return '同时包含 termux 和 wsl2 标签'
+  return null
+}
+const envConflicts = live.map(e => ({ id: e.id, title: e.title, reason: checkEnvironmentTags(e) })).filter(e => e.reason)
+
+// ---- 0.6 低置信度验证（workticket-lowconf-verify：confidence<0.8 需验证）----
+const LOW_CONF_THRESHOLD = 0.8
+const lowConfNeedsVerify = live.filter(e => (e.confidence ?? 1) < LOW_CONF_THRESHOLD && !e.verified).map(e => ({
+  id: e.id, title: e.title, category: e.category, confidence: e.confidence ?? null, recurrence: e.recurrence ?? 0
+}))
+
 // ---- 1. 淘汰候选 ----
 const stale = live.filter(e =>
   (e.recurrence ?? 0) <= 1 &&
@@ -154,7 +181,10 @@ if (AS_JSON) {
     generatedAt: new Date().toISOString(),
     totalEntries: live.length,
     rules: { staleDays: STALE_DAYS, promoteMinRecurrence: PROMOTE_MIN, aggMinMembers: AGG_MIN_MEMBERS, aggMinSumRecurrence: AGG_MIN_SUM_REC, aggSim: AGG_SIM },
-    counts: { staleCandidates: stale.length, promotionCandidates: promote.length, conflictGroups: conflicts.length, junkSuspects: junk.length, aggregationCandidates: aggregation.length },
+    counts: { emptyHeartbeats: emptyHeartbeats.length, envConflicts: envConflicts.length, lowConfNeedsVerify: lowConfNeedsVerify.length, staleCandidates: stale.length, promotionCandidates: promote.length, conflictGroups: conflicts.length, junkSuspects: junk.length, aggregationCandidates: aggregation.length },
+    emptyHeartbeats: LIMIT === 0 ? emptyHeartbeats : emptyHeartbeats.slice(0, LIMIT),
+    envConflicts: LIMIT === 0 ? envConflicts : envConflicts.slice(0, LIMIT),
+    lowConfNeedsVerify: LIMIT === 0 ? lowConfNeedsVerify : lowConfNeedsVerify.slice(0, LIMIT),
     staleCandidates: LIMIT === 0 ? stale : stale.slice(0, LIMIT),
     promotionCandidates: LIMIT === 0 ? promote : promote.slice(0, LIMIT),
     conflictGroups: LIMIT === 0 ? conflicts : conflicts.slice(0, LIMIT),
@@ -166,6 +196,18 @@ if (AS_JSON) {
 
 console.log('══ 记忆生命周期治理报告 ══')
 console.log(`有效条目 ${live.length}/${entries.length} | 规则: 淘汰(${STALE_DAYS}天冷+低置信+零复现) 升格(recurrence≥${PROMOTE_MIN} 的 solutions/fact，非垃圾) 冲突(标题重复) 垃圾(content 无实义/噪声标题) 聚合(≥${AGG_MIN_MEMBERS}条同主题且Σrec≥${AGG_MIN_SUM_REC})`)
+console.log('')
+console.log(`[空壳心跳] ${emptyHeartbeats.length} 条（tools=0/hit=0 的调度心跳，跳过记忆沉淀）`)
+for (const e of emptyHeartbeats.slice(0, LIMIT)) console.log(`  - [${e.category}] ${e.title}  (rec=${e.recurrence})`)
+if (emptyHeartbeats.length > LIMIT) console.log(`  … 其余 ${emptyHeartbeats.length - LIMIT} 条见 --json`)
+console.log('')
+console.log(`[环境标签冲突] ${envConflicts.length} 条（Termux/WSL2 标签混用，需纠错）`)
+for (const e of envConflicts.slice(0, LIMIT)) console.log(`  - [${e.id}] ${e.title}  (${e.reason})`)
+if (envConflicts.length > LIMIT) console.log(`  … 其余 ${envConflicts.length - LIMIT} 条见 --json`)
+console.log('')
+console.log(`[低置信度待验证] ${lowConfNeedsVerify.length} 条（confidence<${LOW_CONF_THRESHOLD} 且未标记 verified）`)
+for (const e of lowConfNeedsVerify.slice(0, LIMIT)) console.log(`  - [${e.category}] ${e.title}  (conf=${e.confidence}, rec=${e.recurrence})`)
+if (lowConfNeedsVerify.length > LIMIT) console.log(`  … 其余 ${lowConfNeedsVerify.length - LIMIT} 条见 --json`)
 console.log('')
 console.log(`[淘汰候选] ${stale.length} 条（批量删除须用户确认；先快照 entries.json）`)
 for (const e of stale.slice(0, LIMIT)) console.log(`  - [${e.category}] ${e.title}  (rec=${e.recurrence}, conf=${e.confidence}, 冷${e.idleDays}天)`)

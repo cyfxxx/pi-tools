@@ -207,6 +207,24 @@ foreach ($f in $files) {
 
 > 运行态健康巡检（触发词：运行检查/会话检查/健康巡检）与每日快速巡检的完整清单见 `references/RUNTIME-CHECK.md`（按需加载）。
 
+## 崩溃恢复与交付闭环（2026-09-11 合并 pi-recovery-delivery-loop）
+
+当 pi 崩溃、会话挂死、重启后状态异常，或需要交付一轮修复优化时，执行以下闭环：
+
+### 环境确认
+先区分 Termux（Android 设备内 Linux）与 WSL2（Windows 内 Linux），两者运行时、配置和 entries.json 的 environment 标签不可混用。
+
+### 诊断与修复
+1. **诊断原因**：检查管理员状态、运行日志、Git 工作区状态和相关会话，定位崩溃或挂死的直接原因
+2. **执行修复**：针对根因做最小改动，避免顺手修改无关配置
+3. **运行验证**：执行确定性回归（`bash ~/.pi/scripts/maintenance/golden-tasks.sh --fast`），确认 F1-F5 全部通过
+4. **提交推送**：`cd ~/.pi && git add -p` 核对变更，`git commit -m "..."`，`git push`
+
+### 会话收尾
+- 仅清理非当前会话
+- 重启后复查管理员状态、当前会话可操作性和关键配置完整性
+- Termux 与 WSL2 是不同运行环境，批量纠错 entries.json 时必须按实际环境分组统计并抽查
+
 ## 每次审计后必须沉淀技能（用户硬性要求，2026-08-18 起）
 
 **每次执行本技能（无论是否产出修复）结束后，必须把本次过程经验沉淀到 references/EXPERIENCE-BASELINE.md（原 frontmatter 巨型行已外置）与相关章节**，这是显式要求而非可选优化：

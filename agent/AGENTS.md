@@ -97,6 +97,7 @@ bash scripts/test/test-all.sh --fast   # 快速模式
 | Pi 官方文档 | https://pi.dev/docs/latest |
 | 扩展开发经验 | `extensions/pi-mode/LESSONS-LEARNED.md` |
 | 自动修复系统 | `agent/recovery/README.md`（wrapper 只分类/启动，修复由 pi 自身完成） |
+| Packs 技能索引 | `packs/INDEX.md`（外部技能包，按需加载：用户需求不被内置技能覆盖时查阅） |
 
 ## 已知噪音
 
