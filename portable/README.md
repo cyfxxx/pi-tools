@@ -29,7 +29,7 @@ pi-portable/
 
 ## 首次构建（新机器）
 
-1. 新建空文件夹（如 `pi-portable`），把种子 `portable/` 全部内容拷进去（`bin/`、`start.bat`、`start.ps1`、`ca-bundle.crt`、`tools/`、`README.md`），另从仓库拷 `scripts/whisper-server.py`（whisper 服务端，check-services.js 依赖）
+1. 新建空文件夹（如 `pi-portable`），把种子 `portable/` 全部内容拷进去（`bin/`、`start.bat`、`start.ps1`、`ca-bundle.crt`、`tools/`、`README.md`），另从仓库拷 `agent/extensions/pi-voice/scripts/whisper-server.py`（whisper 服务端，check-services.js 依赖）
 2. 拷贝配置：从现有实例拷 `agent/`（含扩展源码与配置、sessions 会话；`settings.json`/`models.json`/`auth.json` 含密钥，自行决定）与 `memory/`
 3. 运行 `.\bin\setup.ps1`（自动：下载 Node LTS → npmmirror 装 pi → 下载 ffmpeg/PortableGit/uv → **自动创建 `memory/` 并建 `.pi\agent`/`.pi\memory` 两个 junction** → 装扩展依赖 → 应用核心补丁（patch-footer 系列 4 个 + voice-enter/plan-tools；Termux 专属 playwright-core 与 tab-arg-completion 补丁不适用于 Windows）→ 拷入 ca-bundle/tmux shim；重跑幂等）
 4. 运行 `.\bin\verify.ps1` 验证环境（核心组件全 [OK]，含 junction 有效性/三补丁 marker/配置路径漂移检查；可选组件缺失属正常）
@@ -47,7 +47,7 @@ pi-portable/
 | `.\bin\update-portable.ps1` | **同步扩展代码**（拉仓库最新扩展/技能，保留本地配置） |
 | `.\bin\sync.ps1` | 提交推送本地改动到 GitHub（SSH 443） |
 | `.\bin\setup.ps1` | 构建器（新机器跑一次；重跑幂等） |
-| `bash scripts\test-all.sh`（PI_HOME=包根） | 全量回归（9 扩展 vitest + tsc + subagent + 冲突检查；tsconfig.local.json 缺失自动生成；scripts/ 从仓库同步） |
+| `bash scripts\test\test-all.sh`（PI_HOME=包根） | 全量回归（9 扩展 vitest + tsc + subagent + 冲突检查；tsconfig.local.json 缺失自动生成；scripts/ 从仓库同步） |
 
 ## 会话恢复（--continue）
 

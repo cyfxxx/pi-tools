@@ -85,7 +85,7 @@ async function main() {
   // 2. whisper (18767)
   if (!(await portOpen(18767, 1000))) {
     console.log('[svc] whisper 18767 未监听，拉起...')
-    spawnPython('tools\\whisper', [path.join(ROOT, 'scripts', 'whisper-server.py')], {
+    spawnPython('tools\\whisper', [path.join(ROOT, 'agent', 'extensions', 'pi-voice', 'scripts', 'whisper-server.py')], {
       HF_HOME: path.join(ROOT, 'tools', 'whisper', 'models'),
       HF_ENDPOINT: 'https://hf-mirror.com',
       HF_HUB_DISABLE_XET: '1',
