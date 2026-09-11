@@ -5,7 +5,7 @@
 set -e
 
 PI_DIR="$HOME/.pi"
-RESCUE_DIR="$PI_DIR/agent/rescue"
+RESCUE_DIR="$PI_DIR/agent/recovery"
 SNAPSHOT_DIR="$PI_DIR/.snapshots"
 
 # 颜色定义

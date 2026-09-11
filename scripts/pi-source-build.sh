@@ -6,8 +6,8 @@
 set -uo pipefail
 
 PI_HOME="${PI_HOME:-$HOME/.pi}"
-SOURCE_DIR="$PI_HOME/pi-source"
-CACHE_DIR="$PI_HOME/pi-source-cache"
+SOURCE_DIR="$PI_HOME/agent/recovery/source"
+CACHE_DIR="$PI_HOME/agent/recovery/cache"
 REPO_URL="https://github.com/earendil-works/pi.git"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'

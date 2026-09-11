@@ -90,7 +90,7 @@ CRASH_THRESHOLD=3
 RESCUE_THRESHOLD=5  # 连续崩溃达 5 次触发配置恢复
 RESCUE_PI_THRESHOLD=7  # 连续崩溃达 7 次启动救援模式 pi
 MAX_RECOVERY_ROUNDS=5  # 单次启动最大恢复循环轮数
-PI_SOURCE_CACHE="$HOME/.pi/pi-source-cache"  # L4 源码编译缓存
+PI_SOURCE_CACHE="$HOME/.pi/agent/recovery/cache"  # L4 源码编译缓存
 LAST_ROLLBACK_TS=0
 CIRCUIT_BREAKER_THRESHOLD=5  # 熔断器阈值：连续失败5次触发熔断
 CIRCUIT_BREAKER_COOLDOWN=1800  # 熔断器冷却时间：30分钟（秒）
@@ -125,7 +125,7 @@ preserve_crash_log() {
 CRASH_WINDOW_MS=$((24 * 3600 * 1000))
 
 # 救援模式相关路径
-RESCUE_DIR="$HOME/.pi/agent/rescue"
+RESCUE_DIR="$HOME/.pi/agent/recovery"
 SNAPSHOT_DIR="$HOME/.pi/.snapshots"
 RESCUE_CONFIG="$RESCUE_DIR/rescue-config.json"
 RESCUE_PROMPT="$RESCUE_DIR/rescue-prompt.md"
@@ -341,7 +341,7 @@ start_rescue_pi() {
   "extensions": [],
   "skills": [],
   "systemPrompt": null,
-  "appendSystemPrompt": "~/.pi/agent/rescue/rescue-prompt.md",
+  "appendSystemPrompt": "~/.pi/agent/recovery/rescue-prompt.md",
   "thinking": "low"
 }
 EOF
@@ -682,7 +682,7 @@ fs.writeFileSync(p,JSON.stringify(pkg,null,2));
   elif [ -n "$missing_module" ]; then
     # 缺失内部模块（如 migrations.js）：尝试从源码缓存恢复
     echo "[pi-wrapper] 缺失模块: $missing_module" >&2
-    local source_cache="$HOME/.pi/pi-source-cache"
+    local source_cache="$HOME/.pi/agent/recovery/cache"
     local module_name
     module_name="$(basename "$missing_module")"
     local dest_dir
@@ -795,7 +795,7 @@ recover_extension_fail() {
   # 检查是否是语法错误（ParseError, SyntaxError）
   if echo "$log_file" | grep -qE "ParseError|SyntaxError|Unexpected token"; then
     # 语法错误：尝试从源码缓存恢复扩展文件
-    local source_cache="$HOME/.pi/pi-source-cache"
+    local source_cache="$HOME/.pi/agent/recovery/cache"
     local ext_dir="$HOME/.pi/agent/extensions/$ext_name"
     
     # 检查是否有备份的 index.ts

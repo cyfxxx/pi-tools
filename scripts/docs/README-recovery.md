@@ -1,6 +1,6 @@
 # Pi 自动修复系统 - 快速指南
 
-完整、权威的恢复说明见 [`agent/rescue/README.md`](../agent/rescue/README.md)。本文是 wrapper 脚本的入口摘要。
+完整、权威的恢复说明见 [`agent/recovery/README.md`](../agent/recovery/README.md)。本文是 wrapper 脚本的入口摘要。
 
 **概述**：
 `pi-wrapper.sh` 崩溃时仅负责检查、分类、启动修复进程；实际修复操作由 pi 自身完成（要么用当前 pi 修外部问题，要么用源码缓存的 pi 修坏的 pi）。这样既避免了脚本误修复，又让用户能在 TUI 中看到修复过程。
@@ -24,7 +24,7 @@
 ```
 L1: 精准恢复（针对具体崩溃类型）
   ↓ 失败
-L2: 源码恢复（从 pi-source-cache 恢复 dist/）
+L2: 源码恢复（从 agent/recovery/cache 恢复 dist/）
   ↓ 失败
 L3: 救援模式 pi（--no-extensions 启动）
   ↓ 失败

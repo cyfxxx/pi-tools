@@ -96,7 +96,7 @@ bash scripts/test/test-all.sh --fast   # 快速模式
 | 模块化方案 | `docs/maintenance/MODULARIZATION-PLAN.md` |
 | Pi 官方文档 | https://pi.dev/docs/latest |
 | 扩展开发经验 | `extensions/pi-mode/LESSONS-LEARNED.md` |
-| 自动修复系统 | `agent/rescue/README.md`（wrapper 只分类/启动，修复由 pi 自身完成） |
+| 自动修复系统 | `agent/recovery/README.md`（wrapper 只分类/启动，修复由 pi 自身完成） |
 
 ## 已知噪音
 

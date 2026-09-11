@@ -60,7 +60,7 @@ npm install --prefix ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_m
 
 ```bash
 # 源码缓存的 pi（好的）
-GOOD_PI="$HOME/.pi/pi-source-cache/dist/cli.js"
+GOOD_PI="$HOME/.pi/agent/recovery/cache/dist/cli.js"
 
 # 如果缓存不存在，先构建
 if [ ! -f "$GOOD_PI" ]; then
@@ -77,7 +77,7 @@ node --check "$BAD_DIST/cli.js" 2>&1 | head -5
 cp -r "$GOOD_PI" "$BAD_DIST/cli.js"
 # 或整体覆盖
 rm -rf "$BAD_DIST"
-cp -r "$HOME/.pi/pi-source-cache/dist" "$BAD_DIST"
+cp -r "$HOME/.pi/agent/recovery/cache/dist" "$BAD_DIST"
 ```
 
 ## 常见问题修复
@@ -88,13 +88,13 @@ cp -r "$HOME/.pi/pi-source-cache/dist" "$BAD_DIST"
 ls -la ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js
 
 # 如果有源码缓存，用它恢复
-if [ -d ~/.pi/pi-source-cache/dist ]; then
-  cp -r ~/.pi/pi-source-cache/dist ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist
+if [ -d ~/.pi/agent/recovery/cache/dist ]; then
+  cp -r ~/.pi/agent/recovery/cache/dist ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/dist
 fi
 
 # 同步依赖
-if [ -d ~/.pi/pi-source/node_modules/@earendil-works ]; then
-  cp -r ~/.pi/pi-source/node_modules/@earendil-works/* ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/
+if [ -d ~/.pi/agent/recovery/source/node_modules/@earendil-works ]; then
+  cp -r ~/.pi/agent/recovery/source/node_modules/@earendil-works/* ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/
 fi
 ```
 
@@ -120,7 +120,7 @@ done
 grep "getNativeClipboard" ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.js 2>/dev/null
 
 # 如果缺失，从源码同步
-cp -r ~/.pi/pi-source/node_modules/@earendil-works/pi-tui ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui
+cp -r ~/.pi/agent/recovery/source/node_modules/@earendil-works/pi-tui ~/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui
 ```
 
 ## 验证修复

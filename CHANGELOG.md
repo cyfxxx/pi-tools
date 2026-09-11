@@ -11,7 +11,7 @@
 - **pi-translate-zh v12**：适配 pi 0.85.1，新增全屏设置项翻译、Cache miss notices 描述更新、Working 去省略号
 - **扩展清单补全**：README.md、AGENTS.md 补充 pi-mode、pi-webui
 - **补丁数更新**：9→12 个（新增 fuzzy-match-type / truncate-type / autocomplete-startswith）
-- **死链修复**：docs/RESCUE-MODE.md → agent/rescue/README.md
+- **死链修复**：docs/RESCUE-MODE.md → agent/recovery/README.md
 - **cache-guard 基线同步**：AGENTS.md + pi-context/index.ts + subagent/index.ts 指纹漂移已确认并更新基线
 
 ## 2026-09-05 每日任务 + 知识库

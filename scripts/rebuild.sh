@@ -1459,8 +1459,8 @@ fi
 if [ -f "$PI_HOME/scripts/pi-source-build.sh" ]; then
   title "Phase 5" "L4 源码编译缓存"
   # 仅在缓存不存在或源码有更新时构建
-  CACHE_DIR="$PI_HOME/pi-source-cache"
-  SOURCE_DIR="$PI_HOME/pi-source"
+  CACHE_DIR="$PI_HOME/agent/recovery/cache"
+  SOURCE_DIR="$PI_HOME/agent/recovery/source"
   NEED_BUILD=0
   if [ ! -f "$CACHE_DIR/dist/bundle/cli.js" ]; then
     NEED_BUILD=1

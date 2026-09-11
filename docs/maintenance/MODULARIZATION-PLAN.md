@@ -18,7 +18,7 @@
 - ✅ Phase 4: lib/index.ts 统一导出
 - ✅ Phase 5: 代码和文档中的路径引用更新
 - ✅ symlink 修复：scripts/ 下25个断裂 symlink 相对路径修正
-- ✅ pi-webui 移除、pi-source-cache 加入 .gitignore
+- ✅ pi-webui 移除、agent/recovery/cache 加入 .gitignore
 
 ### 第二阶段：分层架构重构（2026-09-09）
 

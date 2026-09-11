@@ -92,26 +92,28 @@ pi 崩溃
 
 ```
 ~/.pi/
-├── agent/rescue/
+├── agent/recovery/
 │   ├── rescue-config.json      # 救援模式配置
 │   ├── rescue-prompt.md        # 救援模式提示词（含工具使用指令）
-│   └── README.md               # 本文档
+│   ├── README.md               # 本文档
+│   ├── source/                 # L4: git clone 源码（depth=1）
+│   └── cache/                  # L4: 预编译产物
+│       ├── version.json        # 版本信息
+│       ├── dist/               # coding-agent 编译产物
+│       ├── npm-shrinkwrap.json # 依赖锁定
+│       └── package.json        # 包描述
 ├── logs/
 │   └── recovery-audit.jsonl    # 恢复审计日志（JSONL 格式）
 ├── .snapshots/                 # 快照目录
-├── pi-source/                  # L4: git clone 源码（depth=1）
-├── pi-source-cache/            # L4: 预编译产物
-│   ├── version.json            # 版本信息
-│   ├── dist/                   # coding-agent 编译产物
-│   ├── npm-shrinkwrap.json     # 依赖锁定
-│   └── package.json            # 包描述
 └── scripts/
     ├── pi-wrapper.sh           # 启动脚本（智能恢复核心）
-    ├── pi-crash-analyzer.sh    # 崩溃类型分析器
-    ├── pi-recovery-audit.sh    # 审计日志模块
+    ├── crash-recovery/
+    │   ├── pi-crash-analyzer.sh    # 崩溃类型分析器
+    │   ├── pi-recovery-audit.sh    # 审计日志模块
+    │   └── pi-rescue.sh            # 手动救援脚本
     ├── pi-source-build.sh      # L4: 源码编译脚本
-    ├── pi-rescue.sh            # 手动救援脚本
-    └── test-recovery.sh        # 冗余系统测试套件
+    └── test/
+        └── test-recovery.sh    # 冗余系统测试套件
 ```
 
 ## 审计日志格式
@@ -193,7 +195,7 @@ bash ~/.pi/scripts/pi-source-build.sh --no-proxy
 
 ### 查看 L4 缓存状态
 ```bash
-cat ~/.pi/pi-source-cache/version.json | python3 -m json.tool
+cat ~/.pi/agent/recovery/cache/version.json | python3 -m json.tool
 ```
 
 ## 配置
@@ -241,7 +243,7 @@ CRASH_WINDOW_MS=86400000    # 崩溃计数时间窗（24h）
 
 1. npm 安装的 pi 因磁盘损坏/误删/版本冲突完全不可用
 2. L2 的 `recover_missing_module`（npm install）也失败
-3. 自动触发 L4：检查 `pi-source-cache/` 预编译缓存
+3. 自动触发 L4：检查 `agent/recovery/cache/` 预编译缓存
 4. 有缓存 → 覆盖 npm dist + 同步源码 node_modules 依赖
 5. 无缓存 → 尝试实时构建（clone + build + bundle）
 6. 健康检查通过 → 重启成功
