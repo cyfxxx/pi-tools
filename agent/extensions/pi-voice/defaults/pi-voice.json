@@ -1,0 +1,8 @@
+{
+  "whisperToken": "pv-b9a05bff7d0c17f8cf61ce11",
+  "tmpDir": "/storage/emulated/0/pi-voice/",
+  "language": "zh",
+  "whisperDevice": "cpu",
+  "ttsEnabled": false,
+  "sttBackend": "sherpa"
+}

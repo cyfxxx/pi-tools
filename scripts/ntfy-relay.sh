@@ -1,1 +1,0 @@
-../agent/extensions/pi-autopilot/scripts/ntfy-relay.sh

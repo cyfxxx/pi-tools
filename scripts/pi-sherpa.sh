@@ -1,1 +1,0 @@
-../agent/extensions/pi-voice/scripts/pi-sherpa.sh

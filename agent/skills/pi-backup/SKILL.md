@@ -224,7 +224,7 @@ GitHub 同步完成
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
 4. 从 `deploy/tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
 
-5. **pi-link 公钥安装**：`bash ~/.pi/scripts/pi-link-keys.sh install`（把 `deploy/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
+5. **pi-link 公钥安装**：`bash ~/.pi/agent/extensions/pi-link/scripts/pi-link-keys.sh install`（把 `deploy/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
 6. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
 7. 告知用户重启 pi。
 
@@ -332,14 +332,14 @@ GitHub 同步完成
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 8b | wrapper shim（`pi` → pi-wrapper.sh） | npm 重装 pi 覆盖了 `bin/pi` | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（重装 shim，`pi-original` 保留） |
+| 8b | wrapper shim（`pi` → pi-wrapper.sh） | npm 重装 pi 覆盖了 `bin/pi` | `bash ~/.pi/scripts/install/install-wrapper.sh --ensure --quiet`（重装 shim，`pi-original` 保留） |
 
 **Phase 2-F — 语音服务（条件触发，见 B2 说明）：**
 
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
-| 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
-| 8d | pi-link 互连公钥 | `scripts/pi-link-keys.sh` 与 `deploy/keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
+| 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/agent/extensions/pi-voice/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
+| 8d | pi-link 互连公钥 | `agent/extensions/pi-link/scripts/pi-link-keys.sh` 与 `deploy/keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
 
 **Phase 2-F2 — tmux 配置同步（跨系统兼容，单独一组）：**
 
@@ -379,9 +379,9 @@ tmux 是 pi-tmux 扩展与 pi 自身 TUI 的运行依赖。系统包管理器不
 | settings.json | `python3 -c "import json; json.load(open('$HOME/.pi/agent/settings.json'))" 2>/dev/null \|\| echo "JSON 校验失败"` |
 | 扩展完整性 | `for d in "$HOME/.pi/agent/extensions"/*/; do [ -d "$d" ] && { case "$(basename "$d")" in tests\|node_modules\|types) continue;; esac; [ -f "$d/index.ts" ] \|\| echo "$(basename "$d") MISSING"; }; done`（动态扫描，新扩展免维护；`types/` 为类型声明目录，非扩展） |
 | 类型链接 | `grep -q "$(readlink -f ~/.local/share/pi-node/current 2>/dev/null \|\| ls -d ~/.local/share/pi-node/*/ 2>/dev/null \| tail -1)" ~/.pi/agent/extensions/tsconfig.local.json \|\| echo "tsconfig paths 过期"`（`rebuild` Phase 2-D 自动同步；paths 在本机生成的 `tsconfig.local.json`，共享 `tsconfig.json` 不含 paths） |
-| wrapper 自愈 | `bash ~/.pi/scripts/install-wrapper.sh --ensure --quiet`（幂等重装 shim，`pi-original` 保留） |
+| wrapper 自愈 | `bash ~/.pi/scripts/install/install-wrapper.sh --ensure --quiet`（幂等重装 shim，`pi-original` 保留） |
 | 端到端冒烟测试 | `timeout 90 pi -p "回复 OK"`——输出 `OK` 且 exit 0 即全部扩展加载成功 + 模型链路可用；失败会指明具体扩展（如 pi-voice 报 `Extension runtime not initialized` 时检查 `PI_DIST`，见注意事项 13） |
-| whisper 服务 | `bash ~/.pi/scripts/pi-whisper.sh status`（输出"运行中"或重启后首用自动加载） |
+| whisper 服务 | `bash ~/.pi/agent/extensions/pi-voice/scripts/pi-whisper.sh status`（输出"运行中"或重启后首用自动加载） |
 | 语音跳过提示 | `bash ~/.pi/scripts/rebuild.sh --yes`（无 `pi-voice.json` 时输出"跳过 whisper/语音依赖"一行提示，确认不装多余） |
 
 **示例输出：**
@@ -509,9 +509,9 @@ pi-backup verify
 3. **恢复前快照**：每次 `restore` 操作会自动创建 `~/.pi/pre-restore-{timestamp}.tar.gz`，可用于回滚。
 4. **跨机器恢复**：`settings.yml` 中的 SearXNG secret_key 是安装时生成的。跨机器恢复后需要重新生成。
 5. **重建超时**：`npm install` 在网络慢时可能超时。建议在网络稳定的环境下执行 `rebuild`。
-6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install-cron.sh` 重建。
+6. **crontab 不包含在归档中**：使用 `crontab -l > pi-crontab.bak` 单独备份调度条目。恢复后运行 `bash scripts/install/install-cron.sh` 重建。
 7. **调度任务文件**：`agent/extensions/pi-autopilot/scheduled-tasks.json` 已在备份清单中。如果恢复时该文件存在但扩展尚未安装，运行 `bash scripts/rebuild.sh --yes` 补装扩展依赖和 crontab。
-8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
+8. **wrapper 恢复**：如果备份中包含了 pi-autopilot 扩展和 wrapper 脚本，恢复后建议运行 `~/.pi/scripts/install/install-wrapper.sh` 重新安装 wrapper，以启用自动重启能力。如果不需要自动重启，跳过此步骤即可。
 9. **tmux 依赖**：pi-tmux 扩展与 pi 自身 TUI 依赖 tmux。恢复后 rebuild Phase 2-F2 自动同步 tmux 配置（tmux 命令本身不随 rebuild 自动安装，缺失时按系统包管理器手动安装）。若 tmux 缺失，pi-tmux 工具会返回安装指引错误。跨机器恢复注意系统差异（macOS 用 brew 且 `xclip` 绑定需改 `pbcopy`），见 `docs/alacritty-tmux-setup.md`。
 10. **tmux 会话重连**：pi-wrapper.sh 支持 `PI_TMUX_SESSION=<名>` 环境变量把 pi 放进指定 tmux 会话（仅交互式生效），配合 tmux-resurrect 可持久恢复。设置该变量时确保不写入 `/etc/profile` 等全局位置，避免影响 pi-autopilot 子进程。
 11. **多机 memory 冲突（P1）**：`memory/entries.json` 入库共享（已带环境标签，pi-memory 注入/检索自动过滤）；`notes.json`/`summaries.json` 已 git 忽略（会话级/环境特定，不入库）。多机交替 push/pull 时 entries.json 冲突处理：`git checkout --theirs memory/entries.json` 保留远程 → 本地重要新增从 stash/备份手工合并（pi-memory 会自动重新提取会话，一般无需手工）。详见 `docs/ENVIRONMENTS.md`。

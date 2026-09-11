@@ -1,1 +1,0 @@
-../agent/extensions/pi-context/scripts/patch-footer-cache.mjs
