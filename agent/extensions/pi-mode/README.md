@@ -51,7 +51,7 @@ pi --mode full      # 以完整模式启动（默认）
       "extensions": ["!ext1", "+ext2", "-ext3"],
       "skills": ["+skill1", "-skill2"],
       "systemPrompt": null,
-      "appendSystemPrompt": "~/.pi/agent/modes/prompts/append.md",
+      "appendSystemPrompt": "~/.pi/agent/extensions/pi-mode/prompts/append.md",
       "thinking": "low"
     }
   }
@@ -97,7 +97,7 @@ pi --mode full      # 以完整模式启动（默认）
       "extensions": ["!pi-web-search", "!pi-browser"],
       "skills": ["+skills/pi-code-review/SKILL.md"],
       "systemPrompt": null,
-      "appendSystemPrompt": "~/.pi/agent/modes/prompts/coding-append.md",
+      "appendSystemPrompt": "~/.pi/agent/extensions/pi-mode/prompts/coding-append.md",
       "thinking": "high"
     }
   }
@@ -106,7 +106,7 @@ pi --mode full      # 以完整模式启动（默认）
 
 ## 提示词文件
 
-模式的追加提示词文件放在 `~/.pi/agent/modes/prompts/` 目录下：
+模式的追加提示词文件放在 `~/.pi/agent/extensions/pi-mode/prompts/` 目录下：
 
 - `light-append.md` - light 模式追加提示词
 - `quick-append.md` - quick 模式追加提示词

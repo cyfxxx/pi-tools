@@ -29,7 +29,7 @@
         "-skills/pi-repo-optimize/SKILL.md"
       ],
       "systemPrompt": null,
-      "appendSystemPrompt": "~/.pi/agent/modes/prompts/light-append.md",
+      "appendSystemPrompt": "~/.pi/agent/extensions/pi-mode/prompts/light-append.md",
       "thinking": "low"
     },
     "quick": {
@@ -41,7 +41,7 @@
         "!ALL"
       ],
       "systemPrompt": null,
-      "appendSystemPrompt": "~/.pi/agent/modes/prompts/quick-append.md",
+      "appendSystemPrompt": "~/.pi/agent/extensions/pi-mode/prompts/quick-append.md",
       "thinking": "off"
     }
   }
