@@ -1,4 +1,4 @@
-import { truncateHead, truncateTail, setCompactionWarmPrefixProvider, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
+import { truncateHead, truncateTail, type ExtensionAPI, type ToolResultEvent, type TurnEndEvent } from "@earendil-works/pi-coding-agent";
 import type { Usage } from "@earendil-works/pi-ai";
 import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdirSync, readdirSync, readFileSync, statSync, renameSync, unlinkSync, existsSync, appendFileSync } from "node:fs";
@@ -714,20 +714,27 @@ export default function (pi: ExtensionAPI) {
 		compactWarmAllowed =
 			event.reason !== "overflow" && !(w > 0 && event.preparation.tokensBefore > w * 0.9);
 	});
-	try {
-		setCompactionWarmPrefixProvider(() => {
-			if (!compactWarmAllowed) return null;
-			if (!lastRequestPayload || lastRequestPayload.messages.length === 0) return null;
-			if (!AUTO_PREFIX_CACHE_RE.test(lastModelKey)) return null;
-			// 素材必须是主请求「最终参数」：messages/tools 均取 buildParams 之后、发送之前的
-			// payload（桥在参数层整体替换，不再做任何二次转换——原始工具定义缺 type 字段
-			// 会导致网关 422；context 级重放同理失配）。
-			if (!Array.isArray(lastRequestPayload.tools) || lastRequestPayload.tools.length === 0) return null;
-			return { systemPrompt: "", tools: lastRequestPayload.tools, messages: lastRequestPayload.messages };
-		});
-	} catch {
-		// 补丁未应用（如 pi update 后未跑 rebuild）时静默降级为原生隔离摘要
-	}
+	(async () => {
+		try {
+			// 动态获取 setCompactionWarmPrefixProvider（pi-coding-agent 版本兼容）
+			const piAgent = await import("@earendil-works/pi-coding-agent");
+			const setCompactionWarmPrefixProvider = (piAgent as any).setCompactionWarmPrefixProvider;
+			if (typeof setCompactionWarmPrefixProvider === 'function') {
+				setCompactionWarmPrefixProvider(() => {
+					if (!compactWarmAllowed) return null;
+					if (!lastRequestPayload || lastRequestPayload.messages.length === 0) return null;
+					if (!AUTO_PREFIX_CACHE_RE.test(lastModelKey)) return null;
+					// 素材必须是主请求「最终参数」：messages/tools 均取 buildParams 之后、发送之前的
+					// payload（桥在参数层整体替换，不再做任何二次转换——原始工具定义缺 type 字段
+					// 会导致网关 422；context 级重放同理失配）。
+					if (!Array.isArray(lastRequestPayload.tools) || lastRequestPayload.tools.length === 0) return null;
+					return { systemPrompt: "", tools: lastRequestPayload.tools, messages: lastRequestPayload.messages };
+				});
+			}
+		} catch {
+			// 补丁未应用（如 pi update 后未跑 rebuild）时静默降级为原生隔离摘要
+		}
+	})()
 
 	// R2/R3：context 阶段确定性过滤（结果每轮一致，不破坏缓存前缀）
 	pi.on("context", (event, ctx) => {

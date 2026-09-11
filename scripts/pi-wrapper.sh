@@ -92,6 +92,10 @@ RESCUE_PI_THRESHOLD=7  # 连续崩溃达 7 次启动救援模式 pi
 MAX_RECOVERY_ROUNDS=5  # 单次启动最大恢复循环轮数
 PI_SOURCE_CACHE="$HOME/.pi/pi-source-cache"  # L4 源码编译缓存
 LAST_ROLLBACK_TS=0
+CIRCUIT_BREAKER_THRESHOLD=5  # 熔断器阈值：连续失败5次触发熔断
+CIRCUIT_BREAKER_COOLDOWN=1800  # 熔断器冷却时间：30分钟（秒）
+CIRCUIT_BREAKER_FILE="$HOME/.pi/data/circuit-breaker.json"
+DISABLED_EXTENSIONS_FILE="$HOME/.pi/data/disabled-extensions.json"
 
 # 加载崩溃分析器和审计日志模块
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -350,14 +354,22 @@ EOF
   fi
   
   # 启动救援模式 pi（保留核心工具，禁用扩展避免干扰）
+  # 输出到终端让用户看到救援过程，同时记录到日志
+  local rescue_log="/tmp/pi-rescue-$$.log"
+  echo "[pi-wrapper] 救援模式 pi 正在执行，请等待..." >&2
   node "$PI_JS" \
     --no-extensions \
     --no-skills \
     --append-system-prompt "$RESCUE_PROMPT" \
     -p "$rescue_instruction" \
-    "$@"
+    "$@" 2>&1 | tee "$rescue_log"
+  local rescue_exit=${PIPESTATUS[0]}
   
-  return $?
+  if [ -f "$rescue_log" ] && [ -s "$rescue_log" ]; then
+    echo "[pi-wrapper] 救援模式 pi 执行完成，输出已保存到 $rescue_log" >&2
+  fi
+  
+  return $rescue_exit
 }
 
 # ── 健康检查 ──
@@ -401,11 +413,164 @@ health_check() {
     rm -f "$ext_log"
   fi
 
+  # 4. 进程存活检查：验证 pi 进程能正常运行
+  local pi_pid=""
+  pi_pid=$(pgrep -f "pi-coding-agent/dist/cli.js" 2>/dev/null | head -1)
+  if [ -n "$pi_pid" ]; then
+    # 检查进程是否仍在运行
+    if ! kill -0 "$pi_pid" 2>/dev/null; then
+      echo "[pi-wrapper] 健康检查警告：pi 进程已退出" >&2
+      # 不返回失败，因为可能是正常退出
+    fi
+  fi
+
+  # 5. 磁盘空间检查：确保有足够空间运行
+  local disk_usage
+  disk_usage=$(df -h "$HOME/.pi" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
+  if [ -n "$disk_usage" ] && [ "$disk_usage" -gt 90 ]; then
+    echo "[pi-wrapper] 健康检查警告：磁盘使用率 ${disk_usage}%（>90%）" >&2
+    # 不返回失败，但记录警告
+  fi
+
   echo "[pi-wrapper] 健康检查通过" >&2
   return 0
 }
 
 # ── 智能恢复函数 ──
+
+# ── pi 修复分工：wrapper 做检查/测试/启动，pi 做实际修复 ──
+
+# pi_core_ok [pi_js]
+# 检查 pi 核心能否正常启动（不含扩展/技能）。
+# 返回 0=核心正常（崩溃原因在外部），1=核心损坏（崩溃原因在 pi 自身）。
+# 这是"外部问题"与"pi 自身问题"的分界线。
+pi_core_ok() {
+  local pi_js="${1:-$PI_JS}"
+  if [ ! -f "$pi_js" ]; then
+    return 1
+  fi
+  # 注意：不先跑 --version 预检——它也要加载完整 CLI 初始化链（provider 解析），
+  # 在慢网关下会超时误报（实测 10s 不够）。直接用完整 probe 一次性判定。
+  local log="/tmp/pi-core-probe-$$.log"
+  if timeout 90 node "$pi_js" --no-extensions --no-skills --no-session -p 'Say exactly: ok' >"$log" 2>&1; then
+    rm -f "$log"
+    return 0
+  fi
+  echo "[pi-wrapper] 核心启动失败，日志片段:" >&2
+  head -8 "$log" >&2
+  rm -f "$log"
+  return 1
+}
+
+# is_interactive
+# 判断当前是否在 TTY 交互环境中（用户能看到 TUI）。
+# 非 TTY（cron/autopilot 子进程）时修复仍跑，但不阻塞等待用户。
+is_interactive() {
+  [ -t 0 ] && [ -t 1 ]
+}
+
+# run_fix_pi <mode> <pi_js> <crash_log>
+# 启动一个"修复者 pi"，让它读崩溃日志并自行修复。
+# mode=external: 用当前 pi（--no-extensions --no-skills），修外部问题。
+# mode=self:     用源码缓存的 pi（--no-extensions --no-skills），修 pi 自身。
+# 返回 pi 的退出码。输出同时落盘到日志，方便事后审计。
+# 超时保护：修复 pi 自身也可能卡住（LLM 慢/挂死），超时后 kill 并返回失败，
+# 避免 wrapper 被一个挂死的修复进程无限期阻塞。
+run_fix_pi() {
+  local mode="$1"
+  local pi_js="$2"
+  local crash_log="$3"
+  local label
+  case "$mode" in
+    external) label="外部修复（当前 pi，屏蔽扩展/技能）" ;;
+    self)     label="自我修复（源码缓存 pi，修 pi 自身）" ;;
+    *)        label="修复" ;;
+  esac
+  echo "[pi-wrapper] === 启动 pi 自修复：$label ===" >&2
+  echo "[pi-wrapper] 修复者: $pi_js" >&2
+  echo "[pi-wrapper] 崩溃日志: $crash_log" >&2
+
+  local fix_log="/tmp/pi-fix-$$.log"
+  local instruction
+  # 修复指令：显式要求用 read 读日志、分步修复、输出标记（避免 LLM 猜测导致超时）
+  instruction="
+1. 用 read 工具读取 $crash_log
+2. 分析错误原因
+3. 用 edit/write/bash 修复
+4. 用 node --check 或 pi --version 验证
+5. 最后输出 '修复完成'
+"
+
+  # 修复超时：默认 240s（LLM 首请求常需 60-120s），可通过 PI_FIX_TIMEOUT 覆盖
+  local fix_timeout="${PI_FIX_TIMEOUT:-240}"
+
+  # 修复过程输出到终端（TTY 时用户可见）+ 落盘日志
+  if is_interactive; then
+    timeout "$fix_timeout" node "$pi_js" \
+      --no-extensions --no-skills --no-session \
+      -p "$instruction" 2>&1 | tee "$fix_log"
+  else
+    timeout "$fix_timeout" node "$pi_js" \
+      --no-extensions --no-skills --no-session \
+      -p "$instruction" >"$fix_log" 2>&1
+  fi
+  local exit_code=${PIPESTATUS[0]}
+
+  if [ "$exit_code" -eq 124 ]; then
+    echo "[pi-wrapper] 修复 pi 超时（${fix_timeout}s），已终止" >&2
+  fi
+
+  if [ -s "$fix_log" ]; then
+    echo "[pi-wrapper] 修复输出已保存: $fix_log" >&2
+  fi
+  return $exit_code
+}
+
+# classify_crash <crash_log>
+# 判定崩溃属于"pi 自身损坏"还是"外部问题"还是"临时性"。
+# 输出: pi_self | external | transient
+#   pi_self    — dist/ 核心文件语法错误/缺失（pi 自己坏了，需源码 pi 修复）
+#   external   — 扩展/配置/依赖/权限/磁盘等外部原因（pi 本身没问题）
+#   transient — 临时性错误（API/网络/超时），直接重试
+# 判据：纯日志关键词分析，秒级完成，不启动 pi（启动一次 90s 太慢）。
+# 飞行验证 pi_core_ok 仅在修复后做健康检查时使用。
+classify_crash() {
+  local crash_log="$1"
+  [ -f "$crash_log" ] || { echo "external"; return; }
+
+  # 1. 临时性错误：API/网络/超时，直接重试，不修复
+  if grep -qE "50[0-9]|429|ECONNREFUSED|ETIMEDOUT|ECONNRESET|ENOTFOUND|socket hang up|rate.limit|stream interrupted|timeout.*exceeded|Upstream request failed" "$crash_log" 2>/dev/null; then
+    echo "transient"
+    return
+  fi
+
+  # 2. pi 自身损坏：错误明确指向 dist/ 核心文件（cli.js / 核心模块）
+  #    关键：路径必须在 pi-coding-agent 的 dist/ 下，而非扩展目录。
+  #    扩展目录下的 SyntaxError/ParseError 属于 external（扩展是外部）。
+  #    也包括依赖不匹配：SyntaxError: The requested module 'X' does not provide
+  #    an export named 'Y' —— 发生在 dist 文件中，根因是 pi 自身依赖链损坏。
+  #    从已解析的 PI_JS 推导 npm 全局目录（classify_crash 在主循环调用，PI_JS 已就绪）。
+  local global_dir=""
+  if [ -n "${PI_JS:-}" ]; then
+    global_dir="$(dirname "$(dirname "$(dirname "$PI_JS")")")"
+  fi
+  [ -z "$global_dir" ] && global_dir="$HOME/.local/share/pi-node/node-v22.23.1-linux-arm64/lib/node_modules/@earendil-works/pi-coding-agent"
+  if grep -qE "SyntaxError|ParseError|Unexpected (reserved )?token|Cannot find module|ERR_MODULE_NOT_FOUND|does not provide an export named" "$crash_log" 2>/dev/null; then
+    # 去掉 ANSI 转义码后再判路径
+    local clean
+    clean=$(sed 's/\x1b\[[0-9;]*m//g' "$crash_log")
+    if echo "$clean" | grep -qE "${global_dir//\//\/}|pi-coding-agent/dist/|pi-coding-agent/index\.js"; then
+      echo "pi_self"
+      return
+    fi
+    # 不在核心 dist → external（扩展/配置/依赖）
+    echo "external"
+    return
+  fi
+
+  # 3. 其他错误默认按外部处理（扩展/配置/权限/磁盘等）
+  echo "external"
+}
 
 # get_pi_global_dir
 # 返回 npm 全局安装目录（pi-coding-agent 所在）
@@ -434,14 +599,43 @@ disable_extension() {
   if [ -f "$ext_dir/index.ts" ]; then
     mv "$ext_dir/index.ts" "$ext_dir/index.ts.disabled" 2>/dev/null
     echo "[pi-wrapper] 已临时禁用扩展: $ext_name" >&2
+    
+    # 记录被禁用的扩展
+    local disabled_list=""
+    if [ -f "$DISABLED_EXTENSIONS_FILE" ]; then
+      disabled_list=$(cat "$DISABLED_EXTENSIONS_FILE" 2>/dev/null || echo "")
+    fi
+    if [ -z "$disabled_list" ]; then
+      echo "$ext_name" > "$DISABLED_EXTENSIONS_FILE"
+    else
+      echo "$disabled_list" | grep -q "^${ext_name}$" || echo "$ext_name" >> "$DISABLED_EXTENSIONS_FILE"
+    fi
+    
     return 0
   fi
   return 1
 }
 
+# reenable_disabled_extensions
+# 重新启用所有被禁用的扩展（index.ts.disabled → index.ts）
+# 在成功恢复后调用，确保下次启动时扩展可用
+reenable_disabled_extensions() {
+  local reenabled=0
+  for ext_dir in "$HOME/.pi/agent/extensions"/*/; do
+    if [ -f "$ext_dir/index.ts.disabled" ] && [ ! -f "$ext_dir/index.ts" ]; then
+      mv "$ext_dir/index.ts.disabled" "$ext_dir/index.ts" 2>/dev/null && reenabled=$((reenabled + 1))
+    fi
+  done
+  if [ "$reenabled" -gt 0 ]; then
+    echo "[pi-wrapper] 已重新启用 $reenabled 个扩展" >&2
+    # 清空禁用列表
+    rm -f "$DISABLED_EXTENSIONS_FILE"
+  fi
+}
+
 # recover_missing_module [crash_log]
-# 崩溃类型：missing_module — 重新安装缺失的 npm 包
-# 从崩溃日志提取具体包名，精准安装；避免盲目 reinstall 整个包（会删手工修复的依赖）
+# 崩溃类型：missing_module — 重新安装缺失的 npm 包或从源码缓存恢复缺失文件
+# 从崩溃日志提取具体包名/文件路径，精准恢复；避免盲目 reinstall 整个包
 recover_missing_module() {
   local crash_log="${1:-}"
   echo "[pi-wrapper] [恢复] 重装缺失依赖..." >&2
@@ -453,6 +647,12 @@ recover_missing_module() {
   local missing_pkg=""
   if [ -n "$crash_log" ] && [ -f "$crash_log" ]; then
     missing_pkg=$(grep -oP "Cannot find package '\K[^']+" "$crash_log" 2>/dev/null | head -1)
+  fi
+
+  # 从崩溃日志提取缺失的模块路径（格式: Cannot find module '<path>'）
+  local missing_module=""
+  if [ -z "$missing_pkg" ] && [ -n "$crash_log" ] && [ -f "$crash_log" ]; then
+    missing_module=$(grep -oP "Cannot find module '\K[^']+" "$crash_log" 2>/dev/null | head -1)
   fi
 
   if [ -n "$missing_pkg" ]; then
@@ -479,8 +679,42 @@ fs.writeFileSync(p,JSON.stringify(pkg,null,2));
         fi
       fi
     fi
+  elif [ -n "$missing_module" ]; then
+    # 缺失内部模块（如 migrations.js）：尝试从源码缓存恢复
+    echo "[pi-wrapper] 缺失模块: $missing_module" >&2
+    local source_cache="$HOME/.pi/pi-source-cache"
+    local module_name
+    module_name="$(basename "$missing_module")"
+    local dest_dir
+    dest_dir="$(dirname "$missing_module")"
+    
+    # 1. 尝试恢复单个文件
+    if [ -f "$source_cache/dist/$module_name" ] && [ -d "$dest_dir" ]; then
+      cp "$source_cache/dist/$module_name" "$dest_dir/" 2>/dev/null && \
+        echo "[pi-wrapper] 已从源码缓存恢复 $module_name" >&2 && return 0
+    fi
+    
+    # 2. 单个文件不存在，尝试恢复整个 dist 目录
+    if [ -d "$source_cache/dist" ]; then
+      local dist_dir
+      dist_dir="$(dirname "$dest_dir")"
+      echo "[pi-wrapper] 恢复整个 dist 目录..." >&2
+      rm -rf "$dist_dir" 2>/dev/null
+      if cp -r "$source_cache/dist" "$dist_dir" 2>/dev/null; then
+        echo "[pi-wrapper] 已从源码缓存恢复整个 dist 目录" >&2
+        return 0
+      fi
+    fi
+    
+    # 3. 源码缓存恢复失败，降级为重装 pi-coding-agent
+    echo "[pi-wrapper] 源码缓存恢复失败，重装 pi-coding-agent..." >&2
+    if [ -d "$global_dir" ]; then
+      npm install --prefix "$global_dir" 2>&1 | tail -3 >&2
+    else
+      npm install -g @earendil-works/pi-coding-agent 2>&1 | tail -3 >&2
+    fi
   else
-    # 无法提取包名，降级为重装 pi-coding-agent
+    # 无法提取包名/模块路径，降级为重装 pi-coding-agent
     echo "[pi-wrapper] 无法识别缺失包，重装 pi-coding-agent..." >&2
     if [ -d "$global_dir" ]; then
       npm install --prefix "$global_dir" 2>&1 | tail -3 >&2
@@ -502,21 +736,93 @@ recover_syntax_error() {
   fi
 }
 
+# extension_source_ok <ext_name>
+# 飞行前校验：在禁用/恢复扩展之前，先用 node --check 验证扩展源码能否被解析。
+# 返回 0=源码可解析（问题不在源码，可安全禁用），1=源码解析失败（保留现场，不盲目禁用）。
+# 设计意图：禁用扩展是"关掉功能"而非"修好功能"。若源码本身有语法错误，
+# 禁用只是绕过崩溃，下次更新后同一错误会原样复发（本次 pi-context 顶层 await 即是）。
+# 因此解析失败时打印精确行号，交由用户/下次会话修复，而非静默丢功能。
+extension_source_ok() {
+  local ext_name="$1"
+  local ext_dir="$HOME/.pi/agent/extensions/$ext_name"
+  local src=""
+  # 优先检查 .ts 源码（jiti 解析入口），其次 .js
+  if [ -f "$ext_dir/index.ts" ]; then
+    src="$ext_dir/index.ts"
+  elif [ -f "$ext_dir/index.js" ]; then
+    src="$ext_dir/index.js"
+  else
+    return 0  # 无源码可校验（如纯 dist 扩展），放行
+  fi
+  # node --check 对 .ts 需 --experimental-strip-types（Node 22.6+）；失败时回退不 strip
+  if node --check "$src" >/dev/null 2>&1; then
+    return 0
+  fi
+  if node --experimental-strip-types --check "$src" >/dev/null 2>&1; then
+    return 0
+  fi
+  # 解析失败：输出精确行号，便于定位
+  local err_line
+  err_line=$(node --check "$src" 2>&1 | grep -oE "^[^:]+:[0-9]+:[0-9]+" | head -1)
+  [ -z "$err_line" ] && err_line=$(node --experimental-strip-types --check "$src" 2>&1 | grep -oE "^[^:]+:[0-9]+:[0-9]+" | head -1)
+  echo "[pi-wrapper] [诊断] 扩展 $ext_name 源码解析失败：$err_line" >&2
+  echo "[pi-wrapper] [诊断] 保留源码现场，不自动禁用（禁用=丢功能，非修复）" >&2
+  return 1
+}
+
 # recover_extension_fail <log_file>
-# 崩溃类型：extension_fail — 临时禁用问题扩展
+# 崩溃类型：extension_fail — 智能处理扩展加载失败
 recover_extension_fail() {
   local log_file="$1"
   local ext_name
   ext_name="$(get_failed_extension_name "$log_file")"
-  if [ -n "$ext_name" ]; then
-    echo "[pi-wrapper] [恢复] 临时禁用扩展: $ext_name" >&2
-    disable_extension "$ext_name"
-  else
+  
+  if [ -z "$ext_name" ]; then
     echo "[pi-wrapper] [恢复] 无法确定问题扩展，尝试禁用所有扩展" >&2
     for ext_dir in "$HOME/.pi/agent/extensions"/*/; do
       [ -f "$ext_dir/index.ts" ] && mv "$ext_dir/index.ts" "$ext_dir/index.ts.disabled" 2>/dev/null
     done
+    return 0
   fi
+  
+  # 飞行前校验：源码能否解析？
+  if ! extension_source_ok "$ext_name"; then
+    echo "[pi-wrapper] [恢复] 扩展 $ext_name 源码有语法错误，不自动禁用（保留功能，待修复）" >&2
+    echo "[pi-wrapper] [恢复] 临时方案：用 -ne 启动（跳过扩展）" >&2
+    return 1
+  fi
+  
+  # 检查是否是语法错误（ParseError, SyntaxError）
+  if echo "$log_file" | grep -qE "ParseError|SyntaxError|Unexpected token"; then
+    # 语法错误：尝试从源码缓存恢复扩展文件
+    local source_cache="$HOME/.pi/pi-source-cache"
+    local ext_dir="$HOME/.pi/agent/extensions/$ext_name"
+    
+    # 检查是否有备份的 index.ts
+    if [ -f "$ext_dir/index.ts.bak" ]; then
+      cp "$ext_dir/index.ts.bak" "$ext_dir/index.ts" 2>/dev/null
+      echo "[pi-wrapper] [恢复] 从备份恢复扩展 $ext_name" >&2
+      return 0
+    fi
+    
+    # 没有备份，禁用扩展
+    echo "[pi-wrapper] [恢复] 扩展 $ext_name 有语法错误，临时禁用" >&2
+    disable_extension "$ext_name"
+    return 0
+  fi
+  
+  # 非语法错误：检查是否可恢复
+  # 如果是运行时错误（TypeError, ReferenceError），尝试禁用
+  if echo "$log_file" | grep -qE "TypeError|ReferenceError"; then
+    echo "[pi-wrapper] [恢复] 扩展 $ext_name 运行时错误，临时禁用" >&2
+    disable_extension "$ext_name"
+    return 0
+  fi
+  
+  # 其他错误：禁用扩展
+  echo "[pi-wrapper] [恢复] 扩展 $ext_name 加载失败，临时禁用" >&2
+  disable_extension "$ext_name"
+  return 0
 }
 
 # recover_config_corrupt
@@ -560,10 +866,133 @@ recover_lock_contention() {
 }
 
 # recover_provider_error
-# 崩溃类型：provider_error — 回滚 lastGood 模型
+# 崩溃类型：provider_error — 指数退避重试（API 错误是临时性的，不回滚模型）
 recover_provider_error() {
-  echo "[pi-wrapper] [恢复] 回滚 lastGood 模型..." >&2
-  rollback_to_lastgood
+  local crash_count="${1:-1}"
+  # 指数退避：1s, 2s, 4s, 8s, 最大 30s
+  local delay=$((2 ** (crash_count - 1)))
+  if [ "$delay" -gt 30 ]; then
+    delay=30
+  fi
+  echo "[pi-wrapper] [恢复] API 错误，等待 ${delay}s 后重试..." >&2
+  sleep "$delay"
+  return 0
+}
+
+# recover_cli_argument_error
+# 崩溃类型：cli_argument_error — 自动修复参数错误
+recover_cli_argument_error() {
+  local crash_log="${1:-}"
+  echo "[pi-wrapper] [恢复] 检测到 CLI 参数错误..." >&2
+  
+  # 检查是否是 -m 参数问题
+  if echo "$crash_log" | grep -qE "Unknown option: -m"; then
+    echo "[pi-wrapper] [恢复] -m 参数未被 wrapper 正确处理，检查 resolve_mode..." >&2
+    # 尝试从原始参数中移除 -m 和后续参数
+    local new_args=()
+    local skip_next=false
+    for arg in "${ORIG_ARGS[@]}"; do
+      if [ "$skip_next" = true ]; then
+        skip_next=false
+        continue
+      fi
+      if [ "$arg" = "-m" ] || [ "$arg" = "--mode" ]; then
+        skip_next=true
+        continue
+      fi
+      new_args+=("$arg")
+    done
+    ORIG_ARGS=("${new_args[@]}")
+    echo "[pi-wrapper] [恢复] 已从参数中移除 -m/--mode" >&2
+    return 0
+  fi
+  
+  # 其他参数错误，返回失败
+  return 1
+}
+
+# recover_network_error
+# 崩溃类型：network_error — 指数退避重试
+recover_network_error() {
+  local crash_count="${1:-1}"
+  # 指数退避：2s, 4s, 8s, 16s, 最大 60s
+  local delay=$((2 ** crash_count))
+  if [ "$delay" -gt 60 ]; then
+    delay=60
+  fi
+  echo "[pi-wrapper] [恢复] 网络错误，等待 ${delay}s 后重试..." >&2
+  sleep "$delay"
+  return 0
+}
+
+# recover_oom_error
+# 崩溃类型：oom_error — 清理内存并增加 Node.js 内存限制
+recover_oom_error() {
+  echo "[pi-wrapper] [恢复] 内存不足，尝试清理..." >&2
+  
+  # 1. 清理系统缓存
+  sync 2>/dev/null
+  echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
+  
+  # 2. 检查 Node.js 内存使用
+  local node_mem
+  node_mem=$(node -e "console.log(process.memoryUsage().rss)" 2>/dev/null || echo "0")
+  echo "[pi-wrapper] 当前 Node.js 内存使用: $((node_mem / 1024 / 1024))MB" >&2
+  
+  # 3. 增加 Node.js 内存限制（如果未设置）
+  if [ -z "$NODE_OPTIONS" ]; then
+    export NODE_OPTIONS="--max-old-space-size=2048"
+    echo "[pi-wrapper] 设置 Node.js 内存限制: 2048MB" >&2
+  fi
+  
+  return 0
+}
+
+# recover_disk_full
+# 崩溃类型：disk_full — 清理磁盘空间
+recover_disk_full() {
+  echo "[pi-wrapper] [恢复] 磁盘空间不足，尝试清理..." >&2
+  
+  # 1. 清理 pi 日志（保留最近7天）
+  find "$HOME/.pi/data/logs" -name "*.log" -mtime +7 -delete 2>/dev/null || true
+  
+  # 2. 清理崩溃日志（保留最近10个）
+  find "$HOME/.pi/data/logs/crash-logs" -name "*.log" -type f | head -n -10 | xargs rm -f 2>/dev/null || true
+  
+  # 3. 清理临时文件
+  rm -f /tmp/pi-crash-*.log 2>/dev/null || true
+  rm -f /tmp/pi-health-check-*.log 2>/dev/null || true
+  
+  # 4. 清理 npm 缓存
+  npm cache clean --force 2>/dev/null || true
+  
+  # 5. 检查磁盘空间
+  local disk_usage
+  disk_usage=$(df -h "$HOME/.pi" 2>/dev/null | tail -1 | awk '{print $5}' | tr -d '%')
+  echo "[pi-wrapper] 清理后磁盘使用率: ${disk_usage}%" >&2
+  
+  return 0
+}
+
+# recover_timeout_error
+# 崩溃类型：timeout_error — 进程挂死，强制终止
+recover_timeout_error() {
+  echo "[pi-wrapper] [恢复] 进程超时，强制终止..." >&2
+  
+  # 1. 终止所有 pi 进程
+  pkill -f "pi-coding-agent/dist/cli.js" 2>/dev/null || true
+  sleep 2
+  
+  # 2. 检查是否有残留进程
+  local remaining_pids
+  remaining_pids=$(pgrep -f "pi-coding-agent/dist/cli.js" 2>/dev/null || echo "")
+  if [ -n "$remaining_pids" ]; then
+    echo "[pi-wrapper] 强制终止残留进程: $remaining_pids" >&2
+    echo "$remaining_pids" | xargs kill -9 2>/dev/null || true
+    sleep 1
+  fi
+  
+  return 0
 }
 
 # escalate_recovery <crash_type> [crash_log]
@@ -728,6 +1157,83 @@ write_crash_count() {
   " 2>/dev/null
 }
 
+# ── 熔断器 ──
+
+# read_circuit_breaker
+# 读取熔断器状态
+# 返回: 0=正常 1=熔断中
+read_circuit_breaker() {
+  if [ ! -f "$CIRCUIT_BREAKER_FILE" ]; then
+    return 1
+  fi
+  node -e "
+    const fs = require('fs');
+    try {
+      const cb = JSON.parse(fs.readFileSync('$CIRCUIT_BREAKER_FILE', 'utf-8'));
+      if (cb.tripped && cb.cooldownEnd) {
+        const now = Date.now();
+        if (now < cb.cooldownEnd) {
+          console.log('tripped');
+          process.exit(0);
+        }
+        // 冷却期结束，重置熔断器
+        cb.tripped = false;
+        cb.consecutiveFails = 0;
+        cb.cooldownEnd = 0;
+        fs.writeFileSync('$CIRCUIT_BREAKER_FILE', JSON.stringify(cb, null, 2));
+      }
+      process.exit(1);
+    } catch(e) { process.exit(1); }
+  " 2>/dev/null
+  if [ $? -eq 0 ]; then
+    return 0
+  fi
+  return 1
+}
+
+# write_circuit_breaker
+# 更新熔断器状态
+# 参数: $1=是否跳闸 (true/false) $2=连续失败次数
+write_circuit_breaker() {
+  local tripped="$1"
+  local consecutive_fails="${2:-0}"
+  node -e "
+    const fs = require('fs');
+    let cb = { tripped: false, consecutiveFails: 0, cooldownEnd: 0 };
+    try { cb = JSON.parse(fs.readFileSync('$CIRCUIT_BREAKER_FILE', 'utf-8')); } catch(e) {}
+    cb.tripped = '$tripped' === 'true';
+    cb.consecutiveFails = $consecutive_fails;
+    if (cb.tripped && !cb.cooldownEnd) {
+      cb.cooldownEnd = Date.now() + ($CIRCUIT_BREAKER_COOLDOWN * 1000);
+    } else if (!cb.tripped) {
+      cb.cooldownEnd = 0;
+    }
+    fs.writeFileSync('$CIRCUIT_BREAKER_FILE', JSON.stringify(cb, null, 2));
+  " 2>/dev/null
+}
+
+# check_circuit_breaker
+# 检查熔断器状态，如果熔断则等待冷却时间
+# 返回: 0=正常可以继续 1=熔断中应停止
+check_circuit_breaker() {
+  if read_circuit_breaker; then
+    echo "[pi-wrapper] 熔断器触发，恢复操作暂停中..." >&2
+    # 计算剩余冷却时间
+    local remaining
+    remaining=$(node -e "
+      const fs = require('fs');
+      try {
+        const cb = JSON.parse(fs.readFileSync('$CIRCUIT_BREAKER_FILE', 'utf-8'));
+        const remaining = Math.max(0, cb.cooldownEnd - Date.now());
+        console.log(Math.ceil(remaining / 1000));
+      } catch(e) { console.log(0); }
+    " 2>/dev/null || echo "0")
+    echo "[pi-wrapper] 剩余冷却时间: ${remaining}s" >&2
+    return 1
+  fi
+  return 0
+}
+
 save_lastgood() {
   # 正常退出时记录当前默认模型为“最近一次良好配置”
   node -e "
@@ -832,6 +1338,48 @@ ensure_tmux() {
   fi
 }
 
+# validate_config
+# 校验 pi 配置文件是否有效
+# 返回 0=有效 1=无效
+validate_config() {
+  echo "[pi-wrapper] 校验配置文件..." >&2
+  local config_valid=true
+  
+  # 校验 settings.json
+  if [ -f "$SETTINGS_FILE" ]; then
+    if ! node -e "JSON.parse(require('fs').readFileSync('$SETTINGS_FILE', 'utf-8'))" 2>/dev/null; then
+      echo "[pi-wrapper] 配置错误: settings.json 格式无效" >&2
+      config_valid=false
+    fi
+  fi
+  
+  # 校验 models.json
+  local models_file="$HOME/.pi/agent/models.json"
+  if [ -f "$models_file" ]; then
+    if ! node -e "JSON.parse(require('fs').readFileSync('$models_file', 'utf-8'))" 2>/dev/null; then
+      echo "[pi-wrapper] 配置错误: models.json 格式无效" >&2
+      config_valid=false
+    fi
+  fi
+  
+  # 校验 modes.json
+  local modes_file="$HOME/.pi/agent/modes.json"
+  if [ -f "$modes_file" ]; then
+    if ! node -e "JSON.parse(require('fs').readFileSync('$modes_file', 'utf-8'))" 2>/dev/null; then
+      echo "[pi-wrapper] 配置错误: modes.json 格式无效" >&2
+      config_valid=false
+    fi
+  fi
+  
+  if [ "$config_valid" = false ]; then
+    echo "[pi-wrapper] 配置校验失败，尝试从快照恢复..." >&2
+    return 1
+  fi
+  
+  echo "[pi-wrapper] 配置校验通过" >&2
+  return 0
+}
+
 # L2: cron 守护自愈（离线调度保障）。pi-cron.sh 由 crontab 每分钟触发，
 # 但 proot 环境 cron 守护可能未运行（重启后丢失、无人拉起），在此确保拉起。
 # 幂等：已在运行则跳过。
@@ -845,6 +1393,8 @@ ensure_cron() {
 
 # pi-mode: 解析 --mode/-m 参数并翻译为 CLI 标志
 # 用法: pi --mode light 或 pi -m light
+# 输出: RESOLVED_ARGS 数组（全局变量），调用方用 set -- "${RESOLVED_ARGS[@]}" 应用
+RESOLVED_ARGS=()
 resolve_mode() {
   local mode_name=""
   local new_args=()
@@ -881,17 +1431,32 @@ resolve_mode() {
     fi
   fi
 
-  # 沒有模式參數，直接返回
+  # 沒有模式參數，直接返回（使用已过滤的 new_args，避免裸 -m/--mode 泄漏到 CLI）
   if [ -z "$mode_name" ]; then
-    eval "set -- \"\$@\""
+    RESOLVED_ARGS=("${new_args[@]}")
     return
   fi
 
-  # 讀取 modes.json
+  # 更新 modes.json 的 current 字段（pi-mode 扩展会读取此字段）
+  local modes_file="$HOME/.pi/agent/modes.json"
+  if [ -f "$modes_file" ]; then
+    node -e "
+      const fs = require('fs');
+      try {
+        const modes = JSON.parse(fs.readFileSync('$modes_file', 'utf-8'));
+        if (modes.current !== '$mode_name') {
+          modes.current = '$mode_name';
+          fs.writeFileSync('$modes_file', JSON.stringify(modes, null, 2) + '\n');
+        }
+      } catch(e) {}
+    " 2>/dev/null
+  fi
+
+  # 讀取模式配置
   local modes_file="$HOME/.pi/agent/modes.json"
   if [ ! -f "$modes_file" ]; then
     echo "[pi-wrapper] 模式配置文件不存在: $modes_file" >&2
-    eval "set -- \"\$@\""
+    RESOLVED_ARGS=("${new_args[@]}")
     return
   fi
 
@@ -908,14 +1473,36 @@ resolve_mode() {
 
   local extra_args=()
 
-  # 扩展：!ALL
-  local no_ext
-  no_ext=$(echo "$mode_config" | node -e "
+  # 扩展处理：支持 !ALL（禁用全部）和 !name（排除特定扩展）
+  local ext_excludes
+  ext_excludes=$(echo "$mode_config" | node -e "
     const m=JSON.parse(require('fs').readFileSync('/dev/stdin','utf-8'));
-    console.log((m.extensions||[]).includes('!ALL')?'yes':'no');
+    const exts = m.extensions || [];
+    if (exts.includes('!ALL')) { console.log('ALL'); process.exit(0); }
+    const excludes = exts.filter(e => e.startsWith('!')).map(e => e.slice(1));
+    if (excludes.length > 0) console.log(excludes.join(','));
+    else console.log('');
   " 2>/dev/null)
-  if [ "$no_ext" = "yes" ]; then
+  
+  if [ "$ext_excludes" = "ALL" ]; then
     extra_args+=("--no-extensions")
+  elif [ -n "$ext_excludes" ]; then
+    # 有排除列表：先禁用自动发现，再逐个加载允许的扩展
+    extra_args+=("--no-extensions")
+    local ext_dir="$HOME/.pi/agent/extensions"
+    for ext_path in "$ext_dir"/*/; do
+      local ext_name
+      ext_name="$(basename "$ext_path")"
+      # 跳过非扩展目录
+      [ ! -f "$ext_path/package.json" ] && continue
+      [ ! -f "$ext_path/index.ts" ] && continue
+      # 检查是否在排除列表中
+      if echo ",$ext_excludes," | grep -q ",$ext_name,"; then
+        echo "[pi-wrapper] 模式排除扩展: $ext_name" >&2
+        continue
+      fi
+      extra_args+=("--extension" "$ext_path")
+    done
   fi
 
   # 技能：!ALL
@@ -926,6 +1513,11 @@ resolve_mode() {
   " 2>/dev/null)
   if [ "$no_skills" = "yes" ]; then
     extra_args+=("--no-skills")
+  fi
+
+  # 上下文文件：非 full 模式禁用 AGENTS.md/CLAUDE.md
+  if [ "$mode_name" != "full" ]; then
+    extra_args+=("--no-context-files")
   fi
 
   # 系统提示词
@@ -954,14 +1546,15 @@ resolve_mode() {
   export PI_AGENT_MODE="$mode_name"
   echo "[pi-wrapper] 启用模式: $mode_name" >&2
 
-  # 合并参数：模式标志 + 剩余原始参数（去掉 -m/--mode）
-  set -- "${extra_args[@]}" "${new_args[@]}"
+  # 合并参数到全局变量 RESOLVED_ARGS（函数内 set -- 不传播到调用方）
+  RESOLVED_ARGS=("${extra_args[@]}" "${new_args[@]}")
 }
 while true; do
   ensure_tmux
   ensure_cron
   # 解析 --mode/-m 參數並應用模式配置
   resolve_mode "$@"
+  set -- "${RESOLVED_ARGS[@]}"
   
   
   
@@ -969,6 +1562,18 @@ while true; do
   if [ "${SNAPSHOT_CREATED:-}" != "1" ]; then
     create_snapshot >/dev/null 2>&1
     SNAPSHOT_CREATED=1
+  fi
+  
+  # 启动前校验配置文件
+  if ! validate_config; then
+    echo "[pi-wrapper] 配置校验失败，尝试从快照恢复..." >&2
+    if [ -d "$SNAPSHOT_DIR" ]; then
+      local latest_snapshot
+      latest_snapshot=$(ls -1d "$SNAPSHOT_DIR"/snapshot_* 2>/dev/null | tail -1)
+      if [ -n "$latest_snapshot" ] && restore_snapshot "$latest_snapshot"; then
+        echo "[pi-wrapper] 从快照恢复配置成功" >&2
+      fi
+    fi
   fi
   
   echo "[pi-wrapper] 启动 Pi... (js: $PI_JS)" >&2
@@ -1000,6 +1605,17 @@ while true; do
       fi
       crash_count=$((crash_count + 1))
       write_crash_count "$crash_count"
+      
+      # 检查熔断器状态
+      if check_circuit_breaker; then
+        echo "[pi-wrapper] 熔断器正常，继续恢复..." >&2
+      else
+        echo "[pi-wrapper] 熔断器触发，停止恢复" >&2
+        audit_begin "$CRASH_TYPE" "$CRASH_SNIPPET" "$crash_count" "$EXIT_CODE"
+        audit_end "circuit_breaker" "false" "熔断器触发，暂停恢复"
+        preserve_crash_log "$CRASH_LOG"
+        break
+      fi
       
       # 分析崩溃原因
       CRASH_TYPE=$(analyze_crash "$CRASH_LOG")
@@ -1037,119 +1653,120 @@ while true; do
         break
       fi
       
-      # 根据崩溃类型选择恢复策略（每种类型有完整升级链）
+      # ── 新恢复逻辑：wrapper 做分类/启动，pi 做实际修复 ──
+      # 1. 分类崩溃：pi 自身损坏 vs 外部问题 vs 临时性
+      local crash_class
+      crash_class=$(classify_crash "$CRASH_LOG")
+      echo "[pi-wrapper] 崩溃分类: $crash_class (原类型=$CRASH_TYPE)" >&2
+
       RECOVERY_OK=false
-      case "$CRASH_TYPE" in
-        missing_module)
-          # L1: 精准安装缺失包
-          if recover_missing_module "$CRASH_LOG"; then
+      case "$crash_class" in
+        transient)
+          # 临时性错误（API/网络/超时）：指数退避重试，不修复
+          echo "[pi-wrapper] 检测到临时性错误，指数退避重试..." >&2
+          if recover_provider_error "$crash_count"; then
             RECOVERY_OK=true
-          # L2: 源码恢复
-          elif recover_from_source; then
+          elif recover_network_error "$crash_count"; then
             RECOVERY_OK=true
-          # L3: 救援模式 pi（兜底）
-          elif start_rescue_pi "$CRASH_LOG"; then
-            RECOVERY_OK=true
-          fi
-          ;;
-        syntax_error)
-          if recover_syntax_error; then
-            RECOVERY_OK=true
-          elif recover_from_source; then
-            RECOVERY_OK=true
-          elif start_rescue_pi "$CRASH_LOG"; then
+          elif recover_timeout_error; then
             RECOVERY_OK=true
           fi
           ;;
-        extension_fail)
-          if recover_extension_fail "$CRASH_LOG"; then
+
+        external)
+          # pi 核心正常，外部问题（扩展/配置/依赖/权限/磁盘）→ 用当前 pi（屏蔽扩展）自修复
+          echo "[pi-wrapper] === 路径 A：外部问题，用当前 pi 修复（屏蔽扩展/技能） ===" >&2
+          if run_fix_pi external "$PI_JS" "$CRASH_LOG"; then
             RECOVERY_OK=true
-            TEST_WITH_EXTENSIONS=1
-          elif recover_from_source; then
-            RECOVERY_OK=true
-          elif start_rescue_pi "$CRASH_LOG"; then
-            RECOVERY_OK=true
+          else
+            echo "[pi-wrapper] 外部修复 pi 失败，尝试传统恢复链..." >&2
+            # 回退到原有细粒度恢复（不破坏兼容）
+            case "$CRASH_TYPE" in
+              extension_fail)
+                if recover_extension_fail "$CRASH_LOG"; then
+                  RECOVERY_OK=true
+                  TEST_WITH_EXTENSIONS=1
+                fi
+                ;;
+              config_corrupt)
+                if recover_config_corrupt; then RECOVERY_OK=true; fi
+                ;;
+              missing_module)
+                if recover_missing_module "$CRASH_LOG"; then RECOVERY_OK=true; fi
+                ;;
+              permission_error)
+                if [ -d "$HOME/.pi" ]; then chmod -R u+rw "$HOME/.pi" 2>/dev/null; RECOVERY_OK=true; fi
+                ;;
+              disk_full)
+                if recover_disk_full; then RECOVERY_OK=true; fi
+                ;;
+              lock_contention)
+                if recover_lock_contention; then RECOVERY_OK=true; fi
+                ;;
+              *)
+                # 其他外部问题让 pi 重试
+                if run_fix_pi external "$PI_JS" "$CRASH_LOG"; then RECOVERY_OK=true; fi
+                ;;
+            esac
           fi
           ;;
-        config_corrupt)
-          if recover_config_corrupt; then
-            RECOVERY_OK=true
-          elif recover_from_source; then
-            RECOVERY_OK=true
-          elif start_rescue_pi "$CRASH_LOG"; then
-            RECOVERY_OK=true
-          fi
-          ;;
-        proxy_error)
-          if recover_proxy_error; then
-            RECOVERY_OK=true
-          elif recover_from_source; then
-            RECOVERY_OK=true
-          elif start_rescue_pi "$CRASH_LOG"; then
-            RECOVERY_OK=true
-          fi
-          ;;
-        lock_contention)
-          if recover_lock_contention; then
-            RECOVERY_OK=true
-          elif recover_from_source; then
-            RECOVERY_OK=true
-          elif start_rescue_pi "$CRASH_LOG"; then
-            RECOVERY_OK=true
-          fi
-          ;;
-        provider_error)
-          if recover_provider_error; then
-            RECOVERY_OK=true
-          elif recover_from_source; then
-            RECOVERY_OK=true
-          elif start_rescue_pi "$CRASH_LOG"; then
-            RECOVERY_OK=true
-          fi
-          ;;
-        *)
-          # unknown 类型：逐级升级恢复策略
-          if [ "$crash_count" -ge "$RESCUE_PI_THRESHOLD" ]; then
-            echo "[pi-wrapper] 未知崩溃类型，启动 L4 源码恢复 + 救援模式 pi..." >&2
-            if recover_from_source; then
-              RECOVERY_OK=true
-            elif start_rescue_pi "$CRASH_LOG"; then
-              RECOVERY_OK=true
+
+        pi_self)
+          # pi 自身损坏（dist 语法错误/缺失/核心模块损坏）→ 用源码缓存的 pi 修复坏的 pi
+          echo "[pi-wrapper] === 路径 B：pi 自身损坏，用源码缓存 pi 修复 pi ===" >&2
+          local good_pi="$PI_SOURCE_CACHE/dist/cli.js"
+          if [ ! -f "$good_pi" ]; then
+            echo "[pi-wrapper] 源码缓存 pi 不存在，尝试实时构建..." >&2
+            if [ -x "$HOME/.pi/scripts/pi-source-build.sh" ]; then
+              bash "$HOME/.pi/scripts/pi-source-build.sh" 2>&1 | tail -5 >&2
             fi
-          elif [ "$crash_count" -ge "$CRASH_THRESHOLD" ]; then
-            echo "[pi-wrapper] 未知崩溃类型，尝试扩展恢复 → 源码恢复 → 救援模式 pi..." >&2
-            if recover_extension_fail "$CRASH_LOG"; then
+          fi
+          if [ -f "$good_pi" ]; then
+            if run_fix_pi self "$good_pi" "$CRASH_LOG"; then
               RECOVERY_OK=true
-              TEST_WITH_EXTENSIONS=1
-            elif recover_from_source; then
-              RECOVERY_OK=true
-            elif start_rescue_pi "$CRASH_LOG"; then
-              RECOVERY_OK=true
+            else
+              echo "[pi-wrapper] 源码 pi 自修复失败，尝试 recover_from_source..." >&2
+              if recover_from_source; then
+                RECOVERY_OK=true
+              fi
             fi
           else
-            echo "[pi-wrapper] 未知崩溃类型(${crash_count}/${CRASH_THRESHOLD})，1 秒后重试..." >&2
-            audit_end "retry" "true" "未知类型，重试累积"
-            preserve_crash_log "$CRASH_LOG"
-            sleep 1
-            set -- "${ORIG_ARGS[@]}"
-            continue
+            echo "[pi-wrapper] 无可用的源码 pi，回退 recover_from_source..." >&2
+            if recover_from_source; then
+              RECOVERY_OK=true
+            fi
           fi
           ;;
       esac
-      
+
       # 健康检查
       if [ "$RECOVERY_OK" = true ] && health_check; then
         audit_end "$CRASH_TYPE" "true" "恢复成功，健康检查通过"
         echo "[pi-wrapper] 恢复成功，重启..." >&2
+        reenable_disabled_extensions
+        write_circuit_breaker "false" 0  # 重置熔断器
         RECOVERY_ROUNDS=0
         preserve_crash_log "$CRASH_LOG"
         sleep 1
         set -- "${ORIG_ARGS[@]}" "--continue"
         continue
       else
-        audit_end "$CRASH_TYPE" "false" "恢复失败或健康检查不通过"
-        echo "[pi-wrapper] 恢复失败，停止" >&2
+        # 恢复失败：尝试下一个策略而非立即停止
+        echo "[pi-wrapper] 当前恢复策略失败，尝试其他策略..." >&2
+        audit_end "$CRASH_TYPE" "false" "恢复失败或健康检查不通过，尝试其他策略"
         preserve_crash_log "$CRASH_LOG"
+        
+        if [ "$crash_count" -ge "$CIRCUIT_BREAKER_THRESHOLD" ]; then
+          write_circuit_breaker "true" "$crash_count"
+          echo "[pi-wrapper] 连续失败 ${crash_count} 次，触发熔断器" >&2
+        fi
+        
+        if [ "$RECOVERY_ROUNDS" -lt "$MAX_RECOVERY_ROUNDS" ]; then
+          sleep 1
+          set -- "${ORIG_ARGS[@]}"
+          continue
+        fi
+        echo "[pi-wrapper] 已达最大恢复轮数($MAX_RECOVERY_ROUNDS)，停止恢复" >&2
         break
       fi
     fi
@@ -1157,6 +1774,7 @@ while true; do
     # 正常退出：记录 lastGood 并清零崩溃计数
     save_lastgood
     write_crash_count 0
+    reenable_disabled_extensions
     SNAPSHOT_CREATED=0
     RECOVERY_ROUNDS=0
     echo "[pi-wrapper] 正常退出，不重启" >&2
