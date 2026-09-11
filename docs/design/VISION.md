@@ -54,9 +54,9 @@
 |---|---|---|---|
 | 缓存 | 命中率 / 断裂归因 | usage-stats / lesson-miner / cache-guard | ✅ 已有 |
 | 干预 | abort 快照留存率 / corrective 关联率 | pi-intervention 扩展 → `memory/interventions.jsonl`（git 忽略） | ✅ P1 |
-| 任务 | 成功率代理 / 干预次数 / token 成本（按会话聚合） | scripts/task-metrics.mjs（usage-diag + interventions） | ✅ P2 |
-| 回归 | golden tasks（行为防退化基准） | scripts/golden-tasks.sh（--fast 确定性 / --full 无头会话） | ✅ P3 |
-| 记忆库 | 规模 / 陈旧度 / 升格候选 / 冲突嫌疑 | scripts/memory-lifecycle.mjs（只读报告） | ✅ P4 |
+| 任务 | 成功率代理 / 干预次数 / token 成本（按会话聚合） | agent/extensions/pi-autopilot/scripts/task-metrics.mjs（usage-diag + interventions） | ✅ P2 |
+| 回归 | golden tasks（行为防退化基准） | scripts/maintenance/golden-tasks.sh（--fast 确定性 / --full 无头会话） | ✅ P3 |
+| 记忆库 | 规模 / 陈旧度 / 升格候选 / 冲突嫌疑 | agent/extensions/pi-memory/scripts/memory-lifecycle.mjs（只读报告） | ✅ P4 |
 
 ## 5. 记忆生命周期治理规则 v1
 

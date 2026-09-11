@@ -18,9 +18,9 @@
 #     G2 工具执行断言（在 tmp 目录写文件并校验内容）
 #
 # 用法：
-#   bash scripts/golden-tasks.sh            # fast 档
-#   bash scripts/golden-tasks.sh --fast     # 同上
-#   bash scripts/golden-tasks.sh --full     # fast + 无头会话两任务
+#   bash scripts/maintenance/golden-tasks.sh            # fast 档
+#   bash scripts/maintenance/golden-tasks.sh --fast     # 同上
+#   bash scripts/maintenance/golden-tasks.sh --full     # fast + 无头会话两任务
 #   PI_BIN=... 覆盖 pi 可执行路径（默认 command -v pi）
 set -u
 FAILED=0
@@ -31,6 +31,8 @@ red() { printf "\033[31m✗ %s\033[0m\n" "$1"; FAILED=$((FAILED+1)); }
 
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$SCRIPTS")"
+AUTOPILOT_SCRIPTS="$ROOT/agent/extensions/pi-autopilot/scripts"
+CONTEXT_SCRIPTS="$ROOT/agent/extensions/pi-context/scripts"
 MODE="fast"
 [ "${1:-}" = "--full" ] && MODE="full"
 
@@ -38,7 +40,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 # ---------- Fast 档 ----------
-if TM_JSON="$TMP/tm.json" node "$SCRIPTS/task-metrics.mjs" --json > "$TMP/tm.json" 2>/dev/null && TM_JSON="$TMP/tm.json" python3 -c "
+if TM_JSON="$TMP/tm.json" node "$AUTOPILOT_SCRIPTS/task-metrics.mjs" --json > "$TMP/tm.json" 2>/dev/null && TM_JSON="$TMP/tm.json" python3 -c "
 import json
 import os as _os
 d=json.load(open(_os.environ['TM_JSON']))
@@ -54,7 +56,7 @@ if node "$SCRIPTS/lesson-miner.mjs" --limit 1 >/dev/null 2>&1; then
 else
   red "F2a lesson-miner 异常"
 fi
-if node "$ROOT/scripts/usage-stats.mjs" >/dev/null 2>&1 || node "$SCRIPTS/usage-stats.mjs" >/dev/null 2>&1; then
+if node "$CONTEXT_SCRIPTS/usage-stats.mjs" >/dev/null 2>&1; then
   grn "F2b usage-stats 可运行"
 else
   red "F2b usage-stats 异常"

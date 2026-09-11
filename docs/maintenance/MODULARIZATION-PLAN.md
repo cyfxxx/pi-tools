@@ -158,8 +158,8 @@ Layer 0 ─ 基础层 ───────────── agent/core/ (confi
 | 兼容层 | 位置 | 清理日期 | 说明 |
 |--------|------|----------|------|
 | lib/ 兼容层 | `agent/lib/index.ts` | 2026-09-23 | 重导出 core/ + services/ |
-| scripts/ symlink | `scripts/patch-*.mjs` | 2026-09-23 | 指向扩展 scripts/ |
-| scripts/ symlink | `scripts/pi-cron.sh` 等 | 2026-09-23 | 指向扩展 scripts/ |
+| scripts/ symlink | `scripts/patch-*.mjs` | 2026-09-23 | 指向扩展 scripts/（已移除，改为直接引用） |
+| scripts/ symlink | `scripts/pi-cron.sh` 等 | 2026-09-23 | 指向扩展 scripts/（已移除，改为直接引用） |
 | data/ symlink | `memory/` → `data/memory/` | 2026-09-23 | 保持旧路径可访问 |
 | data/ symlink | `logs/` → `data/logs/` | 2026-09-23 | 保持旧路径可访问 |
 | data/ symlink | `plans/` → `data/plans/` | 2026-09-23 | 保持旧路径可访问 |
@@ -168,7 +168,7 @@ Layer 0 ─ 基础层 ───────────── agent/core/ (confi
 
 2026-09-23（2 周过渡期后）：
 1. 删除 `agent/lib/` 兼容层目录
-2. 删除 `scripts/` 中指向扩展 scripts/ 的 symlink
+2. 删除 `scripts/` 中指向扩展 scripts/ 的 symlink（已完成）
 3. 确认所有代码引用新路径后，删除 data/ 顶层 symlink
 
 ---
@@ -217,7 +217,7 @@ console.log('All imports OK')
 "
 
 # 2. 全量测试
-bash scripts/test-all.sh
+bash scripts/test/test-all.sh
 
 # 3. 类型检查
 cd agent/extensions && npx tsc --noEmit

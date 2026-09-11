@@ -190,8 +190,8 @@ subagent 双轨：mjs 测试 `cd agent/extensions/subagent && node --experimenta
 - `services/token-budget/prune.ts` 阈值 = 缓存契约：`PRUNE_PROTECT_TOKENS=120K`（分层擦除保护带）、`PRUNE_MINIMUM_TOKENS=80K`（最低回收）、`DEFAULT_KEEP_THINKING_TOKENS=64K`（thinking 剪枝）——1M 窗口内普通会话全程不触发，清理交给 auto-compact；阈值回退会被 cache-guard 阻断
 - 历史背景：16K thinking 预算曾致 3.8h 会话 27 次缓存断裂、1.46M token 浪费（每 2-3 轮改早期消息 → 前缀断裂）；64K 后模拟断裂 39→4 次，实测 0 断裂/98%+
 - 工具 schema 是 system prompt 一部分：conflict-check 每次运行将 registerTool 块 sha256 入账 `stats/tool-fingerprint.jsonl`，跨会话漂移可追溯
-- 诊断：`node scripts/usage-stats.mjs` 看每会话命中/断裂/浪费；断裂轮 cacheRead ≈ 断裂点，对照该轮事件定位；`cache-guard.mjs` 查注入面漂移
-- 流程层守门（2026-08-26，源自 dsh 生态 Reasonix 纪律）：`scripts/check-cache-impact.sh` 经 `.githooks/commit-msg`（rebuild 自动配 `core.hooksPath`）强制触碰缓存敏感面的 commit 携带 `Cache-impact: <none|low|medium|high> - <理由>`；触碰 `agent/{skills,prompts,agents}/` 追加 `System-prompt-review:`（拒绝 none/占位）。手动报告：`bash scripts/check-cache-impact.sh --staged`。与 cache-guard.mjs 分工：指纹管内容漂移，声明管流程纪律
+- 诊断：`node agent/extensions/pi-context/scripts/usage-stats.mjs` 看每会话命中/断裂/浪费；断裂轮 cacheRead ≈ 断裂点，对照该轮事件定位；`cache-guard.mjs` 查注入面漂移
+- 流程层守门（2026-08-26，源自 dsh 生态 Reasonix 纪律）：`scripts/maintenance/check-cache-impact.sh` 经 `.githooks/commit-msg`（rebuild 自动配 `core.hooksPath`）强制触碰缓存敏感面的 commit 携带 `Cache-impact: <none|low|medium|high> - <理由>`；触碰 `agent/{skills,prompts,agents}/` 追加 `System-prompt-review:`（拒绝 none/占位）。手动报告：`bash scripts/maintenance/check-cache-impact.sh --staged`。与 cache-guard.mjs 分工：指纹管内容漂移，声明管流程纪律
 
 ## 补丁生命周期
 
@@ -210,7 +210,7 @@ subagent 双轨：mjs 测试 `cd agent/extensions/subagent && node --experimenta
 
 共 12 个 patch 文件由 rebuild.sh 自动执行（幂等）：11 个无条件 + `patch-playwright-core.mjs` 仅 Termux 条件执行；pi update 升级 dist 后需重跑 rebuild.sh（或手动 node 执行对应脚本）。
 
-补丁文件位置：`agent/extensions/*/scripts/patch-*.mjs`（通过 symlink 到 `scripts/` 供 rebuild.sh 发现）
+补丁文件位置：`agent/extensions/*/scripts/patch-*.mjs`（rebuild.sh 直接读取各扩展 scripts/ 目录）
 
 footer 状态栏口径速查：`Σ/↑/↓`=会话累计（Σ=总输入=命中+未命中 / ↑=累计未命中输入 / ↓=累计输出）；`CH{x}/{y}%`=左实时（最近一轮）/右会话累计；context 区 `34.5k/200k`=实时/窗口（>40% 追加 ⚠ 提示重启前先压缩、>70% 黄、>90% 红，无括号百分比）；`¥`=成本人民币（参考汇率 6.77=2026-08 近 90 天中位数，常量在 patch-footer-format.mjs，改汇率后重跑自动更新 dist）。
 

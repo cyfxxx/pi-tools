@@ -18,7 +18,7 @@ pi（earendil-works/pi-coding-agent）扩展开发实测经验汇总（2026-08�
 
 - **`enter` 是保留键**：`tui.input.submit` 默认绑 enter，且在 `RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS` 列表（`dist/core/extensions/runner.js`）——扩展注册 **enter 会被静默丢弃，无任何警告**！用 `Key.return`（matchesKey 的 case enter/return 同一分支，`\r` 命中）或 `shift+enter` 等非保留键
 - **注册前查保留列表**：`grep -A20 "RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS" dist/core/extensions/runner.js`
-- **handler 返回 false = 放行**：依赖补丁 `scripts/patch-voice-enter.mjs`（rebuild.sh 自动执行，pi update 后需重跑）；未打补丁时注册 enter/return 会**吞掉全部回车**（输入提交/菜单失效）——用 `enterPatchApplied()` 探测，未检测到补丁则不注册
+- **handler 返回 false = 放行**：依赖补丁 `agent/extensions/pi-voice/scripts/patch-voice-enter.mjs`（rebuild.sh 自动执行，pi update 后需重跑）；未打补丁时注册 enter/return 会**吞掉全部回车**（输入提交/菜单失效）——用 `enterPatchApplied()` 探测，未检测到补丁则不注册
 - 按键原始数据排查：在 `dist/modes/interactive/interactive-mode.js` 的 `onExtensionShortcut` 打临时日志可看到 `{data, keys:[...]}`——确认按键是否到达、注册是否被丢弃
 
 ## 参数补全语义
@@ -50,7 +50,7 @@ cd agent/extensions/<ext> && ../../node_modules/vitest/vitest.mjs run
 cd agent/extensions && ../node_modules/typescript/bin/tsc -p tsconfig.local.json --noEmit
 cd agent/extensions && node tests/conflict-check.mjs
 # 全量
-bash scripts/test-all.sh
+bash scripts/test/test-all.sh
 ```
 
 - **单测的局限**：mock 验证"实现符合假设"，不验证"假设符合真实"——平台集成行为（按键分发、补全语义、硬件行为）必须运行时验证或集成冒烟

@@ -213,7 +213,7 @@ pi-backup rebuild --yes          # 静默自动重建
 ```bash
 git clone https://github.com/cyfxxx/pi-tools.git ~/.pi
 cd ~/.pi && bash scripts/rebuild.sh --yes
-bash scripts/install-wrapper.sh   # 可选：安装自动重启 wrapper
+bash scripts/install/install-wrapper.sh   # 可选：安装自动重启 wrapper
 ```
 
 > **`~/.pi/` 已存在时**：`git clone` 到非空目录会失败；不要直接 `rm -rf ~/.pi`。建议先 `mv ~/.pi ~/.pi.bak` 再克隆。
@@ -398,17 +398,17 @@ pi（bash wrapper）→ pi-wrapper.sh → node cli.js
 ```
 
 - **`pi-wrapper.sh`** — 检测目标 `cli.js`，以 `node cli.js` 方式启动 Pi
-- **`install-wrapper.sh`** — 安装/卸载 wrapper
+- **`install/install-wrapper.sh`** — 安装/卸载 wrapper
 - **`pi-orig.sh`** — 绕过 wrapper 直接启动（故障逃生口）
 
-**安装：** `bash scripts/install-wrapper.sh`
+**安装：** `bash scripts/install/install-wrapper.sh`
 
 ## 测试与回归
 
 一键全量回归：
 
 ```bash
-bash scripts/test-all.sh
+bash scripts/test/test-all.sh
 ```
 
 | 套件 | 命令 | 用例数 |

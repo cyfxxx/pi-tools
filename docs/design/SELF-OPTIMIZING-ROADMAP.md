@@ -110,7 +110,7 @@
 - [x] 阶段 2.1（每日自检 ✅ 实弹：08-20 08:30 命中 97.7%／断裂 0；下次 08-21 00:30）
 - [x] 阶段 2.2（决策启发式成文 §4 v1：命中/膨胀/回归/成本/重构/回滚六规则）
 - [x] 阶段 2.3（优化工单闭环流程入 memory 库 procedure；1 ticket=1 改动+验证）
-- [x] 阶段 2.4（失败会话学习）——✅ 已落地 scripts/lesson-miner.mjs（只读扫描 usage-diag/tool-events → 候选教训线索，LLM 提炼后存 memory）
+- [x] 阶段 2.4（失败会话学习）——✅ 已落地 scripts/maintenance/lesson-miner.mjs（只读扫描 usage-diag/tool-events → 候选教训线索，LLM 提炼后存 memory）
 - [x] 阶段 2.5（工具/技能用量账单）——✅ 已落地 usage-stats.mjs 工具聚合 + pi-context tool_result hook 按工具累加
 - [x] 阶段 2.6（压缩可逆快照）——✅ 已上线：auto-compact 触发前原文快照落盘 logs/compact-snapshots/（compact-snapshots 已有运行产物）
 - [x] 阶段 3.3（通知推送骨架：pi-notify.sh + 模板配置 + 自检联动；渠道接入暂缓，未误发）

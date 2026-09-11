@@ -325,7 +325,7 @@ phase1_config() {
     ok "searxng/settings.yml 已存在"
   fi
 
-  # git hooks（幂等）：缓存影响声明守门（scripts/check-cache-impact.sh 经 commit-msg hook 生效）
+  # git hooks（幂等）：缓存影响声明守门（scripts/maintenance/check-cache-impact.sh 经 commit-msg hook 生效）
   if [ -d "$PI_HOME/.githooks" ] && git -C "$PI_HOME" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if [ "$(git -C "$PI_HOME" config core.hooksPath)" != ".githooks" ]; then
       git -C "$PI_HOME" config core.hooksPath .githooks
@@ -796,7 +796,7 @@ PY2D
 # ---- Phase 2-E: pi-wrapper 自愈 ----
 phase2_wrapper() {
   title "Phase 2-E" "Pi wrapper 自愈"
-  local sw="$PI_HOME/scripts/install-wrapper.sh"
+  local sw="$PI_HOME/scripts/install/install-wrapper.sh"
   if [ ! -f "$sw" ]; then
     warn "install-wrapper.sh 缺失"
     return 0
@@ -811,7 +811,7 @@ phase2_wrapper() {
 # ---- Phase 2-E2: tool-stats 同步 git hooks（post-merge 自动合并跨设备统计） ----
 phase2_tool_sync_hooks() {
   title "Phase 2-E2" "工具统计同步 hooks"
-  local hs="$PI_HOME/scripts/install-tool-sync-hooks.sh"
+  local hs="$PI_HOME/scripts/install/install-tool-sync-hooks.sh"
   if [ ! -f "$hs" ]; then
     warn "install-tool-sync-hooks.sh 缺失"
     return 0
@@ -859,32 +859,32 @@ phase2_tmux() {
 # 每台设备重建时自动安装；pi-link-keys.sh install 幂等（Termux 双位置）。
 phase2_link_keys() {
   title "Phase 2-F3" "pi-link 互连公钥安装"
-  if [ ! -f "$PI_HOME/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/deploy/keys/authorized_keys" ]; then
+  if [ ! -f "$PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/deploy/keys/authorized_keys" ]; then
     warn "pi-link-keys.sh 或 deploy/keys/authorized_keys 缺失，跳过"
     return 0
   fi
-  bash "$PI_HOME/scripts/pi-link-keys.sh" install >/dev/null 2>&1 \
+  bash "$PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh" install >/dev/null 2>&1 \
     && ok "互连公钥已安装（仓库 deploy/keys/authorized_keys → 本机 authorized_keys）" \
-    || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/scripts/pi-link-keys.sh install）"
+    || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh install）"
 }
 
 # ---- Phase 2-F4: packs 第三方技能包同步（reverse-skill 等；packs/ 不入库） ----
 # 每设备重建时从 GitHub 原项目拉齐 packs（增量）；网络差/仓库不可达不中断 rebuild。
-# 包内容不入 git，同步脚本 scripts/packs-sync.sh 入库随仓库分发。
+# 包内容不入 git，同步脚本 scripts/maintenance/packs-sync.sh 入库随仓库分发。
 phase2_packs() {
   title "Phase 2-F4" "packs 技能包同步"
   if [ "${CI_SKIP_HEAVY:-0}" = "1" ]; then
     ok "CI 模式：跳过 Phase 2-F4（CI_SKIP_HEAVY）"
     return 0
   fi
-  if [ ! -f "$PI_HOME/scripts/packs-sync.sh" ]; then
+  if [ ! -f "$PI_HOME/scripts/maintenance/packs-sync.sh" ]; then
     warn "packs-sync.sh 缺失，跳过"
     return 0
   fi
-  if bash "$PI_HOME/scripts/packs-sync.sh" >/dev/null 2>&1; then
+  if bash "$PI_HOME/scripts/maintenance/packs-sync.sh" >/dev/null 2>&1; then
     ok "packs 同步完成（按需读取，不注册技能面）"
   else
-    warn "packs 同步失败（网络/仓库问题，手动: bash $PI_HOME/scripts/packs-sync.sh）"
+    warn "packs 同步失败（网络/仓库问题，手动: bash $PI_HOME/scripts/maintenance/packs-sync.sh）"
   fi
 }
 
@@ -917,7 +917,7 @@ phase2_systemd() {
     kill "$(cat "$searx_pid")" 2>/dev/null && warn "已停止手动 SearXNG 进程（由 systemd 接管）"
   fi
   if [ -f "$PI_HOME/logs/whisper/server.pid" ] && kill -0 "$(cat "$PI_HOME/logs/whisper/server.pid")" 2>/dev/null; then
-    "$PI_HOME/scripts/pi-whisper.sh" stop >/dev/null 2>&1 && warn "已停止手动 whisper 进程（由 systemd 接管）"
+    "$PI_HOME/agent/extensions/pi-voice/scripts/pi-whisper.sh" stop >/dev/null 2>&1 && warn "已停止手动 whisper 进程（由 systemd 接管）"
   fi
   local rc=0
   systemctl enable pi-searxng.service >/dev/null 2>&1 || rc=1
@@ -939,7 +939,7 @@ phase2_voice() {
     ok "CI 模式：跳过 Phase 2-F（CI_SKIP_HEAVY）"
     return 0
   fi
-  local wsv="$PI_HOME/scripts/pi-whisper.sh"
+  local wsv="$PI_HOME/agent/extensions/pi-voice/scripts/pi-whisper.sh"
   local voice_cfg="$PI_HOME/agent/pi-voice.json"
   [ -f "$wsv" ] || { warn "pi-whisper.sh 缺失，跳过"; return 0; }
 
@@ -1205,7 +1205,7 @@ print(('missing:'+','.join(missing)) if missing else ('ok:%d' % len(names)))
   elif command -v systemctl &>/dev/null && systemctl is-enabled pi-autopilot.timer &>/dev/null; then
     ok "pi-autopilot: systemd timer 已安装"
   else
-    info "pi-autopilot: 运行 $PI_HOME/scripts/install-cron.sh 安装定时触发"
+    info "pi-autopilot: 运行 $PI_HOME/scripts/install/install-cron.sh 安装定时触发"
   fi
 
   # SearXNG 服务可达性（smoke-test 第 1 项依赖）
@@ -1327,87 +1327,87 @@ elif [ "$SKIP_PATCHES" = "1" ]; then
 else
 # 版本关联校验（2026-08-19）：12 个 patch-*.mjs 头部声明 @target-version <major.minor>，
 # 与当前 pi 版本失配时显式失败——避免 pi update 后补丁静默失效（footer 无实时 token / 回车被吞等回退）
-if node "$PI_HOME/scripts/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
+if node "$PI_HOME/scripts/maintenance/verify-patches.mjs" "$PI_DIST" >/dev/null 2>&1; then
   ok "补丁目标版本匹配（$(node -e "console.log(require('$(dirname "$PI_DIST")/package.json').version)" 2>/dev/null)）"
 else
   # 审计 MEDIUM：此前 exit 1 直接中止——playwright-core 补丁、install-cron、最终 verify 等
   # 与补丁无关的维护项全部被连带跳过。改为 warn 继续（后续逐补丁应用会自然暴露失配项），
   # 失配明细由 verify-patches.mjs 输出
   warn "补丁与当前 pi 版本可能不匹配：pi update 后需逐补丁核对并更新 @target-version 声明"
-  info "失配明细：node scripts/verify-patches.mjs <pi-dist>；本次继续执行后续维护项"
+  info "失配明细：node scripts/maintenance/verify-patches.mjs <pi-dist>；本次继续执行后续维护项"
 fi
-if [ -f "$PI_HOME/scripts/patch-footer-live-context.mjs" ]; then
-  node "$PI_HOME/scripts/patch-footer-live-context.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/footer-live-context.mjs" ]; then
+  node "$PI_HOME/agent/extensions/footer-live-context.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "footer 实时上下文 token 补丁" \
     || warn "footer 补丁未应用（pi 版本可能已改动），需人工核对"
 else
   warn "patch-footer-live-context.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-footer-cache.mjs" ]; then
-  node "$PI_HOME/scripts/patch-footer-cache.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/footer-cache.mjs" ]; then
+  node "$PI_HOME/agent/extensions/footer-cache.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "footer CH 双命中率 + context 去百分比补丁" \
     || warn "footer 缓存补丁未应用（pi 版本可能已改动或 live-context 补丁缺失），需人工核对"
 else
   warn "patch-footer-cache.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-footer-format.mjs" ]; then
-  node "$PI_HOME/scripts/patch-footer-format.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/footer-format.mjs" ]; then
+  node "$PI_HOME/agent/extensions/footer-format.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "footer 字段中文标签 + 人民币成本补丁" \
     || warn "footer 格式补丁未应用（pi 版本可能已改动或前后补丁顺序异常），需人工核对"
 else
   warn "patch-footer-format.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-footer-restart-hint.mjs" ]; then
-  node "$PI_HOME/scripts/patch-footer-restart-hint.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/footer-restart-hint.mjs" ]; then
+  node "$PI_HOME/agent/extensions/footer-restart-hint.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "footer 重启前建议压缩 ⚠ 提示补丁" \
     || warn "footer 重启提示补丁未应用（pi 版本可能已改动或 cache 补丁缺失），需人工核对"
 else
   warn "patch-footer-restart-hint.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-voice-enter.mjs" ]; then
-  node "$PI_HOME/scripts/patch-voice-enter.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/voice-enter.mjs" ]; then
+  node "$PI_HOME/agent/extensions/voice-enter.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "回车条件拦截补丁（pi-voice 听写）" \
     || warn "回车补丁未应用（pi 版本可能已改动）：未打补丁时回车键会被 pi-voice 吞掉"
 else
   warn "patch-voice-enter.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-compaction-warm-prefix.mjs" ]; then
-  node "$PI_HOME/scripts/patch-compaction-warm-prefix.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/compaction-warm-prefix.mjs" ]; then
+  node "$PI_HOME/agent/extensions/compaction-warm-prefix.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "压缩摘要暖前缀重放补丁（pi-context 缓存复用，2026-08-26）" \
     || warn "暖前缀补丁未应用（pi 版本可能已改动）：压缩摘要调用将全价计费（功能不受影响，仅成本退化）"
 else
   warn "patch-compaction-warm-prefix.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-plan-tools.mjs" ]; then
-  node "$PI_HOME/scripts/patch-plan-tools.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/plan-tools.mjs" ]; then
+  node "$PI_HOME/agent/extensions/plan-tools.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "工具 schema 恢复补丁（plan-mode 模型侧切换）" \
     || warn "工具 schema 补丁未应用（pi 版本可能已改动）：恢复会话模型无法调用新注册工具（plan_enter/plan_exit），可移除补丁改用用户侧快捷键切换（方案 2）"
 else
   warn "patch-plan-tools.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-tab-arg-completion.mjs" ]; then
-  node "$PI_HOME/scripts/patch-tab-arg-completion.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/tab-arg-completion.mjs" ]; then
+  node "$PI_HOME/agent/extensions/tab-arg-completion.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "Tab 参数补全补丁（/voice 等子命令 Tab 可见）" \
     || warn "Tab 参数补全补丁未应用（pi-tui 版本可能已改动）：斜杠命令有空格时 Tab 仍走文件补全，子命令需手动删空格重打空格触发"
 else
   warn "patch-tab-arg-completion.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-autocomplete-startswith.mjs" ]; then
-  node "$PI_HOME/scripts/patch-autocomplete-startswith.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/autocomplete-startswith.mjs" ]; then
+  node "$PI_HOME/agent/extensions/autocomplete-startswith.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "Autocomplete startswith 类型守恒补丁（修复 value.startsWith 崩溃）" \
     || warn "Autocomplete 补丁未应用（pi-tui 版本可能已改动）：补全时遇到非字符串值仍会崩溃"
 else
   warn "patch-autocomplete-startswith.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-fuzzy-match-type.mjs" ]; then
-  node "$PI_HOME/scripts/patch-fuzzy-match-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/fuzzy-match-type.mjs" ]; then
+  node "$PI_HOME/agent/extensions/fuzzy-match-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "Fuzzy match 类型守恒补丁（修复 text.toLowerCase 崩溃）" \
     || warn "Fuzzy match 补丁未应用（pi-tui 版本可能已改动）：模糊匹配遇到非字符串值仍会崩溃"
 else
   warn "patch-fuzzy-match-type.mjs 缺失，跳过"
 fi
-if [ -f "$PI_HOME/scripts/patch-truncate-type.mjs" ]; then
-  node "$PI_HOME/scripts/patch-truncate-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
+if [ -f "$PI_HOME/agent/extensions/truncate-type.mjs" ]; then
+  node "$PI_HOME/agent/extensions/truncate-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
     && ok "Truncate 类型守恒补丁（修复 text.slice 崩溃）" \
     || warn "Truncate 补丁未应用（pi-tui 版本可能已改动）：截断显示遇到非字符串值仍会崩溃"
 else
@@ -1421,8 +1421,8 @@ fi
 if [ "$IS_TERMUX" = "1" ]; then
   pwext="$PI_HOME/agent"
   if [ -d "$pwext/node_modules/cloakbrowser" ]; then
-    if [ -f "$PI_HOME/scripts/patch-playwright-core.mjs" ]; then
-      node "$PI_HOME/scripts/patch-playwright-core.mjs" "$pwext" >/dev/null 2>&1 \
+    if [ -f "$PI_HOME/agent/extensions/playwright-core.mjs" ]; then
+      node "$PI_HOME/agent/extensions/playwright-core.mjs" "$pwext" >/dev/null 2>&1 \
         && ok "playwright-core android→linux 补丁（Termux 浏览器）" \
         || warn "playwright-core 补丁未应用（pi-browser 重装后需重跑 rebuild）"
     fi
@@ -1444,9 +1444,9 @@ if [ "$IS_TERMUX" = "1" ]; then
 fi
 
 # Scheduler 离线调度安装（可选）
-if [ -f "$PI_HOME/scripts/install-cron.sh" ]; then
+if [ -f "$PI_HOME/scripts/install/install-cron.sh" ]; then
   title "Phase 4" "定时调度安装"
-  bash "$PI_HOME/scripts/install-cron.sh" 2>&1 | while IFS= read -r line; do
+  bash "$PI_HOME/scripts/install/install-cron.sh" 2>&1 | while IFS= read -r line; do
     if echo "$line" | grep -q "^✓"; then
       ok "${line#✓ }"
     elif echo "$line" | grep -q "^⚠"; then
@@ -1502,9 +1502,9 @@ echo "  启动 SearXNG:    $PI_HOME/searxng/start.sh"
 echo "  停止 SearXNG:    $PI_HOME/searxng/stop.sh"
 echo "  重新生成配置:    $PI_HOME/searxng/generate-config.sh --force"
 echo "  安装浏览器:      cd $PI_HOME/agent && npx cloakbrowser install"
-echo "  安装定时调度:    $PI_HOME/scripts/install-cron.sh"
-echo "  Whisper 转写:    $PI_HOME/scripts/pi-whisper.sh {start|stop|status}"
-echo "  wrapper 自愈:    $PI_HOME/scripts/install-wrapper.sh --ensure"
+echo "  安装定时调度:    $PI_HOME/scripts/install/install-cron.sh"
+echo "  Whisper 转写:    $PI_HOME/agent/extensions/pi-voice/scripts/pi-whisper.sh {start|stop|status}"
+echo "  wrapper 自愈:    $PI_HOME/scripts/install/install-wrapper.sh --ensure"
 echo "  L4 源码构建:     $PI_HOME/scripts/pi-source-build.sh [--force]"
 echo "  循环任务:        /loop 5m <prompt>"
 echo "  定时任务:        /schedule cron \"0 9 * * 1-5\" <prompt>"

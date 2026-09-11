@@ -45,7 +45,7 @@ pi-bg.sh list
 
 ```bash
 # 后台跑全量回归，前台继续聊天
-pi-bg.sh start regression "运行 bash ~/.pi/scripts/test-all.sh，逐项报告结果并分析失败项"
+pi-bg.sh start regression "运行 bash ~/.pi/scripts/test/test-all.sh，逐项报告结果并分析失败项"
 
 # 长驻后台 agent：随时派活
 pi-bg.sh rpc helper
