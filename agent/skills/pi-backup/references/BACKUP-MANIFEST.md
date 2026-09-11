@@ -31,7 +31,7 @@
 | 调度任务 | `agent/extensions/pi-autopilot/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
 | 调度脚本 | `agent/extensions/pi-autopilot/scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
 | pi-link 设备清单 | `pi-link.json` | 多设备互联配置（host/user/port，gitignored 每环境独立，归档必须带走） |
-| pi-link 公钥合集 | `deploy/keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
+| pi-link 公钥合集 | `extensions/pi-link/keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
 | pi-link 加固入口 | `agent/extensions/pi-link/scripts/pi-link-entry.sh` | ssh forced command 加固入口（每设备需 `install-wrapper` 类机制装到 sshd） |
 | pi-link 密钥脚本 | `agent/extensions/pi-link/scripts/pi-link-keys.sh` | 公钥 install/export/add（新设备接入流程） |
 | 部署配置 | `deploy/systemd/` | systemd unit 模板（pi-searxng/pi-whisper，`%PI_HOME%` 占位；rebuild.sh 安装时替换） |

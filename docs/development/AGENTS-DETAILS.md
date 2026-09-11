@@ -155,7 +155,7 @@
 
 - `deploy/systemd/` — unit 模板
 - `deploy/tmux/` — tmux.conf 与状态脚本
-- `deploy/keys/` — pi-link 公钥合集
+- `extensions/pi-link/keys/` — pi-link 公钥合集
 - `searxng/` — 自托管搜索（settings.yml 含密钥，git 忽略；venv/repo 可重建）
 
 ### packs/（统一外部技能仓库）

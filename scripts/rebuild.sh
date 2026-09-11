@@ -854,17 +854,17 @@ phase2_tmux() {
   fi
 }
 
-# ---- Phase 2-F3: pi-link 互连公钥安装（deploy/keys/authorized_keys → 本机 authorized_keys） ----
-# 多设备免密互连：仓库 deploy/keys/authorized_keys 收集所有设备公钥（git 同步），
+# ---- Phase 2-F3: pi-link 互连公钥安装（extensions/pi-link/keys/authorized_keys → 本机 authorized_keys） ----
+# 多设备免密互连：仓库 extensions/pi-link/keys/authorized_keys 收集所有设备公钥（git 同步），
 # 每台设备重建时自动安装；pi-link-keys.sh install 幂等（Termux 双位置）。
 phase2_link_keys() {
   title "Phase 2-F3" "pi-link 互连公钥安装"
-  if [ ! -f "$PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/deploy/keys/authorized_keys" ]; then
-    warn "pi-link-keys.sh 或 deploy/keys/authorized_keys 缺失，跳过"
+  if [ ! -f "$PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh" ] || [ ! -f "$PI_HOME/agent/extensions/pi-link/keys/authorized_keys" ]; then
+    warn "pi-link-keys.sh 或 extensions/pi-link/keys/authorized_keys 缺失，跳过"
     return 0
   fi
   bash "$PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh" install >/dev/null 2>&1 \
-    && ok "互连公钥已安装（仓库 deploy/keys/authorized_keys → 本机 authorized_keys）" \
+    && ok "互连公钥已安装（extensions/pi-link/keys/authorized_keys → 本机 authorized_keys）" \
     || warn "pi-link 公钥安装失败（手动: bash $PI_HOME/agent/extensions/pi-link/scripts/pi-link-keys.sh install）"
 }
 

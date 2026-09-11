@@ -224,7 +224,7 @@ GitHub 同步完成
      缺失时 `rebuild` 的验证阶段会明确警告并给出上述引导。
 4. 从 `deploy/tmux/` 写回外部配置（见[收录方式](#备份清单)的 `cp` 命令）：`~/.tmux.conf` 等缺失时执行，已存在则提示确认覆盖。
 
-5. **pi-link 公钥安装**：`bash ~/.pi/agent/extensions/pi-link/scripts/pi-link-keys.sh install`（把 `deploy/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
+5. **pi-link 公钥安装**：`bash ~/.pi/agent/extensions/pi-link/scripts/pi-link-keys.sh install`（把 `extensions/pi-link/keys/authorized_keys` 合并进本机 `~/.ssh/authorized_keys`，Termux 自动双写）——否则新设备无法被其他设备免密接入。
 6. 运行[重建流程](#pi-backup-rebuild)（`--yes` 时自动全部执行，否则逐项确认）。
 7. 告知用户重启 pi。
 
@@ -339,7 +339,7 @@ GitHub 同步完成
 | # | 重建项 | 条件 | 命令 |
 |---|--------|------|------|
 | 8c | whisper 服务启动 | 语音条件满足且 venv 与 `/opt/pi-whisper/models` 均就绪（6a/6b 完成） | `bash ~/.pi/agent/extensions/pi-voice/scripts/pi-whisper.sh start`（已运行则跳过；token/device 从 `agent/pi-voice.json` 读取；GPU 检测在 6c） |
-| 8d | pi-link 互连公钥 | `agent/extensions/pi-link/scripts/pi-link-keys.sh` 与 `deploy/keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
+| 8d | pi-link 互连公钥 | `agent/extensions/pi-link/scripts/pi-link-keys.sh` 与 `extensions/pi-link/keys/authorized_keys` 存在 | rebuild.sh Phase 2-F3 自动执行 `pi-link-keys.sh install`（幂等：合并到 `~/.ssh/authorized_keys`，Termux 双写 proot+Termux 位置） |
 
 **Phase 2-F2 — tmux 配置同步（跨系统兼容，单独一组）：**
 
