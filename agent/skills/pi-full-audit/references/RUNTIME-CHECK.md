@@ -12,7 +12,7 @@
 ### 检查清单（按序）
 
 1. **运行时状态**：`admin_status`（模型/provider/会话文件/思考层级）+ `autopilot_status`（自主运行开关、任务数、遥测、预算、failover）+ `schedule_task list`（定时任务）
-2. **缓存命中与 token**：先跑 `node scripts/usage-stats.mjs`（跨会话聚合，幂等；按 startTs 去重入账 `agent/stats/usage-sessions.jsonl`）看历史对比与当前会话断裂/浪费，再读 `agent/.usage-diag.jsonl` 尾部 3 条：
+2. **缓存命中与 token**：先跑 `node agent/extensions/pi-context/scripts/usage-stats.mjs`（跨会话聚合，幂等；按 startTs 去重入账 `agent/stats/usage-sessions.jsonl`）看历史对比与当前会话断裂/浪费，再读 `agent/.usage-diag.jsonl` 尾部 3 条：
    - 命中率 = cacheRead / (input + cacheRead)，正常 >90%（实测 98%+）；偏低 → system prompt 前缀不稳定（时间戳注入/banding 失效）
    - **统计修正（2026-08-14 实战）**：先排除 run 边界轮——重启/--continue 恢复/新实例后的首轮必然重发（context 重建），不算异常；usage-diag 记录所有 turn_end（含同机其他 pi 实例、昨晚实例），统计全量时先按时间窗口滤出当前会话活跃期
    - **断裂点定位法**：低命中轮的 cacheRead ≈ 断裂点位置。断裂点 ≈ system prompt 尾部 → **systemPrompt 拼入式注入**（如 pi-memory 旧实现）——变化时全部历史重发，应改为消息注入；断裂点在消息末尾 → 注入块变化，成本仅注入本身（≤几 K），正常
@@ -34,7 +34,7 @@
    - `todo update`（plan-mode）→ 观察状态条/overlay 即时刷新 + 该轮 input
    - bash 大输出轮 in≈50K 属 DeepSeek 侧缓存现象（消息序列无断裂，请求级 hash 验证法确认），不算注入回归
    - 验证模板（2026-08-14 实测）：记忆变化轮 in=40-92 token 命中 100%；连续相邻请求逐消息 hash 全同
-   - 基准工具：`bash scripts/pi-bench.sh usage`（聚合报告）`timing`（关键计时）`compare <基准>`（退化检测）
+   - 基准工具：`bash agent/extensions/pi-context/scripts/pi-bench.sh usage`（聚合报告）`timing`（关键计时）`compare <基准>`（退化检测）
 
 ### 判定基准（2026-08-14 实测沉淀）
 
@@ -67,9 +67,9 @@
 
 每日整体复检 pi 前一日运行情况，**只读为主、不深入探索**（防 token 浪费，参考一轮 tools 6-12 个、out ~500 tokens）。后台独立会话执行（tmux_run），勿改配置，工作目录 `cd /root/.pi`。
 
-1. **缓存命中**：`node scripts/usage-stats.mjs` 看当前/近期会话命中率与断裂
+1. **缓存命中**：`node agent/extensions/pi-context/scripts/usage-stats.mjs` 看当前/近期会话命中率与断裂
 2. **健康日志**：`ls -lt logs/` 找异常（ERROR/扩展报错），查 tmux 残留
 3. **订阅产出**：知识订阅当日输出非空（knowledge-fetch 任务 lastRun 成功、.seen.txt 未全命中）
-4. **存储水位**：`node scripts/usage-stats.mjs --json` 看会话体积；`du -sh memory/ logs/` 水位（参考阈值：缓存命中 >96%、断裂 ≤1 次 A 类、浪费 <50K tokens、存储 <2MB/条目 <600 为正常）
+4. **存储水位**：`node agent/extensions/pi-context/scripts/usage-stats.mjs --json` 看会话体积；`du -sh memory/ logs/` 水位（参考阈值：缓存命中 >96%、断裂 ≤1 次 A 类、浪费 <50K tokens、存储 <2MB/条目 <600 为正常）
 5. **汇总**：一条 bash 聚合完成全部检查项；输出仅"ok / 异常项清单"两类结论；异常项创建后续任务处理，不在当轮深挖
 
