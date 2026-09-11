@@ -3,6 +3,6 @@
   "extensions": [],
   "skills": [],
   "systemPrompt": null,
-  "appendSystemPrompt": "~/.pi/agent/rescue/rescue-prompt.md",
+  "appendSystemPrompt": "~/.pi/agent/recovery/rescue-prompt.md",
   "thinking": "low"
 }

@@ -1,5 +1,5 @@
 {
-  "tripped": true,
-  "consecutiveFails": 5,
-  "cooldownEnd": 1789089195609
+  "tripped": false,
+  "consecutiveFails": 0,
+  "cooldownEnd": 0
 }

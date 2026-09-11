@@ -144,7 +144,7 @@
       "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-09-03T08:21:26.221Z",
-      "accessedAt": "2026-09-11T01:07:37.881Z",
+      "accessedAt": "2026-09-11T21:10:27.536Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
@@ -5452,7 +5452,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-09-03T08:21:20.952Z",
-      "accessedAt": "2026-09-11T01:07:37.881Z",
+      "accessedAt": "2026-09-11T21:10:27.536Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -11969,7 +11969,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-09-11T01:07:37.881Z",
+      "accessedAt": "2026-09-11T21:10:27.536Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -12160,7 +12160,7 @@
       "recurrence": 4,
       "createdAt": "2026-08-25T22:54:39.097Z",
       "updatedAt": "2026-09-03T08:20:11.300Z",
-      "accessedAt": "2026-09-11T01:07:37.881Z",
+      "accessedAt": "2026-09-11T21:10:27.536Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -16140,7 +16140,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-09-03T08:20:26.256Z",
-      "accessedAt": "2026-09-11T01:07:37.881Z",
+      "accessedAt": "2026-09-11T21:10:27.536Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux",
@@ -21444,10 +21444,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 10,
+      "recurrence": 11,
       "createdAt": "2026-09-10T10:42:22.608Z",
-      "updatedAt": "2026-09-11T01:07:37.805Z",
-      "accessedAt": "2026-09-11T01:07:37.805Z",
+      "updatedAt": "2026-09-11T21:10:27.439Z",
+      "accessedAt": "2026-09-11T21:10:27.439Z",
       "environments": [
         "all"
       ],
@@ -21936,6 +21936,251 @@
       "contentHash": "ddb2917ea7d8da0a",
       "observedAt": "2026-09-11T01:08:49.327Z",
       "deleted": false
+    },
+    {
+      "id": "b8f8cfa4-a981-4dd6-a417-cfe4eb1a7753",
+      "category": "fact",
+      "title": "tool-stats-sync.mjs 实际路径",
+      "content": "每日工具统计脚本 tool-stats-sync.mjs 位于 /root/.pi/agent/extensions/pi-context/scripts/，而非用户常误记的 ~/.pi/scripts/。运行方式：node <path>/tool-stats-sync.mjs --daily，输出到 ~/.pi/memory/stats/tool-count-<hostname>.json。",
+      "tags": [
+        "tool-stats",
+        "path",
+        "pi-context"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T15:37:24.786Z",
+      "updatedAt": "2026-09-11T15:37:24.786Z",
+      "accessedAt": "2026-09-11T15:37:24.786Z",
+      "observedAt": "2026-09-11T15:37:24.786Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a09117-8904-77d8-9924-31136b77425a",
+      "deleted": false,
+      "contentHash": "afc779c9d81e1b16"
+    },
+    {
+      "id": "8d08591c-bd12-4aa0-a3a2-863bc51725ab",
+      "category": "fact",
+      "title": "pi-tools 仓库 remote URL",
+      "content": "当前仓库 remote origin 为 git@github.com:cyfxxx/pi-tools.git，使用 SSH 协议，不含 token，推送前无需处理凭证。",
+      "tags": [
+        "git",
+        "remote",
+        "github"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T15:37:24.786Z",
+      "updatedAt": "2026-09-11T15:37:24.786Z",
+      "accessedAt": "2026-09-11T15:37:24.786Z",
+      "observedAt": "2026-09-11T15:37:24.786Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a09117-8904-77d8-9924-31136b77425a",
+      "deleted": false,
+      "contentHash": "1b743d0f8218cdd9"
+    },
+    {
+      "id": "d605e69b-90e9-4720-80dd-a7b5e2f57dba",
+      "category": "procedure",
+      "title": "每日工具统计提交流程",
+      "content": "每日工具统计聚合流程：1) node 运行 tool-stats-sync.mjs --daily；2) 确认生成 memory/stats/tool-count-<hostname>.json；3) git add 该文件并 commit（message: 'chore: tool stats <YYYY-MM-DD>'）；4) 推送前确认 remote URL 无 token；5) 若远端冲突先 git pull --rebase 再 push。2026-09-11 执行无冲突一次成功。",
+      "tags": [
+        "procedure",
+        "daily",
+        "git"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T15:37:24.786Z",
+      "updatedAt": "2026-09-11T15:37:24.786Z",
+      "accessedAt": "2026-09-11T15:37:24.786Z",
+      "observedAt": "2026-09-11T15:37:24.786Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a09117-8904-77d8-9924-31136b77425a",
+      "deleted": false,
+      "contentHash": "416d680f5d059f38"
+    },
+    {
+      "id": "01c250c5-7e7b-42d3-913b-7e72489f77d2",
+      "category": "fact",
+      "title": "2026-09-11 工具统计结果",
+      "content": "2026-09-11 当日工具调用 3496 次，主机 localhost，文件 ~/.pi/memory/stats/tool-count-localhost.json，commit 759a5b5，已推送至 origin master（f493152..759a5b5）。",
+      "tags": [
+        "tool-stats",
+        "2026-09-11"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T15:37:24.786Z",
+      "updatedAt": "2026-09-11T15:37:24.786Z",
+      "accessedAt": "2026-09-11T15:37:24.786Z",
+      "observedAt": "2026-09-11T15:37:24.786Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a09117-8904-77d8-9924-31136b77425a",
+      "deleted": false,
+      "contentHash": "01c48220ff4562f1"
+    },
+    {
+      "id": "1a60ade9-2f29-48c9-b2b1-5ff59463f249",
+      "category": "solutions",
+      "title": "packs/INDEX.md 强化方案",
+      "content": "技能发现不走长期记忆，改为强化 packs/INDEX.md。背景：packs/ 有 14 个包、153 个 SKILL.md、约 18,500 行，原 INDEX.md 仅 13 条且触发词稀疏。方案：①补齐 dg-piagent 为第 14 个包；②每包触发词扩到 ≥6 个同义/近义表达；③为 media-toolkit/pdf-toolkit/wechatide-skill 添加功能级二级索引（子技能路径+用途）；④顶部加 3 步使用引导（何时查 packs、与 agent/skills 的区别）。验证：逐条核对 find packs/ -name SKILL.md 实际路径与索引一致，触发词计数只检查包索引表行（二级索引子行不含触发词，检查它们会误报）。结果 commit f493152 已推送到 github.com:cyfxxx/pi-tools.git。核心取舍：记忆注入是每轮固定成本，INDEX.md 是按需一次性成本，低频技能不适合入记忆。",
+      "tags": [
+        "packs",
+        "INDEX.md",
+        "技能发现",
+        "长期记忆",
+        "按需加载"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T21:09:36.475Z",
+      "updatedAt": "2026-09-11T21:09:36.475Z",
+      "accessedAt": "2026-09-11T21:09:36.475Z",
+      "observedAt": "2026-09-11T21:09:36.475Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
+      "deleted": false,
+      "contentHash": "63378cec7bc47dfd"
+    },
+    {
+      "id": "544984d7-73f5-4868-829b-b1ce40e1e1e5",
+      "category": "fact",
+      "title": "压缩快照保留机制",
+      "content": "会话压缩前的完整消息会落盘到 ~/.pi/logs/compact-snapshots/，文件名 compact-<timestamp>.json，内容含 ts（时间戳）、contextTokens（当前上下文 token 数）、threshold（压缩阈值）、reason（overflow 或 threshold）、messages（完整消息数组）。保留策略：最多 8 个文件（按文件名排序，超最新的直接删）、最长 7 天（超期自动清理）、失败不阻塞压缩（try-catch 保护）。定位：压缩后原文不可追溯时的兜底，可用于调试会话退化。与长期记忆（entries.json）独立：记忆是跨会话主动沉淀的知识网络，快照是临时原文备份。",
+      "tags": [
+        "压缩",
+        "快照",
+        "上下文管理",
+        "兜底"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T21:09:36.475Z",
+      "updatedAt": "2026-09-11T21:09:36.475Z",
+      "accessedAt": "2026-09-11T21:09:36.475Z",
+      "observedAt": "2026-09-11T21:09:36.475Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
+      "deleted": false,
+      "contentHash": "a43964eb5616be5b"
+    },
+    {
+      "id": "d5644280-3be3-4e2c-aff8-21b3812b6628",
+      "category": "fact",
+      "title": "工具统计任务流水",
+      "content": "tool-stats-daily 调度任务由 agent/extensions/pi-context/scripts/tool-stats-sync.mjs --daily 执行（注意脚本在扩展目录下，不在 ~/.pi/scripts/）。输出到 data/memory/stats/tool-count-localhost.json（2026-09-11 记录 3496 次调用，localhost 主机）。任务流程：运行脚本→生成文件→git add→git commit→git push。远端为 SSH URL git@github.com:cyfxxx/pi-tools.git，无 token 冲突。同批提交的还有 data/memory/daily-results/results-localhost.jsonl（任务成功记录）和 data/memory/entries.json（5 条 accessedAt 时间戳更新）。",
+      "tags": [
+        "tool-stats",
+        "调度任务",
+        "pi-context",
+        "git"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T21:09:36.475Z",
+      "updatedAt": "2026-09-11T21:09:36.475Z",
+      "accessedAt": "2026-09-11T21:09:36.475Z",
+      "observedAt": "2026-09-11T21:09:36.475Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
+      "deleted": false,
+      "contentHash": "879ba5cdffbafa1b"
+    },
+    {
+      "id": "baf5afa4-1bc5-4db4-a90f-6331bc646082",
+      "category": "procedure",
+      "title": "2026-09-23 到期清理项",
+      "content": "长期跟踪的清理计划剩余两项将于 2026-09-23 自动触发：①删除 agent/lib/ 兼容层（清理 7 个月后的旧兼容代码，实际 2026-09-23 到期）；②删除 data/ 顶层 symlink（memory/→data/memory/、logs/→data/logs/、plans/→data/plans/）。执行前需手动确认：所有旧代码 import 已迁移到新路径（core/ + services/ 分层），symlink 删除前确保所有代码已使用新路径，避免 import 失败。确认后执行：cd ~/.pi && rm -rf agent/lib/、rm -f memory logs plans（仅 symlink）、git add -A && git commit。",
+      "tags": [
+        "清理",
+        "2026-09-23",
+        "agent/lib",
+        "symlink"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T21:09:36.475Z",
+      "updatedAt": "2026-09-11T21:09:36.475Z",
+      "accessedAt": "2026-09-11T21:09:36.475Z",
+      "observedAt": "2026-09-11T21:09:36.475Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
+      "deleted": false,
+      "contentHash": "7385af23df56e5e0"
+    },
+    {
+      "id": "bcf25218-3afb-4e19-8a13-b1956cdb28ce",
+      "category": "habit",
+      "title": "用户推进多步计划的交互模式",
+      "content": "用户对低风险变更倾向于授权助手自行判断并直接执行（如'自行判断，选择最合适的方案'），不等待逐项确认。对于多步计划，用户通过重复发送'继续'来推进，助手应每轮完成一个明确步骤后报告状态并等待下一轮。推送前习惯先验证（路径存在性、条目计数、触发词数量），验证通过再 git push。这种模式适合分步确认式交互，不适合一次性大批量自动执行。",
+      "tags": [
+        "用户偏好",
+        "交互模式",
+        "确认流程"
+      ],
+      "confidence": 0.85,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T21:09:36.475Z",
+      "updatedAt": "2026-09-11T21:09:36.475Z",
+      "accessedAt": "2026-09-11T21:09:36.475Z",
+      "observedAt": "2026-09-11T21:09:36.475Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
+      "deleted": false,
+      "contentHash": "935f65bc44fe740a"
+    },
+    {
+      "id": "c8f6f35a-2bc3-4d5e-ab04-af686a0602d0",
+      "category": "fact",
+      "title": "验证脚本作用域 bug",
+      "content": "在 packs/INDEX.md 强化后的验证阶段，触发词数量检查脚本报'7 个包触发词不足 6 个'的假警报。根因：检查逻辑遍历了 INDEX.md 中的所有行，包括功能级二级索引的子技能行（如 media-toolkit/extract-images/SKILL.md），而这些子行本身不含触发词字段。修正：将检查范围限定为包索引表行（以 '- **' 开头的条目），排除二级索引子行。修正后 14 个包全部通过 ≥6 触发词检查。教训：验证脚本的作用域必须与数据模型对齐，多级索引结构中子级行不应参与父级字段的约束检查。",
+      "tags": [
+        "验证",
+        "脚本bug",
+        "假警报",
+        "INDEX.md"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-11T21:09:36.475Z",
+      "updatedAt": "2026-09-11T21:09:36.475Z",
+      "accessedAt": "2026-09-11T21:09:36.475Z",
+      "observedAt": "2026-09-11T21:09:36.475Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
+      "deleted": false,
+      "contentHash": "cf345c762a6fb2b6"
     }
   ]
 }
