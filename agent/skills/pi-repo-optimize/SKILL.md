@@ -36,7 +36,7 @@ description: 对配置仓库（如 .pi）做目录结构、文件存储、架构
 ### 4. 执行与验证
 
 - 按用户确认的方案批量修改，一轮内完成同类改动
-- 验证：配置仓库跑 scripts/test-all.sh 全量回归
+- 验证：配置仓库跑 scripts/test/test-all.sh 全量回归
 - 文档同步：README/AGENTS.md 的目录清单与实际一致
 - 提交推送前检查 remote 无 token（有则先恢复无凭证 URL）
 

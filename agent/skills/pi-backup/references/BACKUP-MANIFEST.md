@@ -29,27 +29,27 @@
 | SearXNG 配置 | `searxng/settings.yml` | SearXNG 配置文件（含 secret_key） |
 | SearXNG 脚本 | `searxng/start.sh`、`searxng/stop.sh` | 启停脚本 |
 | 调度任务 | `agent/extensions/pi-autopilot/scheduled-tasks.json` | 定时任务定义（扩展与 cron 共享） |
-| 调度脚本 | `scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
+| 调度脚本 | `agent/extensions/pi-autopilot/scripts/pi-cron.sh` | cron 包装脚本（离线执行） |
 | pi-link 设备清单 | `pi-link.json` | 多设备互联配置（host/user/port，gitignored 每环境独立，归档必须带走） |
 | pi-link 公钥合集 | `deploy/keys/authorized_keys` | 所有设备公钥合集（git 入库；clone 后需 `pi-link-keys.sh install` 装到本机） |
-| pi-link 加固入口 | `scripts/pi-link-entry.sh` | ssh forced command 加固入口（每设备需 `install-wrapper` 类机制装到 sshd） |
-| pi-link 密钥脚本 | `scripts/pi-link-keys.sh` | 公钥 install/export/add（新设备接入流程） |
+| pi-link 加固入口 | `agent/extensions/pi-link/scripts/pi-link-entry.sh` | ssh forced command 加固入口（每设备需 `install-wrapper` 类机制装到 sshd） |
+| pi-link 密钥脚本 | `agent/extensions/pi-link/scripts/pi-link-keys.sh` | 公钥 install/export/add（新设备接入流程） |
 | 部署配置 | `deploy/systemd/` | systemd unit 模板（pi-searxng/pi-whisper，`%PI_HOME%` 占位；rebuild.sh 安装时替换） |
-| 调度安装脚本 | `scripts/install-cron.sh`、`scripts/install-systemd.sh` | crontab / systemd 安装 |
+| 调度安装脚本 | `scripts/install/install-cron.sh`、`scripts/install/install-systemd.sh` | crontab / systemd 安装 |
 | 生命周期脚本 | `scripts/pi-wrapper.sh` | 进程外生命周期管理器（自动重启） |
-| 生命周期安装脚本 | `scripts/install-wrapper.sh` | wrapper 安装/卸载 |
+| 生命周期安装脚本 | `scripts/install/install-wrapper.sh` | wrapper 安装/卸载 |
 | 生命周期直启脚本 | `scripts/pi-orig.sh` | 绕过 wrapper 直接启动（故障逃生） |
 | 全局重建脚本 | `scripts/rebuild.sh` | 一键重建依赖（npm、venv、二进制） |
-| 回归测试脚本 | `scripts/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
-| 重建回归脚本 | `scripts/docker-rebuild-test.sh` | Docker 干净环境重建回归（clone→rebuild→判定） |
-| 核心补丁 | `scripts/patch-*.mjs`（8 个：voice-enter/footer-live-context/plan-tools/tab-arg-completion/playwright-core/footer-cache/footer-format/footer-restart-hint） | rebuild.sh Phase 3 自动执行；**漏备份则 restore 后 rebuild 无法打补丁** |
+| 回归测试脚本 | `scripts/test/test-all.sh` | 一键全量回归（测试+类型+冲突检查） |
+| 重建回归脚本 | `scripts/maintenance/docker-rebuild-test.sh` | Docker 干净环境重建回归（clone→rebuild→判定） |
+| 核心补丁 | `agent/extensions/*/scripts/patch-*.mjs`（pi-context、pi-voice、plan-mode、pi-browser 等扩展各自的补丁） | rebuild.sh Phase 3 自动执行；**漏备份则 restore 后 rebuild 无法打补丁** |
 | 用量基准 | `scripts/pi-bench.sh` | usage/timing/compare 基准工具 |
-| 后台任务脚本 | `scripts/pi-bg.sh` + `scripts/README-pi-bg.md` | 后台任务四件套隔离 + 文档 |
+| 后台任务脚本 | `agent/extensions/pi-tmux/scripts/pi-bg.sh` + `scripts/docs/README-pi-bg.md` | 后台任务四件套隔离 + 文档 |
 | 冒烟测试 | `scripts/smoke-test.sh` | rebuild 依赖其第 1 项 |
 | Termux 前置 | `scripts/termux-prereq.sh` | Termux 前置依赖安装（rebuild 依赖） |
 | 多环境文档 | `docs/ENVIRONMENTS.md` | 多环境识别/切换流程/数据隔离表 |
-| Whisper 服务脚本 | `scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
-| Whisper 服务源码 | `scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
+| Whisper 服务脚本 | `agent/extensions/pi-voice/scripts/pi-whisper.sh` | 语音转写常驻服务管理（start/stop/status） |
+| Whisper 服务源码 | `agent/extensions/pi-voice/scripts/whisper-server.py` | faster-whisper HTTP 转写服务（127.0.0.1:18766；venv/模型可重建） |
 | SearXNG 生成脚本 | `searxng/generate-config.sh` | 自动生成 settings.yml（含 secret_key） |
 | tmux 配置 | `deploy/tmux/tmux.conf` | tmux 键位/插件/持久化配置副本（源 `~/.tmux.conf`；git 同步直接携带，WSL2 调优见 docs/alacritty-tmux-setup.md） |
 | Alacritty 配置 | `deploy/tmux/alacritty.toml` | 终端渲染配置副本（源 `~/.config/alacritty/alacritty.toml`，存在时收录） |

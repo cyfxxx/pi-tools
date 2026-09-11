@@ -92,10 +92,10 @@ foreach ($f in $files) {
 
 ### 第 2 步：基线回归测试（审查前必跑）
 
-- 用项目自带全量测试（~/.pi 仓库：`bash scripts/test-all.sh`）
-- 长任务用 `tmux_run` 后台跑，**命令一律全量重定向落盘**：`bash scripts/test-all.sh > /tmp/x.log 2>&1; echo EXIT=$? >> /tmp/x.log`——管道 `| tail` 会吞掉全部中间输出致日志空白误判失败（08-25 与 08-26 两次实战踩坑）。**禁止 tmux_wait 阻塞等待**（AGENTS.md 铁律；2026-08-15 实战教训：until_exit 等满 420s 占用前台）——tmux_run 后结束回合或转做其他独立工作，后续轮次用 `tmux_read` 轮询结果
+- 用项目自带全量测试（~/.pi 仓库：`bash scripts/test/test-all.sh`）
+- 长任务用 `tmux_run` 后台跑，**命令一律全量重定向落盘**：`bash scripts/test/test-all.sh > /tmp/x.log 2>&1; echo EXIT=$? >> /tmp/x.log`——管道 `| tail` 会吞掉全部中间输出致日志空白误判失败（08-25 与 08-26 两次实战踩坑）。**禁止 tmux_wait 阻塞等待**（AGENTS.md 铁律；2026-08-15 实战教训：until_exit 等满 420s 占用前台）——tmux_run 后结束回合或转做其他独立工作，后续轮次用 `tmux_read` 轮询结果
 - 测试**全绿**再进入深度审查；有红项先记录为问题，不阻塞后续步骤
-- **vitest 必须以扩展目录为 cwd 跑**（分层验证走 `bash scripts/test-all.sh --only=<ext>`）：在 agent/ 根直跑单套件会因 `__mocks__` alias 仅在扩展 root 生效而批量误报失败（2026-08-26 实战：40 失败全部为环境假象）
+- **vitest 必须以扩展目录为 cwd 跑**（分层验证走 `bash scripts/test/test-all.sh --only=<ext>`）：在 agent/ 根直跑单套件会因 `__mocks__` alias 仅在扩展 root 生效而批量误报失败（2026-08-26 实战：40 失败全部为环境假象）
 
 ### 第 3 步：subagent 并行深度审查（核心）
 
@@ -169,7 +169,7 @@ foreach ($f in $files) {
    - **worker 修复报告不可全信**：主会话抽查关键 diff（每个 worker 抽 2-4 处：外部句柄承接/状态迁移/边界条件），确认与方案一致；worker prompt 的输出约束含「tsc -p tsconfig.local.json 无新增报错」自检要求（新建测试文件的 vi.fn 泛型/vi.mocked 类型错误需主会话兑底）
 3. 每个修复点**至少一个回归测试**：优先补在对应扩展现有测试文件；测试要能捕获旧行为（修复前先跑一遍确认失败）。给已有审计修复行为加缓存类优化前先 grep 对应契约测试（行为可能已被锁定，实战例：pi-link 探测 TTL 缓存破坏「改名即时跟进」契约——改为仅失败路径缓存）
 4. 行为/语义变化的修复同步更新 README/CHANGELOG（有维护惯例的扩展，如 subagent/plan-mode/pi-web-search 有 CHANGELOG）；代码注释与实现矛盾的一并更正。改 AGENTS.md 等注入面文档会使下轮会话缓存前缀失效一次，属预期成本
-5. 全量回归：对应扩展 vitest + tsc + 注册面/conflict-check（`bash scripts/test-all.sh`）；新测试文件要进仓库而非临时验证；全量回归同样 tmux_run 后台跑（禁 tmux_wait，见第 2 步）
+5. 全量回归：对应扩展 vitest + tsc + 注册面/conflict-check（`bash scripts/test/test-all.sh`）；新测试文件要进仓库而非临时验证；全量回归同样 tmux_run 后台跑（禁 tmux_wait，见第 2 步）
 6. **正则/多层转义类精确修改用 write 写独立 .mjs 脚本执行最可靠**：edit 工具写负向前瞻等复杂正则时转义层叠易错位（文件落成双反斜杠语义反转），node -e 内嵌又叠加 bash 双引号转义连环出错
 7. **修复逐项销账**：对照审计报告清单逐项核对修复状态（2026-08-15 教训：多任务同文件合并完成时漏更新 todo 状态，#5 残留待办行被用户发现）；全部完成后 todo delete 归档清除 TUI 展示
 8. 提交推送：按仓库惯例分离提交（如代码修复 / memory/entries.json 记忆增量分开）；提交前检查 staged 区无残留（并行会话/先前操作遗留）；pull --rebase 前确认工作区改动归属（本会话 vs 并行会话）；push 前确认 remote 无凭证 token；SSH remote 直接推
