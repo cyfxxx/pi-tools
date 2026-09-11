@@ -114,3 +114,4 @@
 {"ts":"2026-09-11T00:43:26.700Z","device":"localhost","taskId":"1abc5540-8e25-4d0b-8e1b-a834875da726","taskName":"daily-health","result":"failed","output":"验证前: 连续失败 2 次，启用 Best-of-N 验证重试","durationMs":30551}
 {"ts":"2026-09-11T00:44:33.259Z","device":"localhost","taskId":"c523c2ed-0daa-4ec7-9c91-a6061f0873fd","taskName":"knowledge-subscribe","result":"failed","output":"验证前: 连续失败 2 次，启用 Best-of-N 验证重试","durationMs":97104}
 {"ts":"2026-09-11T01:09:58.445Z","device":"localhost","taskId":"da6c4e09-9792-41e3-b85d-2dac351fbd14","taskName":"daily-review","result":"success","output":"","durationMs":269355}
+{"ts":"2026-09-11T15:31:45.573Z","device":"localhost","taskId":"58effa5f-0dcc-40c1-8e3c-93eab23f1776","taskName":"tool-stats-daily","result":"success","output":"","durationMs":97184}
