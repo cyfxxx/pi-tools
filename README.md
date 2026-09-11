@@ -491,7 +491,7 @@ bash ~/.pi/scripts/rebuild.sh --yes
 ```bash
 service cron status
 crontab -l | grep pi-cron
-bash scripts/install-cron.sh
+bash scripts/install/install-cron.sh
 ```
 
 ### 任务锁文件残留导致新任务不执行

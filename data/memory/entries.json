@@ -4061,7 +4061,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-12T16:03:30.224Z",
       "updatedAt": "2026-08-12T16:03:30.224Z",
-      "accessedAt": "2026-08-12T16:03:30.224Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-12T16:03:30.224Z",
       "environments": [
         "termux"
@@ -4387,7 +4387,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-13T00:06:13.074Z",
       "updatedAt": "2026-08-15T21:45:00.000Z",
-      "accessedAt": "2026-08-13T00:06:13.074Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-13T00:06:13.074Z",
       "environments": [
         "wsl2",
@@ -8491,7 +8491,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-22T04:15:50.184Z",
       "updatedAt": "2026-08-22T04:15:50.184Z",
-      "accessedAt": "2026-08-22T04:15:50.184Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-22T04:15:50.184Z",
       "environments": [
         "wsl2",
@@ -10219,7 +10219,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-24T09:27:25.423Z",
       "updatedAt": "2026-08-24T09:27:25.423Z",
-      "accessedAt": "2026-08-24T09:27:25.423Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-24T09:27:25.423Z",
       "environments": [
         "termux"
@@ -11334,7 +11334,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-25T01:46:15.132Z",
       "updatedAt": "2026-08-25T01:46:15.132Z",
-      "accessedAt": "2026-09-07T00:08:06.251Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-25T01:46:15.132Z",
       "environments": [
         "wsl2",
@@ -13015,7 +13015,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T05:56:30.687Z",
       "updatedAt": "2026-08-26T05:56:30.687Z",
-      "accessedAt": "2026-09-08T08:22:50.697Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-26T05:56:30.687Z",
       "environments": [
         "termux"
@@ -16928,7 +16928,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T05:59:57.197Z",
       "updatedAt": "2026-08-10T05:59:57.197Z",
-      "accessedAt": "2026-08-10T05:59:57.197Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-10T05:59:57.197Z",
       "deleted": false,
       "environments": [
@@ -16952,7 +16952,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T06:36:51.133Z",
       "updatedAt": "2026-08-10T06:36:51.133Z",
-      "accessedAt": "2026-08-10T06:36:51.133Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-10T06:36:51.133Z",
       "deleted": false,
       "environments": [
@@ -17022,7 +17022,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T08:59:37.714Z",
       "updatedAt": "2026-08-10T08:59:37.714Z",
-      "accessedAt": "2026-08-10T08:59:37.714Z",
+      "accessedAt": "2026-09-11T06:30:56.650Z",
       "observedAt": "2026-08-10T08:59:37.714Z",
       "deleted": false,
       "environments": [
@@ -21933,7 +21933,9 @@
       "environments": [
         "all"
       ],
-      "contentHash": "ddb2917ea7d8da0a"
+      "contentHash": "ddb2917ea7d8da0a",
+      "observedAt": "2026-09-11T01:08:49.327Z",
+      "deleted": false
     }
   ]
 }

@@ -35,4 +35,4 @@ description: 每日聚合工具调用统计并推送到远程仓库，用于跨�
 ## 相关文件
 - `~/.pi/scripts/tool-stats-sync.mjs`：聚合脚本
 - `~/.pi/memory/stats/`：输出目录
-- `~/.pi/scripts/test-all.sh`：全量回归含统计验证
+- `~/.pi/scripts/test/test-all.sh`：全量回归含统计验证

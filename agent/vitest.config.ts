@@ -1,5 +1,5 @@
 // agent 根 vitest 配置 = 纯守门，不放行任何测试。
-// 各扩展套件必须经 scripts/test-all.sh（cd 到扩展目录，用各自的 vitest.config.ts +
+// 各扩展套件必须经 scripts/test/test-all.sh（cd 到扩展目录，用各自的 vitest.config.ts +
 // __mocks__ 别名隔离 getAgentDir）。
 //
 // 为什么用插件而不是 globalSetup：vitest 在「无匹配测试文件」时提前退出，
@@ -18,7 +18,7 @@ const rootGuard = {
         '[vitest-root-guard] 禁止在 agent/ 根目录运行 vitest。',
         '扩展测试的 __mocks__ 别名仅在各自扩展目录的 vitest.config.ts 下生效，',
         '根目录直跑会把测试数据写进真实配置（2026-08-26 restart_hang 误报事故根因）。',
-        '正确用法：bash scripts/test-all.sh --only=<ext>',
+        '正确用法：bash scripts/test/test-all.sh --only=<ext>',
         '或：cd extensions/<ext> && node ../../node_modules/vitest/vitest.mjs run',
       ].join('\n'),
     )

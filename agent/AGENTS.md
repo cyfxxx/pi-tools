@@ -75,9 +75,9 @@ remote 含 token 时先 `git remote set-url origin` 恢复无凭证 URL。勿提
 ## 验证
 
 ```bash
-bash scripts/test-all.sh          # 全量回归
-bash scripts/test-all.sh --only=<ext1>,<ext2>  # 分层快检
-bash scripts/test-all.sh --fast   # 快速模式
+bash scripts/test/test-all.sh          # 全量回归
+bash scripts/test/test-all.sh --only=<ext1>,<ext2>  # 分层快检
+bash scripts/test/test-all.sh --fast   # 快速模式
 ```
 
 回归细节：`docs/development/AGENTS-DETAILS.md` → 回归验证细节

@@ -58,6 +58,6 @@
 
 ```bash
 node scripts/usage-stats.mjs                    # 命中率/断裂
-bash scripts/test-all.sh --fast                 # 回归门禁
+bash scripts/test/test-all.sh --fast                 # 回归门禁
 # memory_stats 工具查看记忆库占用与冷数据
 ```

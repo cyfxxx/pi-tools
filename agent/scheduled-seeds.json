@@ -66,7 +66,7 @@
       "name": "golden-fast",
       "type": "cron",
       "schedule": "30 7 * * *",
-      "prompt": "执行防退化基准（确定性零 LLM 主流程，勿做其他事）：运行 bash ~/.pi/scripts/golden-tasks.sh（--fast 档：F1-F5 本地脚本断言）。全部 ✓ 则输出一行'golden-fast 全绿'即结束，不写文件不提交。任一 ✗ 红项：将失败行与 golden 输出尾部 10 行写入 memory/daily-results/{{date}}-golden-<本机hostname>.md，git add 该文件后 commit（message: 'golden: fail {{date}}'）并 push（冲突先 git pull --rebase 重试一次，仍失败保留本地不阻塞）。",
+      "prompt": "执行防退化基准（确定性零 LLM 主流程，勿做其他事）：运行 bash ~/.pi/scripts/maintenance/golden-tasks.sh（--fast 档：F1-F5 本地脚本断言）。全部 ✓ 则输出一行'golden-fast 全绿'即结束，不写文件不提交。任一 ✗ 红项：将失败行与 golden 输出尾部 10 行写入 memory/daily-results/{{date}}-golden-<本机hostname>.md，git add 该文件后 commit（message: 'golden: fail {{date}}'）并 push（冲突先 git pull --rebase 重试一次，仍失败保留本地不阻塞）。",
       "useSubagent": true,
       "notifyMain": true,
       "waitForUserOnLocal": true,

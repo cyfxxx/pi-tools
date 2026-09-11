@@ -27,7 +27,7 @@ jobs:
           CI_SKIP_HEAVY=1 bash scripts/rebuild.sh --yes --no-voice --no-piper --no-log 2>&1
 
       - name: 全量回归（9 套 vitest + tsc + subagent + 注册面 + 冲突 + 缓存守门）
-        run: bash scripts/test-all.sh
+        run: bash scripts/test/test-all.sh
 
       - name: 备份体检（git 卫生 / 密钥泄漏 / 依赖完整）
         run: |
