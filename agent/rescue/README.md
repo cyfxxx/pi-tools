@@ -10,7 +10,21 @@ Pi 救援模式是一套智能崩溃分析与多层冗余恢复系统，在 Pi �
 2. **审计日志** (`pi-recovery-audit.sh`)：记录每次恢复的完整上下文
 3. **智能路由器** (`pi-wrapper.sh`)：根据崩溃类型选择恢复策略
 
-## 恢复层级
+## 恢复层级（新逻辑）
+
+新逻辑下，wrapper 不再按"崩溃类型→固定动作"的旧表格分派，而是先分类再启动修复 pi：
+
+| 分类 | 判据 | 动作 |
+|---|---|---|
+| `transient` | API 5xx/429、网络超时、ECONNREFUSED 等 | 指数退避重试，不修复 |
+| `external` | pi 核心正常，外部因素（扩展/配置/依赖/权限/磁盘） | 启动当前 pi（`--no-extensions --no-skills`）作为修复者，让它读崩溃日志并自行修复外部问题 |
+| `pi_self` | pi 核心自身损坏（dist 语法错误/缺失/依赖不匹配） | 启动源码缓存的 pi 作为修复者，让它修复坏的 pi |
+
+wrapper 只负责检查、分类、启动修复进程；实际修复操作由 pi 自身完成（要么用当前 pi 修外部问题，要么用源码缓存的 pi 修坏的 pi）。这样既避免了脚本误修复，又让用户能在 TUI 中看到修复过程。
+
+如果新逻辑的修复 pi 失败，wrapper 会回退到原有的细粒度恢复链（见下表）。
+
+### 旧恢复层级（作为回退）
 
 | 层级 | 触发条件 | 恢复动作 |
 |---|---|---|
@@ -37,16 +51,32 @@ pi 崩溃
 
 ## 崩溃类型与恢复策略
 
+新分类体系（wrapper 先分类，再决定动作）：
+
+| 类型 | 识别模式 | 恢复动作 |
+|---|---|---|
+| `transient` | `50[0-9]` / `429` / `ECONNREFUSED` / `ETIMEDOUT` / `socket hang up` / `rate.limit` / `stream interrupted` / `timeout.*exceeded` | 指数退避重试，不修复 |
+| `external` | 扩展/配置/依赖/权限/磁盘导致的崩溃（pi 核心正常） | 启动当前 pi（`--no-extensions --no-skills`）读崩溃日志并自行修复外部问题 |
+| `pi_self` | 错误明确指向 `pi-coding-agent/dist/`（含 `SyntaxError` / `ParseError` / `does not provide an export named` / `ERR_MODULE_NOT_FOUND`） | 启动源码缓存的 pi 修复坏的 pi |
+
+旧分类体系（作为回退，仍在 `pi-crash-analyzer.sh` 中保留）：
+
 | 类型 | 识别模式 | 恢复动作 |
 |---|---|---|
 | `missing_module` | `ERR_MODULE_NOT_FOUND` | 重装 npm 依赖 |
 | `syntax_error` | `SyntaxError` (本地文件上下文) | rebuild 恢复补丁 |
-| `extension_fail` | `Failed to load extension` | 临时禁用问题扩展 |
+| `extension_fail` | `Failed to load extension` | 临时禁用问题扩展（先 `node --check` 飞行校验，源码有语法错误就不禁用） |
 | `config_corrupt` | settings.json 相关错误 | 从快照恢复配置 |
 | `proxy_error` | `Invalid URL protocol` / socks | 清除代理环境变量 |
 | `lock_contention` | `EADDRINUSE` / `无法获取调度锁` | kill 竞争实例 |
 | `provider_error` | `502` / `503` / `429` / `server_error` | 切换 lastGood 模型 |
 | `node_compat` | `ERR_MODULE_NOT_FOUND` for `node:` 前缀 | 升级 Node.js |
+| `cli_argument_error` | `Unknown option` / `unknown flag` | 自动修复参数 |
+| `network_error` | `ECONNREFUSED` / `ETIMEDOUT` / DNS | 指数退避重试 |
+| `permission_error` | `EACCES` / `permission denied` | 修复文件权限 |
+| `oom_error` | `JavaScript heap out of memory` | 清理内存 / 增加限制 |
+| `disk_full` | `ENOSPC` / `No space left on device` | 清理磁盘空间 |
+| `timeout_error` | 进程超时 / 挂死 | 强制终止并重启 |
 | `unknown` | 以上均不匹配 | 累积计数，达阈值升级 |
 
 ## 防越修越坏机制
