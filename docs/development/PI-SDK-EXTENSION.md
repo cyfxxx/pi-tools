@@ -2,6 +2,28 @@
 
 > 扩展 API 不够用时，如何安全地利用 SDK 做更深层定制。
 
+## 元信息
+
+| 属性 | 值 |
+|------|-----|
+| 版本 | v1.0 |
+| 更新日期 | 2026-09-12 |
+| 适用范围 | Pi 扩展深度定制、SDK 使用 |
+| 相关文档 | [AGENTS.md](../../agent/AGENTS.md), [PI-EXT-DEV-NOTES.md](./PI-EXT-DEV-NOTES.md) |
+
+---
+
+## 目录
+
+- [一、背景：扩展 API 与 SDK 的关系](#一背景扩展-api-与-sdk-的关系)
+- [二、深度定制总览](#二深度定制总览)
+- [三、方案详解](#三方案详解)
+- [四、不能做什么](#四不能做什么)
+- [五、决策树：应该用哪个方案](#五决策树应该用哪个方案)
+- [六、总结与注意事项](#六总结与注意事项)
+
+---
+
 ## 一、背景：扩展 API 与 SDK 的关系
 
 Pi 的扩展系统有两层能力来源：
@@ -60,8 +82,8 @@ import { estimateTokens, createBashToolDefinition, SessionManager }
 | 函数 | 用途 |
 |------|------|
 | `estimateTokens(message)` | 估算单条消息 token 数（字符/4 保守估算） |
-| `estimateContextTokens(messages)` | 用最后一条 usage 计算总 context token，无则回退逐条估算（**注意：由 `@earendil-works/pi-agent-core` 导出，不在 pi-coding-agent**） |
-| `calculateContextTokens(usage)` | 从 usage 计算 context token（优先 totalTokens） |
+| `estimateContextTokens(messages)` | 用最后一条 usage 计算总 context token |
+| `calculateContextTokens(usage)` | 从 usage 计算 context token |
 | `compact(preparation, model, ...)` | 执行压缩（全参数控制） |
 | `shouldCompact(contextTokens, contextWindow, settings)` | 判断是否需要压缩 |
 | `prepareBranchEntries(entries, tokenBudget)` | 预计算分支摘要条目 |
@@ -146,7 +168,7 @@ pi.registerTool({
 
 **适用场景：** 需要在扩展中写 session 元数据、合并 session、重命名等——扩展 API 没暴露写方法时。
 
-**原理：** `ctx.sessionManager` 运行时是完整的 `SessionManager` 实例，但类型是只读的 `ReadonlySessionManager`（`Pick<SessionManager, 若干只读方法>`）。通过类型转换可以绕过。
+**原理：** `ctx.sessionManager` 运行时是完整的 `SessionManager` 实例，但类型是只读的 `ReadonlySessionManager`。通过类型转换可以绕过。
 
 ```typescript
 import type { SessionManager } from "@earendil-works/pi-agent-core"
@@ -155,12 +177,12 @@ pi.on("agent_end", (event, ctx) => {
   const mgr = ctx.sessionManager as unknown as SessionManager
   mgr.setSessionName("auto-named-session")
   mgr.setLabel(entryId, "reviewed")
-  mgr.merge(otherSession) // 合并另一个 session
-  mgr.addEntry(customEntry) // 添加自定义条目
+  mgr.merge(otherSession)
+  mgr.addEntry(customEntry)
 })
 ```
 
-**`SessionManager` 可额外调用的写方法（`ReadonlySessionManager` 没有的）：**
+**`SessionManager` 可额外调用的写方法：**
 
 | 方法 | 用途 |
 |------|------|
@@ -176,9 +198,9 @@ pi.on("agent_end", (event, ctx) => {
 | `save()` | 持久化 |
 
 **⚠️ 风险：**
-- **版本耦合：** `ReadonlySessionManager` 的 `Pick` 列表随版本变化，Cast 后的方法名可能在不同版本间消失或改名
-- **状态不一致：** 绕过扩展 API 直接修改 session，Pi 内部可能没收到通知，导致 UI 不同步
-- **调试困难：** Pi 不保证这些内部方法的稳定性，出问题不兼容
+- **版本耦合：** `ReadonlySessionManager` 的 `Pick` 列表随版本变化
+- **状态不一致：** 绕过扩展 API 直接修改 session，Pi 内部可能没收到通知
+- **调试困难：** Pi 不保证这些内部方法的稳定性
 
 ---
 
@@ -186,36 +208,15 @@ pi.on("agent_end", (event, ctx) => {
 
 **适用场景：** `/foo` 命令需要在 session 间切换、fork、发送消息。
 
-**不同于普通事件上下文的地方：**
-
 `ExtensionCommandContext`（给 `registerCommand` handler 使用）比 `ExtensionContext` 多出：
 
 ```typescript
-// 只有命令 handler 有：
 ctx.newSession(options)     // 创建新 session
 ctx.fork(entryId, options)  // 分叉 session
 ctx.navigateTree(targetId)  // 导航到 session 树节点
 ctx.switchSession(path)     // 切换到其他 session 文件
 ctx.waitForIdle()           // 等待 agent 空闲
 ctx.reload()                // 重新加载扩展/技能/配置
-```
-
-**`withSession()` 回调更进一步（`ReplacedSessionContext`）：**
-
-```typescript
-pi.registerCommand({
-  name: "snapshot",
-  description: "创建快照并切回",
-}, async (ctx) => {
-  await ctx.fork(ctx.getLeafId(), {
-    withSession: async (newCtx) => {
-      // 此时 newCtx 绑定到新 fork 的 session
-      await newCtx.sendUserMessage(
-        "请总结当前进展并保存到笔记"
-      )
-    }
-  })
-})
 ```
 
 **`sendUserMessage` 的 `deliverAs` 参数：**
@@ -246,7 +247,7 @@ const results = globalThis.__pi_shared_state?.lastSearchResults
 - 无类型安全
 - 扩展卸载时不会自动清理
 
-**替代方案：** `pi.events` EventBus（类型安全更差，但不会污染全局作用域）
+**替代方案：** `pi.events` EventBus
 
 ```typescript
 // 扩展 A
@@ -260,7 +261,7 @@ pi.events.emit("my-channel", data)
 
 ### 方案 F：自定义 Provider（✅ 安全）
 
-**适用场景：** 添加非标准 API 兼容的模型供应商，需要自定义 baseUrl、HTTP headers、认证方式、流式解析。不需要 SDK。
+**适用场景：** 添加非标准 API 兼容的模型供应商，需要自定义 baseUrl、HTTP headers、认证方式、流式解析。
 
 ```typescript
 pi.registerProvider("my-provider", {
@@ -275,8 +276,6 @@ pi.registerProvider("my-provider", {
 })
 ```
 
-参见内置的 `registerProvider` 类型定义和 Pi 的 `ModelRuntime`。
-
 ---
 
 ## 四、不能做什么
@@ -285,7 +284,7 @@ pi.registerProvider("my-provider", {
 
 | 操作 | 原因 |
 |------|------|
-| 改 `beforeToolCall` / `afterToolCall` / `shouldStopAfterTurn` / `prepareNextTurn` | 这些是 `createAgentSession()` 的配置参数，运行时已固定，外部无法注入 |
+| 改 `beforeToolCall` / `afterToolCall` / `shouldStopAfterTurn` / `prepareNextTurn` | 这些是 `createAgentSession()` 的配置参数，运行时已固定 |
 | 改 agent loop 的 retry/compact/continue 逻辑 | agent loop 内部硬编码 |
 | 改扩展加载机制 | 加载器在扩展运行前已完成 |
 | 改会话文件格式 | SessionManager 的序列化/反序列化硬编码 |
@@ -346,8 +345,8 @@ pi.registerProvider("my-provider", {
 
 ### 注意事项
 
-- **SDK 版本锁定：** `@earendil-works/pi-agent-core` 和 `@earendil-works/pi-coding-agent` 随 Pi 更新。如果导入的函数签名变了，扩展会在运行时 break。建议在 `CHANGELOG.md` 中记录依赖的 Pi 版本。
+- **SDK 版本锁定：** `@earendil-works/pi-agent-core` 和 `@earendil-works/pi-coding-agent` 随 Pi 更新。如果导入的函数签名变了，扩展会在运行时 break。
 - **类型安全优先：** 能用 `import type` 就别 cast `as any`。方案 C 的 cast 应该集中在一个文件里，方便排查。
 - **测试：** 用到 SDK 导入的扩展要在 Pi 版本升级后做回归测试。
-- **热重载行为：** 扩展通过 `ctx.reload()` 重载时，`globalThis` 上残留的状态不会自动清理，方案 E 需要注意。
-- **不要依赖内部 API：** 方案 C 突破的类型方法不被 Pi 官方保障稳定，升级后出问题先自查是否 cast 所致。
+- **热重载行为：** 扩展通过 `ctx.reload()` 重载时，`globalThis` 上残留的状态不会自动清理。
+- **不要依赖内部 API：** 方案 C 突破的类型方法不被 Pi 官方保障稳定。
