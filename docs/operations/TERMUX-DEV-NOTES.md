@@ -5,6 +5,28 @@
 
 本机环境实测经验（2026-08 汇总，pi-voice 录音链路反复踩坑总结）。适用于在 Termux（PRoot 容器）内开发涉及 Android 系统 API 的功能。
 
+## 元信息
+
+| 属性 | 值 |
+|------|-----|
+| 版本 | v1.0 |
+| 更新日期 | 2026-09-12 |
+| 适用范围 | Termux/Android 环境开发、录音链路 |
+| 相关文档 | [ENVIRONMENTS.md](./ENVIRONMENTS.md), [PI-EXT-DEV-NOTES.md](../development/PI-EXT-DEV-NOTES.md) |
+
+---
+
+## 目录
+
+- [一、路径与权限](#一路径与权限)
+- [二、termux-microphone-record](#二termux-microphonerecordtermux-api-录音)
+- [三、Android 系统特性](#三android-系统特性)
+- [四、终端/输入](#四终端输入)
+- [五、网络](#五网络)
+- [六、sshd 与 pi-link](#六sshd-与-pi-link多设备互联)
+- [七、whisper（本地转写）](#七whisper本地转写)
+- [八、开发流程提醒](#八开发流程提醒)
+
 ## 路径与权限
 
 - **Termux:API（Android app）只能访问系统可访问路径**：`/storage/emulated/0/...`；PRoot 容器内路径（`/tmp/...`）会报 `open failed: ENOENT`。录音等文件必须放共享存储
