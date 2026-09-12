@@ -17,6 +17,26 @@ version: v1.1
 | 不适用 | 仅同步单个文件/临时传文件（用 scp/rsync）；不含配置的普通代码仓库同步 |
 | 依赖 | tar, git, npm, rebuild.sh |
 
+---
+
+## 目录
+
+- [一、概述](#一概述)
+- [二、命令列表](#二命令列表)
+- [三、pi-backup create](#pi-backup-create)
+- [四、pi-backup sync](#pi-backup-sync)
+- [五、pi-backup restore](#pi-backup-restore)
+- [六、pi-backup clone](#pi-backup-clone)
+- [七、pi-backup rebuild](#pi-backup-rebuild)
+- [八、pi-backup verify](#pi-backup-verify)
+- [九、pi-backup list](#pi-backup-list)
+- [十、备份清单](#十备份清单)
+- [十一、备份目录约定](#十一备份目录约定)
+
+---
+
+## 一、概述
+
 对 `~/.pi/` 下的 agent 配置、skills、扩展源码、SearXNG 配置文件等进行打包备份与恢复。支持两种模式：
 
 - **本地归档**（`create` / `restore`）：tar.gz 压缩包，适合快照存档
