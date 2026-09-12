@@ -442,6 +442,7 @@ bash scripts/test/test-all.sh
 | 项目愿景 | `docs/design/VISION.md` | 理解设计决策 |
 | 模块化方案 | `docs/maintenance/MODULARIZATION-PLAN.md` | 架构重构 |
 | 故障排除 | `docs/TROUBLESHOOTING.md` | 常见问题诊断 |
+| 常见问题 | `docs/FAQ.md` | 快速查阅 |
 
 > **防止上下文膨胀**：不要一次性加载所有文档，只在需要时 read 对应文件。
 
