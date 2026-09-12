@@ -9,7 +9,7 @@
 | 版本 | v1.1 |
 | 更新日期 | 2026-09-12 |
 | 适用范围 | 跨会话记忆、自主学习 |
-| 相关文档 | [ctx-lite](../../ctx-lite/README.md), [Mem0](https://github.com/mem0ai/mem0) |
+| 相关文档 | [ctx-lite](#合并前), [Mem0](https://github.com/mem0ai/mem0) |
 
 ---
 

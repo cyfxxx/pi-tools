@@ -9,7 +9,7 @@
 | 版本 | v1.1 |
 | 更新日期 | 2026-09-12 |
 | 适用范围 | 语音输入、语音输出、转写服务 |
-| 相关文档 | [pi-whisper.sh](../../scripts/pi-whisper.sh), [pi-sherpa.sh](../../scripts/pi-sherpa.sh) |
+| 相关文档 | [pi-whisper.sh](./scripts/pi-whisper.sh), [pi-sherpa.sh](./scripts/pi-sherpa.sh) |
 
 ---
 

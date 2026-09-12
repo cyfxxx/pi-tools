@@ -9,7 +9,7 @@
 | 版本 | v1.1 |
 | 更新日期 | 2026-09-12 |
 | 适用范围 | 定时任务、失败自愈、自管理 |
-| 相关文档 | [pi-scheduler](../pi-scheduler/README.md), [pi-admin](../pi-admin/README.md) |
+| 相关文档 | [pi-scheduler](#融合前), [pi-admin](#融合前) |
 
 ---
 
