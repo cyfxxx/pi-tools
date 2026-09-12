@@ -32,14 +32,14 @@
 | 创建统一文档模板 | ✅ 完成 | 100% |
 | 整理扩展README文档（高优先级） | ✅ 完成 | 100% |
 | 整理扩展README文档（中优先级） | ✅ 完成 | 100% |
-| 整理技能SKILL文档 | ✅ 完成 | 80%（4/5 核心完成） |
+| 整理技能SKILL文档 | ✅ 完成 | 100% |
 | 整理docs/目录文档 | ⏳ 待开始 | 0% |
 | 统计缺少的文档并创建 | ⏳ 待开始 | 0% |
 | 更新根目录README.md的文档索引 | ⏳ 待开始 | 0% |
 
 ### 1.2 当前完成度
 
-**已完成 85%**，剩余 15% 为低优先级任务。
+**已完成 90%**，剩余 10% 为低优先级任务（docs/ 目录文档）。
 
 ---
 
@@ -71,7 +71,7 @@
 | 12 | `agent/extensions/pi-memory/README.md` | 添加元信息、目录导航、架构图 |
 | 13 | `agent/extensions/plan-mode/README.md` | 添加元信息、目录导航、架构图 |
 
-### 2.3 整理的技能SKILL文档（4个）
+### 2.3 整理的技能SKILL文档（6个，全部完成）
 
 | # | 文档 | 整理内容 |
 |---|------|----------|
@@ -79,6 +79,8 @@
 | 2 | `agent/skills/pi-code-review/SKILL.md` | 添加元信息、目录导航、章节编号 |
 | 3 | `agent/skills/pi-full-audit/SKILL.md` | 添加元信息、目录导航、章节编号 |
 | 4 | `agent/skills/pi-translate-zh/SKILL.md` | 添加元信息、目录导航、章节编号 |
+| 5 | `agent/skills/pi-bug-diagnosis/SKILL.md` | 添加元信息、目录导航、章节编号 |
+| 6 | `agent/skills/pi-backup/SKILL.md` | 添加元信息表格 |
 
 ---
 
@@ -96,13 +98,8 @@
 | 6 | `agent/skills/pi-code-review/SKILL.md` | 已整理完成 |
 | 7 | `agent/skills/pi-full-audit/SKILL.md` | 已整理完成 |
 | 8 | `agent/skills/pi-translate-zh/SKILL.md` | 已整理完成 |
-
-### 3.2 中优先级（待整理）
-
-| # | 文档 | 问题 |
-|---|------|------|
-| 1 | `agent/skills/pi-bug-diagnosis/SKILL.md` | 需要添加元信息 |
-| 2 | `agent/skills/pi-backup/SKILL.md` | 需要添加元信息 |
+| 9 | `agent/skills/pi-bug-diagnosis/SKILL.md` | 已整理完成 |
+| 10 | `agent/skills/pi-backup/SKILL.md` | 已整理完成 |
 
 ### 3.2 低优先级（待整理）
 
@@ -126,9 +123,9 @@
 | 类别 | 数量 | 已整理 | 待整理 |
 |------|------|--------|--------|
 | 扩展README文档 | 13 | 13 | 0 |
-| 技能SKILL文档 | 6 | 4 | 2 |
+| 技能SKILL文档 | 6 | 6 | 0 |
 | docs/ 文档 | 13 | 0 | 13 |
-| **总计** | **32** | **17** | **15** |
+| **总计** | **32** | **19** | **13** |
 
 ### 4.2 整理效果
 
