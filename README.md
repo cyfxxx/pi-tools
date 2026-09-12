@@ -429,6 +429,22 @@ bash scripts/test/test-all.sh
 | 冲突检查 | `cd agent/extensions && node tests/conflict-check.mjs` | 9 项 |
 | 缓存注入面守门 | `cd agent/extensions && node tests/cache-guard.mjs` | 注入面指纹/阈值契约 |
 
+## 深度文档索引
+
+按需加载：问题驱动，先查索引再读文档。
+
+| 主题 | 文档 | 适用场景 |
+|------|------|----------|
+| 扩展开发规范 | `docs/development/PI-EXT-DEV-NOTES.md` | 开发新扩展、踩坑排查 |
+| SDK 扩展开发 | `docs/development/PI-SDK-EXTENSION.md` | 需要 SDK 深度定制 |
+| 多环境配置 | `docs/operations/ENVIRONMENTS.md` | 跨设备配置同步 |
+| Termux 开发 | `docs/operations/TERMUX-DEV-NOTES.md` | Android 录音/语音问题 |
+| 项目愿景 | `docs/design/VISION.md` | 理解设计决策 |
+| 模块化方案 | `docs/maintenance/MODULARIZATION-PLAN.md` | 架构重构 |
+| 故障排除 | `docs/TROUBLESHOOTING.md` | 常见问题诊断 |
+
+> **防止上下文膨胀**：不要一次性加载所有文档，只在需要时 read 对应文件。
+
 ## ⚠ 安全注意事项
 
 ### 密钥文件（永远不要提交到 git）
