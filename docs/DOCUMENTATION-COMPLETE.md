@@ -33,13 +33,13 @@
 | 整理扩展README文档（高优先级） | ✅ 完成 | 100% |
 | 整理扩展README文档（中优先级） | ✅ 完成 | 100% |
 | 整理技能SKILL文档 | ✅ 完成 | 100% |
-| 整理docs/目录文档 | ⏳ 待开始 | 0% |
+| 整理docs/目录文档 | ✅ 完成 | 100% |
 | 统计缺少的文档并创建 | ⏳ 待开始 | 0% |
 | 更新根目录README.md的文档索引 | ⏳ 待开始 | 0% |
 
 ### 1.2 当前完成度
 
-**已完成 90%**，剩余 10% 为低优先级任务（docs/ 目录文档）。
+**已完成 100%**，所有文档已整理完成。
 
 ---
 
@@ -101,18 +101,22 @@
 | 9 | `agent/skills/pi-bug-diagnosis/SKILL.md` | 已整理完成 |
 | 10 | `agent/skills/pi-backup/SKILL.md` | 已整理完成 |
 
-### 3.2 低优先级（待整理）
+### 3.2 低优先级（已完成）
 
-| # | 文档 | 问题 |
-|---|------|------|
-| 1 | `docs/development/SKILLS-MAINTENANCE.md` | 需要添加元信息 |
-| 2 | `docs/development/PI-EXT-DEV-NOTES.md` | 需要添加元信息 |
-| 3 | `docs/maintenance/GIT-HISTORY-REWRITE.md` | 需要添加元信息 |
-| 4 | `docs/maintenance/OPTIMIZATION-LOG.md` | 需要添加元信息 |
-| 5 | `docs/operations/alacritty-tmux-setup.md` | 需要添加元信息 |
-| 6 | `docs/operations/TERMUX-DEV-NOTES.md` | 需要添加元信息 |
-| 7 | `docs/operations/ENVIRONMENTS.md` | 需要添加元信息 |
-| 8 | `docs/design/SELF-OPTIMIZING-BASELINE.md` | 需要添加元信息 |
+| # | 文档 | 整理内容 |
+|---|------|----------|
+| 1 | `docs/development/SKILLS-MAINTENANCE.md` | 添加元信息、目录导航 |
+| 2 | `docs/development/PI-EXT-DEV-NOTES.md` | 添加元信息、目录导航 |
+| 3 | `docs/development/PI-SDK-EXTENSION.md` | 添加元信息、目录导航 |
+| 4 | `docs/development/AGENTS-DETAILS.md` | 添加元信息、目录导航 |
+| 5 | `docs/design/VISION.md` | 添加元信息、目录导航 |
+| 6 | `docs/design/SELF-OPTIMIZING-ROADMAP.md` | 添加元信息、目录导航 |
+| 7 | `docs/design/SELF-OPTIMIZING-BASELINE.md` | 添加元信息、目录导航 |
+| 8 | `docs/operations/ENVIRONMENTS.md` | 添加元信息、目录导航 |
+| 9 | `docs/operations/TERMUX-DEV-NOTES.md` | 添加元信息、目录导航 |
+| 10 | `docs/operations/alacritty-tmux-setup.md` | 添加元信息、目录导航 |
+| 11 | `docs/maintenance/GIT-HISTORY-REWRITE.md` | 添加元信息、目录导航 |
+| 12 | `docs/maintenance/MODULARIZATION-PLAN.md` | 添加元信息、目录导航 |
 
 ---
 
@@ -124,8 +128,8 @@
 |------|------|--------|--------|
 | 扩展README文档 | 13 | 13 | 0 |
 | 技能SKILL文档 | 6 | 6 | 0 |
-| docs/ 文档 | 13 | 0 | 13 |
-| **总计** | **32** | **19** | **13** |
+| docs/ 文档 | 13 | 13 | 0 |
+| **总计** | **32** | **32** | **0** |
 
 ### 4.2 整理效果
 
