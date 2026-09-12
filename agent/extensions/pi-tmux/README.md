@@ -9,7 +9,7 @@
 | 版本 | v1.1 |
 | 更新日期 | 2026-09-12 |
 | 适用范围 | 后台任务、长任务、交互程序 |
-| 相关文档 | [alacritty-tmux-setup.md](../../../../docs/operations/alacritty-tmux-setup.md) |
+| 相关文档 | [alacritty-tmux-setup.md](../../../docs/operations/alacritty-tmux-setup.md) |
 
 ---
 

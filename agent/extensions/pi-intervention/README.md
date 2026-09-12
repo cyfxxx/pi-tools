@@ -9,7 +9,7 @@
 | 版本 | v1.0 |
 | 更新日期 | 2026-09-12 |
 | 适用范围 | 用户干预捕获、意图分析 |
-| 相关文档 | [VISION.md](../../../../docs/design/VISION.md), [ROADMAP.md](../../../../docs/design/SELF-OPTIMIZING-ROADMAP.md) |
+| 相关文档 | [VISION.md](../../../docs/design/VISION.md), [ROADMAP.md](../../../docs/design/SELF-OPTIMIZING-ROADMAP.md) |
 
 ---
 

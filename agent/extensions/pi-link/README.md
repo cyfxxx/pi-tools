@@ -9,7 +9,7 @@
 | 版本 | v1.1 |
 | 更新日期 | 2026-09-12 |
 | 适用范围 | 多设备互联、远程调用 |
-| 相关文档 | [pi-link.json](../../pi-link.json), [pi-link-keys.sh](./scripts/pi-link-keys.sh) |
+| 相关文档 | [pi-link.json](../../../pi-link.json), [pi-link-keys.sh](./scripts/pi-link-keys.sh) |
 
 ---
 
