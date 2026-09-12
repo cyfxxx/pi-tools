@@ -1,10 +1,91 @@
 # pi-autopilot — 自主运行扩展
 
-融合 pi-scheduler（定时任务）+ pi-admin（自管理）并增加失败自愈闭环，让 Pi 无人值守自驱动运行。
+> 融合 pi-scheduler（定时任务）+ pi-admin（自管理）并增加失败自愈闭环，让 Pi 无人值守自驱动运行。
 
-## 功能
+## 元信息
 
-### 1. 定时任务
+| 属性 | 值 |
+|------|-----|
+| 版本 | v1.1 |
+| 更新日期 | 2026-09-12 |
+| 适用范围 | 定时任务、失败自愈、自管理 |
+| 相关文档 | [pi-scheduler](../pi-scheduler/README.md), [pi-admin](../pi-admin/README.md) |
+
+---
+
+## 目录
+
+- [一、概述](#一概述)
+- [二、架构](#二架构)
+- [三、功能](#三功能)
+- [四、配置项](#四配置项)
+- [五、使用方法](#五使用方法)
+- [六、模块说明](#六模块说明)
+- [七、数据流](#七数据流)
+- [八、已知问题](#八已知问题)
+- [九、测试](#九测试)
+- [十、更新记录](#十更新记录)
+
+---
+
+## 一、概述
+
+### 1.1 解决的问题
+
+Pi 在无人值守场景下需要：
+- 定时执行任务（如每日站会、定期检查）
+- 自动处理失败（如 API 超时、服务不可用）
+- 自管理（如重启、状态查看）
+
+### 1.2 设计理念
+
+- **融合架构**：将 pi-scheduler 和 pi-admin 合并为统一扩展
+- **失败自愈**：自动分类错误，选择最合适的恢复策略
+- **预算控制**：防止无限重试和成本失控
+- **安全约束**：策略/预算配置仅命令可写，工具只读
+
+---
+
+## 二、架构
+
+### 2.1 系统架构图
+
+```
+任务触发 → 预算检查 → 注入执行 → 遥测记录
+    ↓
+失败 → 错误分类 → 决策矩阵 → 重试 / failover / 暂停告警
+    ↓
+会话挂死 → 看门狗 → 重启恢复 → 恢复队列重注入
+    ↓
+崩溃 ×3 → wrapper 回滚 lastGood → 重启
+```
+
+### 2.2 核心组件
+
+| 组件 | 文件 | 功能 |
+|------|------|------|
+| 调度器 | `scheduler.ts` | 30s 轮询、触发、错误处置闭环 |
+| 策略引擎 | `policy.ts` | 错误分类 + 决策矩阵 |
+| 模型切换 | `failover.ts` | fallback 链选择/执行（成功率排序，dry-run） |
+| 看门狗 | `watchdog.ts` | 挂死检测与恢复 |
+| 预算控制 | `budget.ts` | 预算三锁（maxRunsPerDay/maxCostPerDay/allowedModels） |
+| 遥测 | `telemetry.ts` | 运行遥测与成本估算（读 models.json 价格） |
+| 恢复队列 | `queue.ts` | pendingInject 标记与恢复队列 |
+| 配置管理 | `autoconfig.ts` | 自主配置读写（原子写） |
+
+### 2.3 事件流
+
+1. **任务触发**：cron 轮询或手动触发
+2. **预算检查**：检查是否超出运行次数/成本限制
+3. **注入执行**：通过 sendUserMessage 注入任务
+4. **遥测记录**：记录运行结果和成本
+5. **失败处理**：错误分类 → 决策矩阵 → 重试/failover/暂停
+
+---
+
+## 三、功能
+
+### 3.1 定时任务
 
 | 类型 | 命令 | 说明 |
 |------|------|------|
@@ -12,11 +93,12 @@
 | cron | `/schedule cron "0 9 * * 1-5" standup` | 5 字段 POSIX cron |
 | once | `/schedule remind +30m review PR` | 一次性提醒，执行后自动禁用 |
 
+**特性**：
 - 会话内：30s 轮询触发；离线：`pi-cron.sh` 由系统 cron 每分钟调用
 - 任务属性：标签、历史记录、最大运行时间、重试次数、完成通知（Webhook）
 - 导出/导入（JSON）、cron 表达式预览、模板变量 `{{date}}`/`{{time}}`/`{{datetime}}`/`{{cwd}}`
 
-### 2. 失败自愈
+### 3.2 失败自愈
 
 | 错误类别 | 判定 | 处置 |
 |---------|------|------|
@@ -24,35 +106,42 @@
 | 服务不可用 | provider/api/connection/network/429/503/502 等 | `failoverAfter`(2) 次后切换 fallback 链 |
 | 逻辑错误 | Error:/invalid 等 | 直接失败（不烧重启成本） |
 | 连续失败 | failCount ≥ `suspendAfter`(5) | 暂停任务 + Webhook 告警 |
-| failover 熔断 | failoverCount ≥ `maxFailovers`(1) | 暂停任务——连续切换模型已达上限，防双模型链 ping-pong 无限重启 |
-| 鉴权错误 | 401/403/unauthorized/invalid api key | 直接失败（重试无意义，不烧额度） |
+| failover 熔断 | failoverCount ≥ `maxFailovers`(1) | 暂停任务——连续切换模型已达上限 |
+| 鉴权错误 | 401/403/unauthorized/invalid api key | 直接失败（重试无意义） |
 
-- **模型 failover**：`fallbackModels` 硬白名单（AI 不可自由选模型），结合历史成功率选目标，写 wrapper 状态后重启带 `--model`
-- **重试退避（A1）**：失败重试延迟固定 60s 改为**指数退避 + 抖动**——`base 30s × 2^(failCount−1)`，上限 5min，±50% 抖动（下限 base/2）；连续瞬时故障（provider_down/超时）递增延迟避免自撞，抖动防共振
-- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（`restart_hang`）；默认 **180（3 小时）**——长思考/长时间等待场景不再误判；回合进行中（长工具执行）豁免——busy 期间不判挂死，但豁免有上限（2×maxIdleMinutes，turn 内真挂死不被永久豁免）
+**关键机制**：
+- **模型 failover**：`fallbackModels` 硬白名单（AI 不可自由选模型），结合历史成功率选目标
+- **重试退避**：指数退避 + 抖动——`base 30s × 2^(failCount−1)`，上限 5min，±50% 抖动
+- **看门狗**：`maxIdleMinutes` 无活动自动重启恢复（默认 180 分钟）
 - **崩溃回滚**：pi-wrapper 连续 3 次崩溃 → 回滚 lastGood 模型（5 分钟防抖）
-- **任务超时钳位**：调度任务 `maxRunTime` 钳位到 [5, 86400] 秒（负值/0 → 5s，≥2³¹ 溢出 → 86400），防极端值导致任务被立即误杀 / `maxCostPerDay`(0=不限) / `allowedModels`，超限自动跳过并通知（跳过时推进下次调度时间，预算恢复后自动补跑；不记 failed 遥测，避免 todayRuns 越拦越满锁到次日零点）
-- **成本估算口径（2026-08-26 审计声明）**：遥测 `estCost` 以 prompt/output **字符数近似 token 数**（1 字符≈1 token，真实 usage 不可得）——对中文等多字节文本**系统性偏松（低估）**，`budget.maxCostPerDay` / `/auto status` 的成本数字依赖此口径，仅作相对趋势参考，非精确计费
-- **恢复队列（A2/A3）**：
-  - `pendingInject` 语义改为**运行中标记**——fireViaMessage 非阻塞（sendUserMessage 立即返回），tick 过滤 pendingInject=true 的任务防 interval 长任务重叠触发；`agent_settled`（主会话空闲）统一清除
-  - 附带修复：旧实现注入后从不清除，崩溃恢复会重放全部历史注入任务；现只恢复真正"注入后未完成"的任务
-  - **注入式任务最终化（finalizeInjected）**：agent_settled 时对本轮注入的 message 任务回写 `updateTaskAfterRun('success')`——once 任务自动删除（修复前 nextRun 推 +1h 而 computeNextRun 对 once 返回过期时间 → 每小时重复注入、永不删除）、interval/cron 推进 nextRun 并重置 failCount/failoverCount、`notifyOnCompletion` 补发 success webhook（与 subagent 路径对齐）、交付完成即补记一条 telemetry 成功运行（此前只统计 subagent 与失败运行，注入任务日预算被系统性低估）、任务已删/改型安全跳过。**abort 回合甄别**：宿主 finally 无条件发 agent_settled，中止回合也会到达此处——index.ts 在 agent_end 检查尾部 assistant `stopReason==='aborted'` 回写标记后，中止回合仅推进 nextRun 防 tick 重复注入（不记 success、不删 once、不发 webhook、不消耗重试次数）；`/schedule enable` 清零熔断计数（suspend 恢复后不一次失败即再熔断）
-  - **恢复次数上限**：`recoveryCount` 超 3 次转 dead-letter——暂停任务 + Webhook 告警，需人工介入（`/schedule enable` 恢复），防连续崩溃无限重注入
+- **任务超时钳位**：调度任务 `maxRunTime` 钳位到 [5, 86400] 秒
 
-### 3. 自管理
+### 3.3 自管理
 
-命令：`/auto restart`（重启需确认）
-工具：`admin_status` `admin_list_models` `admin_set_model` `admin_list_sessions` `admin_switch_session` `admin_get_config` `admin_set_config` `admin_restart` `verify_report` `verify_config` `verify_test`
+**命令**：
+- `/auto restart`（重启需确认）
+- `/auto status [--stats]`（--stats 附加遥测统计）
+- `/auto policy`
+- `/auto failover [--exec]`
+- `/auto pause`
+- `/auto resume`
+- `/auto help`
 
-休眠组 `autopilot`（默认不注入，`enable_tool("autopilot")` 启用）：`autopilot_status`（运行状态/遥测）`autopilot_stats`（调度统计）`autopilot_failover`（failover 策略查看）`autopilot_policy`（策略只读查询）`schedule_task`（任务创建/管理）。共 16 个工具（8 admin_* + 5 autopilot/schedule + 3 verify_*）。
+**工具**（共 16 个）：
+- `admin_*`（8 个）：admin_status, admin_list_models, admin_set_model, admin_list_sessions, admin_switch_session, admin_get_config, admin_set_config, admin_restart
+- `autopilot_*`（5 个）：autopilot_status, autopilot_stats, autopilot_failover, autopilot_policy, schedule_task
+- `verify_*`（3 个）：verify_report, verify_config, verify_test
 
-状态/统计：`/auto status [--stats]`（--stats 附加遥测统计） `/auto policy` `/auto failover [--exec]` `/auto pause` `/auto resume`（`/auto help` 查看全部用法）
+**安全约束**：
+- 策略/预算配置仅 `/auto policy` 命令可写
+- `autopilot_policy` 工具只读
+- failover 链为配置白名单
 
-> 精简说明：`/admin:model` `/admin:session` `/admin:config` 已移除（分别由内置 `/model`、`/resume` `/session` `/tree`、`/settings` 或模型侧 admin_* 工具替代）；`/loop` `/remind` 已并入 `/schedule loop|remind`。
+---
 
-**安全约束**：策略/预算配置仅 `/auto policy` 命令可写；`autopilot_policy` 工具只读；failover 链为配置白名单。
+## 四、配置项
 
-## 配置
+### 4.1 主配置文件
 
 `.pi-autopilot-config.json`（首次自动生成）：
 
@@ -67,26 +156,83 @@
 }
 ```
 
-**enabled 门控语义**：`enabled=false`（自主运行关闭）时 30s tick 直接返回——到期任务不自动触发（含 waitForUserOnLocal 提示注入），预算检查也不执行（`fireTask` 内预算拦截整体包在 `if (config.enabled)` 分支中）；手动 `/schedule run`（含 force）不经 tick 门控，不受影响。
+### 4.2 配置项说明
 
-## admin_restart 上下文提示
+| 配置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `enabled` | boolean | true | 启用自主运行 |
+| `requeueOnRestart` | boolean | true | 重启时重新入队任务 |
+| `maxIdleMinutes` | number | 180 | 看门狗超时时间（分钟） |
+| `budget.maxRunsPerDay` | number | 50 | 每日最大运行次数 |
+| `budget.maxCostPerDay` | number | 0 | 每日最大成本（0=不限） |
+| `budget.allowedModels` | string[] | [] | 允许的模型列表 |
+| `policy.failoverAfter` | number | 2 | 失败多少次后切换模型 |
+| `policy.suspendAfter` | number | 5 | 失败多少次后暂停任务 |
+| `policy.timeoutFactor` | number | 2 | 超时因子 |
+| `policy.maxFailovers` | number | 1 | 最大 failover 次数 |
+| `fallbackModels` | string[] | [] | 备选模型列表 |
 
-调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（阈值硬编码 0.4；pi-context 侧重启压缩阈值为 100K，见其 README），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。重启照常执行（提示不阻断），避免用户毫不知情地烧掉一次全量重新计费。
+### 4.3 enabled 门控语义
 
-运行时文件：`.pi-autopilot-telemetry.json`（1000 条上限）、`.pi-autopilot-lastgood.json`、`.pi-autopilot-crash.json`（均在 `agent/extensions/pi-autopilot/` 下）。
+`enabled=false`（自主运行关闭）时 30s tick 直接返回——到期任务不自动触发（含 waitForUserOnLocal 提示注入），预算检查也不执行；手动 `/schedule run`（含 force）不经 tick 门控，不受影响。
 
-**调度锁**：`agent/extensions/pi-autopilot/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用）。
+---
 
-## 数据流
+## 五、使用方法
 
+### 5.1 安装
+
+```bash
+# 通过 rebuild.sh 自动安装
+bash scripts/rebuild.sh --yes
+
+# 或手动安装 cron
+bash scripts/install/install-cron.sh
+
+# 或安装 systemd timer
+bash scripts/install/install-systemd.sh
 ```
-任务触发 → 预算检查 → 注入执行 → 遥测记录
-失败 → 错误分类 → 决策矩阵 → 重试 / failover（重启切换模型）/ 暂停告警
-会话挂死 → 看门狗 → 重启恢复 → 恢复队列重注入
-崩溃 ×3 → wrapper 回滚 lastGood → 重启
+
+### 5.2 基本用法
+
+```bash
+# 创建定时任务
+/schedule loop 5m check build
+/schedule cron "0 9 * * 1-5" standup
+/schedule remind +30m review PR
+
+# 查看状态
+/auto status
+/auto status --stats
+
+# 查看策略
+/auto policy
+
+# 查看 failover 配置
+/auto failover
 ```
 
-## 模块
+### 5.3 高级用法
+
+```bash
+# 暂停/恢复任务
+/auto pause
+/auto resume
+
+# 重启（需确认）
+/auto restart
+
+# 手动触发任务
+/schedule run <task-id>
+```
+
+### 5.4 admin_restart 上下文提示
+
+调用 `admin_restart` 时，若当前上下文 ≥40% 窗口（阈值硬编码 0.4），工具会发出 warning 通知并在返回值附带提示：重启后首轮将全量重发，建议先 `/compact` 再重启。
+
+---
+
+## 六、模块说明
 
 | 文件 | 职责 |
 |------|------|
@@ -101,19 +247,68 @@
 | `state.ts` / `config.ts` / `sessions.ts` / `notifications.ts` / `storage.ts` | 自管理/任务存储（pi-admin + pi-scheduler 迁移） |
 | `tools.ts` / `commands.ts` | 工具与命令注册（admin_* 兼容别名） |
 
-## 开发
+---
 
-```bash
-npm install
-npx vitest run        # 覆盖：storage/notifications + scheduler + policy/failover/budget/telemetry/queue/watchdog
+## 七、数据流
+
+```
+任务触发 → 预算检查 → 注入执行 → 遥测记录
+失败 → 错误分类 → 决策矩阵 → 重试 / failover（重启切换模型）/ 暂停告警
+会话挂死 → 看门狗 → 重启恢复 → 恢复队列重注入
+崩溃 ×3 → wrapper 回滚 lastGood → 重启
 ```
 
-## 升级说明
+### 7.1 运行时文件
 
-替换 `settings.json` 中 `extensions/pi-admin/index.ts` 与 `extensions/pi-scheduler/index.ts` 两条目为 `extensions/pi-autopilot/index.ts`（rebuild.sh 已自动处理）。工具 `admin_*`、`schedule_task` 全部保留；命令已精简（见上文）：仅保留 `/auto` 与 `/schedule`（`/loop` `/remind` 并入其子命令）。
+| 文件 | 说明 |
+|------|------|
+| `.pi-autopilot-telemetry.json` | 遥测数据（1000 条上限） |
+| `.pi-autopilot-lastgood.json` | 最后一次成功运行的模型 |
+| `.pi-autopilot-crash.json` | 崩溃记录 |
+| `agent/extensions/pi-autopilot/scheduler.lock` | 调度锁（与 pi-cron 共享） |
 
-## CHANGELOG
+### 7.2 调度锁
 
-- 2026-08：重试改指数退避+抖动（A1）；恢复队列 pendingInject 重语义与崩溃恢复修复（A2/A3）；failover 熔断上限防 ping-pong、调度锁 24h 租约 TTL、看门狗 busy 豁免上限等审计修复
-- 2026-08-17：admin_restart 高上下文压缩建议；finalizeInjected 注入式任务闭环（once 删除 / notifyOnCompletion webhook / telemetry 补记）
-- 2026-08-25：中止回合甄别——宿主 finally 无条件发 agent_settled，agent_end 尾部 stopReason==='aborted' 回写后仅推 nextRun，不记 success
+`agent/extensions/pi-autopilot/scheduler.lock`（与 pi-cron 共享）——内容 `PID:时间戳`，24h 租约 TTL（进程存活但调度停摆/PID 复用时不永久占用）。
+
+---
+
+## 八、已知问题
+
+- **成本估算口径**：遥测 `estCost` 以 prompt/output 字符数近似 token 数（1 字符≈1 token，真实 usage 不可得）——对中文等多字节文本系统性偏松（低估），仅作相对趋势参考，非精确计费
+- **上下文压缩建议**：调用 `admin_restart` 时，若当前上下文 ≥40% 窗口，工具会发出 warning 通知，建议先 `/compact` 再重启
+
+---
+
+## 九、测试
+
+### 9.1 运行测试
+
+```bash
+cd agent/extensions/pi-autopilot
+npm install
+npx vitest run
+```
+
+### 9.2 测试覆盖
+
+- storage/notifications
+- scheduler
+- policy/failover/budget/telemetry/queue/watchdog
+
+---
+
+## 十、更新记录
+
+| 日期 | 版本 | 变更 |
+|------|------|------|
+| 2026-09-12 | v1.1 | 按照文档模板重新组织结构，添加元信息、目录导航、架构图 |
+| 2026-08-25 | v1.0 | 中止回合甄别——宿主 finally 无条件发 agent_settled |
+| 2026-08-17 | v1.0 | admin_restart 高上下文压缩建议；finalizeInjected 注入式任务闭环 |
+| 2026-08 | v1.0 | 重试改指数退避+抖动（A1）；恢复队列 pendingInject 重语义与崩溃恢复修复（A2/A3） |
+
+---
+
+## 十一、升级说明
+
+替换 `settings.json` 中 `extensions/pi-admin/index.ts` 与 `extensions/pi-scheduler/index.ts` 两条目为 `extensions/pi-autopilot/index.ts`（rebuild.sh 已自动处理）。工具 `admin_*`、`schedule_task` 全部保留；命令已精简：仅保留 `/auto` 与 `/schedule`（`/loop` `/remind` 并入其子命令）。
