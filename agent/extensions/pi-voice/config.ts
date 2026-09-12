@@ -170,7 +170,42 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, configPath: str
     sherpaToken: env.PI_VOICE_SHERPA_TOKEN ?? file.sherpaToken ?? file.whisperToken ?? DEFAULTS.sherpaToken,
     sherpaScript: env.PI_VOICE_SHERPA_SCRIPT ?? file.sherpaScript ?? DEFAULTS.sherpaScript,
   }
+  validateConfig(merged)
   return merged
+}
+
+/**
+ * 配置校验：必填项缺失或非法值时抛出明确错误，避免运行时异常。
+ * 仅校验关键字段（影响录音/转写主流程的项）；可选字段保持回退默认值。
+ */
+function validateConfig(cfg: VoiceConfig): void {
+  const errors: string[] = []
+  // whisperEndpoint 必填（转写入口）
+  if (!cfg.whisperEndpoint || typeof cfg.whisperEndpoint !== 'string') {
+    errors.push('whisperEndpoint 为空或非法（环境变量 PI_VOICE_WHISPER_ENDPOINT 或配置文件）')
+  }
+  // sherpaEndpoint 仅在 sttBackend==='sherpa' 时必填
+  if (cfg.sttBackend === 'sherpa' && (!cfg.sherpaEndpoint || typeof cfg.sherpaEndpoint !== 'string')) {
+    errors.push('sherpaEndpoint 为空或非法（sttBackend=sherpa 时必填）')
+  }
+  // 录音二进制路径非空字符串
+  if (typeof cfg.micBin !== 'string' || !cfg.micBin) errors.push('micBin 为空')
+  if (typeof cfg.ffmpegBin !== 'string' || !cfg.ffmpegBin) errors.push('ffmpegBin 为空')
+  if (typeof cfg.ttsBin !== 'string' || !cfg.ttsBin) errors.push('ttsBin 为空')
+  // 临时目录必须是字符串
+  if (typeof cfg.tmpDir !== 'string' || !cfg.tmpDir) errors.push('tmpDir 为空')
+  // 数值字段范围校验
+  if (!Number.isFinite(cfg.maxSeconds) || cfg.maxSeconds < 0) errors.push('maxSeconds 必须 ≥ 0')
+  if (!Number.isFinite(cfg.linuxTtsRate) || cfg.linuxTtsRate < 50 || cfg.linuxTtsRate > 500) {
+    errors.push('linuxTtsRate 必须在 50-500 之间')
+  }
+  if (!Number.isFinite(cfg.ttsMaxChars) || cfg.ttsMaxChars < 1) errors.push('ttsMaxChars 必须 ≥ 1')
+  // 枚举值校验
+  if (!['auto', 'cpu', 'cuda'].includes(cfg.whisperDevice)) errors.push('whisperDevice 必须为 auto/cpu/cuda')
+  if (!['whisper', 'sherpa'].includes(cfg.sttBackend)) errors.push('sttBackend 必须为 whisper/sherpa')
+  if (errors.length > 0) {
+    throw new Error(`pi-voice 配置校验失败：${errors.join('；')}`)
+  }
 }
 
 /**

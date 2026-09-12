@@ -72,7 +72,9 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
   // （风险：探测失败保守判存活防误报；通知失败静默不中断）
   // opts 缓存：轮询每 5s 一次，若每次 re-spawn `tmux -V` 检查，长任务（小时级）
   // 会 spawn 数百次子进程；tmux 配置在会话生命周期内不变，首次解析后复用
+  // 审计 HIGH：缓存需在配置变更时自动失效（bin/logDir/prefix 变更），否则导致探测使用过期配置
   let cachedOpts: TmuxOpts | null = null
+  let cachedCfgHash: string | null = null
   // 负缓存+指数退避：requireTmux 连续失败（tmux 长期不可用/被卸载）时按
   // 30s→60s→…→10min 退避重试解析，不再每 5s 无限 re-spawn tmux -V。
   // 退避只限制「opts 解析」频率：窗口内 hasSession 恒返回 true（保守判存活），
@@ -84,6 +86,14 @@ export function registerTmuxTools(pi: ExtensionAPI, cfg: TmuxConfig): Completion
   const watcherHandles = new Map<string, WatcherHandle>()
   const watcher = createCompletionWatcher({
     hasSession: async (name: string) => {
+      const cfgHash = `${cfg.bin}|${cfg.prefix}|${cfg.logDir}`
+      // 审计 HIGH：配置变更时清除缓存（bin/logDir/prefix 变化导致探测使用过期配置）
+      if (cachedCfgHash !== cfgHash) {
+        cachedOpts = null
+        cachedCfgHash = cfgHash
+        probeFailCount = 0
+        lastProbeFailAt = 0
+      }
       if (!cachedOpts) {
         const sinceLastFail = Date.now() - lastProbeFailAt
         if (lastProbeFailAt !== 0 && sinceLastFail < probeBackoffMs(probeFailCount)) return true // 负缓存窗口内：跳过 re-spawn，保守判存活

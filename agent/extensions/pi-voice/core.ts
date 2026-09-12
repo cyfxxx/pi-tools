@@ -224,6 +224,8 @@ export function startRecording(
     // 2026-08-28：同步持久化 pid 供崩溃后新实例判定孤儿态
     termuxSessionActive = true
     writeSessionOwner()
+    // termux 不使用 activeLinuxRecorder，改由 termuxSessionActive + sessionStateFile 门控
+    activeLinuxRecorder = null
   }
   let errBuf = ''
   let outBuf = ''
@@ -246,8 +248,8 @@ export function startRecording(
   })
   child.on('exit', (code) => {
     if (activeLinuxRecorder?.child === child) activeLinuxRecorder = null
-    // 审计 MEDIUM 修复：子进程异常退出（启动失败/被占用）→ 会话作废；code===0
-    // 保留登记（服务端可能仍在录或待补 -q 收尾 moov atom，见 dictation 续录路径）
+    // termux: CLI launcher 进程退出（code===0）不代表录音结束，服务端仍在后台录制
+    // 仅异常退出（code≠0）才作废会话；正常退出保留 termuxSessionActive 供 stopRecording 消费
     if (spec.kind === 'termux' && (code ?? -1) !== 0) { termuxSessionActive = false; clearSessionOwner() }
     onExit(code ?? -1, capture())
   })

@@ -11,79 +11,90 @@
  * 由审计流程覆盖；本脚本只抓"机械可验证且漂移高发"的三类。
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { join, basename } from 'node:path'
+import { join } from 'node:path'
 
-const ROOT = join(import.meta.dirname, '..')
+const ROOT = '/root/.pi'
 const EXT_DIR = join(ROOT, 'agent', 'extensions')
 const SKIP = new Set(['node_modules', 'tests', 'types', 'lib'])
-const SKIP_FILES = new Set(['tool-groups.ts']) // 组定义文件，非工具注册
 
-let failures = 0
-
-function srcFiles(dir) {
-  const out = []
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name)
-    if (e.isDirectory()) {
-      if (e.name === 'node_modules' || e.name === 'tests') continue
-      out.push(...srcFiles(p))
-    } else if (/\.(ts|mjs)$/.test(e.name) && !SKIP_FILES.has(e.name)) {
-      out.push(p)
-    }
+function* extDirs() {
+  const entries = readdirSync(EXT_DIR, { withFileTypes: true })
+  for (const entry of entries) {
+    if (!entry.isDirectory() || SKIP.has(entry.name)) continue
+    const full = join(EXT_DIR, entry.name)
+    const index = join(full, 'index.ts')
+    if (existsSync(index)) yield entry.name, full
   }
-  return out
 }
 
-for (const entry of readdirSync(EXT_DIR, { withFileTypes: true })) {
-  if (!entry.isDirectory() || SKIP.has(entry.name)) continue
-  const extDir = join(EXT_DIR, entry.name)
-  const readmePath = join(extDir, 'README.md')
-  if (!existsSync(readmePath)) continue
-  const readme = readFileSync(readmePath, 'utf-8')
+const toolNameErrors = []
+const slashCmdErrors = []
+const countErrors = []
 
-  // 1) 工具名：src 内 name: 'xxx' 且像工具名（snake_case），README 未提及则报
-  const toolNames = new Set()
-  for (const f of srcFiles(extDir)) {
-    const src = readFileSync(f, 'utf-8')
-    for (const m of src.matchAll(/name:\s*['"]([a-z][a-z0-9_]{2,30})['"]/g)) toolNames.add(m[1])
-  }
-  // 过滤明显的非工具名（配置键等启发式：README 提过的不报，未提的才人工看）
-  const missingTools = [...toolNames].filter((n) => !readme.includes(n))
-  // 工具名误报缓冲：排除常见配置键形态（含 config/env/dir/file/path 等词尾）
-  const likelyKeys = missingTools.filter(
-    (n) => !/(config|env|dir|file|path|mode|type|key|name|url|token|prefix|timeout|enabled)/.test(n)
-  )
-  if (likelyTools(missingTools).length > 0 && likelyKeys.length > 0) {
-    console.log(`⚠ [${entry.name}] README 未提及疑似工具名: ${likelyKeys.join(', ')}`)
-    failures++
-  }
+for (const [extName, extPath] of extDirs()) {
+  const readme = join(extPath, 'README.md')
+  if (!existsSync(readme)) continue
+  const readmeContent = readFileSync(readme, 'utf-8')
 
-  // 2) slash 命令：registerCommand('xxx') → README 需有 /xxx
-  for (const f of srcFiles(extDir)) {
-    const src = readFileSync(f, 'utf-8')
-    for (const m of src.matchAll(/registerCommand\(\s*['"]([a-z0-9-]+)['"]/g)) {
-      const cmd = m[1]
-      if (!readme.includes(`/${cmd}`)) {
-        console.log(`⚠ [${entry.name}] README 未提及 slash 命令 /${cmd}`)
-        failures++
+  // 1. 工具名一致
+  const toolRegex = /registerTool\(\s*{[^}]*name:\s*['"`]([^'"`]+)['"`]/g
+  const toolNamesInReadme = []
+  let m
+  while ((m = toolRegex.exec(readmeContent)) !== null) toolNamesInReadme.push(m[1])
+
+  // 遍历源码
+  const walk = (dir) => {
+    const entries = readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      if (SKIP.has(entry.name)) continue
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && (entry.name.endsWith('.ts') || entry.name.endsWith('.js') || entry.name.endsWith('.tsx'))) {
+        const txt = readFileSync(full, 'utf-8')
+        const tr = /registerTool\(\s*{[^}]*name:\s*['"`]([^'"`]+)['"`]/g
+        let tmm
+        while ((tmm = tr.exec(txt)) !== null) {
+          if (!toolNamesInReadme.includes(tmm[1])) {
+            toolNameErrors.push(`${extName}/${entry.name}: 工具名 "${tmm[1]}" 未在 README.md 中提及`) // 忽略 case
+          }
+        }
       }
     }
   }
+  walk(extPath)
 
-  // 3) 测试计数声明（易漂移）
-  const countClaims = readme.match(/\d+\s*(个用例|项测试|条用例|tests? cases?)/gi)
-  if (countClaims) {
-    console.log(`ℹ [${entry.name}] README 含具体测试计数（建议去数字化）: ${countClaims.join(', ')}`)
+  // 2. slash 命令一致
+  // 从 README 中提取所有以 '/' 开头的单词
+  const slashInReadme = readmeContent.match(/\s+(\/[a-zA-Z0-9_-]+)\s/g) || []
+  const slashCmdsInReadme = slashInReadme.map(x => x.trim())
+
+  const indexSrc = readFileSync(join(extPath, 'index.ts'), 'utf-8')
+  // 用字符串匹配代替正则，避免 / 在 regex 中的转义问题
+  const cmdPattern = /registerCommand\(\s*{[^}]*name:\s*['"`]([^'"`]+)['"`]/g
+  let cmm
+  while ((cmm = cmdPattern.exec(indexSrc)) !== null) {
+    const cmd = cmm[1]
+    if (!slashCmdsInReadme.includes(cmd)) {
+      slashCmdErrors.push(`${extName}: slash 命令 "${cmd}" 未在 README.md 中提及`) // 忽略 case
+    }
+  }
+
+  // 3. 测试计数防漂移
+  const countRegex = /\d+\s*个?\s*用例?/g
+  const counts = readmeContent.match(countRegex)
+  if (counts && counts.length > 0) {
+    countErrors.push(`${extName}: README 中提到了测试用例数，可能存在漂移风险（检查是否需要更新）`)
   }
 }
 
-function likelyTools(names) {
-  return names
+if (toolNameErrors.length === 0 && slashCmdErrors.length === 0 && countErrors.length === 0) {
+  console.log('✓ doc-lint 通过：工具/slash 命令清单与 README 一致')
+  process.exit(0)
 }
 
-if (failures > 0) {
-  console.log(`✗ doc-lint 失败（${failures} 项）`)
-  process.exit(1)
-} else {
-  console.log('✓ doc-lint 通过：工具/slash 命令清单与 README 一致')
-}
+for (const err of toolNameErrors) console.error('✗ ' + err)
+for (const err of slashCmdErrors) console.error('✗ ' + err)
+for (const err of countErrors) console.error('✗ ' + err)
+
+console.error(`\ndoc-lint 失败（${toolNameErrors.length} 个工具名 / ${slashCmdErrors.length} 个 slash 命令 / ${countErrors.length} 个测试计数问题）`)
+process.exit(1)

@@ -223,6 +223,11 @@ export function createDictation(
       if (recordingChild === null || recordingChild.exitCode != null) return
       if (deps.fileExists(file)) return
       void (async () => {
+        // 再次确认进程仍在运行且文件仍未生成，避免在进程已退出或文件已出现时
+        // 做无效的全局 stop(-q) 清理；这既避免误报，也避免误停其他录音实例。
+        if (recordingChild === null || recordingChild.exitCode != null || deps.fileExists(file)) {
+          return
+        }
         currentFile = null
         recordingChild = null
         // 审计 MEDIUM 修复：置空后异步停旧录音存在竞态窗口（全局 -q 会停掉刚启动的

@@ -71,19 +71,32 @@ const winChildren = new Map<string, import('node:child_process').ChildProcess>()
 const winNonInteractive = new Set<string>()
 
 function winPidPath(opts: TmuxOpts, name: string): string {
+  // 审计 HIGH：PID 文件需包含会话名前缀（pi-），防止同目录下多扩展/多用户 pidfile 冲突
+  // 规范化：name 已是 pi-xxx 形式，直接用作文件名；避免 ../ 等穿越（NAME_RE 已校验）
   return join(opts.logDir, `${name}.pid`)
 }
 
-/** 解析 args 中 -flag 的值（tmux 参数风格） */
+/** 解析 args 中 -flag 的值（tmux 参数风格），支持同 flag 多次出现时取最后一个（符合 tmux 语义） */
 function winArgAt(args: string[], flag: string): string | undefined {
-  const i = args.indexOf(flag)
-  return i >= 0 ? args[i + 1] : undefined
+  let last: string | undefined
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === flag && i + 1 < args.length) {
+      last = args[i + 1]
+      i++ // skip the value (for 循环也会 i++，这里额外 +1 跳过值)
+    }
+  }
+  return last
 }
 
-/** 会话名：优先 Map → pidfile → 空。NAME_RE 校验（防路径穿越：../../x 等非法名返回空——调用点自然失败，不会进入 pidfile/taskkill/文件读写） */
+/** 会话名：优先 Map → pidfile → 空。NAME_RE 校验（防路径穿越：../../x 等非法名返回空——调用点自然失败，不会进入 pidfile/taskkill/文件读写）
+ * 审计 HIGH：winSessionName 需正确解析 -t/-s 参数，跳过 -d/-c/-F/-J 等其他 flag 及其参数 */
 function winSessionName(opts: TmuxOpts, args: string[]): string {
-  const n = winArgAt(args, '-t') ?? winArgAt(args, '-s') ?? ''
-  return n && NAME_RE.test(n) ? n : ''
+  const raw = winArgAt(args, '-t') ?? winArgAt(args, '-s') ?? ''
+  try {
+    return normalizeSessionName(raw, opts.prefix)
+  } catch {
+    return ''
+  }
 }
 
 /** 便携包 shell：PortableGit bash（优先）→ 系统 cmd.exe */
@@ -96,9 +109,16 @@ function resolveWindowsShell(): string {
 function winPidAlive(pid: number | undefined): boolean {
   if (!pid || pid <= 0) return false
   try {
+    // process.kill(pid, 0)：只检查进程是否存在，不发送信号
+    // Windows: 返回 0 表示存在，返回错误表示不存在
+    // Unix: 返回 0 表示存在，返回 EPERM 表示进程存在但权限不足（如根本不应该误判为不存在），返回其他错误表示不存在
     process.kill(pid, 0)
     return true
-  } catch {
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException
+    // 如果是 EPERM（权限不足），说明进程确实存在但无法发送信号，视为存在
+    if (err.code === 'EPERM') return true
+    // 其他错误（如 ECHILD 表示进程不存在）视为不存在
     return false
   }
 }
@@ -483,29 +503,49 @@ export async function startSession(
   ensureLogDir(opts)
   const startDir = cwd ? resolve(cwd) : homedir()
 
-  // 统一行为：将命令包装在 shell 中并传给 new-session，
-  // 使会话在命令自然结束（成功/失败）时自动退出。
-  // 退出码 130 (SIGINT) 保留 shell，维持“中断后继续交互”的用法。
-  const shellCmd = `${command}; [ $? -ne 130 ] && exit`
-  const newArgs = process.platform === 'win32'
-    ? ['new-session', '-d', '-s', name, '-c', startDir, shellCmd]
-    : ['new-session', '-d', '-s', name, '-c', startDir, shellCmd]
+  const logPath = logPathFor(opts, name)
 
-  const create = await runTmux(opts, newArgs, 30000)
+  if (process.platform === 'win32') {
+    // Windows 后端：tmux 不可用，使用 bash -c 直接执行命令
+    const shellCmd = `${command}; [ $? -ne 130 ] && exit`
+    const create = await runTmux(
+      opts,
+      ['new-session', '-d', '-s', name, '-c', startDir, shellCmd],
+      30000,
+    )
+    if (create.code !== 0) {
+      if (/duplicate session/i.test(create.stderr)) {
+        return { name, logPath, started: false }
+      }
+      throw new Error(`创建 tmux 会话失败: ${create.stderr || create.stdout || `code ${create.code}`}`)
+    }
+
+    // Windows 后端 pipe-pane 为 no-op，日志由 spawn stdio 捕获
+    return { name, logPath, started: true }
+  }
+
+  // Linux/macOS：先创建空会话并挂接 pipe-pane，再发送命令，避免命令在 pipe-pane 挂载前执行导致日志丢失
+  const create = await runTmux(opts, ['new-session', '-d', '-s', name, '-c', startDir], 30000)
   if (create.code !== 0) {
     if (/duplicate session/i.test(create.stderr)) {
-      return { name, logPath: logPathFor(opts, name), started: false }
+      return { name, logPath, started: false }
     }
     throw new Error(`创建 tmux 会话失败: ${create.stderr || create.stdout || `code ${create.code}`}`)
   }
 
-  // pipe-pane 落盘日志（-o 追加）；先做单代轮转防止无限增长
   rotateLogIfLarge(opts, name)
-  const logPath = logPathFor(opts, name)
   const pipeCmd = `cat >> ${shellSingleQuote(logPath)}`
-  await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
+  const pipeResult = await runTmux(opts, ['pipe-pane', '-t', name, '-o', pipeCmd], 10000)
+  if (pipeResult.code !== 0) {
+    throw new Error(`pipe-pane 设置失败: ${pipeResult.stderr || pipeResult.stdout}`)
+  }
 
-  return { name, logPath: logPathFor(opts, name), started: true }
+  // 命令尾部追加 [ $? -ne 130 ] && exit：成功/失败时自动退出，130 时保留 shell 供交互
+  const injected = `${command}; [ $? -ne 130 ] && exit`
+  await runTmux(opts, ['send-keys', '-t', name, '-l', injected], 10000)
+  await runTmux(opts, ['send-keys', '-t', name, 'Enter'], 10000)
+
+  return { name, logPath, started: true }
 }
 
 

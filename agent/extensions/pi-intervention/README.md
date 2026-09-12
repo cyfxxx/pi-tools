@@ -207,7 +207,6 @@ export PI_HOME=/tmp/test-pi
 
 ### 8.1 测试位置
 
-测试用例位于 `extensions/pi-web-search/tests/extensions.test.ts` 中的 pi-intervention 块。
 
 ### 8.2 测试内容
 
