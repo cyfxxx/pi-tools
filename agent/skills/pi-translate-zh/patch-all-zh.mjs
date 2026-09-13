@@ -361,8 +361,8 @@ sections.push(() => {
 			"description: `恢复全局默认（${config.thinkingLevel}）`",
 		],
 		[
-			'description: "Show transcript notices for significant prompt-cache misses and compaction costs"',
-			"description: `显示显著缓存未命中与压缩成本的通知`",
+			'description: "Show transcript notices for cache costs and provider recovery diagnostics"',
+			"description: `显示缓存成本和提供者恢复诊断的通知`",
 		],
 		['description: "Select a model to configure"', "description: `选择要配置的模型`"],
 		['description: "Log in to a provider or configure an API key first"', "description: `请先登录提供商或配置 API 密钥`"],
@@ -396,8 +396,8 @@ sections.push(() => {
 		],
 		['label: "Cache miss notices"', "label: `缓存未命中通知`"],
 		[
-			'description: "Show transcript notices for significant prompt-cache misses"',
-			"description: `为显著的提示词缓存未命中显示记录通知`",
+			'description: "Automatically copy selected text in fullscreen mode; disable to copy selections with Ctrl+X"',
+			"description: `在全屏模式下自动复制所选文本；禁用后可使用 Ctrl+X 复制所选文本`",
 		],
 		['label: "Output padding"', "label: `输出内边距`"],
 		[
@@ -639,7 +639,7 @@ sections.push(() => {
 			'"Anthropic 订阅认证已激活。第三方调用消耗额外用量并按 token 计费，不计入 Claude 套餐限制。在 https://claude.ai/settings/usage 管理额外用量。可在 /settings 中禁用此警告。"',
 		],
 		['"Working..."', '"处理中..."'],
-		['"Thinking..."', '"思考中..."'],
+		['"思考中..."', '"思考中..."'],
 		['"What\'s New"', '"更新内容"'],
 		['"Unknown error occurred"', '"发生未知错误"'],
 		['"Failed to create session"', '"创建会话失败"'],

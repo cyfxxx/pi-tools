@@ -85,3 +85,13 @@
 - 聚合候选 3 组：组1 knowledge-fetch.py（11条/sumRec=17）、组2 entries.json 冲突管理（10条/sumRec=13）、组3 tool-stats 每日聚合（8条/sumRec=12）——均给出归纳方向草案，待用户确认。
 - 冲突嫌疑 2 组：install-wrapper.sh readlink bug（保留 solutions 删 fact）、.pi 配置仓库远程推送流程（合并为一条 procedure）——待用户确认。
 - 淘汰候选 6 条：仅列出，不自动删除，批量删除须用户确认。
+
+---
+
+## 七、2026-09-13 memory-lifecycle 只读报告补充
+
+- 升格候选 3 条（同 09-12，recurrence 均未变）：翻译脚本匹配技巧（rec=25）、代码标识符不应翻译（rec=25）、每日知识订阅流程（rec=5）——均满足 recurrence≥5，但「验证有效」需用户确认后方可写入，本轮不重复评估。
+- 聚合候选 3 组（同 09-12）：组1 knowledge-fetch.py（11条/sumRec=16）、组2 entries.json 冲突管理（10条/sumRec=13）、组3 tool-stats 每日聚合（9条/sumRec=13）——归纳方向草案已给出，待用户确认。
+- 冲突嫌疑 2 组（同 09-12）：install-wrapper.sh readlink bug、.pi 配置仓库远程推送流程——合并裁决建议已给出，待用户确认。
+- 淘汰候选 6 条（同 09-12）：仅列出，不自动删除，批量删除须用户确认。
+- 本轮新增条目（非候选，已正常入库）：健康告警与 golden 失败同日并发的处置顺序（procedure）、MYPC 设备任务执行长期中断（fact）、自动化任务链可靠性三层闭环（solutions, confidence=0.6）、干预教训: 会话清理指令需明确范围与目标 ID（solutions）、干预教训: 用户口误纠正需回溯确认操作目标（solutions）。

@@ -144,13 +144,16 @@
       "recurrence": 26,
       "createdAt": "2026-08-02T08:40:02.562Z",
       "updatedAt": "2026-09-03T08:21:26.221Z",
-      "accessedAt": "2026-09-11T21:10:27.536Z",
+      "accessedAt": "2026-09-13T00:37:37.985Z",
       "observedAt": "2026-08-03T13:32:38.668Z",
       "deleted": false,
       "environments": [
         "all"
       ],
-      "contentHash": "07232f1fc7d5846d"
+      "contentHash": "07232f1fc7d5846d",
+      "links": [
+        "daab9fee-c498-4b16-9030-f38f6cb85b58"
+      ]
     },
     {
       "id": "5bbd8efb-d935-4c43-a661-cc1b84083dc0",
@@ -2724,7 +2727,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T03:32:17.685Z",
       "updatedAt": "2026-08-11T03:32:17.685Z",
-      "accessedAt": "2026-09-11T07:09:10.009Z",
+      "accessedAt": "2026-09-13T00:38:20.913Z",
       "observedAt": "2026-08-11T03:32:17.685Z",
       "deleted": false,
       "environments": [
@@ -2907,7 +2910,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T06:33:54.084Z",
       "updatedAt": "2026-08-11T06:33:54.084Z",
-      "accessedAt": "2026-08-11T06:33:54.084Z",
+      "accessedAt": "2026-09-13T00:40:43.176Z",
       "environments": [
         "termux"
       ],
@@ -3033,7 +3036,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T13:54:24.746Z",
       "updatedAt": "2026-08-11T13:54:24.746Z",
-      "accessedAt": "2026-09-11T07:09:10.009Z",
+      "accessedAt": "2026-09-13T00:38:20.635Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
         "wsl2",
@@ -3108,7 +3111,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-11T13:54:24.746Z",
       "updatedAt": "2026-08-11T13:54:24.746Z",
-      "accessedAt": "2026-09-11T13:39:34.881Z",
+      "accessedAt": "2026-09-13T00:38:20.913Z",
       "observedAt": "2026-08-11T13:54:24.746Z",
       "environments": [
         "wsl2",
@@ -5452,7 +5455,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-13T16:02:02.699Z",
       "updatedAt": "2026-09-03T08:21:20.952Z",
-      "accessedAt": "2026-09-11T21:10:27.536Z",
+      "accessedAt": "2026-09-13T00:37:37.985Z",
       "observedAt": "2026-08-13T16:02:02.699Z",
       "environments": [
         "all"
@@ -7704,7 +7707,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T07:13:56.813Z",
       "updatedAt": "2026-08-19T07:13:56.813Z",
-      "accessedAt": "2026-09-09T05:41:58.203Z",
+      "accessedAt": "2026-09-13T00:38:20.635Z",
       "environments": [
         "all"
       ],
@@ -7728,7 +7731,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-19T07:13:56.890Z",
       "updatedAt": "2026-08-19T07:13:56.890Z",
-      "accessedAt": "2026-09-09T05:41:58.203Z",
+      "accessedAt": "2026-09-13T00:38:20.635Z",
       "environments": [
         "all"
       ],
@@ -11969,7 +11972,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-25T08:27:24.585Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-09-11T21:10:27.536Z",
+      "accessedAt": "2026-09-13T00:37:37.985Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -11978,7 +11981,8 @@
       "lastSessionId": "01a037c7-4fe5-7fe4-a77f-b1e6454fdc0f",
       "deleted": false,
       "links": [
-        "fd5746b1-36a9-4c41-ba5c-091d72fce9c8"
+        "fd5746b1-36a9-4c41-ba5c-091d72fce9c8",
+        "da25b9c5-8794-4cfa-a97d-40ecaba62616"
       ],
       "contentHash": "1915bee5948070ae"
     },
@@ -12160,7 +12164,7 @@
       "recurrence": 4,
       "createdAt": "2026-08-25T22:54:39.097Z",
       "updatedAt": "2026-09-03T08:20:11.300Z",
-      "accessedAt": "2026-09-11T21:10:27.536Z",
+      "accessedAt": "2026-09-13T00:37:37.985Z",
       "observedAt": "2026-08-25T22:54:39.097Z",
       "environments": [
         "termux",
@@ -12407,7 +12411,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T02:49:24.885Z",
       "updatedAt": "2026-08-26T02:49:24.885Z",
-      "accessedAt": "2026-08-26T02:49:24.885Z",
+      "accessedAt": "2026-09-13T00:40:43.834Z",
       "environments": [
         "all"
       ],
@@ -12432,7 +12436,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T02:49:24.918Z",
       "updatedAt": "2026-08-26T02:49:24.918Z",
-      "accessedAt": "2026-08-31T00:14:51.772Z",
+      "accessedAt": "2026-09-13T00:40:43.834Z",
       "environments": [
         "all"
       ],
@@ -12482,7 +12486,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T02:49:24.988Z",
       "updatedAt": "2026-08-26T02:49:24.988Z",
-      "accessedAt": "2026-08-26T02:49:24.988Z",
+      "accessedAt": "2026-09-13T00:40:43.834Z",
       "environments": [
         "all"
       ],
@@ -12711,7 +12715,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T04:48:25.056Z",
       "updatedAt": "2026-08-26T04:48:25.056Z",
-      "accessedAt": "2026-09-07T01:25:39.654Z",
+      "accessedAt": "2026-09-13T00:40:43.834Z",
       "observedAt": "2026-08-26T04:48:25.056Z",
       "environments": [
         "wsl2",
@@ -12965,7 +12969,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-26T06:10:37.423Z",
       "updatedAt": "2026-08-26T06:10:37.423Z",
-      "accessedAt": "2026-09-11T13:39:34.881Z",
+      "accessedAt": "2026-09-13T00:40:43.176Z",
       "environments": [
         "all"
       ],
@@ -15565,7 +15569,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-30T08:50:02.026Z",
       "updatedAt": "2026-08-30T08:50:02.026Z",
-      "accessedAt": "2026-09-07T01:25:39.654Z",
+      "accessedAt": "2026-09-13T00:40:43.834Z",
       "observedAt": "2026-08-30T08:50:02.026Z",
       "environments": [
         "wsl2",
@@ -16140,7 +16144,7 @@
       "recurrence": 3,
       "createdAt": "2026-08-12T14:50:07.175Z",
       "updatedAt": "2026-09-03T08:20:26.256Z",
-      "accessedAt": "2026-09-11T21:10:27.536Z",
+      "accessedAt": "2026-09-13T00:37:37.985Z",
       "observedAt": "2026-08-12T14:50:07.175Z",
       "environments": [
         "termux",
@@ -17190,7 +17194,7 @@
       "recurrence": 1,
       "createdAt": "2026-08-10T23:19:51.166Z",
       "updatedAt": "2026-08-10T23:19:51.166Z",
-      "accessedAt": "2026-09-11T07:09:10.009Z",
+      "accessedAt": "2026-09-13T00:38:20.913Z",
       "observedAt": "2026-08-10T23:19:51.166Z",
       "deleted": false,
       "environments": [
@@ -20823,7 +20827,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-09T12:54:12.901Z",
       "updatedAt": "2026-09-09T12:54:12.901Z",
-      "accessedAt": "2026-09-11T01:07:45.995Z",
+      "accessedAt": "2026-09-13T00:38:20.913Z",
       "observedAt": "2026-09-09T12:54:12.901Z",
       "environments": [
         "termux"
@@ -21071,7 +21075,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-10T02:53:50.333Z",
       "updatedAt": "2026-09-10T02:53:50.333Z",
-      "accessedAt": "2026-09-10T02:53:50.333Z",
+      "accessedAt": "2026-09-13T00:38:20.635Z",
       "environments": [
         "all"
       ],
@@ -21093,7 +21097,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-10T06:05:47.880Z",
       "updatedAt": "2026-09-10T06:05:47.880Z",
-      "accessedAt": "2026-09-11T13:39:34.881Z",
+      "accessedAt": "2026-09-13T00:40:43.176Z",
       "environments": [
         "all"
       ],
@@ -21115,7 +21119,7 @@
       "recurrence": 1,
       "createdAt": "2026-09-10T06:06:11.640Z",
       "updatedAt": "2026-09-10T06:06:11.640Z",
-      "accessedAt": "2026-09-10T06:06:11.640Z",
+      "accessedAt": "2026-09-13T00:40:43.176Z",
       "environments": [
         "all"
       ],
@@ -21444,10 +21448,10 @@
       "tags": [],
       "confidence": 0.7,
       "source": "manual",
-      "recurrence": 11,
+      "recurrence": 15,
       "createdAt": "2026-09-10T10:42:22.608Z",
-      "updatedAt": "2026-09-11T21:10:27.439Z",
-      "accessedAt": "2026-09-11T21:10:27.439Z",
+      "updatedAt": "2026-09-13T00:37:37.914Z",
+      "accessedAt": "2026-09-13T00:37:37.914Z",
       "environments": [
         "all"
       ],
@@ -22181,6 +22185,598 @@
       "lastSessionId": "01a08b4f-52f8-72ac-9c5d-faa56c7c082f",
       "deleted": false,
       "contentHash": "cf345c762a6fb2b6"
+    },
+    {
+      "id": "daab9fee-c498-4b16-9030-f38f6cb85b58",
+      "category": "procedure",
+      "title": "翻译未匹配排查流程（pi-translate-zh）",
+      "content": "当运行 `node patch-all-zh.mjs --check` 或执行翻译时出现「未匹配项」提示（如 settings-selector.js 未匹配 8 项、interactive-mode.js 未匹配 3 项），请按照以下步骤排查并更新补丁：\n\n1. 确认字符串在目标版本的实际形式\n   - 打开对应文件（如 `dist/modes/interactive/components/settings-selector.js`），搜索原始英文字符串。\n   - 判断该字符串是否已被删除、重命名或已被翻译（中文）。\n   - 若已删除或合并，可在补丁中删除对应的翻译条目。\n   - 若已被翻译（即文件中已出现中文），则该条目可视为已翻译，可从补丁中移除（避免重复翻译）。\n\n2. 检查是否为新增字符串\n   - 将当前文件的英文字符串与补丁中的原文进行 diff。\n   - 若发现新增英文字符串，则需要在补丁中添加对应的翻译条目（参照补丁现有格式）。\n   - 新增条目应放在合适的分区（如「设置菜单」或「交互模式消息」）。\n\n3. 更新补丁脚本\n   - 编辑 `~/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs`，在对应的翻译数组中增删条目。\n   - 注意保持 JSON 转义正确，且只替换原始英文，保留变量占位符（如 `${var}`）。\n\n4. 重新运行校验\n   - 执行 `node patch-all-zh.mjs --check`，确认未匹配项减少为 0（或仅剩极少数已确认删除的字符串）。\n   - 如仍有未匹配，重复步骤 1-3。\n\n5. 应用翻译并重启 pi\n   - 运行 `node patch-all-zh.mjs`（不带 --check）写入翻译。\n   - 重启 pi 以使中文生效。\n\n6. 提交更新（如需共享）\n   - 将更新后的 patch-all-zh.mjs 提交到仓库，以便其他环境使用。\n\n参考：pi-translate-zh SKILL.md 中的「3.2 pi 更新后查找需要翻译的新文件」提供了查找未翻译字符串的命令示例。\n\n该流程确保翻译补丁与 pi 版本同步，避免因版本升级导致的中文缺失。",
+      "tags": [
+        "translation",
+        "maintenance",
+        "procedure"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T14:03:35.328Z",
+      "updatedAt": "2026-09-12T14:03:35.328Z",
+      "accessedAt": "2026-09-12T14:03:35.328Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "bd854636d6a1ce9e",
+      "links": [
+        "6c7ef129-a16d-4d95-bf2e-0313ad17c918"
+      ],
+      "observedAt": "2026-09-12T14:03:35.328Z",
+      "deleted": false
+    },
+    {
+      "id": "da25b9c5-8794-4cfa-a97d-40ecaba62616",
+      "category": "fact",
+      "title": "空壳任务记录的判定与处置",
+      "content": "在经验沉淀输入中，若任务轮次统计全零（tools=0、hit=0、out=0）即为空壳记录，无可提炼内容。处置原则：不存入长期记忆库（memory），不写入 SKILL 草稿，以防污染记忆库。",
+      "tags": [
+        "memory",
+        "procedure",
+        "cleanup"
+      ],
+      "confidence": 0.9,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T14:03:48.865Z",
+      "updatedAt": "2026-09-12T14:03:48.865Z",
+      "accessedAt": "2026-09-12T14:03:48.865Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "1d3b5677d84be970",
+      "links": [
+        "f707031c-9c55-45f6-9873-4e3eecfcafcd"
+      ],
+      "observedAt": "2026-09-12T14:03:48.865Z",
+      "deleted": false
+    },
+    {
+      "id": "3650591a-dda9-44ea-bad9-cf871e5039d4",
+      "category": "fact",
+      "title": "daily-health.mjs 断裂检测漏计 prevCacheRead=0",
+      "content": "scripts/maintenance/daily-health.mjs 的断裂判定条件为 `prevCacheRead < prev-100 && input > 10K`，当 prevCacheRead=0 时 `0 < -100` 恒为假，导致零缓存启动后的断裂被漏计。在 agent/.usage-diag.jsonl 中实测到 75 轮满足 `prevCacheRead=0 && cacheRead=0 && input>10K && round>5` 被漏计，修正后 A/B 断裂从 80 升至 155。修复方式：增加 `prevCacheRead===0` 分支，与原有条件并列触发。证据：agent/.usage-diag.jsonl 602 轮 / 44 会话，与脚本口径对齐。",
+      "tags": [
+        "daily-health",
+        "断裂检测",
+        "bug",
+        "修复"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:28:25.542Z",
+      "updatedAt": "2026-09-12T19:28:25.542Z",
+      "accessedAt": "2026-09-12T19:28:25.542Z",
+      "observedAt": "2026-09-12T19:28:25.542Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0924c-824c-7352-9163-b63aac91e039",
+      "deleted": false,
+      "contentHash": "713eb7755929e45f",
+      "links": [
+        "a7bd4a98-00a4-4401-8158-8376d7a3295f"
+      ]
+    },
+    {
+      "id": "1ba84d91-008f-4eca-8da9-10954a70ee06",
+      "category": "procedure",
+      "title": "A/B 断裂根因诊断排除法",
+      "content": "诊断 A/B 断裂时按以下证据链排除归因：① 查 tool-events.jsonl 是否有 tool-enable 事件，无则排除工具启用；② 查 cacheWrite 是否全窗口为 0，是则排除瞬时 TTL 缓存；③ 查是否有 usage-missing 事件，无则排除 provider 缺 usage。2026-09-12 断裂窗口 13:49-15:15 UTC 实测：plan_exit 事件 13:38~392s 与零缓存启动间隔 491s 吻合，cacheWrite=0，无 tool-enable，无 usage-missing，结论为服务端缓存逐出的持久状态（非瞬时 TTL），与 usage-stats.mjs 注释的 A 类断裂「全段重放」一致。",
+      "tags": [
+        "断裂诊断",
+        "usage-stats",
+        "归因排除",
+        "方法论"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:28:25.544Z",
+      "updatedAt": "2026-09-12T19:28:25.544Z",
+      "accessedAt": "2026-09-13T00:38:20.635Z",
+      "observedAt": "2026-09-12T19:28:25.544Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0924c-824c-7352-9163-b63aac91e039",
+      "deleted": false,
+      "contentHash": "2a292f93c2e6e609"
+    },
+    {
+      "id": "5ebc3c3f-35d0-450c-8b5b-0437c55b9d9b",
+      "category": "fact",
+      "title": "golden-fast 管线 F1/F2b 失败模式",
+      "content": "2026-09-12 golden-fast 结果为 2 项失败：F1 task-metrics 管线异常、F2b usage-stats 异常；F2a、F3、F4、F5 全绿。结果写入 data/memory/daily-results/2026-09-12-golden-localhost.md，提交为 a7eaff3 golden: fail 2026-09-12 并推送 master。健康告警在 golden 通过验收前不视为已解决，需先诊断 F1/F2b 再重跑 golden-fast。",
+      "tags": [
+        "golden-fast",
+        "task-metrics",
+        "usage-stats",
+        "CI"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:28:25.544Z",
+      "updatedAt": "2026-09-12T19:28:25.544Z",
+      "accessedAt": "2026-09-12T19:28:25.544Z",
+      "observedAt": "2026-09-12T19:28:25.544Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0924c-824c-7352-9163-b63aac91e039",
+      "deleted": false,
+      "contentHash": "44d2db782dac0672"
+    },
+    {
+      "id": "d3025cce-1d5f-4dd0-be39-950a02a0493c",
+      "category": "fact",
+      "title": "2026-09-12 会话挂死自动重启",
+      "content": "系统于 2026-09-12 触发 restart_hang，原因为会话挂死（183 分钟无活动），自动重启恢复。重启后当前分支为 master，HEAD 为 c0a0d16 docs: 更新文档整理完成报告。历史提交 27ead70 daily-health: alert 2026-09-12 与 a7eaff3 golden: fail 2026-09-12 均已推送且位于 HEAD 历史中，健康结论仍为 alert。",
+      "tags": [
+        "重启",
+        "restart_hang",
+        "会话挂死",
+        "环境"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:28:25.544Z",
+      "updatedAt": "2026-09-12T19:28:25.544Z",
+      "accessedAt": "2026-09-12T19:28:25.544Z",
+      "observedAt": "2026-09-12T19:28:25.544Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0924c-824c-7352-9163-b63aac91e039",
+      "deleted": false,
+      "contentHash": "af8434310228868c"
+    },
+    {
+      "id": "4b910d1e-4d39-4764-8609-35d7f766aa25",
+      "category": "habit",
+      "title": "诊断前先审查未提交变更",
+      "content": "工作区存在未提交变更时，先审查 data/memory/daily-results/results-localhost.jsonl 和 data/memory/entries.json 的内容，确认属于运行态变更还是故障修复需要，再进入诊断流程，避免把运行态变更与故障修复混在一起提交。F5 测试产生的临时干预记录已清理，无残留。",
+      "tags": [
+        "工作流",
+        "git 卫生",
+        "变更审查"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:28:25.544Z",
+      "updatedAt": "2026-09-12T19:28:25.544Z",
+      "accessedAt": "2026-09-12T19:28:25.544Z",
+      "observedAt": "2026-09-12T19:28:25.544Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0924c-824c-7352-9163-b63aac91e039",
+      "deleted": false,
+      "contentHash": "28824940bf53eea2"
+    },
+    {
+      "id": "8578075d-1559-4394-8db4-ebaf6a635e52",
+      "category": "procedure",
+      "title": "每日工具统计聚合提交流程",
+      "content": "每日任务：运行 node agent/extensions/pi-context/scripts/tool-stats-sync.mjs --daily，确认生成 data/memory/stats/tool-count-<hostname>.json 后 git add 并 commit（message: 'chore: tool stats YYYY-MM-DD'，日期取系统当天），推送前先确认 remote URL 无 token，再 git push。若与远端冲突先 git pull --rebase 再推。本环境 hostname 为 localhost，仓库 remote 为 git@github.com:cyfxxx/pi-tools.git。",
+      "tags": [
+        "tool-stats",
+        "git",
+        "daily",
+        "pi-tools"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:29:01.043Z",
+      "updatedAt": "2026-09-12T19:29:01.043Z",
+      "accessedAt": "2026-09-12T19:29:01.043Z",
+      "observedAt": "2026-09-12T19:29:01.043Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0964d-51a2-727d-b0cb-d898d8acb2bf",
+      "deleted": false,
+      "contentHash": "1583c2cfe356ec83"
+    },
+    {
+      "id": "6448878c-0465-4f8b-91ab-be9e2371cd19",
+      "category": "reference",
+      "title": "tool-stats-sync.mjs 脚本真实路径",
+      "content": "tool-stats-sync.mjs 的实际路径是 agent/extensions/pi-context/scripts/tool-stats-sync.mjs，而非用户口述的 ~/.pi/scripts/。该脚本的 --daily 模式生成 data/memory/stats/tool-count-<hostname>.json，按主机名区分统计文件。",
+      "tags": [
+        "script-path",
+        "tool-stats-sync"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:29:01.043Z",
+      "updatedAt": "2026-09-12T19:29:01.043Z",
+      "accessedAt": "2026-09-12T19:29:01.043Z",
+      "observedAt": "2026-09-12T19:29:01.043Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0964d-51a2-727d-b0cb-d898d8acb2bf",
+      "deleted": false,
+      "contentHash": "c7fcfd5fe77e7116"
+    },
+    {
+      "id": "571912e4-3d12-4550-a71a-52d87d3ccc79",
+      "category": "fact",
+      "title": "本机 hostname 与仓库 remote",
+      "content": "当前环境 hostname 为 localhost，工具统计文件名为 tool-count-localhost.json。Git 仓库 remote 为 git@github.com:cyfxxx/pi-tools.git（SSH 格式，不含 token）。2026-09-13 当日工具调用 4322 次。",
+      "tags": [
+        "hostname",
+        "remote",
+        "localhost"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:29:01.043Z",
+      "updatedAt": "2026-09-12T19:29:01.043Z",
+      "accessedAt": "2026-09-12T19:29:01.043Z",
+      "observedAt": "2026-09-12T19:29:01.043Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0964d-51a2-727d-b0cb-d898d8acb2bf",
+      "deleted": false,
+      "contentHash": "fea49ba5fbb49a74"
+    },
+    {
+      "id": "30f59288-0d45-4ddb-b13a-77788b25f181",
+      "category": "preference",
+      "title": "提交与推送约定",
+      "content": "用户约定：commit message 格式为 'chore: tool stats YYYY-MM-DD'，日期以系统当天为准（不以消息中的日期为准）；推送前必须先核对 remote URL 是否包含 token，含 token 则需先 git remote set-url origin 恢复无凭证 URL；遇远端冲突先 git pull --rebase 再 git push。",
+      "tags": [
+        "git-convention",
+        "commit-message",
+        "security"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-12T19:29:01.043Z",
+      "updatedAt": "2026-09-12T19:29:01.043Z",
+      "accessedAt": "2026-09-12T19:29:01.043Z",
+      "observedAt": "2026-09-12T19:29:01.043Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0964d-51a2-727d-b0cb-d898d8acb2bf",
+      "deleted": false,
+      "contentHash": "0bce5bcee52e23d4"
+    },
+    {
+      "id": "d7e84d2a-d63a-42a7-8915-04503694a6db",
+      "category": "procedure",
+      "title": "每日健康度量标准流程",
+      "content": "每日健康度量主流程：运行 node ~/.pi/scripts/maintenance/daily-health.mjs，输出结论行（结论=ok 或 结论=alert）并自动追加本机 logs/daily-health.log（日志不入库，口径与告警规则见脚本头注释）。结论=ok 时立即结束，不写文件不提交。结论=alert 时：将 alert 行与一行原因分析写入 memory/daily-results/2026-09-13-health-<本机hostname>.md（勿读大文件勿跑诊断），git add 该文件后 commit（message: 'daily-health: alert 2026-09-13'）并 push；推送冲突先 git pull --rebase 重试一次，仍失败保留本地不阻塞。执行时禁止做其他事。",
+      "tags": [
+        "health-check",
+        "daily",
+        "maintenance",
+        "git"
+      ],
+      "confidence": 0.7,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T00:21:53.058Z",
+      "updatedAt": "2026-09-13T00:21:53.058Z",
+      "accessedAt": "2026-09-13T00:21:53.058Z",
+      "observedAt": "2026-09-13T00:21:53.058Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a09809-3440-7797-b61a-ee28d6ca0148",
+      "deleted": false,
+      "contentHash": "468ab1f712147b9c"
+    },
+    {
+      "id": "341b3e3f-2566-4897-8529-7fdf4b19a78f",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-90647 ASE2000 证书验证绕过 critical 2026-09-13",
+      "content": "CVE-2026-90647：ASE/Kalkitech ASE2000 V2 Communication Test Set 2.35–2.37 on Windows 存在严重证书验证绕过漏洞（improper certificate validation），CVSS critical。影响通信测试设备，攻击者可伪造证书实施中间人攻击。来源：GitHub Security Advisory (GHSA-gcc5-22r7-2jf2)，2026-09-13 披露。",
+      "tags": [
+        "knowledge",
+        "security",
+        "CVE",
+        "critical"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T00:40:57.107Z",
+      "updatedAt": "2026-09-13T00:40:57.107Z",
+      "accessedAt": "2026-09-13T00:40:57.107Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "712945a1338a223e",
+      "observedAt": "2026-09-13T00:40:57.107Z",
+      "deleted": false
+    },
+    {
+      "id": "8de8ec54-311b-4e1d-b63c-d07106dde814",
+      "category": "fact",
+      "title": "knowledge 安全 CVE-2026-84869 ConnectWise ScreenConnect 已遭利用 2026-09-11",
+      "content": "CVE-2026-84869：ConnectWise ScreenConnect 存在权限管理不当与缺失授权漏洞，CISA 已标记为「已遭利用/勒索」。可导致未授权访问。来源：CISA 官方漏洞库，2026-09-11。",
+      "tags": [
+        "knowledge",
+        "security",
+        "CVE",
+        "CISA",
+        "ransomware"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T00:40:57.218Z",
+      "updatedAt": "2026-09-13T00:40:57.218Z",
+      "accessedAt": "2026-09-13T00:40:57.218Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "4803a06cc0a1067a",
+      "observedAt": "2026-09-13T00:40:57.218Z",
+      "deleted": false
+    },
+    {
+      "id": "47371010-8587-44e0-af21-458c384c0596",
+      "category": "fact",
+      "title": "knowledge 安全 OpenAI Agents 关联 RubyGems 恶意攻击 RCE 2026-09-12",
+      "content": "OpenAI Agents 关联 RubyGems 恶意攻击活动：攻击者利用 OpenAI 智能体在 RubyDoc 服务器实现 RCE、窃取密钥并外泄数据。事件引发 AI 监管呼声。来源：FreeBuf，2026-09-12。",
+      "tags": [
+        "knowledge",
+        "security",
+        "AI",
+        "RCE",
+        "supply-chain"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T00:40:57.304Z",
+      "updatedAt": "2026-09-13T00:40:57.304Z",
+      "accessedAt": "2026-09-13T00:40:57.304Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "5347bfe06f02d071",
+      "observedAt": "2026-09-13T00:40:57.304Z",
+      "deleted": false
+    },
+    {
+      "id": "b38c6837-074f-40c7-840c-549176dca094",
+      "category": "fact",
+      "title": "knowledge 安全 黑客利用 Claude 搜寻 180 万安卓密钥 2026-09-12",
+      "content": "Anthropic 报告揭示：黑客利用 Claude 搜寻 180 万安卓应用密钥，AI 正成恶意运营核心——从网络犯罪到监控、宣传、武器化，攻击成本骤降、规模激增。来源：FreeBuf，2026-09-12。",
+      "tags": [
+        "knowledge",
+        "security",
+        "AI-abuse",
+        "credentials"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T00:40:57.380Z",
+      "updatedAt": "2026-09-13T00:40:57.380Z",
+      "accessedAt": "2026-09-13T00:40:57.380Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "daeb863e01c74ef9",
+      "observedAt": "2026-09-13T00:40:57.380Z",
+      "deleted": false
+    },
+    {
+      "id": "63db8ca8-30e9-4f55-8a53-1711e4902817",
+      "category": "fact",
+      "title": "knowledge 新闻 曼德海峡局势趋紧 油价高位 2026-09-13",
+      "content": "曼德海峡局势趋紧：也门胡塞武装夺取红海关键战略要地并与沙特持续冲突，13 日凌晨打击沙特多处军事设施。霍尔木兹海峡航运磋商将启，国际油价仍维持高位。来源：中新网，2026-09-13。",
+      "tags": [
+        "knowledge",
+        "news",
+        "geopolitics",
+        "energy"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T00:40:57.451Z",
+      "updatedAt": "2026-09-13T00:40:57.451Z",
+      "accessedAt": "2026-09-13T00:40:57.451Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "7efb045fca8fb2f8",
+      "observedAt": "2026-09-13T00:40:57.451Z",
+      "deleted": false
+    },
+    {
+      "id": "f922c7b0-8c72-4516-829c-fe1e225e9333",
+      "category": "solutions",
+      "title": "golden-tasks.sh ROOT 路径 bug 修复",
+      "content": "golden-tasks.sh（~/.pi/scripts/maintenance/golden-tasks.sh）第 33 行 ROOT 原取值为 dirname \"$SCRIPTS\"，仅上溯到 scripts/ 目录，导致 AUTOPILOT_SCRIPTS/CONTEXT_SCRIPTS 指向不存在的 scripts/agent/... 路径，F1/F2b 断言误报失败。修正为 dirname $(dirname $SCRIPTS) 后指向仓库根 .pi，重跑 6 项断言（F1-F5 等）全部通过。修复尚未提交。",
+      "tags": [
+        "golden-tasks",
+        "bug-fix",
+        "scripts",
+        "path"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:22:21.962Z",
+      "updatedAt": "2026-09-13T01:22:21.962Z",
+      "accessedAt": "2026-09-13T01:22:21.962Z",
+      "observedAt": "2026-09-13T01:22:21.962Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0981e-f16b-77ad-905b-eed9b18db1b7",
+      "deleted": false,
+      "contentHash": "7d39b5a9bc35456f"
+    },
+    {
+      "id": "0a3e62bb-f396-4736-b4f5-55fac6afcec2",
+      "category": "procedure",
+      "title": "golden-fast 防退化基准流程",
+      "content": "防退化基准为确定性零 LLM 主流程：运行 bash ~/.pi/scripts/maintenance/golden-tasks.sh --fast，执行 F1-F5 本地脚本断言。全部通过则输出 'golden-fast 全绿' 即结束，不写文件不提交。任一失败则将失败行与 golden 输出尾部 10 行写入 memory/daily-results/2026-09-13-golden-<hostname>.md，git add 该文件后 commit（message: 'golden: fail 2026-09-13'）并 push，冲突先 git pull --rebase 重试一次，仍失败保留本地不阻塞。",
+      "tags": [
+        "golden-tasks",
+        "regression",
+        "procedure"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:22:21.962Z",
+      "updatedAt": "2026-09-13T01:22:21.962Z",
+      "accessedAt": "2026-09-13T01:22:21.962Z",
+      "observedAt": "2026-09-13T01:22:21.962Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0981e-f16b-77ad-905b-eed9b18db1b7",
+      "deleted": false,
+      "contentHash": "628a8afdf8129628"
+    },
+    {
+      "id": "0dd57e22-044d-422f-b6b0-c2805dff6a3b",
+      "category": "procedure",
+      "title": "健康告警与 golden 失败同日并发的处置顺序",
+      "content": "当每日健康检查结论=alert 且同日 golden-fast 基准出现失败时，按序执行：先 daily-health（写 health md + git commit/push），再 golden-fast（写 golden md + git commit/push），最后 tool-stats-daily（聚合 + commit/push）。三者均写本机 daily-results 且独立提交，避免同文件竞争与锁冲突。推送冲突统一先 git pull --rebase 重试一次，仍失败保留本地不阻塞。健康告警原因分析仅写一行，不读大文件不跑诊断。",
+      "tags": [
+        "健康检查",
+        "golden-fast",
+        "任务调度",
+        "处置顺序"
+      ],
+      "confidence": 0.7,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:32:37.611Z",
+      "updatedAt": "2026-09-13T01:32:37.611Z",
+      "accessedAt": "2026-09-13T01:32:37.611Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "c54176854175ec24",
+      "observedAt": "2026-09-13T01:32:37.611Z",
+      "deleted": false
+    },
+    {
+      "id": "08123c96-f0a8-431f-b334-b924589ce7ac",
+      "category": "fact",
+      "title": "MYPC 设备任务执行长期中断（自 2026-09-07）",
+      "content": "MYPC 设备在 memory/daily-results/results-MYPC.jsonl 中最后记录为 2026-09-07T00:08:27 daily-health success，此后至 2026-09-13 再无任何任务执行记录。缺失任务包括：knowledge-subscribe（最后一次 2026-09-05）、daily-health、golden-fast、daily-review、tool-stats-daily。与 localhost 设备形成明显信息不对称：localhost 每日 4 类任务正常轮转，MYPC 仅 09-06 tool-stats 与 09-07 golden/health 三条。需排查 MYPC 的 pi-autopilot 调度器是否存活、网络可达性或设备离线。",
+      "tags": [
+        "多设备",
+        "MYPC",
+        "任务中断",
+        "信息不对称"
+      ],
+      "confidence": 0.95,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:32:37.768Z",
+      "updatedAt": "2026-09-13T01:32:37.768Z",
+      "accessedAt": "2026-09-13T01:32:37.768Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "73be4a497a992a53",
+      "observedAt": "2026-09-13T01:32:37.768Z",
+      "deleted": false
+    },
+    {
+      "id": "a7bd4a98-00a4-4401-8158-8376d7a3295f",
+      "category": "solutions",
+      "title": "归纳自：每日健康度量标准流程、golden-fast 管线 F1/F2b 失败模式、每日工具统计聚合提交流程、MYPC 设备任务执行长期中断、daily-health.mjs 断裂检测漏计 prevCacheRead=0",
+      "content": "每日自动化任务链的可靠性依赖三层闭环：(1) 确定性零 LLM 断言（daily-health 命中率/断裂阈值、golden-fast F1-F5 本地脚本断言）作为唯一告警来源，禁止在告警处置中引入 LLM 诊断；(2) 同日多任务并发时按 health→golden→tool-stats 顺序独立提交，避免同文件竞争与调度锁冲突；(3) 跨设备结果对比（results-<device>.jsonl）作为信息不对称的早期检测器——当某设备超过 3 天无任何任务记录时即视为离线/调度器失联，需主动排查而非等待其自行恢复。断裂检测的边界条件（prevCacheRead=0 时 prevCacheRead < prev-100 恒假）必须在断言脚本中显式覆盖，否则告警数字会系统性偏低。",
+      "tags": [
+        "归纳",
+        "自动化",
+        "可靠性",
+        "三层闭环"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:32:46.702Z",
+      "updatedAt": "2026-09-13T01:32:46.702Z",
+      "accessedAt": "2026-09-13T01:32:46.702Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "6f128535a0db6468",
+      "links": [
+        "3650591a-dda9-44ea-bad9-cf871e5039d4"
+      ],
+      "observedAt": "2026-09-13T01:32:46.702Z",
+      "deleted": false
+    },
+    {
+      "id": "7913a66e-b48b-4ffb-bff5-8635957a0958",
+      "category": "solutions",
+      "title": "干预教训: 会话清理指令需明确范围与目标 ID",
+      "content": "来源记录 ts=2026-09-09T12:58:43Z（干预 id iv_1788958723479_m7q6on）。纠正前：用户说「清理其他会话」，助手直接执行了跨全部会话的清理操作（10 次 bash 调用）。纠正后：用户澄清「是清理之前的会话」。差异：指令缺少时间范围限定词（\"之前\"）与目标 ID 约束。今后正确做法：面对会话清理/删除类指令，先调用 admin_list_sessions 列出全部会话及其时间戳，向用户确认清理范围（哪些 session ID、时间边界）后再执行；若用户指令含歧义词（\"其他\"\"之前\"\"旧的\"），必须先澄清再动手，禁止凭推断批量删除。",
+      "tags": [
+        "干预教训",
+        "会话清理",
+        "误删",
+        "歧义指令"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:32:58.182Z",
+      "updatedAt": "2026-09-13T01:32:58.182Z",
+      "accessedAt": "2026-09-13T01:32:58.182Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "53cb4d7013e2dfb6",
+      "observedAt": "2026-09-13T01:32:58.182Z",
+      "deleted": false
+    },
+    {
+      "id": "d7abc228-91c7-4ee0-a079-066b368d3a35",
+      "category": "solutions",
+      "title": "干预教训: 用户口误纠正需回溯确认操作目标",
+      "content": "来源记录 ts=2026-09-09T06:26:06Z（干预 id iv_1788935166842_voah2b）。纠正前：用户说「a6fe4cac 删除，其他的按照 1、2、3 执行」，助手按字面执行。纠正后：用户说「说错了，是 064ee064 删除」。差异：目标 ID 从 a6fe4cac 变为 064ee064，若已执行则造成误删。今后正确做法：涉及删除/移除类指令且目标为短 ID（如 8 位 hex）时，先将 ID 与 admin_list_sessions 的实际 session ID 列表比对确认存在性，再向用户回读确认「即将删除 <ID> 对应的会话，是否正确」；用户纠正后需重新核对新 ID 再执行。禁止在用户纠正前已对旧目标执行不可逆操作。",
+      "tags": [
+        "干预教训",
+        "用户口误",
+        "短ID",
+        "回溯确认"
+      ],
+      "confidence": 0.6,
+      "source": "manual",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T01:32:58.298Z",
+      "updatedAt": "2026-09-13T01:32:58.298Z",
+      "accessedAt": "2026-09-13T01:32:58.298Z",
+      "environments": [
+        "all"
+      ],
+      "contentHash": "74434423235566d3"
     }
   ]
 }
