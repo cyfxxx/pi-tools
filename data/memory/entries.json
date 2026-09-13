@@ -18231,15 +18231,17 @@
       "source": "extract",
       "recurrence": 2,
       "createdAt": "2026-09-03T05:10:12.411Z",
-      "updatedAt": "2026-09-11T01:06:25.484Z",
+      "updatedAt": "2026-09-13T06:54:48.170Z",
       "accessedAt": "2026-09-11T01:06:25.484Z",
       "observedAt": "2026-09-11T01:06:25.484Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "01a06589-31dc-7687-b71e-04a61a52371c",
-      "deleted": false,
-      "contentHash": "cae7dc97eaca4136"
+      "deleted": true,
+      "contentHash": "cae7dc97eaca4136",
+      "supersededBy": "8a0cb66c-9eba-4189-af5f-0cd7096acc59",
+      "validUntil": "2026-09-13T06:54:48.170Z"
     },
     {
       "id": "4896af90-d974-4fc8-9522-02bb3a454f95",
@@ -22306,15 +22308,17 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-09-12T19:28:25.544Z",
-      "updatedAt": "2026-09-12T19:28:25.544Z",
+      "updatedAt": "2026-09-13T06:54:08.420Z",
       "accessedAt": "2026-09-12T19:28:25.544Z",
       "observedAt": "2026-09-12T19:28:25.544Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "01a0924c-824c-7352-9163-b63aac91e039",
-      "deleted": false,
-      "contentHash": "44d2db782dac0672"
+      "deleted": true,
+      "contentHash": "44d2db782dac0672",
+      "supersededBy": "d85d7ae4-6344-479e-a627-7d8c13bd0201",
+      "validUntil": "2026-09-13T06:54:08.420Z"
     },
     {
       "id": "d3025cce-1d5f-4dd0-be39-950a02a0493c",
@@ -22623,15 +22627,17 @@
       "source": "extract",
       "recurrence": 1,
       "createdAt": "2026-09-13T01:22:21.962Z",
-      "updatedAt": "2026-09-13T01:22:21.962Z",
+      "updatedAt": "2026-09-13T06:54:48.000Z",
       "accessedAt": "2026-09-13T01:22:21.962Z",
       "observedAt": "2026-09-13T01:22:21.962Z",
       "environments": [
         "termux"
       ],
       "lastSessionId": "01a0981e-f16b-77ad-905b-eed9b18db1b7",
-      "deleted": false,
-      "contentHash": "7d39b5a9bc35456f"
+      "deleted": true,
+      "contentHash": "7d39b5a9bc35456f",
+      "supersededBy": "67dad97e-184c-4e86-87a3-bedd14e844ac",
+      "validUntil": "2026-09-13T06:54:48.000Z"
     },
     {
       "id": "0a3e62bb-f396-4736-b4f5-55fac6afcec2",
@@ -22741,19 +22747,23 @@
         "干预教训",
         "会话清理",
         "误删",
-        "歧义指令"
+        "歧义指令",
+        "干预",
+        "指令歧义",
+        "教训"
       ],
       "confidence": 0.6,
       "source": "manual",
-      "recurrence": 1,
+      "recurrence": 2,
       "createdAt": "2026-09-13T01:32:58.182Z",
-      "updatedAt": "2026-09-13T01:32:58.182Z",
-      "accessedAt": "2026-09-13T01:32:58.182Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
       "environments": [
-        "all"
+        "all",
+        "termux"
       ],
       "contentHash": "53cb4d7013e2dfb6",
-      "observedAt": "2026-09-13T01:32:58.182Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
       "deleted": false
     },
     {
@@ -22765,18 +22775,328 @@
         "干预教训",
         "用户口误",
         "短ID",
-        "回溯确认"
+        "回溯确认",
+        "干预",
+        "口误",
+        "教训"
       ],
       "confidence": 0.6,
       "source": "manual",
-      "recurrence": 1,
+      "recurrence": 2,
       "createdAt": "2026-09-13T01:32:58.298Z",
-      "updatedAt": "2026-09-13T01:32:58.298Z",
-      "accessedAt": "2026-09-13T01:32:58.298Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
       "environments": [
-        "all"
+        "all",
+        "termux"
       ],
-      "contentHash": "74434423235566d3"
+      "contentHash": "74434423235566d3",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "deleted": false
+    },
+    {
+      "id": "d85d7ae4-6344-479e-a627-7d8c13bd0201",
+      "category": "fact",
+      "title": "MYPC 设备任务执行长期中断（自 2026-09-07）",
+      "content": "MYPC 设备自 2026-09-07T00:08 daily-health 后无任何新记录，缺 09-08 至 09-13 全部五类任务（daily-health / knowledge-subscribe / golden-benchmark / tool-stats / memory-backup）。localhost 同期正常轮转。跨设备结果对比作为早期检测器：任一设备超 3 天无记录即视为离线，需告警并检查调度。已入库 fact 条目记录此事。",
+      "tags": [
+        "设备",
+        "MYPC",
+        "调度",
+        "中断",
+        "跨设备对比"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:07.962Z",
+      "updatedAt": "2026-09-13T06:54:48.363Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0985a-83c1-70d6-8f97-45e14881a3c5",
+      "deleted": true,
+      "contentHash": "fa22e111e0c53a3f",
+      "supersededBy": "3aa312b2-ae0f-47a1-b2dc-920c2c85c182",
+      "validUntil": "2026-09-13T06:54:48.363Z"
+    },
+    {
+      "id": "6408d317-881a-412d-9bcf-61b849197e37",
+      "category": "solutions",
+      "title": "自动化任务链可靠性三层闭环（insight）",
+      "content": "归纳自 2026-09-13 跨条目反思，近 24h 17 条非 deleted 条目 Σ(confidence×recurrence)=14.15>12 触发。三层：①确定性断言闭环——关键结果用确定性 node 命令验证而非估算；②同日多任务提交顺序——health→golden→tool-stats 顺序独立提交，避免同文件竞争与调度锁冲突；③跨设备 3 天无记录即告警。适用：所有自动化任务链的可靠性设计与排错。",
+      "tags": [
+        "可靠性",
+        "任务链",
+        "闭环",
+        "insight"
+      ],
+      "confidence": 0.6,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:07.963Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0985a-83c1-70d6-8f97-45e14881a3c5",
+      "deleted": false,
+      "contentHash": "00d1b4c3329e17c9"
+    },
+    {
+      "id": "58b55c89-b958-44da-a41c-0b67f6abaa19",
+      "category": "procedure",
+      "title": "每日回顾六步流程与产出约定",
+      "content": "每日回顾固定六步：①读 memory/daily-results/ 全部设备任务结果对比，识别遗漏与信息不对称；②回顾近 24h 会话摘要提炼 1-3 条入库，跨条目反思用 node -e 统计 entries.json 非 deleted 条目 Σ(confidence×recurrence)，>12 生成 insight（category=solutions, confidence=0.6, content 开头注明归纳自哪些条目）；③干预反思解析 interventions.jsonl 近 7 天 correctivePrompt 非空记录，提炼 1-2 条教训（category=solutions, confidence=0.6, title 前缀「干预教训:」）；④Voyager 自动课程比对 lesson-course.json 与 OPTIMIZATION-LOG 去重，连续第 2 天无既有工单才生成 workticket 草稿；⑤memory-lifecycle.mjs --json 只读报告分四组候选；⑥输出结论首行固定「知识订阅：<N>条」。验证回写：工单末尾追加「状态: accepted|rejected|neutral」。",
+      "tags": [
+        "每日回顾",
+        "流程",
+        "ROADMAP",
+        "Voyager"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:07.963Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0985a-83c1-70d6-8f97-45e14881a3c5",
+      "deleted": false,
+      "contentHash": "b6c997c48d8f63c9"
+    },
+    {
+      "id": "9ec3d594-d9d0-4a6c-a0a8-4e9b2e9f1f5a",
+      "category": "procedure",
+      "title": "Voyager 自动课程去重与工单生成规则",
+      "content": "自动课程（ROADMAP 5.7）规则：读取 ~/.pi/logs/lesson-course.json（无则空对象），扫描 ~/.pi/packs/drafts/workticket-*.md 标题与 docs/OPTIMIZATION-LOG.md 已记录标题做提案去重。某主题已提过工单或已入 LOG（无论 accepted/rejected/neutral）则不重复生成，仅更新 lesson-course.json 日期；某主题连续第 2 天出现且无既有工单时，用 write 生成 workticket-<短名>.md（首行 status: proposed，三节：## 问题 / ## 建议改动 / ## 验证方式），仅草稿不执行改动。清理：lesson-course.json 只保留近 90 天且按主题去重（同主题仅留最新一条）。",
+      "tags": [
+        "Voyager",
+        "自动课程",
+        "工单",
+        "去重",
+        "ROADMAP 5.7"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:07.963Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0985a-83c1-70d6-8f97-45e14881a3c5",
+      "deleted": false,
+      "contentHash": "84d64f936ef654b0"
+    },
+    {
+      "id": "a18128b4-4c62-45ee-8878-44a3608a5df4",
+      "category": "reference",
+      "title": "memory-lifecycle.mjs 只读报告四组候选结构",
+      "content": "~/.pi/scripts/memory-lifecycle.mjs --json 输出四组候选：①升格候选（recurrence≥5 且验证有效，逐条评估后写入 OPTIMIZATION-LOG 升格建议待用户确认，不直接改提示词/扩展）；②聚合候选（组给出单条规则草案写入 OPTIMIZATION-LOG 待确认）；③冲突嫌疑（组合并裁决建议）；④淘汰候选（仅列出不动，批量删除须用户确认）。无候选则跳过本步。本轮（2026-09-13）无变化，已在 OPTIMIZATION-LOG 第七节补充说明。",
+      "tags": [
+        "memory-lifecycle",
+        "OPTIMIZATION-LOG",
+        "报告结构"
+      ],
+      "confidence": 0.9,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:07.963Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0985a-83c1-70d6-8f97-45e14881a3c5",
+      "deleted": false,
+      "contentHash": "52b19e6b9a9dd7a5"
+    },
+    {
+      "id": "792735f3-720c-4585-aff3-22afdfcfc05f",
+      "category": "fact",
+      "title": "2026-09-13 知识订阅新增 60 条",
+      "content": "2026-09-13 知识订阅任务（knowledge-subscribe）在 localhost 成功运行，产出 60 条新增知识摘要，详情见 logs/knowledge/summary-2026-09-13.md。MYPC 本机未跑该任务（无 2026-09-13-knowledge-MYPC.md）。每日回顾结论首行固定格式「知识订阅：<N 条新增或无新增>，详情 logs/knowledge/summary-YYYY-MM-DD.md」。",
+      "tags": [
+        "知识订阅",
+        "2026-09-13",
+        "localhost"
+      ],
+      "confidence": 0.95,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:07.963Z",
+      "updatedAt": "2026-09-13T06:54:07.963Z",
+      "accessedAt": "2026-09-13T06:54:07.963Z",
+      "observedAt": "2026-09-13T06:54:07.963Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a0985a-83c1-70d6-8f97-45e14881a3c5",
+      "deleted": false,
+      "contentHash": "dded0a598015e705"
+    },
+    {
+      "id": "575717fd-5708-47fe-8185-9072cb4186b6",
+      "category": "solutions",
+      "title": "翻译补丁补全与覆盖验证",
+      "content": "对象：pi-translate-zh 在 pi 0.85.1。证据链：检查 settings-selector.js、interactive-mode.js 缺项；编辑 /root/.pi/agent/skills/pi-translate-zh/patch-all-zh.mjs，修复 malformed JSON arrays 并补入两条描述；运行 patch script 后 slash-commands.js 22/22、settings-selector.js 77/77，核心 TUI 100%。",
+      "tags": [
+        "翻译",
+        "patch-all-zh",
+        "覆盖率"
+      ],
+      "confidence": 0.98,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
+    },
+    {
+      "id": "67dad97e-184c-4e86-87a3-bedd14e844ac",
+      "category": "solutions",
+      "title": "golden-tasks 根路径修复",
+      "content": "对象：scripts/maintenance/golden-tasks.sh。证据：第 33 行 dirname \"$SCRIPTS\" 将 ROOT 设为 scripts，导致 AUTOPILOT_SCRIPTS/CONTEXT_SCRIPTS 指向不存在的 scripts/agent；改为 dirname $(dirname \"$SCRIPTS\") 后重跑，6 项全绿。",
+      "tags": [
+        "golden-tasks",
+        "路径",
+        "健康检查"
+      ],
+      "confidence": 0.99,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
+    },
+    {
+      "id": "8a0cb66c-9eba-4189-af5f-0cd7096acc59",
+      "category": "procedure",
+      "title": "knowledge-subscribe 入库流程",
+      "content": "对象：knowledge-subscribe。执行链：python3 agent/extensions/pi-autopilot/scripts/knowledge-fetch.py 抓取 60 条至 logs/knowledge/2026-09-13.md；memory_search 查重，memory_store 入库 5 条；摘要写 ~/.pi/logs/knowledge/summary-2026-09-13.md；git add 使用 data/memory 真实路径；commit/push 成功 b1ea127..bf93045。",
+      "tags": [
+        "知识订阅",
+        "memory",
+        "git"
+      ],
+      "confidence": 0.98,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
+    },
+    {
+      "id": "3aa312b2-ae0f-47a1-b2dc-920c2c85c182",
+      "category": "fact",
+      "title": "MYPC 任务长期中断",
+      "content": "对象：跨设备 daily-results。localhost 最近记录为 2026-09-13T00:51 knowledge-subscribe success；MYPC 最近记录为 2026-09-07T00:08 daily-health success，缺少 09-08 至 09-13 五类任务。",
+      "tags": [
+        "MYPC",
+        "daily-results",
+        "健康告警"
+      ],
+      "confidence": 0.99,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
+    },
+    {
+      "id": "bb26e050-1ae6-44f8-9ea6-554a350875df",
+      "category": "procedure",
+      "title": "会话清理先确认范围",
+      "content": "对象：会话清理。证据：来源 iv_1788958723479_m7q6on，原指令“清理其他会话”被字面执行；纠正为“清理之前的会话”后完成。规则：先列 session，再确认清理范围与目标 ID。",
+      "tags": [
+        "会话清理",
+        "范围确认"
+      ],
+      "confidence": 0.97,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
+    },
+    {
+      "id": "3bf3f3fb-42ac-4793-bc72-c0bf4dd874cd",
+      "category": "procedure",
+      "title": "短 ID 纠正先回读目标",
+      "content": "对象：短 ID 纠正。证据：来源 iv_1788935166842_voah2b，错误操作 a6fe4cac 后纠正为 064ee064。规则：短 ID 先比对 session 列表，再回读确认目标。",
+      "tags": [
+        "会话纠正",
+        "目标确认"
+      ],
+      "confidence": 0.97,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
+    },
+    {
+      "id": "6f011175-fcc8-4cd6-a39e-a6ed9214d5b4",
+      "category": "procedure",
+      "title": "git hook 提交字段要求",
+      "content": "对象：git commit/push hook。证据：首次提交被 hook 拦截，要求补充 Cache-impact 与 System-prompt-review 字段；补齐后 4901cf5 推送成功，临时文件 60%、8min 已删除。",
+      "tags": [
+        "git",
+        "hook",
+        "提交规范"
+      ],
+      "confidence": 0.96,
+      "source": "extract",
+      "recurrence": 1,
+      "createdAt": "2026-09-13T06:54:47.375Z",
+      "updatedAt": "2026-09-13T06:54:47.375Z",
+      "accessedAt": "2026-09-13T06:54:47.375Z",
+      "observedAt": "2026-09-13T06:54:47.375Z",
+      "environments": [
+        "termux"
+      ],
+      "lastSessionId": "01a093fe-696c-7153-a068-6cc217064e44"
     }
   ]
 }
