@@ -30,7 +30,7 @@ grn() { printf "\033[32m✓ %s\033[0m\n" "$1"; }
 red() { printf "\033[31m✗ %s\033[0m\n" "$1"; FAILED=$((FAILED+1)); }
 
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(dirname "$SCRIPTS")"
+ROOT="$(dirname "$(dirname "$SCRIPTS")")"
 AUTOPILOT_SCRIPTS="$ROOT/agent/extensions/pi-autopilot/scripts"
 CONTEXT_SCRIPTS="$ROOT/agent/extensions/pi-context/scripts"
 MODE="fast"
