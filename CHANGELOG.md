@@ -3,6 +3,18 @@
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
 `git checkout <tag>` 回退，或从该 tag 拉分支修复。
 
+## 2026-09-13 代码质量修复和优化
+
+- **修复文件权限**：rebuild.sh、pi-wrapper.sh 权限从 777 改为 755（安全加固）
+- **修复 Python 代码**：npm-missing-deps.py 使用 with 语句管理文件（资源泄漏修复）
+- **修复 TypeScript 代码**：hook-registry.ts 空 catch 块添加注释说明
+- **更新 .gitignore**：添加 *.bak 规则，排除备份文件
+- **恢复 recovery/cache/**：从当前安装重建 v0.85.1 缓存（L4 恢复能力恢复）
+- **清理诊断日志**：usage-diag.jsonl 从 25349 行缩减到 1000 行
+- **清理备份文件**：删除 backup/packs-with-git-20260821.tar.gz（7.5MB）
+- **Git 仓库优化**：执行 git gc --aggressive 压缩历史
+- **CI 配置修复**：分支名从 main 改为 master（与本地一致）
+
 ## 2026-09-06 每日健康巡检 + 全项目审计修复
 
 - **全项目深度审计修复闭环**（aba290e）：确定性检查 + 11 套 vitest 全绿 + 8 组并行深度审查 + 主会话终审
