@@ -62,7 +62,7 @@ export class LoginDialogComponent extends Container {
     cancel() {
         this.abortController.abort();
         if (this.inputRejecter) {
-            this.inputRejecter(new Error("Login cancelled"));
+            this.inputRejecter(new Error("登录已取消"));
             this.inputResolver = undefined;
             this.inputRejecter = undefined;
         }
@@ -76,7 +76,7 @@ export class LoginDialogComponent extends Container {
         this.contentContainer.addChild(new Spacer(1));
         const linkedUrl = `\x1b]8;;${url}\x07${url}\x1b]8;;\x07`;
         this.contentContainer.addChild(new Text(theme.fg("accent", linkedUrl), 1, 0));
-        const clickHint = process.platform === "darwin" ? "Cmd+click to open" : "Ctrl+click to open";
+        const clickHint = process.platform === "darwin" ? "Cmd+点击打开" : "Ctrl+点击打开";
         const hyperlink = `\x1b]8;;${url}\x07${clickHint}\x1b]8;;\x07`;
         this.contentContainer.addChild(new Text(theme.fg("dim", hyperlink), 1, 0));
         if (instructions) {
@@ -94,7 +94,7 @@ export class LoginDialogComponent extends Container {
         this.contentContainer.addChild(new Spacer(1));
         const linkedUrl = `\x1b]8;;${info.verificationUri}\x07${info.verificationUri}\x1b]8;;\x07`;
         this.contentContainer.addChild(new Text(theme.fg("accent", linkedUrl), 1, 0));
-        const clickHint = process.platform === "darwin" ? "Cmd+click to open" : "Ctrl+click to open";
+        const clickHint = process.platform === "darwin" ? "Cmd+点击打开" : "Ctrl+点击打开";
         const hyperlink = `\x1b]8;;${info.verificationUri}\x07${clickHint}\x1b]8;;\x07`;
         this.contentContainer.addChild(new Text(theme.fg("dim", hyperlink), 1, 0));
         this.contentContainer.addChild(new Spacer(1));

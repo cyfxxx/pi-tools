@@ -38,7 +38,7 @@ export class OAuthSelectorComponent extends Container {
         this.addChild(new DynamicBorder());
         this.addChild(new Spacer(1));
         // Add title
-        const title = mode === "login" ? "Select provider to configure:" : "Select provider to logout:";
+        const title = mode === "login" ? "选择要配置的提供商：" : "选择要注销的提供商：";
         this.addChild(new TruncatedText(theme.fg("accent", theme.bold(title)), 1, 0));
         this.addChild(new Spacer(1));
         this.searchInput = new Input();
@@ -103,9 +103,9 @@ export class OAuthSelectorComponent extends Container {
         if (this.filteredProviders.length === 0) {
             const message = this.allProviders.length === 0
                 ? this.mode === "login"
-                    ? "No providers available"
-                    : "No providers logged in. Use /login first."
-                : "No matching providers";
+                    ? "没有可用的提供商"
+                    : "没有已登录的提供商。请先使用 /login。"
+                : "没有匹配的提供商";
             this.listContainer.addChild(new TruncatedText(theme.fg("muted", `  ${message}`), 1, 0));
         }
     }

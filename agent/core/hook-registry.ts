@@ -73,8 +73,9 @@ export const hookRegistry = {
             result.warnings.push(`[${hook.id}] ${hook.message}`)
           }
         }
-      } catch {
-        // Hook 判定失败不阻塞主流程
+      } catch (e) {
+        // Hook 判定失败不阻塞主流程（如正则语法错误、hook 配置格式异常等）
+        // 仅记录 warning，不中断主流程
       }
     }
     return result

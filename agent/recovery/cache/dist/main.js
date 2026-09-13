@@ -307,9 +307,9 @@ export async function createSessionManager(parsed, cwd, sessionDir, settingsMana
                 return openSessionOrExit(resolved.path, sessionDir);
             case "global": {
                 console.log(chalk.yellow(`Session found in different project: ${resolved.cwd}`));
-                const shouldFork = await promptConfirm("Fork this session into current directory?");
+                const shouldFork = await promptConfirm("将此会话分叉到当前目录？");
                 if (!shouldFork) {
-                    console.log(chalk.dim("Aborted."));
+                    console.log(chalk.dim("已中止。"));
                     process.exit(0);
                 }
                 return forkSessionOrExit(resolved.path, cwd, sessionDir);
@@ -323,7 +323,7 @@ export async function createSessionManager(parsed, cwd, sessionDir, settingsMana
         try {
             const selectedPath = await selectSession((onProgress) => SessionManager.list(cwd, sessionDir, onProgress), (onProgress) => SessionManager.listAll(sessionDir, onProgress), settingsManager);
             if (!selectedPath) {
-                console.log(chalk.dim("No session selected"));
+                console.log(chalk.dim("未选择会话"));
                 process.exit(0);
             }
             return SessionManager.open(selectedPath, sessionDir);
@@ -430,7 +430,7 @@ function resolveCliPaths(cwd, paths) {
 }
 async function promptForMissingSessionCwd(issue, settingsManager) {
     return showStartupSelector(settingsManager, formatMissingSessionCwdPrompt(issue), [
-        { label: "Continue", value: issue.fallbackCwd },
+        { label: "继续", value: issue.fallbackCwd },
         { label: "Cancel", value: undefined },
     ]);
 }
@@ -473,7 +473,7 @@ export async function main(args, options) {
     if (parsed.diagnostics.length > 0) {
         for (const d of parsed.diagnostics) {
             const color = d.type === "error" ? chalk.red : chalk.yellow;
-            console.error(color(`${d.type === "error" ? "Error" : "Warning"}: ${d.message}`));
+            console.error(color(`${d.type === "error" ? "Error" : "警告"}: ${d.message}`));
         }
         if (parsed.diagnostics.some((d) => d.type === "error")) {
             process.exit(1);
@@ -491,7 +491,7 @@ export async function main(args, options) {
             result = await exportFromFile(parsed.export, outputPath);
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to export session";
+            const message = error instanceof Error ? error.message : "导出会话失败";
             console.error(chalk.red(`Error: ${message}`));
             process.exit(1);
         }
@@ -504,7 +504,7 @@ export async function main(args, options) {
         takeOverStdout();
     }
     if (parsed.mode === "rpc" && parsed.fileArgs.length > 0) {
-        console.error(chalk.red("Error: @file arguments are not supported in RPC mode"));
+        console.error(chalk.red("错误：RPC 模式不支持 @file 参数"));
         process.exit(1);
     }
     validateForkFlags(parsed);
@@ -550,7 +550,7 @@ export async function main(args, options) {
     if (parsed.name !== undefined) {
         const name = normalizeSessionName(parsed.name);
         if (name === undefined) {
-            console.error(chalk.red("Error: --name requires a non-empty value"));
+            console.error(chalk.red("错误：--name 需要非空值"));
             process.exit(1);
         }
         sessionManager.appendSessionInfo(name);
@@ -736,7 +736,7 @@ export async function main(args, options) {
     }
     const startupBenchmark = isTruthyEnvFlag(process.env.PI_STARTUP_BENCHMARK);
     if (startupBenchmark && appMode !== "interactive") {
-        console.error(chalk.red("Error: PI_STARTUP_BENCHMARK only supports interactive mode"));
+        console.error(chalk.red("错误：PI_STARTUP_BENCHMARK 仅支持交互模式"));
         process.exit(1);
     }
     // RPC refreshes catalogs here in the background; interactive mode starts its refresh after TUI initialization.

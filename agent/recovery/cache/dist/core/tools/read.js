@@ -3,6 +3,7 @@ import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { Type } from "typebox";
 import { processImage } from "../../utils/image-process.js";
 import { detectSupportedImageMimeTypeFromFile } from "../../utils/mime.js";
+import { getExperimentalToolSampling } from "../experimental.js";
 import { resolveReadPathAsync } from "./path-utils.js";
 import { readRenderers } from "./renderers/read.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -37,7 +38,7 @@ export function createReadToolDefinition(cwd, options) {
         promptSnippet: readToolSystemPromptContribution.snippet,
         promptGuidelines: [...readToolSystemPromptContribution.guidelines],
         parameters: readSchema,
-        constrainedSampling: { type: "json_schema", strict: "prefer" },
+        constrainedSampling: getExperimentalToolSampling(),
         async execute(_toolCallId, { path, offset, limit }, signal, _onUpdate, ctx) {
             return new Promise((resolve, reject) => {
                 if (signal?.aborted) {

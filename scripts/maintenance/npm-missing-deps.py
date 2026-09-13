@@ -41,7 +41,8 @@ def spec_ok(inst, spec):
 def main():
     pkg_dir = sys.argv[1]
     try:
-        d = json.load(open(os.path.join(pkg_dir, 'package.json')))
+        with open(os.path.join(pkg_dir, 'package.json')) as f:
+            d = json.load(f)
     except Exception:
         print('PKGERR')
         sys.exit(0)
@@ -56,7 +57,8 @@ def main():
             missing.append(k)
             continue
         try:
-            inst = ver_pair(json.load(open(os.path.join(d_dir, 'package.json'))).get('version', ''))
+            with open(os.path.join(d_dir, 'package.json')) as f:
+                inst = ver_pair(json.load(f).get('version', ''))
         except Exception:
             missing.append(k)  # 残留/损坏的包目录
             continue

@@ -109,42 +109,82 @@ export class FooterComponent {
         if (sessionName) {
             pwd = `${pwd} • ${sessionName}`;
         }
-        // Build stats line
+// Patch (patch-footer-format.mjs): 前 3 字段改为 Σ总输入(prompt 总量=命中+未命中) / ↑累计未命中 / ↓累计输出；R/W 合并进"Σ"（明细见 CH 与 /session）。
+        const sessionPromptTotal = usageTotals.input + usageTotals.cacheRead + usageTotals.cacheWrite;
         const statsParts = [];
+        if (sessionPromptTotal > 0)
+            statsParts.push(`Σ${formatTokens(sessionPromptTotal)}`);
         if (usageTotals.input)
             statsParts.push(`↑${formatTokens(usageTotals.input)}`);
         if (usageTotals.output)
             statsParts.push(`↓${formatTokens(usageTotals.output)}`);
-        if (usageTotals.cacheRead)
-            statsParts.push(`R${formatTokens(usageTotals.cacheRead)}`);
-        if (usageTotals.cacheWrite)
-            statsParts.push(`W${formatTokens(usageTotals.cacheWrite)}`);
-        if ((usageTotals.cacheRead > 0 || usageTotals.cacheWrite > 0) && latestCacheHitRate !== undefined) {
-            statsParts.push(`CH${latestCacheHitRate.toFixed(1)}%`);
-        }
+        // Patch (patch-footer-cache.mjs): CH 实时/会话双命中率（实时=最新一条 assistant 消息，会话=全部条目累计）。↑↓RW$ 保持累计口径。
+            const sessionPromptTokens = usageTotals.input + usageTotals.cacheRead + usageTotals.cacheWrite;
+            const sessionCacheHitRate =
+                sessionPromptTokens > 0 ? (usageTotals.cacheRead / sessionPromptTokens) * 100 : undefined;
+            if ((usageTotals.cacheRead > 0 || usageTotals.cacheWrite > 0) && (latestCacheHitRate !== undefined || sessionCacheHitRate !== undefined)) {
+                const hitRates = [];
+                if (latestCacheHitRate !== undefined) hitRates.push(latestCacheHitRate.toFixed(1));
+                if (sessionCacheHitRate !== undefined) hitRates.push(sessionCacheHitRate.toFixed(1));
+                statsParts.push(`CH${hitRates.join("/")}%`);
+            }
         // Kimi Coding is subscription-backed despite using API-key authentication.
         const usingSubscription = state.model
             ? state.model.provider === "kimi-coding" || this.session.modelRuntime.isUsingSubscription(state.model.provider)
             : false;
         if (usageTotals.cost || usingSubscription) {
-            const costStr = `$${usageTotals.cost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
+// Patch (patch-footer-format.mjs): 成本换算人民币（近似汇率常量；usageTotals.cost 为 USD，改汇率编辑下一行）
+            const CNY_PER_USD = 6.77;
+            const costStr = `¥${(usageTotals.cost * CNY_PER_USD).toFixed(2)}${usingSubscription ? " (sub)" : ""}`;
             statsParts.push(costStr);
         }
         // Colorize context percentage based on usage
         let contextPercentStr;
         const autoIndicator = this.autoCompactEnabled ? " (auto)" : "";
-        const contextPercentDisplay = contextPercent === "?"
-            ? `?/${formatTokens(contextWindow)}${autoIndicator}`
-            : `${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
-        if (contextPercentValue > 90) {
-            contextPercentStr = theme.fg("error", contextPercentDisplay);
-        }
-        else if (contextPercentValue > 70) {
-            contextPercentStr = theme.fg("warning", contextPercentDisplay);
+        // Patch (patch-footer-live-context.mjs) V3: 实时上下文显示——分母恒为真实上下文窗口（压缩线不是窗口，显示 x/256k 会误导）。
+// 自动压缩参考线 PI_CONTEXT_ABSOLUTE_TOKENS 默认 256K 仅用于着色预警：达线黄、超窗80%红+!!。
+// 达线≠必然压缩（普通压缩受完成/后台/空闲三重门限约束）；压缩后 tokens=null 显示 "?"。
+    const compactLine = (() => {
+        const raw = process.env.PI_CONTEXT_ABSOLUTE_TOKENS;
+        const n = raw ? parseInt(raw, 10) : 0;
+        return Number.isFinite(n) && n > 0 ? n : 256000;
+    })();
+    const effWindow = contextWindow > 0 ? contextWindow : compactLine; // 即真实窗口（历史变量名，下游 cache/restart-hint 补丁引用）
+    const liveTokens = contextUsage?.tokens;
+    const liveTokensStr =
+        liveTokens !== null && liveTokens !== undefined && effWindow > 0
+            ? `${formatTokens(liveTokens)}/`
+            : "";
+            const effPercent = (liveTokens !== null && liveTokens !== undefined && effWindow > 0)
+                ? String(Math.round((liveTokens / effWindow) * 1000) / 10)
+                : contextPercent;
+            // Patch (patch-footer-restart-hint.mjs): 上下文 >40% 窗口时在 context 区追加 "⚠"（重启后首轮必全量重发，建议先 /compact；>70% 已有黄/红着色）。
+                const restartHint = contextPercent !== "?" && contextPercentValue > 40 && contextPercentValue <= 70 ? " ⚠" : "";
+                const contextPercentDisplay = contextPercent === "?"
+                    ? `?/${formatTokens(effWindow)}${autoIndicator}`
+                    : `${liveTokensStr}${formatTokens(effWindow)}${autoIndicator}${restartHint}`;
+        // Patch (patch-footer-live-context.mjs) V3.1 着色: 双指标——黄=达自动压缩参考线(256K)；红=超真实窗口 80%（溢出预警，优先级更高，超窗加!!）。
+// 显示分母仍为真实窗口；两指标口径独立（小窗口模型红会先于黄触发，自洽）。
+    const linePct = (liveTokens !== null && liveTokens !== undefined && compactLine > 0)
+        ? (liveTokens / compactLine) * 100
+        : -1;
+    const winPct = (liveTokens !== null && liveTokens !== undefined && contextWindow > 0)
+        ? (liveTokens / contextWindow) * 100
+        : contextPercentValue;
+    if ((winPct > 80 || contextPercentValue > 90)) {
+        if (winPct > 100) {
+            contextPercentStr = theme.fg("error", contextPercentDisplay + " !!");
         }
         else {
-            contextPercentStr = contextPercentDisplay;
+            contextPercentStr = theme.fg("error", contextPercentDisplay);
         }
+    }
+    else if (linePct >= 100) {
+        contextPercentStr = theme.fg("warning", contextPercentDisplay);
+    }
+    else {
+        contextPercentStr = contextPercentDisplay;
+    }
         statsParts.push(contextPercentStr);
         if (areExperimentalFeaturesEnabled()) {
             statsParts.push(`${theme.fg("dim", "•")} ${theme.bold(theme.fg("warning", "xp"))}`);

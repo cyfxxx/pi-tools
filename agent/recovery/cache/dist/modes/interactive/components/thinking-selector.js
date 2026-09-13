@@ -7,13 +7,13 @@ const THINKING_SELECT_LIST_LAYOUT = {
     maxPrimaryColumnWidth: 32,
 };
 const LEVEL_DESCRIPTIONS = {
-    off: "No reasoning",
-    minimal: "Very brief reasoning (~1k tokens)",
-    low: "Light reasoning (~2k tokens)",
-    medium: "Moderate reasoning (~8k tokens)",
-    high: "Deep reasoning (~16k tokens)",
-    xhigh: "Extra-high reasoning (~32k tokens)",
-    max: "Maximum reasoning",
+    off: `无推理`,
+    minimal: `极简推理（约 1K token）`,
+    low: `轻度推理（约 2K token）`,
+    medium: `中等推理（约 8K token）`,
+    high: `深度推理（约 16K token）`,
+    xhigh: `最大推理（约 32K token）`,
+    max: `最大推理`,
 };
 /**
  * Component that renders a thinking level selector with borders

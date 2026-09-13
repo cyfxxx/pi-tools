@@ -114,7 +114,7 @@ function isDeadTerminalError(error) {
     const code = error.code;
     return code !== undefined && DEAD_TERMINAL_ERROR_CODES.has(code);
 }
-const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING = "Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage. Disable this warning in /settings.";
+const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING = "Anthropic 订阅认证已激活。第三方调用消耗额外用量并按 token 计费，不计入 Claude 套餐限制。在 https://claude.ai/settings/usage 管理额外用量。可在 /settings 中禁用此警告。";
 function isAnthropicSubscriptionAuthKey(apiKey) {
     return typeof apiKey === "string" && apiKey.startsWith("sk-ant-oat");
 }
@@ -223,7 +223,7 @@ export class InteractiveMode {
     workingVisible = true;
     workingIndicatorOptions = undefined;
     defaultWorkingMessage = "Working";
-    defaultHiddenThinkingLabel = "Thinking...";
+    defaultHiddenThinkingLabel = "思考中...";
     hiddenThinkingLabel = this.defaultHiddenThinkingLabel;
     lastSigintTime = 0;
     lastEscapeTime = 0;
@@ -521,7 +521,7 @@ export class InteractiveMode {
             this.chatContainer.addChild(new Text(condensedText, 1, 0));
         }
         else {
-            this.chatContainer.addChild(new Text(theme.bold(theme.fg("accent", "What's New")), 1, 0));
+            this.chatContainer.addChild(new Text(theme.bold(theme.fg("accent", "更新内容")), 1, 0));
             this.chatContainer.addChild(new Spacer(1));
             this.chatContainer.addChild(new Markdown(this.changelogMarkdown.trim(), 1, 0, this.getMarkdownThemeWithSettings()));
             this.chatContainer.addChild(new Spacer(1));
@@ -816,7 +816,7 @@ export class InteractiveMode {
                 await this.session.prompt(initialMessage, { images: initialImages });
             }
             catch (error) {
-                const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+                const errorMessage = error instanceof Error ? error.message : "发生未知错误";
                 this.showError(errorMessage);
             }
         }
@@ -936,7 +936,7 @@ export class InteractiveMode {
         }
         void fetch(`https://pi.dev/api/report-install?version=${encodeURIComponent(version)}`, {
             headers: {
-                "User-Agent": getPiUserAgent(version),
+                "用户代理": getPiUserAgent(version),
             },
             signal: AbortSignal.timeout(5000),
         })
@@ -1302,7 +1302,7 @@ export class InteractiveMode {
                     .map((f) => theme.fg("dim", `  ${this.formatDisplayPath(f.path)}`))
                     .join("\n");
                 const contextCompactList = formatCompactList(contextFiles.map((contextFile) => this.formatContextPath(contextFile.path)), { sort: false });
-                addLoadedSection("Context", contextCompactList, contextList);
+                addLoadedSection("上下文", contextCompactList, contextList);
             }
             const skills = skillsResult.skills;
             if (skills.length > 0) {
@@ -1312,7 +1312,7 @@ export class InteractiveMode {
                     formatPackagePath: (item) => this.getShortPath(item.path, item.sourceInfo),
                 });
                 const skillCompactList = formatCompactList(skills.map((skill) => skill.name));
-                addLoadedSection("Skills", skillCompactList, skillList);
+                addLoadedSection("技能", skillCompactList, skillList);
             }
             const templates = this.session.promptTemplates;
             if (templates.length > 0) {
@@ -1329,7 +1329,7 @@ export class InteractiveMode {
                     },
                 });
                 const promptCompactList = formatCompactList(templates.map((template) => `/${template.name}`));
-                addLoadedSection("Prompts", promptCompactList, templateList);
+                addLoadedSection("提示词", promptCompactList, templateList);
             }
             if (extensions.length > 0) {
                 const groups = this.buildScopeGroups(extensions);
@@ -1338,7 +1338,7 @@ export class InteractiveMode {
                     formatPackagePath: (item) => this.formatExtensionDisplayPath(this.getShortPath(item.path, item.sourceInfo)),
                 });
                 const extensionCompactList = formatCompactList(this.getCompactExtensionLabels(extensions));
-                addLoadedSection("Extensions", extensionCompactList, extList, "mdHeading");
+                addLoadedSection("扩展", extensionCompactList, extList, "mdHeading");
             }
             // Show loaded themes (excluding built-in)
             const loadedThemes = themesResult.themes;
@@ -1353,7 +1353,7 @@ export class InteractiveMode {
                     formatPackagePath: (item) => this.getShortPath(item.path, item.sourceInfo),
                 });
                 const themeCompactList = formatCompactList(customThemes.map((loadedTheme) => loadedTheme.name ?? this.getCompactPathLabel(loadedTheme.sourcePath, loadedTheme.sourceInfo)));
-                addLoadedSection("Themes", themeCompactList, themeList);
+                addLoadedSection("主题", themeCompactList, themeList);
             }
         }
         if (showDiagnostics) {
@@ -1413,7 +1413,7 @@ export class InteractiveMode {
                         return await this.runtimeHost.newSession(options);
                     }
                     catch (error) {
-                        return this.handleFatalRuntimeError("Failed to create session", error);
+                        return this.handleFatalRuntimeError("创建会话失败", error);
                     }
                 },
                 fork: async (entryId, options) => {
@@ -1421,12 +1421,12 @@ export class InteractiveMode {
                         const result = await this.runtimeHost.fork(entryId, options);
                         if (!result.cancelled) {
                             this.editor.setText(result.selectedText ?? "");
-                            this.showStatus("Forked to new session");
+                            this.showStatus("已创建新分支会话");
                         }
                         return { cancelled: result.cancelled };
                     }
                     catch (error) {
-                        return this.handleFatalRuntimeError("Failed to fork session", error);
+                        return this.handleFatalRuntimeError("创建分支会话失败", error);
                     }
                 },
                 navigateTree: async (targetId, options) => {
@@ -1444,7 +1444,7 @@ export class InteractiveMode {
                     if (result.editorText && !this.editor.getText().trim()) {
                         this.editor.setText(result.editorText);
                     }
-                    this.showStatus("Navigated to selected point");
+                    this.showStatus("已跳转到选定位置");
                     void this.flushCompactionQueue({ willRetry: false });
                     return { cancelled: false };
                 },
@@ -1600,8 +1600,11 @@ export class InteractiveMode {
             for (const [shortcutStr, shortcut] of shortcuts) {
                 // Cast to KeyId - extension shortcuts use the same format
                 if (matchesKey(data, shortcutStr)) {
+                    // Patch (patch-voice-enter.mjs): handler 同步返回 false 时放行按键（条件拦截，如录音中才拦截回车）。
+                    const result = shortcut.handler(createContext());
+                    if (result === false) continue;
                     // Run handler async, don't block input
-                    Promise.resolve(shortcut.handler(createContext())).catch((err) => {
+                    Promise.resolve(result).catch((err) => {
                         this.showError(`Shortcut handler error: ${err instanceof Error ? err.message : String(err)}`);
                     });
                     return true;
@@ -1992,11 +1995,11 @@ export class InteractiveMode {
      * Show a confirmation dialog for extensions.
      */
     async showExtensionConfirm(title, message, opts) {
-        const result = await this.showExtensionSelector(`${title}\n${message}`, ["Yes", "No"], opts);
+        const result = await this.showExtensionSelector(`${title}\n${message}`, ["是", "否"], opts);
         return result === "Yes";
     }
     async promptForMissingSessionCwd(error) {
-        const confirmed = await this.showExtensionConfirm("Session cwd not found", formatMissingSessionCwdPrompt(error.issue));
+        const confirmed = await this.showExtensionConfirm("会话工作目录不存在", formatMissingSessionCwdPrompt(error.issue));
         return confirmed ? error.issue.fallbackCwd : undefined;
     }
     /**
@@ -2504,7 +2507,7 @@ export class InteractiveMode {
                 const command = isExcluded ? text.slice(2).trim() : text.slice(1).trim();
                 if (command) {
                     if (this.session.isBashRunning) {
-                        this.showWarning("A bash command is already running. Press Esc to cancel it first.");
+                        this.showWarning("Bash 命令正在运行，请先按 Esc 取消。");
                         this.editor.setText(text);
                         return;
                     }
@@ -2657,7 +2660,7 @@ export class InteractiveMode {
                         errorMessage =
                             retryAttempt > 0
                                 ? `Aborted after ${retryAttempt} retry attempt${retryAttempt > 1 ? "s" : ""}`
-                                : "Operation aborted";
+                                : "操作已取消";
                         this.streamingMessage.errorMessage = errorMessage;
                     }
                     this.streamingComponent.updateContent(this.streamingMessage, false);
@@ -2762,10 +2765,10 @@ export class InteractiveMode {
                 this.clearStatusIndicator("compaction");
                 if (event.aborted) {
                     if (event.reason === "manual") {
-                        this.showError("Compaction cancelled");
+                        this.showError("压缩已取消");
                     }
                     else {
-                        this.showStatus("Auto-compaction cancelled");
+                        this.showStatus("自动压缩已取消");
                     }
                 }
                 else if (event.result) {
@@ -2818,7 +2821,7 @@ export class InteractiveMode {
                 this.clearStatusIndicator("retry");
                 // Show error only on final failure (success shows normal response)
                 if (!event.success) {
-                    this.showError(`Retry failed after ${event.attempt} attempts: ${event.finalError || "Unknown error"}`);
+                    this.showError(`Retry failed after ${event.attempt} attempts: ${event.finalError || "未知错误"}`);
                 }
                 this.ui.requestRender();
                 break;
@@ -3176,7 +3179,7 @@ export class InteractiveMode {
         if (this.chatContainer.children.length > 0) {
             this.chatContainer.addChild(new Spacer(1));
         }
-        this.chatContainer.addChild(new Text(theme.fg("warning", `This project is not trusted. Project ${CONFIG_DIR_NAME} resources and packages are ignored. Use /trust to save a trust decision, then restart pi.`), 1, 0));
+        this.chatContainer.addChild(new Text(theme.fg("warning", `此项目不受信任。项目的 ${CONFIG_DIR_NAME} 资源与包被忽略。使用 /trust 保存信任决策，然后重启 pi。`), 1, 0));
     }
     async getUserInput() {
         const queuedInput = this.pendingUserInputs.shift();
@@ -3249,7 +3252,7 @@ export class InteractiveMode {
         await this.runtimeHost.dispose();
         const resumeCommand = formatResumeCommand(this.sessionManager);
         if (resumeCommand) {
-            process.stdout.write(`${chalk.dim("To resume this session:")} ${resumeCommand}\n`);
+            process.stdout.write(`${chalk.dim("恢复此会话：")} ${resumeCommand}\n`);
         }
         process.exit(0);
     }
@@ -3344,7 +3347,7 @@ export class InteractiveMode {
     }
     handleCtrlZ() {
         if (process.platform === "win32") {
-            this.showStatus("Suspend to background is not supported on Windows");
+            this.showStatus("Windows 不支持挂起到后台");
             return;
         }
         // Keep the event loop alive while suspended. Without this, stopping the TUI
@@ -3408,7 +3411,7 @@ export class InteractiveMode {
     handleDequeue() {
         const restored = this.restoreQueuedMessagesToEditor();
         if (restored === 0) {
-            this.showStatus("No queued messages to restore");
+            this.showStatus("没有待恢复的排队消息");
         }
         else {
             this.showStatus(`Restored ${restored} queued message${restored > 1 ? "s" : ""} to editor`);
@@ -3430,7 +3433,7 @@ export class InteractiveMode {
     cycleThinkingLevel() {
         const newLevel = this.session.cycleThinkingLevel();
         if (newLevel === undefined) {
-            this.showStatus("Current model does not support thinking");
+            this.showStatus("当前模型不支持思考");
         }
         else {
             this.footer.invalidate();
@@ -3442,7 +3445,7 @@ export class InteractiveMode {
         try {
             const result = await this.session.cycleModel(direction);
             if (result === undefined) {
-                const msg = this.session.scopedModels.length > 0 ? "Only one model in scope" : "Only one model available";
+                const msg = this.session.scopedModels.length > 0 ? "范围内只有一个模型" : "只有一个可用模型";
                 this.showStatus(msg);
             }
             else {
@@ -3534,11 +3537,11 @@ export class InteractiveMode {
         const changelogLink = getCapabilities().hyperlinks
             ? hyperlink(theme.fg("accent", changelogUrl), changelogUrl)
             : theme.fg("accent", changelogUrl);
-        const changelogLine = theme.fg("muted", "Changelog: ") + changelogLink;
+        const changelogLine = theme.fg("muted", "更新日志：") + changelogLink;
         const note = release.note?.trim();
         this.chatContainer.addChild(new Spacer(1));
         this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
-        this.chatContainer.addChild(new Text(`${theme.bold(theme.fg("warning", "Update Available"))}\n${updateInstruction}`, 1, 0));
+        this.chatContainer.addChild(new Text(`${theme.bold(theme.fg("warning", "有可用更新"))}\n${updateInstruction}`, 1, 0));
         if (note) {
             this.chatContainer.addChild(new Spacer(1));
             this.chatContainer.addChild(new Markdown(note, 1, 0, this.getMarkdownThemeWithSettings(), {
@@ -3552,11 +3555,11 @@ export class InteractiveMode {
     }
     showPackageUpdateNotification(packages) {
         const action = theme.fg("accent", `${APP_NAME} update --extensions`);
-        const updateInstruction = theme.fg("muted", "Package updates are available. Run ") + action;
+        const updateInstruction = theme.fg("muted", "有可用的包更新。运行 ") + action;
         const packageLines = packages.map((pkg) => `- ${pkg}`).join("\n");
         this.chatContainer.addChild(new Spacer(1));
         this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
-        this.chatContainer.addChild(new Text(`${theme.bold(theme.fg("warning", "Package Updates Available"))}\n${updateInstruction}\n${theme.fg("muted", "Packages:")}\n${packageLines}`, 1, 0));
+        this.chatContainer.addChild(new Text(`${theme.bold(theme.fg("warning", "有可用的包更新"))}\n${updateInstruction}\n${theme.fg("muted", "Packages:")}\n${packageLines}`, 1, 0));
         this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
         this.ui.requestRender();
     }
@@ -3637,7 +3640,7 @@ export class InteractiveMode {
         this.editor.addToHistory?.(text);
         this.editor.setText("");
         this.updatePendingMessagesDisplay();
-        this.showStatus("Queued message for after compaction");
+        this.showStatus("已排队等待压缩后发送的消息");
     }
     isExtensionCommand(text) {
         if (!text.startsWith("/"))
@@ -4253,7 +4256,7 @@ export class InteractiveMode {
                         enabledIds.every((id) => availableModelIds.has(id));
                     const newPatterns = enabledIds === null || allEnabled ? undefined : enabledIds;
                     this.settingsManager.setEnabledModels(newPatterns ? [...newPatterns] : undefined);
-                    this.showStatus("Model selection saved to settings");
+                    this.showStatus("模型选择已保存到设置");
                 },
                 onCancel: () => {
                     done();
@@ -4309,7 +4312,7 @@ export class InteractiveMode {
     showUserMessageSelector() {
         const userMessages = this.session.getUserMessagesForForking();
         if (userMessages.length === 0) {
-            this.showStatus("No messages to fork from");
+            this.showStatus("没有可分支的消息");
             return;
         }
         const initialSelectedId = userMessages[userMessages.length - 1]?.entryId;
@@ -4338,7 +4341,7 @@ export class InteractiveMode {
     async handleCloneCommand() {
         const leafId = this.sessionManager.getLeafId();
         if (!leafId) {
-            this.showStatus("Nothing to clone yet");
+            this.showStatus("暂无内容可克隆");
             return;
         }
         try {
@@ -4348,7 +4351,7 @@ export class InteractiveMode {
                 return;
             }
             this.editor.setText("");
-            this.showStatus("Cloned to new session");
+            this.showStatus("已克隆到新会话");
         }
         catch (error) {
             this.showError(error instanceof Error ? error.message : String(error));
@@ -4359,7 +4362,7 @@ export class InteractiveMode {
         const realLeafId = this.sessionManager.getLeafId();
         const initialFilterMode = this.settingsManager.getTreeFilterMode();
         if (tree.length === 0) {
-            this.showStatus("No entries in session");
+            this.showStatus("会话中没有条目");
             return;
         }
         this.showSelector((done) => {
@@ -4367,7 +4370,7 @@ export class InteractiveMode {
                 // Selecting the current leaf is a no-op (already there)
                 if (entryId === this.sessionManager.getLeafId()) {
                     done();
-                    this.showStatus("Already at this point");
+                    this.showStatus("已在此位置");
                     return;
                 }
                 // Ask about summarization
@@ -4378,10 +4381,10 @@ export class InteractiveMode {
                 // Check if we should skip the prompt (user preference to always default to no summary)
                 if (!this.settingsManager.getBranchSummarySkipPrompt()) {
                     while (true) {
-                        const summaryChoice = await this.showExtensionSelector("Summarize branch?", [
-                            "No summary",
-                            "Summarize",
-                            "Summarize with custom prompt",
+                        const summaryChoice = await this.showExtensionSelector("是否汇总分支？", [
+                            "不汇总",
+                            "汇总",
+                            "使用自定义提示词汇总",
                         ]);
                         if (summaryChoice === undefined) {
                             // User pressed escape - re-show tree selector with same selection
@@ -4390,7 +4393,7 @@ export class InteractiveMode {
                         }
                         wantsSummary = summaryChoice !== "No summary";
                         if (summaryChoice === "Summarize with custom prompt") {
-                            customInstructions = await this.showExtensionEditor("Custom summarization instructions");
+                            customInstructions = await this.showExtensionEditor("自定义汇总说明");
                             if (customInstructions === undefined) {
                                 // User cancelled - loop back to summary selector
                                 continue;
@@ -4424,12 +4427,12 @@ export class InteractiveMode {
                     });
                     if (result.aborted) {
                         // Summarization aborted - re-show tree selector with same selection
-                        this.showStatus("Branch summarization cancelled");
+                        this.showStatus("分支汇总已取消");
                         this.showTreeSelector(entryId);
                         return;
                     }
                     if (result.cancelled) {
-                        this.showStatus("Navigation cancelled");
+                        this.showStatus("导航已取消");
                         return;
                     }
                     // Update UI
@@ -4509,14 +4512,14 @@ export class InteractiveMode {
             if (result.cancelled) {
                 return result;
             }
-            this.showStatus("Resumed session");
+            this.showStatus("已恢复会话");
             return result;
         }
         catch (error) {
             if (error instanceof MissingSessionCwdError) {
                 const selectedCwd = await this.promptForMissingSessionCwd(error);
                 if (!selectedCwd) {
-                    this.showStatus("Resume cancelled");
+                    this.showStatus("恢复已取消");
                     return { cancelled: true };
                 }
                 const result = await this.runtimeHost.switchSession(sessionPath, {
@@ -4527,7 +4530,7 @@ export class InteractiveMode {
                 if (result.cancelled) {
                     return result;
                 }
-                this.showStatus("Resumed session in current cwd");
+                this.showStatus("已在当前目录恢复会话");
                 return result;
             }
             return this.handleFatalRuntimeError("Failed to resume session", error);
@@ -4639,8 +4642,8 @@ export class InteractiveMode {
             return;
         }
         const title = providerOptions?.[0]
-            ? `Select authentication method for ${providerOptions[0].name}:`
-            : "Select authentication method:";
+            ? `为 ${providerOptions[0].name} 选择认证方式：`
+            : "选择认证方式：";
         this.showSelector((done) => {
             const selector = new ExtensionSelectorComponent(title, options, (option) => {
                 done();
@@ -4664,9 +4667,9 @@ export class InteractiveMode {
         const providerOptions = this.getLoginProviderOptions(authType);
         if (providerOptions.length === 0) {
             const message = authType === "oauth"
-                ? "No subscription providers available."
+                ? "没有可用的订阅提供商。"
                 : authType === "api_key"
-                    ? "No API key providers available."
+                    ? "没有可用的 API 密钥提供商。"
                     : "No login providers available.";
             this.showStatus(message);
             return;
@@ -4705,7 +4708,7 @@ export class InteractiveMode {
             return;
         }
         if (providerOptions.length === 0) {
-            this.showStatus("No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.");
+            this.showStatus("没有要移除的已存储凭据。/logout 只移除通过 /login 保存的凭据；环境变量和 models.json 配置不变。");
             return;
         }
         this.showSelector((done) => {
@@ -4740,88 +4743,66 @@ export class InteractiveMode {
     }
     async completeProviderAuthentication(providerId, providerName, authType, previousModel) {
         const actionLabel = authType === "oauth" ? `Logged in to ${providerName}` : `Saved API key for ${providerName}`;
-        const session = this.session;
-        // Dynamic catalogs may be empty until the first authenticated network refresh.
-        const deferSelection = isUnknownModel(previousModel) &&
-            hasDefaultModelProvider(providerId) &&
-            !session.modelRuntime
-                .getAvailableSnapshot()
-                .some((model) => model.provider === providerId && model.id === defaultModelPerProvider[providerId]);
-        const finishAuthentication = async () => {
-            let selectedModel;
-            let selectionError;
-            if (isUnknownModel(previousModel)) {
-                const availableModels = this.session.modelRuntime.getAvailableSnapshot();
-                const providerModels = availableModels.filter((model) => model.provider === providerId);
-                // Matches LLAMA_PROVIDER_ID from extensions/llama/provider.ts; kept inline to avoid coupling interactive mode to the built-in extension.
-                if (providerId === "llama.cpp") {
-                    selectionError = llamaCppPostLoginGuidance(actionLabel, providerModels.length);
-                }
-                else if (!hasDefaultModelProvider(providerId)) {
-                    selectionError = `${actionLabel}, but no default model is configured for provider "${providerId}". Use /model to select a model.`;
-                }
-                else if (providerModels.length === 0) {
-                    selectionError = `${actionLabel}, but no models are available for that provider. Use /model to select a model.`;
-                }
-                else {
-                    const defaultModelId = defaultModelPerProvider[providerId];
-                    // Radius catalogs vary by account; prefer balanced, then use catalog order.
-                    selectedModel =
-                        providerModels.find((model) => model.id === defaultModelId) ??
-                            (providerId === "radius" ? providerModels[0] : undefined);
-                    if (!selectedModel) {
-                        selectionError = `${actionLabel}, but its default model "${defaultModelId}" is not available. Use /model to select a model.`;
-                    }
-                    else {
-                        try {
-                            await this.session.setModel(selectedModel, { persist: true });
-                        }
-                        catch (error) {
-                            selectedModel = undefined;
-                            const errorMessage = error instanceof Error ? error.message : String(error);
-                            selectionError = `${actionLabel}, but selecting its default model failed: ${errorMessage}. Use /model to select a model.`;
-                        }
-                    }
-                }
+        let selectedModel;
+        let selectionError;
+        if (isUnknownModel(previousModel)) {
+            const availableModels = this.session.modelRuntime.getAvailableSnapshot();
+            const providerModels = availableModels.filter((model) => model.provider === providerId);
+            // Matches LLAMA_PROVIDER_ID from extensions/llama/provider.ts; kept inline to avoid coupling interactive mode to the built-in extension.
+            if (providerId === "llama.cpp") {
+                selectionError = llamaCppPostLoginGuidance(actionLabel, providerModels.length);
             }
-            await this.updateAvailableProviderCount();
-            this.footer.invalidate();
-            this.updateEditorBorderColor();
-            if (selectedModel) {
-                this.showStatus(`${actionLabel}. Selected ${selectedModel.id}. Credentials saved to ${getAuthPath()}`);
-                void this.maybeWarnAboutAnthropicSubscriptionAuth(selectedModel);
-                this.checkDaxnutsEasterEgg(selectedModel);
+            else if (!hasDefaultModelProvider(providerId)) {
+                selectionError = `${actionLabel}, but no default model is configured for provider "${providerId}". Use /model to select a model.`;
+            }
+            else if (providerModels.length === 0) {
+                selectionError = `${actionLabel}, but no models are available for that provider. Use /model to select a model.`;
             }
             else {
-                this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}`);
-                if (selectionError) {
-                    this.showError(selectionError);
+                const defaultModelId = defaultModelPerProvider[providerId];
+                selectedModel = providerModels.find((model) => model.id === defaultModelId);
+                if (!selectedModel) {
+                    selectionError = `${actionLabel}, but its default model "${defaultModelId}" is not available. Use /model to select a model.`;
                 }
                 else {
-                    void this.maybeWarnAboutAnthropicSubscriptionAuth();
+                    try {
+                        await this.session.setModel(selectedModel, { persist: true });
+                    }
+                    catch (error) {
+                        selectedModel = undefined;
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        selectionError = `${actionLabel}, but selecting its default model failed: ${errorMessage}. Use /model to select a model.`;
+                    }
                 }
             }
-        };
-        if (deferSelection) {
-            this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}. Refreshing model catalog…`);
+        }
+        await this.updateAvailableProviderCount();
+        this.footer.invalidate();
+        this.updateEditorBorderColor();
+        if (selectedModel) {
+            this.showStatus(`${actionLabel}. Selected ${selectedModel.id}. Credentials saved to ${getAuthPath()}`);
+            void this.maybeWarnAboutAnthropicSubscriptionAuth(selectedModel);
+            this.checkDaxnutsEasterEgg(selectedModel);
         }
         else {
-            await finishAuthentication();
+            this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}`);
+            if (selectionError) {
+                this.showError(selectionError);
+            }
+            else {
+                void this.maybeWarnAboutAnthropicSubscriptionAuth();
+            }
         }
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15_000);
-        void session.modelRuntime
+        void this.session.modelRuntime
             .refresh({ providers: [providerId], signal: controller.signal })
-            .then(async (result) => {
+            .then((result) => {
             if (result.aborted) {
                 this.showWarning(`${actionLabel}, but its model catalog refresh timed out; using cached models.`);
             }
             else if (result.errors.size > 0) {
                 this.showWarning(`${actionLabel}, but its model catalog could not be refreshed; using cached models.`);
-            }
-            // Do not replace a model or session selected while the refresh was running.
-            if (deferSelection && this.session === session && session.model === previousModel) {
-                await finishAuthentication();
             }
             this.updateAvailableProviderCount();
             this.footer.invalidate();
@@ -4853,8 +4834,8 @@ export class InteractiveMode {
         }, providerName);
         if (providerId === "amazon-bedrock") {
             dialog.showDetails([
-                theme.fg("text", "You can also use an AWS profile, IAM keys, or role-based credentials."),
-                theme.fg("muted", "See:"),
+                theme.fg("text", "也可以使用 AWS 配置文件、IAM 密钥或基于角色的凭据。"),
+                theme.fg("muted", "参见："),
                 theme.fg("accent", `  ${path.join(getDocsPath(), "providers.md")}`),
             ]);
         }
@@ -4945,7 +4926,7 @@ export class InteractiveMode {
         }
         else if (event.type === "device_code") {
             dialog.showDeviceCode(event);
-            dialog.showWaiting("Waiting for authentication...");
+            dialog.showWaiting("等待认证...");
         }
         else if (event.type === "info") {
             dialog.showInfo(event.message, event.links);
@@ -4995,11 +4976,11 @@ export class InteractiveMode {
     // =========================================================================
     async handleReloadCommand() {
         if (this.session.isStreaming) {
-            this.showWarning("Wait for the current response to finish before reloading.");
+            this.showWarning("请等待当前回复完成后再重新加载。");
             return;
         }
         if (this.session.isCompacting) {
-            this.showWarning("Wait for compaction to finish before reloading.");
+            this.showWarning("请等待压缩完成后再重新加载。");
             return;
         }
         this.resetExtensionUI();
@@ -5007,7 +4988,7 @@ export class InteractiveMode {
         const borderColor = (s) => theme.fg("border", s);
         reloadBox.addChild(new DynamicBorder(borderColor));
         reloadBox.addChild(new Spacer(1));
-        reloadBox.addChild(new Text(theme.fg("muted", "Reloading keybindings, extensions, skills, prompts, themes, and context files..."), 1, 0));
+        reloadBox.addChild(new Text(theme.fg("muted", "正在重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件..."), 1, 0));
         reloadBox.addChild(new Spacer(1));
         reloadBox.addChild(new DynamicBorder(borderColor));
         const previousEditor = this.editor;
@@ -5057,8 +5038,8 @@ export class InteractiveMode {
                 this.showError(`models.json error: ${modelsJsonError}`);
             }
             this.showStatus(savedImplicitProjectTrust
-                ? "Reloaded keybindings, extensions, skills, prompts, themes, and context files; saved project trust"
-                : "Reloaded keybindings, extensions, skills, prompts, themes, and context files");
+                ? "已重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件；已保存项目信任"
+                : "已重新加载键盘绑定、扩展、技能、提示模板、主题和上下文文件");
             dismissReloadBox(this.editor);
             reloadBoxDismissed = true;
         }
@@ -5118,9 +5099,9 @@ export class InteractiveMode {
             this.showError("Usage: /import <path.jsonl>");
             return;
         }
-        const confirmed = await this.showExtensionConfirm("Import session", `Replace current session with ${inputPath}?`);
+        const confirmed = await this.showExtensionConfirm("导入会话", `用 ${inputPath} 替换当前会话？`);
         if (!confirmed) {
-            this.showStatus("Import cancelled");
+            this.showStatus("导入已取消");
             return;
         }
         try {
@@ -5174,7 +5155,7 @@ export class InteractiveMode {
         }
         const text = this.session.getLastAssistantText();
         if (!text) {
-            this.showError("No agent messages to copy yet.");
+            this.showError("尚无助手消息可复制。");
             return;
         }
         try {
@@ -5183,7 +5164,7 @@ export class InteractiveMode {
                 this.ui.flash("Copied!");
             }
             else {
-                this.showStatus("Copied last agent message to clipboard");
+                this.showStatus("已复制上一条助手消息到剪贴板");
             }
         }
         catch (error) {
@@ -5199,7 +5180,7 @@ export class InteractiveMode {
                 this.chatContainer.addChild(new Text(theme.fg("dim", `Session name: ${currentName}`), 1, 0));
             }
             else {
-                this.showWarning("Usage: /name <name>");
+                this.showWarning("用法: /name <名称>");
             }
             this.ui.requestRender();
             return;
@@ -5222,7 +5203,7 @@ export class InteractiveMode {
         // resolves to a concrete responseModel). Usage without model attribution is
         // grouped separately so the breakdown reconciles with the session total.
         const usageBreakdown = getUsageCostBreakdown(entries);
-        let info = `${theme.bold("Session Info")}\n\n`;
+        let info = `${theme.bold("会话信息")}\n\n`;
         if (sessionName) {
             info += `${theme.fg("dim", "Name:")} ${sessionName}\n`;
         }

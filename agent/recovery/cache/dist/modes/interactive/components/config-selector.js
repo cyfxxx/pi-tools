@@ -11,10 +11,10 @@ import { DynamicBorder } from "./dynamic-border.js";
 import { keyHint, rawKeyHint } from "./keybinding-hints.js";
 const RESOURCE_TYPES = ["extensions", "skills", "prompts", "themes"];
 const RESOURCE_TYPE_LABELS = {
-    extensions: "Extensions",
-    skills: "Skills",
-    prompts: "Prompts",
-    themes: "Themes",
+    extensions: "扩展",
+    skills: "技能",
+    prompts: "提示词",
+    themes: "主题",
 };
 function formatBaseDir(baseDir) {
     const homeDir = homedir();
@@ -40,12 +40,12 @@ function getGroupLabel(metadata, agentDir) {
     if (metadata.source === "auto") {
         if (metadata.baseDir) {
             return metadata.scope === "user"
-                ? `User (${formatBaseDir(metadata.baseDir)})`
-                : `Project (${formatBaseDir(metadata.baseDir)})`;
+                ? `用户 (${formatBaseDir(metadata.baseDir)})`
+                : `项目 (${formatBaseDir(metadata.baseDir)})`;
         }
-        return metadata.scope === "user" ? `User (${formatBaseDir(agentDir)})` : `Project (${CONFIG_DIR_NAME}/)`;
+        return metadata.scope === "user" ? `用户 (${formatBaseDir(agentDir)})` : `项目 (${CONFIG_DIR_NAME}/)`;
     }
-    return metadata.scope === "user" ? "User settings" : "Project settings";
+    return metadata.scope === "user" ? "用户设置" : "项目设置";
 }
 function buildGroups(resolved, agentDir) {
     const groupMap = new Map();
@@ -134,10 +134,10 @@ class ConfigSelectorHeader {
     }
     invalidate() { }
     render(width) {
-        const title = theme.bold(this.writeScope === "project" ? "Project Local Resources" : "Global Resources");
+        const title = theme.bold(this.writeScope === "project" ? "项目本地资源" : "全局资源");
         const sep = theme.fg("muted", " · ");
-        const switchHint = this.projectModeAvailable ? keyHint("tui.input.tab", "switch mode") + sep : "";
-        const actionHint = this.writeScope === "project" ? rawKeyHint("space", "cycle inherit/+/-") : rawKeyHint("space", "toggle");
+        const switchHint = this.projectModeAvailable ? keyHint("tui.input.tab", "切换模式") + sep : "";
+        const actionHint = this.writeScope === "project" ? rawKeyHint("space", "循环 继承/+/-") : rawKeyHint("space", "toggle");
         const hint = switchHint + actionHint + sep + rawKeyHint("esc", "close");
         const spacing = Math.max(1, width - visibleWidth(title) - visibleWidth(hint));
         const scopeHint = this.writeScope === "project"
@@ -301,7 +301,7 @@ class ResourceList {
         lines.push(...this.searchInput.render(width));
         lines.push("");
         if (this.filteredItems.length === 0) {
-            lines.push(theme.fg("muted", "  No resources found"));
+            lines.push(theme.fg("muted", "  未找到资源"));
             return lines;
         }
         // Calculate visible range

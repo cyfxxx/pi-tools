@@ -1,7 +1,7 @@
 import { mkdir as fsMkdir, writeFile as fsWriteFile } from "fs/promises";
-import { dirname, extname } from "path";
-import { EOL } from "os";
+import { dirname } from "path";
 import { Type } from "typebox";
+import { getExperimentalToolSampling } from "../experimental.js";
 import { withFileMutationQueue } from "./file-mutation-queue.js";
 import { resolveToCwd } from "./path-utils.js";
 import { writeRenderers } from "./renderers/write.js";
@@ -15,13 +15,7 @@ export const writeToolSystemPromptContribution = {
     guidelines: ["Use write only for new files or complete rewrites."],
 };
 const defaultWriteOperations = {
-    writeFile: (path, content) => {
-        // Use CRLF for .bat files on Windows, LF otherwise
-        const isBat = extname(path).toLowerCase() === ".bat";
-        const lineEnding = isBat ? "\r\n" : EOL;
-        const normalizedContent = content.replace(/\r?\n/g, lineEnding);
-        return fsWriteFile(path, normalizedContent, "utf-8");
-    },
+    writeFile: (path, content) => fsWriteFile(path, content, "utf-8"),
     mkdir: (dir) => fsMkdir(dir, { recursive: true }).then(() => { }),
 };
 export function createWriteToolDefinition(cwd, options) {
@@ -33,7 +27,7 @@ export function createWriteToolDefinition(cwd, options) {
         promptSnippet: writeToolSystemPromptContribution.snippet,
         promptGuidelines: [...writeToolSystemPromptContribution.guidelines],
         parameters: writeSchema,
-        constrainedSampling: { type: "json_schema", strict: "prefer" },
+        constrainedSampling: getExperimentalToolSampling(),
         async execute(_toolCallId, { path, content }, signal, _onUpdate, ctx) {
             const absolutePath = resolveToCwd(path, ctx?.cwd || cwd);
             const dir = dirname(absolutePath);

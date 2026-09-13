@@ -106,12 +106,12 @@ class SessionSelectorHeader {
     }
     invalidate() { }
     render(width) {
-        const title = this.scope === "current" ? "Resume Session (Current Folder)" : "Resume Session (All)";
+        const title = this.scope === "current" ? "恢复会话（当前文件夹）" : "恢复会话（全部）";
         const leftText = theme.bold(title);
-        const sortLabel = this.sortMode === "threaded" ? "Threaded" : this.sortMode === "recent" ? "Recent" : "Fuzzy";
-        const sortText = theme.fg("muted", "Sort: ") + theme.fg("accent", sortLabel);
-        const nameLabel = this.nameFilter === "all" ? "All" : "Named";
-        const nameText = theme.fg("muted", "Name: ") + theme.fg("accent", nameLabel);
+        const sortLabel = this.sortMode === "threaded" ? "线程视图" : this.sortMode === "recent" ? "最近" : "模糊";
+        const sortText = theme.fg("muted", "排序：") + theme.fg("accent", sortLabel);
+        const nameLabel = this.nameFilter === "all" ? "全部" : "有名称";
+        const nameText = theme.fg("muted", "名称：") + theme.fg("accent", nameLabel);
         let scopeText;
         if (this.loading) {
             const progressText = this.loadProgress ? `${this.loadProgress.loaded}/${this.loadProgress.total}` : "...";
@@ -325,7 +325,7 @@ class SessionList {
             return;
         // Prevent deleting current session
         if (this.isCurrentSessionPath(selected.session.path)) {
-            this.onError?.("Cannot delete the currently active session");
+            this.onError?.("不能删除当前活动会话");
             return;
         }
         this.setConfirmingDeletePath(selected.session.path);
@@ -357,7 +357,7 @@ class SessionList {
                 emptyMessage = "  No sessions found";
             }
             else {
-                // "Current folder" scope - hint to try "all"
+                // "当前文件夹" scope - hint to try "all"
                 emptyMessage = "  No sessions in current folder. Press Tab to view all.";
             }
             lines.push(theme.fg("muted", truncateToWidth(emptyMessage, width, "…")));
@@ -703,7 +703,7 @@ export class SessionSelectorComponent extends Container {
                 const sessions = this.scope === "all" ? (this.allSessions ?? []) : (this.currentSessions ?? []);
                 const showCwd = this.scope === "all";
                 this.sessionList.setSessions(sessions, showCwd);
-                const msg = result.method === "trash" ? "Session moved to trash" : "Session deleted";
+                const msg = result.method === "trash" ? "会话已移至回收站" : "会话已删除";
                 this.header.setStatusMessage({ type: "info", message: msg }, 2000);
                 await this.refreshSessionsAfterMutation();
             }
@@ -725,7 +725,7 @@ export class SessionSelectorComponent extends Container {
         this.renameInput.setValue(currentName ?? "");
         this.renameInput.focused = true;
         const panel = new Container();
-        panel.addChild(new Text(theme.bold("Rename Session"), 1, 0));
+        panel.addChild(new Text(theme.bold("重命名会话"), 1, 0));
         panel.addChild(new Spacer(1));
         panel.addChild(this.renameInput);
         panel.addChild(new Spacer(1));

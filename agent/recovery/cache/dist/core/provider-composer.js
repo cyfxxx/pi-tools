@@ -201,7 +201,7 @@ function composeApiKeyAuth(providerId, base, config, extension) {
         login: inherited?.login ??
             (async (interaction) => ({
                 type: "api_key",
-                key: await interaction.prompt({ type: "secret", message: "Enter API key" }),
+                key: await interaction.prompt({ type: "secret", message: "输入 API 密钥" }),
             })),
         check: async (input) => {
             if (input.credential) {

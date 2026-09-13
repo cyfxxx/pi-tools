@@ -4,6 +4,7 @@ import { spawn } from "child_process";
 import { Type } from "typebox";
 import { waitForChildProcess } from "../../utils/child-process.js";
 import { getShellConfig, getShellEnv, killProcessTree, trackDetachedChildPid, untrackDetachedChildPid, } from "../../utils/shell.js";
+import { getExperimentalToolSampling } from "../experimental.js";
 import { OutputAccumulator } from "./output-accumulator.js";
 import { BASH_UPDATE_THROTTLE_MS, createShellRenderers } from "./renderers/bash.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
@@ -150,7 +151,7 @@ export function createShellToolDefinition(cwd, config, options) {
         promptSnippet: config.promptSnippet,
         promptGuidelines: exposeSessionEnvironment && config.promptGuidelines ? [...config.promptGuidelines] : undefined,
         parameters: bashSchema,
-        constrainedSampling: { type: "json_schema", strict: "prefer" },
+        constrainedSampling: getExperimentalToolSampling(),
         async execute(_toolCallId, { command, timeout }, signal, onUpdate, ctx) {
             const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
             const spawnContext = resolveSpawnContext(resolvedCommand, ctx?.cwd || cwd, spawnHook, exposeSessionEnvironment, ctx);

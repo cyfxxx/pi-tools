@@ -110,7 +110,7 @@ export class DaxnutsComponent {
         const textPhase = Math.max(0, this.tick - this.maxTicks * 0.6);
         if (textPhase > 0 || this.tick >= this.maxTicks) {
             lines.push(center(t.fg("accent", "Free Kimi K2.5 via OpenCode Zen")));
-            lines.push(center(t.fg("success", '"Powered by daxnuts"')));
+            lines.push(center(t.fg("success", '"由 daxnuts 驱动"')));
             lines.push(center(t.fg("muted", "— @thdxr")));
         }
         else {
@@ -120,7 +120,7 @@ export class DaxnutsComponent {
         }
         lines.push("");
         if (textPhase > 2 || this.tick >= this.maxTicks) {
-            lines.push(center(t.fg("dim", "Try OpenCode")));
+            lines.push(center(t.fg("dim", "试试 OpenCode")));
             lines.push(center(t.fg("mdLink", "https://mistral.ai/news/mistral-vibe-2-0")));
         }
         else {

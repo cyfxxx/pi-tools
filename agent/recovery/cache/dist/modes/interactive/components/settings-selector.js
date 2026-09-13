@@ -7,18 +7,18 @@ import { keyDisplayText } from "./keybinding-hints.js";
 import { SelectSubmenu, SteppedSubmenu } from "./settings-submenu.js";
 const MODEL_PICKER_LAYOUT = { minPrimaryColumnWidth: 12, maxPrimaryColumnWidth: 46 };
 const THINKING_DESCRIPTIONS = {
-    off: "No reasoning",
-    minimal: "Very brief reasoning (~1k tokens)",
-    low: "Light reasoning (~2k tokens)",
-    medium: "Moderate reasoning (~8k tokens)",
-    high: "Deep reasoning (~16k tokens)",
-    xhigh: "Extra-high reasoning (~32k tokens)",
-    max: "Maximum reasoning",
+    off: `无推理`,
+    minimal: `极简推理（约 1K token）`,
+    low: `轻度推理（约 2K token）`,
+    medium: `中等推理（约 8K token）`,
+    high: `深度推理（约 16K token）`,
+    xhigh: `最大推理（约 32K token）`,
+    max: `最大推理`,
 };
 const DEFAULT_PROJECT_TRUST_LABELS = {
-    ask: "Ask",
-    always: "Always trust",
-    never: "Never trust",
+    ask: "询问",
+    always: "始终信任",
+    never: "永不信任",
 };
 const DEFAULT_PROJECT_TRUST_BY_LABEL = new Map(Object.entries(DEFAULT_PROJECT_TRUST_LABELS).map(([value, label]) => [label, value]));
 /**
@@ -33,8 +33,8 @@ class WarningSettingsSubmenu extends Container {
         const items = [
             {
                 id: "anthropic-extra-usage",
-                label: "Anthropic extra usage",
-                description: "Warn when Anthropic subscription auth may use paid extra usage",
+                label: `Anthropic 额外用量`,
+                description: `当 Anthropic 订阅认证可能产生付费额外用量时发出警告`,
                 currentValue: (this.state.anthropicExtraUsage ?? true) ? "true" : "false",
                 values: ["true", "false"],
             },
@@ -81,7 +81,7 @@ function singleModeThemeItems(availableThemes, currentTheme) {
         {
             value: AUTOMATIC_THEME_VALUE,
             label: "  Automatic",
-            description: "Use separate themes for light and dark terminal appearance",
+            description: `为浅色和深色终端分别使用不同主题`,
         },
         ...themeItems(availableThemes, currentTheme),
     ];
@@ -143,7 +143,7 @@ class ThemeSubmenu extends Container {
     }
     showSingleMenu() {
         this.mode = "single";
-        const menu = new SelectSubmenu("Theme", "Select a theme, or choose Automatic to follow terminal appearance.", singleModeThemeItems(this.availableThemes, this.singleTheme), this.singleTheme, (value) => {
+        const menu = new SelectSubmenu("主题", "Select a theme, or choose Automatic to follow terminal appearance.", singleModeThemeItems(this.availableThemes, this.singleTheme), this.singleTheme, (value) => {
             if (value === AUTOMATIC_THEME_VALUE) {
                 this.mode = "automatic";
                 this.callbacks.onThemePreview?.(this.getThemeSetting());
@@ -168,8 +168,8 @@ class ThemeSubmenu extends Container {
         const items = [
             {
                 id: "light-theme",
-                label: "Light theme",
-                description: "Theme to use in automatic mode when the terminal is light",
+                label: `浅色主题`,
+                description: `终端为浅色时自动模式使用的主题`,
                 currentValue: this.lightTheme,
                 submenu: (currentValue, done) => this.createThemeSelect("Light Theme", "Select the theme to use for light terminal appearance", currentValue, done, (value) => {
                     this.lightTheme = value;
@@ -179,8 +179,8 @@ class ThemeSubmenu extends Container {
             },
             {
                 id: "dark-theme",
-                label: "Dark theme",
-                description: "Theme to use in automatic mode when the terminal is dark",
+                label: `深色主题`,
+                description: `终端为深色时自动模式使用的主题`,
                 currentValue: this.darkTheme,
                 submenu: (currentValue, done) => this.createThemeSelect("Dark Theme", "Select the theme to use for dark terminal appearance", currentValue, done, (value) => {
                     this.darkTheme = value;
@@ -190,15 +190,15 @@ class ThemeSubmenu extends Container {
             },
             {
                 id: "apply",
-                label: "Apply",
-                description: "Save and go back",
+                label: `应用`,
+                description: `保存并返回`,
                 currentValue: "save and go back",
                 values: ["save and go back"],
             },
             {
                 id: "single-mode",
-                label: "Change mode",
-                description: "Switch to one theme for light and dark",
+                label: `切换模式`,
+                description: `切换为浅色深色共用同一主题`,
                 currentValue: "switch to single theme",
                 values: ["switch to single theme"],
             },
@@ -260,106 +260,106 @@ export class SettingsSelectorComponent extends Container {
         const items = [
             {
                 id: "autocompact",
-                label: "Auto-compact",
-                description: "Automatically compact context when it gets too large",
+                label: `自动压缩`,
+                description: `上下文过大时自动压缩`,
                 currentValue: config.autoCompact ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "steering-mode",
-                label: "Steering mode",
-                description: "Enter while streaming queues steering messages. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.",
+                label: `引导模式`,
+                description: `流式输出时按 Enter 排队引导消息。"one-at-a-time"：逐个发送并等待回复；"all"：全部一次发送`,
                 currentValue: config.steeringMode,
                 values: ["one-at-a-time", "all"],
             },
             {
                 id: "follow-up-mode",
-                label: "Follow-up mode",
-                description: `${followUpKey} queues follow-up messages until agent stops. 'one-at-a-time': deliver one, wait for response. 'all': deliver all at once.`,
+                label: `跟进模式`,
+                description: `跟进消息排队直到代理停止。"one-at-a-time"：逐个发送并等待回复；"all"：全部一次发送`,
                 currentValue: config.followUpMode,
                 values: ["one-at-a-time", "all"],
             },
             {
                 id: "transport",
-                label: "Transport",
-                description: "Preferred transport for providers that support multiple transports",
+                label: `传输协议`,
+                description: `多传输协议提供商的首选传输方式`,
                 currentValue: config.transport,
                 values: ["sse", "websocket", "websocket-cached", "auto"],
             },
             {
                 id: "http-idle-timeout",
-                label: "HTTP idle timeout",
-                description: "Maximum idle gap while waiting for HTTP headers or body chunks. Disable for local models that pause longer than five minutes.",
+                label: `HTTP 空闲超时`,
+                description: `等待 HTTP 标头或数据块时的最大空闲间隙。本地模型暂停超 5 分钟时请关闭此选项`,
                 currentValue: formatHttpIdleTimeoutMs(config.httpIdleTimeoutMs),
                 values: HTTP_IDLE_TIMEOUT_CHOICES.map((choice) => choice.label),
             },
             {
                 id: "hide-thinking",
-                label: "Hide thinking",
-                description: "Hide thinking blocks in assistant responses",
+                label: `隐藏思考过程`,
+                description: `隐藏助手回复中的思考块`,
                 currentValue: config.hideThinkingBlock ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "mermaid-rendering",
-                label: "Mermaid diagrams",
-                description: "Render Mermaid code blocks as Unicode diagrams",
+                label: `Mermaid 图表`,
+                description: `将 Mermaid 代码块渲染为 Unicode 图表`,
                 currentValue: config.mermaidRenderingMode,
                 values: ["off", "final", "streaming"],
             },
             {
                 id: "cache-miss-notices",
-                label: "Cache miss notices",
-                description: "Show transcript notices for cache costs and provider recovery diagnostics",
+                label: `缓存未命中通知`,
+                description: `显示缓存成本和提供者恢复诊断的通知`,
                 currentValue: config.showCacheMissNotices ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "collapse-changelog",
-                label: "Collapse changelog",
-                description: "Show condensed changelog after updates",
+                label: `折叠更新日志`,
+                description: `更新后显示精简版更新日志`,
                 currentValue: config.collapseChangelog ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "quiet-startup",
-                label: "Quiet startup",
-                description: "Disable verbose printing at startup",
+                label: `静默启动`,
+                description: `启动时不打印详细信息`,
                 currentValue: config.quietStartup ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "install-telemetry",
-                label: "Install telemetry",
-                description: "Send an anonymous version/update ping after changelog-detected updates",
+                label: `安装遥测`,
+                description: `在检测到更新后发送匿名版本/更新通知`,
                 currentValue: config.enableInstallTelemetry ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "default-project-trust",
-                label: "Default project trust",
-                description: "Fallback behavior when no extension or saved trust decision decides project trust",
+                label: `默认项目信任`,
+                description: `当扩展或已保存的信任决策未决定项目信任时的回退行为`,
                 currentValue: DEFAULT_PROJECT_TRUST_LABELS[config.defaultProjectTrust],
                 values: Object.values(DEFAULT_PROJECT_TRUST_LABELS),
             },
             {
                 id: "double-escape-action",
-                label: "Double-escape action",
-                description: "Action when pressing Escape twice with empty editor",
+                label: `双击 Esc 动作`,
+                description: `编辑器为空时双击 Esc 触发的动作`,
                 currentValue: config.doubleEscapeAction,
                 values: ["tree", "fork", "none"],
             },
             {
                 id: "tree-filter-mode",
-                label: "Tree filter mode",
-                description: "Default filter when opening /tree",
+                label: `树过滤器模式`,
+                description: `打开 /tree 时的默认过滤器`,
                 currentValue: config.treeFilterMode,
                 values: ["default", "no-tools", "user-only", "labeled-only", "all"],
             },
             {
                 id: "warnings",
-                label: "Warnings",
-                description: "Enable or disable individual warnings",
+                label: `警告`,
+                description: `启用或禁用单个警告`,
                 currentValue: "configure",
                 submenu: (_currentValue, done) => new WarningSettingsSubmenu(currentWarnings, (warnings) => {
                     currentWarnings = warnings;
@@ -368,15 +368,15 @@ export class SettingsSelectorComponent extends Container {
             },
             {
                 id: "model-thinking",
-                label: "Default thinking level per model",
-                description: `Override the default thinking level for specific models. ${cycleThinkingKey} cycles in-session.`,
+                label: `按模型默认思考深度`,
+                description: `为特定模型覆盖默认思考深度。会话内按 ${cycleThinkingKey} 循环切换。`,
                 currentValue: modelThinkingOverridesSummary(currentModelThinkingLevels),
                 submenu: (_currentValue, done) => {
                     const steps = [
                         {
                             key: "model",
                             title: "Per-Model Thinking Level",
-                            description: "Select a model to configure",
+                            description: `选择要配置的模型`,
                             options: () => {
                                 const sorted = [...config.availableDefaultModels].sort((a, b) => {
                                     const aKey = modelSettingKey(a);
@@ -404,7 +404,7 @@ export class SettingsSelectorComponent extends Container {
                                     items.push({
                                         value: "__none__",
                                         label: "No models available",
-                                        description: "Log in to a provider or configure an API key first",
+                                        description: `请先登录提供商或配置 API 密钥`,
                                     });
                                 }
                                 return items;
@@ -419,7 +419,7 @@ export class SettingsSelectorComponent extends Container {
                                 const m = defaultModelByValue.get(ctx.model);
                                 return `Thinking Level for ${m ? modelDisplayLabel(m) : ctx.model}`;
                             },
-                            description: "Select default thinking level for this model",
+                            description: `选择此模型的默认思考深度`,
                             options: (ctx) => {
                                 const model = defaultModelByValue.get(ctx.model);
                                 if (!model)
@@ -435,7 +435,7 @@ export class SettingsSelectorComponent extends Container {
                                     items.push({
                                         value: CLEAR_OVERRIDE_VALUE,
                                         label: "  (clear override)",
-                                        description: `Revert to global default (${config.thinkingLevel})`,
+                                        description: `恢复全局默认（${config.thinkingLevel}）`,
                                     });
                                 }
                                 return items;
@@ -463,36 +463,36 @@ export class SettingsSelectorComponent extends Container {
             },
             {
                 id: "tui-mode",
-                label: "TUI mode",
-                description: "Interface layout; fullscreen mode is experimental",
+                label: `TUI 模式`,
+                description: `界面布局；全屏模式为实验性功能`,
                 currentValue: config.tuiMode,
                 values: ["regular", "fullscreen"],
             },
             {
                 id: "fullscreen-exit-output",
                 label: "Fullscreen exit output",
-                description: "Print the transcript or only a session resume hint when exiting fullscreen mode",
+                description: `退出全屏模式时输出完整对话记录或仅会话恢复提示`,
                 currentValue: config.fullscreenExitOutput,
                 values: ["transcript", "resume-hint"],
             },
             {
                 id: "fullscreen-scrollbar",
-                label: "Fullscreen scrollbar",
-                description: "Scrollbar behavior in fullscreen mode; has no effect in regular mode",
+                label: `全屏滚动条`,
+                description: `全屏模式下的滚动条行为；在常规模式下无效果`,
                 currentValue: config.fullscreenScrollbar,
                 values: ["auto", "always", "hidden"],
             },
             {
                 id: "fullscreen-copy-on-select",
                 label: "Fullscreen copy on select",
-                description: "Automatically copy selected text in fullscreen mode; disable to copy selections with Ctrl+X",
+                description: `在全屏模式下自动复制所选文本；禁用后可使用 Ctrl+X 复制所选文本`,
                 currentValue: config.fullscreenCopyOnSelect ? "true" : "false",
                 values: ["true", "false"],
             },
             {
                 id: "theme",
-                label: "Theme",
-                description: "Color theme for the interface",
+                label: `主题`,
+                description: `界面颜色主题`,
                 currentValue: config.currentTheme,
                 submenu: (currentValue, done) => new ThemeSubmenu(currentValue, config.terminalTheme, config.availableThemes, callbacks, done),
             },
@@ -502,15 +502,15 @@ export class SettingsSelectorComponent extends Container {
             // Insert after autocompact
             items.splice(1, 0, {
                 id: "show-images",
-                label: "Show images",
-                description: "Render images inline in terminal",
+                label: `显示图片`,
+                description: `在终端内联渲染图片`,
                 currentValue: config.showImages ? "true" : "false",
                 values: ["true", "false"],
             });
             items.splice(2, 0, {
                 id: "image-width-cells",
-                label: "Image width",
-                description: "Preferred inline image width in terminal cells",
+                label: `图片宽度`,
+                description: `内联图片在终端中的首选宽度（单位：字符列数）`,
                 currentValue: String(config.imageWidthCells),
                 values: ["60", "80", "120"],
             });
@@ -518,8 +518,8 @@ export class SettingsSelectorComponent extends Container {
         // Image auto-resize toggle (always available, affects both attached and read images)
         items.splice(supportsImages ? 3 : 1, 0, {
             id: "auto-resize-images",
-            label: "Auto-resize images",
-            description: "Resize large images to 2000x2000 max for better model compatibility",
+            label: `自动缩放图片`,
+            description: `将大图缩放到最大 2000x2000 以提升模型兼容性`,
             currentValue: config.autoResizeImages ? "true" : "false",
             values: ["true", "false"],
         });
@@ -527,8 +527,8 @@ export class SettingsSelectorComponent extends Container {
         const autoResizeIndex = items.findIndex((item) => item.id === "auto-resize-images");
         items.splice(autoResizeIndex + 1, 0, {
             id: "block-images",
-            label: "Block images",
-            description: "Prevent images from being sent to LLM providers",
+            label: `拦截图片`,
+            description: `阻止图片发送给 LLM 提供商`,
             currentValue: config.blockImages ? "true" : "false",
             values: ["true", "false"],
         });
@@ -536,8 +536,8 @@ export class SettingsSelectorComponent extends Container {
         const blockImagesIndex = items.findIndex((item) => item.id === "block-images");
         items.splice(blockImagesIndex + 1, 0, {
             id: "skill-commands",
-            label: "Skill commands",
-            description: "Register skills as /skill:name commands",
+            label: `技能命令`,
+            description: `将技能注册为 /skill:name 命令`,
             currentValue: config.enableSkillCommands ? "true" : "false",
             values: ["true", "false"],
         });
@@ -545,8 +545,8 @@ export class SettingsSelectorComponent extends Container {
         const skillCommandsIndex = items.findIndex((item) => item.id === "skill-commands");
         items.splice(skillCommandsIndex + 1, 0, {
             id: "show-hardware-cursor",
-            label: "Show hardware cursor",
-            description: "Show the terminal cursor while still positioning it for IME support",
+            label: `显示硬件光标`,
+            description: `显示终端光标（同时定位以支持 IME）`,
             currentValue: config.showHardwareCursor ? "true" : "false",
             values: ["true", "false"],
         });
@@ -554,8 +554,8 @@ export class SettingsSelectorComponent extends Container {
         const hardwareCursorIndex = items.findIndex((item) => item.id === "show-hardware-cursor");
         items.splice(hardwareCursorIndex + 1, 0, {
             id: "editor-padding",
-            label: "Editor padding",
-            description: "Horizontal padding for input editor (0-3)",
+            label: `编辑器内边距`,
+            description: `输入编辑器的水平内边距（0-3）`,
             currentValue: String(config.editorPaddingX),
             values: ["0", "1", "2", "3"],
         });
@@ -563,8 +563,8 @@ export class SettingsSelectorComponent extends Container {
         const editorPaddingIndex = items.findIndex((item) => item.id === "editor-padding");
         items.splice(editorPaddingIndex + 1, 0, {
             id: "output-padding",
-            label: "Output padding",
-            description: "Horizontal padding for user messages, assistant messages, and thinking",
+            label: `输出内边距`,
+            description: `用户消息、助手消息和思考内容的水平内边距`,
             currentValue: String(config.outputPad),
             values: ["0", "1"],
         });
@@ -572,8 +572,8 @@ export class SettingsSelectorComponent extends Container {
         const outputPaddingIndex = items.findIndex((item) => item.id === "output-padding");
         items.splice(outputPaddingIndex + 1, 0, {
             id: "autocomplete-max-visible",
-            label: "Autocomplete max items",
-            description: "Max visible items in autocomplete dropdown (3-20)",
+            label: `自动补全最大显示数`,
+            description: `自动补全下拉列表的最大可见项数（3-20）`,
             currentValue: String(config.autocompleteMaxVisible),
             values: ["3", "5", "7", "10", "15", "20"],
         });
@@ -581,8 +581,8 @@ export class SettingsSelectorComponent extends Container {
         const autocompleteIndex = items.findIndex((item) => item.id === "autocomplete-max-visible");
         items.splice(autocompleteIndex + 1, 0, {
             id: "clear-on-shrink",
-            label: "Clear on shrink",
-            description: "Clear empty rows when content shrinks (may cause flicker)",
+            label: `收缩时清空`,
+            description: `内容收缩时清空空行（可能导致闪烁）`,
             currentValue: config.clearOnShrink ? "true" : "false",
             values: ["true", "false"],
         });
@@ -590,8 +590,8 @@ export class SettingsSelectorComponent extends Container {
         const clearOnShrinkIndex = items.findIndex((item) => item.id === "clear-on-shrink");
         items.splice(clearOnShrinkIndex + 1, 0, {
             id: "terminal-progress",
-            label: "Terminal progress",
-            description: "Show OSC 9;4 progress indicators in the terminal tab bar",
+            label: `终端进度条`,
+            description: `在终端标签栏显示 OSC 9;4 进度指示器`,
             currentValue: config.showTerminalProgress ? "true" : "false",
             values: ["true", "false"],
         });

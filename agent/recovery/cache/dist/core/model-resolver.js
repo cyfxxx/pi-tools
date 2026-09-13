@@ -14,7 +14,7 @@ export const defaultModelPerProvider = {
     openai: "gpt-5.5",
     "azure-openai-responses": "gpt-5.4",
     "openai-codex": "gpt-5.5",
-    radius: "balanced",
+    radius: "auto",
     nvidia: "nvidia/nemotron-3-super-120b-a12b",
     deepseek: "deepseek-v4-pro",
     google: "gemini-3.1-pro-preview",
@@ -300,7 +300,7 @@ export function resolveCliModel(options) {
         return {
             model: undefined,
             warning: undefined,
-            error: "No models available. Check your installation or add models to models.json.",
+            error: "没有可用模型。请检查安装或向 models.json 添加模型。",
         };
     }
     // Build canonical provider lookup (case-insensitive)

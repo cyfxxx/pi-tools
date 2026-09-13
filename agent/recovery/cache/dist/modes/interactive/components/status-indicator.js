@@ -45,8 +45,8 @@ export class CompactionStatusIndicator extends StatusIndicator {
     constructor(ui, reason) {
         const cancelHint = `(${keyText("app.interrupt")} to cancel)`;
         const label = reason === "manual"
-            ? `Compacting context... ${cancelHint}`
-            : `${reason === "overflow" ? "Context overflow detected, " : ""}Auto-compacting... ${cancelHint}`;
+            ? `正在压缩上下文... ${cancelHint}`
+            : `${reason === "overflow" ? "Context overflow detected, " : ""}自动压缩... ${cancelHint}`;
         super("compaction", ui, (spinner) => theme.fg("accent", spinner), (text) => theme.fg("muted", text), label);
     }
 }

@@ -2,6 +2,7 @@ import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile, writeFile as fsWriteFile } from "fs/promises";
 import { Type } from "typebox";
 import { splitBom } from "../../utils/text.js";
+import { getExperimentalToolSampling } from "../experimental.js";
 import { applyEditsToNormalizedContent, detectLineEnding, generateDiffString, generateUnifiedPatch, normalizeToLF, restoreLineEndings, } from "./edit-diff.js";
 import { withFileMutationQueue } from "./file-mutation-queue.js";
 import { resolveToCwd } from "./path-utils.js";
@@ -86,7 +87,7 @@ export function createEditToolDefinition(cwd, options) {
         promptSnippet: editToolSystemPromptContribution.snippet,
         promptGuidelines: [...editToolSystemPromptContribution.guidelines],
         parameters: editSchema,
-        constrainedSampling: { type: "json_schema", strict: "prefer" },
+        constrainedSampling: getExperimentalToolSampling(),
         renderShell: "self",
         prepareArguments: prepareEditArguments,
         async execute(_toolCallId, input, signal, _onUpdate, ctx) {

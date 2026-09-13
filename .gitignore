@@ -167,6 +167,7 @@ deploy/tmux/*.lock
 
 # 便携包运行时（python embeddable 等）
 .local/
+*.bak
 *.bak-*
 /.cloakbrowser/
 

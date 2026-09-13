@@ -64,7 +64,7 @@ export class ModelSelectorComponent extends Container {
             this.addChild(this.scopeHintText);
         }
         else {
-            const hintText = "Only showing models from configured providers. Use /login to add providers.";
+            const hintText = "仅显示已配置提供商中的模型。使用 /login 添加提供商。";
             this.addChild(new Text(theme.fg("warning", hintText), 0, 0));
         }
         this.addChild(new Spacer(1));
@@ -200,7 +200,7 @@ export class ModelSelectorComponent extends Container {
     getScopeText() {
         const allText = this.scope === "all" ? theme.fg("accent", "all") : theme.fg("muted", "all");
         const scopedText = this.scope === "scoped" ? theme.fg("accent", "scoped") : theme.fg("muted", "scoped");
-        return `${theme.fg("muted", "Scope: ")}${allText}${theme.fg("muted", " | ")}${scopedText}`;
+        return `${theme.fg("muted", "范围：")}${allText}${theme.fg("muted", " | ")}${scopedText}`;
     }
     getScopeHintText() {
         return keyHint("tui.input.tab", "scope") + theme.fg("muted", " (all/scoped)");

@@ -459,9 +459,46 @@ export async function completeSummarization(model, context, options, streamFn, r
         cacheRetention: "none",
         sessionId: options.sessionId ?? uuidv7(),
     };
-    const produce = async () => streamFn
-        ? (await streamFn(model, context, requestOptions)).result()
-        : completeSimple(model, context, requestOptions);
+    const produce = async () => {
+        // Patch (patch-compaction-warm-prefix.mjs): 暖前缀重放 onPayload 桥——摘要请求发送前用主请求
+        // 最终 payload（缓存键原文）替换自身消息，尾部追加剥离 <conversation> 后的摘要指令；素材由
+        // 扩展侧 setCompactionWarmPrefixProvider 提供（未注册/门控拒绝时返回 null → 原生摘要路径）。
+        let reqOpts = requestOptions;
+        if (typeof options?.onPayload !== "function" && typeof getCompactionWarmPrefix === "function") {
+            reqOpts = {
+                ...requestOptions,
+                onPayload: async (payload) => {
+                    try {
+                        const wp = getCompactionWarmPrefix();
+                        if (!wp || !Array.isArray(wp.messages) || wp.messages.length === 0) return payload;
+                        const msgs = payload?.messages;
+                        if (!Array.isArray(msgs) || msgs.length === 0) return payload;
+                        const last = msgs[msgs.length - 1];
+                        const lastText = typeof last?.content === "string"
+                            ? last.content
+                            : Array.isArray(last?.content)
+                                ? last.content.map((b) => (b?.type === "text" ? (b?.text ?? "") : "")).join("\n")
+                                : "";
+                        if (!(last?.role === "user" && typeof lastText === "string" && lastText.includes("<conversation>"))) return payload;
+                        const tail = lastText.replace(/^<conversation>\n[\s\S]*?\n<\/conversation>\n\n/, "");
+                        if (!tail || tail === lastText) return payload;
+                        const next = { ...payload, messages: [...wp.messages, { role: "user", content: tail }] };
+                        if (Array.isArray(wp.tools) && wp.tools.length > 0) next.tools = wp.tools;
+                        try {
+                            const fs0 = await import("node:fs");
+                            fs0.appendFileSync("/root/.pi/logs/warm-diag.jsonl", JSON.stringify({ t: Date.now(), reason: "rewrite-bridge", baseMsgs: wp.messages.length, tailLen: tail.length, tools: Array.isArray(wp.tools) ? wp.tools.length : 0 }) + "\n");
+                        } catch {}
+                        return next;
+                    } catch {
+                        return payload;
+                    }
+                },
+            };
+        }
+        return streamFn
+            ? (await streamFn(model, context, reqOpts)).result()
+            : completeSimple(model, context, reqOpts);
+    };
     return retryAssistantCall(produce, retry, requestOptions.signal, callbacks);
 }
 /**
@@ -470,6 +507,20 @@ export async function completeSummarization(model, context, options, streamFn, r
  */
 export async function generateSummary(currentMessages, model, reserveTokens, apiKey, headers, signal, customInstructions, previousSummary, thinkingLevel, streamFn, env, retry, callbacks, sessionId) {
     return (await generateSummaryWithUsage(currentMessages, model, reserveTokens, apiKey, headers, signal, customInstructions, previousSummary, thinkingLevel, streamFn, env, retry, callbacks, sessionId)).text;
+}
+// Patch (patch-compaction-warm-prefix.mjs): 暖前缀重放注册点——扩展（pi-context）按模型门控注册 provider，
+// 返回与主请求同源的 { systemPrompt, tools, messages } 即启用重放；null 回退原生。
+let _warmPrefixProvider = null;
+export function setCompactionWarmPrefixProvider(fn) {
+    _warmPrefixProvider = typeof fn === "function" ? fn : null;
+}
+function getCompactionWarmPrefix() {
+    if (!_warmPrefixProvider) return null;
+    try {
+        return _warmPrefixProvider();
+    } catch {
+        return null;
+    }
 }
 /** Build the provider context for a standalone summary request. */
 function buildSummarizationContext(promptText) {
@@ -503,7 +554,12 @@ export async function generateSummaryWithUsage(currentMessages, model, reserveTo
     }
     promptText += basePrompt;
     const completionOptions = createSummarizationOptions(model, maxTokens, apiKey, headers, env, signal, thinkingLevel, sessionId);
-    const response = await completeSummarization(model, buildSummarizationContext(promptText), completionOptions, streamFn, retry, callbacks);
+    // Patch (patch-compaction-warm-prefix.mjs): 暖前缀重放退役说明——context 级重放已移除：
+    // 历史素材是「转换前」消息时二次转换结构不匹配，是「已转换」最终参数时再次串行化
+    // 会重复串行化（v1/v1.5 两版均实测失败）。改为 completeSummarization 内注入 onPayload
+    // 桥，在 provider 参数层用主请求最终 payload 整体替换（即缓存键原文），零二次转换。
+    const summaryContext = buildSummarizationContext(promptText);
+    const response = await completeSummarization(model, summaryContext, completionOptions, streamFn, retry, callbacks);
     const failure = getSummarizationFailure(response, "Summarization");
     if (failure) {
         throw new Error(failure);
