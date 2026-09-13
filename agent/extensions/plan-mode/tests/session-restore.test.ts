@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolvePlanModeEnabled, capQaMessages } from '../index'
+import { resolvePlanModeEnabled, capQaMessages } from '../helpers'
 
 function qa(n: number) {
   return Array.from({ length: n }, (_, i) => ({
