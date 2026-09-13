@@ -14,7 +14,7 @@ vi.mock('@earendil-works/pi-coding-agent', () => ({
   },
 }))
 
-import { truncateToolContent, updateFailStreak } from '../index.ts'
+import { truncateToolContent, updateFailStreak } from '../tool-truncation.ts'
 
 function textBlock(text: string) {
   return { type: 'text' as const, text }
