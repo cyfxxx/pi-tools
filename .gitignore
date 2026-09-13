@@ -186,3 +186,4 @@ agent/.ntfy-relay.pid
 agent/extensions/pi-autopilot/.ntfy-relay-state.json
 agent/extensions/pi-autopilot/.ntfy-relay.pid
 agent/.ntfy-inbox.json
+scripts/代码质量检查报告.md
