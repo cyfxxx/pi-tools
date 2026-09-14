@@ -23,11 +23,11 @@ trap '' PIPE
 # ---- 参数解析 ----
 # --yes 非交互 | --voice/--no-voice 语音重建开关 | --whisper-model=<名> 模型档位 | --no-gpu/--no-piper 抑制可选子项
 # --no-log 关闭自动日志（默认 --yes 模式落盘 logs/rebuild-<ts>.log，带时间戳可追溯）
-# --skip-patches 跳过 Phase 3 版本校验与全部 TUI 补丁（默认开启：pi update 后补丁失配仅告警不阻塞）
+# --skip-patches 跳过 Phase 3 版本校验与全部 TUI 补丁（默认关闭：自动应用补丁）
 # --no-skip-patches 强制核对 @target-version（仅当确知 pi 版本匹配时使用）
 # --dry-run 仅打印将执行的动作，不实际运行
 # --check-providers 强制执行 provider 连通性检查（默认跳过，避免阻塞验证段）
-YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0; SKIP_PATCHES=1; DRY_RUN=0; CHECK_PROVIDERS=0
+YES=0; VOICE=""; WHISPER_MODEL="base"; NO_GPU=0; NO_PIPER=0; NO_LOG=0; SKIP_PATCHES=0; DRY_RUN=0; CHECK_PROVIDERS=0
 
 # ---- 输出辅助（先于参数解析定义：warn 可能在参数解析中被调用） ----
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -184,6 +184,50 @@ EOF
     echo "$GH_PROXY $CHINA_MIRROR" > "$PI_HOME/logs/.mirror-cache" 2>/dev/null || true
   else
     rm -f "$PI_HOME/logs/.mirror-cache" 2>/dev/null || true
+  fi
+}
+
+# ---- 补丁自动发现 ----
+# 在 extensions/*/scripts/ 下查找 patch-*.mjs，返回补丁名称→路径映射
+# 用法: find_patch <补丁名>  # 如 find_patch "tab-arg-completion" → 返回完整路径或空
+find_patch() {
+  local name="$1"
+  # 优先级: pi-context/scripts > pi-voice/scripts > plan-mode/scripts > 其他扩展
+  local search_dirs=(
+    "$PI_HOME/agent/extensions/pi-context/scripts"
+    "$PI_HOME/agent/extensions/pi-voice/scripts"
+    "$PI_HOME/agent/extensions/plan-mode/scripts"
+    "$PI_HOME/agent/extensions/pi-browser/scripts"
+  )
+  for dir in "${search_dirs[@]}"; do
+    local f="$dir/patch-${name}.mjs"
+    if [ -f "$f" ]; then
+      echo "$f"
+      return 0
+    fi
+  done
+  # 兜底: 全局搜索
+  local found
+  found=$(find "$PI_HOME/agent/extensions" -name "patch-${name}.mjs" -type f 2>/dev/null | head -1)
+  if [ -n "$found" ]; then
+    echo "$found"
+    return 0
+  fi
+  return 1
+}
+
+# 执行补丁脚本（幂等：已打补丁自动跳过）
+# 用法: apply_patch <补丁名> <描述> [额外参数...]
+apply_patch() {
+  local name="$1" desc="$2"
+  shift 2
+  local script
+  if script=$(find_patch "$name"); then
+    node "$script" "$PI_DIST" "$@" >/dev/null 2>&1 \
+      && ok "$desc" \
+      || warn "${name} 补丁未应用（pi-tui 版本可能已改动），需人工核对"
+  else
+    warn "patch-${name}.mjs 缺失，跳过"
   fi
 }
 
@@ -1336,83 +1380,18 @@ else
   warn "补丁与当前 pi 版本可能不匹配：pi update 后需逐补丁核对并更新 @target-version 声明"
   info "失配明细：node scripts/maintenance/verify-patches.mjs <pi-dist>；本次继续执行后续维护项"
 fi
-if [ -f "$PI_HOME/agent/extensions/footer-live-context.mjs" ]; then
-  node "$PI_HOME/agent/extensions/footer-live-context.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "footer 实时上下文 token 补丁" \
-    || warn "footer 补丁未应用（pi 版本可能已改动），需人工核对"
-else
-  warn "patch-footer-live-context.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/footer-cache.mjs" ]; then
-  node "$PI_HOME/agent/extensions/footer-cache.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "footer CH 双命中率 + context 去百分比补丁" \
-    || warn "footer 缓存补丁未应用（pi 版本可能已改动或 live-context 补丁缺失），需人工核对"
-else
-  warn "patch-footer-cache.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/footer-format.mjs" ]; then
-  node "$PI_HOME/agent/extensions/footer-format.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "footer 字段中文标签 + 人民币成本补丁" \
-    || warn "footer 格式补丁未应用（pi 版本可能已改动或前后补丁顺序异常），需人工核对"
-else
-  warn "patch-footer-format.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/footer-restart-hint.mjs" ]; then
-  node "$PI_HOME/agent/extensions/footer-restart-hint.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "footer 重启前建议压缩 ⚠ 提示补丁" \
-    || warn "footer 重启提示补丁未应用（pi 版本可能已改动或 cache 补丁缺失），需人工核对"
-else
-  warn "patch-footer-restart-hint.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/voice-enter.mjs" ]; then
-  node "$PI_HOME/agent/extensions/voice-enter.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "回车条件拦截补丁（pi-voice 听写）" \
-    || warn "回车补丁未应用（pi 版本可能已改动）：未打补丁时回车键会被 pi-voice 吞掉"
-else
-  warn "patch-voice-enter.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/compaction-warm-prefix.mjs" ]; then
-  node "$PI_HOME/agent/extensions/compaction-warm-prefix.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "压缩摘要暖前缀重放补丁（pi-context 缓存复用，2026-08-26）" \
-    || warn "暖前缀补丁未应用（pi 版本可能已改动）：压缩摘要调用将全价计费（功能不受影响，仅成本退化）"
-else
-  warn "patch-compaction-warm-prefix.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/plan-tools.mjs" ]; then
-  node "$PI_HOME/agent/extensions/plan-tools.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "工具 schema 恢复补丁（plan-mode 模型侧切换）" \
-    || warn "工具 schema 补丁未应用（pi 版本可能已改动）：恢复会话模型无法调用新注册工具（plan_enter/plan_exit），可移除补丁改用用户侧快捷键切换（方案 2）"
-else
-  warn "patch-plan-tools.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/tab-arg-completion.mjs" ]; then
-  node "$PI_HOME/agent/extensions/tab-arg-completion.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "Tab 参数补全补丁（/voice 等子命令 Tab 可见）" \
-    || warn "Tab 参数补全补丁未应用（pi-tui 版本可能已改动）：斜杠命令有空格时 Tab 仍走文件补全，子命令需手动删空格重打空格触发"
-else
-  warn "patch-tab-arg-completion.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/autocomplete-startswith.mjs" ]; then
-  node "$PI_HOME/agent/extensions/autocomplete-startswith.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "Autocomplete startswith 类型守恒补丁（修复 value.startsWith 崩溃）" \
-    || warn "Autocomplete 补丁未应用（pi-tui 版本可能已改动）：补全时遇到非字符串值仍会崩溃"
-else
-  warn "patch-autocomplete-startswith.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/fuzzy-match-type.mjs" ]; then
-  node "$PI_HOME/agent/extensions/fuzzy-match-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "Fuzzy match 类型守恒补丁（修复 text.toLowerCase 崩溃）" \
-    || warn "Fuzzy match 补丁未应用（pi-tui 版本可能已改动）：模糊匹配遇到非字符串值仍会崩溃"
-else
-  warn "patch-fuzzy-match-type.mjs 缺失，跳过"
-fi
-if [ -f "$PI_HOME/agent/extensions/truncate-type.mjs" ]; then
-  node "$PI_HOME/agent/extensions/truncate-type.mjs" "$PI_DIST" >/dev/null 2>&1 \
-    && ok "Truncate 类型守恒补丁（修复 text.slice 崩溃）" \
-    || warn "Truncate 补丁未应用（pi-tui 版本可能已改动）：截断显示遇到非字符串值仍会崩溃"
-else
-  warn "patch-truncate-type.mjs 缺失，跳过"
-fi
+# 使用自动发现函数应用补丁（幂等：已打补丁自动跳过）
+apply_patch "footer-live-context" "footer 实时上下文 token 补丁"
+apply_patch "footer-cache" "footer CH 双命中率 + context 去百分比补丁"
+apply_patch "footer-format" "footer 字段中文标签 + 人民币成本补丁"
+apply_patch "footer-restart-hint" "footer 重启前建议压缩提示补丁"
+apply_patch "voice-enter" "回车条件拦截补丁（pi-voice 听写）"
+apply_patch "compaction-warm-prefix" "压缩摘要暖前缀重放补丁（pi-context 缓存复用）"
+apply_patch "plan-tools" "工具 schema 恢复补丁（plan-mode 模型侧切换）"
+apply_patch "tab-arg-completion" "Tab 参数补全补丁（/voice 等子命令 Tab 可见）"
+apply_patch "autocomplete-startswith" "Autocomplete startswith 类型守恒补丁"
+apply_patch "fuzzy-match-type" "Fuzzy match 类型守恒补丁"
+apply_patch "truncate-type" "Truncate 类型守恒补丁"
 fi
 
 # Termux 浏览器适配（仅 Termux；其他平台 cloakbrowser 官方预编译包直接可用）
