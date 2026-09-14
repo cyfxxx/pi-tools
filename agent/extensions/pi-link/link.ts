@@ -5,6 +5,18 @@ import { deviceAddresses } from './config.ts'
 import { parseState } from './state.ts'
 import { selfName } from './active.ts'
 import type { OutboxEntry } from './outbox.ts'
+import {
+  DEDUP_WINDOW_MS,
+  simpleHash,
+  checkConcurrentAndDedup,
+  markSendStart,
+  markSendSuccess,
+  markSendEnd,
+} from './guards.ts'
+
+// Re-export guards for backward compatibility
+export { DEDUP_WINDOW_MS, simpleHash, checkConcurrentAndDedup, markSendStart, markSendSuccess, markSendEnd } from './guards.ts'
+export { resetSendGuards } from './guards.ts'
 
 /**
  * pi-link 核心：经 SSH 通道连接远程设备的 `pi --mode rpc`，JSONL 协议收发。
@@ -592,11 +604,8 @@ export async function watchRemote(device: DeviceConfig, lines = 30): Promise<{ o
   return { ok: true, text: rows.join('\n') || '(会话为空)' }
 }
 
-/** T2-4 并发与去重状态（模块级，进程内有效） */
-const inflight = new Map<string, boolean>()
-const lastSends = new Map<string, { hash: string; ts: number }>()
-// 进程内 attach 互斥：同设备并发 attach 串行化（链式排队）——防输入框拼接/消息重复注入。
-// 跨设备竞态无法用进程内锁解决（不同主机），由唯一 buffer 名 + 原子探测粘贴最小化。
+/** 进程内 attach 互斥：同设备并发 attach 串行化（链式排队）——防输入框拼接/消息重复注入。
+ * 跨设备竞态无法用进程内锁解决（不同主机），由唯一 buffer 名 + 原子探测粘贴最小化。 */
 const attachLocks = new Map<string, Promise<unknown>>()
 async function withAttachLock<T>(deviceKey: string, fn: () => Promise<T>): Promise<T> {
   const prev = attachLocks.get(deviceKey) ?? Promise.resolve()
@@ -608,47 +617,6 @@ async function withAttachLock<T>(deviceKey: string, fn: () => Promise<T>): Promi
   } finally {
     if (attachLocks.get(deviceKey) === run) attachLocks.delete(deviceKey)
   }
-}
-export const DEDUP_WINDOW_MS = 5 * 60 * 1000
-
-/** 简单字符串 hash（djb2）——去重比对用，无需加密强度 */
-export function simpleHash(s: string): string {
-  const str = s ?? ''
-  let h = 5381
-  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0
-  return h.toString(36)
-}
-
-/** 并发/去重校验：同设备 in-flight 拒绝；同设备同消息窗口内拒绝 */
-export function checkConcurrentAndDedup(deviceKey: string, message: string): { ok: boolean; detail?: string } {
-  if (inflight.get(deviceKey)) {
-    return { ok: false, detail: '该设备已有进行中的调用，请等它完成后再发' }
-  }
-  const hash = simpleHash(message)
-  const prev = lastSends.get(deviceKey)
-  if (prev && prev.hash === hash && Date.now() - prev.ts < DEDUP_WINDOW_MS) {
-    const mins = Math.round((Date.now() - prev.ts) / 60000)
-    return { ok: false, detail: `与 ${mins} 分钟前发送的完全相同消息，已去重（如确需重发请稍等或改动内容）` }
-  }
-  return { ok: true }
-}
-
-export function markSendStart(deviceKey: string): void {
-  inflight.set(deviceKey, true)
-}
-/** 发送成功后写去重指纹（审计 MEDIUM：失败/超时不写，避免误拒重发） */
-export function markSendSuccess(deviceKey: string, message: string): void {
-  lastSends.set(deviceKey, { hash: simpleHash(message), ts: Date.now() })
-}
-
-export function markSendEnd(deviceKey: string): void {
-  inflight.delete(deviceKey)
-}
-
-/** 测试辅助：清空并发/去重状态 */
-export function resetSendGuards(): void {
-  inflight.clear()
-  lastSends.clear()
 }
 
 /** 读取远程信箱（远程 agent 自主完成的回复记录） */
