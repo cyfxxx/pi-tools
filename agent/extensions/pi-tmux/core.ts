@@ -7,6 +7,7 @@ import { execFile, spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, openSync, readSync, writeSync, closeSync, statSync, readdirSync, renameSync, realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, isAbsolute, resolve } from 'node:path'
+import { writeJSONSync } from '../../services/atomic-write.ts'
 
 /** shell 单引号安全转义：将 ' 替换为 '\''，整体用单引号包裹。 */
 function shellSingleQuote(str: string): string {
@@ -698,16 +699,7 @@ export function loadRegistry(): Registry {
 }
 
 export function saveRegistry(reg: Registry): void {
-  mkdirSync(join(registryPath(), '..'), { recursive: true })
-  // 审计修复（2026-08-26）：tmp+rename 原子替换——并发读者不再看到写一半的残缺
-  // JSON（rename 在同文件系统上原子）；tmp 带 pid 后缀防多实例互覆盖临时文件
-  const tmp = `${registryPath()}.tmp-${process.pid}`
-  try {
-    writeFileSync(tmp, JSON.stringify(reg, null, 2), 'utf-8')
-    renameSync(tmp, registryPath())
-  } finally {
-    try { if (existsSync(tmp)) rmSync(tmp) } catch { /* 清理失败忽略 */ }
-  }
+  writeJSONSync(registryPath(), reg)
 }
 
 // 审计修复（2026-08-26）：并发覆盖收敛——register/unregister/prune 均以「写前重读

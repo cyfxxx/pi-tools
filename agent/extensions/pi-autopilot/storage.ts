@@ -6,6 +6,7 @@ import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { Task, TaskStore, SchedulerSettings, ExecHistoryEntry } from './types.ts'
 import { appendTaskResult } from './results.ts'
 import { STORE_VERSION, DEFAULT_MAX_RUN_TIME, RETRY_BASE_DELAY_MS, RETRY_MAX_DELAY_MS, HISTORY_LIMIT, TASKS_FILE } from './types.ts'
+import { writeJSONAtomic } from '../../services/atomic-write.ts'
 
 let lockPid: string | null = null
 
@@ -200,11 +201,7 @@ export function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export async function writeTasks(store: TaskStore): Promise<void> {
-  const p = tasksPath()
-  const tmp = p + '.tmp.' + process.pid
-  await mkdir(dirname(p), { recursive: true })
-  await writeFile(tmp, JSON.stringify(store, null, 2), 'utf-8')
-  await rename(tmp, p)
+  await writeJSONAtomic(tasksPath(), store)
 }
 
 function parseInterval(s: string): number | null {

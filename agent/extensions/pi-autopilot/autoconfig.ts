@@ -1,8 +1,9 @@
-import { readFile, writeFile, mkdir, rename, unlink } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { getAgentDir } from '@earendil-works/pi-coding-agent'
 import type { AutopilotConfig } from './types.ts'
 import { CONFIG_FILE, defaultAutopilotConfig } from './types.ts'
+import { writeJSONAtomic } from '../../services/atomic-write.ts'
 
 const AGENT_DIR = getAgentDir()
 
@@ -56,16 +57,5 @@ function numericFields<T>(src: T | undefined, keys: (keyof T)[]): Partial<T> {
 }
 
 export async function writeAutopilotConfig(config: AutopilotConfig): Promise<void> {
-  const p = configPath()
-  // 审计 LOW：固定 .tmp 后缀在多实例并发写时互踩（A 覆盖 B 正在 rename 的 tmp，
-  // 配置文件内容错乱）——tmp 带 pid 隔离各实例；rename 失败清理残留 tmp
-  const tmp = `${p}.${process.pid}.tmp`
-  await mkdir(dirname(p), { recursive: true })
-  await writeFile(tmp, JSON.stringify(config, null, 2), 'utf-8')
-  try {
-    await rename(tmp, p)
-  } catch (e) {
-    try { await unlink(tmp) } catch { /* 清理失败忽略（不吞原始错误） */ }
-    throw e
-  }
+  await writeJSONAtomic(configPath(), config)
 }

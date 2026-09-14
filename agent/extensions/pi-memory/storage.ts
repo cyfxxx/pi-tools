@@ -79,12 +79,10 @@ function backupCorruptFile(file: string, kind: string): void {
   }
 }
 
+// 兼容层：保留原名供外部调用（已迁移至 services/atomic-write.ts）
+import { writeJSONSync as _writeJSONSync } from '../../services/atomic-write.ts'
 export function writeJSONAtomic(file: string, data: unknown) {
-  ensureDir()
-  // pid 后缀：主进程与提取子进程并发写同文件时互不踩踏 tmp 文件
-  const tmp = `${file}.${process.pid}.tmp`
-  writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
-  renameSync(tmp, file)
+  _writeJSONSync(file, data)
 }
 
 // ── 敏感信息脱敏（写时净化）──────────────────────────────────
