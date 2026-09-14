@@ -77,7 +77,7 @@ Pi 在不同使用场景下需要不同的配置：
 | 模式 | 说明 | 扩展 | 技能 | 思考级别 |
 |------|------|------|------|---------|
 | `full` | 完整模式 | 全部 | 全部 | 默认 |
-| `light` | 轻量模式 | 只保留搜索、plan-mode、pi-context | 只保留 pi-code-review | low |
+| `light` | 轻量模式 | 只保留搜索、plan-mode、pi-context | 只保留 pi-full-audit | low |
 | `quick` | 极简模式 | 无 | 无 | off |
 
 ### 3.2 命令清单
@@ -227,7 +227,7 @@ pi -m quick         # 以极简模式启动
     "coding": {
       "description": "编码模式 - 关闭搜索和浏览器",
       "extensions": ["!pi-web-search", "!pi-browser"],
-      "skills": ["+skills/pi-code-review/SKILL.md"],
+      "skills": ["+skills/pi-full-audit/SKILL.md"],
       "systemPrompt": null,
       "appendSystemPrompt": "~/.pi/agent/extensions/pi-mode/prompts/coding-append.md",
       "thinking": "high"

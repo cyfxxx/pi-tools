@@ -10,7 +10,7 @@
 ## 第 1 步：确定性检查（机器先跑）
 
 ```bash
-bash ~/.pi/agent/skills/pi-code-review/review.sh --all <repo_dir>
+bash ~/.pi/agent/skills/pi-full-audit/review.sh --all <repo_dir>
 ```
 
 - 保存完整输出到 /tmp 再分析（终端输出会截断）

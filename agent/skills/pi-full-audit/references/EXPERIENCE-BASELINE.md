@@ -105,3 +105,9 @@
 - **cache-guard 阈值检查路径过时**：脚本引用 `lib/prune.ts` 但实际文件已迁移至 `services/token-budget/prune.ts`。修复：更新脚本路径。教训：cache-guard 注入面文件清单需随重构同步更新。
 - **doc-lint 工具名检测包含 group name**：`tool-groups.ts` 中 `name: 'verify'` 是组名非工具名，但被 doc-lint 的 `name: 'xxx'` 正则匹配 → 误报。修复：更新 README 列出工具。教训：doc-lint 的工具名启发式需区分 tool registration 与 tool group definition；或在正则中排除 `tool-groups.ts`。
 - **read 工具默认 limit 导致大文件多次读取**：SKILL.md 231 行读了多次（默认 ~65 行/次）。教训：读已知大文件首读就给 `limit: 300`。
+
+### 2026-08-27 仓库体积审计（pi-repo-optimize 合并）
+- **GitHub API `size` 字段有缓存延迟**：重写后仍显示旧值 8.2MB，本地用 `git count-objects -vH` 的 size-pack 才是准的
+- **pack 减幅可能小于被删 blob**：delta 重算吸收，如删 6.2MB 后 pack 仅减 0.9MB（因 entries.json 127 版本 delta 重压缩）
+- **git-filter-repo 优于 filter-branch**：filter-branch 在 541 提交历史中进程死亡未完成（等待 5 分钟无进展）；git-filter-repo 1.4s 完成重写 + 自动 repack。filter-repo 会自动移除 remote（防误推），需重加；需 `--force` 覆盖已 run 标记；完成后删 .git/filter-repo 备份
+- **scan.pdf 入库教训**：建包时生成的测试扫描件（6.2MB，PDF 不可压缩且 git 无 delta 效益）直接入库，永久驻留历史才需重写。建包/测试产物 >1MB 二进制不入库；需要示例用同内容小文件或文本占位 + README 注明生成方法
