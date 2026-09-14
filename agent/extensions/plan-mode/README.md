@@ -286,6 +286,8 @@ todo get id=1
 | 网络 | `curl` `wget -O -` |
 | 其他 | `echo` `printf` `node --version` `python --version` |
 
+> **cd 命令说明**：`cd` 不在白名单中，但允许作为前缀与白名单命令组合使用：`cd <目录> && <单条白名单命令>`。例如 `cd /path/to/dir && ls` 或 `cd "directory with spaces" && cat file.txt`。系统会验证 `cd` 参数内无命令替换、分隔符等危险模式。
+
 ### 6.2 安全设计要点
 
 1. **双重检查**：防止单一规则遗漏
