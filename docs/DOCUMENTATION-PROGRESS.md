@@ -155,9 +155,11 @@
 
 | # | 文档 | 说明 | 优先级 |
 |---|------|------|--------|
-| 1 | `agent/skills/pi-code-review/README.md` | 技能说明文档 | 低 |
-| 2 | `agent/skills/pi-full-audit/README.md` | 技能说明文档 | 低 |
-| 3 | `agent/skills/pi-backup/README.md` | 技能说明文档 | 低 |
+| ~~1~~ | ~~`agent/skills/pi-code-review/README.md`~~ | 已合并进 SKILL.md | ~~低~~ |
+| ~~2~~ | ~~`agent/skills/pi-full-audit/README.md`~~ | 已合并进 SKILL.md | ~~低~~ |
+| ~~3~~ | ~~`agent/skills/pi-backup/README.md`~~ | 已合并进 SKILL.md | ~~低~~ |
+
+> 注：以上 README.md 已于 2026-09-14 合并进对应 SKILL.md，减少模型工具调用次数。
 
 ---
 
