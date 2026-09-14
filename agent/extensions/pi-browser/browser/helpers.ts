@@ -3,8 +3,8 @@
  */
 import type { ExtensionContext, AgentToolUpdateCallback, AgentToolResult } from '@earendil-works/pi-coding-agent'
 import type { BrowserManager } from './impl'
-import { recordOutput, pruneToolOutput } from '../../../services/token-budget/prune.ts'
-import { estimateTokens } from '../../../services/token-budget/context-budget.ts'
+import { recordOutput, pruneToolOutput } from '../../../lib/prune.ts'
+import { estimateTokens } from '../../../lib/context-budget.ts'
 
 export type RecordUsage = (name: string, tokens: number) => void
 

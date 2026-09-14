@@ -238,16 +238,6 @@ export function formatInterval(ms: number): string {
   return `${Math.round(ms / 86400000)}d`
 }
 
-export function parseTimeToMs(timeStr: string): number | null {
-  const rel = parseRelativeTime(timeStr)
-  if (rel !== null) return rel
-
-  const int = parseInterval(timeStr)
-  if (int !== null) return int
-
-  return null
-}
-
 export function isoNow(): string {
   return new Date().toISOString()
 }
