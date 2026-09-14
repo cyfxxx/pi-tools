@@ -7,6 +7,33 @@ description: 让 pi 把远程 ComfyUI（其他有 GPU 的设备上运行的实�
 
 通过本 skill 把远程 ComfyUI 实例变成 pi 的工具：**提交工作流 → 参数化 → 等结果 → 把图下载到本地**。
 
+## 为什么不是 MCP
+
+pi 官方不内置 MCP host（README: "No MCP"）。本项目选择最直接的路线：**单文件 Python CLI（仅 stdlib）+ HTTP API**，零依赖、可调试、全流程可控。MCP 生态的项目（comfy-mcp、comfyui-mcp-server 等）作为参考吸收了设计精华，但协议不依赖它们。
+
+## 吸收的精华（来自社区与官方项目）
+
+| 来源 | 吸收点 |
+|---|---|
+| ComfyUI_Skills_OpenClaw | CLI 作为 agent 主接口；把复杂工作流收敛为少量参数（schema 思想） |
+| comfyui-mcp-server (joenorton) | `PARAM_*` 占位符 → 本项目 `{{...}}` 占位符体系 |
+| ComfyUI-Agent-Kit | 一个能力多 agent 适配的组织思路；内置工作流模板 |
+| comfy-python-sdk | workflow 加载→注入参数→run→取输出的对象式流程（改写为 CLI 语义） |
+| Comfy-Org/comfy-skills | skill 化交付：SKILL.md + 可执行的简化命令面 |
+
+## 结构
+
+```
+comfyui-agent/
+├── SKILL.md              # pi 集成入口（skill frontmatter + 完整用法）
+├── bin/comfyui           # 入口脚本（→ python3 lib/comfyui.py）
+├── lib/comfyui.py        # 单文件 CLI：stdlib only
+├── workflows/            # 内置 API 模板（builtin:<文件名> 引用）
+├── references/API.md     # ComfyUI HTTP API 参考
+├── references/WORKFLOWS.md # 实例实测工作流映射、提示词规范、模型目录速查
+└── config.example.json   # 多实例配置示例
+```
+
 > **命令路径**：文中的 `comfyui ...` 实际执行路径是**本 skill 目录下的 `bin/comfyui`**（与 SKILL.md 同级）。
 > 执行方式：`cd <skill目录> && bin/comfyui ...` 或直接用绝对路径 `<skill目录>/bin/comfyui ...`。
 > 建议首次配置时在 `~/.bashrc`/`~/.zshrc` 加 alias：`alias comfyui='<skill目录>/bin/comfyui'`。
@@ -103,7 +130,6 @@ img2img：`comfyui upload xxx.png` → 得到 `subfolder/type` → 写 workflow 
 
 - [references/API.md](references/API.md)：ComfyUI 原生 HTTP API 端点详解（底层调试用）
 - [references/WORKFLOWS.md](references/WORKFLOWS.md)：**本机实例实测可用的工作流**（UI 保存的 7 个工作流 ↔ 内置 API 模板映射、蓝图/折叠节点机制、各模型提示词规范、低分辨率测试建议、LTX-2.3 待确认项）
-- README.md：架构与设计取舍
 
 ## 使用后经验沉淀（必做）
 

@@ -5,6 +5,8 @@ description: PDF 全场景处理入口：文本/表格/图片提取、合并拆�
 
 # PDF 处理工具包（pdf-toolkit）
 
+基于 GitHub 开源方案整合与优化的 PDF 通用处理能力，遵循 packs 仓库"通用能力可用化 + 专用能力分类 + 繁重能力记录"原则。
+
 ## 路由速查
 
 | 用户诉求 | 走哪里 |
@@ -13,45 +15,47 @@ description: PDF 全场景处理入口：文本/表格/图片提取、合并拆�
 | 合并/拆分/旋转/加密/解密 | `pdf_core merge/split/rotate/encrypt/decrypt` |
 | 生成 PDF（Markdown→PDF） | references/specialized-tools.md §8（pandoc） |
 | 加水印 | `pdf_core watermark`（文本或水印 PDF 叠加） |
-| 扫描件/文字不可复制 | pdf-ocr 子技能（`pdf_core extract` 空文本时先确认此项） |
-| 填写表单（合同/申请表） | pdf-forms 子技能（四步流程） |
-| 去水印/签名/压缩/整书解析/EPUB | references/specialized-tools.md（按需临时启用） |
-| 网页 → PDF | pi-browser 的 `browser_pdf`（不属本包） |
+| 扫描件 OCR | `skills/pdf-ocr/scripts/ocr_pipeline` |
+| 表单填写 | `skills/pdf-forms/scripts/fill_form` |
+| 去水印/签名/压缩等重型能力 | references/specialized-tools.md |
 
-## 通用操作（bin/pdf_core）
+## 结构
 
-```bash
-PY=/root/.pi/packs/pdf-toolkit
-python3 $PY/bin/pdf_core info 文件.pdf        # 页数/加密/元数据
-python3 $PY/bin/pdf_core extract 文件.pdf -o out.md    # 文本（布局保留）
-python3 $PY/bin/pdf_core tables 文件.pdf     # 表格 → 每页 CSV
-python3 $PY/bin/pdf_core images 文件.pdf     # 内嵌图片 → 目录 + manifest.json（sha256 去重）
-python3 $PY/bin/pdf_core render 文件.pdf -p 1-3 -dpi 200   # 页面 PNG（检查/喂模型）
-python3 $PY/bin/pdf_core merge a.pdf b.pdf -o m.pdf --bookmarks   # 合并+书签
-python3 $PY/bin/pdf_core split 文件.pdf 1-3,5,7-   # 拆分（连续段合并成文件）
-python3 $PY/bin/pdf_core rotate 文件.pdf 90 -p 2-4
-python3 $PY/bin/pdf_core encrypt 文件.pdf 密码 -o 加密.pdf
-python3 $PY/bin/pdf_core decrypt 加密.pdf 密码
-python3 $PY/bin/pdf_core watermark 文件.pdf "机密" -o wm.pdf   # 或叠加 水印.pdf
-python3 $PY/bin/pdf_core report 文件.pdf      # 综合报告（元数据+全文+表格+图片）
+```
+pdf-toolkit/
+├── SKILL.md                  # 入口：路由速查 + pdf_core 用法 + 执行纪律
+├── requirements.txt          # pypdf / pdfplumber / pymupdf / reportlab
+├── bin/pdf_core              # 通用能力 CLI（13 个子命令）
+├── skills/
+│   ├── pdf-forms/            # 专用：表单填写（AcroForm 字段 + 坐标插入 + 验证）
+│   │   └── scripts/          # extract_form / fill_form / verify_form
+│   └── pdf-ocr/              # 专用：扫描件 OCR（可搜索 PDF + Markdown）
+│       └── scripts/          # ocr_pipeline
+└── references/
+    └── specialized-tools.md  # 记录：去水印/签名/压缩/Stirling/MinerU/pdf-lib/整书管线等
 ```
 
-说明：
-- 坐标均为 pymupdf 左上原点（渲染 PNG 量图即所得）；唯一例外是 PDF 生成的上下文明确用左下原点的 API
-- 输出默认落在 `./pdf_<动作>_<文件名>/`；合并/拆分/水印等无默认输出目录的子命令，-o 建议显式给出
-- 加密文件统一先 `pdf_core decrypt`
+## 能力分层
 
-## 依赖
+| 层 | 内容 | 形态 |
+|---|---|---|
+| 通用 | 提取/合并/拆分/旋转/加密/水印/渲染/报告 | pdf_core CLI，即用 |
+| 专用 | 表单填写、扫描件 OCR | 子技能 + 脚本，按触发使用 |
+| 记录 | 去水印、签名、压缩、Stirling-PDF、MinerU/Marker、pdf-lib、整书 OCR→EPUB、pandoc 生成 | specialized-tools.md 要点，按需临时启用 |
 
-`requirements.txt`（pypdf / pdfplumber / pymupdf / reportlab；poppler-utils 系统包（pdftotext/pdfinfo）为可选增强）。
-OCR 需 tesseract 二进制 + 语言包，安装命令见 pdf-ocr/SKILL.md 与 specialized-tools.md §9。
+## 借鉴来源（GitHub 调研 2026-06）
 
-## 执行纪律
+- **anthropics/skills `pdf`**（官方，proprietary LICENSE.txt）：技术栈与工具选型（pypdf/pdfplumber/reportlab/pymupdf/tesseract），表单四步流程（结构提取→坐标→填充→验证）与脚本设计
+- **xiexikang/skill-pdf-content-extractor**：综合报告、触发词组织、去水印规则/启发式模式（效果不佳的教训已记录）
+- **KyoSakuyo/skills pdf-set**：扫描书 OCR→Markdown→翻译→EPUB 管线设计（重场景，记录于 specialized-tools §7）
+- **Stirling-PDF**（80k stars）：功能清单作能力规划参照，部署方式记录于 specialized-tools §4
 
-1. 交互式文档（表单、带超链接的目录）操作后必须验证：forms 走 verify_form；通用操作重跑 `info`/`extract` 抽查
-2. 扫描件优先走 OCR 而非盲目猜文本；OCR 结果交付前渲染对照抽查
-3. 重型任务（整本书、GPU 解析、批处理）先与用户确认规模再启用 specialized-tools 条目
+## 验证记录
 
-## 使用后经验沉淀（必做）
+在 /root/.pi/packs/pdf-toolkit/examples/ 下用生成样本实测：生成→提取→表格→合并→拆分→旋转→加密→解密→水印→报告→表单填写→验证。
 
-任务收尾时按 packs/README.md「经验沉淀机制」追加本包根 `EXPERIENCE.md`（工具坑/新发现/流程缺陷，证据导向，标注环境）。未合并条目 ≥3 条或用户要求时合并进本文件正文对应章节并清条目。
+## 环境备注
+
+- 依赖安装采用 `pip install --break-system-packages`（PEP 668 环境）
+- OCR 需额外 `apt install tesseract-ocr tesseract-ocr-chi-sim`（Debian 系）
+- 坐标约定全包统一 pymupdf 左上原点，避免混用
