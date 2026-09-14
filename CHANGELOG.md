@@ -3,6 +3,19 @@
 主线（master）稳定版本锚点。每个稳定版本打 tag（`stable-YYYYMMDD`），出现问题时可用
 `git checkout <tag>` 回退，或从该 tag 拉分支修复。
 
+## 2026-09-14 模块化重构（大文件拆分 + lib/ 清理）
+
+- **lib/ 兼容层清理**：10 个完整实现文件转为 thin re-export shim（消除 ~1746 行重复代码）
+  - usage-diag/context-budget/auto-compact/shadow-review/note-store/task-record/output-archive/config/registry/hook-registry
+- **pi-memory/tools.ts 拆分**：745 行 → 5 功能域模块 + 15 行编排器
+  - memory-store.ts / memory-search.ts / exec-sandbox.ts / notes-tools.ts / checkpoint-tools.ts
+  - CATEGORIES 常量迁移至 types.ts
+- **pi-context/index.ts 拆分**：909 行 → 12 功能域模块 + 55 行编排层
+  - advice-strings / message-utils / admin-state / prune-dump / context-resolver / task-gate
+  - warm-prefix-replay / tool-lifecycle / message-filtering / auto-compact-controller
+  - system-prompt / tool-registrations
+- **package.json 修复**：subagent 补全元数据，pi-link 添加 pi.extensions 字段
+
 ## 2026-09-13 代码质量修复和优化
 
 - **修复文件权限**：rebuild.sh、pi-wrapper.sh 权限从 777 改为 755（安全加固）
